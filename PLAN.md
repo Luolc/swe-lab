@@ -15,11 +15,24 @@ pick up without guesswork. Update it whenever a milestone's state changes.
 
 **Right now:** the single-instance runner works end to end (subscription
 OAuth through the per-call `cc-reverse-proxy`; agent writes its snippet list to
-`.annotation_output.json`; runner parses, validates, and stores the two
-artifacts). We are in the **prompt-iteration phase** (Development phasing step 1):
-run a few examples, judge quality, refine `annotate/prompt.py`. Then annotate
-10–20 examples, and only later un-gitignore `annotations/` to commit the
-deliverable and scale up (batch inference, step 3).
+`.annotation_output.json`, self-validates with the standalone validator, and
+the runner parses/validates/stores the two artifacts). We are in the
+**prompt-iteration phase** (Development phasing step 1).
+
+**Next task — prompt-variance experiment.** Sample one instance per language
+(go / python / js / ts), run each **3 times independently**, and judge:
+(a) is each result reasonable, (b) how large is the run-to-run variance. Minor
+differences (a line off, one more/fewer snippet) are fine; large snippet-set
+divergence means the prompt needs to be made more stable. Iterate
+`annotate/prompt.py` on the findings — including possibly giving the agent an
+explicit JSON example / schema so it cannot misread the format (P1, not P0: the
+validator already guards the schema). Track cost and token usage; persist every
+run's output so progress survives a long session. Write it up as an experiment
+report under `experiments/`. Harness + results:
+`experiments/prompt_variance/` (see its README/report).
+
+After that: annotate 10–20 examples, then un-gitignore `annotations/` to commit
+the deliverable and scale up (batch inference, step 3).
 
 Run one instance:
 `python -m swebench_related_files_annotation.annotate <instance_id> [--model sonnet|opus]`.
