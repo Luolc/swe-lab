@@ -8,7 +8,7 @@
 | Final annotation prompt | [`annotate/annotation_prompt.py`](../../src/swebench_related_files_annotation/annotate/annotation_prompt.py) |
 | Final aggregator prompt | [`annotate/aggregator.py`](../../src/swebench_related_files_annotation/annotate/aggregator.py) |
 | Started | 2026-07-06 20:51 PDT |
-| Last updated | 2026-07-06 23:34 PDT |
+| Last updated | 2026-07-07 00:55 PDT |
 
 ## Contents
 
@@ -20,6 +20,7 @@
 - [Generalization: Second Suite](#generalization-second-suite)
 - [Aggregate Experiment](#aggregate-experiment)
   - [Aggregator Prompt Iteration](#aggregator-prompt-iteration)
+- [Post-Experiment: Batch-QA Coverage Refinement](#post-experiment-batch-qa-coverage-refinement)
 - [Cost](#cost)
 - [Remaining Issues and Open Questions](#remaining-issues-and-open-questions)
 
@@ -288,6 +289,23 @@ case (v2) is less trustworthy than a general, principled one. The finalized
 prompt honors the "most appropriate, not always tightest" point and leaves the
 whole-vs-focus judgment to the agent rather than hard-coding an answer — the
 right call until a larger, more diverse sample says otherwise.
+
+## Post-Experiment: Batch-QA Coverage Refinement
+
+_2026-07-07 PDT._ After finalizing, the pipeline was run on 20 random instances
+([`../batch_annotation/`](../batch_annotation/), seed `20260706`) with
+per-instance manual QA ([qa_log.md](../batch_annotation/qa_log.md)). All 20 were
+valid; the annotator reliably covered the **existing** gold-patch code files +
+tests, and correctly excluded files the patch *creates* (new files), docs, and
+dependency manifests (`go.mod` / `go.sum`). The one recurring gap: existing
+UI-template files a fix edits were sometimes omitted (1 of 20).
+
+Refinement (both prompts): a coverage line — include every file the gold patch
+modifies that **already exists** in the checkout (a UI template or config it
+edits counts); never include files it only *creates*. A 2-example spot-check
+confirmed it: the gap case (openlibrary safe-mode) now covers all 4 gold files
+incl. the two templates, and a clean/focused case (teleport) was unchanged (no
+over-inclusion).
 
 ## Cost
 
