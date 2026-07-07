@@ -1,0 +1,104 @@
+{
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "Defines the Key constants, isMac, isOnlyCtrlOrCmdKeyEvent, and isOnlyCtrlOrCmdIgnoreShiftKeyEvent. The new KeyBindingsManager imports isMac and Key from here, and the solution must understand these existing helpers to design the replacement approach."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 555,
+      "category": "context-file",
+      "description": "The _onKeyDown handler containing all hardcoded navigation and room keyboard shortcuts; a solver must read this to identify every shortcut that needs to be extracted into the new KeyBindingsManager."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The onKeyDown handler for the room-search input, which handles Escape/Arrow/Enter via raw key comparisons that must be replaced with getRoomListAction calls."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "The onReactKeyDown handler in RoomView that uses raw modifier-flag checks for Escape, Shift+PageUp, and Ctrl+Shift+U; the solver must read this to map these to RoomAction enum values."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "The complex onKeyDown handler that mixes formatting, history undo/redo, newline insertion, cursor movement, and autocomplete using inline modifier checks; maps to both MessageComposerAction and AutocompleteAction in the solution."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "The _onKeyDown handler in EditMessageComposer that handles send, cancel, and arrow-key navigation with inline modifier guards; must be replaced to use getMessageComposerAction."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "The onHeaderKeyDown handler that uses raw ArrowLeft/ArrowRight key checks to collapse/expand sublists; must be refactored to use getRoomListAction."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "The _onKeyDown and onVerticalArrow methods in SendMessageComposer that combine send, arrow history navigation, and cancel handling via raw key and modifier checks; the solver must read both to correctly map them to MessageComposerAction values."
+    }
+  ],
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c81d2d8e-0718-469e-bed8-5a9d6deb91b4",
+    "timestamp": "2026-07-07T04:45:35.536479+00:00",
+    "proxy_port": 20014,
+    "num_turns": 21,
+    "cost_usd": 0.5846473499999999,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 44959,
+      "cache_read_input_tokens": 950787,
+      "output_tokens": 8386,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44959,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 508,
+          "cache_read_input_tokens": 80804,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

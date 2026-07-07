@@ -1,0 +1,90 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 362,
+      "end_line": 371,
+      "category": "referenced-function",
+      "description": "The hide_qt_warning context manager defined in log.py that must be moved to qtlog.py; reading it reveals the exact implementation to transplant."
+    },
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 404,
+      "end_line": 419,
+      "category": "referenced-function",
+      "description": "QtWarningFilter class in log.py that must be moved together with hide_qt_warning to qtlog.py, since hide_qt_warning depends on it."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtlog.py",
+      "start_line": 1,
+      "end_line": 214,
+      "category": "context-file",
+      "description": "Destination module for the moved code; the solver must read it to see which imports (contextlib, logging, Iterator) are already present and where at the end of the file to append the new class and function."
+    },
+    {
+      "file_path": "tests/unit/utils/test_log.py",
+      "start_line": 343,
+      "end_line": 369,
+      "category": "useful-unit-test",
+      "description": "TestHideQtWarning class in test_log.py that tests the behavior to be moved; the solver must remove it from here and recreate equivalent tests against qtlog in test_qtlog.py."
+    },
+    {
+      "file_path": "tests/unit/utils/test_qtlog.py",
+      "start_line": 1,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "Destination test file where TestHideQtWarning must be added; the solver needs to see its structure (imports, existing class) to integrate the new tests correctly."
+    },
+    {
+      "file_path": "qutebrowser/browser/qtnetworkdownloads.py",
+      "start_line": 112,
+      "end_line": 130,
+      "category": "referenced-function",
+      "description": "_do_die method that calls log.hide_qt_warning; the solver must update this call site to use qtlog.hide_qt_warning and add qtlog to the module's imports."
+    }
+  ],
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "18244013-2a61-4b89-9cac-019623b2450a",
+    "timestamp": "2026-07-07T04:43:54.597109+00:00",
+    "proxy_port": 20001,
+    "num_turns": 15,
+    "cost_usd": 0.39547635000000003,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 25607,
+      "cache_read_input_tokens": 575837,
+      "output_tokens": 8111,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25607,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 309,
+          "cache_read_input_tokens": 64624,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

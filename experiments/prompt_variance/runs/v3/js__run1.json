@@ -1,0 +1,132 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "isValidationPending, getValidationExpiry, expireValidation, and canSendValidation — these four functions currently rely on database-level TTL (pttl/pexpire) for expiry tracking. The fix rewrites them to read an explicit `expires` timestamp stored in the confirm object, and fixes canSendValidation to handle a null ttl."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 84,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "sendValidationEmail stores the confirmation code using db.pexpire on both confirm:byUid:<uid> and confirm:<code>. The fix removes those pexpire calls and instead stores an `expires` Unix-ms timestamp directly in the confirm object, which all other methods then check."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 162,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "confirmByCode needs to check the explicit expires timestamp before confirming (throwing confirm-email-expired when the entry is stale). confirmByUid is called by the ACP validate-email flow and requires the user's email field to be pre-populated before it's invoked."
+    },
+    {
+      "file_path": "src/controllers/admin/users.js",
+      "start_line": 163,
+      "end_line": 185,
+      "category": "referenced-function",
+      "description": "loadUserInfo assembles the ACP user list. The fix adds a getConfirmObjs() helper that calls db.mget() on confirm:byUid:<uid> keys and then db.getObjects(), then attaches email:pending and email:expired flags to each user object for display in the ACP."
+    },
+    {
+      "file_path": "src/socket.io/admin/user.js",
+      "start_line": 62,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "validateEmail and sendValidationEmail socket handlers must be updated: validateEmail should call getEmailForValidation and setUserField before confirmByUid; sendValidationEmail should pass the retrieved email explicitly so it works even when the user's email field is missing."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 140,
+      "end_line": 155,
+      "category": "referenced-function",
+      "description": "The Promise.all block in deleteAccount lists all cleanup operations run on deletion. The fix adds User.email.expireValidation(uid) here so pending confirmation data is removed when a user is deleted."
+    },
+    {
+      "file_path": "src/database/redis/main.js",
+      "start_line": 59,
+      "end_line": 65,
+      "category": "similar-pattern",
+      "description": "The Redis get function (client.get) is the direct analogue for the new mget method, which should use the native client.mget. Understanding this pattern shows exactly where mget is inserted and how it maps to the Redis client API."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 14,
+      "end_line": 36,
+      "category": "similar-pattern",
+      "description": "The MongoDB exists function for arrays uses find with $in and builds a key→value map — this is the exact pattern the new mget must replicate (find with $in, build a map, return keys.map(k => map[k] ?? null))."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 61,
+      "end_line": 78,
+      "category": "similar-pattern",
+      "description": "The MongoDB get function shows how to retrieve the `data` field from the objects collection with projection, which the mget implementation must mirror for each key."
+    },
+    {
+      "file_path": "src/database/postgres/main.js",
+      "start_line": 101,
+      "end_line": 120,
+      "category": "similar-pattern",
+      "description": "The PostgreSQL get function shows the legacy_object_live/legacy_string JOIN query pattern that the new mget must extend with an ANY($1::TEXT[]) filter to handle multiple keys at once."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 111,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "The canSendValidation test suite, including the test that expires a validation early via db.pexpire. The test_patch changes this test to use db.setObjectField on the confirm object's expires field, revealing the new expiry mechanism the fix must implement."
+    },
+    {
+      "file_path": "test/database/keys.js",
+      "start_line": 21,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Existing db.get tests establish the contract that a missing key returns null and a found key returns the value — the same contract the new db.mget tests extend to arrays of keys."
+    }
+  ],
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cde02f17-1117-4d98-92f7-a7214f79f946",
+    "timestamp": "2026-07-07T04:44:16.946184+00:00",
+    "proxy_port": 20000,
+    "num_turns": 18,
+    "cost_usd": 0.5382669,
+    "usage": {
+      "input_tokens": 286,
+      "cache_creation_input_tokens": 43416,
+      "cache_read_input_tokens": 567183,
+      "output_tokens": 13299,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43416,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 432,
+          "cache_read_input_tokens": 79257,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

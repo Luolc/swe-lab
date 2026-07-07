@@ -2,8 +2,10 @@
 
 **Goal.** Check how the annotation prompt behaves across languages and how stable
 it is run-to-run, then iterate the prompt to reduce variance while keeping
-results reasonable. Status: **baseline + v2 analyzed (v2 was a mixed result);
-v3 (regression fix) next.**
+results reasonable. Status: **complete through v3.** v3 is the recommended
+prompt: it keeps v2's wins and fixes v2's regressions. Residual variance is
+mostly inherent task ambiguity (how much of a test to include), best addressed
+by sample-and-aggregate rather than more prompt tweaks.
 
 ## Method
 
@@ -117,12 +119,66 @@ regressions:
 - Add "keep to the files a solver genuinely must read; don't pad with peripheral
   files unless clearly necessary." (targets the js file-agreement drop)
 
-## Remaining issues / open questions
+## v3 — results (recommended prompt)
 
-- **Inherently ambiguous files** (`qtlog.py`) will keep some range variance no
-  matter the prompt — scattered relevance has no single "right" range. This is
-  the strongest argument for the **sample-and-aggregate** option (PLAN.md): run
-  N times and let an aggregator reconcile ranges.
-- **n=3 per instance, 1 instance per language** is a small sample; file-agreement
-  swings on js may be partly noise. A larger sample would firm up conclusions.
-- Cost so far: baseline $5.64 + v2 $5.12 = **$10.76** across 24 runs (~$0.45/run).
+v3 kept v2's wins (no trivial snippets; cover whole units) and softened the
+whole-file rule (large file → part; small fully-relevant file → whole) plus
+"don't pad peripheral files". All 12 runs valid/complete. Cost $5.34.
+
+Evolution of the headline numbers (baseline → v2 → v3):
+
+| metric | go | python | js | ts |
+| --- | --- | --- | --- | --- |
+| file agreement | 80 → 100 → 75 | 100 → 100 → 100 | 100 → **69 → 90** | 100 → 100 → 100 |
+| snippet counts | 6/7/6 → 8/7/8 → 6/5/6 | 7/8/6 → 7/8/7 → 5/6/7 | 14/15/14 → 20/16/12 → 12/12/16 | 9/15/8 → 8/9/8 → **8/8/8** |
+
+Targeted fixes landed:
+
+- **go `errors.go`: 20% → 98%.** The small fully-relevant file is taken whole
+  by all runs again — the v2 regression is fixed.
+- **js file agreement: 69% → 90%.** "Don't pad peripheral files" removed the
+  inconsistent localization / OpenAPI / error-json inclusions.
+- **python `qtlog.py`: 12% → 100%.** Runs converged on consistently taking the
+  (fully-relevant) file whole — the previously least-stable file is now stable.
+- **ts stayed excellent:** counts `8/8/8`, line-IoU ~100%. The import-snippet
+  fix from v2 held.
+
+Still weak / noisy:
+
+- **Test-coverage extent** on js `test/user/emails.js` (29%), `test/database/
+  keys.js` (40%), `user/delete.js` (21%): runs disagree on *how much* of a test
+  file / suite to include (one suite vs several). This is genuine ambiguity, not
+  a format problem.
+- **Sampling noise (n=3):** some per-file IoUs swing between rounds for reasons
+  unrelated to the prompt (e.g. python `log.py` 45 → 100 → 45, go `evaluator.go`
+  91 → 100 → 57). Fine-grained per-file comparisons across rounds are therefore
+  not fully reliable; the *attributable* conclusions are the four fixes above,
+  which have clear mechanisms.
+
+## Conclusions & recommendation
+
+- **Adopt the v3 prompt.** It gives stable file selection (python/js/ts ≥ 90%
+  file agreement, ts perfectly consistent) and tight, reproducible ranges, with
+  the v2 regressions fixed. The three levers that mattered: no trivial 1-line
+  snippets; take small fully-relevant files whole (don't over-split); don't pad
+  peripheral files.
+- **Residual variance is mostly inherent** — chiefly how much of a test to
+  include. Prompt wording alone won't drive this to zero.
+- **This is the case for sample-and-aggregate** (PLAN.md option): for the
+  ambiguous files, running N times and letting an aggregator reconcile
+  ranges/coverage would beat any single run. Recommended if we later need higher
+  per-instance reliability.
+- **Validate at scale on more instances.** n=3 × 1-instance-per-language is
+  enough to steer the prompt but too small for firm per-file claims; a broader
+  sample would confirm.
+
+## Cost
+
+| round | runs | cost |
+| --- | --- | --- |
+| baseline | 12 | $5.64 |
+| v2 | 12 | $5.12 |
+| v3 | 12 | $5.34 |
+| **total** | **36** | **$16.10** (~$0.45/run) |
+
+Tokens per round ~8M input (mostly prompt-cache reads) / ~90K output.

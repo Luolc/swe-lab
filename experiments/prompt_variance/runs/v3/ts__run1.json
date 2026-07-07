@@ -1,0 +1,104 @@
+{
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 19,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Defines the `Key` constants, `isMac` flag, and helper functions `isOnlyCtrlOrCmdKeyEvent`/`isOnlyCtrlOrCmdIgnoreShiftKeyEvent` that are directly imported in the new `KeyBindingsManager.ts` and `KeyBindingsDefaults.ts`. Understanding these helpers is essential to understand what patterns the new centralized system replaces."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 555,
+      "category": "context-file",
+      "description": "Contains the existing `_onKeyDown` handler with hardcoded room-action and navigation-action shortcuts using raw key comparisons and ad-hoc modifier checks. A solver must read this to enumerate all shortcuts that need to become `RoomAction` and `NavigationAction` enum values and default bindings."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "Contains the existing `onKeyDown` handler for the room-search input that dispatches on raw key values (ESCAPE, ARROW_UP/DOWN, ENTER). The solver must read this to understand which `RoomListAction` values cover these cases and how the handler is replaced."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "Contains the existing `onReactKeyDown` handler checking raw keys (ESCAPE, PAGE_UP, U) with manual modifier guards. A solver needs to read this to understand the `RoomAction` entries (DismissReadMarker, JumpToOldestUnread, UploadFile) and the exact modifier conditions they replace."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "Contains the most complex existing `onKeyDown` handler, covering formatting shortcuts (Bold/Italics/Quote), undo/redo, newline insertion, cursor movement, and autocomplete navigation — all via hardcoded key and modifier checks. The solver must read this to extract the full set of `MessageComposerAction` and `AutocompleteAction` values and replacement logic."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "Contains the existing `_onKeyDown` handler for the edit-message composer, including send (with ctrlEnterToSend setting), cancel, and up/down navigation to adjacent editable events. Must be read to understand how these actions map to `MessageComposerAction` entries and to see the `SettingsStore` dependency the new bindings provider also uses."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "Contains the existing `onHeaderKeyDown` handler that collapses/expands sections on ARROW_LEFT/ARROW_RIGHT. Must be read to understand which `RoomListAction` values (CollapseSection, ExpandSection) are needed and how the sublist interacts with the new manager."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "Contains the existing `_onKeyDown` and `onVerticalArrow` methods handling send, vertical history navigation (ctrl-alt-arrows), editing the last message (plain up), and cancel-reply (escape). Must be read to understand how `MessageComposerAction` actions (Send, SelectPrevSendHistory, SelectNextSendHistory, EditPrevMessage, CancelEditing) are derived and to see the ctrlEnterToSend setting dependency."
+    }
+  ],
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f25e8061-6b84-4966-a6de-7c78ed6314c9",
+    "timestamp": "2026-07-07T04:43:12.778575+00:00",
+    "proxy_port": 20014,
+    "num_turns": 26,
+    "cost_usd": 0.6708357,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 47218,
+      "cache_read_input_tokens": 1172564,
+      "output_tokens": 9133,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47218,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 183,
+          "cache_read_input_tokens": 82943,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

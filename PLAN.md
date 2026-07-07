@@ -19,20 +19,19 @@ OAuth through the per-call `cc-reverse-proxy`; agent writes its snippet list to
 the runner parses/validates/stores the two artifacts). We are in the
 **prompt-iteration phase** (Development phasing step 1).
 
-**Next task — prompt-variance experiment.** Sample one instance per language
-(go / python / js / ts), run each **3 times independently**, and judge:
-(a) is each result reasonable, (b) how large is the run-to-run variance. Minor
-differences (a line off, one more/fewer snippet) are fine; large snippet-set
-divergence means the prompt needs to be made more stable. Iterate
-`annotate/prompt.py` on the findings — including possibly giving the agent an
-explicit JSON example / schema so it cannot misread the format (P1, not P0: the
-validator already guards the schema). Track cost and token usage; persist every
-run's output so progress survives a long session. Write it up as an experiment
-report under `experiments/`. Harness + results:
-`experiments/prompt_variance/` (see its README/report).
+**Done — prompt-variance experiment** (`experiments/prompt_variance/`, see
+`REPORT.md`). Ran one instance per language × 3, over three prompt versions.
+Outcome: file selection is stable; the `v3` prompt (current) fixed the main
+variance drivers (no trivial import snippets; take small fully-relevant files
+whole; don't pad peripheral files). Residual variance is mostly inherent (how
+much of a test to include) — the case for the sample-and-aggregate option. Also
+hardened the runner (failure classification, retry-on-transient, stop-on-usage-
+limit, diagnostics) and parallelized the harness. Cost so far: ~$16 / 36 runs.
 
-After that: annotate 10–20 examples, then un-gitignore `annotations/` to commit
-the deliverable and scale up (batch inference, step 3).
+**Next task — annotate 10–20 examples** with the v3 prompt, spot-check quality,
+then un-gitignore `annotations/` to commit the deliverable and scale up (batch
+inference, step 3). Consider sample-and-aggregate if per-instance reliability
+needs to be higher.
 
 Run one instance:
 `python -m swebench_related_files_annotation.annotate <instance_id> [--model sonnet|opus]`.

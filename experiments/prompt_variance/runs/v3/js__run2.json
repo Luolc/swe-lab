@@ -1,0 +1,132 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "isValidationPending, getValidationExpiry, expireValidation, and canSendValidation — all four need modification: they currently rely on Redis TTL expiry, but the fix requires reading an explicit 'expires' timestamp stored in the confirm object."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 84,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "sendValidationEmail — currently uses pexpire to set TTL on confirm keys; the fix must instead store an explicit 'expires' timestamp in the confirm object and drop the pexpire calls."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 162,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "confirmByCode must be modified to check the new 'expires' field and throw a specific error if expired; confirmByUid is called by the socket validateEmail handler and provides context for the email-confirmation flow."
+    },
+    {
+      "file_path": "src/controllers/admin/users.js",
+      "start_line": 163,
+      "end_line": 185,
+      "category": "referenced-function",
+      "description": "loadUserInfo is the function that populates per-user data for the ACP; a new getConfirmObjs() helper using db.mget must be added here, and the returned confirmObj data must be used to attach 'email:pending' and 'email:expired' flags to each user."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 61,
+      "end_line": 78,
+      "category": "similar-pattern",
+      "description": "MongoDB get() implementation — the mget() method must be added to this file following the same structure: query the 'objects' collection, build a map by _key, and return ordered results with null for missing keys."
+    },
+    {
+      "file_path": "src/database/redis/main.js",
+      "start_line": 59,
+      "end_line": 61,
+      "category": "similar-pattern",
+      "description": "Redis get() implementation — shows the module pattern; mget() must be added here, delegating to module.client.mget(keys)."
+    },
+    {
+      "file_path": "src/database/postgres/main.js",
+      "start_line": 101,
+      "end_line": 120,
+      "category": "similar-pattern",
+      "description": "PostgreSQL get() implementation joining legacy_object_live and legacy_string — the new mget() must follow the same join pattern with an ANY($1::TEXT[]) filter and return null for missing keys."
+    },
+    {
+      "file_path": "src/socket.io/admin/user.js",
+      "start_line": 62,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "Admin socket handlers validateEmail and sendValidationEmail — both must be updated to call user.email.getEmailForValidation(uid) first to resolve the email from either the user profile or the confirm object before proceeding."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 86,
+      "end_line": 156,
+      "category": "referenced-function",
+      "description": "User.deleteAccount — the Promise.all cleanup block needs User.email.expireValidation(uid) added so pending email confirmation data is removed when a user account is deleted."
+    },
+    {
+      "file_path": "test/database/keys.js",
+      "start_line": 8,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "Existing key-method tests for get() — show the expected contract (null returned for missing keys, correct value for existing keys) that the new mget() implementation must satisfy for each adapter."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 42,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "Library-level tests for isValidationPending, getValidationExpiry, expireValidation, and canSendValidation — define the behavioral contracts these functions must satisfy after switching from TTL-based to timestamp-based expiry."
+    },
+    {
+      "file_path": "src/views/admin/manage/users.tpl",
+      "start_line": 100,
+      "end_line": 130,
+      "category": "context-file",
+      "description": "ACP users table template — the email column currently shows only validated/not-validated icons; the fix must add icons for pending and expired states using the new 'email:pending' and 'email:expired' flags."
+    }
+  ],
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5078b585-54d1-4b9a-a8eb-1a0092aa2319",
+    "timestamp": "2026-07-07T04:48:29.188632+00:00",
+    "proxy_port": 20000,
+    "num_turns": 20,
+    "cost_usd": 0.5767717499999999,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 41071,
+      "cache_read_input_tokens": 721165,
+      "output_tokens": 13425,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41071,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 413,
+          "cache_read_input_tokens": 80194,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}
