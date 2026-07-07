@@ -27,7 +27,10 @@ import time
 from swebench_related_files_annotation import load_dataset
 from swebench_related_files_annotation.annotate.errors import UsageLimitError
 from swebench_related_files_annotation.annotate.proxy import build_proxy
-from swebench_related_files_annotation.annotate.runner import annotate_by_id
+from swebench_related_files_annotation.annotate.runner import annotate_instance
+from swebench_related_files_annotation.datasets.swebench_pro import (
+    SweBenchProInstance,
+)
 
 HERE = Path(__file__).parent
 
@@ -80,84 +83,104 @@ SUITES: dict[str, dict[str, str]] = {
     },
 }
 REPEATS = 3
+# All (language, repeat) tasks run concurrently. Repeats of one instance are now
+# isolated (distinct checkout variant + proxy port), so they no longer collide.
+MAX_CONCURRENCY = 12
 
 _SUMMARY_LOCK = threading.Lock()
 
 
-def _run_language(
+def _port(index: int, k: int) -> int:
+  """A unique proxy port per (instance, repeat), below the aggregator range."""
+  return 20000 + index * 4 + (k - 1)
+
+
+def _run_one(
     round_label: str,
     lang: str,
     iid: str,
+    k: int,
     model: str,
     runs_dir: Path,
     summary_path: Path,
 ) -> None:
-  """Run one language's repeats sequentially (they share a checkout/port)."""
+  """Run one (language, repeat) in its own isolated workspace/port."""
+  if _ABORT.is_set():
+    print(f"abort {lang} run{k} (usage limit hit)", flush=True)
+    return
+  out_file = runs_dir / f"{lang}__run{k}.json"
+  if out_file.exists():
+    print(f"skip  {lang} run{k} (already done)", flush=True)
+    return
+
   ds = load_dataset()
-  for k in range(1, REPEATS + 1):
-    if _ABORT.is_set():
-      print(f"abort {lang} run{k} (usage limit hit)", flush=True)
-      break
-    out_file = runs_dir / f"{lang}__run{k}.json"
-    if out_file.exists():
-      print(f"skip  {lang} run{k} (already done)", flush=True)
-      continue
+  record = ds.require(iid)
+  if not isinstance(record, SweBenchProInstance):
+    raise TypeError(f"unexpected record type for {iid}")
+  index = ds.index_of(iid)
 
-    start = time.time()
-    try:
-      result = annotate_by_id(iid, dataset=ds, model=model)
-      duration = round(time.time() - start, 1)
-      ann = result.annotation
-      _ = out_file.write_text(ann.to_json())
-      summary = {
-          "round": round_label,
-          "lang": lang,
-          "instance_id": iid,
-          "run": k,
-          "complete": result.complete,
-          "valid": result.is_valid,
-          "snippet_count": len(ann.snippets),
-          "cost_usd": ann.metadata.get("cost_usd"),
-          "usage": ann.metadata.get("usage"),
-          "num_turns": ann.metadata.get("num_turns"),
-          "duration_s": duration,
-          "validation_problems": result.validation_problems,
-          "snippets": [
-              {
-                  "file_path": s.file_path,
-                  "start": s.start_line,
-                  "end": s.end_line,
-                  "category": s.category.value,
-              }
-              for s in ann.snippets
-          ],
-      }
-    except Exception as exc:  # record the failure and keep going
-      duration = round(time.time() - start, 1)
-      summary = {
-          "round": round_label,
-          "lang": lang,
-          "instance_id": iid,
-          "run": k,
-          "error": f"{type(exc).__name__}: {exc}",
-          "duration_s": duration,
-      }
-      print(f"ERROR {lang} run{k}: {exc}", flush=True)
-      # A usage/quota limit will keep failing until refresh — stop the round.
-      if isinstance(exc, UsageLimitError):
-        _ABORT.set()
-
-    with _SUMMARY_LOCK, summary_path.open("a") as handle:
-      _ = handle.write(json.dumps(summary) + "\n")
-    print(
-        f"done  {lang} run{k}: "
-        f"complete={summary.get('complete')} "
-        f"valid={summary.get('valid')} "
-        f"snippets={summary.get('snippet_count')} "
-        f"cost=${summary.get('cost_usd')} "
-        f"{summary.get('duration_s')}s",
-        flush=True,
+  start = time.time()
+  try:
+    result = annotate_instance(
+        record,
+        index,
+        model=model,
+        variant=f"run{k}",
+        port=_port(index, k),
+        store=False,
     )
+    duration = round(time.time() - start, 1)
+    ann = result.annotation
+    _ = out_file.write_text(ann.to_json())
+    summary = {
+        "round": round_label,
+        "lang": lang,
+        "instance_id": iid,
+        "run": k,
+        "complete": result.complete,
+        "valid": result.is_valid,
+        "snippet_count": len(ann.snippets),
+        "cost_usd": ann.metadata.get("cost_usd"),
+        "usage": ann.metadata.get("usage"),
+        "num_turns": ann.metadata.get("num_turns"),
+        "duration_s": duration,
+        "validation_problems": result.validation_problems,
+        "snippets": [
+            {
+                "file_path": s.file_path,
+                "start": s.start_line,
+                "end": s.end_line,
+                "category": s.category.value,
+            }
+            for s in ann.snippets
+        ],
+    }
+  except Exception as exc:  # record the failure and keep going
+    duration = round(time.time() - start, 1)
+    summary = {
+        "round": round_label,
+        "lang": lang,
+        "instance_id": iid,
+        "run": k,
+        "error": f"{type(exc).__name__}: {exc}",
+        "duration_s": duration,
+    }
+    print(f"ERROR {lang} run{k}: {exc}", flush=True)
+    # A usage/quota limit will keep failing until refresh — stop the round.
+    if isinstance(exc, UsageLimitError):
+      _ABORT.set()
+
+  with _SUMMARY_LOCK, summary_path.open("a") as handle:
+    _ = handle.write(json.dumps(summary) + "\n")
+  print(
+      f"done  {lang} run{k}: "
+      f"complete={summary.get('complete')} "
+      f"valid={summary.get('valid')} "
+      f"snippets={summary.get('snippet_count')} "
+      f"cost=${summary.get('cost_usd')} "
+      f"{summary.get('duration_s')}s",
+      flush=True,
+  )
 
 
 def run_round(
@@ -171,18 +194,13 @@ def run_round(
   # Build the proxy once up front so concurrent runs don't race the `go build`.
   _ = build_proxy()
 
-  with ThreadPoolExecutor(max_workers=len(instances)) as pool:
+  with ThreadPoolExecutor(max_workers=MAX_CONCURRENCY) as pool:
     futures = [
         pool.submit(
-            _run_language,
-            round_label,
-            lang,
-            iid,
-            model,
-            runs_dir,
-            summary_path,
+            _run_one, round_label, lang, iid, k, model, runs_dir, summary_path
         )
         for lang, iid in instances.items()
+        for k in range(1, REPEATS + 1)
     ]
     for future in futures:
       future.result()

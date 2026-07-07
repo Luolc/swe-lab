@@ -18,9 +18,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 import subprocess
+import threading
 from typing import Protocol
 
 from ..paths import repo_cache_dir
+
+# Serializes the mutating git operations (mirror clone, worktree add) so several
+# threads provisioning concurrently — e.g. parallel repeats of one instance —
+# don't race on a mirror's worktree registry. The mutations are fast relative to
+# the agent call that follows, so a single lock is fine.
+_PROVISION_LOCK = threading.Lock()
 
 
 class RepoInstance(Protocol):
@@ -102,8 +109,9 @@ class GitCheckoutProvider:
 
   def provision(self, instance: RepoInstance, *, variant: str = "") -> Path:
     """Return a worktree of ``instance.repo`` checked out at its base commit."""
-    mirror = self._ensure_mirror(instance.repo)
-    return self._ensure_checkout(mirror, instance, variant=variant)
+    with _PROVISION_LOCK:
+      mirror = self._ensure_mirror(instance.repo)
+      return self._ensure_checkout(mirror, instance, variant=variant)
 
   # -- internals -------------------------------------------------------------
 
