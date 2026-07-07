@@ -5,8 +5,8 @@
 | Author | Liangchen Luo |
 | Harness | Claude Code — orchestrating model Claude Opus 4.8 (`claude-opus-4-8[1m]`) |
 | Annotation model under test | Claude Sonnet 4.6 (`claude-sonnet-4-6`) |
-| Started | 2026-07-07 |
-| Last updated | 2026-07-07 |
+| Started | 2026-07-06 20:51 PDT |
+| Last updated | 2026-07-06 23:34 PDT |
 
 ## Contents
 
@@ -73,7 +73,7 @@
 
 ## Baseline Results
 
-_Run: 2026-07-07 03:51–04:22 UTC._
+_Run: 2026-07-06 20:51–21:22 PDT._
 
 All 12 runs completed and passed validation (`valid = 3/3` everywhere).
 
@@ -102,7 +102,7 @@ was *wrong* — all reasonable, on-target files — but ranges vary more than id
 
 ## v2 Results
 
-_Run: 2026-07-07 04:29–04:38 UTC._
+_Run: 2026-07-06 21:29–21:38 PDT._
 
 Changes: added an explicit JSON output example; "range = the enclosing unit,
 never select an entire file"; "cover the whole relevant unit, not a sub-slice";
@@ -129,7 +129,7 @@ wins, two regressions**:
 
 ## v3 Results (Recommended Prompt)
 
-_Run: 2026-07-07 04:41–04:50 UTC._
+_Run: 2026-07-06 21:41–21:50 PDT._
 
 Changes: kept v2's wins; softened to "don't grab a whole *large* file when only
 part is relevant; a *small, fully-relevant* file may be taken whole"; added
@@ -165,7 +165,7 @@ Still weak / noisy:
 
 ## Generalization: Second Suite
 
-_Run: `s2-v3`, 2026-07-07. v3 prompt on four **different** repos: navidrome
+_Run: `s2-v3`, 2026-07-06 22:19–22:33 PDT. v3 prompt on four **different** repos: navidrome
 (go), openlibrary (python), webclients (js), tutanota (the real `ts` repo)._
 
 The point: does v3 generalize beyond the first sample? Yes. All 12 runs
@@ -192,7 +192,7 @@ Aggregation is the better lever for these cases (below).
 
 ## Aggregate Experiment
 
-_Post-processing of the v3 runs (2026-07-07); no new sampling._
+_Post-processing of the s1-v3 runs (2026-07-06 PDT); no new sampling._
 
 Question: is sample-and-aggregate worth building? As a cheap lower bound, a
 **majority-consensus** aggregate over the 3 v3 runs (`aggregate.py`): keep a file
@@ -216,7 +216,7 @@ What it produced, versus individual runs:
 But it is conservative: a genuinely-relevant region only one run found is dropped
 (a recall cost), and it cannot improve on what the runs collectively found.
 
-**LLM aggregator** (`aggregate_llm.py`, 2026-07-07). The real version: feed the
+**LLM aggregator** (`aggregate_llm.py`, 2026-07-06 22:29–22:39 PDT). The real version: feed the
 3 run annotations + task context + the checkout to an aggregator agent that
 synthesizes one reconciled annotation (union the correct, drop over-broad /
 peripheral, pick tight consistent ranges), self-validated. All 4 s1 instances
