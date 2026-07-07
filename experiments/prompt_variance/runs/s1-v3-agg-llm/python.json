@@ -1,0 +1,53 @@
+{
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 362,
+      "end_line": 371,
+      "category": "referenced-function",
+      "description": "The hide_qt_warning context manager in log.py that must be moved to qtlog.py; the solver reads this to know the exact implementation to relocate."
+    },
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 404,
+      "end_line": 419,
+      "category": "referenced-function",
+      "description": "The QtWarningFilter class in log.py that must be moved together with hide_qt_warning to qtlog.py, since hide_qt_warning depends on it."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtlog.py",
+      "start_line": 1,
+      "end_line": 213,
+      "category": "context-file",
+      "description": "The destination module for the moved code; the solver must read it to see which imports are already present and where to append the new QtWarningFilter class and hide_qt_warning function."
+    },
+    {
+      "file_path": "qutebrowser/browser/qtnetworkdownloads.py",
+      "start_line": 31,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "The import block in qtnetworkdownloads.py that must be updated to add qtlog alongside log so the call in _do_die can reference qtlog.hide_qt_warning."
+    },
+    {
+      "file_path": "qutebrowser/browser/qtnetworkdownloads.py",
+      "start_line": 112,
+      "end_line": 129,
+      "category": "referenced-function",
+      "description": "The _do_die method that calls log.hide_qt_warning; this call site must be updated to qtlog.hide_qt_warning after the function is moved."
+    },
+    {
+      "file_path": "tests/unit/utils/test_log.py",
+      "start_line": 343,
+      "end_line": 369,
+      "category": "useful-unit-test",
+      "description": "The TestHideQtWarning class in test_log.py that must be removed from here and recreated in test_qtlog.py referencing qtlog.hide_qt_warning instead of log.hide_qt_warning."
+    },
+    {
+      "file_path": "tests/unit/utils/test_qtlog.py",
+      "start_line": 1,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "The destination test file showing its import pattern and existing class structure, where the migrated TestHideQtWarning tests must be appended."
+    }
+  ]
+}

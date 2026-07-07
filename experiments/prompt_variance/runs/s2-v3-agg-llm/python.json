@@ -1,0 +1,25 @@
+{
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 23,
+      "end_line": 79,
+      "category": "interface-contract",
+      "description": "The full WikidataEntity dataclass, including the statements field type annotation (line 35) that must be changed from dict[str, dict] to dict[str, list[dict]], and the existing methods (especially get_wikipedia_link) that serve as an implementation pattern for the new get_statement_values method."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 1,
+      "end_line": 25,
+      "category": "useful-unit-test",
+      "description": "Test module imports and the createWikidataEntity helper plus EXAMPLE_WIKIDATA_DICT fixture that the new test_get_statement_values test directly reuses to construct WikidataEntity instances."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 80,
+      "end_line": 121,
+      "category": "similar-pattern",
+      "description": "The test_get_wikipedia_link test showing the exact pattern for testing WikidataEntity methods: construct via createWikidataEntity, mutate entity fields directly, assert method return values \u2014 the same structure the new test_get_statement_values must follow."
+    }
+  ]
+}

@@ -17,6 +17,7 @@
 - [v3 Results (Recommended Prompt)](#v3-results-recommended-prompt)
 - [Generalization: Second Suite](#generalization-second-suite)
 - [Aggregate Experiment](#aggregate-experiment)
+  - [Aggregator Prompt Iteration](#aggregator-prompt-iteration)
 - [Cost](#cost)
 - [Remaining Issues and Open Questions](#remaining-issues-and-open-questions)
 
@@ -245,6 +246,44 @@ clean single answer that is at least as good as the best of N runs. Cost is ~4×
 single-run per instance (3 samples + 1 aggregate ≈ $1.7 vs $0.45). Recommended
 as the quality/reliability path for the ambiguous minority — not required for a
 first pass, where v3 single-run is already good and ~4× cheaper.
+
+### Aggregator Prompt Iteration
+
+The aggregator has its own prompt (`annotate/aggregator.py`), iterated
+separately from the annotation prompt. Old outputs are preserved per version in
+`runs/<round>-agg-llm-v{0,1}` for comparison.
+
+- **v0 — "tightest".** The first version told the aggregator to choose "the
+  tightest contiguous range … from signature to closing line". It produced clean
+  results and happened to *focus* the ambiguous ts `BlobAccessTokenFacade.ts`
+  (candidates split 2× whole-file vs 1× focused → v0 picked focused). But
+  "tightest" is too absolute — sometimes a little more context is better.
+- **v1 — "most appropriate" + judgment.** Softened to the *most appropriate*
+  range (not mechanically tightest) and to decide by judgment against the task
+  ground truth rather than by vote. On the same candidates it mostly matched v0,
+  with a few benign broadenings (including a full set of related test suites for
+  js `emails.js` — arguably better context). **Problem it surfaced:** on the
+  whole-vs-focus call it under-trimmed — `BlobAccessTokenFacade.ts` came back as
+  the whole 141-line file where v0 had focused it. "Most appropriate" relaxed the
+  trimming too much on that decision.
+- **v2 — size threshold + disagreement rule (rejected).** Added "take a file
+  whole only up to ~50 lines" and "when candidates split whole vs focused, prefer
+  focused". This re-focused `BlobAccessTokenFacade.ts`, but it was **overfitting
+  to one example out of eight**: a hard line-count threshold would mishandle a
+  genuinely large, fully-relevant file, and the disagreement rule targeted a rare
+  pattern. Discarded.
+- **Finalized — principle-based (chosen).** Keep v1's "most appropriate" +
+  judgment, and decide file scope purely by *task-relevance*: "take a file whole
+  only when the whole file is genuinely relevant; otherwise select the relevant
+  unit(s)". **No line-count threshold, no disagreement rule.** All 8 aggregates
+  were valid; `BlobAccessTokenFacade.ts` came out whole — the agent's honest
+  judgment that the whole facade is relevant here, left unforced.
+
+**Why this version.** With only eight examples, a prompt tuned to nail a single
+case (v2) is less trustworthy than a general, principled one. The finalized
+prompt honors the "most appropriate, not always tightest" point and leaves the
+whole-vs-focus judgment to the agent rather than hard-coding an answer — the
+right call until a larger, more diverse sample says otherwise.
 
 ## Cost
 

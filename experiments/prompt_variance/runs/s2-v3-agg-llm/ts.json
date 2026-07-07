@@ -1,0 +1,46 @@
+{
+  "snippets": [
+    {
+      "file_path": "src/api/worker/facades/BlobAccessTokenFacade.ts",
+      "start_line": 1,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "The BlobAccessTokenFacade class containing requestReadTokenBlobs and requestReadTokenArchive whose archiveDataType parameters must change from ArchiveDataType to ArchiveDataType | null to support owned-archive scenarios."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 202,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "loadMultipleBlobElements calls requestReadTokenArchive with a hardcoded ArchiveDataType.MailDetails that must be replaced with null so blob element reads are agnostic to archive data type."
+    },
+    {
+      "file_path": "src/api/entities/storage/TypeRefs.ts",
+      "start_line": 7,
+      "end_line": 21,
+      "category": "interface-contract",
+      "description": "BlobAccessTokenPostIn TypeScript type definition where archiveDataType is currently typed as NumberString and must be widened to null | NumberString to allow omitting the field for owned archives."
+    },
+    {
+      "file_path": "src/api/entities/storage/TypeModels.js",
+      "start_line": 9,
+      "end_line": 61,
+      "category": "context-file",
+      "description": "BlobAccessTokenPostIn type model definition with archiveDataType cardinality set to 'One', which must change to 'ZeroOrOne' and the model version bumped to reflect the schema change."
+    },
+    {
+      "file_path": "src/api/entities/storage/ModelInfo.ts",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "context-file",
+      "description": "Storage model version file currently at version 6 that must be incremented to 7 alongside the archiveDataType cardinality change."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/BlobAccessTokenFacadeTest.ts",
+      "start_line": 91,
+      "end_line": 150,
+      "category": "useful-unit-test",
+      "description": "Tests for requestReadTokenArchive covering the token request payload, caching, and expiry; these tests are updated to pass null instead of a specific ArchiveDataType, documenting the new expected contract."
+    }
+  ]
+}

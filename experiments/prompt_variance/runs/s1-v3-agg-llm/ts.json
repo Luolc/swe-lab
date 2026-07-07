@@ -1,0 +1,60 @@
+{
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 19,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Defines the `Key` constants, the `isMac` flag, and the existing helpers `isOnlyCtrlOrCmdKeyEvent`/`isOnlyCtrlOrCmdIgnoreShiftKeyEvent` that the new `KeyBindingsManager` imports from and centralizes."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 555,
+      "category": "context-file",
+      "description": "The existing `_onKeyDown` handler with hardcoded room-action and navigation-action shortcuts that must be replaced with `getKeyBindingsManager().getRoomAction()` and `getKeyBindingsManager().getNavigationAction()` calls."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The existing `onKeyDown` handler for the room-search input that uses raw key comparisons for ESCAPE, ARROW_UP/DOWN, and ENTER, to be replaced with `getKeyBindingsManager().getRoomListAction()`."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "The existing `onReactKeyDown` handler with ad-hoc modifier guards for ESCAPE (DismissReadMarker), Shift+PageUp (JumpToOldestUnread), and Ctrl+Shift+U (UploadFile), to be replaced with `getKeyBindingsManager().getRoomAction()`."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "The existing complex `onKeyDown` handler covering formatting (Bold/Italics/Quote), undo/redo, newline insertion, cursor movement, and autocomplete navigation via inline modifier checks, to be replaced with `getKeyBindingsManager().getMessageComposerAction()` and `getKeyBindingsManager().getAutocompleteAction()`."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "The existing `_onKeyDown` handler for the edit-message composer handling Send (with ctrlEnterToSend), CancelEditing, and EditPrevMessage/EditNextMessage via raw key and modifier checks, to be replaced with `getKeyBindingsManager().getMessageComposerAction()`."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "The existing `onHeaderKeyDown` handler that collapses/expands sections on ARROW_LEFT/ARROW_RIGHT, to be replaced with `getKeyBindingsManager().getRoomListAction()` returning `CollapseSection`/`ExpandSection`."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "The existing `_onKeyDown` and `onVerticalArrow` methods handling Send, vertical send-history navigation (ctrl-alt-arrows), EditPrevMessage (plain up), and CancelEditing (escape), to be consolidated into `getKeyBindingsManager().getMessageComposerAction()`."
+    }
+  ]
+}

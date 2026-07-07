@@ -1,0 +1,95 @@
+{
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "isValidationPending, getValidationExpiry, expireValidation, and canSendValidation \u2014 all rely on db pttl/pexpire for expiry tracking and must be rewritten to use an explicit expires timestamp stored in the confirm object."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 84,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "sendValidationEmail stores expiry via db.pexpire on both confirm keys; the fix replaces those pexpire calls with an explicit expires Unix-ms timestamp field in the confirm object."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 162,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "confirmByCode must be updated to check the new expires field and throw confirm-email-expired when stale; confirmByUid is the ACP path that requires the user email field to already be set before it is called."
+    },
+    {
+      "file_path": "src/controllers/admin/users.js",
+      "start_line": 163,
+      "end_line": 185,
+      "category": "referenced-function",
+      "description": "loadUserInfo assembles per-user data for the ACP; a new getConfirmObjs() helper using db.mget must be added here and used to attach email:pending and email:expired flags to each user object."
+    },
+    {
+      "file_path": "src/socket.io/admin/user.js",
+      "start_line": 62,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "validateEmail and sendValidationEmail socket handlers must call getEmailForValidation(uid) before proceeding so they work even when the user email field is missing or a confirm object has expired."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 141,
+      "end_line": 155,
+      "category": "referenced-function",
+      "description": "The Promise.all cleanup block in deleteAccount needs User.email.expireValidation(uid) added so pending confirmation data is removed when a user account is deleted."
+    },
+    {
+      "file_path": "src/database/redis/main.js",
+      "start_line": 59,
+      "end_line": 61,
+      "category": "similar-pattern",
+      "description": "The Redis module.get implementation shows where mget must be inserted and that it should delegate to the native client.mget for bulk retrieval."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 14,
+      "end_line": 36,
+      "category": "similar-pattern",
+      "description": "The MongoDB exists function uses find with $in on _key and maps results back by position \u2014 the exact pattern the new mget must replicate."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 61,
+      "end_line": 78,
+      "category": "similar-pattern",
+      "description": "The MongoDB get function shows how to retrieve the data field from the objects collection with projection, which mget must mirror for each key."
+    },
+    {
+      "file_path": "src/database/postgres/main.js",
+      "start_line": 101,
+      "end_line": 120,
+      "category": "similar-pattern",
+      "description": "The PostgreSQL get function shows the legacy_object_live/legacy_string JOIN query that mget must extend with an ANY($1::TEXT[]) filter to handle multiple keys at once."
+    },
+    {
+      "file_path": "src/views/admin/manage/users.tpl",
+      "start_line": 111,
+      "end_line": 120,
+      "category": "context-file",
+      "description": "The ACP users table email column currently shows only validated/not-validated icons; the fix must add icons for pending and expired states using the new email:pending and email:expired flags."
+    },
+    {
+      "file_path": "test/database/keys.js",
+      "start_line": 8,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Existing key-method tests for get() establish the null-for-missing / value-for-found contract that the new mget() implementation must satisfy across all adapters."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 42,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "Tests for isValidationPending, getValidationExpiry, expireValidation, and canSendValidation define the behavioral contract these functions must satisfy after switching from TTL-based to explicit timestamp-based expiry."
+    }
+  ]
+}

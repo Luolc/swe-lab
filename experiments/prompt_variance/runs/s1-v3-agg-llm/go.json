@@ -1,0 +1,46 @@
+{
+  "snippets": [
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "Defines ErrNotFound and ErrInvalid as typed string errors with constructor helpers; the fix adds a new ErrDisabled type following this exact same pattern so batchEvaluate can use errors.As to detect and skip disabled-flag errors."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 42,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "BatchEvaluate (public entry, lines 42-63) and batchEvaluate (inner loop, lines 65-83) where the bug lives: any error from s.evaluate immediately aborts the whole batch; the fix adds an errors.As check to skip ErrDisabled and continue processing remaining flags."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The private evaluate function, which at line 103 returns errors.ErrInvalidf for a disabled flag; the fix must change this to the new errs.ErrDisabledf so batchEvaluate can distinguish it from other real errors via errors.As."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "ErrorUnaryInterceptor demonstrates the existing errors.As dispatch pattern used in the codebase (ErrNotFound, ErrInvalid, ErrValidation), which the solver must mirror in batchEvaluate to detect ErrDisabled and also to decide whether ErrDisabled needs a new gRPC status mapping here."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 16,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "Declares enabledFlag/disabledFlag test variables and TestBatchEvaluate; the test patch extends this test to include a disabled flag in the batch and asserts two responses are returned without error, defining the expected behavior the fix must satisfy."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 85,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "TestEvaluate_FlagDisabled confirms that a single Evaluate call for a disabled flag still returns an error with 'flag X is disabled', establishing the contract that evaluate must still error while only batchEvaluate should tolerate ErrDisabled."
+    }
+  ]
+}

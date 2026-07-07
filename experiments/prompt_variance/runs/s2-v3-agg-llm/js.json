@@ -1,0 +1,53 @@
+{
+  "snippets": [
+    {
+      "file_path": "packages/components/hooks/assistant/assistantUpsellConfig.ts",
+      "start_line": 1,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "Primary file to change: contains the local `paidUserAssistantAddonName` switch to remove, the `paidSingleUserUpsellConfig` and `paidMultipleUserUpsellConfig` helpers whose `addonName` parameter must become optional with conditional `planIDs` building, and `getAssistantUpsellConfig` whose calls must switch to `getScribeAddonNameByPlan`."
+    },
+    {
+      "file_path": "packages/components/payments/core/subscription/helpers.ts",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "Defines `getScribeAddonNameByPlan`, the centralized resolver that replaces the local `paidUserAssistantAddonName` switch; the solver must read it to understand its signature (returns `ADDON_NAMES | undefined` for unrecognized plans) and that it already exists here."
+    },
+    {
+      "file_path": "packages/components/payments/core/index.ts",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "interface-contract",
+      "description": "The public entry point for `@proton/components/payments/core`; currently does not re-export the `subscription` sub-module, so the solver must add `export * from './subscription'` here to make `SelectedPlan` and `getScribeAddonNameByPlan` importable from the public path."
+    },
+    {
+      "file_path": "packages/components/payments/core/subscription/selected-plan.ts",
+      "start_line": 1,
+      "end_line": 182,
+      "category": "context-file",
+      "description": "Defines the `SelectedPlan` class (including `planIDs`, `cycle`, `name`, `getTotalScribes`, `getTotalMembers`) used throughout the upsell config; also already imports `getScribeAddonNameByPlan` from `./helpers`, confirming the module structure that `subscription/index.ts` must re-export."
+    },
+    {
+      "file_path": "packages/components/hooks/assistant/useAssistantUpsellConfig.tsx",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "context-file",
+      "description": "Imports `SelectedPlan` from the internal `subscription/selected-plan` path; the solver must update this import to use the public `@proton/components/payments/core` entry point."
+    },
+    {
+      "file_path": "packages/components/hooks/assistant/assistantUpsellConfig.test.ts",
+      "start_line": 1,
+      "end_line": 221,
+      "category": "useful-unit-test",
+      "description": "Tests that define the expected `planIDs` shape for free, single-paid, and multi-user upsell configs (including when addon is absent); they also import `SelectedPlan` from the wrong internal path that must be updated."
+    },
+    {
+      "file_path": "packages/components/containers/payments/planCustomizer/ProtonPlanCustomizer.tsx",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "similar-pattern",
+      "description": "Another call-site that imports `SelectedPlan` from the internal `subscription/selected-plan` path (line 5); the solver must update this import to use the public entry point, illustrating the pattern of import fixes needed across the codebase."
+    }
+  ]
+}
