@@ -31,6 +31,10 @@ venv/
 # Datasets: track per-dataset READMEs, ignore the downloaded data files
 datasets/**/data/
 
+# Annotation output — NOT committed during the prompt-iteration phase.
+# (Milestone 3 makes these the committed deliverable; remove this line then.)
+/annotations/
+
 # Jupyter
 .ipynb_checkpoints/
 

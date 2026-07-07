@@ -38,6 +38,16 @@ def datasets_root(repo_root: Path | None = None) -> Path:
   return (repo_root or find_repo_root()) / "datasets"
 
 
+def cache_root(repo_root: Path | None = None) -> Path:
+  """Root of the gitignored local cache (``.cache/``)."""
+  return (repo_root or find_repo_root()) / ".cache"
+
+
 def repo_cache_dir(repo_root: Path | None = None) -> Path:
   """Gitignored cache for provisioned repository checkouts."""
-  return (repo_root or find_repo_root()) / ".cache" / "repos"
+  return cache_root(repo_root) / "repos"
+
+
+def annotations_dir(repo_root: Path | None = None) -> Path:
+  """Version-controlled output directory for annotation records."""
+  return (repo_root or find_repo_root()) / "annotations"
