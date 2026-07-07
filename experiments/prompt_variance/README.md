@@ -45,3 +45,16 @@ python experiments/prompt_variance/analyze.py <round>
 Each run's full annotation is saved to `runs/<round>/<lang>__run<k>.json` and a
 compact line is appended to `runs/<round>/summary.jsonl`. Completed runs are
 skipped on re-invocation, so an interrupted round can be resumed.
+
+## If variance persists: sample-and-aggregate (self-consistency)
+
+Iterating the prompt aims for one stable prompt. But if variance stays high and
+occasionally produces large errors, a fallback is to **run each instance N times
+and have an aggregator agent synthesize the final annotation** from the N traces
+/ results / selected files — majority-vote / self-consistency. This trades more
+sampling for higher correctness. See PLAN.md ("Option: sample-and-aggregate").
+
+If we test this here, the harness must **parallelize the repeats of one
+instance** too (not just across languages), since it means far more sampling.
+That needs per-run isolation the runner lacks today: a distinct checkout, proxy
+port, and proxy-log path per run (all currently keyed by `instance_id`).

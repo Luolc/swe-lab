@@ -267,3 +267,20 @@ early.
   recurring schedule.
 - Docker-based repo provisioning and an editing / test-running agent mode.
 - (Optional) a human spot-check tool for annotation quality.
+
+### Option: sample-and-aggregate (self-consistency)
+
+An alternative to converging on one "perfect" prompt. If, after prompt
+iteration, run-to-run variance remains and occasionally produces large errors,
+we can instead run **each instance N times (e.g. 3) in parallel** and then have
+an **aggregator agent** read the N traces, results, and selected files and
+synthesize a single final annotation. With several independently-sampled
+reference answers, majority-vote / self-consistency (a standard LLM-reasoning
+technique) should raise correctness over any single run.
+
+Not committed to — kept as an option to pick if the prompt-variance experiment
+shows it is warranted. Engineering prerequisite: to sample cheaply at scale, the
+**repeats of one instance must run in parallel** too, which requires per-run
+isolation the current runner does not yet have — each run needs its own
+checkout, proxy port, and proxy-log path (all currently keyed by `instance_id`,
+so they would need a per-run suffix).
