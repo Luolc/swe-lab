@@ -1,0 +1,110 @@
+{
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "Defines the `Key` constants, `isMac` helper, `isOnlyCtrlOrCmdKeyEvent`, and `isOnlyCtrlOrCmdIgnoreShiftKeyEvent` that the new `KeyBindingsManager` and `KeyBindingsDefaults` import and build upon for platform-aware shortcut detection."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 555,
+      "category": "context-file",
+      "description": "The global `_onKeyDown` handler that contains fragmented, hardcoded shortcuts (PageUp/Down, Home/End, K, F, backtick, slash, H, arrow keys, period) that the solution refactors into centralized `KeyBindingsManager` calls."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "The message editor `onKeyDown` method with per-modifier if/else chains for bold, italics, quote, undo/redo, newline, cursor movement, and autocomplete — the existing logic that must be migrated to `getMessageComposerAction` and `getAutocompleteAction` calls."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "The send-message composer `_onKeyDown` and `onVerticalArrow` methods, which implement send, reply-cancel, and history-navigation via raw key/modifier comparisons that the solution replaces with `getMessageComposerAction` dispatch."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 30,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Imports of `Key` and `isOnlyCtrlOrCmdKeyEvent` from Keyboard, and `SettingsStore`, showing the utilities currently relied on for the edit-composer keyboard handler that the solution replaces with `KeyBindingsManager`."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "The edit-message composer `_onKeyDown` method, which early-returns on modifier keys and hard-codes send/escape/arrow-up/arrow-down logic that must be re-expressed through `getMessageComposerAction` in the refactored version."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "The room view `onReactKeyDown` handler, which manually checks modifier combinations for Escape (dismiss read marker), Shift+PageUp (jump to read marker), and Ctrl/Cmd+Shift+U (upload file) — all migrated to `getRoomAction` in the solution."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The room search `onKeyDown` method checking raw `ev.key` values (Escape, ArrowUp/Down, Enter) that the solution replaces with `getRoomListAction` calls to unify shortcut handling."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "The room sublist `onHeaderKeyDown` handler using raw `ev.key` comparisons (ArrowLeft/Right) to collapse/expand sections — replaced by `getRoomListAction` returning `CollapseSection`/`ExpandSection` in the solution."
+    }
+  ],
+  "metadata": {
+    "model": "sonnet",
+    "run_id": "1ef06977-d570-43e3-b79e-9b754d997f73",
+    "timestamp": "2026-07-07T04:15:43.000923+00:00",
+    "proxy_port": 20014,
+    "num_turns": 21,
+    "cost_usd": 0.6264732,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 67626,
+      "cache_read_input_tokens": 822969,
+      "output_tokens": 8129,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 67626,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 444,
+          "cache_read_input_tokens": 87737,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0
+  }
+}

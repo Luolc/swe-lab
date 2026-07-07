@@ -1,0 +1,152 @@
+{
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 1,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Defines Key constants, `isMac`, `isOnlyCtrlOrCmdKeyEvent`, and `isOnlyCtrlOrCmdIgnoreShiftKeyEvent`. The new KeyBindingsManager must import `isMac` and `Key` from here, and this file shows what platform-detection helpers already exist."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 24,
+      "end_line": 24,
+      "category": "context-file",
+      "description": "Imports `isOnlyCtrlOrCmdKeyEvent`, `isOnlyCtrlOrCmdIgnoreShiftKeyEvent`, and `isMac` from Keyboard — these are the old helpers the refactoring must replace with the new KeyBindingsManager."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 555,
+      "category": "referenced-function",
+      "description": "The `_onKeyDown` handler with a large `switch(ev.key)` that handles navigation and room scroll actions using ad-hoc modifier checks; must be understood and refactored to use `getKeyBindingsManager().getRoomAction(ev)` and `getNavigationAction(ev)`."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 23,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "Imports `Key` from Keyboard, showing the existing dependency that will be replaced by KeyBindingsManager's `getRoomListAction`."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "referenced-function",
+      "description": "The `onKeyDown` handler comparing `ev.key` directly against Escape, ArrowUp/Down, and Enter for room list navigation; must be replaced with `getRoomListAction(ev)` switch."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 43,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Imports `isOnlyCtrlOrCmdIgnoreShiftKeyEvent` and `Key` from Keyboard, the old helpers superseded by `getRoomAction` in the refactored version."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "referenced-function",
+      "description": "The `onReactKeyDown` handler checking Escape (dismiss read marker), Shift+PageUp (jump to read marker), and Ctrl+Shift+U (upload file) with explicit modifier guards; must be replaced with `getRoomAction(ev)` cases."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 39,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "Imports `Key` and defines `IS_MAC` via `navigator.platform`; shows how platform detection was done inline before the centralized `isMac` from Keyboard/KeyBindingsManager is used."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "referenced-function",
+      "description": "The `onKeyDown` handler with a long if-else chain using `IS_MAC`/`modKey` for formatting, undo/redo, new-line, cursor-move, and an inner autocomplete `switch(ev.key)`; all must be replaced with `getMessageComposerAction` and `getAutocompleteAction`."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 32,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "Imports `Key` and `isOnlyCtrlOrCmdKeyEvent` together with `SettingsStore`; these are used in `_onKeyDown` to determine send-on-enter behavior, and must be removed in favour of `getMessageComposerAction`."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "referenced-function",
+      "description": "The `_onKeyDown` handler that hard-codes send-vs-newline logic (reading `ctrlEnterToSend` setting), Escape to cancel, and Arrow-Up/Down to navigate editable messages; all must be replaced with `getMessageComposerAction` cases."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 42,
+      "end_line": 42,
+      "category": "context-file",
+      "description": "Imports `Key` from Keyboard, the dependency to be replaced by `getRoomListAction` from KeyBindingsManager in `onHeaderKeyDown`."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "referenced-function",
+      "description": "The `onHeaderKeyDown` handler checking ArrowLeft/ArrowRight to collapse or expand the room sublist section; must be refactored to use `getRoomListAction(ev)` with `CollapseSection`/`ExpandSection` cases."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 41,
+      "end_line": 41,
+      "category": "context-file",
+      "description": "Imports `Key` and `isOnlyCtrlOrCmdKeyEvent` from Keyboard — the old send-key helpers that will be replaced by `getMessageComposerAction` in the refactored `_onKeyDown`."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "The `_onKeyDown` and `onVerticalArrow` methods that determine send-on-enter, history navigation (ctrl+alt+arrows), edit-last-message (arrow-up), and reply cancel (escape) via manual modifier checks; must be replaced with `getMessageComposerAction` action cases."
+    }
+  ],
+  "metadata": {
+    "model": "sonnet",
+    "run_id": "6a6951a8-5471-49a7-a786-b4a15b4b0f85",
+    "timestamp": "2026-07-07T04:19:06.290568+00:00",
+    "proxy_port": 20014,
+    "num_turns": 25,
+    "cost_usd": 0.7444212000000001,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 54474,
+      "cache_read_input_tokens": 1132439,
+      "output_tokens": 13090,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54474,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 326,
+          "cache_read_input_tokens": 90298,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0
+  }
+}

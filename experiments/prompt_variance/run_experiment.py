@@ -25,10 +25,15 @@ import threading
 import time
 
 from swebench_related_files_annotation import load_dataset
+from swebench_related_files_annotation.annotate.errors import UsageLimitError
 from swebench_related_files_annotation.annotate.proxy import build_proxy
 from swebench_related_files_annotation.annotate.runner import annotate_by_id
 
 HERE = Path(__file__).parent
+
+# Set when a usage/quota limit is hit; remaining runs are skipped so the round
+# stops promptly instead of hammering an exhausted window.
+_ABORT = threading.Event()
 
 # One instance per language (see README for how they were chosen).
 INSTANCES: dict[str, str] = {
@@ -63,6 +68,9 @@ def _run_language(
   """Run one language's repeats sequentially (they share a checkout/port)."""
   ds = load_dataset()
   for k in range(1, REPEATS + 1):
+    if _ABORT.is_set():
+      print(f"abort {lang} run{k} (usage limit hit)", flush=True)
+      break
     out_file = runs_dir / f"{lang}__run{k}.json"
     if out_file.exists():
       print(f"skip  {lang} run{k} (already done)", flush=True)
@@ -108,6 +116,9 @@ def _run_language(
           "duration_s": duration,
       }
       print(f"ERROR {lang} run{k}: {exc}", flush=True)
+      # A usage/quota limit will keep failing until refresh — stop the round.
+      if isinstance(exc, UsageLimitError):
+        _ABORT.set()
 
     with _SUMMARY_LOCK, summary_path.open("a") as handle:
       _ = handle.write(json.dumps(summary) + "\n")

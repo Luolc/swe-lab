@@ -1,0 +1,103 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 362,
+      "end_line": 371,
+      "category": "referenced-function",
+      "description": "The `hide_qt_warning` context manager that must be relocated to `qtlog.py`. An engineer reads this to copy the implementation faithfully into the new module."
+    },
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 404,
+      "end_line": 419,
+      "category": "referenced-function",
+      "description": "The `QtWarningFilter` class that must be relocated to `qtlog.py`. An engineer reads this to copy the class definition, including the `filter` method's startswith logic."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtlog.py",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The target module's header and imports, confirming that `contextlib`, `logging`, and `Iterator` are already imported so no new import statements are needed when adding `QtWarningFilter` and `hide_qt_warning`."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtlog.py",
+      "start_line": 210,
+      "end_line": 213,
+      "category": "context-file",
+      "description": "The end of `qt_message_handler`, i.e. the end of the file, where the new `QtWarningFilter` class and `hide_qt_warning` function must be appended."
+    },
+    {
+      "file_path": "tests/unit/utils/test_log.py",
+      "start_line": 343,
+      "end_line": 370,
+      "category": "useful-unit-test",
+      "description": "The existing `TestHideQtWarning` test class that must be removed from `test_log.py` and relocated to `test_qtlog.py` with only the module reference updated from `log.hide_qt_warning` to `qtlog.hide_qt_warning`."
+    },
+    {
+      "file_path": "tests/unit/utils/test_qtlog.py",
+      "start_line": 1,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "The full target test file showing its existing structure, imports (including `qtlog`), and the `TestQtMessageHandler` class pattern, providing the context needed to correctly insert the migrated `TestHideQtWarning` class."
+    },
+    {
+      "file_path": "qutebrowser/browser/qtnetworkdownloads.py",
+      "start_line": 29,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "The import block in `qtnetworkdownloads.py` that must be updated to add `qtlog` alongside the existing `utils` imports so the call site can switch to `qtlog.hide_qt_warning`."
+    },
+    {
+      "file_path": "qutebrowser/browser/qtnetworkdownloads.py",
+      "start_line": 112,
+      "end_line": 130,
+      "category": "referenced-function",
+      "description": "The `_do_die` method body containing the call `log.hide_qt_warning(...)` that must be updated to `qtlog.hide_qt_warning(...)` after the import change."
+    }
+  ],
+  "metadata": {
+    "model": "sonnet",
+    "run_id": "e76b73b0-3dbf-4be3-9ae7-d9031b41e066",
+    "timestamp": "2026-07-07T04:01:04.438858+00:00",
+    "proxy_port": 20001,
+    "num_turns": 19,
+    "cost_usd": 0.44132460000000007,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 24672,
+      "cache_read_input_tokens": 642662,
+      "output_tokens": 10129,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24672,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 273,
+          "cache_read_input_tokens": 60483,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

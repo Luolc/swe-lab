@@ -13,12 +13,19 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 
 from ..datasets.loader import Dataset, load_dataset
 from ..datasets.swebench_pro import SweBenchProInstance
 from ..paths import annotations_dir, cache_root, find_repo_root
 from ..repo.provider import GitCheckoutProvider
 from .agent_validator import validate_output
+from .errors import (
+    AnnotationError,
+    cli_failure,
+    MissingOutputError,
+    RetryableError,
+)
 from .prompt import build_prompt
 from .proxy import (
     build_proxy,
@@ -30,6 +37,11 @@ from .schema import Annotation, parse_agent_output, Snippet
 from .workspace import prepare_workspace, Workspace
 
 DEFAULT_MODEL = "sonnet"
+# A run may explore a large repo for several minutes; cap it generously.
+DEFAULT_CLAUDE_TIMEOUT_S = 1800.0
+# Total attempts for transient (retryable) failures, with backoff between them.
+DEFAULT_MAX_ATTEMPTS = 3
+_RETRY_BACKOFFS_S = (5.0, 20.0, 60.0)
 
 
 @dataclass
@@ -57,8 +69,17 @@ def annotate_instance(
     provider: GitCheckoutProvider | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
+    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
 ) -> RunResult:
-  """Annotate one instance and persist its artifacts."""
+  """Annotate one instance and persist its artifacts.
+
+  Transient failures (network, rate limit, overload, timeout) are retried with
+  backoff up to ``max_attempts``. A usage/quota exhaustion raises
+  ``UsageLimitError`` immediately (no retry) so the caller can stop and wait for
+  the window to refresh. Raw diagnostics for any failure are appended under
+  ``.cache/annotate-failures/<instance_id>.log``.
+  """
   root = repo_root or find_repo_root()
   provider = provider or GitCheckoutProvider()
   binary = build_proxy(root)
@@ -66,14 +87,21 @@ def annotate_instance(
   workspace = prepare_workspace(instance, provider)
   port = port_for_index(index, base_port=base_port)
   proxy_log = cache_root(root) / "proxy-logs" / f"{instance.instance_id}.jsonl"
+  diag_path = (
+      cache_root(root) / "annotate-failures" / f"{instance.instance_id}.log"
+  )
 
-  with ReverseProxy(port, proxy_log, binary) as proxy:
-    cli_result = _invoke_claude(
-        prompt=build_prompt(instance),
-        cwd=workspace.checkout,
-        base_url=proxy.base_url,
-        model=model,
-    )
+  cli_result = _invoke_with_retries(
+      prompt=build_prompt(instance),
+      cwd=workspace.checkout,
+      port=port,
+      proxy_log=proxy_log,
+      binary=binary,
+      model=model,
+      timeout=claude_timeout,
+      diag_path=diag_path,
+      max_attempts=max_attempts,
+  )
 
   snippets = _read_output(workspace)
   validation_problems = _validate(workspace)
@@ -123,46 +151,135 @@ def annotate_by_id(
   return annotate_instance(record, index, model=model, base_port=base_port)
 
 
+def _invoke_with_retries(
+    *,
+    prompt: str,
+    cwd: Path,
+    port: int,
+    proxy_log: Path,
+    binary: Path,
+    model: str,
+    timeout: float,
+    diag_path: Path,
+    max_attempts: int,
+) -> dict[str, object]:
+  """Run the proxy + claude call, retrying only transient failures."""
+  for attempt in range(1, max_attempts + 1):
+    try:
+      with ReverseProxy(port, proxy_log, binary) as proxy:
+        return _invoke_claude(
+            prompt=prompt,
+            cwd=cwd,
+            base_url=proxy.base_url,
+            model=model,
+            timeout=timeout,
+            diag_path=diag_path,
+        )
+    except RetryableError:
+      if attempt >= max_attempts:
+        raise
+      backoff = _RETRY_BACKOFFS_S[min(attempt - 1, len(_RETRY_BACKOFFS_S) - 1)]
+      time.sleep(backoff)
+  # Unreachable: the loop either returns or raises.
+  raise AnnotationError("retry loop exited without a result")
+
+
 def _invoke_claude(
-    *, prompt: str, cwd: Path, base_url: str, model: str
+    *,
+    prompt: str,
+    cwd: Path,
+    base_url: str,
+    model: str,
+    timeout: float,
+    diag_path: Path | None = None,
 ) -> dict[str, object]:
   env = os.environ.copy()
   env["ANTHROPIC_BASE_URL"] = base_url
-  result = subprocess.run(
-      [
-          "claude",
-          "-p",
-          prompt,
-          "--model",
-          model,
-          "--output-format",
-          "json",
-          "--dangerously-skip-permissions",
-      ],
-      cwd=str(cwd),
-      env=env,
-      capture_output=True,
-      text=True,
-      check=False,
-  )
-  if result.returncode != 0:
-    raise RuntimeError(
-        f"claude exited {result.returncode}:\n{result.stderr.strip()}"
+  argv = [
+      "claude",
+      "-p",
+      prompt,
+      "--model",
+      model,
+      "--output-format",
+      "json",
+      "--dangerously-skip-permissions",
+  ]
+  try:
+    result = subprocess.run(
+        argv,
+        cwd=str(cwd),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=timeout,
     )
+  except subprocess.TimeoutExpired as exc:
+    _save_diagnostics(diag_path, "TIMEOUT", exc.stdout, exc.stderr)
+    raise RetryableError(f"claude timed out after {timeout:.0f}s") from exc
+
+  if result.returncode != 0:
+    _save_diagnostics(
+        diag_path, result.returncode, result.stdout, result.stderr
+    )
+    raise cli_failure(stderr=result.stderr)
+
   try:
     parsed = json.loads(result.stdout)
   except json.JSONDecodeError as exc:
-    raise RuntimeError(
-        f"Could not parse claude output as JSON: {exc}\n{result.stdout[:500]}"
+    _save_diagnostics(
+        diag_path, result.returncode, result.stdout, result.stderr
+    )
+    raise AnnotationError(
+        f"could not parse claude output as JSON: {exc}"
     ) from exc
-  return parsed if isinstance(parsed, dict) else {}
+
+  if not isinstance(parsed, dict):
+    _save_diagnostics(
+        diag_path, result.returncode, result.stdout, result.stderr
+    )
+    raise AnnotationError("claude output was not a JSON object")
+
+  if parsed.get("is_error"):
+    _save_diagnostics(
+        diag_path, result.returncode, result.stdout, result.stderr
+    )
+    raise cli_failure(
+        result_text=str(parsed.get("result", "")),
+        api_error_status=parsed.get("api_error_status"),
+    )
+  return parsed
+
+
+def _save_diagnostics(
+    diag_path: Path | None,
+    returncode: object,
+    stdout: str | bytes | None,
+    stderr: str | bytes | None,
+) -> None:
+  """Append raw CLI output for a failed run, to study unknown errors later."""
+  if diag_path is None:
+    return
+  diag_path.parent.mkdir(parents=True, exist_ok=True)
+  stamp = datetime.now(UTC).isoformat()
+  with diag_path.open("a") as handle:
+    _ = handle.write(f"=== {stamp} returncode={returncode} ===\n")
+    _ = handle.write(f"--- stdout ---\n{_as_text(stdout)[:5000]}\n")
+    _ = handle.write(f"--- stderr ---\n{_as_text(stderr)[:5000]}\n\n")
+
+
+def _as_text(value: str | bytes | None) -> str:
+  if isinstance(value, bytes):
+    return value.decode("utf-8", "replace")
+  return value or ""
 
 
 def _read_output(workspace: Workspace) -> tuple[Snippet, ...]:
   if not workspace.output_path.is_file():
-    raise FileNotFoundError(
-        f"Agent did not write {workspace.output_path.name} in the working"
-        " directory."
+    raise MissingOutputError(
+        f"agent did not write {workspace.output_path.name} in the working"
+        " directory"
     )
   return parse_agent_output(workspace.output_path.read_text())
 

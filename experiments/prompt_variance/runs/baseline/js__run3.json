@@ -1,0 +1,145 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "The isValidationPending, getValidationExpiry, expireValidation, and canSendValidation functions all need modification: isValidationPending must check the expires timestamp in the confirmObj; getValidationExpiry should read expires from the object instead of using db.pttl; expireValidation needs a null guard on code; and canSendValidation must handle a missing TTL by using Date.now() as fallback."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 84,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "sendValidationEmail creates the confirm:byUid and confirm:<code> keys; the fix removes db.pexpire calls and instead stores an 'expires' Unix-ms timestamp directly on the confirmObj, which all other expiry checks then read."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 162,
+      "end_line": 187,
+      "category": "referenced-function",
+      "description": "confirmByCode needs an explicit expiry check against confirmObj.expires before proceeding, and the new getEmailForValidation helper must be understood relative to this flow."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 190,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "confirmByUid is the ACP-side confirmation path; it requires a valid email field on user:<uid>, so validateEmail must set the email before calling it (via the new getEmailForValidation fallback)."
+    },
+    {
+      "file_path": "src/socket.io/admin/user.js",
+      "start_line": 62,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "User.validateEmail and User.sendValidationEmail are the ACP socket handlers that fail when the user has no email field; they must call the new getEmailForValidation helper to populate or pass the email before delegating to the lower-level email methods."
+    },
+    {
+      "file_path": "src/controllers/admin/users.js",
+      "start_line": 16,
+      "end_line": 19,
+      "category": "context-file",
+      "description": "Declares userFields, the list of fields fetched for each ACP user row; understanding this is needed to see what is already available when adding the new email:pending/email:expired flags."
+    },
+    {
+      "file_path": "src/controllers/admin/users.js",
+      "start_line": 163,
+      "end_line": 185,
+      "category": "referenced-function",
+      "description": "loadUserInfo is where email:pending and email:expired flags must be computed and attached to each user object; the fix adds a getConfirmObjs() helper that uses db.mget to look up confirm codes in bulk and then attaches the flags."
+    },
+    {
+      "file_path": "src/database/redis/main.js",
+      "start_line": 59,
+      "end_line": 65,
+      "category": "similar-pattern",
+      "description": "The Redis get implementation shows the module pattern and client.get call; the new mget method follows the same pattern using client.mget and must return null for missing keys."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 61,
+      "end_line": 85,
+      "category": "similar-pattern",
+      "description": "The MongoDB get implementation shows how a single key is fetched from the objects collection; mget generalises this with a $in filter and must map results back to the input key order, returning null for absent keys."
+    },
+    {
+      "file_path": "src/database/postgres/main.js",
+      "start_line": 101,
+      "end_line": 120,
+      "category": "similar-pattern",
+      "description": "The PostgreSQL get implementation shows the legacy_object_live / legacy_string JOIN query pattern; mget extends it with an ANY($1::TEXT[]) filter and must return null at positions where no row was found."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 141,
+      "end_line": 155,
+      "category": "context-file",
+      "description": "The user-deletion cleanup Promise.all is where User.email.expireValidation(uid) must be added so that pending confirmation data is cleaned up when an account is deleted."
+    },
+    {
+      "file_path": "src/views/admin/manage/users.tpl",
+      "start_line": 110,
+      "end_line": 120,
+      "category": "context-file",
+      "description": "The email column template currently shows only a validated/not-validated icon using ../email context; it must be updated to use ./email and render three separate icons driven by the new email:confirmed, email:pending, and email:expired flags."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 111,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "The canSendValidation test suite (including the expiry-based resend test) reveals the expected semantics: after a short pexpire the validation becomes old enough to resend; the fix changes the expiry simulation from db.pexpire to setting the expires field on the confirmObj."
+    },
+    {
+      "file_path": "test/database/keys.js",
+      "start_line": 8,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "The Key methods test suite and its setup (beforeEach setting testKey=testValue) establishes the fixture that new mget tests rely on; seeing how get/exists are tested clarifies the null-for-missing-key contract that mget must satisfy."
+    }
+  ],
+  "metadata": {
+    "model": "sonnet",
+    "run_id": "d85c474e-0ac8-4047-bb79-314f54d44090",
+    "timestamp": "2026-07-07T04:11:51.508246+00:00",
+    "proxy_port": 20000,
+    "num_turns": 24,
+    "cost_usd": 0.51088935,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 37129,
+      "cache_read_input_tokens": 805332,
+      "output_tokens": 8406,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37129,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 380,
+          "cache_read_input_tokens": 66585,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0
+  }
+}

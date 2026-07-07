@@ -1,0 +1,96 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e42da21a07a5ae35835ec54f74004ebd58713874",
+  "snippets": [
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 42,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "The `BatchEvaluate` and `batchEvaluate` functions are the heart of the bug. `batchEvaluate` currently returns `nil, err` for any error from `evaluate()`, causing the entire batch to fail when one flag is disabled. The fix must change this to detect `ErrDisabled` and continue processing remaining flags."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The `evaluate` function checks `flag.Enabled` and returns `errors.ErrInvalidf` for disabled flags. The fix requires changing this to return a new distinct `ErrDisabled` type so `batchEvaluate` can distinguish disabled-flag errors from real errors."
+    },
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "Defines the existing error types `ErrNotFound` and `ErrInvalid` that the engineer must mirror to add a new `ErrDisabled` type, including its `Error()` method and `ErrDisabledf` constructor."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "The `ErrorUnaryInterceptor` uses `errors.As` to map custom error types to gRPC status codes. This shows the established pattern of using `errors.As` for type-checking and motivates adding a new `ErrDisabled` type (and potentially handling it here too)."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 27,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "The existing `TestBatchEvaluate` test shows the batch evaluation contract. The test patch extends it to include a disabled flag in the batch and asserts 2 responses are returned, revealing exactly what behavior must be preserved/fixed."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 85,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "`TestEvaluate_FlagDisabled` shows the expected error message `\"flag \\\"foo\\\" is disabled\"` for a single `Evaluate` call on a disabled flag, confirming the error text contract that `ErrDisabled` must preserve."
+    },
+    {
+      "file_path": "rpc/flipt.pb.go",
+      "start_line": 201,
+      "end_line": 428,
+      "category": "interface-contract",
+      "description": "Defines `BatchEvaluationRequest`, `EvaluationResponse`, and `BatchEvaluationResponse` protobuf structs. The engineer must understand these types to correctly populate per-flag responses (including `Timestamp` and `RequestDurationMillis`) for disabled flags."
+    }
+  ],
+  "metadata": {
+    "model": "sonnet",
+    "run_id": "8384523d-f02c-4efe-8e60-f2cadab24c6c",
+    "timestamp": "2026-07-07T03:52:18.356847+00:00",
+    "proxy_port": 20027,
+    "num_turns": 14,
+    "cost_usd": 0.3681018,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 32856,
+      "cache_read_input_tokens": 594386,
+      "output_tokens": 4175,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32856,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 335,
+          "cache_read_input_tokens": 71701,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "Contains the `Key` constant object (all key name strings), `isMac` flag, and `isOnlyCtrlOrCmdKeyEvent`/`isOnlyCtrlOrCmdIgnoreShiftKeyEvent` utility functions. The new `KeyBindingsManager.ts` imports `isMac` from here and replaces the scattered helper functions with a unified `isKeyComboMatch`. `KeyBindingsDefaults.ts` imports both `isMac` and `Key`."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 555,
+      "category": "context-file",
+      "description": "The existing `_onKeyDown` method with all navigation and room shortcuts hardcoded inline using `isOnlyCtrlOrCmdKeyEvent` and modifier checks. All these shortcuts (FocusRoomSearch, ToggleUserMenu, ToggleShortCutDialog, GoToHome, SelectPrev/NextRoom, ToggleRoomSidePanel, ScrollUp/Down, FocusSearch) must be extracted into `KeyBindingsDefaults.ts` and the method rewritten to call `getKeyBindingsManager()`."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The `onKeyDown` handler in RoomSearch maps Escape, ArrowUp/Down, and Enter keys directly to room list actions. Must be refactored to use `getKeyBindingsManager().getRoomListAction(ev)` with `RoomListAction` enum values instead."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "The `onReactKeyDown` method handles Escape (dismiss read marker), Shift+PageUp (jump to read marker), and Ctrl+Shift+U (upload file) using inline modifier checks. Must be replaced with `getKeyBindingsManager().getRoomAction(ev)` returning `RoomAction` enum values."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "The most complex `onKeyDown` handler, covering formatting (Bold, Italics, Quote), undo/redo, cursor movement, newline insertion, and autocomplete (Up/Down/Tab/Escape). Must be split into `MessageComposerAction` and `AutocompleteAction` branches using `getKeyBindingsManager()`."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "The `_onKeyDown` method in the edit message composer checks modifiers directly and reads the `ctrlEnterToSend` setting inline to determine Send vs Escape vs ArrowUp/Down actions. Must be refactored to use `getKeyBindingsManager().getMessageComposerAction(event)` with `MessageComposerAction`."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "The `onHeaderKeyDown` method maps ArrowLeft to `CollapseSection` and ArrowRight to `ExpandSection` directly using `ev.key`. Must be replaced with `getKeyBindingsManager().getRoomListAction(ev)` returning `RoomListAction` enum values."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "The `_onKeyDown` and `onVerticalArrow` methods handle Send, ArrowUp/Down (send history navigation and edit-last-message), and Escape (cancel reply), using inline modifier and settings checks. Must be refactored to use `getKeyBindingsManager().getMessageComposerAction(event)` with `MessageComposerAction` enum."
+    }
+  ],
+  "metadata": {
+    "model": "sonnet",
+    "run_id": "e5ea44d4-38d0-4742-ac5c-df621fa3f2fe",
+    "timestamp": "2026-07-07T04:22:39.101905+00:00",
+    "proxy_port": 20014,
+    "num_turns": 24,
+    "cost_usd": 0.6405002999999999,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 46390,
+      "cache_read_input_tokens": 952506,
+      "output_tokens": 11783,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46390,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 509,
+          "cache_read_input_tokens": 85170,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e42da21a07a5ae35835ec54f74004ebd58713874",
+  "snippets": [
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 42,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "The `BatchEvaluate` and `batchEvaluate` functions that contain the bug: `batchEvaluate` immediately returns nil on any error from `evaluate`, causing the whole batch to fail. The fix must detect `ErrDisabled` here and continue processing instead."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The `evaluate` function's disabled-flag check at line 102–104, which currently returns `errors.ErrInvalidf`. The fix changes this to return a new `ErrDisabled` type so `batchEvaluate` can distinguish disabled-flag errors from real failures."
+    },
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "The existing custom error types (`ErrNotFound`, `ErrInvalid`, `ErrValidation`) define the pattern to follow when adding the new `ErrDisabled` string-based error type with a formatted constructor."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "`ErrorUnaryInterceptor` shows the established pattern for using `errors.As()` to detect custom error types; `batchEvaluate` must adopt the same `errors.As(err, &errd)` pattern to skip disabled flags without aborting the batch."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 27,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "`TestBatchEvaluate` is the test updated by the test patch to verify that a batch containing a disabled flag still returns responses for all flags; reading it clarifies the expected output structure and response count."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 85,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "`TestEvaluate_FlagDisabled` shows that the single `Evaluate` endpoint still expects an error for a disabled flag, clarifying that only `batchEvaluate` should swallow `ErrDisabled`, not `Evaluate`."
+    }
+  ],
+  "metadata": {
+    "model": "sonnet",
+    "run_id": "6c338583-ee6d-4767-9b5b-4403623d0954",
+    "timestamp": "2026-07-07T03:53:21.186249+00:00",
+    "proxy_port": 20027,
+    "num_turns": 12,
+    "cost_usd": 0.29900984999999997,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 28437,
+      "cache_read_input_tokens": 452937,
+      "output_tokens": 3500,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28437,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 297,
+          "cache_read_input_tokens": 67282,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}
