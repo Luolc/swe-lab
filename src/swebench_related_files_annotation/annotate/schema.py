@@ -1,9 +1,9 @@
 """The annotation record: one instance's list of relevant code snippets.
 
 This is the ground-truth deliverable (see PLAN.md). The annotation agent writes
-a JSON file of snippets; this module parses that into typed objects, wraps it
-with run metadata into an :class:`Annotation`, and validates each snippet
-against the checked-out repo.
+a JSON file of snippets; this module parses that into typed objects and wraps it
+with run metadata into an :class:`Annotation`. Per-snippet validation against
+the repo lives in :mod:`agent_validator` (standalone so the agent can run it).
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 import json
-from pathlib import Path
 
 
 class SnippetCategory(StrEnum):
@@ -109,34 +108,6 @@ def parse_agent_output(text: str) -> tuple[Snippet, ...]:
   if not isinstance(items, Sequence):
     raise ValueError("'snippets' must be a list.")
   return tuple(Snippet.from_dict(s) for s in items if isinstance(s, Mapping))
-
-
-def validate_snippet(snippet: Snippet, repo_root: Path) -> list[str]:
-  """Return a list of human-readable problems with ``snippet`` (empty if OK)."""
-  problems: list[str] = []
-  path = repo_root / snippet.file_path
-  if not path.is_file():
-    problems.append(f"file not found: {snippet.file_path}")
-    return problems
-
-  if snippet.start_line < 1:
-    problems.append(f"start_line {snippet.start_line} < 1")
-  if snippet.end_line < snippet.start_line:
-    problems.append(
-        f"end_line {snippet.end_line} < start_line {snippet.start_line}"
-    )
-
-  line_count = _count_lines(path)
-  if snippet.end_line > line_count:
-    problems.append(
-        f"end_line {snippet.end_line} exceeds file length {line_count}"
-    )
-  return problems
-
-
-def _count_lines(path: Path) -> int:
-  with path.open("rb") as handle:
-    return sum(1 for _ in handle)
 
 
 def _as_int(value: object) -> int:

@@ -12,8 +12,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import shutil
 import subprocess
 
+from . import agent_validator
 from ..datasets.swebench_pro import SweBenchProInstance
 from ..repo.provider import RepoProvider
 
@@ -21,6 +23,8 @@ from ..repo.provider import RepoProvider
 CONTEXT_DIR = ".annotation_context"
 # File the agent must write its snippet list to, relative to the checkout.
 ANNOTATION_OUTPUT = ".annotation_output.json"
+# Standalone validator the agent runs to self-check (relative to the checkout).
+VALIDATOR_SCRIPT = f"{CONTEXT_DIR}/validate_annotation.py"
 
 _GIT_LOG_LIMIT = 200
 
@@ -40,6 +44,10 @@ class Workspace:
   def output_path(self) -> Path:
     return self.checkout / ANNOTATION_OUTPUT
 
+  @property
+  def validator_path(self) -> Path:
+    return self.checkout / VALIDATOR_SCRIPT
+
 
 def prepare_workspace(
     instance: SweBenchProInstance, provider: RepoProvider
@@ -56,6 +64,9 @@ def prepare_workspace(
   _write(context / "gold_patch.diff", instance.patch)
   _write(context / "test_patch.diff", instance.test_patch)
   _write(context / "git_log.txt", _git_log(checkout))
+
+  # Drop the standalone validator in so the agent can self-check its output.
+  _ = shutil.copyfile(agent_validator.__file__, workspace.validator_path)
 
   # Start each run from a clean slate: drop any output from a previous run.
   workspace.output_path.unlink(missing_ok=True)

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from ..datasets.swebench_pro import SweBenchProInstance
 from .schema import SnippetCategory
-from .workspace import ANNOTATION_OUTPUT, CONTEXT_DIR
+from .workspace import ANNOTATION_OUTPUT, CONTEXT_DIR, VALIDATOR_SCRIPT
 
 _CATEGORY_HELP = {
     SnippetCategory.REFERENCED_FUNCTION: (
@@ -78,5 +78,16 @@ Guidance:
     real repository code.
   - Base line numbers on the files as they exist in this checkout.
 
-When done, ensure `{ANNOTATION_OUTPUT}` exists and is valid JSON. That file is
-your only output — do not write anything else."""
+Validate before finishing: after writing `{ANNOTATION_OUTPUT}`, run
+
+    python3 {VALIDATOR_SCRIPT}
+
+It checks every snippet (required fields, valid category, the file exists, and
+the line range is within the file) and prints, in an agent-friendly way,
+exactly what is wrong. It exits non-zero if there are problems. Fix your output
+and re-run until it prints `OK`. Note on line numbers: use the line numbers
+shown by the Read tool; a file that ends in a newline has one extra (empty)
+final line, and the validator accepts that.
+
+Only finish once the validator prints `OK`. `{ANNOTATION_OUTPUT}` is your only
+deliverable — do not modify any other file."""

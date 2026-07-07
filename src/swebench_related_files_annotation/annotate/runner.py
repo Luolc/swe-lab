@@ -18,6 +18,7 @@ from ..datasets.loader import Dataset, load_dataset
 from ..datasets.swebench_pro import SweBenchProInstance
 from ..paths import annotations_dir, cache_root, find_repo_root
 from ..repo.provider import GitCheckoutProvider
+from .agent_validator import validate_output
 from .prompt import build_prompt
 from .proxy import (
     build_proxy,
@@ -25,12 +26,7 @@ from .proxy import (
     port_for_index,
     ReverseProxy,
 )
-from .schema import (
-    Annotation,
-    parse_agent_output,
-    Snippet,
-    validate_snippet,
-)
+from .schema import Annotation, parse_agent_output, Snippet
 from .workspace import prepare_workspace, Workspace
 
 DEFAULT_MODEL = "sonnet"
@@ -80,7 +76,7 @@ def annotate_instance(
     )
 
   snippets = _read_output(workspace)
-  validation_problems = _validate(snippets, workspace.checkout)
+  validation_problems = _validate(workspace)
   last_record = _last_proxy_record(proxy_log)
   complete = bool(last_record.get("complete", False))
 
@@ -170,15 +166,10 @@ def _read_output(workspace: Workspace) -> tuple[Snippet, ...]:
   return parse_agent_output(workspace.output_path.read_text())
 
 
-def _validate(
-    snippets: tuple[Snippet, ...], checkout: Path
-) -> dict[str, list[str]]:
-  problems: dict[str, list[str]] = {}
-  for i, snippet in enumerate(snippets):
-    found = validate_snippet(snippet, checkout)
-    if found:
-      problems[f"{i}:{snippet.file_path}"] = found
-  return problems
+def _validate(workspace: Workspace) -> dict[str, list[str]]:
+  """Post-hoc check via the same validator the agent runs (single source)."""
+  problems = validate_output(workspace.output_path, workspace.checkout)
+  return {f"{p.index}:{p.file_path}": p.messages for p in problems}
 
 
 def _last_proxy_record(proxy_log: Path) -> dict[str, object]:

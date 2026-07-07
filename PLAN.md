@@ -179,8 +179,16 @@ the code so these future directions require extension, not rewrite:
   `base_port + index` (`DEFAULT_BASE_PORT = 20000`) with a per-instance log.
 - `workspace.py` — provision the checkout + materialize hint files into
   `.annotation_context/`; agent writes `.annotation_output.json`.
+- `agent_validator.py` — a standalone, stdlib-only validator dropped into the
+  workspace. The agent runs it (`python3 .annotation_context/validate_annotation.py`)
+  to self-check and fix its output until every snippet is valid *before*
+  finishing; the runner imports the same code for its post-hoc check (single
+  source of truth). Line numbering matches the Read tool: a trailing newline
+  yields one extra (empty) addressable line, so an `end_line` of "last line + 1"
+  on a newline-terminated file is accepted (this was the flipt off-by-one — a
+  convention mismatch, not an agent error).
 - `prompt.py` — the instruction (read-only requested in the prompt, not enforced
-  by tool restrictions; agent writes its result to a file).
+  by tool restrictions; agent writes its result to a file, then self-validates).
 - `runner.py` + `__main__.py` — orchestrate everything and store artifacts.
 
 Two decisions locked during the first run: headless Claude Code uses the
