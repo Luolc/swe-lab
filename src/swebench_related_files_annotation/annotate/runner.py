@@ -108,8 +108,13 @@ def annotate_instance(
   last_record = _last_proxy_record(proxy_log)
   complete = bool(last_record.get("complete", False))
 
+  model_usage = cli_result.get("modelUsage")
+  model_ids = list(model_usage) if isinstance(model_usage, dict) else []
+  model_used = ", ".join(model_ids) if model_ids else model
+
   metadata: dict[str, object] = {
-      "model": model,
+      "model": model_used,
+      "model_requested": model,
       "run_id": cli_result.get("session_id"),
       "timestamp": datetime.now(UTC).isoformat(),
       "proxy_port": port,
