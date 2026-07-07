@@ -87,6 +87,7 @@ def annotate_instance(
       "proxy_port": port,
       "num_turns": cli_result.get("num_turns"),
       "cost_usd": cli_result.get("total_cost_usd"),
+      "usage": cli_result.get("usage"),
       "stop_reason": cli_result.get("stop_reason"),
       "complete": complete,
       "snippet_count": len(snippets),
