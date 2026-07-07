@@ -9,7 +9,17 @@ is run-to-run, then iterate the prompt to reduce variance. See
 - One instance per language (go / python / js / ts), each run **3 times**.
 - Judge: (a) is each result reasonable, (b) how big is the run-to-run variance.
   Small differences (a line off, one more/fewer snippet) are acceptable; large
-  divergence in the *set of snippets* means the prompt needs to be more stable.
+  divergence means the prompt needs to be more stable.
+
+Variance is judged on **two** axes, not just snippet count:
+
+1. **Which files** are selected (file-set agreement across the 3 runs).
+2. **The actual line ranges** within each file — do the runs point at roughly
+   the same lines, and are the ranges *reasonable*? A run that grabs a whole
+   200-line file where others take a focused 20-line range is a variance/quality
+   problem even if the file set matches. `analyze.py` reports a per-file
+   line-coverage IoU across runs plus the concrete ranges, so range drift and
+   over-broad ranges are visible.
 
 ## Instances
 
