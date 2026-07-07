@@ -29,11 +29,28 @@ resolves by judgment. Runner hardened (failure classification, retry-on-transien
 stop-on-usage-limit, diagnostics); harness fully parallel (per-instance repeats
 isolated by checkout variant + proxy port). Cost so far: ~$24 / 56 runs.
 
-**Next task — batch-annotate & QA in rounds of 20.** Random-sample 20 instances,
-run the pipeline in parallel, and manually QA each result as it lands (brief note
-if fine, detailed if a problem). After 20, summarize: if a **severe** problem
-appears, stop and fix; otherwise sample the next 20. **At 40 total, stop and hand
-off to the user for manual review.** QA notes: `experiments/batch_annotation/`.
+**Now running — batch inference & QA** (`experiments/batch_annotation/`).
+Random-sampled instances annotated with the full pipeline, QA'd per instance.
+
+- **Rounds (20 each, disjoint):** ids in `round{1,2,3}_ids.txt` (seed `20260706`).
+  round1 ✅ done (19 ✅ / 1 ⚠️ / 0 ❌); round2 in progress; round3 = examples
+  41–60, planned. **Each round's ids must exclude every already-run id** — the
+  pipeline does NOT skip; re-running an id re-does all 4 agent calls and
+  overwrites (wasted tokens). round1 ∩ round2 = 0 (verified).
+- **Mechanism:** one `python -m …annotate <id>` per instance (3 samples +
+  aggregate). Rolling window of ~4 concurrent pipelines (8-core / 16 GB box; 20
+  at once would OOM). QA each result on completion → `qa_log.md`; per-run stdout
+  in gitignored `.cache/batch-logs/`.
+- **QA rule:** brief ✅ if valid + covers the *existing* gold-patch code files
+  (new files / docs / dep-manifests correctly excluded). **minor → log & keep
+  going; severe → log + explain in chat.** Target: 60 total, then reassess.
+- After round1 a **coverage line** was added to both prompts (see the report's
+  "Batch-QA Coverage Refinement"); spot-check confirmed it.
+- **`annotations/` is now committed** (the deliverable); push after each round.
+
+**Resume after a session break:** `qa_log.md` rows + `annotations/swebench_pro/<id>/`
+show what's done; remaining = `round*_ids.txt` minus done. Re-launch a missing id
+with the pipeline CLI (guard: skip if its `aggregate.json` already exists).
 
 Run one instance (full pipeline):
 `python -m swebench_related_files_annotation.annotate <instance_id> [--model sonnet|opus] [--samples 3]`.
