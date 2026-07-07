@@ -242,21 +242,40 @@ def _invoke_claude(
     _save_diagnostics(diag_path, "TIMEOUT", exc.stdout, exc.stderr)
     raise RetryableError(f"claude timed out after {timeout:.0f}s") from exc
 
+  # `claude --output-format json` writes its result object — including any
+  # error, with `is_error` / `result` / `api_error_status` — to STDOUT, even
+  # when it exits nonzero (e.g. a mid-session API 401). So parse stdout first
+  # and build a well-classified error; stderr is usually empty for these.
+  parsed: object = None
+  parse_error: json.JSONDecodeError | None = None
+  try:
+    parsed = json.loads(result.stdout)
+  except json.JSONDecodeError as exc:
+    parse_error = exc
+
+  result_text = ""
+  api_error_status: object = None
+  if isinstance(parsed, dict):
+    result_text = str(parsed.get("result", ""))
+    api_error_status = parsed.get("api_error_status")
+
   if result.returncode != 0:
     _save_diagnostics(
         diag_path, result.returncode, result.stdout, result.stderr
     )
-    raise cli_failure(stderr=result.stderr)
+    raise cli_failure(
+        stderr=result.stderr,
+        result_text=result_text,
+        api_error_status=api_error_status,
+    )
 
-  try:
-    parsed = json.loads(result.stdout)
-  except json.JSONDecodeError as exc:
+  if parse_error is not None:
     _save_diagnostics(
         diag_path, result.returncode, result.stdout, result.stderr
     )
     raise AnnotationError(
-        f"could not parse claude output as JSON: {exc}"
-    ) from exc
+        f"could not parse claude output as JSON: {parse_error}"
+    ) from parse_error
 
   if not isinstance(parsed, dict):
     _save_diagnostics(
@@ -269,8 +288,9 @@ def _invoke_claude(
         diag_path, result.returncode, result.stdout, result.stderr
     )
     raise cli_failure(
-        result_text=str(parsed.get("result", "")),
-        api_error_status=parsed.get("api_error_status"),
+        stderr=result.stderr,
+        result_text=result_text,
+        api_error_status=api_error_status,
     )
   return parsed
 

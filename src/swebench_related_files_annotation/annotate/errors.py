@@ -72,6 +72,13 @@ _RETRYABLE_MARKERS: tuple[str, ...] = (
     "bad gateway",
     "gateway timeout",
     "service unavailable",
+    # A 401 mid-session is transient here: OAuth subscription tokens can expire
+    # or race a refresh during a long run. A truly bad credential fails on the
+    # first turn, not after minutes of work; a fresh invocation gets a fresh
+    # token. Retries are bounded, so a persistent 401 still stops after a few.
+    "401",
+    "invalid authentication credentials",
+    "authentication_error",
 )
 
 
