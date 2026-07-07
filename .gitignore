@@ -31,9 +31,9 @@ venv/
 # Datasets: track per-dataset READMEs, ignore the downloaded data files
 datasets/**/data/
 
-# Annotation output — NOT committed during the prompt-iteration phase.
-# (Milestone 3 makes these the committed deliverable; remove this line then.)
-/annotations/
+# Annotation output under annotations/<dataset>/<instance_id>/ is the committed
+# deliverable (candidate + aggregate annotations and their last-exchange
+# records). Proxy logs and other scratch stay under the gitignored .cache/.
 
 # Jupyter
 .ipynb_checkpoints/

