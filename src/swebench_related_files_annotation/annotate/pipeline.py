@@ -19,6 +19,7 @@ from ..paths import find_repo_root
 from .agent_run import DEFAULT_MODEL, RunResult
 from .aggregator import aggregate_instance
 from .annotator import annotate_instance
+from .errors import AnnotationError, UsageLimitError
 from .proxy import DEFAULT_BASE_PORT
 from .storage import (
     AGGREGATE_LABEL,
@@ -83,8 +84,20 @@ def annotate_with_aggregation(
         variant=f"sample{k}",
     )
 
+  candidates: list[RunResult] = []
   with ThreadPoolExecutor(max_workers=samples) as pool:
-    candidates = list(pool.map(_sample, range(1, samples + 1)))
+    futures = [pool.submit(_sample, k) for k in range(1, samples + 1)]
+    for future in futures:
+      try:
+        candidates.append(future.result())
+      except UsageLimitError:
+        raise  # quota exhausted — stop, don't quietly drop
+      except AnnotationError:
+        pass  # a sample failed after its own retries; aggregate the survivors
+  if not candidates:
+    raise AnnotationError(
+        f"all {samples} samples failed for {instance.instance_id}"
+    )
 
   for k, candidate in enumerate(candidates, start=1):
     _ = store_run(

@@ -105,7 +105,7 @@ def run_agent(
   proxy_log = cache_root(root) / "proxy-logs" / f"{tag}.jsonl"
   diag_path = cache_root(root) / "annotate-failures" / f"{tag}.log"
 
-  cli_result = invoke_with_retries(
+  cli_result, snippets = invoke_with_retries(
       prompt=prompt,
       cwd=workspace.checkout,
       port=run_port,
@@ -115,9 +115,9 @@ def run_agent(
       timeout=claude_timeout,
       diag_path=diag_path,
       max_attempts=max_attempts,
+      workspace=workspace,
   )
 
-  snippets = read_snippets(workspace)
   validation_problems = validate_workspace(workspace)
   last_record = last_proxy_record(proxy_log)
   complete = bool(last_record.get("complete", False))
@@ -178,12 +178,18 @@ def invoke_with_retries(
     timeout: float,
     diag_path: Path,
     max_attempts: int,
-) -> dict[str, object]:
-  """Run the proxy + claude call, retrying only transient failures."""
+    workspace: Workspace,
+) -> tuple[dict[str, object], tuple[Snippet, ...]]:
+  """Run the proxy + claude call and read the output, retrying flaky attempts.
+
+  Retries transient CLI failures *and* the case where the agent ends without
+  writing its output file (``MissingOutputError``) — a known flaky behavior that
+  a fresh attempt usually fixes. Returns ``(cli_result, snippets)``.
+  """
   for attempt in range(1, max_attempts + 1):
     try:
       with ReverseProxy(port, proxy_log, binary) as proxy:
-        return _invoke_claude(
+        cli_result = _invoke_claude(
             prompt=prompt,
             cwd=cwd,
             base_url=proxy.base_url,
@@ -191,7 +197,8 @@ def invoke_with_retries(
             timeout=timeout,
             diag_path=diag_path,
         )
-    except RetryableError:
+      return cli_result, read_snippets(workspace)
+    except (RetryableError, MissingOutputError):
       if attempt >= max_attempts:
         raise
       backoff = _RETRY_BACKOFFS_S[min(attempt - 1, len(_RETRY_BACKOFFS_S) - 1)]
