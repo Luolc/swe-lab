@@ -1,6 +1,6 @@
-"""Shared machinery for running a headless annotation agent in a workspace.
+"""Shared machinery for running a headless snippet-annotation agent.
 
-Both the single-instance annotator (`runner`) and the sample aggregator
+Both the single-instance annotator (`annotator`) and the sample aggregator
 (`aggregator`) do the same thing: provision an isolated workspace, invoke a
 headless Claude Code agent through a per-call reverse proxy (with retries and
 failure classification), then read / validate / store the result. That flow

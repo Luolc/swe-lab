@@ -1,0 +1,88 @@
+{
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "isValidationPending, getValidationExpiry, expireValidation, and canSendValidation \u2014 all use database TTL for expiry; the fix rewrites them to read an explicit expires timestamp from the confirm object and guards against null ttl in canSendValidation."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 84,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "sendValidationEmail stores expiry via db.pexpire on both confirm keys; the fix replaces those calls with an explicit expires timestamp stored in the confirm object."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 162,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "confirmByCode must check the new expires field before confirming an email; confirmByUid is called by the ACP flow and requires the user's email field to already be set before it is invoked."
+    },
+    {
+      "file_path": "src/controllers/admin/users.js",
+      "start_line": 163,
+      "end_line": 185,
+      "category": "referenced-function",
+      "description": "loadUserInfo assembles per-user data for the ACP; the fix adds a getConfirmObjs() helper using db.mget and attaches email:pending and email:expired flags to each user object."
+    },
+    {
+      "file_path": "src/socket.io/admin/user.js",
+      "start_line": 62,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "Admin socket validateEmail and sendValidationEmail handlers; both must call getEmailForValidation first and set or pass the email so confirmByUid and sendValidationEmail work when the user's email field is missing."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 141,
+      "end_line": 155,
+      "category": "referenced-function",
+      "description": "deleteAccount's Promise.all cleanup block; the fix adds User.email.expireValidation(uid) here to remove pending confirmation data when a user account is deleted."
+    },
+    {
+      "file_path": "src/database/redis/main.js",
+      "start_line": 59,
+      "end_line": 61,
+      "category": "similar-pattern",
+      "description": "Redis get() implementation using client.get; the new mget() must follow this module pattern using client.mget for bulk retrieval."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 61,
+      "end_line": 78,
+      "category": "similar-pattern",
+      "description": "MongoDB get() queries the objects collection with a projection; mget must mirror this but filter with $in on multiple keys and map results back by position returning null for missing keys."
+    },
+    {
+      "file_path": "src/database/postgres/main.js",
+      "start_line": 101,
+      "end_line": 120,
+      "category": "similar-pattern",
+      "description": "PostgreSQL get() joins legacy_object_live and legacy_string; mget must extend this query with ANY($1::TEXT[]) to handle multiple keys at once."
+    },
+    {
+      "file_path": "src/views/admin/manage/users.tpl",
+      "start_line": 111,
+      "end_line": 119,
+      "category": "context-file",
+      "description": "ACP users table email cell currently shows one validated/not-validated icon pair; the fix replaces it with three separate icons for validated, pending, and expired states using the new flags."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 42,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "All email validation library tests for isValidationPending, getValidationExpiry, expireValidation, and canSendValidation; the test_patch updates the canSendValidation expiry test to set the expires field on the confirm object instead of using db.pexpire."
+    },
+    {
+      "file_path": "test/database/keys.js",
+      "start_line": 8,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Existing db.get contract tests (null for missing key, value for existing key) that the new mget tests are inserted into, establishing the behavioral contract mget must satisfy."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 1,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Defines all Key constants, the isMac flag, and the existing helper functions isOnlyCtrlOrCmdKeyEvent and isOnlyCtrlOrCmdIgnoreShiftKeyEvent that the new KeyBindingsManager replaces with its centralized isKeyComboMatch logic."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 555,
+      "category": "context-file",
+      "description": "The _onKeyDown handler with all hardcoded navigation and room shortcuts using raw key comparisons and ad-hoc modifier checks that must be replaced with getRoomAction/getNavigationAction calls."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The onKeyDown handler for the room-search input that dispatches on raw Key.ESCAPE/ARROW_UP/ARROW_DOWN/ENTER values and must be replaced with getRoomListAction calls."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "The onReactKeyDown handler using raw key and modifier checks for Escape, Shift+PageUp, and Ctrl+Shift+U that must be replaced with getRoomAction calls."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "The complex onKeyDown handler mixing formatting shortcuts, undo/redo, newline insertion, cursor movement, and autocomplete via inline modifier checks that must be replaced with getMessageComposerAction and getAutocompleteAction calls."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "The _onKeyDown handler covering send (with ctrlEnterToSend), cancel, and arrow-key navigation to adjacent editable events using raw key and modifier checks that must be replaced with getMessageComposerAction."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "The onHeaderKeyDown handler using raw ARROW_LEFT/ARROW_RIGHT key checks to collapse/expand sublists that must be replaced with getRoomListAction calls."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "The _onKeyDown and onVerticalArrow methods handling send, vertical history navigation (ctrl-alt-arrows), editing the last message, and cancel-reply via raw key checks that must be consolidated into getMessageComposerAction."
+    }
+  ]
+}

@@ -1,10 +1,10 @@
-"""Build and run one ``cc-reverse-proxy`` per annotation call.
+"""Build and run one ``cc-reverse-proxy`` per agent call.
 
-Every headless Claude Code invocation gets its own proxy on a distinct port
-(``base_port + dataset index``) so concurrent/interleaved runs never collide,
-and each proxy logs to a per-instance path so logs never overwrite each other.
-The proxy records every request/response pair — used later to extract the final
-exchange and the session-success (``complete``) flag.
+Every headless Claude Code invocation (annotation or aggregation) gets its own
+proxy on a distinct port so concurrent/interleaved runs never collide, and each
+proxy logs to a per-run path so logs never overwrite each other. The proxy
+records every request/response pair — used later to extract the final exchange
+and the session-success (``complete``) flag.
 """
 
 from __future__ import annotations

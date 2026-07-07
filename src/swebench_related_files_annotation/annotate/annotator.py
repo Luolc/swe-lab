@@ -1,7 +1,9 @@
-"""Annotate a single instance end to end.
+"""Annotate one instance: produce its list of relevant code snippets.
 
-A thin wrapper over :func:`agent_run.run_agent` with the annotation prompt; the
-shared workspace / proxy / validate / store machinery lives in ``agent_run``.
+A thin wrapper over :func:`agent_run.run_agent` with the annotation prompt (the
+counterpart of ``aggregator``, which reconciles several annotations into one).
+The shared workspace / proxy / validate / store machinery lives in
+``agent_run``.
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ from .agent_run import (
     run_agent,
     RunResult,
 )
-from .prompt import build_prompt
+from .annotation_prompt import build_annotation_prompt
 from .proxy import DEFAULT_BASE_PORT
 
 __all__ = [
@@ -47,7 +49,7 @@ def annotate_instance(
   return run_agent(
       instance,
       index,
-      prompt=build_prompt(instance),
+      prompt=build_annotation_prompt(instance),
       kind="annotation",
       repo_root=repo_root,
       provider=provider,

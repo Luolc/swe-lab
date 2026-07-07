@@ -1,0 +1,137 @@
+{
+  "snippets": [
+    {
+      "file_path": "core/agents/lastfm/client.go",
+      "start_line": 37,
+      "end_line": 235,
+      "category": "interface-contract",
+      "description": "Exported Client struct, NewClient constructor, and all exported methods (AlbumGetInfo, ArtistGetInfo, ArtistGetSimilar, ArtistGetTopTracks, GetToken, GetSession, UpdateNowPlaying, Scrobble, makeRequest, sign) that must all be renamed to unexported equivalents."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent.go",
+      "start_line": 24,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "lastfmAgent struct holding a *Client field and lastFMConstructor calling NewClient \u2014 both must be updated to the unexported client type and newClient constructor."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent.go",
+      "start_line": 169,
+      "end_line": 292,
+      "category": "referenced-function",
+      "description": "Private call* helper methods and NowPlaying/Scrobble that invoke exported Client methods by name; all call sites must be renamed to their unexported forms."
+    },
+    {
+      "file_path": "core/agents/lastfm/auth_router.go",
+      "start_line": 27,
+      "end_line": 49,
+      "category": "context-file",
+      "description": "Router struct with a *Client field and NewRouter constructor calling NewClient \u2014 both must be updated to use the unexported client type and newClient constructor."
+    },
+    {
+      "file_path": "core/agents/lastfm/auth_router.go",
+      "start_line": 117,
+      "end_line": 129,
+      "category": "referenced-function",
+      "description": "fetchSessionKey calls client.GetSession which must be renamed to getSession once the method is made unexported."
+    },
+    {
+      "file_path": "core/agents/lastfm/client_test.go",
+      "start_line": 19,
+      "end_line": 173,
+      "category": "useful-unit-test",
+      "description": "Tests that construct *Client via NewClient and invoke all exported method names directly; all occurrences must be updated to the unexported forms."
+    },
+    {
+      "file_path": "core/agents/lastfm/agent_test.go",
+      "start_line": 27,
+      "end_line": 438,
+      "category": "useful-unit-test",
+      "description": "Agent tests with five separate BeforeEach blocks each calling NewClient to inject a fake HTTP client; all five must be updated to call newClient."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/client.go",
+      "start_line": 28,
+      "end_line": 175,
+      "category": "interface-contract",
+      "description": "Exported Client struct, NewClient constructor, and all exported methods (ValidateToken, UpdateNowPlaying, Scrobble, path, makeRequest) that must be renamed to unexported equivalents."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/agent.go",
+      "start_line": 22,
+      "end_line": 41,
+      "category": "context-file",
+      "description": "listenBrainzAgent struct holding a *Client field and listenBrainzConstructor calling NewClient \u2014 both must be updated to the unexported client type and newClient constructor."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/agent.go",
+      "start_line": 66,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "NowPlaying calls client.UpdateNowPlaying and Scrobble calls client.Scrobble; both call sites must be renamed to the unexported forms."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/auth_router.go",
+      "start_line": 27,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "Router struct with a *Client field and NewRouter constructor calling NewClient \u2014 both must be updated to use the unexported client type and newClient constructor."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/auth_router.go",
+      "start_line": 76,
+      "end_line": 111,
+      "category": "referenced-function",
+      "description": "link handler calls client.ValidateToken which must be renamed to validateToken once the method is made unexported."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/client_test.go",
+      "start_line": 16,
+      "end_line": 118,
+      "category": "useful-unit-test",
+      "description": "Tests that construct *Client via NewClient and invoke exported methods ValidateToken, UpdateNowPlaying, and Scrobble; all must be renamed to their unexported equivalents."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/agent_test.go",
+      "start_line": 20,
+      "end_line": 44,
+      "category": "useful-unit-test",
+      "description": "BeforeEach block that assigns NewClient(...) to agent.client; must be updated to use newClient."
+    },
+    {
+      "file_path": "core/agents/listenbrainz/auth_router_test.go",
+      "start_line": 17,
+      "end_line": 33,
+      "category": "useful-unit-test",
+      "description": "BeforeEach block that calls NewClient to create a client for the auth router; must be updated to newClient once the constructor is made unexported."
+    },
+    {
+      "file_path": "core/agents/spotify/client.go",
+      "start_line": 28,
+      "end_line": 115,
+      "category": "interface-contract",
+      "description": "Exported Client struct, NewClient constructor, and all exported methods (SearchArtists, authorize, makeRequest, parseError) that must be renamed to unexported equivalents."
+    },
+    {
+      "file_path": "core/agents/spotify/spotify.go",
+      "start_line": 22,
+      "end_line": 41,
+      "category": "context-file",
+      "description": "spotifyAgent struct holding a *Client field and spotifyConstructor calling NewClient \u2014 both must be updated to the unexported client type and newClient constructor."
+    },
+    {
+      "file_path": "core/agents/spotify/spotify.go",
+      "start_line": 68,
+      "end_line": 87,
+      "category": "referenced-function",
+      "description": "searchArtist calls client.SearchArtists which must be renamed to searchArtists once the Spotify client method is made unexported."
+    },
+    {
+      "file_path": "core/agents/spotify/client_test.go",
+      "start_line": 14,
+      "end_line": 131,
+      "category": "useful-unit-test",
+      "description": "Tests that use *Client, NewClient, and SearchArtists (plus the fakeHttpClient helper); all exported names must be updated to their unexported forms."
+    }
+  ]
+}

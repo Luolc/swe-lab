@@ -4,15 +4,14 @@ Runs one instance per language N times each, saving every run's full annotation
 and a compact summary line. Resumable: a run whose output file already exists is
 skipped, so re-invoking after an interruption continues where it left off.
 
-Parallelism: the languages run concurrently (different instances => different
-checkouts, proxy ports, and logs, so no collisions), while the repeats within a
-language run sequentially (they share one checkout / port / proxy log).
+Parallelism: every (language, repeat) task runs concurrently. Each has its own
+isolated checkout variant and proxy port, so nothing collides.
 
 Usage:
-    python experiments/prompt_variance/run_experiment.py <round> [model]
+    python experiments/prompt_variance/run_experiment.py <round> [model] [suite]
 
-``<round>`` is a label (e.g. ``baseline``, ``v2``) that names the output subdir,
-so successive prompt versions can be compared side by side.
+``<round>`` names the output subdir (e.g. ``s1-v3``); ``suite`` selects the
+instance set (``s1`` default, or the diverse ``s2``).
 """
 
 from __future__ import annotations
@@ -25,9 +24,11 @@ import threading
 import time
 
 from swebench_related_files_annotation import load_dataset
+from swebench_related_files_annotation.annotate.annotator import (
+    annotate_instance,
+)
 from swebench_related_files_annotation.annotate.errors import UsageLimitError
 from swebench_related_files_annotation.annotate.proxy import build_proxy
-from swebench_related_files_annotation.annotate.runner import annotate_instance
 from swebench_related_files_annotation.datasets.swebench_pro import (
     SweBenchProInstance,
 )

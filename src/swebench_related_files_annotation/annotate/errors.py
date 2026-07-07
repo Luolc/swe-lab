@@ -1,4 +1,4 @@
-"""Failure taxonomy and classification for the annotation runner.
+"""Failure taxonomy and classification for annotation / aggregation runs.
 
 We do not yet know every way a headless Claude Code run can fail, so the policy
 is deliberately conservative:

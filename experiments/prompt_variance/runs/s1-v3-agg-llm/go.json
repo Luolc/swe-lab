@@ -1,0 +1,46 @@
+{
+  "snippets": [
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 55,
+      "category": "similar-pattern",
+      "description": "Defines ErrNotFound and ErrInvalid typed string errors with constructor helpers; the fix mirrors this pattern to add a new ErrDisabled type that batchEvaluate can detect via errors.As."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 42,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "BatchEvaluate (entry point with a buggy error-check ordering) and batchEvaluate (inner loop that unconditionally returns nil+err on any evaluate failure, including disabled flags) \u2014 both need fixing."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The evaluate helper that returns errors.ErrInvalidf for a disabled flag (line 103); this must be changed to the new ErrDisabled type so batchEvaluate can distinguish it from real errors."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "ErrorUnaryInterceptor shows the existing errors.As dispatch pattern used with custom error types in this codebase, which the solver must replicate in batchEvaluate to detect ErrDisabled."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 16,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "Declares enabledFlag/disabledFlag variables and TestBatchEvaluate; the test patch extends this test to include a disabled flag and assert two responses are returned without error."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 85,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "TestEvaluate_FlagDisabled confirms that a single Evaluate call for a disabled flag still returns an error, establishing the contract that evaluate must return a typed disabled error while BatchEvaluate tolerates it."
+    }
+  ]
+}

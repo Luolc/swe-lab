@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import argparse
 
+from .annotator import annotate_by_id, DEFAULT_MODEL
 from .proxy import DEFAULT_BASE_PORT
-from .runner import annotate_by_id, DEFAULT_MODEL
 
 
 def main() -> int:

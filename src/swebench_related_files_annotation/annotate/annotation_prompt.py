@@ -1,10 +1,13 @@
-"""The instruction given to the headless annotation agent.
+"""The annotation prompt: the instruction given to a single annotation agent.
 
 The agent is told to read-only-explore the checked-out repo, consult the hint
 materials, and write a list of relevant code snippets to a fixed output file.
 Read-only behavior is requested in the prompt (not enforced by tool
 restrictions) because there is no Docker environment set up here, so building,
 running tests, or modifying the repo would not work anyway.
+
+The aggregator's prompt (which reconciles several such annotations) lives
+separately in ``aggregator``.
 """
 
 from __future__ import annotations
@@ -33,8 +36,8 @@ _CATEGORY_HELP = {
 }
 
 
-def build_prompt(instance: SweBenchProInstance) -> str:
-  """Return the full instruction text for one instance."""
+def build_annotation_prompt(instance: SweBenchProInstance) -> str:
+  """Return the full annotation instruction text for one instance."""
   categories = "\n".join(
       f"  - `{cat.value}` — {help_text}"
       for cat, help_text in _CATEGORY_HELP.items()
