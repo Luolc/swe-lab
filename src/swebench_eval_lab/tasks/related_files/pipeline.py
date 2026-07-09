@@ -19,7 +19,7 @@ from swebench_eval_lab.core.datasets.loader import Dataset, load_dataset
 from swebench_eval_lab.core.datasets.swebench_pro import SweBenchProInstance
 from swebench_eval_lab.core.paths import find_repo_root
 
-from .agent_run import DEFAULT_MODEL, RunResult
+from .agent_run import DEFAULT_CAPTURE, DEFAULT_MODEL, RunResult
 from .aggregator import aggregate_instance
 from .annotator import annotate_instance
 from .storage import (
@@ -56,6 +56,7 @@ def annotate_with_aggregation(
     repo_root: Path | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
+    capture: str = DEFAULT_CAPTURE,
 ) -> PipelineResult:
   """Sample ``instance`` ``samples`` times (in parallel), then aggregate.
 
@@ -83,6 +84,7 @@ def annotate_with_aggregation(
         model=model,
         port=block + (k - 1),
         variant=f"sample{k}",
+        capture=capture,
     )
 
   candidates: list[RunResult] = []
@@ -120,6 +122,7 @@ def annotate_with_aggregation(
       repo_root=root,
       model=model,
       port=block + samples,
+      capture=capture,
   )
   _ = store_run(
       instance.instance_id,
@@ -145,6 +148,7 @@ def annotate_by_id_with_aggregation(
     dataset: str = DEFAULT_DATASET,
     samples: int = DEFAULT_SAMPLES,
     model: str = DEFAULT_MODEL,
+    capture: str = DEFAULT_CAPTURE,
 ) -> PipelineResult:
   """Look an instance up by id and run the sample-and-aggregate pipeline."""
   dataset_obj = dataset_obj or load_dataset(dataset)
@@ -153,5 +157,10 @@ def annotate_by_id_with_aggregation(
     raise TypeError(f"Unexpected record type: {type(record).__name__}")
   index = dataset_obj.index_of(instance_id)
   return annotate_with_aggregation(
-      record, index, dataset=dataset, samples=samples, model=model
+      record,
+      index,
+      dataset=dataset,
+      samples=samples,
+      model=model,
+      capture=capture,
   )

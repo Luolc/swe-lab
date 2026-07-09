@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 
-from .agent_run import DEFAULT_MODEL
+from .agent_run import CAPTURE_MODES, DEFAULT_CAPTURE, DEFAULT_MODEL
 from .pipeline import annotate_by_id_with_aggregation, DEFAULT_SAMPLES
 from .storage import DEFAULT_DATASET
 
@@ -33,6 +33,15 @@ def main() -> int:
       default=DEFAULT_SAMPLES,
       help=f"Independent samples to aggregate (default: {DEFAULT_SAMPLES}).",
   )
+  _ = parser.add_argument(
+      "--capture",
+      choices=CAPTURE_MODES,
+      default=DEFAULT_CAPTURE,
+      help=(
+          "Trace source: 'proxy' (reverse proxy, raw wire record) or 'stream'"
+          f" (claude stream-json, no proxy). Default: {DEFAULT_CAPTURE}."
+      ),
+  )
   args = parser.parse_args()
 
   result = annotate_by_id_with_aggregation(
@@ -40,6 +49,7 @@ def main() -> int:
       dataset=args.dataset,
       samples=args.samples,
       model=args.model,
+      capture=args.capture,
   )
 
   agg = result.aggregate

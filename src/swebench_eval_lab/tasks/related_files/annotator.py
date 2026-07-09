@@ -16,6 +16,7 @@ from swebench_eval_lab.core.datasets.swebench_pro import SweBenchProInstance
 from swebench_eval_lab.core.repo.provider import GitCheckoutProvider
 
 from .agent_run import (
+    DEFAULT_CAPTURE,
     DEFAULT_CLAUDE_TIMEOUT_S,
     DEFAULT_MAX_ATTEMPTS,
     DEFAULT_MODEL,
@@ -44,6 +45,7 @@ def annotate_instance(
     variant: str = "",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
+    capture: str = DEFAULT_CAPTURE,
 ) -> RunResult:
   """Annotate one instance; return the result (the caller persists it)."""
   return run_agent(
@@ -59,6 +61,7 @@ def annotate_instance(
       variant=variant,
       max_attempts=max_attempts,
       claude_timeout=claude_timeout,
+      capture=capture,
   )
 
 
@@ -68,6 +71,7 @@ def annotate_by_id(
     dataset: Dataset | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
+    capture: str = DEFAULT_CAPTURE,
 ) -> RunResult:
   """Look an instance up by id and annotate it (using its dataset index)."""
   dataset = dataset or load_dataset()
@@ -75,4 +79,6 @@ def annotate_by_id(
   if not isinstance(record, SweBenchProInstance):
     raise TypeError(f"Unexpected record type: {type(record).__name__}")
   index = dataset.index_of(instance_id)
-  return annotate_instance(record, index, model=model, base_port=base_port)
+  return annotate_instance(
+      record, index, model=model, base_port=base_port, capture=capture
+  )

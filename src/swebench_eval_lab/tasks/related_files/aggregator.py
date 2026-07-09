@@ -19,6 +19,7 @@ from swebench_eval_lab.core.datasets.loader import Dataset, load_dataset
 from swebench_eval_lab.core.datasets.swebench_pro import SweBenchProInstance
 
 from .agent_run import (
+    DEFAULT_CAPTURE,
     DEFAULT_CLAUDE_TIMEOUT_S,
     DEFAULT_MAX_ATTEMPTS,
     DEFAULT_MODEL,
@@ -95,6 +96,7 @@ def aggregate_instance(
     variant: str = "agg",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
+    capture: str = DEFAULT_CAPTURE,
 ) -> RunResult:
   """Reconcile ``candidates`` (each an object with a ``snippets`` array)."""
   candidates_json = json.dumps({"candidates": list(candidates)}, indent=2)
@@ -112,6 +114,7 @@ def aggregate_instance(
       variant=variant,
       max_attempts=max_attempts,
       claude_timeout=claude_timeout,
+      capture=capture,
   )
 
 
@@ -122,6 +125,7 @@ def aggregate_by_id(
     dataset: Dataset | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_AGG_BASE_PORT,
+    capture: str = DEFAULT_CAPTURE,
 ) -> RunResult:
   """Look an instance up by id and aggregate ``candidates`` for it."""
   dataset = dataset or load_dataset()
@@ -130,5 +134,10 @@ def aggregate_by_id(
     raise TypeError(f"Unexpected record type: {type(record).__name__}")
   index = dataset.index_of(instance_id)
   return aggregate_instance(
-      record, index, candidates, model=model, base_port=base_port
+      record,
+      index,
+      candidates,
+      model=model,
+      base_port=base_port,
+      capture=capture,
   )
