@@ -93,7 +93,7 @@ def push_traces(
     *,
     repo_id: str = DEFAULT_REPO_ID,
     repo_root: Path | None = None,
-    private: bool = False,
+    private: bool = True,
 ) -> Path:
   """Upload all trace files to the HF dataset repo; write the git manifest.
 
@@ -165,15 +165,10 @@ def main() -> int:
   _ = parser.add_argument("action", choices=("push", "fetch"))
   _ = parser.add_argument("--dataset", default=DEFAULT_DATASET)
   _ = parser.add_argument("--repo-id", default=DEFAULT_REPO_ID)
-  _ = parser.add_argument(
-      "--private",
-      action="store_true",
-      help="Create the repo as private on first push.",
-  )
   args = parser.parse_args()
 
   if args.action == "push":
-    out = push_traces(args.dataset, repo_id=args.repo_id, private=args.private)
+    out = push_traces(args.dataset, repo_id=args.repo_id)
     manifest = json.loads(out.read_text())
     print(
         f"pushed {manifest['num_traces']} traces"
