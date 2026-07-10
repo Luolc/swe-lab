@@ -22,9 +22,9 @@ from swebench_eval_lab import load_dataset
 from swebench_eval_lab.core.datasets.swebench_pro import (
     SweBenchProInstance,
 )
+from swebench_eval_lab.tasks.related_files.storage import instance_dir
 
 HERE = Path(__file__).parent
-REPO_ROOT = HERE.parent.parent
 
 
 def _is_new_file(patch: str, path: str) -> bool:
@@ -37,7 +37,7 @@ def check(instance_id: str) -> None:
   inst = load_dataset().require(instance_id)
   if not isinstance(inst, SweBenchProInstance):
     raise TypeError(instance_id)
-  base = REPO_ROOT / "annotations" / "swebench_pro" / instance_id
+  base = instance_dir(instance_id)
   agg: dict[str, Any] = json.loads((base / "aggregate.json").read_text())
   meta = agg.get("metadata", {})
   gold = re.findall(r"diff --git a/(\S+) b/", inst.patch)
