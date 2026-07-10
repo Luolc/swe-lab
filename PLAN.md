@@ -4,27 +4,58 @@ Living document. It captures the current direction and will be refined as we go.
 
 ## Scope
 
-`swebench-eval-lab` is an umbrella for tooling that **enriches and audits
-SWE-bench evaluation data**, organized as independent *tasks* over shared
-infrastructure (`src/swebench_eval_lab/core/`: dataset loading, per-instance
-repo checkout, and a headless-agent harness).
+`swebench-eval-lab` is an umbrella for tooling that **enriches, runs, and audits
+SWE-bench evaluation data**, organized as independent workstreams over shared
+infrastructure in `src/swebench_eval_lab/core/` (dataset loading, per-instance
+repo checkout, a headless-agent harness, a Docker execution layer, and the
+dataset-agnostic benchmark contracts).
 
-- **Related-files annotation** (`tasks/related_files/`) — the first and, so far,
-  only implemented task. Everything below currently concerns it. **Shipped**
-  (phase 1: 100 instances). See also
-  [`src/swebench_eval_lab/tasks/related_files/README.md`](src/swebench_eval_lab/tasks/related_files/README.md).
-- **Quality auditing** *(planned)* — flag "skewed" eval examples that no longer
-  measure real capability (ambiguous specs vs. overly-specific tests, broken
-  environments, contamination, brittle graders), à la OpenAI's *Separating
-  signal from noise in coding evaluations*. Not started; it will land as a
-  sibling under `tasks/` and reuse `core/`.
+- **Workstream 1 — Related-files annotation** (`tasks/related_files/`) —
+  ground-truth "what code must a solver read" per instance. **Shipped**: 121
+  instances annotated & QA'd (100 in phase 1 via the reverse proxy, +20 in the
+  new default **stream** capture). See
+  [`tasks/related_files/README.md`](src/swebench_eval_lab/tasks/related_files/README.md).
+- **Workstream 2 — Solve + evaluate pipeline** (`rollout/` + `evaluation/` on
+  `core/docker/`) — actually *solve* SWE-bench Pro tasks in Docker and *grade*
+  the patches. **Eval built & validated**; rollout (agent sampling) is next. See
+  "Workstream 2" below.
+- **Workstream 3 — Quality auditing / skew** *(planned; first tool falls out of
+  W2)* — flag eval instances that no longer measure real capability, à la
+  OpenAI's *Separating signal from noise in coding evaluations*. A **gold
+  self-test sweep** (grade every instance's own gold patch; any that does *not*
+  resolve is a broken/skewed instance) drops straight out of the eval pipeline.
 
 ## Status
 
 **Read this first.** Snapshot of where the work stands so a fresh session can
 pick up without guesswork. Update it whenever a milestone's state changes.
 
-| Milestone | State | Notes |
+**Latest (2026-07-10).**
+
+- **W1 (annotation)** — the runner now defaults to **stream capture**
+  (`claude --output-format stream-json`, no reverse proxy; `--capture proxy`
+  still available), producing a **source-agnostic unified exchange record** with
+  operator PII redacted at write time (home/name/email → an "Alan Turing"
+  placeholder). The large per-run trace records live **off-repo in a private HF
+  dataset repo** (`luolc/swebench-eval-lab-traces`) via `traces.py` push/fetch +
+  a git-tracked `traces_manifest.json`; only the small annotation JSON + parquet
+  stay in git. Round 6 (20 instances, stream mode) is done & QA'd — **20/20
+  valid, stream == proxy quality**. Total shipped: **121 instances / 1086
+  snippets**. `GitCheckoutProvider` hardened to self-heal stale worktrees.
+- **W2 (solve + eval)** — the **evaluation** subsystem is built and validated:
+  gold self-tests **resolve** for flipt (Go) and ansible (Python), both locally
+  and on **GitHub Actions** (native amd64, ~1–2.5 min/instance, free private
+  minutes, no secrets). Architecture, decisions, and next steps in "Workstream
+  2" below. **rollout** (agent sampling) not started (needs a subscription
+  token).
+- The repo was renamed `swebench-eval-lab` and reorganized into `core/` +
+  `tasks/` (+ new `rollout/`/`evaluation/`); git history was scrubbed of a
+  leaked OAuth token and operator PII (force-pushed).
+
+The rest of this file is per-workstream detail. **W1 milestones/history**
+follow; **W2** has its own section further down.
+
+| Milestone (W1 — annotation) | State | Notes |
 | --- | --- | --- |
 | 1 — Data-loading foundation | ✅ Done (2026-07-06) | See "Milestone 1" below for what shipped and where the code lives. |
 | 2 — Annotation agent runner | ✅ Done (2026-07-06) | `tasks/related_files/` — single-instance runner **and** the 3-sample-then-aggregate pipeline; both prompts finalized (annotation v3, aggregator). |
@@ -264,7 +295,9 @@ the code so these future directions require extension, not rewrite:
 
 Two decisions locked during the first run: headless Claude Code uses the
 **subscription OAuth** (validated to pass through the proxy — no API key), and
-the extracted proxy record is **kept whole** (~144 KB/instance).
+the extracted proxy record is **kept whole** (~144 KB/instance). *(Both since
+evolved — see the "Latest" block: **stream** capture is now the default (no
+proxy), and the trace record moved off-repo to HF.)*
 
 ### Milestone 3 — Annotation storage & format ✅ *(done + committed, 2026-07-07)*
 
@@ -298,21 +331,19 @@ the extracted proxy record is **kept whole** (~144 KB/instance).
     resulting annotation is probably unreliable and should be flagged rather than
     trusted. (Detail to refine during Milestone 2 iteration.)
 
-### What gets committed vs. kept local
+### What gets committed vs. stored off-repo *(updated 2026-07-10)*
 
-Two artifacts per instance are committed and pushed to the repo:
+**Committed to git** (the small deliverable): each instance's annotation JSON
+(`candidate_1..3.json` + `aggregate.json`) and the combined
+`annotations.parquet` (+ `metadata.json`), plus a `traces_manifest.json`.
 
-1. **The structured annotation** — `outputs/related_files/<instance_id>.json` (the code
-   snippets described above).
-2. **A single extracted proxy record** — the **last** record from that instance's
-   `cc-reverse-proxy` log, capturing the final exchange: the request is the
-   conversation from the first message up to the second-to-last message, and the
-   response is the model's final answer. Just this one record is small enough to
-   version-control, and it preserves how the annotation was produced.
-
-The **full** `cc-reverse-proxy` output (every request/response for the whole run)
-is **not** tracked — it is large, so it stays local / gitignored. Only the single
-extracted last record is committed.
+**Off-repo** (large, on the private HF dataset repo `luolc/swebench-eval-lab-traces`):
+the per-run **`*.last_exchange.json`** trace records — one per candidate/aggregate,
+each the run's unified exchange record (final request/response, `complete` flag,
+model, etc.). They were originally committed but grew to ~60 MB, so they moved to
+HF via `traces.py` (`push` / `fetch`, integrity-checked by sha256 in the
+manifest); the raw files are gitignored. Operator PII is redacted from every
+record at write time, and secrets never appear (auth header / org id scrubbed).
 
 ## Development phasing (respecting Claude Code usage limits)
 
@@ -372,3 +403,117 @@ per-run isolation so repeats of one instance run concurrently — was built: eac
 run gets its own checkout `variant`, proxy `port`, and log path (provisioning
 guarded by a lock). See the prompt-variance `REPORT.md` for why this beat
 single-run, and `aggregator.py` for the finalized reconciler prompt.
+
+---
+
+# Workstream 2 — Solve + evaluate pipeline
+
+Started 2026-07-09. Build a **robust, Docker-based pipeline that actually solves
+SWE-bench Pro tasks** (an agent generates a patch) and **evaluates** them (apply
+the patch, run the tests, grade). Reuse the best existing references rather than
+reinvent; no existing harness fully fits, so we build our own around them.
+
+## Objective & split
+
+Two decoupled flows over a shared Docker layer:
+
+- **`rollout`** *(agent sampling — planned)* — run a headless coding agent
+  **inside** an instance's prebuilt container and capture its full trajectory +
+  the resulting patch (`git diff`). Deliberately **not** called "solver": trace
+  generation is general (solving is one use; later we'll also, e.g., feed a
+  trajectory back in for behavioral analysis). The agent harness is **pluggable**
+  (Claude Code first; Codex / OpenCode / … later) — the harness-agnostic contract
+  is *patch = `git diff` of the workdir*; the trace format is per-harness.
+- **`evaluation`** *(built + validated)* — apply a candidate patch, run the
+  instance's tests, parse, and grade `resolved ⇔ (fail_to_pass ∪ pass_to_pass) ⊆
+  passed`.
+
+## Reference
+
+Official harness cloned at `/Users/luoliangchen/dev/3p/scaleapi/SWE-bench_Pro-os`
+(MIT). We **reuse** its prebuilt per-instance Docker Hub images
+(`jefzda/sweap-images:<dockerhub_tag>`), its per-instance `run_script.sh` +
+`parser.py`, and its grading rule; we **port** its `create_entryscript` logic. We
+do **not** vendor its ~1000 harness files or take it as a submodule — instead we
+**fetch** each instance's `run_script`/`parser` from a **pinned commit**
+(`ca10a60…`, tip of `origin/main` at 2026-07-10) into a gitignored cache. Solver
+references: **mini-swe-agent** (MIT; Scale's leaderboard scaffold) and the
+**Claude Agent SDK** (MIT).
+
+## Architecture — general flow + per-dataset adapter
+
+Mirrors the `datasets/` split (general loader + per-dataset record). **General,
+dataset-agnostic** code never learns a dataset's specifics; each dataset provides
+an **adapter**:
+
+- `core/benchmark.py` — the contract: `EvalSpec` (image ref, workdir,
+  base_commit, before_repo_set_cmd, run_script/parser content, test lists,
+  grading) + `BenchmarkAdapter` protocol.
+- `core/datasets/swebench_pro/` — a **package**: `record.py` (the record) +
+  `execution.py` (`SweBenchProAdapter`: jefzda image ref, pinned scaleapi harness
+  fetch, `EvalSpec` builder). **All** SWE-bench-Pro run-knowledge lives here;
+  adding a dataset = adding a sibling adapter package.
+- `core/docker/provider.py` — general `DockerProvider` (pull; run a script in a
+  bind-mounted container; `linux/amd64`).
+- `evaluation/runner.py` + `__main__.py` — build the entryscript from an
+  `EvalSpec`, run it, parse `output.json`, grade → `EvalResult`. CLI: `python -m
+  swebench_eval_lab.evaluation <id> --gold` (grade the gold patch as a self-test)
+  or `--patch-file`.
+- `.github/workflows/eval.yml` — manual gold self-test on a GitHub-hosted runner.
+
+## Decisions (2026-07-10)
+
+- **Execution = GitHub Actions.** Debug on the private repo's free 2000
+  min/month. First real container run on GH Actions (native amd64 — no local
+  Apple-Silicon emulation; gold eval needs no secrets). Prefer **container jobs**
+  (`jobs.<x>.container.image: <instance image>` via matrix) or "ubuntu runner +
+  docker run" — both work; the eval CLI reuses either. Public-repo (free,
+  unlimited minutes) decision deferred; if needed, a minimal public repo can
+  wrap this one.
+- **Auth.** P0 = **Claude subscription** via `CLAUDE_CODE_OAUTH_TOKEN`
+  (`claude setup-token`); P1 = **OpenRouter** (Anthropic-compatible endpoint —
+  `ANTHROPIC_BASE_URL=https://openrouter.ai/api`, `ANTHROPIC_AUTH_TOKEN=<orkey>`,
+  `ANTHROPIC_API_KEY=""`, model `~anthropic/claude-sonnet-latest`), Claude models
+  only, chosen for its more flexible limits.
+- **Claude Code in the container** = mount a **pinned native linux-x64 binary**
+  (downloaded at runtime to a gitignored cache — **never** committed), not an
+  npm-in-a-wrapper-image (which would mean building/pushing ~731 images and
+  rebuilding on every version bump).
+- **Trace storage** reuses the W1 pattern (HF dataset repo + manifest).
+
+## Progress — evaluation validated ✅
+
+Gold self-tests **resolve** end to end:
+
+| instance | lang / runner | where | result |
+| --- | --- | --- | --- |
+| flipt-io/flipt | Go / `go test` | local (emulated) | resolved ✅ |
+| flipt-io/flipt | Go / `go test` | GitHub Actions | resolved ✅ (~2.5 min) |
+| ansible/ansible | Python / `ansible-test` | GitHub Actions | resolved ✅ (~57 s) |
+
+Neither needed ENV-scraping nor `test_patch` (the tests exist at `base_commit`).
+The GH runner is native amd64 → the whole thing (checkout + `uv sync` + dataset
+download + image pull + test + grade) is ~1–2.5 min/instance and free.
+
+## Next steps
+
+1. **Matrix eval** — one dispatch grading many instances in parallel (256
+   matrix-cap → shard across workflows). The path to running all 731.
+2. **Gold self-test sweep** — grade every instance's own gold patch; any that
+   does *not* resolve flags a broken/skewed instance (this **is** the W3 skew
+   tool). Log what's dropped; don't silently truncate.
+3. **`rollout`** — the container agent loop (needs a subscription token). Extract
+   the generic "run Claude Code headless + stream-json trace + exchange record"
+   from `tasks/related_files/agent_run.py` into `core/agent/` so rollout reuses it.
+
+## Open items / contingencies
+
+- **ENV / `test_patch`.** Not needed for flipt/ansible, but Scale's entryscript
+  scrapes `ENV` from the dockerfiles and some instances may need `test_patch`
+  applied. Add to the adapter (fetch dockerfiles / apply `test_patch`) **only if
+  a gold self-test fails** — the sweep will surface these.
+- **Scale-harness brittleness to harden as we port** (from the research): `eval()`
+  on dataset fields → `ast.literal_eval`; ENV scraped textually; only the last
+  line of `before_repo_set_cmd` used; regex parsers are format-sensitive; image
+  tag special-casing (element-web / `-vnan`). We already fetch scripts from a
+  pinned commit to avoid drift.
