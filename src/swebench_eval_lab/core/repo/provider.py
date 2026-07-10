@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import shutil
 import subprocess
 import threading
 from typing import Protocol
@@ -164,16 +165,33 @@ class GitCheckoutProvider:
     commit = instance.base_commit
 
     if (checkout / ".git").exists():
-      current = self._git("rev-parse", "HEAD", cwd=checkout)
+      try:
+        current = self._git("rev-parse", "HEAD", cwd=checkout)
+      except GitError:
+        # A stale worktree whose gitdir link is broken (e.g. the repo root was
+        # moved/renamed): drop it and re-create from the mirror below.
+        current = None
       if current == commit:
         return checkout
-      self._ensure_commit(mirror, commit)
-      _ = self._git("checkout", "--detach", commit, cwd=checkout)
-      return checkout
+      if current is not None:
+        self._ensure_commit(mirror, commit)
+        _ = self._git("checkout", "--detach", commit, cwd=checkout)
+        return checkout
+      shutil.rmtree(checkout, ignore_errors=True)
 
     self._ensure_commit(mirror, commit)
     self.checkouts_dir.mkdir(parents=True, exist_ok=True)
+    # Clear any dangling worktree registrations (a checkout dir deleted out
+    # from under git, or stale entries after the repo was moved) so ``add``
+    # self-heals instead of failing "missing but already registered".
+    _ = self._git("worktree", "prune", cwd=mirror)
     _ = self._git(
-        "worktree", "add", "--detach", str(checkout), commit, cwd=mirror
+        "worktree",
+        "add",
+        "--force",
+        "--detach",
+        str(checkout),
+        commit,
+        cwd=mirror,
     )
     return checkout

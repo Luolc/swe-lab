@@ -269,3 +269,32 @@ are single existing-file omissions on otherwise-correct annotations. The metric
 to watch is *existing gold-code coverage*, not raw file overlap — a large share
 of gold-patch files are new files, docs, lockfiles, generated code, or (in a few
 cases) unrelated changes bundled into the same commit, all correctly excluded.
+
+## Round 6 (stream capture) — 2026-07-09
+
+Purpose: validate the new `--capture stream` implementation (no reverse proxy;
+trace derived from `claude --output-format stream-json`). 20 new instances,
+pairwise-disjoint from rounds 1–5 (`round6_ids.txt`, seed `20260709`), each run
+through the full 3-samples + aggregate pipeline in stream mode.
+
+- **20/20 valid, 20/20 complete, all `capture=stream`.** The stream
+  completeness signal (terminal `result.subtype == "success"`) and the unified
+  exchange record work correctly end to end.
+- **Existing-gold coverage: 17/20 full; 3 minor misses**, all in the
+  correctly-excluded category (not code a solver must read):
+  - ansible `…/developing_modules_documenting.rst` (doc)
+  - element-web `src/i18n/strings/en_EN.json` (i18n strings)
+  - vuls `README.md`, `go.mod`, `go.sum` (doc + dep manifests)
+- **No severe problems; 0 invalid.** Quality matches the proxy-mode phase-1
+  rounds — same doc/manifest omission pattern, no regression from stream.
+- **One operational hiccup, not a stream bug:** `protonmail/webclients-2c3559`
+  failed provisioning on a *stale git worktree* still pointing at the pre-rename
+  repo path. Root-caused and fixed in `core/repo/provider.py` (self-heal: rebuild
+  a broken worktree, `prune` + `--force` on add); re-ran cleanly (4/4 gold).
+
+| round | valid | ✅ full | ⚠ minor | ❌ | notes |
+| --- | --- | --- | --- | --- | --- |
+| 6 (stream) | 20/20 | 17 | 3 | 0 | doc/manifest/i18n omissions only; stream == proxy quality |
+
+**Verdict:** stream capture is validated — safe to use, and a reasonable
+candidate to make the default. Proxy remains the code default for now.

