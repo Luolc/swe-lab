@@ -2,10 +2,11 @@
 
 Both the single-instance annotator (`annotator`) and the sample aggregator
 (`aggregator`) do the same thing: provision an isolated workspace, invoke a
-headless Claude Code agent through a per-call reverse proxy (with retries and
-failure classification), then read / validate / store the result. That flow
-lives here as :func:`run_agent`; the two callers differ only in the prompt and
-in a couple of extra context files.
+headless Claude Code agent (capturing its trace via ``stream-json`` by default,
+or a per-call reverse proxy — see ``CAPTURE_MODES``), with retries and failure
+classification, then read / validate / store the result. That flow lives here as
+:func:`run_agent`; the two callers differ only in the prompt and in a couple of
+extra context files.
 
 Per-run isolation: pass a ``variant`` (and optionally an explicit ``port``) so
 several runs of the same instance can execute concurrently without sharing a
@@ -61,7 +62,7 @@ _RETRY_BACKOFFS_S = (5.0, 20.0, 60.0)
 CAPTURE_PROXY = "proxy"
 CAPTURE_STREAM = "stream"
 CAPTURE_MODES = (CAPTURE_PROXY, CAPTURE_STREAM)
-DEFAULT_CAPTURE = CAPTURE_PROXY
+DEFAULT_CAPTURE = CAPTURE_STREAM
 
 
 @dataclass

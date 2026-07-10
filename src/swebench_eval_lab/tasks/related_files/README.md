@@ -50,7 +50,7 @@ python -m swebench_eval_lab.tasks.related_files.traces fetch   # download + veri
 | --- | --- |
 | `schema.py` | `SnippetCategory`, `Snippet` / `Annotation`, output parsing + validation. |
 | `annotation_prompt.py` | The annotation instruction; `aggregator.py` holds the reconciler prompt. |
-| `agent_run.py` | Shared runner: provision workspace, invoke headless Claude Code through a per-call proxy with retries + failure classification, read/validate/store. |
+| `agent_run.py` | Shared runner: provision workspace, invoke headless Claude Code (trace via `stream-json` by default, or a per-call reverse proxy) with retries + failure classification, read/validate/store. |
 | `annotator.py` / `aggregator.py` | Thin task wrappers over `agent_run` (one sample; reconcile samples). |
 | `pipeline.py` | Orchestrates N samples + aggregate. |
 | `workspace.py` | Provision the checkout + materialize hint files into `.annotation_context/`. |
