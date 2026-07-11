@@ -353,3 +353,44 @@ reliably improve recall. Combined parquet now 181 instances / 1678 snippets.
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 9 (stream) | 20/20 | 20/20 | 16 | 4 | 0 | MAXJOBS=2; 1 real source-recall miss (vuls-4a72295d) flagged |
+
+## Round 10 (stream) — 2026-07-10
+
+20/20 valid, all 3-candidate, **0 STALL**. Coverage 16 full / 4 minor — every
+miss is a correctly-excluded manifest/doc/generated file (`go.mod/sum/work.sum`,
+`README.md`, `rpc/flipt_grpc.pb.go`). Ran at MAXJOBS=2, healthy throughout
+(swapout +~63 MB over the round, no thrash). No source-recall misses in this
+round.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 10 (stream) | 20/20 | 20/20 | 16 | 4 | 0 | MAXJOBS=2; all misses manifest/doc/generated |
+
+## Recall audit across all 201 — source-file misses
+
+Added `recall_audit.py`: for every annotated instance it classifies each missed
+existing-gold file as *acceptable* (doc / i18n / dependency-manifest / generated
+code / build-CI / test-data) vs *source* (real app code). Manually reviewed all
+32 instances that had any miss — the classifier had **no false negatives** (no
+real source hidden in the "acceptable" bucket); its only errors are
+over-inclusion, caught by hand:
+
+- **`vuls-4a72295`** — genuine miss (`cvecontents.go`, `vulninfos.go`). Re-ran:
+  best of 3 attempts reached 4/7, recovering `cvecontents.go` + `scanner/base.go`;
+  `vulninfos.go` missed in all 3 runs = a real recall ceiling (likely a
+  peripheral model tweak). **Kept the 4/7 aggregate.**
+- **`openlibrary-b67138`** — genuine miss (`catalog/marc/parse_xml.py`, the MARC
+  parser central to the 880-field task). Re-ran → **6/6, fixed.**
+- **`NodeBB-76c6e30`** — *not* a defect. Problem is plugin-id validation; the
+  annotation correctly found `src/plugins/install.js` + `cli/manage.js` +
+  `constants.js` + `test/plugins.js`. The "missed source" (`flags.js`,
+  `topic.js`, `reputation.tpl`) belongs to an unrelated reputation feature
+  bundled in the same gold commit — correctly excluded. Left as-is.
+- **`flipt-3d5a345`** (`examples/openfeature/main.go`) and **`navidrome-ee21f3`**
+  (`reflex.conf`) — peripheral example / dev-tooling files, not needed to solve
+  the stated problem. Left as-is.
+
+Lesson: a low coverage ratio can be gold-patch contamination (bundled unrelated
+files), not an annotation failure — so a "source miss" must be confirmed against
+the problem statement, not trusted from the metric alone. Combined parquet: 201
+instances / 1874 snippets.

