@@ -11,9 +11,9 @@ repo checkout, a headless-agent harness, a Docker execution layer, and the
 dataset-agnostic benchmark contracts).
 
 - **Workstream 1 — Related-files annotation** (`tasks/related_files/`) —
-  ground-truth "what code must a solver read" per instance. **Shipped**: 121
-  instances annotated & QA'd (100 in phase 1 via the reverse proxy, +20 in the
-  new default **stream** capture). See
+  ground-truth "what code must a solver read" per instance. **Shipped**: 201
+  instances annotated & QA'd (100 in phase 1 via the reverse proxy; rounds 6–10
+  in the default **stream** capture). See
   [`tasks/related_files/README.md`](src/swebench_eval_lab/tasks/related_files/README.md).
 - **Workstream 2 — Solve + evaluate pipeline** (`rollout/` + `evaluation/` on
   `core/docker/`) — actually *solve* SWE-bench Pro tasks in Docker and *grade*
@@ -39,9 +39,27 @@ pick up without guesswork. Update it whenever a milestone's state changes.
   placeholder). The large per-run trace records live **off-repo in a private HF
   dataset repo** (`luolc/swebench-eval-lab-traces`) via `traces.py` push/fetch +
   a git-tracked `traces_manifest.json`; only the small annotation JSON + parquet
-  stay in git. Round 6 (20 instances, stream mode) is done & QA'd — **20/20
-  valid, stream == proxy quality**. Total shipped: **121 instances / 1086
-  snippets**. `GitCheckoutProvider` hardened to self-heal stale worktrees.
+  stay in git. **Rounds 6–10 complete** (stream mode; each 20/20 valid, all
+  3-candidate). Total shipped: **201 instances / 1874 snippets** (traces:
+  `luolc/swebench-eval-lab-traces`, 804 files / 115.5 MB). `GitCheckoutProvider`
+  hardened to self-heal stale worktrees.
+  - **Concurrency ceiling.** Batch runs at **MAXJOBS=2** (≤6 headless agents) on
+    the 16 GB box; MAXJOBS=4 (12 agents, ~1–2 GB each) swap-thrashes. An earlier
+    13 h round-7 hang was root-caused to `capture_output=True` buffering big-repo
+    streams in RAM + swap-thrash; fixed (`c4d12d5`: stream stdout to file +
+    `killpg` on timeout). `perf_check.py` now flags per-run stalls every round.
+  - **Recall audit.** `recall_audit.py` classifies every missed gold file as
+    acceptable (doc/i18n/manifest/generated/build/test-data) vs real source, so
+    genuine recall gaps surface instead of hiding among routine exclusions. Full
+    201-instance sweep + manual review found 2 real source misses (re-ran:
+    openlibrary-b67138 → fixed 6/6; vuls-4a72295 → 4/7, one model file a recall
+    ceiling); 3 auditor hits were verified non-defects (gold-patch bundled an
+    unrelated feature / example / dev-config). Lesson recorded: a low coverage
+    ratio can be gold-patch contamination, not annotation failure — confirm each
+    "source miss" against the problem statement.
+  - **In flight:** round 11 (`round11_ids.txt`, 20 new instances) was started but
+    **stopped at 4/20, uncommitted** — resumable via
+    `MAXJOBS=2 bash /tmp/run_round.sh .../round11_ids.txt` (skips the 4 done).
 - **W2 (solve + eval)** — the **evaluation** subsystem is built and validated:
   gold self-tests **resolve** for flipt (Go) and ansible (Python), both locally
   and on **GitHub Actions** (native amd64, ~1–2.5 min/instance, free private
