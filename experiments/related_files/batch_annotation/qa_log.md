@@ -409,3 +409,15 @@ false-flagged `flipt-9f8127f`. Combined parquet: 221 instances / 2105 snippets.
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 11 (stream) | 20/20 | 20/20 | 16 | 4 | 0 | 1 source miss (confirmation.go) = recall ceiling, kept |
+
+## Round 12 (stream) — 2026-07-12
+
+20/20 valid, all 3-candidate, **0 STALL**. MAXJOBS=2, healthy. Coverage 16 full /
+4 minor — every miss is a correctly-excluded doc/manifest file
+(`changelog.asciidoc`, `go.mod/sum`, `.rst`, `go.work.sum`). **No source-recall
+misses** (recall_audit clean for this round). Combined parquet: 241 instances /
+2314 snippets.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 12 (stream) | 20/20 | 20/20 | 16 | 4 | 0 | all misses doc/manifest; no source gaps |

