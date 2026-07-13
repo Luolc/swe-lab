@@ -495,3 +495,17 @@ Combined parquet: 361 instances / 3599 snippets.
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 18 (stream) | 20/20 | 20/20 | 18 | 2 | 0 | svg asset (auditor fix); no source gaps |
+
+## Round 19 (stream) — 2026-07-13 (spanned a 2nd credit-limit interruption)
+
+20/20 valid, all 3-candidate, **0 STALL**. Hit the credit limit at ~06:24
+(committed nothing mid-round; resumed ~4.5 h later, finished the remaining 6 with
+0 failures). Coverage 13 full / 7 minor. Two auditor hits, both judged non-defects
+by reading the patch: `tutanota-befce4b` `ViewSlider.ts` is a +1/-1 ripple
+unrelated to the SendMailModel-test problem; `flipt-af7a0be` `config/default.yml`
+is a +2/-1 config-data file (annotation got 8/10 incl. the core tracing code).
+Both skipped. Combined parquet: 381 instances / 3795 snippets.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 19 (stream) | 20/20 | 20/20 | 13 | 7 | 0 | 2nd credit-limit interruption + resume; 2 non-defect audit hits |

