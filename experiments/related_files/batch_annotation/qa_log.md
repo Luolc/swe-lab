@@ -446,3 +446,16 @@ Kept. Combined parquet: 281 instances / 2782 snippets.
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 14 (stream) | 20/20 | 20/20 | 13 | 7 | 0 | credit-limit interruption + resume; no real source gaps |
+
+## Round 15 (stream) — 2026-07-12 — reaches 301 total
+
+20/20 valid, all 3-candidate, **0 STALL**. MAXJOBS=2, healthy. Coverage 18 full /
+2 minor — all misses correctly-excluded manifest/doc/i18n (`go.mod/sum`,
+`docs/icons.md`, `en_EN.json`). **No new source-recall misses** (audit stable at
+the 6 already-dispositioned entries: 2 recall ceilings kept — vuls vulninfos.go,
+teleport confirmation.go — and 4 verified non-defects). Combined parquet:
+**301 instances / 3008 snippets**. Rounds 7–15 batch complete.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 15 (stream) | 20/20 | 20/20 | 18 | 2 | 0 | reaches 301; no source gaps |

