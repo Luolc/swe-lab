@@ -470,3 +470,16 @@ misses.** Combined parquet: 321 instances / 3183 snippets.
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 16 (stream) | 20/20 | 20/20 | 17 | 3 | 0 | all misses doc/manifest; no source gaps |
+
+## Round 17 (stream) — 2026-07-13
+
+20/20 valid, all 3-candidate. Coverage 16 full / 4 minor — all misses
+correctly-excluded manifest/doc/i18n (`go.mod/sum/work.sum`, `.pot`,
+`.asciidoc`). **No new source-recall misses.** **1 STALL**: teleport-4f771403
+candidate_2 idle ~1807s (near the 1800s timeout) — the API-retry-backoff kind
+(other candidates fine, memory healthy, not thrash); recovered, candidate valid,
+final stayed 3-candidate. Combined parquet: 341 instances / 3392 snippets.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 17 (stream) | 20/20 | 20/20 | 16 | 4 | 1 | 1 API-retry stall (recovered); no source gaps |

