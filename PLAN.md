@@ -539,14 +539,38 @@ download + image pull + test + grade) is ~1–2.5 min/instance and free.
 
 ## Next steps
 
-1. **Matrix eval** — one dispatch grading many instances in parallel (256
-   matrix-cap → shard across workflows). The path to running all 731.
-2. **Gold self-test sweep** — grade every instance's own gold patch; any that
-   does *not* resolve flags a broken/skewed instance (this **is** the W3 skew
-   tool). Log what's dropped; don't silently truncate.
-3. **`rollout`** — the container agent loop (needs a subscription token). Extract
-   the generic "run Claude Code headless + stream-json trace + exchange record"
-   from `tasks/related_files/agent_run.py` into `core/agent/` so rollout reuses it.
+**Priority (set 2026-07-14): `rollout` first**, because it takes wall-clock time
+to run; while it runs we build matrix-eval + the gold sweep. A subscription
+`CLAUDE_CODE_OAUTH_TOKEN` is now available (stored in gitignored `.envrc.local`;
+rotate after use).
+
+1. **`rollout` — the container agent loop.** Run headless Claude Code inside each
+   instance's prebuilt image, capture the trajectory + the patch. Sub-tasks:
+   - **Patch extraction** is the hard, error-prone part and has its own grounded
+     spec: **[`docs/patch-extraction.md`](docs/patch-extraction.md)** (surveys
+     SWE-bench Pro / classic, SWE-agent, mini-swe-agent, OpenHands, Agentless,
+     Moatless, R2E-Gym; ~40 corner cases). Implement §7 of that doc verbatim:
+     isolated-config `git add -A` (with `:(exclude)` build noise + nested-`.git`
+     removal) → `git diff --cached --binary --no-textconv --no-ext-diff
+     --no-color --default-prefix -c core.quotepath=false -c core.autocrlf=false
+     <base_commit>` → **write raw bytes** → empty-patch guard.
+   - Extract the generic "run Claude Code headless + stream-json trace + exchange
+     record" from `tasks/related_files/agent_run.py` into `core/agent/` so rollout
+     reuses it.
+   - Mount a pinned native linux-x64 Claude Code binary (gitignored cache, never
+     committed); GH Actions **container job** model (one instance per job).
+2. **Close two eval gaps** (cheap, do alongside rollout — see
+   `docs/patch-extraction.md` §8): add `strip_binary_hunks` before writing
+   `patch.diff` in `evaluation/runner.py` (Scale does this; we don't → binary
+   patches can fail our strict `git apply -v`), and an **empty-patch guard**.
+   Confirm the **open item**: does Pro's per-instance harness reset agent-touched
+   *test files*, or must we? (`docs/patch-extraction.md` §5.1.)
+3. **Matrix eval** — one dispatch grading many instances in parallel (256
+   matrix-cap → shard across workflows). The path to running all 731. Build while
+   rollout runs.
+4. **Gold self-test sweep** — grade every instance's own gold patch; any that does
+   *not* resolve flags a broken/skewed instance (this **is** the W3 skew tool).
+   Log what's dropped; don't silently truncate.
 
 ## Open items / contingencies
 
