@@ -17,6 +17,7 @@ from pathlib import Path
 
 from swebench_eval_lab.core.benchmark import EvalSpec
 from swebench_eval_lab.core.docker.provider import DockerProvider
+from swebench_eval_lab.core.patch import strip_binary_hunks
 from swebench_eval_lab.core.paths import cache_root, find_repo_root
 
 _ENTRYSCRIPT = "entryscript.sh"
@@ -69,7 +70,10 @@ def evaluate(
   root = repo_root or find_repo_root()
   workspace = cache_root(root) / "eval_workspaces" / spec.instance_id
   workspace.mkdir(parents=True, exist_ok=True)
-  _ = (workspace / "patch.diff").write_text(patch)
+  # Match Scale's grader: strip binary hunks before `git apply` so a
+  # binary-containing patch it would strip-then-apply doesn't fail our strict
+  # single apply (see docs/patch-extraction.md §1, §8).
+  _ = (workspace / "patch.diff").write_text(strip_binary_hunks(patch))
   _ = (workspace / "run_script.sh").write_text(spec.run_script)
   _ = (workspace / "parser.py").write_text(spec.parser)
   _ = (workspace / _ENTRYSCRIPT).write_text(build_entryscript(spec))
