@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import shlex
 
 from swebench_eval_lab.core.benchmark import EvalSpec
 from swebench_eval_lab.core.docker.provider import DockerProvider
@@ -37,18 +38,53 @@ class EvalResult:
   output_found: bool
 
 
-def build_entryscript(spec: EvalSpec, *, env_exports: str = "") -> str:
-  """The in-container script (mirrors Scale's create_entryscript)."""
-  setup_lines = spec.before_repo_set_cmd.strip().splitlines()
-  last_setup = setup_lines[-1] if setup_lines else ""
-  selected = ",".join(spec.selected_tests)
+def build_entryscript(spec: EvalSpec) -> str:
+  """The in-container script (mirrors Scale's create_entryscript).
+
+  Scale's reference implementation (swe_bench_pro_eval.py:create_entryscript)
+  scrapes every ``ENV`` line from the per-instance base and instance Dockerfiles
+  and re-emits them as ``export`` statements at the top of this script.  We
+  deliberately omit that step.
+
+  Docker's ``ENV`` instruction bakes variables into the image's environment:
+  they are automatically inherited by every process started in a container run
+  from that image, regardless of the entrypoint or the script being executed.
+  There
+  is no need to ``export`` them again inside the script — they are already
+  present.  This was verified empirically: running
+  ``docker run --entrypoint /bin/bash <image> -c env`` on a known instance
+  (ansible, 2026-07-15) showed ``PYTEST_ADDOPTS``, ``UV_HTTP_TIMEOUT``, and
+  ``DEBIAN_FRONTEND`` all set without any manual export, and the gold self-test
+  for that instance resolved correctly.
+
+  Scale's re-export is therefore redundant.  Omitting it avoids the need to
+  fetch and parse Dockerfiles (one HTTP round-trip per instance per run) while
+  producing identical behaviour.
+  """
+  # In SWE-bench Pro, ``before_repo_set_cmd`` is always a 4-line block: the
+  # first three lines reset the repo (reset/clean/checkout to base_commit); the
+  # last line restores the golden test files by path, e.g.
+  #   git checkout f327e65d -- test/units/cli/test_galaxy.py test/units/...
+  # This ensures a candidate patch cannot modify the test files for grading.
+  # Scale's reference takes the same ``split("\n")[-1]`` approach.
+  golden_test_checkout = (
+      spec.before_repo_set_cmd.strip().splitlines()[-1]
+      if spec.before_repo_set_cmd.strip()
+      else ""
+  )
+  # shlex.quote wraps the argument in single quotes, preventing bash from
+  # expanding $ in test names (e.g. TestMalformedOpMsg/empty_$db_key → empty)
+  # and glob-expanding [...] brackets from pytest parametrize IDs.  The current
+  # dataset silently works without this because the one affected instance also
+  # has the parent test name in the selected list, which causes Go to run all
+  # subtests regardless; quoting is nonetheless the correct defensive practice.
+  selected = shlex.quote(",".join(spec.selected_tests))
   return (
-      f"{env_exports}\n"
       f"cd {spec.workdir}\n"
       f"git reset --hard {spec.base_commit}\n"
       f"git checkout {spec.base_commit}\n"
       "git apply -v /workspace/patch.diff\n"
-      f"{last_setup}\n"
+      f"{golden_test_checkout}\n"
       f"bash /workspace/run_script.sh {selected}"
       " > /workspace/stdout.log 2> /workspace/stderr.log\n"
       "python /workspace/parser.py /workspace/stdout.log"
