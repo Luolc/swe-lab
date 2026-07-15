@@ -556,3 +556,21 @@ parquet: **501 instances / 4926 snippets**.
 | 24 (stream) | 20/20 | 20/20 | 19 | 1 | 0 | qutebrowser `doc/*.asciidoc` + `pytest.ini` (test-config, not source) |
 | 25 (stream) | 20/20 | 20/20 | 19 | 1 | 0 | openlibrary `scripts/affiliate_server.py` miss = +2/-2 docstring example (re-run verified non-defect) |
 | **21-25** | **100/100** | **100/100** | **90** | **10** | **0** | reaches 501; credit-limit tail retried clean; 0 real source gaps (the 1 flagged = non-defect) |
+
+## Round 26 (stream) — 2026-07-14 — reaches 521 total
+
+20/20 valid, all 3-candidate, 0 STALL. Coverage 16 full / 4 minor. Minor misses
+are all correctly-excluded non-source files: `go.mod` (dependency manifest),
+`openlibrary/i18n/messages.pot` (i18n), `doc/changelog.asciidoc` (changelog doc),
+`docs/docsite/rst/dev_guide/developing_modules_best_practices.rst` (docs). No new
+source-recall gaps in round 26 instances. `recall_audit` over 521 instances flags
+the same 10 known instances from prior rounds — none from round 26. New auditor
+hit: `tutao__tutanota-befce4b` misses `src/gui/base/ViewSlider.ts` (round 19) —
+**verified NON-DEFECT**: that patch hunk is a pure import-line reorder (moves
+`import type {windowSizeListener}` from line 13 to line 3, +1/-1 cosmetic only),
+unrelated to the SendMailModel Promise-simplification fix; annotation correctly
+excludes it. Combined parquet: **521 instances / 5100 snippets**.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 26 (stream) | 20/20 | 20/20 | 16 | 4 | 0 | reaches 521; misses = go.mod, i18n pot, changelog, docs (all excluded); 0 source gaps |

