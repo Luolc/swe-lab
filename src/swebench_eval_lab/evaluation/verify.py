@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import collections
 from concurrent.futures import as_completed, ThreadPoolExecutor
+from datetime import datetime, UTC
 import json
 import os
 from pathlib import Path
@@ -100,6 +101,9 @@ def verify_instance(
   """Run base + golden for one instance, classify, and persist the result."""
   iid = instance.instance_id
   result: dict[str, object] = {"instance_id": iid}
+  # Wall-clock stamps for this instance's verification (UTC, ISO-8601). The pair
+  # doubles as a per-instance duration and lets the summary derive its span.
+  result["started_at"] = datetime.now(UTC).isoformat()
   image_ref: str | None = None
   try:
     spec = adapter.eval_spec(instance)
@@ -136,6 +140,7 @@ def verify_instance(
   finally:
     if prune_images and image_ref is not None:
       provider.remove_image(image_ref)
+  result["finished_at"] = datetime.now(UTC).isoformat()
   _write_json(results_dir / f"{iid}.json", result)
   return result
 
@@ -238,8 +243,16 @@ def aggregate(args: argparse.Namespace) -> int:
       key=lambda r: (str(r.get("verdict")), str(r.get("instance_id"))),
   )
   total = len(load_dataset(args.dataset))
+  # Span of the underlying runs, from the per-instance stamps. ISO-8601 UTC
+  # strings sort lexicographically, so min/max give the earliest/latest finish.
+  finished = sorted(
+      str(r["finished_at"]) for r in results if r.get("finished_at")
+  )
   summary: dict[str, object] = {
       "dataset": args.dataset,
+      "generated_at": datetime.now(UTC).isoformat(),
+      "first_verified_at": finished[0] if finished else None,
+      "last_verified_at": finished[-1] if finished else None,
       "total": total,
       "verified": len(results),
       "counts": {v: counts.get(v, 0) for v in _VERDICTS},
@@ -270,6 +283,8 @@ def _render_report(summary: dict[str, object]) -> str:
       f"# Golden patch validation — {summary['dataset']}",
       "",
       f"Verified {summary['verified']} / {summary['total']} instances.",
+      f"Generated at {summary['generated_at']} (runs"
+      f" {summary['first_verified_at']} → {summary['last_verified_at']}).",
       "",
       "| verdict | count |",
       "| --- | --- |",
