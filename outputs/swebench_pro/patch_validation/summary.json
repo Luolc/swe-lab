@@ -1,0 +1,21 @@
+{
+  "counts": {
+    "BASE_UNEXPECTED_PASS": 0,
+    "ERROR": 0,
+    "GOLDEN_FAIL": 1,
+    "OK": 730
+  },
+  "dataset": "swebench_pro",
+  "first_verified_at": "2026-07-16T08:47:29.481764+00:00",
+  "generated_at": "2026-07-16T11:11:01.714693+00:00",
+  "last_verified_at": "2026-07-16T10:54:28.583175+00:00",
+  "non_ok": [
+    {
+      "error": null,
+      "instance_id": "instance_NodeBB__NodeBB-76c6e30282906ac664f2c9278fc90999b27b1f48-vd59a5728dfc977f44533186ace531248c2917516",
+      "verdict": "GOLDEN_FAIL"
+    }
+  ],
+  "total": 731,
+  "verified": 731
+}

