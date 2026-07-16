@@ -694,3 +694,15 @@ real source gaps in round 32.** Combined parquet: **641 instances / snippets upd
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 32 (stream) | 20/20 | 20/20 | 14 | 6 | 0 | reaches 641; misses = docs/issue-template + ansible_builtin_runtime.yml (comment-only, non-defect); 0 source gaps |
+
+## Round 33 (stream) — 2026-07-16 — reaches 661 total (resumed post credit-reset)
+
+Resumed after the credit-limit pause (waited past 07:30 PT); the 2 pre-limit
+aggregates were kept and skipped. 20/20 valid, all 3-candidate, 0 STALL. Coverage
+17 full / 3 minor; all misses non-source: `doc/help/settings.asciidoc` (docs),
+`go.mod`/`go.sum` (manifests), `Taskfile.yml` (build infra). `recall_audit` over
+661 flags 19 — all in the standing known-accepted set; **0 new source misses**.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 33 (stream) | 20/20 | 20/20 | 17 | 3 | 0 | reaches 661; misses = doc/manifests/Taskfile (build infra); 0 new source gaps; resumed post-reset |

