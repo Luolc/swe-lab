@@ -731,3 +731,14 @@ comment-only hit. **0 new real source gaps.** Combined parquet: **701 instances 
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 35 (stream) | 20/20 | 20/20 | 14 | 6 | 0 | reaches 701 (700 passed); misses = changelog/docs/manifests + server.go comment-only del (non-defect); resumed post 2nd reset |
+
+## Round 36 (stream) — 2026-07-16 — reaches 721 total (toward full 731)
+
+20/20 valid, all 3-candidate, 0 STALL, 0 credit-limit failures. Coverage 17 full /
+3 minor; all misses non-source: CHANGELOG.md, install/package.json (manifest), i18n
+(`messages.pot`, `en_EN.json`). `recall_audit` over 721 flags only the standing
+known-accepted set — 0 new source misses. Combined parquet: **721 instances / ? snippets**.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 36 (stream) | 20/20 | 20/20 | 17 | 3 | 0 | reaches 721; misses = changelog/package.json/i18n; 0 new source gaps |

