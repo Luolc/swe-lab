@@ -1,7 +1,7 @@
 {
   "parquet": "annotations.parquet",
-  "num_rows": 541,
-  "num_snippets": 5273,
-  "generated_at": "2026-07-15T04:50:25.464693+00:00",
-  "sha256": "bd6a7b8c838d9ab988750deabd8b95fb4792f8e5a43ae50b103df657557bbe65"
+  "num_rows": 561,
+  "num_snippets": 5450,
+  "generated_at": "2026-07-16T07:51:49.650398+00:00",
+  "sha256": "e3d540bbc8c060daa1aa4883e77d58d072f687e5a62835675ffe9edc162664e9"
 }

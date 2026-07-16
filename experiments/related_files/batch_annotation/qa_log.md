@@ -592,3 +592,25 @@ excluded. Combined parquet: **541 instances / 5273 snippets**.
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 27 (stream) | 20/20 | 20/20 | 15 | 5 | 0 | reaches 541; misses = manifests/docs/changelog/testdata; teleport-c1b1c6a miss = CI config + empty deleted proto (non-defect) |
+
+## Round 28 (stream) — 2026-07-16 — reaches 561 total
+
+20/20 valid, all 3-candidate, 0 STALL (perf_check idle>120s: 0). Coverage 15 full
+/ 5 minor. All minor misses are correctly-excluded non-source: `Dockerfile` +
+`go.mod`/`go.sum`/`go.work.sum` (build + dependency manifests), a `.rst` dev-guide
+doc, and two `internal/config/testdata/authentication/*.yml` fixtures.
+`recall_audit` over 561 instances flags 12 instances with source misses — 11 are
+the same known-accepted non-defects / recall ceilings from prior rounds (vuls
+`vulninfos.go`, teleport `confirmation.go` + `.drone.yml`/`ping.proto`, NodeBB-76c6e30,
+flipt-3d5a345 example, flipt-af7a0be config, openlibrary-2fe532a docstring,
+navidrome reflex.conf, webclients support.ts pure-move, qutebrowser pytest.ini,
+tutanota ViewSlider.ts). The one NEW hit is `future-architect__vuls-139f3a81` →
+`integration`, **verified NON-DEFECT**: `integration` is a **git submodule
+pointer** (mode `160000` gitlink); the gold hunk only bumps the subproject commit
+SHA (`d97bf53…` → `b40375c4…`), same class as a go.mod/go.sum bump — no source to
+read, correctly excluded. **0 real source gaps in round 28.** Combined parquet:
+**561 instances / 5450 snippets**; traces pushed (2244 files / 308.5 MB).
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 28 (stream) | 20/20 | 20/20 | 15 | 5 | 0 | reaches 561; misses = Dockerfile/manifests/doc/testdata; vuls-139f3a81 miss = submodule pointer bump (non-defect) |

