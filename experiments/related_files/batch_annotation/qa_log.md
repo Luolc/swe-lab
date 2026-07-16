@@ -706,3 +706,14 @@ aggregates were kept and skipped. 20/20 valid, all 3-candidate, 0 STALL. Coverag
 | round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 33 (stream) | 20/20 | 20/20 | 17 | 3 | 0 | reaches 661; misses = doc/manifests/Taskfile (build infra); 0 new source gaps; resumed post-reset |
+
+## Round 34 (stream) — 2026-07-16 — reaches 681 total
+
+20/20 valid, all 3-candidate, 0 STALL, 0 credit-limit failures. **Coverage 20 full
+/ 0 minor** — every instance fully covers its existing gold-patch source files (a
+clean round with no misses at all). `recall_audit` over 681 flags only the standing
+known-accepted set — 0 new source misses. Combined parquet: **681 instances / ? snippets**.
+
+| round | valid | 3-cand | ✅ full | ⚠ minor | STALL | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 34 (stream) | 20/20 | 20/20 | 20 | 0 | 0 | reaches 681; clean round — full coverage on every instance, 0 misses |

