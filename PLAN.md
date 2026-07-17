@@ -615,6 +615,156 @@ rotate after use).
    above) → 731/731. Remaining follow-up: **publish the fully-fixed parquet to
    Hugging Face** and retire the in-memory `patches.py` stopgap.
 
+## Patch extraction — open decisions (review before building the extractor)
+
+`docs/patch-extraction.md` is the grounded corner-case survey, and its §7 was
+written as *the* spec. But part of §7 has since been implemented ahead of the
+doc in [`core/patch.py`](src/swebench_eval_lab/core/patch.py)
+(`build_extraction_script` + `strip_binary_hunks` + `is_effectively_empty`,
+unit-tested in `tests/test_patch.py`, **not yet wired into any pipeline**), and
+in doing so it **diverged from and in places contradicts** the doc. These are the
+points that are *not settled* — resolve each before the `rollout` extractor and
+the grading path are finalized. Each item lists **doc says / code says / the
+tension / the call to make**. This section is the review target; once decided,
+fold the outcome back into `docs/patch-extraction.md` §7–§8 and the code so all
+three agree.
+
+### D1. Base to diff against: post-setup commit vs raw `base_commit`
+
+- **Doc (§7, §2):** step 2 diffs `--cached ... "$BASE_COMMIT"` — i.e. against the
+  instance's original `base_commit`.
+- **Code:** `build_extraction_script(base_ref=...)` diffs against a caller-supplied
+  `base_ref`, and its docstring specifies `base_ref` should be *"the post-setup
+  commit the rollout entryscript makes right before the agent runs"* — a fresh
+  commit of the container's post-provision state, **not** `base_commit`.
+- **Tension:** these are different strategies. Diffing against a **post-setup
+  commit** (the "commit-the-base trick", §4A.4) means any tree mutations from
+  image setup / `before_repo_set_cmd` are already *in the base* and cannot leak
+  into the patch — which is exactly why the code can drop the `:(exclude)`
+  denylist (see D2). Diffing against raw `base_commit` (the doc) is simpler and
+  matches what the grader applies against, but re-admits all of §4A.4/§4A.5's
+  contamination.
+- **Call to make:** confirm we adopt the **post-setup-commit** base (code's
+  choice) and make the rollout entryscript actually create that commit before the
+  agent starts. **Then verify the resulting patch still applies against the real
+  `base_commit` on the grading side** — if setup changed tracked files, a diff
+  vs the post-setup commit may *not* cleanly apply vs `base_commit` under the
+  strict single `git apply -v`. This round-trip (extract-vs-post-setup →
+  apply-vs-base_commit) is the crux and is currently unproven end to end.
+
+### D2. `:(exclude)` build-noise denylist: keep, drop, or make tunable
+
+- **Doc (§7 step 1):** hardcodes the mini-swe-agent #528 denylist
+  (`pyproject.toml`, `setup.cfg`, `setup.py`, `tox.ini`, `*.cfg`, `*.toml`).
+- **Code:** `exclude_globs` defaults to **empty** (no denylist); the docstring
+  argues it is unnecessary *given* the post-setup base of D1, but keeps the
+  parameter for "the rare instance that still needs it."
+- **Tension:** the post-setup base removes *setup-time* noise, but the **agent's
+  own run** can still trigger a build tool that rewrites `pyproject.toml` /
+  lockfiles *after* the base snapshot — that noise would still enter the patch.
+  So the denylist may still be wanted as a secondary defense even with D1.
+- **Call to make:** decide among (a) rely purely on the post-setup base, no
+  denylist; (b) keep a small default denylist as belt-and-suspenders; (c) keep it
+  empty by default but wire a per-ecosystem/per-instance override through
+  `exclude_globs`. Whatever we pick, **log** any path a denylist drops (no silent
+  truncation).
+
+### D3. Binary handling is currently self-contradictory (§7 vs §8 vs code)
+
+- **Doc §7 (grading):** "keep single `git apply -v` **and add `strip_binary_hunks`**
+  before writing `patch.diff`."
+- **Doc §8 (later, 2026-07-15):** grading "deliberately does **not** call
+  `strip_binary_hunks`" because "the extractor's `git diff` omits binary by
+  default so the patch reaching the grader is already binary-free."
+- **Code:** the extractor's `_DIFF_FLAGS` **includes `--binary`**, which *emits*
+  an applyable binary patch — the opposite of "omits binary by default." So the
+  §8 premise is false as written, and §7 and §8 give opposite instructions.
+- **Tension:** with `--binary` at extraction + no strip at grading, a
+  binary-containing agent patch is applied verbatim by our `git apply -v` — but
+  Scale **strips** binary before applying (§1), so our grade would **diverge from
+  Scale's** on exactly those patches. Meanwhile §4B.1 wants faithful binary
+  capture *for the trace*.
+- **Call to make:** pick one coherent policy, e.g.:
+  1. **Two artifacts** — extract *with* `--binary` for the faithful trace, and
+     produce the *graded* patch by `strip_binary_hunks` (matches Scale exactly);
+     or
+  2. **Drop `--binary`** at extraction so binary never enters either artifact
+     (simplest; loses faithful binary in the trace); or
+  3. **Keep `--binary`, no strip**, and *accept + document* the divergence from
+     Scale for binary-dependent instances (SBP golden patches are binary-free, so
+     this only affects agent patches).
+  Then make §7, §8, and `core/patch.py` say the same thing.
+
+### D4. `--default-prefix` vs the `-c` prefix pins (git-version compat)
+
+- **Doc §7:** uses `git diff ... --default-prefix`.
+- **Code:** deliberately **avoids** `--default-prefix` (git ≥ 2.41 only) and pins
+  `-c diff.noprefix=false -c diff.mnemonicPrefix=false` instead, for the same
+  `a/ b/` prefixes on any git version.
+- **Call to make:** confirm the container git versions across the image fleet; if
+  any predate 2.41, the code's approach is required and the doc should be updated
+  to match. Low risk, but it is a real doc/code mismatch to close.
+
+### D5. Agent-touched **test files** (§5.1) — the load-bearing open item
+
+- **The risk:** a solver can game the held-out tests by editing them. SWE-Bench
+  classic defends by resetting modified test files to base + removing agent-created
+  test files, *then* applying the gold `test_patch` (§5.1/§5.2), with a
+  **modified-vs-new** distinction that is load-bearing (issue #518).
+- **Unknown:** whether SWE-Bench **Pro**'s per-instance `run_script.sh` +
+  our ported `build_eval_script` already reset agent-touched test files, or
+  whether nothing does. If nothing does, our grade is gameable.
+- **Call to make:** inspect an actual Pro `run_script.sh` and our
+  `core/datasets/swebench_pro/grading.py` entryscript to determine current
+  behavior, then decide **where** the reset lives — strip test-file edits from the
+  patch at *extraction* (rollout side), or reset-to-base + apply gold tests at
+  *grading* (eval side, matching classic). This is the single most important
+  correctness decision here and blocks trusting any rollout grade.
+
+### D6. Eval-side apply hardening ladder (opt-in deviation from Scale)
+
+- **Doc §7 (grading):** offers an *optional* fallback ladder
+  `git apply -v → git apply --3way → git apply --reject` (we hold `base_commit`,
+  so `--3way` is viable), explicitly opt-in + logged, never silent.
+- **State:** not built; grading is the single strict `git apply -v` (matches
+  Scale).
+- **Call to make:** decide whether the rollout MVP grades **strictly like Scale**
+  (recommended for comparability) and treats hardening as a later, clearly-labeled
+  experiment — or whether we want the ladder from day one behind a flag.
+
+### D7. Deferred guards — defer, but **log when they would fire**
+
+Three §4 corner cases are deferred "until a real instance needs them"; the risk is
+that they fail **silently**. Decision: keep them deferred **but add detection +
+logging** so the gold/rollout sweep surfaces any instance that hits them, instead
+of silently mis-extracting:
+
+- **Gitignored new source files** (§4A.2) — `git add -A` silently skips them; a
+  real new source file that happens to match `.gitignore` vanishes. Detect via a
+  `git status --ignored` / `git check-ignore` pass and log; force-add only if it's
+  genuinely source.
+- **Submodules / gitlinks** (§4C.6) — `--ignore-submodules=all` is the fix; until
+  then, log any `Subproject commit` line reaching the patch.
+- **Git LFS pointer-vs-content** (§4B.2) — detect `filter=lfs` via `.gitattributes`
+  / `git check-attr` and log; decide pull-objects vs exclude per instance.
+
+### D8. Empty-patch guard — wire it, and on which side(s)
+
+- **Code:** `is_effectively_empty` exists and is tested, but is **not wired** into
+  extraction or grading (§8 confirms "no empty-patch guard").
+- **Call to make:** wire it on **both** sides per §5.4 — at extraction, an
+  empty/no-op patch marks the rollout attempt as failed (don't bother grading);
+  at grading, defensively treat it as unresolved. Confirm both.
+
+### Where each open item lands in code (once decided)
+
+- D1/D2/D3/D4/D7 → `core/patch.py` (`build_extraction_script`, `_DIFF_FLAGS`) +
+  the rollout entryscript that makes the post-setup commit and invokes it.
+- D3/D5/D6/D8 → `core/datasets/swebench_pro/grading.py` (`build_eval_script`) and
+  the grading entrypoint.
+- All of them → reconcile `docs/patch-extraction.md` §7–§8 so doc, code, and the
+  grading path finally agree (they do not today).
+
 ## Open items / contingencies
 
 - **ENV / `test_patch`.** Not needed for flipt/ansible, but Scale's entryscript
