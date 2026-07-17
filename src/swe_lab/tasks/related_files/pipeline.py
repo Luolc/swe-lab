@@ -13,13 +13,14 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from swebench_eval_lab.core.agent.errors import AnnotationError, UsageLimitError
-from swebench_eval_lab.core.agent.proxy import DEFAULT_BASE_PORT
-from swebench_eval_lab.core.datasets.loader import Dataset, load_dataset
-from swebench_eval_lab.core.datasets.swebench_pro import SweBenchProInstance
-from swebench_eval_lab.core.paths import find_repo_root
+from swe_lab.core.agent.errors import AnnotationError, UsageLimitError
+from swe_lab.core.agent.proxy import DEFAULT_BASE_PORT
+from swe_lab.core.agent.trace import DEFAULT_CAPTURE
+from swe_lab.core.datasets.loader import Dataset, load_dataset
+from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.core.paths import find_repo_root
 
-from .agent_run import DEFAULT_CAPTURE, DEFAULT_MODEL, RunResult
+from .agent_run import DEFAULT_MODEL, RunResult
 from .aggregator import aggregate_instance
 from .annotator import annotate_instance
 from .storage import (

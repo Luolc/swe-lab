@@ -1,6 +1,6 @@
 """Run one rollout: a headless agent solves an instance inside its container.
 
-Dataset-agnostic: takes an :class:`~swebench_eval_lab.core.benchmark.EvalSpec`
+Dataset-agnostic: takes an :class:`~swe_lab.core.benchmark.EvalSpec`
 (which image, workdir, base_commit) plus a ready-made solve ``prompt``, and
 returns the extracted patch + the agent's trajectory as a unified exchange
 record. The dataset-specific prompt construction lives in the CLI (``__main__``)
@@ -19,15 +19,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from swebench_eval_lab.core.agent.binary import ensure_claude_binary
-from swebench_eval_lab.core.agent.trace import last_stream_record
-from swebench_eval_lab.core.benchmark import EvalSpec
-from swebench_eval_lab.core.docker.provider import DockerProvider, Mount
-from swebench_eval_lab.core.patch import (
+from swe_lab.core.agent.binary import ensure_claude_binary
+from swe_lab.core.agent.trace import last_stream_record
+from swe_lab.core.benchmark import EvalSpec
+from swe_lab.core.docker.provider import DockerProvider, Mount
+from swe_lab.core.patch import (
     is_effectively_empty,
     strip_binary_hunks,
 )
-from swebench_eval_lab.core.paths import cache_root, find_repo_root
+from swe_lab.core.paths import cache_root, find_repo_root
 
 from .constants import (
     AGENT_STDERR_NAME,

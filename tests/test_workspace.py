@@ -5,12 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import final
 
-from swebench_eval_lab.core.datasets.swebench_pro import (
+from swe_lab.core.datasets.swebench_pro import (
     COLUMNS,
     SweBenchProInstance,
 )
-from swebench_eval_lab.core.repo.provider import RepoInstance
-from swebench_eval_lab.tasks.related_files.workspace import (
+from swe_lab.core.repo.provider import RepoInstance
+from swe_lab.tasks.related_files.workspace import (
     ANNOTATION_OUTPUT,
     CONTEXT_DIR,
     prepare_workspace,

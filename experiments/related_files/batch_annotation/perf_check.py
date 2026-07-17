@@ -21,7 +21,7 @@ import json
 from pathlib import Path
 import sys
 
-from swebench_eval_lab.tasks.related_files.storage import instance_dir
+from swe_lab.tasks.related_files.storage import instance_dir
 
 HERE = Path(__file__).parent
 STALL_S = 120.0  # idle overhead above this is flagged as a stall

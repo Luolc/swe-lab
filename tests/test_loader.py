@@ -7,11 +7,11 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from swebench_eval_lab.core.datasets.loader import (
+from swe_lab.core.datasets.loader import (
     load_dataset,
     load_parquet,
 )
-from swebench_eval_lab.core.datasets.swebench_pro import (
+from swe_lab.core.datasets.swebench_pro import (
     COLUMNS,
     SweBenchProInstance,
 )

@@ -25,13 +25,13 @@ import signal
 import subprocess
 import time
 
-from swebench_eval_lab.core.agent.errors import (
+from swe_lab.core.agent.errors import (
     AnnotationError,
     cli_failure,
     MissingOutputError,
     RetryableError,
 )
-from swebench_eval_lab.core.agent.proxy import (
+from swe_lab.core.agent.proxy import (
     build_proxy,
     DEFAULT_BASE_PORT,
     port_for_index,
@@ -42,7 +42,7 @@ from swebench_eval_lab.core.agent.proxy import (
 # ``core.agent.trace`` so ``rollout`` (agent runs in-container) reuses them
 # without a core→tasks dependency. Re-exported here for back-compat: existing
 # callers and tests still import these names from ``agent_run``.
-from swebench_eval_lab.core.agent.trace import (
+from swe_lab.core.agent.trace import (
     CAPTURE_MODES,
     CAPTURE_PROXY,
     DEFAULT_CAPTURE,
@@ -52,9 +52,9 @@ from swebench_eval_lab.core.agent.trace import (
     last_stream_record,
     parse_stream_events,
 )
-from swebench_eval_lab.core.datasets.swebench_pro import SweBenchProInstance
-from swebench_eval_lab.core.paths import cache_root, find_repo_root
-from swebench_eval_lab.core.repo.provider import GitCheckoutProvider
+from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.core.paths import cache_root, find_repo_root
+from swe_lab.core.repo.provider import GitCheckoutProvider
 
 from .agent_validator import validate_output
 from .schema import Annotation, parse_agent_output, Snippet

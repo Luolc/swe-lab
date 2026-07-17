@@ -15,11 +15,11 @@ from collections.abc import Sequence
 import json
 from pathlib import Path
 
-from swebench_eval_lab.core.datasets.loader import Dataset, load_dataset
-from swebench_eval_lab.core.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.core.agent.trace import DEFAULT_CAPTURE
+from swe_lab.core.datasets.loader import Dataset, load_dataset
+from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
 
 from .agent_run import (
-    DEFAULT_CAPTURE,
     DEFAULT_CLAUDE_TIMEOUT_S,
     DEFAULT_MAX_ATTEMPTS,
     DEFAULT_MODEL,

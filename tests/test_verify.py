@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from swebench_eval_lab.core.benchmark import EvalSpec
-from swebench_eval_lab.core.datasets.swebench_pro import EvalResult
-from swebench_eval_lab.evaluation.verify import (
+from swe_lab.core.benchmark import EvalSpec
+from swe_lab.core.datasets.swebench_pro import EvalResult
+from swe_lab.evaluation.verify import (
     _base_json,
     BASE_UNEXPECTED_PASS,
     classify,

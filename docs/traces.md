@@ -9,7 +9,7 @@ This is a **general mechanism**, not a related-files-specific one: every
 annotation task produces large per-run traces that want the same off-repo +
 manifest treatment. It is documented here at the repo level for that reason. The
 implementation currently lives in
-[`tasks/related_files/traces.py`](../src/swebench_eval_lab/tasks/related_files/traces.py)
+[`tasks/related_files/traces.py`](../src/swe_lab/tasks/related_files/traces.py)
 (the first annotation task); it will be promoted to `core/` when the second task
 lands — see [§7](#7-multi-task-note-future). The model below is task-agnostic.
 
@@ -28,7 +28,7 @@ So the repo splits its data into **three planes**:
 | --- | --- | --- | --- |
 | **Input dataset** | `datasets/<name>/data/*.parquet` (downloaded from a public HF dataset, e.g. `ScaleAI/SWE-bench_Pro`) | no (gitignored) | the tasks to annotate |
 | **Output annotations** | `outputs/related_files/<dataset>/` — `annotations.parquet`, `metadata.json`, `README.md`, `traces_manifest.json` | **yes** (small) | the deliverable |
-| **Output traces** | HF **dataset** repo `luolc/swebench-eval-lab-traces` (private) | no — only the *manifest* is | the big per-run conversations |
+| **Output traces** | HF **dataset** repo `luolc/swe-lab-traces` (private) | no — only the *manifest* is | the big per-run conversations |
 
 Only the **manifest** (`traces_manifest.json`) is version-controlled. It is the
 bridge between the small committed deliverable and the big off-repo blobs.
@@ -39,7 +39,7 @@ bridge between the small committed deliverable and the big off-repo blobs.
 
 ```jsonc
 {
-  "repo_id": "luolc/swebench-eval-lab-traces",
+  "repo_id": "luolc/swe-lab-traces",
   "repo_type": "dataset",
   "revision": "2a88ec59bfcf…",        // the exact HF commit this manifest describes
   "git_commit": "eb83421…",           // the repo commit it was generated at
@@ -93,7 +93,7 @@ The commands below make that rule enforceable and the divergences detectable.
 Run from the repo root with `HF_TOKEN` set (e.g. `source ./.envrc.local`):
 
 ```
-python -m swebench_eval_lab.tasks.related_files.traces <action> [flags]
+python -m swe_lab.tasks.related_files.traces <action> [flags]
 ```
 
 | Command | What it does |

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from swebench_eval_lab.rollout.constants import (
+from swe_lab.rollout.constants import (
     CLAUDE_BIN_AT,
     MOUNT_AT,
     PATCH_NAME,
@@ -16,9 +16,9 @@ from swebench_eval_lab.rollout.constants import (
     RAW_PATCH_NAME,
     TRAJECTORY_NAME,
 )
-from swebench_eval_lab.rollout.entryscript import build_rollout_script
-from swebench_eval_lab.rollout.prompt import build_solve_prompt
-from swebench_eval_lab.rollout.runner import _read_patch, RolloutResult
+from swe_lab.rollout.entryscript import build_rollout_script
+from swe_lab.rollout.prompt import build_solve_prompt
+from swe_lab.rollout.runner import _read_patch, RolloutResult
 
 
 def test_entryscript_runs_agent_then_extracts_against_base_commit() -> None:

@@ -45,11 +45,11 @@ import subprocess
 from huggingface_hub import hf_hub_download, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
-from swebench_eval_lab.core.paths import find_repo_root, outputs_root
+from swe_lab.core.paths import find_repo_root, outputs_root
 
 from .storage import DEFAULT_DATASET, TASK_DIRNAME
 
-DEFAULT_REPO_ID = "luolc/swebench-eval-lab-traces"
+DEFAULT_REPO_ID = "luolc/swe-lab-traces"
 REPO_TYPE = "dataset"
 TRACE_SUFFIX = ".last_exchange.json"
 MANIFEST_NAME = "traces_manifest.json"
@@ -389,7 +389,7 @@ def _print_status(st: Status) -> None:
 
 def main() -> int:
   parser = argparse.ArgumentParser(
-      prog="python -m swebench_eval_lab.tasks.related_files.traces",
+      prog="python -m swe_lab.tasks.related_files.traces",
       description="Push/fetch/reconcile HF-stored conversation traces.",
   )
   _ = parser.add_argument(

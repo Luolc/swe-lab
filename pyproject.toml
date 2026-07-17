@@ -1,5 +1,5 @@
 [project]
-name = "swebench-eval-lab"
+name = "swe-lab"
 version = "0.1.0"
 description = "Tooling to enrich and audit SWE-Bench evaluation data (related-files annotation, and more)"
 readme = "README.md"

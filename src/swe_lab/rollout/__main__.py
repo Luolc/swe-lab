@@ -1,10 +1,10 @@
 """CLI: run one rollout (agent solves an instance) + optionally grade its patch.
 
     # solve only — writes the patch + trajectory to the run workspace
-    python -m swebench_eval_lab.rollout <instance_id>
+    python -m swe_lab.rollout <instance_id>
 
     # solve, then grade the produced patch through the eval harness
-    python -m swebench_eval_lab.rollout <instance_id> --grade
+    python -m swe_lab.rollout <instance_id> --grade
 
 Needs Docker available and CLAUDE_CODE_OAUTH_TOKEN set (inherited by reference
 into the container). Prints a JSON summary; with --grade, exit 0 iff resolved.
@@ -17,8 +17,8 @@ from dataclasses import asdict
 import json
 import os
 
-from swebench_eval_lab.core.datasets.loader import load_dataset
-from swebench_eval_lab.core.datasets.swebench_pro import (
+from swe_lab.core.datasets.loader import load_dataset
+from swe_lab.core.datasets.swebench_pro import (
     evaluate,
     SweBenchProAdapter,
     SweBenchProInstance,
@@ -36,7 +36,7 @@ from .runner import DEFAULT_TIMEOUT_S, rollout
 
 def main() -> int:
   parser = argparse.ArgumentParser(
-      prog="python -m swebench_eval_lab.rollout",
+      prog="python -m swe_lab.rollout",
       description="Run a headless agent to solve one instance in its image.",
   )
   _ = parser.add_argument("instance_id")

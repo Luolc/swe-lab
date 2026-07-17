@@ -101,7 +101,7 @@ jobs:
 
       - name: Verify shard ${{ matrix.shard }}/${{ inputs.shards }}
         run: |
-          uv run python -m swebench_eval_lab.evaluation.verify \
+          uv run python -m swe_lab.evaluation.verify \
             --shard ${{ matrix.shard }}/${{ inputs.shards }} \
             --jobs ${{ inputs.jobs }} \
             --limit ${{ inputs.limit }} \
@@ -145,7 +145,7 @@ jobs:
           merge-multiple: true
 
       - name: Aggregate into summary.json + report.md
-        run: uv run python -m swebench_eval_lab.evaluation.verify --aggregate
+        run: uv run python -m swe_lab.evaluation.verify --aggregate
 
       - name: Upload summary
         uses: actions/upload-artifact@v4

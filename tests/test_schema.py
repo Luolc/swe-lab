@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from swebench_eval_lab.tasks.related_files.schema import (
+from swe_lab.tasks.related_files.schema import (
     Annotation,
     parse_agent_output,
     Snippet,

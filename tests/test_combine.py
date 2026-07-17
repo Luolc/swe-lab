@@ -9,18 +9,18 @@ from pathlib import Path
 
 import polars as pl
 
-from swebench_eval_lab.tasks.related_files.combine import (
+from swe_lab.tasks.related_files.combine import (
     build_dataframe,
     COLUMNS,
     combine,
     METADATA_NAME,
 )
-from swebench_eval_lab.tasks.related_files.schema import (
+from swe_lab.tasks.related_files.schema import (
     Annotation,
     Snippet,
     SnippetCategory,
 )
-from swebench_eval_lab.tasks.related_files.storage import (
+from swe_lab.tasks.related_files.storage import (
     instance_dir,
 )
 

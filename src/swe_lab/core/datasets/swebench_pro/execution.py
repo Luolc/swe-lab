@@ -4,7 +4,7 @@ Everything specific to SWE-Bench Pro about *setting up* a run lives here (the
 data records are in ``record``; grading the run is in ``grading``): the prebuilt
 Docker Hub images, the per-instance test harness (``run_script`` + ``parser``)
 fetched from Scale's repo, and the mapping onto the general
-:class:`~swebench_eval_lab.core.benchmark.EvalSpec`.
+:class:`~swe_lab.core.benchmark.EvalSpec`.
 Implements ``BenchmarkAdapter[SweBenchProInstance]``.
 """
 
@@ -14,8 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import urllib.request
 
-from swebench_eval_lab.core.benchmark import EvalSpec
-from swebench_eval_lab.core.paths import cache_root, find_repo_root
+from swe_lab.core.benchmark import EvalSpec
+from swe_lab.core.paths import cache_root, find_repo_root
 
 from .constants import (
     GITHUB_RAW_BASE,

@@ -1,12 +1,12 @@
-# Project Plan — swebench-eval-lab
+# Project Plan — swe-lab
 
 Living document. It captures the current direction and will be refined as we go.
 
 ## Scope
 
-`swebench-eval-lab` is an umbrella for tooling that **enriches, runs, and audits
+`swe-lab` is an umbrella for tooling that **enriches, runs, and audits
 SWE-Bench evaluation data**, organized as independent workstreams over shared
-infrastructure in `src/swebench_eval_lab/core/` (dataset loading, per-instance
+infrastructure in `src/swe_lab/core/` (dataset loading, per-instance
 repo checkout, a headless-agent harness, a Docker execution layer, and the
 dataset-agnostic benchmark contracts).
 
@@ -15,7 +15,7 @@ dataset-agnostic benchmark contracts).
   full dataset, 731/731 instances annotated & QA'd** (7083 snippets; 37 rounds;
   phase 1 via the reverse proxy, the rest in the default **stream** capture).
   Nothing left to annotate. See
-  [`tasks/related_files/README.md`](src/swebench_eval_lab/tasks/related_files/README.md).
+  [`tasks/related_files/README.md`](src/swe_lab/tasks/related_files/README.md).
 - **Workstream 2 — Solve + evaluate pipeline** (`rollout/` + `evaluation/` on
   `core/docker/`) — actually *solve* SWE-Bench Pro tasks in Docker and *grade*
   the patches. **Eval built & validated**; rollout (agent sampling) is next. See
@@ -41,7 +41,7 @@ pick up without guesswork. Update it whenever a milestone's state changes.
   still available), producing a **source-agnostic unified exchange record** with
   operator PII redacted at write time (home/name/email → an "Alan Turing"
   placeholder). The large per-run trace records live **off-repo in a private HF
-  dataset repo** (`luolc/swebench-eval-lab-traces`, **2924 files / 412.6 MB**)
+  dataset repo** (`luolc/swe-lab-traces`, **2924 files / 412.6 MB**)
   via `traces.py` push/fetch + a git-tracked `traces_manifest.json`; only the
   small annotation JSON + parquet stay in git. `GitCheckoutProvider` hardened to
   self-heal stale worktrees. **Nothing is left to annotate.**
@@ -71,7 +71,7 @@ pick up without guesswork. Update it whenever a milestone's state changes.
   the current focus** — a subscription `CLAUDE_CODE_OAUTH_TOKEN` is now available;
   the extractor's open design decisions are catalogued in "Patch extraction —
   open decisions" under Workstream 2. Architecture and next steps below.
-- The repo was renamed `swebench-eval-lab` and reorganized into `core/` +
+- The repo was renamed `swe-lab` and reorganized into `core/` +
   `tasks/` (+ new `rollout/`/`evaluation/`); git history was scrubbed of a
   leaked OAuth token and operator PII (force-pushed).
 
@@ -143,7 +143,7 @@ mechanism still works: the pipeline CLI skips any instance whose `aggregate.json
 already exists, so re-running an id is idempotent.)
 
 Run one instance (full pipeline):
-`python -m swebench_eval_lab.tasks.related_files <instance_id> [--model sonnet|opus] [--samples 3]`.
+`python -m swe_lab.tasks.related_files <instance_id> [--model sonnet|opus] [--samples 3]`.
 
 ## Objective
 
@@ -262,7 +262,7 @@ the code so these future directions require extension, not rewrite:
 4. `GitCheckoutProvider`: clone `repo` and checkout `base_commit` into a
    gitignored local cache; idempotent and reusable across runs.
 
-**Delivered** (under `src/swebench_eval_lab/`):
+**Delivered** (under `src/swe_lab/`):
 
 - `datasets/swebench_pro.py` — `SweBenchProInstance`, the typed frozen record
   over the 16 columns, plus its column set and parsing (list columns are Python
@@ -292,7 +292,7 @@ the code so these future directions require extension, not rewrite:
   instance's proxy so every request/response is logged.
 - Parse the structured output into the annotation schema.
 
-**Delivered** (under `src/swebench_eval_lab/tasks/related_files/`):
+**Delivered** (under `src/swe_lab/tasks/related_files/`):
 
 - `schema.py` — `SnippetCategory` (5 categories), `Snippet` / `Annotation`,
   agent-output parsing, per-snippet validation.
@@ -332,7 +332,7 @@ proxy), and the trace record moved off-repo to HF.)*
   auditing). The combined deliverable is a single
   `outputs/related_files/<dataset>/annotations.parquet` beside `intermediate/`, built from
   every instance's `aggregate.json` by the `combine` binary (`python -m
-  swebench_eval_lab.tasks.related_files.combine`) — **one row per instance**
+  swe_lab.tasks.related_files.combine`) — **one row per instance**
   (`instance_id`, `relevant_snippets`: a JSON string of the ordered snippet dicts
   `file_path`, `start_line`, `end_line`, `category`, `description`). A
   `metadata.json` sidecar records row/snippet counts, timestamp, and the
@@ -361,7 +361,7 @@ proxy), and the trace record moved off-repo to HF.)*
 (`candidate_1..3.json` + `aggregate.json`) and the combined
 `annotations.parquet` (+ `metadata.json`), plus a `traces_manifest.json`.
 
-**Off-repo** (large, on the private HF dataset repo `luolc/swebench-eval-lab-traces`):
+**Off-repo** (large, on the private HF dataset repo `luolc/swe-lab-traces`):
 the per-run **`*.last_exchange.json`** trace records — one per candidate/aggregate,
 each the run's unified exchange record (final request/response, `complete` flag,
 model, etc.). They were originally committed but grew to ~60 MB, so they moved to
@@ -503,7 +503,7 @@ an **adapter**:
   bind-mounted container; `linux/amd64`).
 - `evaluation/` — the general eval **CLI** only (`__main__`): pick a dataset,
   build its `EvalSpec`, hand it to that dataset's grader. CLI: `python -m
-  swebench_eval_lab.evaluation <id> --gold` (grade the gold patch as a self-test)
+  swe_lab.evaluation <id> --gold` (grade the gold patch as a self-test)
   or `--patch-file`. Only SWE-Bench Pro is wired up today.
 - `.github/workflows/eval.yml` — manual gold self-test on a GitHub-hosted runner.
 
@@ -585,7 +585,7 @@ still downloads the *original* upstream parquet and corrects only these 8 entrie
 `core/datasets/swebench_pro/patches.py` (`patch_fail_to_pass`, applied in
 `record.from_raw`; a no-op on every other row and self-limiting once the data is
 fixed). With it, all three gold-eval `resolved = true` locally via the real
-`python -m swebench_eval_lab.evaluation <id> --gold` path → the sweep is
+`python -m swe_lab.evaluation <id> --gold` path → the sweep is
 effectively **731/731**. **End state (TODO):** publish one fully-fixed parquet to
 our own Hugging Face dataset repo and point the loader at it; then delete
 `patches.py`.
@@ -631,7 +631,7 @@ rotate after use).
 
 These were open items reviewed against `docs/patch-extraction.md` (the grounded
 corner-case survey) and the implementation in
-[`core/patch.py`](src/swebench_eval_lab/core/patch.py). **They are now decided**
+[`core/patch.py`](src/swe_lab/core/patch.py). **They are now decided**
 (user, 2026-07-17); the code, its docstrings, and the doc have been reconciled to
 match. Each item below keeps its rationale and records the **✅ decision**; the
 per-item history (doc-said / code-said / tension) is retained as the audit trail.

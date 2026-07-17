@@ -34,5 +34,5 @@ jobs:
 
       - name: Gold self-test (expect resolved=true)
         run: |
-          uv run python -m swebench_eval_lab.evaluation \
+          uv run python -m swe_lab.evaluation \
             "${{ inputs.instance_id }}" --gold --timeout 1800

@@ -1,6 +1,6 @@
 """CLI: combine per-instance aggregates into one deliverable parquet.
 
-    python -m swebench_eval_lab.tasks.related_files.combine [--dataset ...]
+    python -m swe_lab.tasks.related_files.combine [--dataset ...]
 
 Reads every
 ``outputs/related_files/<dataset>/intermediate/<instance_id>/aggregate.json``
@@ -136,7 +136,7 @@ def combine(
 
 def main() -> int:
   parser = argparse.ArgumentParser(
-      prog="python -m swebench_eval_lab.tasks.related_files.combine",
+      prog="python -m swe_lab.tasks.related_files.combine",
       description=(
           "Combine per-instance aggregate annotations into one parquet."
       ),

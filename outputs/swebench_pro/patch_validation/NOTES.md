@@ -33,7 +33,7 @@ fails. Evidence it is flaky, not broken:
 
 - It was `OK` in the earlier full sweep (`29463094538`, 728/731) on the same
   code + data — only this test's external call differs run to run.
-- A local golden re-verify (`python -m swebench_eval_lab.evaluation <id> --gold`)
+- A local golden re-verify (`python -m swe_lab.evaluation <id> --gold`)
   **resolves**: 2933 passed, 0 missing.
 
 So the "true" verdict here is `OK`; the one-off failure is infra flakiness in an

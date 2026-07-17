@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from swebench_eval_lab.core.benchmark import EvalSpec
-from swebench_eval_lab.core.datasets.swebench_pro.constants import (
+from swe_lab.core.benchmark import EvalSpec
+from swe_lab.core.datasets.swebench_pro.constants import (
     IMAGE_REPO,
     PARSER_NAME,
     RUN_SCRIPT_NAME,
     SCALE_SWEBENCH_PRO_COMMIT,
 )
-from swebench_eval_lab.core.datasets.swebench_pro.execution import (
+from swe_lab.core.datasets.swebench_pro.execution import (
     github_raw_url,
     image_ref,
 )

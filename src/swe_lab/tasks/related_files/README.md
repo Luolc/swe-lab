@@ -16,14 +16,14 @@ Annotate one instance end to end (3 independent samples, then an aggregator
 reconciles them into one annotation):
 
 ```bash
-python -m swebench_eval_lab.tasks.related_files <instance_id> \
+python -m swe_lab.tasks.related_files <instance_id> \
     [--model sonnet|opus] [--samples 3] [--dataset swebench_pro]
 ```
 
 Roll every instance's `aggregate.json` up into the combined parquet deliverable:
 
 ```bash
-python -m swebench_eval_lab.tasks.related_files.combine [--dataset swebench_pro]
+python -m swe_lab.tasks.related_files.combine [--dataset swebench_pro]
 ```
 
 Output lands under `outputs/related_files/<dataset>/` — see that folder's
@@ -35,14 +35,14 @@ on-disk layout and parquet schema.
 Each run's full agent conversation is written to
 `intermediate/<id>/<label>.last_exchange.json`. These are large, so they are
 **not** committed to git — they live in a Hugging Face dataset repo
-([`luolc/swebench-eval-lab-traces`](https://huggingface.co/datasets/luolc/swebench-eval-lab-traces)),
+([`luolc/swe-lab-traces`](https://huggingface.co/datasets/luolc/swe-lab-traces)),
 with a tracked `traces_manifest.json` (sha256 + size + repo revision per trace).
 
 ```bash
 # needs HF_TOKEN (e.g. in .envrc.local) for push
-python -m swebench_eval_lab.tasks.related_files.traces status  # local vs manifest vs HF
-python -m swebench_eval_lab.tasks.related_files.traces push    # upload + refresh manifest
-python -m swebench_eval_lab.tasks.related_files.traces fetch   # download + verify by sha256
+python -m swe_lab.tasks.related_files.traces status  # local vs manifest vs HF
+python -m swe_lab.tasks.related_files.traces push    # upload + refresh manifest
+python -m swe_lab.tasks.related_files.traces fetch   # download + verify by sha256
 ```
 
 Keeping the local files, the committed manifest, and the HF revision reconciled
@@ -67,7 +67,7 @@ reconciliation decision table.
 | `__main__.py` | CLI entry point. |
 
 Shared infrastructure (dataset loading, repo checkout, the reverse proxy, and
-run-error types) lives under `swebench_eval_lab.core`.
+run-error types) lives under `swe_lab.core`.
 
 ## Experiments
 

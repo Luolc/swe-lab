@@ -36,7 +36,7 @@ SWE-Bench classic's (which is far more forgiving; see §6).
 
 From the primary source
 `3p/scaleapi/SWE-bench_Pro-os/swe_bench_pro_eval.py`, mirrored by our
-[`core/datasets/swebench_pro/grading.py`](../src/swebench_eval_lab/core/datasets/swebench_pro/grading.py):
+[`core/datasets/swebench_pro/grading.py`](../src/swe_lab/core/datasets/swebench_pro/grading.py):
 
 1. **A single, strict apply — no fallback ladder.** The entryscript applies with
    exactly one command (`swe_bench_pro_eval.py:120`; our `build_eval_script`):
@@ -475,7 +475,7 @@ so binary *bytes* are never serialized; the host then strips the residual
 bytes-free `Binary files ... differ` marker. We diff against the instance's
 original `base_commit` (D1), which guarantees the grading round-trip. No
 `:(exclude)` build-noise denylist by default (D2). This is implemented in
-[`core/patch.py`](../src/swebench_eval_lab/core/patch.py) `build_extraction_script`.
+[`core/patch.py`](../src/swe_lab/core/patch.py) `build_extraction_script`.
 
 ```bash
 # 0. remove stray nested repos that would become gitlinks (§4A.8)
@@ -546,7 +546,7 @@ binary is simply dropped, which matches Scale's grading effect (§1).
 
 - **Binary:** the extractor omits `--binary` (text-only, D3) and the rollout runner
   strips the residual marker, so the patch reaching
-  [`core/datasets/swebench_pro/grading.py`](../src/swebench_eval_lab/core/datasets/swebench_pro/grading.py)
+  [`core/datasets/swebench_pro/grading.py`](../src/swe_lab/core/datasets/swebench_pro/grading.py)
   is already binary-free; grading applies it verbatim (does **not** call
   `strip_binary_hunks`, matching Scale's effect of dropping binary).
 - **Empty-patch guard:** wired rollout-side (`is_effectively_empty` → explicit

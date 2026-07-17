@@ -1,10 +1,10 @@
 """CLI: grade a patch for one instance by running its tests in the container.
 
     # gold self-test (apply the dataset's own gold patch -> should resolve)
-    python -m swebench_eval_lab.evaluation <instance_id> --gold
+    python -m swe_lab.evaluation <instance_id> --gold
 
     # grade a candidate patch from a file
-    python -m swebench_eval_lab.evaluation <instance_id> --patch-file fix.diff
+    python -m swe_lab.evaluation <instance_id> --patch-file fix.diff
 
 Needs Docker available. Prints a JSON result; exit 0 iff resolved.
 """
@@ -15,8 +15,8 @@ import argparse
 from dataclasses import asdict
 import json
 
-from swebench_eval_lab.core.datasets.loader import load_dataset
-from swebench_eval_lab.core.datasets.swebench_pro import (
+from swe_lab.core.datasets.loader import load_dataset
+from swe_lab.core.datasets.swebench_pro import (
     evaluate,
     SweBenchProAdapter,
     SweBenchProInstance,
@@ -25,7 +25,7 @@ from swebench_eval_lab.core.datasets.swebench_pro import (
 
 def main() -> int:
   parser = argparse.ArgumentParser(
-      prog="python -m swebench_eval_lab.evaluation",
+      prog="python -m swe_lab.evaluation",
       description="Grade a patch by running an instance's tests in its image.",
   )
   _ = parser.add_argument("instance_id")

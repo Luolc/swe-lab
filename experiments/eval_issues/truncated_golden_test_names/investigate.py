@@ -22,10 +22,10 @@ import json
 from pathlib import Path
 import shutil
 
-from swebench_eval_lab.core.datasets.loader import load_dataset
-from swebench_eval_lab.core.datasets.swebench_pro import evaluate, SweBenchProAdapter
-from swebench_eval_lab.core.datasets.swebench_pro.grading import _passed_tests
-from swebench_eval_lab.core.paths import cache_root, find_repo_root
+from swe_lab.core.datasets.loader import load_dataset
+from swe_lab.core.datasets.swebench_pro import evaluate, SweBenchProAdapter
+from swe_lab.core.datasets.swebench_pro.grading import _passed_tests
+from swe_lab.core.paths import cache_root, find_repo_root
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results"
@@ -84,7 +84,7 @@ def reproduce(keys: list[str]) -> None:
   root = find_repo_root()
   ds = load_dataset("swebench_pro")
   adapter = SweBenchProAdapter(repo_root=root)
-  from swebench_eval_lab.core.docker.provider import DockerProvider
+  from swe_lab.core.docker.provider import DockerProvider
 
   provider = DockerProvider()
   ws_root = cache_root(root) / "exp_golden_fail"
@@ -138,7 +138,7 @@ def verify(keys: list[str]) -> None:
   root = find_repo_root()
   ds = load_dataset("swebench_pro")
   adapter = SweBenchProAdapter(repo_root=root)
-  from swebench_eval_lab.core.docker.provider import DockerProvider
+  from swe_lab.core.docker.provider import DockerProvider
 
   provider = DockerProvider()
   ws_root = cache_root(root) / "exp_golden_fail"

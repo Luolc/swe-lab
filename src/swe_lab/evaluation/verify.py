@@ -24,16 +24,16 @@ import json
 import os
 from pathlib import Path
 
-from swebench_eval_lab.core.benchmark import EvalSpec
-from swebench_eval_lab.core.datasets.loader import load_dataset
-from swebench_eval_lab.core.datasets.swebench_pro import (
+from swe_lab.core.benchmark import EvalSpec
+from swe_lab.core.datasets.loader import load_dataset
+from swe_lab.core.datasets.swebench_pro import (
     EvalResult,
     evaluate,
     SweBenchProAdapter,
     SweBenchProInstance,
 )
-from swebench_eval_lab.core.docker.provider import DockerError, DockerProvider
-from swebench_eval_lab.core.paths import cache_root, find_repo_root
+from swe_lab.core.docker.provider import DockerError, DockerProvider
+from swe_lab.core.paths import cache_root, find_repo_root
 
 # Verdicts.
 OK = "OK"
@@ -306,7 +306,7 @@ def _render_report(summary: dict[str, object]) -> str:
 
 def main() -> int:
   parser = argparse.ArgumentParser(
-      prog="python -m swebench_eval_lab.evaluation.verify",
+      prog="python -m swe_lab.evaluation.verify",
       description="Full-dataset golden verification.",
   )
   _ = parser.add_argument("--dataset", default="swebench_pro")

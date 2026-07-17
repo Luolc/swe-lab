@@ -504,7 +504,7 @@ wheels = [
 ]
 
 [[package]]
-name = "swebench-eval-lab"
+name = "swe-lab"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

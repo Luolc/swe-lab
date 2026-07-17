@@ -58,7 +58,7 @@ jobs:
 
       - name: Rollout (solve + grade)
         run: |
-          uv run python -m swebench_eval_lab.rollout \
+          uv run python -m swe_lab.rollout \
             "${{ inputs.instance_id }}" \
             --model "${{ inputs.model }}" \
             ${{ inputs.grade && '--grade' || '' }} \

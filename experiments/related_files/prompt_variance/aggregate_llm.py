@@ -1,7 +1,7 @@
 """LLM sample-and-aggregate experiment harness (thin wrapper).
 
 The aggregation pipeline itself lives in the package
-(`swebench_eval_lab.tasks.related_files.aggregator`). This script just
+(`swe_lab.tasks.related_files.aggregator`). This script just
 feeds each instance's committed run annotations to it and records the result,
 for comparing the aggregate against the individual runs.
 
@@ -21,8 +21,8 @@ import sys
 import time
 from typing import Any
 
-from swebench_eval_lab import load_dataset
-from swebench_eval_lab.tasks.related_files.aggregator import (
+from swe_lab import load_dataset
+from swe_lab.tasks.related_files.aggregator import (
     aggregate_by_id,
 )
 

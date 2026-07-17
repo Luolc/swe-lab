@@ -18,11 +18,11 @@ import re
 import sys
 from typing import Any
 
-from swebench_eval_lab import load_dataset
-from swebench_eval_lab.core.datasets.swebench_pro import (
+from swe_lab import load_dataset
+from swe_lab.core.datasets.swebench_pro import (
     SweBenchProInstance,
 )
-from swebench_eval_lab.tasks.related_files.storage import instance_dir
+from swe_lab.tasks.related_files.storage import instance_dir
 
 HERE = Path(__file__).parent
 

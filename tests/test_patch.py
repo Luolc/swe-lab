@@ -1,4 +1,4 @@
-"""Tests for :mod:`swebench_eval_lab.core.patch`.
+"""Tests for :mod:`swe_lab.core.patch`.
 
 The pure helpers (``strip_binary_hunks``, ``is_effectively_empty``) are unit
 tested. ``build_extraction_script`` runs against a **real** temporary git repo
@@ -15,7 +15,7 @@ import subprocess
 
 import pytest
 
-from swebench_eval_lab.core.patch import (
+from swe_lab.core.patch import (
     build_extraction_script,
     is_effectively_empty,
     strip_binary_hunks,

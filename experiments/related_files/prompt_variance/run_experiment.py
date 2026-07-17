@@ -24,13 +24,13 @@ import sys
 import threading
 import time
 
-from swebench_eval_lab import load_dataset
-from swebench_eval_lab.core.agent.errors import UsageLimitError
-from swebench_eval_lab.core.agent.proxy import build_proxy
-from swebench_eval_lab.core.datasets.swebench_pro import (
+from swe_lab import load_dataset
+from swe_lab.core.agent.errors import UsageLimitError
+from swe_lab.core.agent.proxy import build_proxy
+from swe_lab.core.datasets.swebench_pro import (
     SweBenchProInstance,
 )
-from swebench_eval_lab.tasks.related_files.annotator import (
+from swe_lab.tasks.related_files.annotator import (
     annotate_instance,
 )
 

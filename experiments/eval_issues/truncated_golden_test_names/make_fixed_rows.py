@@ -13,7 +13,7 @@ import dataclasses
 import json
 from pathlib import Path
 
-from swebench_eval_lab.core.datasets.loader import load_dataset
+from swe_lab.core.datasets.loader import load_dataset
 
 HERE = Path(__file__).resolve().parent
 INSTANCES = {

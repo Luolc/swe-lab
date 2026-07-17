@@ -5,7 +5,7 @@ at ``base_commit`` in ``workdir``). It: prepares a writable HOME, runs the
 headless Claude Code agent on the repo (streaming its ``stream-json`` trajectory
 to a mounted file), then extracts the agent's edits as a text-only,
 ``git apply``-able patch via the shared
-:func:`~swebench_eval_lab.core.patch.build_extraction_script` (written to the
+:func:`~swe_lab.core.patch.build_extraction_script` (written to the
 raw patch file; the runner strips any residual binary marker section host-side).
 
 **Base for the diff (MVP choice).** We diff against the instance's original
@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import shlex
 
-from swebench_eval_lab.core.patch import build_extraction_script
+from swe_lab.core.patch import build_extraction_script
 
 from .constants import (
     AGENT_HOME_AT,

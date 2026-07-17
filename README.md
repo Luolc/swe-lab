@@ -4,10 +4,10 @@ Tooling to **build, run, enrich, audit and fix SWE (a.k.a. coding agent) evaluat
 
 ## Tasks
 
-- **Related-files annotation** (`src/swebench_eval_lab/tasks/related_files/`) —
+- **Related-files annotation** (`src/swe_lab/tasks/related_files/`) —
   for each task instance, produce a ground-truth list of the code snippets a
   model needs to read to solve it. **Shipped**: 100 instances annotated & QA'd.
-  See [`tasks/related_files/README.md`](src/swebench_eval_lab/tasks/related_files/README.md).
+  See [`tasks/related_files/README.md`](src/swe_lab/tasks/related_files/README.md).
 
 - **Quality auditing** *(planned)* — flag "skewed" eval examples that no longer
   measure real capability (ambiguous specs vs. overly-specific tests, broken
@@ -28,8 +28,8 @@ The overall roadmap and design decisions live in [`PLAN.md`](PLAN.md).
 ### 1. Clone with submodules
 
 ```bash
-git clone --recurse-submodules https://github.com/Luolc/swebench-eval-lab.git
-cd swebench-eval-lab
+git clone --recurse-submodules https://github.com/Luolc/swe-lab.git
+cd swe-lab
 ```
 
 If you already cloned without `--recurse-submodules`, initialize the

@@ -24,7 +24,7 @@ from collections.abc import Iterator
 import json
 from pathlib import Path
 
-from swebench_eval_lab.core.paths import find_repo_root, outputs_root
+from swe_lab.core.paths import find_repo_root, outputs_root
 
 from .agent_run import RunResult
 from .schema import Annotation
