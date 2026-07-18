@@ -30,5 +30,10 @@ firm up.
 
 Shared-code changes that don't belong to a single vertical — e.g. extracting
 common code out of a workstream into `core/`, or hardening a shared provider —
-are **horizontal** work and are planned here (add a `spec.md` / `plan.md` /
-`todo.md` alongside this README when there's active work). None right now.
+are **horizontal** work and are planned here (a `spec.md` / `plan.md` / `plans/`
+alongside this README).
+
+**Active now — the SandboxRun redesign:** re-architect the execution core into one
+unified sandboxed-task engine + three plug-in axes (harness / dataset /
+eval-method), so `rollout` and `eval` become configs of one engine. See
+**[spec.md](spec.md)** (draft, for review).
