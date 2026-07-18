@@ -33,10 +33,12 @@ class DatasetRecord(Protocol):
   # Read-only so frozen-dataclass records satisfy the protocol.
   @property
   def instance_id(self) -> str:
+    """The unique id of this record within its dataset."""
     ...
 
   @classmethod
   def from_raw(cls, raw: Mapping[str, str]) -> DatasetRecord:
+    """Parse one raw parquet row into a record."""
     ...
 
 
@@ -53,6 +55,16 @@ class Dataset:
   def __init__(
       self, name: str, path: Path, records: tuple[DatasetRecord, ...]
   ) -> None:
+    """Initialize the dataset and index its records by instance id.
+
+    Args:
+      name: The dataset name (registry key, or the parquet file stem).
+      path: The parquet file the records were loaded from.
+      records: The parsed records, in parquet row order.
+
+    Raises:
+      ValueError: If two records share an ``instance_id``.
+    """
     self.name: str = name
     self.path: Path = path
     self._records: tuple[DatasetRecord, ...] = records
@@ -75,6 +87,7 @@ class Dataset:
 
   @property
   def records(self) -> tuple[DatasetRecord, ...]:
+    """The records in parquet row order."""
     return self._records
 
   def get(self, instance_id: str) -> DatasetRecord | None:

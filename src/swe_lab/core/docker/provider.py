@@ -26,6 +26,7 @@ class Mount:
   read_only: bool = False
 
   def as_arg(self) -> str:
+    """Return this mount as a ``docker run -v`` argument string."""
     spec = f"{self.host}:{self.container}"
     return f"{spec}:ro" if self.read_only else spec
 
@@ -41,6 +42,7 @@ class ContainerRun:
 
   @property
   def ok(self) -> bool:
+    """Whether the container exited zero without timing out."""
     return self.exit_code == 0 and not self.timed_out
 
 
@@ -51,6 +53,7 @@ class DockerProvider:
   platform: str = DEFAULT_PLATFORM
 
   def pull(self, image_ref: str, *, timeout: float = _PULL_TIMEOUT_S) -> None:
+    """Pull ``image_ref`` for the provider's platform."""
     run = self._docker(
         ["pull", "--platform", self.platform, image_ref], timeout=timeout
     )
@@ -78,12 +81,25 @@ class DockerProvider:
     The image's entrypoint is overridden with ``shell`` so the script runs
     regardless of what the image's default entrypoint is.
 
-    ``extra_mounts`` bind-mounts additional host paths (e.g. rollout's pinned
-    Claude Code binary). ``env`` sets explicit ``KEY=VALUE`` variables in the
-    container. ``pass_env`` names variables to **inherit** from this process's
-    environment (``docker run -e NAME`` with no value) — use it for secrets like
-    ``CLAUDE_CODE_OAUTH_TOKEN`` so the value is passed by reference and never
-    appears in the ``docker`` argv (and thus not in ``ps`` or logs).
+    Args:
+      image_ref: The pullable image reference to run.
+      workspace: Host directory bind-mounted into the container.
+      script_name: Script inside ``workspace`` to execute.
+      mount_at: Container path the workspace is mounted at.
+      timeout: Seconds before the run is killed.
+      network: If false, run with networking disabled (``--network none``).
+      shell: Interpreter used as the overriding entrypoint.
+      extra_mounts: Additional host paths to bind-mount (e.g. rollout's
+        pinned Claude Code binary).
+      env: Explicit ``KEY=VALUE`` variables set in the container.
+      pass_env: Names of variables to **inherit** from this process's
+        environment (``docker run -e NAME`` with no value) — use it for
+        secrets like ``CLAUDE_CODE_OAUTH_TOKEN`` so the value is passed by
+        reference and never appears in the ``docker`` argv (and thus not in
+        ``ps`` or logs).
+
+    Returns:
+      The container's exit code and captured stdout/stderr.
     """
     args = ["run", "--rm", "--platform", self.platform]
     if not network:
@@ -104,7 +120,7 @@ class DockerProvider:
     return self._docker(args, timeout=timeout)
 
   def remove_image(self, image_ref: str, *, timeout: float = 120.0) -> None:
-    """Best-effort ``docker rmi`` to reclaim disk (e.g. between eval runs).
+    """Remove ``image_ref`` best-effort to reclaim disk between eval runs.
 
     Never raises on a normal failure (image absent or still in use): pruning is
     an optimization, not a correctness step.

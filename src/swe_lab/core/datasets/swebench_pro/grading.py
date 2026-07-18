@@ -36,12 +36,23 @@ from .constants import (
 
 @dataclass(frozen=True)
 class EvalResult:
-  """Outcome of grading one patch."""
+  """Outcome of grading one patch.
+
+  Attributes:
+    instance_id: The graded instance's id.
+    resolved: True iff ``output.json`` was found and every required test
+      (``fail_to_pass`` plus ``pass_to_pass``) passed.
+    passed: Sorted names of the tests the parser reported as passed.
+    missing: Sorted required test names not in ``passed``.
+    exit_code: Exit code of the container run.
+    timed_out: Whether the container run hit the timeout.
+    output_found: Whether the parser produced ``output.json``.
+  """
 
   instance_id: str
   resolved: bool
   passed: tuple[str, ...]
-  missing: tuple[str, ...]  # required tests not in passed
+  missing: tuple[str, ...]
   exit_code: int
   timed_out: bool
   output_found: bool
@@ -55,14 +66,21 @@ def build_eval_script(
 ) -> str:
   """Build the in-container eval script (ports Scale's create_entryscript).
 
-  ``apply_patch`` and ``checkout_golden_tests`` default to the real grading
-  flow. Set them to ``False`` for dataset self-checks:
+  Both flags default to the real grading flow; set them to ``False`` for
+  dataset self-checks.
 
-  - ``apply_patch=False`` — grade the base commit untouched, to confirm the
-    required tests *fail* without the fix.
-  - ``checkout_golden_tests=False`` — skip restoring the golden test files, to
-    confirm the base commit *passes* when the bug-exposing tests aren't added
-    (i.e. the golden tests are what detect the regression).
+  Args:
+    spec: The eval spec identifying workdir, base commit, and tests.
+    apply_patch: Apply ``patch.diff`` after resetting to the base commit. Set
+      to ``False`` to grade the base commit untouched, confirming the
+      required tests *fail* without the fix.
+    checkout_golden_tests: Restore the golden test files after the reset. Set
+      to ``False`` to confirm the base commit *passes* when the bug-exposing
+      tests aren't added (i.e. the golden tests are what detect the
+      regression).
+
+  Returns:
+    The entryscript text, newline-terminated.
   """
   # Unlike Scale's reference, we do not scrape ``ENV`` lines from the
   # per-instance Dockerfiles and re-export them.  Docker's ``ENV`` instruction
@@ -119,13 +137,26 @@ def evaluate(
     network: bool = True,
     checkout_golden_tests: bool = True,
 ) -> EvalResult:
-  """Run the instance's tests in its image and grade.
+  """Run the instance's tests in its image and grade the outcome.
 
-  ``patch`` is applied with ``git apply`` when given; pass ``None`` to grade the
-  base commit untouched (e.g. to confirm the required tests fail without a fix).
-  ``checkout_golden_tests`` is forwarded to :func:`build_eval_script` (see its
-  self-check modes). The per-instance workspace defaults to a dir under the
-  gitignored cache; pass ``workspace`` to run in an isolated location.
+  Args:
+    spec: The eval spec identifying image, workdir, and tests.
+    patch: The candidate diff, applied with ``git apply``; pass ``None`` to
+      grade the base commit untouched (e.g. to confirm the required tests
+      fail without a fix).
+    provider: Runs the container; defaults to a fresh ``DockerProvider``.
+    workspace: Directory staged with the harness files and bind-mounted into
+      the container; defaults to a per-instance dir under the gitignored
+      cache — pass one to run in an isolated location.
+    repo_root: Repo root used to locate the default cache; auto-detected when
+      omitted.
+    timeout: Seconds before the container run is killed.
+    network: Whether the container gets network access.
+    checkout_golden_tests: Forwarded to :func:`build_eval_script` (see its
+      self-check modes).
+
+  Returns:
+    The graded result; ``resolved`` is True iff all required tests passed.
   """
   apply_patch = patch is not None
   provider = provider or DockerProvider()

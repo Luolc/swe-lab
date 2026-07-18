@@ -60,7 +60,7 @@ def combined_parquet_path(
     *,
     repo_root: Path | None = None,
 ) -> Path:
-  """Path of the combined deliverable parquet for a dataset."""
+  """Return the path of the combined deliverable parquet for a dataset."""
   return dataset_dir(dataset, repo_root=repo_root) / COMBINED_PARQUET_NAME
 
 
@@ -115,6 +115,7 @@ def store_run(
 
 
 def candidate_label(index: int) -> str:
+  """Return the storage label of one candidate (e.g. ``candidate_1``)."""
   return f"candidate_{index}"
 
 

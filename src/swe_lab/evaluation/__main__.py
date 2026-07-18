@@ -24,6 +24,7 @@ from swe_lab.core.datasets.swebench_pro import (
 
 
 def main() -> int:
+  """Parse CLI args, grade one instance's patch, and print the JSON result."""
   parser = argparse.ArgumentParser(
       prog="python -m swe_lab.evaluation",
       description="Grade a patch by running an instance's tests in its image.",

@@ -72,8 +72,16 @@ _RETRY_BACKOFFS_S = (5.0, 20.0, 60.0)
 class RunResult:
   """Outcome of one agent run (annotation or aggregate).
 
-  Carries the parsed annotation and the extracted final proxy record
-  (``last_record``); persisting them is the caller's job (see ``storage``).
+  Persisting the result is the caller's job (see ``storage``).
+
+  Attributes:
+    instance_id: The annotated dataset instance.
+    annotation: The parsed annotation, run metadata included.
+    last_record: The extracted final trace record of the conversation.
+    proxy_log_path: The raw trace log (proxy or stream JSONL) of the run.
+    complete: Whether the trace shows the final exchange finished normally.
+    validation_problems: Per-snippet problem messages keyed by
+      ``"<index>:<file_path>"``; empty when every snippet is valid.
   """
 
   instance_id: str
@@ -85,6 +93,7 @@ class RunResult:
 
   @property
   def is_valid(self) -> bool:
+    """Whether the run completed and every snippet validated."""
     return self.complete and not self.validation_problems
 
 
@@ -108,13 +117,40 @@ def run_agent(
 ) -> RunResult:
   """Run an agent in an isolated workspace and return its validated result.
 
-  ``instance`` must be a repo record (``repo`` / ``base_commit`` /
-  ``instance_id``). Transient failures are retried with backoff; usage-limit
-  failures raise immediately. ``variant`` isolates concurrent runs of one
-  instance (distinct checkout, proxy port, and log paths). ``capture`` selects
-  the trace source (see ``CAPTURE_MODES``): ``proxy`` keeps a reverse proxy in
-  front of the API; ``stream`` reads the CLI's own ``stream-json`` output and
-  needs no proxy.
+  A failed run propagates :class:`AnnotationError` from
+  :func:`invoke_with_retries`: transient failures are retried with backoff;
+  the :class:`UsageLimitError` subclass is raised immediately, without
+  retrying.
+
+  Args:
+    instance: The repo record (``repo`` / ``base_commit`` / ``instance_id``)
+      whose checkout the agent works in.
+    index: The instance's dataset index; keys the default proxy port.
+    prompt: The full instruction text given to the agent.
+    kind: Run kind recorded in the metadata (``annotation`` / ``aggregate``).
+    context_files: Extra context files (name to content) to write into the
+      workspace's context directory.
+    extra_metadata: Extra entries merged into the annotation metadata.
+    repo_root: This repo's root; discovered when omitted.
+    provider: Checkout provider; a fresh :class:`GitCheckoutProvider` when
+      omitted.
+    model: The Claude model alias to run.
+    base_port: Base of the proxy-port range indexed by ``index``.
+    port: Explicit proxy port; overrides the ``index``-derived one.
+    variant: Isolates concurrent runs of one instance (distinct checkout,
+      proxy port, and log paths).
+    max_attempts: Total attempts for transient (retryable) failures, with
+      backoff between them.
+    claude_timeout: Per-attempt wall-clock limit for the claude call.
+    capture: Trace source (see ``CAPTURE_MODES``): ``proxy`` keeps a reverse
+      proxy in front of the API; ``stream`` reads the CLI's own
+      ``stream-json`` output and needs no proxy.
+
+  Returns:
+    The run result; persisting it is the caller's job (see ``storage``).
+
+  Raises:
+    ValueError: If ``capture`` is not one of ``CAPTURE_MODES``.
   """
   if capture not in CAPTURE_MODES:
     raise ValueError(
@@ -228,11 +264,35 @@ def invoke_with_retries(
   """Run the claude call and read the output, retrying flaky attempts.
 
   Retries transient CLI failures *and* the case where the agent ends without
-  writing its output file (``MissingOutputError``) — a known flaky behavior that
-  a fresh attempt usually fixes. In ``proxy`` capture the call goes through a
-  reverse proxy that writes ``trace_log``; in ``stream`` capture the CLI's own
-  ``stream-json`` output is written to ``trace_log`` directly. Returns
-  ``(cli_result, snippets)``.
+  writing its output file (``MissingOutputError``) — a known flaky behavior
+  that a fresh attempt usually fixes.
+
+  Args:
+    prompt: The full instruction text given to the agent.
+    cwd: The workspace checkout to run the agent in.
+    port: Reverse-proxy port (used in ``proxy`` capture only).
+    trace_log: Where the trace lands: written by the reverse proxy in
+      ``proxy`` capture, or holding the CLI's own ``stream-json`` output in
+      ``stream`` capture.
+    binary: The built reverse-proxy binary; required for ``proxy`` capture.
+    capture: Trace source (see ``CAPTURE_MODES``).
+    model: The Claude model alias to run.
+    timeout: Per-attempt wall-clock limit for the claude call.
+    diag_path: Where raw CLI output of failed attempts is appended.
+    max_attempts: Total attempts for transient (retryable) failures.
+    workspace: The prepared workspace whose output file is read.
+
+  Returns:
+    ``(cli_result, snippets)`` — the CLI's final result object and the
+    parsed snippets from the output file.
+
+  Raises:
+    RetryableError: If a transient failure persists through the last
+      attempt.
+    MissingOutputError: If the agent still wrote no output file on the last
+      attempt.
+    AnnotationError: If the CLI fails non-transiently or its output is
+      unparseable.
   """
   for attempt in range(1, max_attempts + 1):
     try:
@@ -468,6 +528,7 @@ def _as_text(value: str | bytes | None) -> str:
 
 
 def read_snippets(workspace: Workspace) -> tuple[Snippet, ...]:
+  """Parse the agent's output file; raise ``MissingOutputError`` if absent."""
   if not workspace.output_path.is_file():
     raise MissingOutputError(
         f"agent did not write {workspace.output_path.name} in the working"
@@ -477,6 +538,6 @@ def read_snippets(workspace: Workspace) -> tuple[Snippet, ...]:
 
 
 def validate_workspace(workspace: Workspace) -> dict[str, list[str]]:
-  """Post-hoc check via the same validator the agent runs (single source)."""
+  """Re-check the output via the validator the agent ran (single source)."""
   problems = validate_output(workspace.output_path, workspace.checkout)
   return {f"{p.index}:{p.file_path}": p.messages for p in problems}

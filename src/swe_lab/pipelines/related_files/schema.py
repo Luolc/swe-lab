@@ -26,7 +26,15 @@ class SnippetCategory(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Snippet:
-  """One contiguous, inclusive line range in one file, with why it matters."""
+  """One contiguous, inclusive line range in one file, with why it matters.
+
+  Attributes:
+    file_path: Path relative to the repo root.
+    start_line: First line of the range (1-based, inclusive).
+    end_line: Last line of the range (1-based, inclusive).
+    category: Why the snippet is relevant (see :class:`SnippetCategory`).
+    description: One or two sentences on the snippet's role in the task.
+  """
 
   file_path: str
   start_line: int
@@ -36,6 +44,7 @@ class Snippet:
 
   @classmethod
   def from_dict(cls, raw: Mapping[str, object]) -> Snippet:
+    """Build a snippet from a raw dict; raise ``ValueError`` if malformed."""
     missing = [
         k
         for k in ("file_path", "start_line", "end_line", "category")
@@ -52,6 +61,7 @@ class Snippet:
     )
 
   def to_dict(self) -> dict[str, object]:
+    """Return a JSON-ready dict with ``category`` as its string value."""
     data = asdict(self)
     data["category"] = self.category.value
     return data
@@ -59,13 +69,21 @@ class Snippet:
 
 @dataclass(frozen=True, slots=True)
 class Annotation:
-  """All snippets for one instance, plus how the annotation was produced."""
+  """All snippets for one instance, plus how the annotation was produced.
+
+  Attributes:
+    instance_id: The annotated dataset instance.
+    snippets: The ordered relevant-code snippets.
+    metadata: How the annotation was produced (model, cost, turn count,
+      validation summary, ...).
+  """
 
   instance_id: str
   snippets: tuple[Snippet, ...]
   metadata: dict[str, object] = field(default_factory=dict)
 
   def to_dict(self) -> dict[str, object]:
+    """Return the annotation as a JSON-ready dict."""
     return {
         "instance_id": self.instance_id,
         "snippets": [s.to_dict() for s in self.snippets],
@@ -73,10 +91,12 @@ class Annotation:
     }
 
   def to_json(self) -> str:
+    """Serialize to indented JSON with a trailing newline."""
     return json.dumps(self.to_dict(), indent=2, ensure_ascii=False) + "\n"
 
   @classmethod
   def from_dict(cls, raw: Mapping[str, object]) -> Annotation:
+    """Build an annotation from a raw dict (the ``to_dict`` shape)."""
     snippets_raw = raw.get("snippets", [])
     if not isinstance(snippets_raw, Sequence):
       raise ValueError("'snippets' must be a list.")

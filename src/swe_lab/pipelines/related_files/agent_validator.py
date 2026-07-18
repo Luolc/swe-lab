@@ -144,7 +144,7 @@ def validate_output(output_path: Path, repo_root: Path) -> list[SnippetProblem]:
 
 
 def format_report(problems: list[SnippetProblem], snippet_count: int) -> str:
-  """Human/agent-friendly summary of validation results."""
+  """Format validation results as a human/agent-friendly report."""
   if not problems:
     return f"OK: all {snippet_count} snippet(s) are valid."
   lines = [f"FAILED: {len(problems)} snippet(s) have problems.", ""]
@@ -162,6 +162,7 @@ def format_report(problems: list[SnippetProblem], snippet_count: int) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+  """Run the validator CLI; return 0 when every snippet is valid."""
   args = sys.argv[1:] if argv is None else argv
   output_path = Path(args[0]) if args else Path(DEFAULT_OUTPUT)
   repo_root = Path(args[1]) if len(args) > 1 else Path.cwd()

@@ -63,8 +63,9 @@ with the following repo-wide choices and deviations (full plan + rationale:
 - **Deviations from the public guide:** 2-space indentation (Google-internal
   style, via pyink); §2.2 *import-modules-not-symbols* is **waived entirely**
   (symbol imports are fine).
-- **TODO format** (§3.12): `# TODO: <issue-link or context> - <text>`; the
-  `TODO(name):` form is deprecated by the guide — don't use it in new code.
+- **TODO format (§3.12) is deliberately not adopted**: the guide's
+  issue-link-based form presumes an issue tracker and this repo doesn't use
+  GitHub issues (short-term: won't). Revisit if issues are ever adopted.
 - **Tests** are exempt from docstring-presence rules (D1xx, per §3.8.2.1);
   format rules still apply.
 - Enforced by ruff (`D` google convention + `D401` + `D417`, `N`, `C90`,

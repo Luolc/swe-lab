@@ -44,7 +44,7 @@ def build_rollout_script(
     mount_at: str = MOUNT_AT,
     exclude_globs: tuple[str, ...] = (),
 ) -> str:
-  """Bash the container runs: agent solves the repo, then we extract the patch.
+  """Build the bash that runs the agent in-container and extracts the patch.
 
   ``claude_bin`` is the read-only bind-mount path of the pinned native binary;
   the workspace is mounted at ``mount_at`` (prompt in, trajectory + patch out).

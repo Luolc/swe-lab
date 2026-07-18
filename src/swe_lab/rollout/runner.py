@@ -80,11 +80,27 @@ def rollout(
 ) -> RolloutResult:
   """Run the agent in ``spec``'s image and return its patch + trajectory.
 
-  ``binary_path`` defaults to the pinned native Claude Code binary (downloaded +
-  checksum-verified on first use). The workspace defaults to a per-instance dir
-  under the gitignored cache. The container inherits ``CLAUDE_CODE_OAUTH_TOKEN``
-  from this process's environment by reference (never in the docker argv), so
-  that variable must be set. Network is on (the agent must reach the API).
+  The container inherits ``CLAUDE_CODE_OAUTH_TOKEN`` from this process's
+  environment by reference (never in the docker argv), so that variable must be
+  set. Network is on (the agent must reach the API).
+
+  Args:
+    spec: Executable spec of the instance (image, workdir, base commit).
+    prompt: Ready-made solve instruction handed to the agent.
+    model: Claude Code model alias the agent runs with.
+    provider: Docker interface; a default one is created when omitted.
+    binary_path: Agent binary to bind-mount; defaults to the pinned native
+      Claude Code binary (downloaded + checksum-verified on first use).
+    workspace: Host directory staged into the container; defaults to a
+      per-instance dir under the gitignored cache.
+    repo_root: Repository root used to locate the cache and the binary.
+    timeout: Wall-clock limit for the container run, in seconds.
+    pull: Pull ``spec.image_ref`` before running.
+    exclude_globs: Git pathspecs excluded from the extracted patch.
+
+  Returns:
+    The rollout outcome: clean patch, emptiness/completion flags, exchange
+    record, exit status, and the workspace path.
   """
   provider = provider or DockerProvider()
   root = repo_root or find_repo_root()

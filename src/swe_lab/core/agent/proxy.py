@@ -24,6 +24,7 @@ _PROXY_SOURCE = "submodules/cc-reverse-proxy/reverse_proxy.go"
 
 
 def proxy_binary_path(repo_root: Path | None = None) -> Path:
+  """Return the cache path of the built ``cc-reverse-proxy`` binary."""
   return cache_root(repo_root) / "bin" / "cc-reverse-proxy"
 
 
@@ -57,7 +58,19 @@ def port_for_index(index: int, *, base_port: int = DEFAULT_BASE_PORT) -> int:
 
 @dataclass
 class ReverseProxy:
-  """A running proxy instance, managed as a context manager."""
+  """A running ``cc-reverse-proxy`` process, managed as a context manager.
+
+  Entering the context starts the proxy and blocks until it accepts
+  connections; exiting terminates the process (killing it if it does not
+  stop promptly).
+
+  Attributes:
+    port: Local port the proxy listens on.
+    output_path: File the proxy appends request/response records to.
+    binary: Path of the built proxy executable.
+    target: Upstream API base URL requests are forwarded to.
+    startup_timeout_s: Seconds to wait for the proxy to start listening.
+  """
 
   port: int
   output_path: Path
@@ -69,6 +82,7 @@ class ReverseProxy:
 
   @property
   def base_url(self) -> str:
+    """The local URL agent calls should use as their API base."""
     return f"http://127.0.0.1:{self.port}"
 
   def __enter__(self) -> ReverseProxy:

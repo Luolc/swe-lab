@@ -39,14 +39,17 @@ class Workspace:
 
   @property
   def context_dir(self) -> Path:
+    """The hint-materials directory inside the checkout."""
     return self.checkout / CONTEXT_DIR
 
   @property
   def output_path(self) -> Path:
+    """The file the agent must write its snippet list to."""
     return self.checkout / ANNOTATION_OUTPUT
 
   @property
   def validator_path(self) -> Path:
+    """The standalone validator script inside the checkout."""
     return self.checkout / VALIDATOR_SCRIPT
 
 

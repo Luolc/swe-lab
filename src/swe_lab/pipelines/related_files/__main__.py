@@ -18,6 +18,7 @@ from .storage import DEFAULT_DATASET
 
 
 def main() -> int:
+  """Run the annotation CLI and return the process exit status."""
   parser = argparse.ArgumentParser(
       prog="python -m swe_lab.pipelines.related_files",
       description="Annotate one SWE-Bench instance's relevant code snippets.",
