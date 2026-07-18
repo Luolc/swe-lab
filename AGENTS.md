@@ -2,9 +2,82 @@
 
 Working rules for AI agents in this repo.
 
-The project roadmap and design decisions live in [`PLAN.md`](PLAN.md). Read it
-before starting implementation work — it is the source of truth for what we are
-building and the current milestone.
+The project roadmap and current status live in [`PLAN.md`](PLAN.md) (a thin
+index); the detail is under [`docs/`](docs/). Read `PLAN.md` before starting
+work — it points to everything else.
+
+## How we work
+
+Two modes, and the mode picks the method:
+
+- **Building** (a feature or change): follow the lifecycle
+  `/spec → /plan → /build → /review → /ship` (slash commands in
+  [`.claude/commands/`](.claude/commands/), skills in
+  [`.claude/skills/`](.claude/skills/)), with test-driven development and small
+  atomic commits as the default.
+- **Experimenting** (learning something — a prompt, variance, a failure, "is X
+  worth building?"): follow the
+  **[experiment playbook](docs/experiments/playbook.md)** — hypothesis → logged,
+  timestamped run → empirical results → attributable conclusion → a `REPORT.md`.
+  This is the ML side the coding skills don't cover. An experiment's report
+  *feeds* a `/spec` or a decision; don't build straight from a hunch.
+
+Before touching code, read [`docs/conventions.md`](docs/conventions.md) (codebase
+map, commands, hazards). **Source-of-truth rule:** where a doc and the code
+disagree, the **code wins** unless the doc is explicitly the spec being
+implemented; docs known to have drifted carry a **Provisional** banner
+(currently: `docs/patch-extraction.md` and the D1–D8 decision log). Record
+decisions worth remembering in [`docs/decisions/`](docs/decisions/) — and **don't
+re-litigate an accepted ADR; if a decision must change, write a new ADR that
+supersedes it.**
+
+## Git & GitHub workflow (agents drive this — no manual clicking)
+
+This is a solo, automation-first project: **you** (the agent) own the full
+git/GitHub flow via the `gh` CLI. Don't ask the user to push, merge, or click in
+the GitHub UI — do it, and report the PR link.
+
+- **Branch for non-trivial work:** `type/short-desc` (`docs/…`, `feat/…`,
+  `fix/…`, `chore/…`, `exp/…`). Never commit non-trivial changes straight onto
+  `main`.
+- **Open a PR** (`gh pr create`) with a real title and body — what changed and
+  *why*.
+- **Merge:** squash-merge + delete the branch; keep `main` linear and
+  always-green. Fast-forward local `main` after (`git checkout main && git pull`).
+- **The pre-merge gate is the [quality bar](#quality-bar), run locally** — the
+  repo's GitHub Actions workflows are heavy, manual (`workflow_dispatch`) Docker
+  eval jobs, not a lightweight PR check. swe-lab is a **public** repo, so a
+  lightweight `pytest` + `pre-commit` CI + branch protection + `gh pr merge --auto`
+  on green is a worthwhile future addition; until it lands the gate is procedural.
+- **Commit messages:** imperative mood, explain the *why*; end with a
+  `Co-Authored-By:` trailer for the model that wrote the change.
+- **Escape hatch:** direct-to-`main` is reserved for trivial or urgent fixes.
+
+## Quality bar
+
+Before merge, both must be clean (see [`docs/conventions.md`](docs/conventions.md)):
+
+```sh
+uv run pre-commit run --all-files    # ruff + pyink + isort + basedpyright + uv-lock
+uv run pytest                         # the test suite
+```
+
+Scope to what you touched while iterating; run the full set before merge. New
+behavior gets a test; `experiments/` is exempt from the hooks.
+
+## Boundaries
+
+- **Always:** run the quality bar before merge; keep `PLAN.md` thin (detail lives
+  in `docs/`); redact operator PII in any trace record; treat the **code** as
+  source of truth over a doc flagged *provisional*.
+- **Ask first:** adding a runtime dependency; changing the annotation schema or
+  the `EvalSpec` / report contract; re-hosting or renaming the HF dataset repos;
+  the deferred `outputs/` restructure; deleting anything under `outputs/` (it is a
+  committed deliverable).
+- **Never:** commit secrets / OAuth tokens / `.envrc.local`; commit dataset data
+  files or large trace records (gitignored / off-repo on HF by design); push
+  non-trivial work straight to `main`; present the provisional patch-extraction
+  docs as authoritative.
 
 ## Communicating with the user
 

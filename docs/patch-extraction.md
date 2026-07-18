@@ -1,5 +1,15 @@
 # Extracting a diff patch from an agent's rollout
 
+> ⚠️ **Provisional — NOT source of truth (flagged 2026-07-17).** This survey and
+> its §7/§8 recommendations went through a lot of back-and-forth and are not
+> fully trusted. **The current code is authoritative** —
+> [`core/patch.py`](../src/swe_lab/core/patch.py),
+> [`rollout/`](../src/swe_lab/rollout/), and
+> [`core/datasets/swebench_pro/grading.py`](../src/swe_lab/core/datasets/swebench_pro/grading.py).
+> Read the code before relying on anything here. Kept as an audit trail; pending
+> a joint re-review with the settled-decision log in
+> [`docs/decisions/patch-extraction-decisions.md`](decisions/patch-extraction-decisions.md).
+
 **Scope.** A *general* engineering reference for one deceptively hard step in the
 `rollout` workstream (see [`PLAN.md`](../PLAN.md) → Workstream 2): after a coding
 agent has edited a repo inside its container, capture its work as a **patch** that
