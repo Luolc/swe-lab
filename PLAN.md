@@ -57,7 +57,10 @@ This repo follows a light-but-real lifecycle (adapted from the `agent-skills`
 pack — brownfield path). Two modes:
 
 - **Building** (a feature / change): `/spec → /plan → /build → /review → /ship`,
-  with TDD and small atomic commits as the default. Slash commands are in
+  with TDD and small atomic commits as the default. A non-trivial feature starts
+  from a short spec (`/spec` → a `SPEC.md`, per the sibling repo's template); the
+  plan + task list for the active milestone live in [`tasks/`](tasks/)
+  (`plan.md` + `todo.md`). Slash commands are in
   [`.claude/commands/`](.claude/commands/); the skills they invoke are installed
   under [`.claude/skills/`](.claude/skills/).
 - **Experimenting** (learning something — prompts, variance, failures, "is X
@@ -75,6 +78,7 @@ Agent behavior rules (voice input, language, naming) are in
 
 | Doc | What's in it |
 | --- | --- |
+| [tasks/](tasks/) | Process planning for the active milestone — `plan.md` (phased order, DoD, checkpoints, risks) + `todo.md` (ordered tasks). |
 | [docs/conventions.md](docs/conventions.md) | Codebase map, build/test/lint commands, directory meanings, hazards, source-of-truth rule. |
 | [docs/workstreams/](docs/workstreams/) | Per-workstream detail — objective, design, milestones, history, next steps ([W1](docs/workstreams/w1-related-files.md) · [W2](docs/workstreams/w2-solve-eval.md) · [W3](docs/workstreams/w3-quality-audit.md)). |
 | [docs/decisions/](docs/decisions/) | Architectural decisions (ADRs). Includes the ⚠️ provisional patch-extraction decision log. |

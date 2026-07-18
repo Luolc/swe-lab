@@ -14,7 +14,10 @@ Two modes, and the mode picks the method:
   `/spec → /plan → /build → /review → /ship` (slash commands in
   [`.claude/commands/`](.claude/commands/), skills in
   [`.claude/skills/`](.claude/skills/)), with test-driven development and small
-  atomic commits as the default.
+  atomic commits as the default. A non-trivial feature starts from a short spec
+  (`/spec` → `SPEC.md`); the plan + task list for the active milestone live in
+  [`tasks/`](tasks/) (`plan.md` + `todo.md`) — if a task is missing, add it there
+  first.
 - **Experimenting** (learning something — a prompt, variance, a failure, "is X
   worth building?"): follow the
   **[experiment playbook](docs/experiments/playbook.md)** — hypothesis → logged,
