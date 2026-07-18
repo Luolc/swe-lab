@@ -4,16 +4,16 @@ Tooling to **build, run, enrich, audit and fix SWE (a.k.a. coding agent) evaluat
 
 ## Tasks
 
-- **Related-files annotation** (`src/swe_lab/tasks/related_files/`) —
+- **Related-files annotation** (`src/swe_lab/pipelines/related_files/`) —
   for each task instance, produce a ground-truth list of the code snippets a
   model needs to read to solve it. **Shipped**: 100 instances annotated & QA'd.
-  See [`tasks/related_files/README.md`](src/swe_lab/tasks/related_files/README.md).
+  See [`pipelines/related_files/README.md`](src/swe_lab/pipelines/related_files/README.md).
 
 - **Quality auditing** *(planned)* — flag "skewed" eval examples that no longer
   measure real capability (ambiguous specs vs. overly-specific tests, broken
   environments, contamination, brittle graders), in the spirit of OpenAI's
   [*Separating signal from noise in coding evaluations*](https://openai.com/index/separating-signal-from-noise-coding-evaluations/).
-  Not started; it will land as a sibling under `tasks/`.
+  Not started; it will land as a sibling under `pipelines/`.
 
 The overall roadmap and design decisions live in [`PLAN.md`](PLAN.md).
 

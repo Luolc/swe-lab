@@ -389,7 +389,7 @@ def _print_status(st: Status) -> None:
 
 def main() -> int:
   parser = argparse.ArgumentParser(
-      prog="python -m swe_lab.tasks.related_files.traces",
+      prog="python -m swe_lab.pipelines.related_files.traces",
       description="Push/fetch/reconcile HF-stored conversation traces.",
   )
   _ = parser.add_argument(

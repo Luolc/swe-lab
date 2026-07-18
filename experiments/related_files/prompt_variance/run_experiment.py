@@ -30,7 +30,7 @@ from swe_lab.core.agent.proxy import build_proxy
 from swe_lab.core.datasets.swebench_pro import (
     SweBenchProInstance,
 )
-from swe_lab.tasks.related_files.annotator import (
+from swe_lab.pipelines.related_files.annotator import (
     annotate_instance,
 )
 

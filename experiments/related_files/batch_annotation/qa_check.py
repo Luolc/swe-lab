@@ -22,7 +22,7 @@ from swe_lab import load_dataset
 from swe_lab.core.datasets.swebench_pro import (
     SweBenchProInstance,
 )
-from swe_lab.tasks.related_files.storage import instance_dir
+from swe_lab.pipelines.related_files.storage import instance_dir
 
 HERE = Path(__file__).parent
 

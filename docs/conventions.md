@@ -24,7 +24,7 @@ uv run pytest                        # run the test suite
 uv run pre-commit run --all-files    # ruff + pyink + isort + basedpyright + uv-lock
 
 # The three product CLIs (module entrypoints):
-python -m swe_lab.tasks.related_files <instance_id> [--model sonnet|opus] [--samples 3]
+python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
 python -m swe_lab.evaluation <instance_id> --gold          # grade an instance's gold patch
 python -m swe_lab.rollout <instance_id>                    # run the container agent loop
 ```
@@ -52,7 +52,7 @@ module names are unaffected.)
 | Path | What it is |
 | --- | --- |
 | `src/swe_lab/core/` | Shared, **dataset-agnostic** infra: `datasets/` (loader + per-dataset adapter packages), `repo/` (checkout providers), `docker/` (execution), `agent/` (headless Claude Code runner + trace/binary/proxy), `patch.py`, `benchmark.py`, `paths.py`. |
-| `src/swe_lab/tasks/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). |
+| `src/swe_lab/pipelines/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). |
 | `src/swe_lab/evaluation/` | **W2** — the general eval CLI (apply patch → run tests → grade). |
 | `src/swe_lab/rollout/` | **W2** — the container agent loop (entryscript, prompt, runner, patch extraction). |
 | `experiments/` | Exploratory experiments + investigations. Each has a `README` (design/how-to-run) and, when it reaches conclusions, a `REPORT`; raw run artifacts under `runs/<variant>/`. Exempt from code hooks. See the [experiment playbook](experiments/playbook.md). |
