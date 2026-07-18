@@ -26,7 +26,7 @@ dataset defect vs. genuine) → record.
 - Turn the gold-sweep + eval-issue investigations into a **standing audit** that
   classifies every instance (healthy / dataset-defect / environment-broken /
   brittle-grader / contaminated).
-- Land as a sibling task under `src/swe_lab/tasks/` once the eval pipeline (W2)
+- Land as a sibling task under `src/swe_lab/pipelines/` once the eval pipeline (W2)
   is running at scale.
 
 ## Related experiments

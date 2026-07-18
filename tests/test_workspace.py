@@ -10,7 +10,7 @@ from swe_lab.core.datasets.swebench_pro import (
     SweBenchProInstance,
 )
 from swe_lab.core.repo.provider import RepoInstance
-from swe_lab.tasks.related_files.workspace import (
+from swe_lab.pipelines.related_files.workspace import (
     ANNOTATION_OUTPUT,
     CONTEXT_DIR,
     prepare_workspace,

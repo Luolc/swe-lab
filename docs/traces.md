@@ -9,7 +9,7 @@ This is a **general mechanism**, not a related-files-specific one: every
 annotation task produces large per-run traces that want the same off-repo +
 manifest treatment. It is documented here at the repo level for that reason. The
 implementation currently lives in
-[`tasks/related_files/traces.py`](../src/swe_lab/tasks/related_files/traces.py)
+[`pipelines/related_files/traces.py`](../src/swe_lab/pipelines/related_files/traces.py)
 (the first annotation task); it will be promoted to `core/` when the second task
 lands — see [§7](#7-multi-task-note-future). The model below is task-agnostic.
 
@@ -93,7 +93,7 @@ The commands below make that rule enforceable and the divergences detectable.
 Run from the repo root with `HF_TOKEN` set (e.g. `source ./.envrc.local`):
 
 ```
-python -m swe_lab.tasks.related_files.traces <action> [flags]
+python -m swe_lab.pipelines.related_files.traces <action> [flags]
 ```
 
 | Command | What it does |
@@ -172,7 +172,7 @@ What guarantees each property:
 
 ## 7. Multi-task note (future)
 
-Today `traces.py` lives under `tasks/related_files/` and the HF repo layout is
+Today `traces.py` lives under `pipelines/related_files/` and the HF repo layout is
 `<dataset>/intermediate/<id>/…` — no `<task>/` segment. A second annotation task
 pushing to the same repo could collide. When the second task lands, promote this
 module to `core/` parameterised by `(task, dataset, repo_id)`, and shift the

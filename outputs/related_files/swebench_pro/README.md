@@ -38,7 +38,7 @@ outputs/related_files/swebench_pro/
 the `combine` binary (run from the repo root):
 
 ```bash
-python -m swe_lab.tasks.related_files.combine
+python -m swe_lab.pipelines.related_files.combine
 ```
 
 Only `aggregate.json` files feed the parquet — candidates and

@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from swe_lab.tasks.related_files.agent_run import RunResult
-from swe_lab.tasks.related_files.schema import Annotation
-from swe_lab.tasks.related_files.storage import (
+from swe_lab.pipelines.related_files.agent_run import RunResult
+from swe_lab.pipelines.related_files.schema import Annotation
+from swe_lab.pipelines.related_files.storage import (
     candidate_label,
     instance_dir,
     store_run,

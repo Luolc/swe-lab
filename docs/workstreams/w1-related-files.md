@@ -4,7 +4,7 @@
 
 Ground-truth "what code must a solver read" per instance. 7083 snippets over 37
 rounds; final commit `6fe7095`. Nothing left to annotate. Code lives under
-[`src/swe_lab/tasks/related_files/`](../../src/swe_lab/tasks/related_files/).
+[`src/swe_lab/pipelines/related_files/`](../../src/swe_lab/pipelines/related_files/).
 
 ---
 
@@ -126,7 +126,7 @@ Delivered (under `src/swe_lab/`, since reorganized into `core/`):
 
 ### Milestone 2 — Annotation agent runner (single instance) ✅ *(2026-07-07)*
 
-Delivered (under `src/swe_lab/tasks/related_files/`):
+Delivered (under `src/swe_lab/pipelines/related_files/`):
 
 - `schema.py` — `SnippetCategory` (5 categories), `Snippet` / `Annotation`,
   agent-output parsing, per-snippet validation.
@@ -162,7 +162,7 @@ available via `--capture proxy`.)*
   auditing). The combined deliverable is a single
   `outputs/related_files/swebench_pro/annotations.parquet`, built from every
   instance's `aggregate.json` by the `combine` binary
-  (`python -m swe_lab.tasks.related_files.combine`) — **one row per instance**
+  (`python -m swe_lab.pipelines.related_files.combine`) — **one row per instance**
   (`instance_id`, `relevant_snippets`: a JSON string of the ordered snippet
   dicts). A `metadata.json` sidecar records row/snippet counts, timestamp, and
   the parquet's SHA-256.
@@ -255,7 +255,7 @@ this beat single-run, and `aggregator.py` for the finalized reconciler prompt.
 ## Run one instance
 
 ```bash
-python -m swe_lab.tasks.related_files <instance_id> [--model sonnet|opus] [--samples 3]
+python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
 ```
 
 ## Deferred / future

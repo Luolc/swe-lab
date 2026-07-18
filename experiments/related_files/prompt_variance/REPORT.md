@@ -5,8 +5,8 @@
 | Author | Liangchen Luo |
 | Harness | Claude Code — orchestrating model Claude Opus 4.8 (`claude-opus-4-8[1m]`) |
 | Annotation model under test | Claude Sonnet 4.6 (`claude-sonnet-4-6`) |
-| Final annotation prompt | [`tasks/related_files/annotation_prompt.py`](../../../src/swe_lab/tasks/related_files/annotation_prompt.py) |
-| Final aggregator prompt | [`tasks/related_files/aggregator.py`](../../../src/swe_lab/tasks/related_files/aggregator.py) |
+| Final annotation prompt | [`pipelines/related_files/annotation_prompt.py`](../../../src/swe_lab/pipelines/related_files/annotation_prompt.py) |
+| Final aggregator prompt | [`pipelines/related_files/aggregator.py`](../../../src/swe_lab/pipelines/related_files/aggregator.py) |
 | Started | 2026-07-06 20:51 PDT |
 | Last updated | 2026-07-07 00:55 PDT |
 
@@ -252,7 +252,7 @@ first pass, where v3 single-run is already good and ~4× cheaper.
 
 ### Aggregator Prompt Iteration
 
-The aggregator has its own prompt ([`tasks/related_files/aggregator.py`](../../../src/swe_lab/tasks/related_files/aggregator.py)),
+The aggregator has its own prompt ([`pipelines/related_files/aggregator.py`](../../../src/swe_lab/pipelines/related_files/aggregator.py)),
 iterated separately from the annotation prompt. Outputs are preserved per
 version — v0 ([s1](runs/s1-v3-agg-llm-v0/), [s2](runs/s2-v3-agg-llm-v0/)),
 v1 ([s1](runs/s1-v3-agg-llm-v1/), [s2](runs/s2-v3-agg-llm-v1/)), finalized
