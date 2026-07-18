@@ -84,24 +84,32 @@ A **`SandboxManager`** owns the container lifecycle and drives a composed set of
 Adapted from a proven manager/observer pattern (an xAI/Hades sandbox lifecycle
 manager), with one deliberate change (see the Sandbox note).
 
-### The `Sandbox` hosts its own context
+### The `Sandbox` is a pure handle; the outcome is a `RunResult`
 
-Because we own the whole stack, the **`Sandbox` *is* the context** — a dataclass
-carrying the live handle + run state, yielded to the body and passed to every
-observer hook. (The reference pattern kept a separate context that *held* the
-sandbox only because the sandbox was externally owned; we don't need that.)
+The `Sandbox` is **only a handle** to the live container — nothing accumulates on
+it, so its state is always clear. The **shared, inspectable state between
+observers is the workspace filesystem** (`sb.workspace`), where artifacts already
+live (`trajectory.jsonl`, `patch.diff`, `output.json`). The run's outcome is an
+explicit **`RunResult`** the manager builds from observer *return values* + what
+it catches (status / error / metrics). Nobody accumulates hidden state on a
+shared object.
 
 ```python
-@dataclass
-class Sandbox:
+@dataclass(frozen=True)
+class Sandbox:                       # pure handle — nothing mutable accumulates on it
     label: str
-    workspace: Path                  # host-visible dir shared into the container
+    workspace: Path                  # host-visible dir shared into the container = the shared state (files)
                                      #   A-host → `docker create -v` mount · A-ghjob → local dir
     backend: SandboxBackend          # A-host | A-ghjob
-    artifacts: dict[str, Any] = {}   # observers + body read/write (patch, trace, result, metrics)
-    error: Exception | None = None
-    metadata: dict[str, Any] = {}
     def exec(self, script, *, timeout, env=..., stream_to=None) -> ExecResult: ...  # run in the container
+
+@dataclass
+class RunResult:                     # the manager's aggregated return
+    label: str
+    status: RunStatus                # ok / setup_failed / errored / …
+    artifacts: dict[str, Path]       # refs into the workspace: patch.diff, trajectory.jsonl, …
+    metrics: dict[str, float] = {}
+    error: Exception | None = None
 ```
 
 ### The observer — the original five hooks only
@@ -109,15 +117,16 @@ class Sandbox:
 No per-phase hooks: `after_create`→`before_main` (and `after_main`→
 `before_destroy`) had nothing between them, so they were redundant. The five
 lifecycle hooks are enough; most observers touch just `after_create` and/or
-`before_destroy`.
+`before_destroy`. Hooks **return contributions** (artifact refs / metrics) that
+the manager aggregates — they do **not** mutate a shared bag.
 
 ```python
 class SandboxObserver:                # all no-op by default; override what you need
-    def before_create(self, sb): ...
-    def after_create(self, sb): ...       # sandbox is up → SETUP runs here
-    def before_destroy(self, sb): ...     # EXTRACT / PERSIST / eval-parse — ALWAYS run (finally)
-    def after_destroy(self, sb): ...
-    def on_error(self, sb): ...           # failure metrics; may `exec` into the still-live sb
+    def before_create(self, sb: Sandbox) -> None: ...
+    def after_create(self, sb: Sandbox) -> None: ...       # sandbox up → SETUP runs here (exec + write files)
+    def before_destroy(self, sb: Sandbox) -> Contribution | None: ...  # EXTRACT / PERSIST / eval-parse (always)
+    def after_destroy(self, sb: Sandbox) -> None: ...
+    def on_error(self, sb: Sandbox, error: Exception) -> Contribution | None: ...  # may exec into the live sb
 
 class CompositeObserver(SandboxObserver): # fan out to a list, in registration order
     observers: list[SandboxObserver]
@@ -125,17 +134,23 @@ class CompositeObserver(SandboxObserver): # fan out to a list, in registration o
 
 ### The manager yields the sandbox; `main` is the body
 
+The manager yields the (handle-only) `sandbox`; the body is `main`. Artifacts are
+**files written into `sb.workspace`**; the manager accumulates a `RunResult` from
+observer contributions and exposes it after the block.
+
 ```python
-with manager.sandbox() as sb:                 # before_create → backend.up → after_create (setup ran)
-    sb.artifacts["trajectory"] = run_agent(sb)     # the ONE action: rollout — or run_eval_script(sb): eval
-# on exit → before_destroy observers ALWAYS run (extract → sb.artifacts["patch"]; persist);
-#           on any exception → on_error observers (exec metrics into the live sb); then teardown
+with manager.sandbox() as sb:          # before_create → backend.up → after_create (setup ran); sb = live handle
+    run_agent(sb)                       # the ONE action: rollout writes trajectory.jsonl into sb.workspace
+                                        #                 (or run_eval_script(sb) for eval)
+result = manager.result                 # RunResult — before_destroy observers already ran
 ```
 
 **Post-processing always runs** (the `finally` semantics) — we deliberately keep
 it simple and have **no** main→teardown signal for now; add a conditional-skip
 later only if a real case needs it. On error, `before_destroy` still runs, so its
-observers may guard on `sb.error` where relevant.
+observers may guard on the caught error where relevant. **Observer→observer data
+flows through the workspace** (extract writes `patch.diff` and returns its ref;
+persist pushes the workspace) — never through mutable state on the sandbox.
 
 ### Phase → hook mapping (nothing beyond the five hooks)
 
