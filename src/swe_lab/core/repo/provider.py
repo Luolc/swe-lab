@@ -1,10 +1,10 @@
 """Pluggable repository provisioning.
 
 The annotation flow needs a working checkout of each instance's repo at its
-``base_commit``. :class:`RepoProvider` is the abstraction; :class:`GitCheckout`
-``Provider`` is the read-only implementation used now. A future
-``DockerProvider`` (using ``dockerhub_tag`` / ``before_repo_set_cmd``) can slot
-in behind the same protocol without touching callers.
+``base_commit``. :class:`RepoProvider` is the abstraction;
+:class:`GitCheckoutProvider` is the read-only implementation used now. A
+future ``DockerProvider`` (using ``dockerhub_tag`` / ``before_repo_set_cmd``)
+can slot in behind the same protocol without touching callers.
 
 ``GitCheckoutProvider`` keeps one bare *mirror* clone per repo and adds a
 per-instance *worktree* checked out at ``base_commit``. Sharing a single object
@@ -40,14 +40,17 @@ class RepoInstance(Protocol):
 
   @property
   def repo(self) -> str:
+    """The ``owner/name`` identifier of the repository."""
     ...
 
   @property
   def base_commit(self) -> str:
+    """The commit sha the task starts from."""
     ...
 
   @property
   def instance_id(self) -> str:
+    """The unique identifier of the task instance."""
     ...
 
 
@@ -57,8 +60,14 @@ class RepoProvider(Protocol):
   def provision(self, instance: RepoInstance, *, variant: str = "") -> Path:
     """Return a path to a checkout of ``instance`` ready to read.
 
-    ``variant`` gives an isolated checkout so several runs of one instance can
-    proceed concurrently without sharing a working directory.
+    Args:
+      instance: The task instance to provision.
+      variant: Optional label giving an isolated checkout so several runs
+        of one instance can proceed concurrently without sharing a working
+        directory.
+
+    Returns:
+      The path of the provisioned checkout.
     """
     ...
 
@@ -74,12 +83,16 @@ def _repo_slug(repo: str) -> str:
 
 @dataclass
 class GitCheckoutProvider:
-  """Clone + checkout ``base_commit`` into a gitignored local cache.
+  """Provider that clones and checks out ``base_commit`` into a local cache.
 
   Layout under ``cache_dir``::
 
       mirrors/<owner__name>.git   # one bare mirror per repo (shared objects)
       checkouts/<instance_id>/    # one worktree per instance @ base_commit
+
+  Attributes:
+    cache_dir: Gitignored root of the mirror/checkout cache.
+    remote_base: Base URL repositories are cloned from.
   """
 
   cache_dir: Path = field(default_factory=repo_cache_dir)
@@ -90,19 +103,24 @@ class GitCheckoutProvider:
 
   @property
   def mirrors_dir(self) -> Path:
+    """The directory of bare mirror clones, one per repository."""
     return self.cache_dir / "mirrors"
 
   @property
   def checkouts_dir(self) -> Path:
+    """The directory of per-instance worktree checkouts."""
     return self.cache_dir / "checkouts"
 
   def remote_url(self, repo: str) -> str:
+    """Return the clone URL for ``repo``."""
     return f"{self.remote_base}/{repo}.git"
 
   def mirror_path(self, repo: str) -> Path:
+    """Return the bare-mirror path for ``repo``."""
     return self.mirrors_dir / f"{_repo_slug(repo)}.git"
 
   def checkout_path(self, instance: RepoInstance, *, variant: str = "") -> Path:
+    """Return the checkout path for ``instance`` (suffixed by ``variant``)."""
     name = instance.instance_id
     if variant:
       name = f"{name}__{variant}"

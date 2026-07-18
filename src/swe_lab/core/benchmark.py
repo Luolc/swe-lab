@@ -35,6 +35,7 @@ class EvalSpec:
 
   @property
   def required_tests(self) -> frozenset[str]:
+    """Return the union of ``fail_to_pass`` and ``pass_to_pass`` tests."""
     return frozenset(self.fail_to_pass) | frozenset(self.pass_to_pass)
 
   def is_resolved(self, passed: frozenset[str] | set[str]) -> bool:

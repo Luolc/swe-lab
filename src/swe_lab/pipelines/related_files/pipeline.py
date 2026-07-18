@@ -36,7 +36,14 @@ DEFAULT_SAMPLES = 3
 
 @dataclass
 class PipelineResult:
-  """The full sample-and-aggregate outcome for one instance."""
+  """The full sample-and-aggregate outcome for one instance.
+
+  Attributes:
+    instance_id: The annotated dataset instance.
+    candidates: The per-sample results that survived their own retries.
+    aggregate: The reconciled result — the deliverable.
+    directory: Where every artifact of this run was stored.
+  """
 
   instance_id: str
   candidates: list[RunResult]
@@ -45,6 +52,7 @@ class PipelineResult:
 
   @property
   def is_valid(self) -> bool:
+    """Whether the aggregate run is complete and valid."""
     return self.aggregate.is_valid
 
 
@@ -61,8 +69,10 @@ def annotate_with_aggregation(
 ) -> PipelineResult:
   """Sample ``instance`` ``samples`` times (in parallel), then aggregate.
 
-  Stores every candidate and the aggregate under
-  ``outputs/related_files/<dataset>/<instance_id>/``.
+  Every candidate and the aggregate are stored under
+  ``outputs/related_files/<dataset>/<instance_id>/``. A sample that fails
+  after its own retries is dropped and the survivors are aggregated; quota
+  exhaustion stops the pipeline immediately.
 
   Proxy ports: each instance gets a contiguous block of ``samples + 1`` ports
   keyed by its dataset index — the samples take slots ``0..samples-1`` and the
@@ -70,6 +80,24 @@ def annotate_with_aggregation(
   parallel samples of one instance, and any number of concurrent *different*
   instances, never collide. Ceiling: ``base_port + N*(samples+1) < 65535`` (for
   731 instances × 4 that is ~22.9k, far below the limit).
+
+  Args:
+    instance: The instance to annotate.
+    index: The instance's dataset index; keys its proxy-port block.
+    dataset: Dataset name; picks the output directory.
+    samples: Number of independent annotation samples to aggregate.
+    repo_root: This repo's root; discovered when omitted.
+    model: The Claude model alias to run.
+    base_port: Base of the per-instance proxy-port blocks.
+    capture: Trace source (see ``CAPTURE_MODES``).
+
+  Returns:
+    The pipeline result carrying every candidate and the aggregate.
+
+  Raises:
+    ValueError: If ``samples`` is below 1.
+    AnnotationError: If every sample failed, or the aggregate run failed.
+    UsageLimitError: If the quota was exhausted mid-run (never swallowed).
   """
   if samples < 1:
     raise ValueError("samples must be >= 1")
@@ -151,7 +179,24 @@ def annotate_by_id_with_aggregation(
     model: str = DEFAULT_MODEL,
     capture: str = DEFAULT_CAPTURE,
 ) -> PipelineResult:
-  """Look an instance up by id and run the sample-and-aggregate pipeline."""
+  """Look an instance up by id and run the sample-and-aggregate pipeline.
+
+  Args:
+    instance_id: The instance to annotate.
+    dataset_obj: The loaded dataset to look ``instance_id`` up in; loaded
+      from ``dataset`` when omitted.
+    dataset: Dataset name; names what to load into ``dataset_obj`` and
+      picks the output directory.
+    samples: Number of independent annotation samples to aggregate.
+    model: The Claude model alias to run.
+    capture: Trace source (see ``CAPTURE_MODES``).
+
+  Returns:
+    The pipeline result carrying every candidate and the aggregate.
+
+  Raises:
+    TypeError: If the dataset record is not a :class:`SweBenchProInstance`.
+  """
   dataset_obj = dataset_obj or load_dataset(dataset)
   record = dataset_obj.require(instance_id)
   if not isinstance(record, SweBenchProInstance):

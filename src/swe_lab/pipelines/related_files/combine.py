@@ -89,12 +89,12 @@ def build_dataframe(
 
 
 def _total_snippets(frame: pl.DataFrame) -> int:
-  """Total snippet count across all rows (parses the JSON column)."""
+  """Return the total snippet count across all rows (parses the JSON)."""
   return sum(len(json.loads(value)) for value in frame["relevant_snippets"])
 
 
 def _sha256(path: Path) -> str:
-  """SHA-256 hex digest of a file's bytes."""
+  """Return the SHA-256 hex digest of a file's bytes."""
   return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -135,6 +135,7 @@ def combine(
 
 
 def main() -> int:
+  """Run the combine CLI and print a summary of the build."""
   parser = argparse.ArgumentParser(
       prog="python -m swe_lab.pipelines.related_files.combine",
       description=(

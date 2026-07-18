@@ -48,7 +48,7 @@ _WS_SUBDIR = "golden_verify"  # scratch workspaces under cache_root
 
 
 def classify(spec: EvalSpec, base: EvalResult, golden: EvalResult) -> str:
-  """Verdict for one instance from its base + golden runs.
+  """Return the verdict for one instance from its base + golden runs.
 
   ``ERROR`` (either run produced no gradeable output, or timed out) is kept
   distinct from real dataset findings so infra flakes don't masquerade as them.
@@ -98,7 +98,21 @@ def verify_instance(
     network: bool,
     prune_images: bool,
 ) -> dict[str, object]:
-  """Run base + golden for one instance, classify, and persist the result."""
+  """Run base + golden for one instance, classify, and persist the result.
+
+  Args:
+    instance: The dataset record to verify.
+    adapter: Builds the instance's ``EvalSpec``.
+    provider: Docker interface used to pull images and run the graded runs.
+    results_dir: Directory receiving this instance's JSON result file.
+    ws_root: Root under which the instance's scratch workspaces are staged.
+    timeout: Wall-clock limit for each graded run, in seconds.
+    network: Whether the containers may access the network.
+    prune_images: Remove the instance's image after both runs.
+
+  Returns:
+    The persisted result record, including the verdict.
+  """
   iid = instance.instance_id
   result: dict[str, object] = {"instance_id": iid}
   # Wall-clock stamps for this instance's verification (UTC, ISO-8601). The pair
@@ -172,6 +186,7 @@ def _out_dir(root: Path, raw: str) -> Path:
 
 
 def run(args: argparse.Namespace) -> int:
+  """Verify this shard's instances, writing one JSON result per instance."""
   root = find_repo_root()
   out_dir = _out_dir(root, args.out_dir)
   results_dir = out_dir / _RESULTS_SUBDIR
@@ -228,6 +243,7 @@ def run(args: argparse.Namespace) -> int:
 
 
 def aggregate(args: argparse.Namespace) -> int:
+  """Merge per-instance results into ``summary.json`` + ``report.md``."""
   root = find_repo_root()
   out_dir = _out_dir(root, args.out_dir)
   results_dir = out_dir / _RESULTS_SUBDIR
@@ -305,6 +321,7 @@ def _render_report(summary: dict[str, object]) -> str:
 
 
 def main() -> int:
+  """Parse CLI args and dispatch to ``run`` or ``aggregate``."""
   parser = argparse.ArgumentParser(
       prog="python -m swe_lab.evaluation.verify",
       description="Full-dataset golden verification.",

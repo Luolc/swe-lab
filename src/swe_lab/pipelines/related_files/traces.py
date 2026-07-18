@@ -68,6 +68,7 @@ def _task_dir(repo_root: Path | None = None) -> Path:
 def manifest_path(
     dataset: str = DEFAULT_DATASET, *, repo_root: Path | None = None
 ) -> Path:
+  """Return the path of a dataset's version-controlled trace manifest."""
   return _task_dir(repo_root) / dataset / MANIFEST_NAME
 
 
@@ -163,12 +164,24 @@ def push_traces(
   """Upload all trace files to the HF dataset repo; write the git manifest.
 
   The repo mirrors the local layout (``<dataset>/intermediate/<id>/<label>``);
-  only ``*.last_exchange.json`` files are uploaded. Unless ``force``, the push
-  is guarded by an optimistic-concurrency check: it refuses if the HF head has
-  moved past the revision recorded in the local manifest (someone else pushed
-  since your last sync). ``mirror`` additionally deletes remote traces that are
-  absent locally, making HF exactly match the local set. Returns the manifest
-  path.
+  only ``*.last_exchange.json`` files are uploaded.
+
+  Args:
+    dataset: Dataset name; picks the local trace tree.
+    repo_id: The HF dataset repo to push to.
+    repo_root: This repo's root; discovered when omitted.
+    private: Whether the HF repo is created private if it does not exist.
+    mirror: Also delete remote traces that are absent locally, making HF
+      exactly match the local set.
+    force: Skip the optimistic-concurrency guard (last-writer-wins).
+
+  Returns:
+    The path of the rewritten manifest.
+
+  Raises:
+    SyncError: If ``force`` is unset and the HF head has moved past the
+      revision recorded in the local manifest (someone else pushed since
+      your last sync).
   """
   root = repo_root or find_repo_root()
   base = _task_dir(root)
@@ -212,8 +225,17 @@ def fetch_traces(
   """Download every trace named in the manifest, verifying sha256.
 
   Downloads at the manifest's pinned revision (reproducible — unaffected by
-  later HF pushes). Skips files already present with the right hash. Returns
-  ``(ok, mismatched)``.
+  later HF pushes) and skips files already present with the right hash.
+
+  Args:
+    dataset: Dataset name; picks the manifest and the local trace tree.
+    repo_root: This repo's root; discovered when omitted.
+
+  Returns:
+    ``(ok, mismatched)`` — counts of verified and hash-mismatched traces.
+
+  Raises:
+    FileNotFoundError: If the dataset has no manifest to fetch from.
   """
   root = repo_root or find_repo_root()
   base = _task_dir(root)
@@ -257,10 +279,21 @@ def adopt_remote(
     repo_id: str = DEFAULT_REPO_ID,
     repo_root: Path | None = None,
 ) -> Path:
-  """Take HF head as truth: download every trace there and rewrite the manifest.
+  """Take HF head as truth: download its traces and rewrite the manifest.
 
-  For the case where HF was pushed but its manifest was never committed to git,
-  so the local manifest points at a stale revision. Returns the manifest path.
+  For the case where HF was pushed but its manifest was never committed to
+  git, so the local manifest points at a stale revision.
+
+  Args:
+    dataset: Dataset name; picks the local trace tree.
+    repo_id: The HF dataset repo to adopt from.
+    repo_root: This repo's root; discovered when omitted.
+
+  Returns:
+    The path of the rewritten manifest.
+
+  Raises:
+    SyncError: If the HF repo does not exist or is unreachable.
   """
   root = repo_root or find_repo_root()
   base = _task_dir(root)
@@ -286,7 +319,17 @@ def adopt_remote(
 
 @dataclass(frozen=True)
 class Status:
-  """A comparison of the three states for one dataset's traces."""
+  """A comparison of the three states for one dataset's traces.
+
+  Attributes:
+    has_manifest: Whether a local manifest exists at all.
+    manifest_revision: The HF revision the manifest pins, if any.
+    hf_head: The HF repo's current head revision, if reachable.
+    local_ok: Manifest-listed traces present locally with matching hashes.
+    local_changed: Manifest-listed traces whose local hash differs.
+    local_missing: Manifest-listed traces absent locally.
+    local_extra: Local traces the manifest does not list.
+  """
 
   has_manifest: bool
   manifest_revision: str | None
@@ -298,6 +341,7 @@ class Status:
 
   @property
   def local_clean(self) -> bool:
+    """Whether local files match the manifest exactly."""
     return (
         self.local_changed == 0
         and self.local_missing == 0
@@ -306,9 +350,11 @@ class Status:
 
   @property
   def in_sync_with_hf(self) -> bool:
+    """Whether the manifest pins the current HF head."""
     return self.hf_head is not None and self.manifest_revision == self.hf_head
 
   def recommendation(self) -> str:
+    """Return a one-line recommendation for the next action."""
     if not self.has_manifest:
       return "never pushed — run `push` to publish local traces."
     if self.hf_head is None:
@@ -388,6 +434,7 @@ def _print_status(st: Status) -> None:
 
 
 def main() -> int:
+  """Run the traces CLI and return the process exit status."""
   parser = argparse.ArgumentParser(
       prog="python -m swe_lab.pipelines.related_files.traces",
       description="Push/fetch/reconcile HF-stored conversation traces.",

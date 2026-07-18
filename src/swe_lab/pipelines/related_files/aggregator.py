@@ -35,7 +35,7 @@ CANDIDATES_FILE = "candidates.json"
 
 
 def build_aggregator_prompt(repo: str, n_candidates: int) -> str:
-  """Instruction for reconciling ``n_candidates`` annotations into one."""
+  """Build the prompt reconciling ``n_candidates`` annotations into one."""
   return f"""\
 You are aggregating {n_candidates} independent candidate annotations of the same
 SWE-Bench task into a single, best annotation. Each candidate is one attempt at
@@ -98,7 +98,12 @@ def aggregate_instance(
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
     capture: str = DEFAULT_CAPTURE,
 ) -> RunResult:
-  """Reconcile ``candidates`` (each an object with a ``snippets`` array)."""
+  """Reconcile ``candidates`` (each an object with a ``snippets`` array).
+
+  A thin wrapper over :func:`agent_run.run_agent` with the aggregator prompt
+  and a ``candidates.json`` context file; the remaining keywords pass
+  through unchanged.
+  """
   candidates_json = json.dumps({"candidates": list(candidates)}, indent=2)
   return run_agent(
       instance,

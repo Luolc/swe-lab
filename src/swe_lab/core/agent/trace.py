@@ -62,6 +62,7 @@ def parse_stream_events(stdout: str) -> list[dict[str, object]]:
 def final_result_event(
     events: list[dict[str, object]],
 ) -> dict[str, object] | None:
+  """Return the last terminal ``result`` event, or ``None`` if absent."""
   for event in reversed(events):
     if event.get("type") == "result":
       return event
@@ -79,12 +80,13 @@ def _last_assistant_message(
 
 
 def last_assistant_stop_reason(events: list[dict[str, object]]) -> object:
+  """Return the last assistant message's ``stop_reason`` (``None`` if none)."""
   message = _last_assistant_message(events)
   return message.get("stop_reason") if message else None
 
 
 def _stream_complete(result_event: dict[str, object]) -> bool:
-  """Whether a ``stream-json`` run finished cleanly.
+  """Return whether a ``stream-json`` run finished cleanly.
 
   The reliable signal is the terminal ``result`` event (``subtype == "success"``
   and not ``is_error``) — assistant messages in the stream may carry a null
@@ -173,7 +175,7 @@ def _scrub_metadata(metadata: object) -> object:
 
 
 def _git_config(key: str) -> str:
-  """Best-effort ``git config`` lookup (empty string on any failure)."""
+  """Return the ``git config`` value for ``key`` (empty on any failure)."""
   try:
     result = subprocess.run(
         ["git", "config", "--get", key],
@@ -228,7 +230,15 @@ def _redact_pii(record: dict[str, object]) -> dict[str, object]:
 
 
 def build_exchange_from_proxy(raw: dict[str, object]) -> dict[str, object]:
-  """Map a raw ``cc-reverse-proxy`` record to the unified exchange schema."""
+  """Map a raw ``cc-reverse-proxy`` record to the unified exchange schema.
+
+  Args:
+    raw: One request/response record as logged by the proxy (the wire-level
+      API request body plus the reassembled response).
+
+  Returns:
+    The redacted unified exchange record.
+  """
   request = raw.get("request")
   request = request if isinstance(request, dict) else {}
   response = raw.get("response")
@@ -265,7 +275,15 @@ def build_exchange_from_proxy(raw: dict[str, object]) -> dict[str, object]:
 def build_exchange_from_stream(
     events: list[dict[str, object]],
 ) -> dict[str, object]:
-  """Map parsed ``stream-json`` events to the unified exchange schema."""
+  """Map parsed ``stream-json`` events to the unified exchange schema.
+
+  Args:
+    events: The run's parsed events, in stream order.
+
+  Returns:
+    The redacted unified exchange record (``system`` / ``tools`` are null:
+    the stream never carries the raw API request).
+  """
   result_event = final_result_event(events) or {}
   messages_src: list[dict[str, object]] = []
   for event in events:

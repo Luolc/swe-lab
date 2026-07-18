@@ -1,6 +1,7 @@
 # Task 01 — Google-style readability lift (full repo)
 
-**Status: 🚧 In progress** · Decided 2026-07-18 · Precedes the SandboxRun plan.
+**Status: ✅ Complete (P0–P2 + gates; P3 leftovers below)** · Decided & executed
+2026-07-18 · Preceded the SandboxRun plan.
 
 Bring the whole repo up to the
 [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html),
@@ -33,8 +34,13 @@ exceptions, no mutable defaults. The measured gap:
 | Docstring section hanging indent | 2 spaces (match code indent). |
 | Docstring prose width | 80 cols, enforced (W505 + `max-doc-length = 80`). |
 | Quotes | pyink majority-quotes, unchanged. |
-| TODO format | `# TODO: <issue-link or context> - <text>` (§3.12 current form; `TODO(name):` is deprecated by the guide). |
 | Tests | exempt from docstring-presence rules (D1xx) per §3.8.2.1. |
+
+> **Dropped rule — TODO format (§3.12).** The guide's current form
+> (`# TODO: <issue-link> - <text>`) presumes an issue tracker; this repo does
+> not use GitHub issues, so the rule is a no-op today (removed 2026-07-18).
+> Whether to manage plans/bugs via issues is a future discussion — short-term
+> no. Revisit this rule if issues are ever adopted.
 
 ## Toolchain (verified 2026-07-18)
 
@@ -69,7 +75,10 @@ exceptions, no mutable defaults. The measured gap:
   hand-fixes the new rules surfaced (13× D401 mood, 2× D301 raw-string, 2× W505
   rewrap, 1× D205). CI (pre-commit) enforces from then on. Temporary ignores
   only where P2 removes them (D102/D103/D107/D417 off until the rewrite lands).
-- **P2 — docstring rewrite, ~6–8 module-scoped PRs**: every public API gets
+- **P2 — docstring rewrite** ✅ (landed as one PR, not 6–8: the four module
+  batches were rewritten and verified together on one tree, and CI runs
+  `--all-files`, so slicing them into interdependent PRs added conflict risk
+  with no review value; ~90 docstrings added/rewritten): every public API gets
   imperative summary + `Args:`/`Returns:`/`Raises:` where warranted (omit
   sections when the one-liner suffices — §3.8.3 explicitly allows it; that is
   the cure for verbosity imbalance, not more prose); classes get `Attributes:`;
@@ -83,10 +92,12 @@ exceptions, no mutable defaults. The measured gap:
      LOC); deep polish there is done as part of the migration itself.
   5. `paths.py`, `__main__`s, leftovers; drop the temporary D102/D103/D107/D417
      ignores.
-- **P3 — judgment readability pass** (can interleave with P2 reviews): comments
-  why-not-what; naming descriptiveness beyond N-rules; >~40-line functions
-  (§3.18) — e.g. `validate_snippet_dict`; error-message precision (§3.10.2);
-  TODO reformatting.
+- **P3 — judgment readability pass** (🔶 remaining, deliberately deferred):
+  naming descriptiveness beyond N-rules; >~40-line functions (§3.18) — e.g.
+  `validate_snippet_dict`; error-message precision (§3.10.2). These change
+  code (not just docs), so they are done under review — the function splits
+  most naturally during the SandboxRun migration, which rewrites the biggest
+  offenders anyway. Comment style conformance happened alongside P2.
   **Do-not-touch:** the long `git diff`-related comments in `core/patch.py` are
   **deliberately verbose** (owner's explicit call, 2026-07-18 — they encode the
   ADR-0001 patch-extraction subtleties). The comment pass must not trim them.

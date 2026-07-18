@@ -95,13 +95,6 @@ ignore = [
     # Trivial dunders are self-evident (guide §3.8.3 requires docstrings only
     # for public API / nontrivial / non-obvious functions).
     "D105",
-    # TEMPORARY (horizontal task 01): presence + section rules stay off until
-    # the module-by-module Google-docstring rewrite lands; the final batch
-    # flips them on (D417 included) and removes these lines.
-    "D102", # undocumented-public-method
-    "D103", # undocumented-public-function
-    "D107", # undocumented-public-init
-    "D417", # undocumented-param
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -121,3 +114,9 @@ max-doc-length = 80
 # Disable ruff formatting. Use pyink in this project.
 # Add any other file patterns if your project uses them (e.g., "**/*.ipynb" for Jupyter notebooks)
 exclude = ["**/*.py", "**/*.pyi"]
+
+[tool.pydoclint]
+# Reconcile pydoclint with ruff's D107 (undocumented-public-init): D107
+# requires an __init__ docstring, while pydoclint's default (DOC301) forbids
+# one. Allow __init__ docstrings; pydoclint still checks their contents.
+allow-init-docstring = true

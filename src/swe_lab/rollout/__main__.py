@@ -35,6 +35,7 @@ from .runner import DEFAULT_TIMEOUT_S, rollout
 
 
 def main() -> int:
+  """Parse CLI args, run one rollout, and optionally grade its patch."""
   parser = argparse.ArgumentParser(
       prog="python -m swe_lab.rollout",
       description="Run a headless agent to solve one instance in its image.",

@@ -49,7 +49,7 @@ def binary_cache_path(
     platform: str = LINUX_X64,
     repo_root: Path | None = None,
 ) -> Path:
-  """Where the pinned binary for ``version``/``platform`` is cached on disk."""
+  """Return the on-disk cache path of the ``version``/``platform`` binary."""
   root = repo_root or find_repo_root()
   return (
       cache_root(root)
@@ -89,13 +89,25 @@ def ensure_claude_binary(
     repo_root: Path | None = None,
     refresh: bool = False,
 ) -> Path:
-  """Ensure the pinned native binary is cached (checksum-verified); return it.
+  """Ensure the pinned native binary is cached and checksum-verified.
 
   Idempotent: a cached binary whose sha256 matches the release manifest is
   reused; otherwise it is (re)downloaded and verified. The file is made
-  executable so it can be mounted and run directly in the container. Raises if
-  the downloaded bytes don't match the manifest checksum (a corrupt or
-  tampered download is never silently used).
+  executable so it can be mounted and run directly in the container.
+
+  Args:
+    version: Claude Code release to fetch.
+    platform: Release platform key (the container is always linux/amd64).
+    repo_root: Repository root used to locate the cache; discovered when
+      omitted.
+    refresh: If true, re-download even when a valid cached binary exists.
+
+  Returns:
+    The path of the verified, executable binary.
+
+  Raises:
+    ValueError: If the downloaded bytes do not match the manifest checksum
+      (a corrupt or tampered download is never silently used).
   """
   dest = binary_cache_path(
       version=version, platform=platform, repo_root=repo_root

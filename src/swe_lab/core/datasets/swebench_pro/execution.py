@@ -37,7 +37,7 @@ def image_ref(dockerhub_tag: str) -> str:
 
 
 def github_raw_url(instance_id: str, filename: str) -> str:
-  """Raw GitHub URL for one harness file at the pinned Scale commit."""
+  """Return the raw GitHub URL of one harness file at the pinned commit."""
   return (
       f"{GITHUB_RAW_BASE}/{SCALE_SWEBENCH_PRO_REPO}/{SCALE_SWEBENCH_PRO_COMMIT}"
       f"/run_scripts/{instance_id}/{filename}"
@@ -45,7 +45,7 @@ def github_raw_url(instance_id: str, filename: str) -> str:
 
 
 def harness_dir(instance_id: str, *, repo_root: Path | None = None) -> Path:
-  """Gitignored cache directory for one instance's fetched harness files."""
+  """Return the gitignored cache dir for one instance's harness files."""
   root = repo_root or find_repo_root()
   return cache_root(root) / HARNESS_SUBDIR / instance_id
 
@@ -86,6 +86,11 @@ class SweBenchProAdapter:
   repo_root: Path | None = None
 
   def eval_spec(self, instance: SweBenchProInstance) -> EvalSpec:
+    """Build the runnable ``EvalSpec`` for one instance.
+
+    Fetches (or reuses) the instance's cached harness files and maps the
+    record's fields onto the general spec.
+    """
     run_script, parser = fetch_harness(
         instance.instance_id, repo_root=self.repo_root
     )

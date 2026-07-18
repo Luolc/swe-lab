@@ -108,7 +108,15 @@ class SweBenchProInstance:
   def from_raw(cls, raw: Mapping[str, str]) -> SweBenchProInstance:
     """Build a ``SweBenchProInstance`` from one raw parquet row.
 
-    ``raw`` must contain exactly the expected columns as strings.
+    Args:
+      raw: One parquet row, with every expected column as a raw string.
+
+    Returns:
+      The parsed instance, with list and text columns normalized.
+
+    Raises:
+      ValueError: If the row is missing expected columns, or a list column
+        does not hold a list literal.
     """
     missing = [c for c in COLUMNS if c not in raw]
     if missing:

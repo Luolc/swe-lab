@@ -62,7 +62,7 @@ def strip_binary_hunks(patch: str) -> str:
 
 
 def is_effectively_empty(patch: str) -> bool:
-  """Whether a patch has no applyable content (empty, whitespace, or no hunks).
+  """Return whether a patch has no applyable content.
 
   True for the empty string, whitespace-only text, and a patch that carries no
   ``diff --git`` section at all (e.g. one that was entirely binary and got
@@ -126,25 +126,33 @@ def build_extraction_script(
     exclude_globs: tuple[str, ...] = (),
     remove_nested_git: bool = True,
 ) -> str:
-  """Bash that extracts the agent's patch, for the instance container.
+  """Build the in-container bash that extracts the agent's patch.
 
-  Produces a canonical, ``git apply``-able **text** diff of everything the repo
-  at ``workdir`` gained since ``base_ref``, written as **raw bytes** to
-  ``output_path``. New files are staged with ``git add -N`` (intent-to-add) and
-  the diff omits ``--binary``, so binary content is never serialized — the happy
-  path is text-only. The output may still carry a bytes-free
-  ``Binary files ... differ`` header for a binary change; the rollout runner
-  strips those with :func:`strip_binary_hunks` before grading.
-
-  ``base_ref`` is the diff base — pass the instance's ``base_commit`` so the
-  patch applies against the exact base the grader resets to (a post-setup
-  commit is a deferred alternative). ``exclude_globs`` (a git pathspec suffix
-  each, e.g. ``pyproject.toml`` or ``*.toml``) is available for the rare
-  instance that needs a build-noise denylist, but defaults to empty (the
-  denylist is deferred — see ADR-0001).
+  The script produces a canonical, ``git apply``-able **text** diff of
+  everything the repo at ``workdir`` gained since ``base_ref``, written as
+  **raw bytes** to ``output_path``. New files are staged with ``git add -N``
+  (intent-to-add) and the diff omits ``--binary``, so binary content is never
+  serialized — the happy path is text-only. The output may still carry a
+  bytes-free ``Binary files ... differ`` header for a binary change; the
+  rollout runner strips those with :func:`strip_binary_hunks` before grading.
 
   The script itself is side-effecting only inside the container (it stages the
   worktree and removes stray nested ``.git`` dirs); it does not commit.
+
+  Args:
+    workdir: In-container path of the instance's repo.
+    base_ref: The diff base — pass the instance's ``base_commit`` so the patch
+      applies against the exact base the grader resets to (a post-setup commit
+      is a deferred alternative).
+    output_path: In-container path the diff is written to as raw bytes.
+    exclude_globs: Build-noise denylist; each entry is a git pathspec suffix
+      (e.g. ``pyproject.toml`` or ``*.toml``). Defaults to empty — the
+      denylist is deferred (see ADR-0001).
+    remove_nested_git: Remove stray nested ``.git`` dirs first so they are not
+      staged as gitlinks that swallow the files inside them.
+
+  Returns:
+    The bash script text, newline-terminated.
   """
   wd = shlex.quote(workdir)
   out = shlex.quote(output_path)
