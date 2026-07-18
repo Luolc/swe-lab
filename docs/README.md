@@ -42,6 +42,7 @@ current focus** → [w2](workstreams/w2-solve-eval/). Patch extraction is settle
 | [workstreams/](workstreams/) | The **verticals** — one folder per workstream (design/history, plus `spec`/`plan`/`todo` when active). |
 | [conventions.md](conventions.md) | Codebase map, build/test/lint commands, directory meanings, hazards, source-of-truth rule. |
 | [decisions/](decisions/) | Architectural decisions (ADRs). ADR-0001 = patch extraction + grading (Accepted). |
+| [reviews/](reviews/) | Point-in-time engineering audits of the codebase (dated snapshots, not specs). |
 | [experiments/playbook.md](experiments/playbook.md) | How we run experiments + investigations in this ML/eval repo. |
 | [patch-extraction.md](patch-extraction.md) | Corner-case survey (background research, non-authoritative — decisions are in ADR-0001). |
 | [traces.md](traces.md) | Off-repo trace storage (HF dataset repo + manifest). |
