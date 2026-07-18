@@ -138,6 +138,27 @@ effectively **731/731**. **End state (TODO):** publish one fully-fixed parquet t
 our own Hugging Face dataset repo and point the loader at it; then delete
 `patches.py`. See [[dataset-golden-fix]] in memory.
 
+## Capacity & CI concurrency
+
+**Golden sweep timing (reference).** The full 731-instance gold self-test sweep
+(`verify-golden`, run `29463094538`, 2026-07-16) took **~135 min wall-clock**
+(2 h 15 m) across **66 matrix jobs** (~11 instances each): per-job median ~31 min,
+max ~68 min; sequential-equivalent ~34 h → **~15× effective parallelism** (under
+the ~20-job cap; tail effects keep it below 20). This is *gold grading only*
+(apply the gold patch + run tests, ~2.5 min/instance, **no agent**) — **rollout is
+heavier** (an agent runs minutes–tens-of-minutes per instance), so a full-731
+rollout sweep will be longer with a more pronounced slow-instance tail. Argues for
+the plan's *small-batch-then-full* checkpoint.
+
+**Concurrency is account-wide and shared with the merge CI.** The free-plan
+standard-runner limit (~20 concurrent jobs) is **per account, shared across all
+repos and workflows** — the merge gate (`ci.yml` → `check`) draws from the same
+~20 as a heavy `verify-golden` / `rollout` sweep. Excess jobs **queue** (never
+dropped): a single long job takes one slot; a sweep that saturates all 20 only
+*delays* merges (the ~40 s `check` gets a slot as sweep jobs finish, ~every
+31 min) — it doesn't block them. **Mitigation:** cap a heavy sweep's
+`strategy.max-parallel` (e.g. 15) to keep headroom for the merge CI.
+
 ## Next steps
 
 **Priority (set 2026-07-14): `rollout` first**, because it takes wall-clock time
