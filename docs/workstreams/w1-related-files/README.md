@@ -4,7 +4,7 @@
 
 Ground-truth "what code must a solver read" per instance. 7083 snippets over 37
 rounds; final commit `6fe7095`. Nothing left to annotate. Code lives under
-[`src/swe_lab/pipelines/related_files/`](../../src/swe_lab/pipelines/related_files/).
+[`src/swe_lab/pipelines/related_files/`](../../../src/swe_lab/pipelines/related_files/).
 
 ---
 
@@ -187,7 +187,7 @@ available via `--capture proxy`.)*
   `fetch`, integrity-checked by sha256 in the manifest); the raw files are
   gitignored. Operator PII is redacted from every record at write time, and
   secrets never appear (auth header / org id scrubbed). See
-  [`docs/traces.md`](../traces.md).
+  [`docs/traces.md`](../../traces.md).
 
 ## How the full run went
 
@@ -198,7 +198,7 @@ OAuth), the aggregator reconciles them, and `combine` rolls the aggregates into
 instances** (5 rounds of 20; 100/100 valid, 98 ✅ / 2 ⚠️ / 0 severe) to the
 **complete 731** over **37 rounds**, hand-QA'd + recall-audited every round:
 **731/731 valid, all 3-candidate, 7083 snippets**. Full breakdown in
-[`experiments/related_files/batch_annotation/qa_log.md`](../../experiments/related_files/batch_annotation/qa_log.md).
+[`experiments/related_files/batch_annotation/qa_log.md`](../../../experiments/related_files/batch_annotation/qa_log.md).
 
 - **Concurrency ceiling.** Batch ran at **MAXJOBS=2** (≤6 headless agents) on the
   16 GB box; MAXJOBS=4 (12 agents, ~1–2 GB each) swap-thrashes. An earlier 13 h
@@ -227,20 +227,20 @@ Started as an *option* and became the **production pipeline**
 (self-consistency over independently-sampled references). Per-run isolation
 (own checkout `variant`, proxy `port`, log path; provisioning guarded by a lock)
 lets repeats of one instance run concurrently. See the prompt-variance
-[`REPORT.md`](../../experiments/related_files/prompt_variance/REPORT.md) for why
+[`REPORT.md`](../../../experiments/related_files/prompt_variance/REPORT.md) for why
 this beat single-run, and `aggregator.py` for the finalized reconciler prompt.
 
 ## Related experiments
 
 - **Prompt variance** —
-  [`experiments/related_files/prompt_variance/`](../../experiments/related_files/prompt_variance/)
-  ([REPORT.md](../../experiments/related_files/prompt_variance/REPORT.md)). One
+  [`experiments/related_files/prompt_variance/`](../../../experiments/related_files/prompt_variance/)
+  ([REPORT.md](../../../experiments/related_files/prompt_variance/REPORT.md)). One
   instance per language × 3, over three prompt versions + aggregator iteration.
   Outcome: file selection is stable; the **v3** prompt fixed the main variance
   drivers; residual variance is inherent, resolved by the finalized aggregator.
   Cost ~$24 / 56 runs.
 - **Batch annotation & QA** —
-  [`experiments/related_files/batch_annotation/`](../../experiments/related_files/batch_annotation/)
+  [`experiments/related_files/batch_annotation/`](../../../experiments/related_files/batch_annotation/)
   (`qa_log.md`, per-round id lists, `qa_check.py` / `perf_check.py` /
   `recall_audit.py`).
 
@@ -248,8 +248,8 @@ this beat single-run, and `aggregator.py` for the finalized reconciler prompt.
 
 - **Publish the fixed parquet.** The loader still patches 3 dataset-side
   truncated `fail_to_pass` names in memory (`patches.py`) — see
-  [W2](w2-solve-eval.md) and
-  [the eval-issue write-up](../../experiments/eval_issues/truncated_golden_test_names/README.md).
+  [W2](../w2-solve-eval/README.md) and
+  [the eval-issue write-up](../../../experiments/eval_issues/truncated_golden_test_names/README.md).
   Publish a corrected parquet to HF and retire the stopgap.
 
 ## Run one instance

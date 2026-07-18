@@ -12,7 +12,7 @@
 > here as current behavior — check the ADR and the code.
 
 **Scope.** A *general* engineering reference for one deceptively hard step in the
-`rollout` workstream (see [`PLAN.md`](../PLAN.md) → Workstream 2): after a coding
+`rollout` workstream (see the [W2 workstream](workstreams/w2-solve-eval/)): after a coding
 agent has edited a repo inside its container, capture its work as a **patch** that
 our `evaluation` step can re-apply with `git apply` and grade. Getting `git diff`
 "mostly right" is easy; getting it right for *every* instance — new files,
@@ -476,7 +476,7 @@ fallback), `unidiff` (parse/classify hunks), `python-patch`.
 
 ---
 
-## 7. Decision for this repo *(settled 2026-07-17; see `PLAN.md` → "Patch extraction — decisions")*
+## 7. Decision for this repo *(settled — see [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md))*
 
 ### Extraction (rollout side) — run in the container, at repo root, against `base_commit`
 

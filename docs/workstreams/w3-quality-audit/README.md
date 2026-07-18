@@ -11,11 +11,11 @@ brittle graders — in the spirit of OpenAI's
 
 A **gold self-test sweep** (grade every instance's own gold patch; any that does
 *not* resolve is a broken/skewed instance) drops straight out of the
-[W2](w2-solve-eval.md) eval pipeline. It has already been run once across the
+[W2](../w2-solve-eval/README.md) eval pipeline. It has already been run once across the
 full dataset and surfaced exactly the expected class of issue: 3 instances that
 looked like `GOLDEN_FAIL` turned out to be **upstream dataset defects** (test
 names truncated by one character), not real capability signal — write-up in
-[`experiments/eval_issues/truncated_golden_test_names/`](../../experiments/eval_issues/truncated_golden_test_names/README.md).
+[`experiments/eval_issues/truncated_golden_test_names/`](../../../experiments/eval_issues/truncated_golden_test_names/README.md).
 
 That investigation is the template for this workstream: reproduce → diagnose →
 cross-check against the reference implementation → classify (harness bug vs.
@@ -31,8 +31,8 @@ dataset defect vs. genuine) → record.
 
 ## Related experiments
 
-- [`experiments/eval_issues/`](../../experiments/eval_issues/) — per-issue
+- [`experiments/eval_issues/`](../../../experiments/eval_issues/) — per-issue
   investigations (`truncated_golden_test_names/`,
   `shell_expansion_in_entryscript/`). Each is a reproduce → diagnose → fix
-  write-up; see the [experiment playbook](../experiments/playbook.md) for the
+  write-up; see the [experiment playbook](../../experiments/playbook.md) for the
   investigation-write-up convention.

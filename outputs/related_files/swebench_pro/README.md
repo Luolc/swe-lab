@@ -3,7 +3,8 @@
 Ground-truth annotations of the code a model needs to read to solve each
 SWE-Bench Pro task instance. For each instance we annotate a list of **relevant
 code snippets** — one `file_path` plus one contiguous, inclusive line range,
-with a short reason. See the repository [`PLAN.md`](../../../PLAN.md) for the
+with a short reason. See the
+[W1 workstream doc](../../../docs/workstreams/w1-related-files/README.md) for the
 objective and how annotations are produced.
 
 ## Folder structure

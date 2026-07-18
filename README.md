@@ -15,7 +15,7 @@ Tooling to **build, run, enrich, audit and fix SWE (a.k.a. coding agent) evaluat
   [*Separating signal from noise in coding evaluations*](https://openai.com/index/separating-signal-from-noise-coding-evaluations/).
   Not started; it will land as a sibling under `pipelines/`.
 
-The overall roadmap and design decisions live in [`PLAN.md`](PLAN.md).
+The overall roadmap and design live in [`docs/README.md`](docs/README.md).
 
 ## Setup
 

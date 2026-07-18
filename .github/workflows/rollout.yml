@@ -10,7 +10,7 @@ name: rollout
 # MVP note: this uses the same "ubuntu runner + docker run" model as `eval`
 # (DockerProvider bind-mounts the pinned agent binary + inherits the token by
 # reference into the container). The "container job" model (one instance IS the
-# job) is a later optimization — see PLAN.md → Workstream 2 decisions.
+# job) is a later optimization — see docs/workstreams/w2-solve-eval.
 on:
   workflow_dispatch:
     inputs:

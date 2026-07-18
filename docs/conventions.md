@@ -3,7 +3,7 @@
 The working map of this repo, written from the code — stack, commands, what each
 directory means, and the hazards a fresh session (human or agent) would
 otherwise learn the hard way. Pairs with [`AGENTS.md`](../AGENTS.md) (agent
-behavior rules) and [`PLAN.md`](../PLAN.md) (roadmap / status).
+behavior rules) and [`README.md`](README.md) (the map — roadmap / status).
 
 ## Stack
 
@@ -73,8 +73,8 @@ module names are unaffected.)
   background research. For how patch
   extraction / diffing / grading actually behave, read `core/patch.py`,
   `rollout/`, and `core/datasets/swebench_pro/grading.py`.
-- `PLAN.md` is the roadmap + status snapshot; the [workstream docs](workstreams/)
-  carry the detail.
+- [`README.md`](README.md) is the map (roadmap + status); the
+  [workstream docs](workstreams/) carry the detail.
 
 ## Hazards (learned the hard way)
 
@@ -84,7 +84,7 @@ module names are unaffected.)
   hung for 13 h without them.
 - **amd64 emulation is slow locally.** The prebuilt instance images are amd64;
   on Apple Silicon they run emulated. Real execution happens on **GitHub
-  Actions** (native amd64, free minutes) — see [W2](workstreams/w2-solve-eval.md).
+  Actions** (native amd64, free minutes) — see [W2](workstreams/w2-solve-eval/).
 - **Secrets never land in git.** `.envrc.local` holds the subscription
   `CLAUDE_CODE_OAUTH_TOKEN` and is **gitignored** — rotate after use. Git history
   was once scrubbed (force-pushed) of a leaked OAuth token + operator PII; don't

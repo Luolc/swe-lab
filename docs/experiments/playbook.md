@@ -168,6 +168,18 @@ model. Structure:
 - **The report is the durable artifact.** Sessions end; `REPORT.md` is what the
   next one reads instead of re-running $24 of experiments.
 
+## The experiments themselves
+
+They live under [`../../experiments/`](../../experiments/) (exempt from the
+code-quality hooks), grouped by workstream:
+
+| Experiment | Kind | Serves |
+| --- | --- | --- |
+| [related_files/prompt_variance](../../experiments/related_files/prompt_variance/) | Full experiment (README + REPORT) | [W1](../workstreams/w1-related-files/) |
+| [related_files/batch_annotation](../../experiments/related_files/batch_annotation/) | Batch run + QA log | [W1](../workstreams/w1-related-files/) |
+| [eval_issues/truncated_golden_test_names](../../experiments/eval_issues/truncated_golden_test_names/) | Investigation | [W2](../workstreams/w2-solve-eval/) / [W3](../workstreams/w3-quality-audit/) |
+| [eval_issues/shell_expansion_in_entryscript](../../experiments/eval_issues/shell_expansion_in_entryscript/) | Investigation | [W2](../workstreams/w2-solve-eval/) |
+
 ## Future: codify this as a skill
 
 The installed `agent-skills` pack has no skill for empirical / experiment-driven

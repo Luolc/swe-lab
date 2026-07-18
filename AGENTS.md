@@ -2,9 +2,9 @@
 
 Working rules for AI agents in this repo.
 
-The project roadmap and current status live in [`PLAN.md`](PLAN.md) (a thin
-index); the detail is under [`docs/`](docs/). Read `PLAN.md` before starting
-work — it points to everything else.
+The project map — roadmap, status, and where everything lives — is
+[`docs/README.md`](docs/README.md). Read it before starting work; it points to
+everything else.
 
 ## How we work
 
@@ -15,9 +15,9 @@ Two modes, and the mode picks the method:
   [`.claude/commands/`](.claude/commands/), skills in
   [`.claude/skills/`](.claude/skills/)), with test-driven development and small
   atomic commits as the default. A non-trivial feature starts from a short spec
-  (`/spec` → `SPEC.md`); the plan + task list for the active milestone live in
-  [`tasks/`](tasks/) (`plan.md` + `todo.md`) — if a task is missing, add it there
-  first.
+  (`/spec` → `SPEC.md`); the plan + task list for the active workstream live in
+  its folder (`docs/workstreams/<active>/plan.md` + `todo.md`) — if a task is
+  missing, add it there first.
 - **Experimenting** (learning something — a prompt, variance, a failure, "is X
   worth building?"): follow the
   **[experiment playbook](docs/experiments/playbook.md)** — hypothesis → logged,
@@ -72,8 +72,9 @@ behavior gets a test; `experiments/` is exempt from the hooks.
 
 ## Boundaries
 
-- **Always:** run the quality bar before merge; keep `PLAN.md` thin (detail lives
-  in `docs/`); redact operator PII in any trace record; treat the **code** as
+- **Always:** run the quality bar before merge; keep the docs map
+  ([`docs/README.md`](docs/README.md)) thin (detail lives in each workstream
+  folder); redact operator PII in any trace record; treat the **code** as
   source of truth over a doc flagged *provisional*.
 - **Ask first:** adding a runtime dependency; changing the annotation schema or
   the `EvalSpec` / report contract; re-hosting or renaming the HF dataset repos;

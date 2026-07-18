@@ -13,7 +13,7 @@ clears the Definition of Done there. Sizes: XS=1 file · S=1–2 · M=3–5 · L
 
 ## Task 1: Re-review the patch-extraction decisions ✅ done
 Reconciled D1–D8 against the code with the user and formalized them as
-[ADR-0001](../docs/decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted);
+[ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted);
 the survey is demoted to non-authoritative background, and the code no longer
 carries fragile doc references (only inline conclusions + a stable `ADR-0001`
 pointer).

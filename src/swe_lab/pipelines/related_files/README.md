@@ -7,8 +7,8 @@ This is about *building* ground truth, **not** about scoring an agent's file
 selection against the gold patch (the gold `patch` / `test_patch` are inputs the
 annotator may consult, not a comparison target).
 
-See [`PLAN.md`](../../../../PLAN.md) for the objective, schema, categories, and
-current status.
+See [the W1 workstream doc](../../../../docs/workstreams/w1-related-files/README.md)
+for the objective, schema, categories, and current status.
 
 ## Running
 

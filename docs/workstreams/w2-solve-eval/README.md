@@ -126,12 +126,12 @@ cases, a trailing space in one), so grading's exact string-set membership scores
 those (actually-passing) tests as missing. Confirmed via local Docker repro and
 cross-checked against Scale's own `swe_bench_pro_eval.py`, which fails identically
 on the same data — full write-up in
-[`experiments/eval_issues/truncated_golden_test_names/`](../../experiments/eval_issues/truncated_golden_test_names/README.md).
+[`experiments/eval_issues/truncated_golden_test_names/`](../../../experiments/eval_issues/truncated_golden_test_names/README.md).
 
 **Temporary fix (in place):** rather than re-host the parquet yet, the loader
 still downloads the *original* upstream parquet and corrects only these 8 entries
 **in memory at load time** — see
-[`core/datasets/swebench_pro/patches.py`](../../src/swe_lab/core/datasets/swebench_pro/patches.py)
+[`core/datasets/swebench_pro/patches.py`](../../../src/swe_lab/core/datasets/swebench_pro/patches.py)
 (`patch_fail_to_pass`, applied in `record.from_raw`; a no-op on every other row).
 With it, all three gold-eval `resolved = true` locally → the sweep is
 effectively **731/731**. **End state (TODO):** publish one fully-fixed parquet to
@@ -148,11 +148,11 @@ rotate after use).
 1. **`rollout` — the container agent loop.** Run headless Claude Code inside each
    instance's prebuilt image, capture the trajectory + the patch. Sub-tasks:
    - **Patch extraction** is the hard, error-prone part. Its contract is settled
-     in [ADR-0001](../decisions/ADR-0001-patch-extraction-and-grading.md)
-     (Accepted); the [corner-case survey](../patch-extraction.md) is retained as
+     in [ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md)
+     (Accepted); the [corner-case survey](../../patch-extraction.md) is retained as
      non-authoritative background. The code is the source of truth
-     ([`core/patch.py`](../../src/swe_lab/core/patch.py),
-     [`rollout/`](../../src/swe_lab/rollout/)).
+     ([`core/patch.py`](../../../src/swe_lab/core/patch.py),
+     [`rollout/`](../../../src/swe_lab/rollout/)).
    - Extract the generic "run Claude Code headless + stream-json trace + exchange
      record" into `core/agent/` so rollout reuses it. *(Done — see
      `core/agent/`.)*
@@ -171,7 +171,7 @@ rotate after use).
 
 ## Patch-extraction decisions
 
-Settled in [ADR-0001](../decisions/ADR-0001-patch-extraction-and-grading.md)
+Settled in [ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md)
 (Accepted): text-only diff vs `base_commit`, strict `git apply` matching Scale.
 The code is the source of truth.
 

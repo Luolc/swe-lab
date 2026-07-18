@@ -4,9 +4,9 @@ The **process** planning surface: the phased build order, the standing quality
 bar, and review checkpoints for the milestone in flight. Pairs with
 [`todo.md`](todo.md) (the ordered task list).
 
-- **What we're building & where it stands:** [`PLAN.md`](../PLAN.md) (roadmap +
-  status) and the [workstream docs](../docs/workstreams/).
-- **How we work:** [`AGENTS.md`](../AGENTS.md) (build vs experiment mode, git
+- **What we're building & where it stands:** the [map](../../README.md) (roadmap +
+  status) and this workstream's [README](README.md).
+- **How we work:** [`AGENTS.md`](../../../AGENTS.md) (build vs experiment mode, git
   workflow, quality bar, boundaries).
 - Naming note: this top-level `tasks/` holds **planning** (plan + todo). The
   dataset-pipeline *code* lives under `src/swe_lab/pipelines/` — not to be
@@ -15,12 +15,12 @@ bar, and review checkpoints for the milestone in flight. Pairs with
 ## Current milestone — W2: a working solve + eval loop at scale
 
 W1 (annotation) is ✅ complete. W3 (audit) is planned. The active work is
-**[W2](../docs/workstreams/w2-solve-eval.md)**: the `evaluation` subsystem is
+**[W2](README.md)**: the `evaluation` subsystem is
 built and validated (full gold sweep done, 731/731); **`rollout` (agent sampling)
 is the focus**, then matrix eval to run at scale.
 
 **Patch extraction is settled** in
-[ADR-0001](../docs/decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted);
+[ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted);
 the code stays authoritative. Still confirm the *actual* current rollout state
 against the code before starting a rollout task — don't trust a doc's
 "done"/"next" framing blindly.
@@ -69,7 +69,7 @@ the user to catch a wrong turn while the work is still cheap to redo. Mark them 
 
 ## Open questions
 
-Carried from [W2](../docs/workstreams/w2-solve-eval.md); resolve in-phase:
+Carried from [W2](README.md); resolve in-phase:
 
 1. Does any instance need `ENV`-scraping / `test_patch` applied? (Surfaces only
    when a gold self-test fails.)
