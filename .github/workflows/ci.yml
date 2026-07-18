@@ -1,0 +1,39 @@
+# Lightweight PR gate: format/lint/type-check + tests. The other workflows
+# (eval / rollout / verify-golden) are heavy, manual Docker jobs — this is the
+# fast check that keeps `main` always-green and can gate auto-merge.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# One in-flight run per ref; newer pushes cancel older ones.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv (with cache)
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync deps (creates .venv, installs dev group)
+        run: uv sync
+
+      - name: Tests
+        run: uv run pytest -q
+
+      # pyink + ruff + isort + basedpyright + uv-lock. basedpyright type-checks
+      # against .venv, so this runs after `uv sync`.
+      - name: Format / lint / type-check
+        run: uv run pre-commit run --all-files --show-diff-on-failure
