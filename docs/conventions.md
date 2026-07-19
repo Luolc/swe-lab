@@ -70,6 +70,10 @@ with the following repo-wide choices and deviations (full plan + rationale:
   format rules still apply.
 - Enforced by ruff (`D` google convention + `D401` + `D417`, `N`, `C90`,
   `W505`) and **pydoclint** (Args ↔ signature consistency) in pre-commit + CI.
+- **Modern typing syntax (PEP 695):** type aliases use the `type` statement
+  (`type Mounts = dict[str, Mount]`, never bare `Mounts = …` or
+  `TypeAlias`); generics use the bracket form
+  (`class Grader[V: Verdict](Protocol)`), not `TypeVar` boilerplate.
 
 ## Directory map
 

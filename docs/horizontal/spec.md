@@ -130,7 +130,7 @@ class Mount:
     executable: bool = False         # chmod +x after materializing
                                      # exactly one of content/source is set
 
-Mounts = dict[str, Mount]            # key = workspace-relative target path
+type Mounts = dict[str, Mount]       # key = workspace-relative target path
 ```
 
 This kills the duplicated-staging smell directly and keeps the axes decoupled:

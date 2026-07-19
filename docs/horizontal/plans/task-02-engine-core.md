@@ -87,7 +87,7 @@ class Mount:
   source: Path | None = None     # large, host-cached (the ~100MB agent binary)
   executable: bool = False
 
-Mounts = dict[str, Mount]        # key = workspace-relative target path
+type Mounts = dict[str, Mount]   # key = workspace-relative target path
 
 def merge_mounts(*contributions: Mounts) -> Mounts: ...
     # duplicate target path → SandboxError (loud, never a silent overwrite)
