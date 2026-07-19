@@ -1,11 +1,18 @@
 """The backend seam: one way to realize a live sandbox.
 
-Two implementations are planned — A-host (``docker create/start/exec/rm`` on
-any runner, workspace bind-mounted) and A-ghjob (the GitHub job *is* the
-container; workspace is a local dir). The manager and observers are
-backend-agnostic; scripts reference workspace files only through the
-``SANDBOX_WORKSPACE`` environment variable every backend sets at exec time
-(see the task-02 design, §5.5, for the full reasoning).
+Two implementations are planned. A **host-orchestrated Docker backend**: the
+host drives ``docker create/start/exec/rm`` and the workspace directory is
+bind-mounted into the container. A **GitHub-Actions container-job backend**:
+the CI job itself runs inside the instance's image, so the workspace is just
+a local directory and ``exec`` runs in the job's own shell.
+
+The manager and observers are backend-agnostic. Because the workspace lands
+at a different in-sandbox path per backend (a fixed mount point vs. an
+arbitrary runner directory), generated scripts never hardcode it — they
+reference workspace files only through the ``SANDBOX_WORKSPACE`` environment
+variable, which every backend sets on each exec. That is the whole contract
+that lets one script text run unchanged on any backend (the same pattern as
+GitHub Actions' own ``GITHUB_WORKSPACE``).
 """
 
 from __future__ import annotations
@@ -77,8 +84,8 @@ class SandboxBackend(Protocol):
       timeout: Seconds before the execution is killed.
       env: Extra variables set for this execution only.
       stream_to: Stream stdout to this host file instead of capturing it
-        in memory (load-bearing for long agent runs — see conventions
-        Hazards).
+        in memory. Load-bearing for long agent runs: buffering hours of
+        agent output in memory has caused runs to swap-thrash and hang.
 
     Returns:
       The script's exit status and output.

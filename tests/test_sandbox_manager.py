@@ -1,7 +1,8 @@
 """Lifecycle tests for SandboxManager: ordering + the full failure matrix.
 
-Each failure-matrix row of the task-02 design is one test here, asserting
-which hooks ran, whether teardown happened, and the resulting status/error.
+Each row of the failure matrix (the semantics spelled out in the manager's
+module docstring) is one test here, asserting which hooks ran, whether
+teardown happened, and the resulting status/error.
 """
 
 from pathlib import Path

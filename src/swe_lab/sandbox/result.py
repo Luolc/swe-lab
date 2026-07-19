@@ -3,7 +3,8 @@
 The manager assembles a single ``RunResult`` from observer *return values*
 (``Contribution``) plus what it catches — exactly once, at teardown. Typed
 per-axis results (e.g. an eval verdict) do not travel through here: they live
-on the stateful observer that produced them (task-02 design, §5.4).
+on the stateful observer that produced them — the caller constructed that
+observer, holds the reference, and reads the typed result straight back.
 """
 
 from __future__ import annotations

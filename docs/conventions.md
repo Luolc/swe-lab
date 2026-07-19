@@ -79,6 +79,12 @@ with the following repo-wide choices and deviations (full plan + rationale:
   config fields + a private state slot via
   `field(default=None, init=False, repr=False)`) prefer `@dataclass` over a
   long hand-written `__init__`. A hand-rolled `__init__` needs a reason.
+- **Docstrings are self-contained.** A first-time reader gets no
+  design-history context: define project shorthand where it's used (spell out
+  what a backend/mode *is*, don't name-drop internal labels like "A-host"),
+  and never cite planning docs by section (`task-NN §x.y` — those files move
+  and renumber). Carry the conclusion inline; the only sanctioned doc pointer
+  in code is a stable `ADR-NNNN` reference.
 
 ## Directory map
 
