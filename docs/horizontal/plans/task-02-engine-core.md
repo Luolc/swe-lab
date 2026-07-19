@@ -128,9 +128,9 @@ class SandboxBackend(Protocol):
 
 # ─── result.py ──────────────────────────────────────────────────────────────
 class RunStatus(StrEnum):
-  OK = "ok"
-  SETUP_FAILED = "setup_failed"   # before_create/mounts/up/after_create failed
-  ERRORED = "errored"             # body or a before_destroy observer failed
+  SUCCESS = "success"
+  SETUP_ERROR = "setup_error"   # before_create/mounts/up/after_create failed
+  RUN_ERROR = "run_error"       # body or a before_destroy observer failed
 
 @dataclass(frozen=True)
 class Contribution:
@@ -229,16 +229,16 @@ class SandboxManager:
 
 | Failing step | on_error runs? | before_destroy runs? | down runs? | status | error |
 |---|---|---|---|---|---|
-| `before_create` hook raises | no (no live sb) | no | no | SETUP_FAILED | hook's |
-| `merge_mounts` duplicate target | no | no | no | SETUP_FAILED | SandboxError |
-| `materialize` (missing source) | no | no | no | SETUP_FAILED | SandboxError |
-| `backend.up` raises | no | no | yes (best-effort) | SETUP_FAILED | backend's |
-| `after_create` hook raises | yes | yes | yes | SETUP_FAILED | hook's |
-| body raises | yes | yes | yes | ERRORED | body's |
-| `before_destroy` hook raises (clean body) | no | rest still run | yes | ERRORED | hook's |
-| `before_destroy` hook raises (after body error) | already ran | rest still run | yes | ERRORED | body's (primary) |
+| `before_create` hook raises | no (no live sb) | no | no | SETUP_ERROR | hook's |
+| `merge_mounts` duplicate target | no | no | no | SETUP_ERROR | SandboxError |
+| `materialize` (missing source) | no | no | no | SETUP_ERROR | SandboxError |
+| `backend.up` raises | no | no | yes (best-effort) | SETUP_ERROR | backend's |
+| `after_create` hook raises | yes | yes | yes | SETUP_ERROR | hook's |
+| body raises | yes | yes | yes | RUN_ERROR | body's |
+| `before_destroy` hook raises (clean body) | no | rest still run | yes | RUN_ERROR | hook's |
+| `before_destroy` hook raises (after body error) | already ran | rest still run | yes | RUN_ERROR | body's (primary) |
 | `backend.down` raises | — | — | swallowed+logged | unchanged | unchanged |
-| everything clean | no | yes | yes | OK | None |
+| everything clean | no | yes | yes | SUCCESS | None |
 
 Edge ledger beyond the matrix: `result` accessed before/inside the `with` →
 `SandboxError`; observer contribution key collisions (two observers claim
@@ -264,9 +264,10 @@ after the run.
 hand (`grading.py:170-186`); rollout writes `prompt.txt`/`entryscript.sh` and
 bind-mounts the binary (`runner.py:117-141`). Both become `Mounts`
 contributions (spec §Declarative mounts). The stale-artifact clearing
-(`grading.py:167-169`, `runner.py:113-115`) becomes engine policy:
-materialization runs on a per-run workspace the manager may pre-clean (see §8
-Q3). Name collision note: today's `Mount` in `core/docker/provider.py:20-31`
+(`grading.py:167-169`, `runner.py:113-115`) becomes engine policy: the
+manager **refuses a non-empty workspace unless `reuse=True`** (settled, §8
+Q3) — a fresh dir per run beats today's delete-known-names lists, which
+silently miss any artifact name added later. Name collision note: today's `Mount` in `core/docker/provider.py:20-31`
 is a *bind* mount (host→container path); the new `sandbox.mounts.Mount` is a
 *materialized file*. They coexist until 10b deletes the old provider; the
 A-host backend keeps bind-mount logic internal (task 03 §5).
@@ -296,16 +297,53 @@ observers with result fields are single-run objects; reusing one across runs
 is a bug (fresh observer per composition — the compositions in tasks 04/06
 construct them per call).
 
-### 5.5 `exec` takes script *text*; the backend places it
-Today the script must be a staged file in the workspace and its in-container
-path is coupled to `MOUNT_AT` (`grading.py:118-125` builds `/workspace/...`
-paths; `rollout/constants.py` MOUNT_AT ditto). Passing text lets the backend
-write it under the workspace and invoke it by *its own* notion of the
-workspace path — which is exactly the A-host (`/workspace`) vs A-ghjob (local
-dir) difference. Scripts that need to reference workspace files use the
-`SANDBOX_WORKSPACE` env var both backends set (decision recorded here; the
-consumer side is task 04 §5.3). Why not keep path-based exec: it would leak
-`MOUNT_AT` into every axis and break on A-ghjob.
+### 5.5 `exec` takes script *text*; workspace paths resolve via `SANDBOX_WORKSPACE`
+
+**The problem.** Script text is generated at *compile time* (dataset/eval-
+method builds `eval_script`), but the workspace's in-container path is a
+*backend, exec-time* fact: A-host bind-mounts it at `/workspace`; under
+A-ghjob the job *is* the container and the workspace is an arbitrary local
+path known only at runtime. Today a shared constant bridges the gap —
+`MOUNT_AT = "/workspace"`, with comments insisting builder and runner use the
+same constant (`swebench_pro/constants.py`, `rollout/constants.py`;
+`grading.py:118-125` builds `/workspace/...` paths from it). One backend, so
+it works; A-ghjob kills the constant.
+
+**Alternatives weighed (settled with the user 2026-07-18):**
+
+1. *Parameterize the generator* — pass the workspace path into the compile
+   step. Feasible, but then `eval_script` can't be fixed at compile time:
+   either `compile_unit_test` grows a backend-coupled argument (the dataset
+   compile step now knows backend facts — the axis boundary leaks), or
+   `UnitTestSpec.eval_script` becomes a `(workspace: str) -> str` callable
+   (more machinery). Worse, the script stops being a **byte-stable artifact**:
+   task-04's pinned old-builder parity fixture and any persisted/reproducible
+   script record depend on "same compile → same bytes".
+2. *Backend-side token substitution* (`{{WORKSPACE}}` replaced at exec time) —
+   fragile: every substitution site must get quoting/escaping right (a path
+   with spaces breaks it), plus accidental-token risk.
+3. **Env var (chosen)** — scripts write `"$SANDBOX_WORKSPACE"/patch.diff`; the
+   backend injects the value at exec (`docker exec -e` / job env). One quoting
+   discipline handles all escaping; the script text is backend-independent
+   and byte-stable; compile stays pure.
+
+This is also the established solution to exactly this problem: GitHub Actions
+sets `$GITHUB_WORKSPACE` rather than templating user scripts (likewise
+`CI_PROJECT_DIR`, `BUILD_SOURCESDIRECTORY` …) — script author and execution
+environment decouple by handshaking on a stable *name*. Bonus: `docker exec`
+into a live container and script fragments run by hand, because the var is
+just there.
+
+**Known costs + mitigations:** one level of indirection (the reader must know
+who sets it — this section is that record), and an unset var fails silently —
+mitigated by the backend contract (both backends always set it; unit-tested),
+with `set -u` in generated scripts as an optional hardening *after* CP1 (it
+would break byte-parity with the pinned old-builder fixture, so not in the
+port itself).
+
+Passing script *text* (rather than a workspace path to a pre-staged file) is
+the enabling half: the backend writes the text under the workspace and invokes
+it by its own notion of the path — keeping `MOUNT_AT` out of every axis.
 
 ### 5.6 One engine error type: `SandboxError(RuntimeError)`
 Follows the audit's base-exception finding (P2) *locally*: engine failures are
@@ -350,11 +388,14 @@ Google-docstring'd (task-01 P4 guardrail — gates are live).
 1. ~~`Contribution.data`~~ — **resolved 2026-07-18**: no generic data slot;
    typed results live on stateful observers (§5.4), `Contribution` stays
    artifacts+metrics per the spec sketch.
-2. **`exec(script_text)` + `SANDBOX_WORKSPACE` env (§5.5)** — OK? This is the
-   one interface choice that constrains both backends and every axis.
-3. **Per-run workspace hygiene** — proposal: the manager *refuses* a non-empty
-   workspace unless `reuse=True` is passed (safer than today's targeted
-   `unlink` lists, which silently miss new artifact names). Confirm, or keep
-   today's delete-known-names behavior?
-4. **Naming** — `RunStatus.SETUP_FAILED/ERRORED/OK` labels; `testing.py` as
-   the public-doubles module name. Objections welcome before code exists.
+2. ~~`exec(script_text)` + `SANDBOX_WORKSPACE`~~ — **resolved 2026-07-18**:
+   confirmed; the full reasoning (alternatives, byte-stability, CI precedent,
+   mitigations) is recorded in §5.5.
+3. ~~Per-run workspace hygiene~~ — **resolved 2026-07-18**: the manager
+   refuses a non-empty workspace unless `reuse=True` (no silent
+   delete-known-names lists).
+4. ~~Naming~~ — **resolved 2026-07-18**:
+   `RunStatus.SUCCESS / SETUP_ERROR / RUN_ERROR` (symmetric noun forms,
+   replacing the earlier OK/SETUP_FAILED/ERRORED draft); `testing.py` stands.
+
+**All open questions resolved — the design is cleared for implementation.**

@@ -115,7 +115,7 @@ def run_unit_test[V: Verdict](
     # composes manager(mounts=unit_spec.mounts, observers=[*observers, obs]);
     # body = sb.exec(unit_spec.eval_script, timeout=…, stream_to=stdout.log);
     # returns (manager.result, obs.verdict). verdict is None only when the
-    # run died before before_destroy could fire (early SETUP_FAILED rows of
+    # run died before before_destroy could fire (early SETUP_ERROR rows of
     # the task-02 matrix) — callers gate on RunResult.status.
 
 # ─── datasets/swebench_pro/unit_test.py ─────────────────────────────────────
@@ -249,7 +249,7 @@ run is the proof.
   single body exec; the verdict lands on the observer and in the returned
   tuple; grader runs even when the body exec fails (before_destroy semantics,
   task 02 matrix); an early setup failure returns `verdict=None` with
-  `status=SETUP_FAILED`.
+  `status=SETUP_ERROR`.
 - **Verdict protocol:** `SweBenchProVerdict` satisfies `Verdict`
   (basedpyright enforces the generic bound at compile time — that *is* the
   test).
