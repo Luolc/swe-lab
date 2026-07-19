@@ -45,12 +45,14 @@ Small, one-concern modules per the repo's code style (spec §Code Style):
 ```
 sandbox/
   __init__.py    Curated exports (the package's public API).
+  errors.py      SandboxError (own module: mounts needs it, backend doesn't
+                 own it — avoids a mounts→backend dependency).
   spec.py        SandboxSpec.
   mounts.py      Mount, Mounts, merge_mounts(), materialize().
-  result.py      RunStatus, Contribution, RunResult.
+  result.py      RunStatus, Contribution, RunResult, merge_contributions().
   observer.py    SandboxObserver (five no-op hooks), CompositeObserver.
-  backend.py     SandboxBackend protocol, ExecResult, SandboxError.
-  manager.py     SandboxManager (context manager; the lifecycle driver).
+  backend.py     SandboxBackend protocol, ExecResult, WORKSPACE_ENV.
+  manager.py     Sandbox + SandboxManager (the lifecycle driver).
   testing.py     FakeBackend + RecordingObserver (public test doubles).
 ```
 
@@ -232,7 +234,7 @@ class SandboxManager:
 | `before_create` hook raises | no (no live sb) | no | no | SETUP_ERROR | hook's |
 | `merge_mounts` duplicate target | no | no | no | SETUP_ERROR | SandboxError |
 | `materialize` (missing source) | no | no | no | SETUP_ERROR | SandboxError |
-| `backend.up` raises | no | no | yes (best-effort) | SETUP_ERROR | backend's |
+| `backend.up` raises | no | no | backend-internal (up must clean its own partial state — the manager has no handle) | SETUP_ERROR | backend's |
 | `after_create` hook raises | yes | yes | yes | SETUP_ERROR | hook's |
 | body raises | yes | yes | yes | RUN_ERROR | body's |
 | `before_destroy` hook raises (clean body) | no | rest still run | yes | RUN_ERROR | hook's |

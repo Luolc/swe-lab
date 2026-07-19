@@ -33,6 +33,7 @@ repos:
           - --style=google
           - --arg-type-hints-in-docstring=False
           - --check-return-types=False
+          - --check-yield-types=False
           - --show-filenames-in-every-violation-message=True
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.11.7
