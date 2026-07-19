@@ -1,8 +1,7 @@
 """The lifecycle driver: bring a sandbox up, run one body, always clean up.
 
 ``SandboxManager`` yields a pure-handle ``Sandbox`` for the caller's body and
-assembles a single ``RunResult`` at teardown. Failure semantics follow the
-task-02 design's failure matrix exactly:
+assembles a single ``RunResult`` at teardown. Failure semantics, exhaustively:
 
 - Setup failures (hooks/mounts/up) **propagate** — a ``with`` body cannot run
   without a sandbox — but the ``RunResult`` is still assembled first.
