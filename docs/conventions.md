@@ -74,6 +74,11 @@ with the following repo-wide choices and deviations (full plan + rationale:
   (`type Mounts = dict[str, Mount]`, never bare `Mounts = …` or
   `TypeAlias`); generics use the bracket form
   (`class Grader[V: Verdict](Protocol)`), not `TypeVar` boilerplate.
+- **Dataclass wherever the class is field-shaped** — records are
+  `frozen=True` dataclasses; even stateful classes (e.g. a manager holding
+  config fields + a private state slot via
+  `field(default=None, init=False, repr=False)`) prefer `@dataclass` over a
+  long hand-written `__init__`. A hand-rolled `__init__` needs a reason.
 
 ## Directory map
 

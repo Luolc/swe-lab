@@ -181,17 +181,19 @@ class Sandbox:
   def exec(self, script, *, timeout, env=None, stream_to=None) -> ExecResult:
     ...                                    # delegates to the bound backend
 
+@dataclass
 class SandboxManager:
-  def __init__(
-      self,
-      spec: SandboxSpec,
-      *,
-      backend: SandboxBackend,
-      observers: Sequence[SandboxObserver] = (),
-      mounts: Mounts | None = None,        # composition-level extras
-      label: str | None = None,            # defaults to spec.instance_id
-      workspace: Path,
-  ) -> None: ...
+  """Configuration fields + one private state slot — a dataclass, not a long
+  hand-written __init__ (repo style: dataclass wherever the class is
+  field-shaped)."""
+
+  spec: SandboxSpec
+  backend: SandboxBackend
+  workspace: Path
+  observers: Sequence[SandboxObserver] = ()
+  mounts: Mounts = field(default_factory=dict)   # composition-level extras
+  label: str = ""                     # "" → spec.instance_id (__post_init__)
+  _result: RunResult | None = field(default=None, init=False, repr=False)
 
   @contextmanager
   def sandbox(self) -> Iterator[Sandbox]: ...
