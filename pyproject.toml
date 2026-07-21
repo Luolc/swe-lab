@@ -25,6 +25,11 @@ dev = [
     "isort>=8.0.1",
 ]
 
+[tool.pytest.ini_options]
+markers = [
+    "docker: integration test that needs a usable Docker daemon; auto-skipped when Docker is absent (see tests/conftest.py)",
+]
+
 [tool.basedpyright]
 venvPath = "."
 venv = ".venv"

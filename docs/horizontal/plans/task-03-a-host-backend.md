@@ -1,10 +1,12 @@
 # Task 03 — A-host backend: `docker create/start/exec/rm`
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) (§Two backends, one interface; assumption 3) and
-> [task 02](task-02-engine-core.md)'s `SandboxBackend` protocol. Grounded in
-> the current one-shot provider (`src/swe_lab/core/docker/provider.py` at
-> `9667fff`). Open items in §8.
+> **Status: DONE (PR #27).** Class shipped as **`DockerHostBackend`** (not
+> `HostBackend` — self-contained naming, per the docstring convention). All
+> three §8 open questions resolved as recommended (bash keep-alive;
+> `@pytest.mark.docker` auto-skip; hardening deferred). One implementation
+> delta: exec feeds the script on **stdin** rather than a scratch file — see
+> §5.6 (added). 11 tests (8 mocked argv + 3 live-Docker, auto-skipped when no
+> daemon). Sections below are the original plan.
 
 ---
 
@@ -159,6 +161,19 @@ Companion of task 02 §5.5: A-host sets it to `mount_at` (`/workspace`);
 A-ghjob will set it to the local workspace path. Axis-generated scripts
 reference workspace files only through it, which is what makes one script text
 run on both backends (spec Success #4).
+
+### 5.6 Exec feeds the script on stdin, not a scratch file *(implementation delta)*
+The plan (§4 step 4) wrote each script to `<workspace>/.sandbox/exec-<n>.sh`
+and ran it by path. But the `SandboxBackend.exec` signature only carries the
+handle, **not** the workspace path — and the backend is a frozen, stateless
+dataclass, so it cannot map handle→workspace to locate that file. Rather than
+widen the interface or encode the path into the handle, exec runs
+`docker exec -i <cid> /bin/bash -s` and feeds the script text on **stdin**.
+This is stateless, needs no scratch dir (the `.sandbox/` ledger entry is
+dropped), and keeps `SANDBOX_WORKSPACE` (a construction-time backend field) as
+the only path handshake. Trade-off: the script is not left on disk for
+post-hoc inspection — if a composition wants an entryscript persisted for
+audit, it can add it as a `Mount`, which is orthogonal.
 
 ## 6. Tests
 
