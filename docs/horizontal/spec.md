@@ -117,21 +117,34 @@ class RunResult:                     # the manager's aggregated return
 Everything a run needs staged into the workspace is declared as a **`Mounts`**
 value instead of imperative per-flow staging code (today rollout and eval each
 hand-write their own). Each **axis contributes its own mounts** — dataset: setup
-files; harness: the pinned agent binary + entryscript; eval-method:
-`run_script.sh` + `parser.py` — and the manager **merges and materializes** the
-union into `sb.workspace` before the container comes up (duplicate target paths
-are an error, not a silent overwrite).
+files; harness: the prompt + agent invocation script; eval-method:
+`entryscript.sh` + `run_script.sh` + `parser.py` + `required_tests.json` — and
+the manager **merges and materializes** the union into `sb.workspace` before the
+container comes up (duplicate target paths are an error, not a silent
+overwrite). Every script the sandbox runs is a materialized file, **run by its
+`$SANDBOX_WORKSPACE` path** (not fed on stdin), so the exact script that ran
+survives in the workspace for audit. The concrete file inventory per composition
+is [`workspace-layout.md`](workspace-layout.md).
 
 ```python
 @dataclass(frozen=True)
 class Mount:
-    content: bytes | None = None     # small, runtime-generated (scripts)
-    source: Path | None = None       # large, host-cached (the ~100MB agent binary)
+    content: bytes | None = None     # small, runtime-generated (scripts, expectations)
+    source: Path | None = None       # host-cached file, copied in
     executable: bool = False         # chmod +x after materializing
                                      # exactly one of content/source is set
 
 type Mounts = dict[str, Mount]       # key = workspace-relative target path
 ```
+
+**Assets vs. mounts.** Large read-only *infrastructure* — the ~100 MB pinned
+agent binary — is **not** a workspace mount: it would be copied per run and
+would pollute a persisted workspace (task 12). It is instead a backend **asset**
+— a host file placed at a fixed container path, read-only — realized by A-host
+as `-v host:container:ro` and by A-ghjob as a `cp` into place. Assets are a
+backend construction-time property (like `network`/`env`), so the agent binary
+lands on `PATH` (`/usr/local/bin/claude`) outside the workspace; only run *data*
+lives in the workspace.
 
 This kills the duplicated-staging smell directly and keeps the axes decoupled:
 no axis needs to know what another axis mounts.

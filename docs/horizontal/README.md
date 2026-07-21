@@ -39,5 +39,7 @@ alongside this README).
 **Active now — the SandboxRun redesign:** re-architect the execution core into one
 unified sandboxed-task engine + three plug-in axes (harness / dataset /
 eval-method), so `rollout` and `eval` become configs of one engine. See
-**[spec.md](spec.md)** (**approved 2026-07-18** — open questions resolved; next
-step is the plan).
+**[spec.md](spec.md)** (approved 2026-07-18), the **[plan](plan.md)** +
+per-task designs in **[plans/](plans/)**, and
+**[workspace-layout.md](workspace-layout.md)** (the concrete per-run file
+inventory every composition is built against).

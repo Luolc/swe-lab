@@ -63,8 +63,11 @@ observer, all against FakeBackend / fixtures).
 BINARY_NAME = "claude"            # copied into the workspace, run from there
 PROMPT_NAME = "prompt.txt"
 TRAJECTORY_NAME = "trajectory.jsonl"
+AGENT_SCRIPT_NAME = "agent.sh"       # the invocation script (a mount, run by path)
 AGENT_STDERR_NAME = "agent.stderr"
-AGENT_HOME_AT = "/tmp/claude-home"   # writable HOME inside the container
+CLAUDE_HOME = "/tmp/claude-home"     # the claude binary's writable HOME (in /tmp,
+                                     # ephemeral, NOT a workspace file); harness-owned
+BINARY_AT = "/usr/local/bin/claude"  # asset path on PATH — NOT in the workspace
 DEFAULT_MODEL = "sonnet"
 # The token is a rollout-composition concern (task 07 sets the backend's
 # pass_env); the agent binary reads $CLAUDE_CODE_OAUTH_TOKEN from the env.
@@ -79,19 +82,28 @@ class ClaudeCodeHarness:
   binary_path: Path | None = None      # default: ensure_claude_binary(...)
   repo_root: Path | None = None
 
-  def mounts(self) -> Mounts:
-    """The pinned binary (executable) + the prompt text, staged into the ws."""
-    binary = self.binary_path or ensure_claude_binary(repo_root=self.repo_root)
+  def mounts(self, workdir: str) -> Mounts:
+    """Stage the prompt + the invocation script (agent.sh) into the workspace.
+
+    The binary is NOT here — it is a backend *asset* at BINARY_AT (see §5.3);
+    the rollout composition wires it into the backend.
+    """
     return {
-        BINARY_NAME: Mount(source=binary, executable=True),
         PROMPT_NAME: Mount(content=self.prompt.encode()),
+        AGENT_SCRIPT_NAME: Mount(
+            content=self._invocation_script(workdir).encode(), executable=True
+        ),
     }
 
-  def build_body(self, workdir: str) -> Callable[[Sandbox], None]:
-    """Return the main action: exec the agent invocation in the sandbox."""
-    script = self._invocation_script(workdir)
+  def binary_asset(self) -> tuple[str, Path]:
+    """(container_path, host_path) for the backend's read-only asset mount."""
+    binary = self.binary_path or ensure_claude_binary(repo_root=self.repo_root)
+    return BINARY_AT, binary
+
+  def build_body(self) -> Callable[[Sandbox], None]:
+    """Return the main action: run the staged agent.sh by its workspace path."""
     def body(sb: Sandbox) -> None:
-      _ = sb.exec(script, timeout=...)   # timeout threaded by the composition
+      _ = sb.run(AGENT_SCRIPT_NAME, timeout=...)  # run a workspace file by name
     return body
 
   def trace_observer(self) -> StreamTraceObserver: ...
@@ -123,18 +135,21 @@ interpolated values `shlex.quote`d (as `entryscript.py:55-61`):
 
 ```bash
 set -u
-export HOME=/tmp/claude-home
+export HOME=/tmp/claude-home            # claude's writable HOME (harness-owned)
 mkdir -p "$HOME"
 export IS_SANDBOX=1                     # so the agent accepts --dangerously-… as root
 cd <workdir>                            # spec.workdir, e.g. /app (no git reset — rollout
                                         #   works from the image's checked-out state)
-"$SANDBOX_WORKSPACE"/claude \
+claude \                                # the binary is an asset on PATH (§5.3)
   -p "$(cat "$SANDBOX_WORKSPACE"/prompt.txt)" \
   --model <model> --output-format stream-json --verbose \
   --dangerously-skip-permissions \
   > "$SANDBOX_WORKSPACE"/trajectory.jsonl \
   2> "$SANDBOX_WORKSPACE"/agent.stderr || true
 ```
+
+This text is staged as `agent.sh` (a mount) and **run by its workspace path**
+(`sb.run("agent.sh")`), so the exact invocation persists for audit.
 
 `|| true` preserves the current swallow (`entryscript.py:51-53,76`): a nonzero
 agent exit must still leave the workspace edits for extraction. Model is passed
@@ -161,18 +176,18 @@ agent_run.py`), so **moving** those files now would break W1 — out of scope
 thin shim is left. This task adds the harness *around* the existing functions.
 (§8 Q1 confirms the reuse-not-move call.)
 
-### 5.3 The binary is copied into the workspace, not bind-mounted separately
-Old rollout bind-mounted the ~100 MB binary read-only at a fixed path
-(`runner.py:135`: `Mount(binary_path, CLAUDE_BIN_AT, read_only=True)`). The
-engine's `Mount(source=…)` (task 02) copies it into the per-run workspace, run
-from `$SANDBOX_WORKSPACE/claude`. Rationale: it keeps "everything the run needs
-is in the one bind-mounted workspace" (a spec principle) and avoids adding a
-second-bind-mount concept to the backend. Cost: a ~100 MB `shutil.copyfile` per
-run — negligible against a minutes-long agent run, and reclaimed with the
-workspace. The binary lives under `/workspace`, not the repo `/app`, so it never
-pollutes the extracted diff. *(Alternative — extend the backend with read-only
-asset mounts — rejected: more interface for marginal savings; revisit only if
-copy cost ever matters.)*
+### 5.3 The binary is an asset (fixed container path), not a workspace mount
+*(Revised 2026-07-21 with the user — the earlier draft copied the binary into
+the workspace; reversed.)* The ~100 MB binary is read-only **infrastructure**,
+not run data: copying it into every per-run workspace wastes disk/time and
+would pollute a persisted workspace (task 12 would push it to T1). So it is a
+backend **asset** — a host file at a fixed container path, read-only — realized
+by A-host as `-v <binary>:/usr/local/bin/claude:ro` (what the old rollout did,
+`runner.py:135`) and by A-ghjob as a `cp` into place. The harness declares the
+asset (`/usr/local/bin/claude` → `ensure_claude_binary()`); the rollout
+composition (task 07) wires it into the backend's `assets`. Scripts invoke it as
+`claude` (on `PATH`). Only run *data* lives in the workspace; see
+[`workspace-layout.md`](../workspace-layout.md).
 
 ### 5.4 Rollout records failure; it does not classify-and-retry
 W1's `errors.py` taxonomy (`classify_error_text`, `UsageLimitError`,
@@ -219,9 +234,10 @@ functions — no new runtime deps. New code Google-docstring'd.
    `core/agent/{binary,trace}` now and defer the physical relocation +
    W1-import repoint to 10b? (Alternative: move now and repoint W1 in this
    task — bigger blast radius, breaks the strangler's "old path intact".)
-2. **Binary copy vs bind-mount (§5.3)** — accept the ~100 MB workspace copy, or
-   should I add a read-only asset-mount concept to `DockerHostBackend` now?
-   I recommend the copy.
-3. **HOME path** — the harness uses its own `/tmp/claude-home`
-   (`AGENT_HOME_AT`), independent of rollout's old `/tmp/rollout-home`
-   (`rollout/constants.py:20`). Fine, or keep the old name for continuity?
+2. ~~Binary copy vs bind-mount~~ — **resolved 2026-07-21**: the binary is a
+   backend **asset** at `/usr/local/bin/claude` (read-only, on PATH), not a
+   workspace copy (§5.3). Requires the task-03 asset-mount amendment.
+3. ~~HOME path~~ — **resolved 2026-07-21**: `CLAUDE_HOME = /tmp/claude-home`,
+   owned by this harness (a claude-specific detail, not an engine/shared
+   constant), in-container ephemeral, not a workspace file. A different harness
+   sets its own or none.

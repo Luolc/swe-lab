@@ -123,7 +123,8 @@ def run_unit_test[V: Verdict](
 ) -> tuple[RunResult, V | None]: ...
     # constructs a FRESH EvalParseObserver per call (single-run object),
     # composes manager(mounts=unit_spec.mounts, observers=[*observers, obs]);
-    # body = sb.exec(unit_spec.eval_script, timeout=…, stream_to=stdout.log);
+    # the eval script is staged as entryscript.sh (a mount) and the body runs
+    # it by path: `with manager.sandbox() as sb: sb.run("entryscript.sh")`;
     # returns (manager.result, obs.verdict). verdict is None only when the
     # run died before before_destroy could fire (early SETUP_ERROR rows of
     # the task-02 matrix) — callers gate on RunResult.status.
@@ -175,8 +176,9 @@ def compile_unit_test(
     checkout_golden_tests: bool = True,
     repo_root: Path | None = None,
 ) -> tuple[SandboxSpec, UnitTestSpec[SweBenchProVerdict]]: ...
-    # mounts = {run_script.sh, parser.py, required_tests.json (=fail∪pass),
-    #           patch.diff iff patch}; grader = SweBenchProGrader()  # zero fields
+    # mounts = {entryscript.sh (the eval script, run by path), run_script.sh,
+    #           parser.py, required_tests.json (=fail∪pass), patch.diff iff
+    #           patch}; grader = SweBenchProGrader()  # zero fields
 ```
 
 ## 4. The compile step & grade step — element by element

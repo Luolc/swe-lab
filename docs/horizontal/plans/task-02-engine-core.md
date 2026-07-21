@@ -301,6 +301,16 @@ construct them per call).
 
 ### 5.5 `exec` takes script *text*; workspace paths resolve via `SANDBOX_WORKSPACE`
 
+> **Amended 2026-07-21.** The `SANDBOX_WORKSPACE` handshake below stands, but
+> the *mechanism* changed: exec no longer feeds the text on stdin. The engine
+> gains **`Sandbox.run(name, …)`** to run a persisted workspace file by path,
+> and scripts are staged as named files (mounts for pre-run scripts;
+> observer-written for the extraction script) so the exact script survives for
+> audit and A-ghjob needs no stdin plumbing. See
+> [`workspace-layout.md`](../workspace-layout.md) and task-03's status note.
+> The reasoning here (compile-time-vs-exec-time path gap, byte-stable scripts,
+> the `GITHUB_WORKSPACE` precedent) is unchanged.
+
 **The problem.** Script text is generated at *compile time* (dataset/eval-
 method builds `eval_script`), but the workspace's in-container path is a
 *backend, exec-time* fact: A-host bind-mounts it at `/workspace`; under

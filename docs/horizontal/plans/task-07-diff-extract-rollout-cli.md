@@ -75,7 +75,10 @@ class DiffExtractObserver(SandboxObserver):
         output_path=f'"$SANDBOX_WORKSPACE"/{RAW_PATCH_NAME}',
         exclude_globs=self.exclude_globs,
     )
-    _ = sb.exec(script, timeout=_EXTRACT_TIMEOUT_S)
+    # stage extract.sh into the workspace, then run it by path (persisted for
+    # audit — same file-based exec as the pre-run scripts, not stdin)
+    (sb.workspace / EXTRACT_SCRIPT_NAME).write_text(script)
+    _ = sb.run(EXTRACT_SCRIPT_NAME, timeout=_EXTRACT_TIMEOUT_S)
     raw = _read_patch(sb.workspace / RAW_PATCH_NAME)
     self.patch = strip_binary_hunks(raw)
     self.binary_stripped = self.patch != raw
