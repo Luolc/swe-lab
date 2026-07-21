@@ -56,7 +56,8 @@ evaluation/
 
 datasets/… (current core/datasets/swebench_pro/, moves at 10a):
   swebench_pro/
-    unit_test.py      OutputState, SweBenchProVerdict, SweBenchProGrader,
+    unit_test.py      OutputState, SweBenchProVerdict, SweBenchProGrader
+                      (stateless), REQUIRED_TESTS_NAME,
                       compile_unit_test(instance) -> (SandboxSpec, UnitTestSpec)
                       build_eval_script port (private)
 ```
@@ -148,10 +149,24 @@ class SweBenchProVerdict:
   def resolved(self) -> bool:  # derived convenience (Verdict surface)
     return self.score >= 1.0
 
+REQUIRED_TESTS_NAME = "required_tests.json"   # the compiled expectation
+
 @dataclass(frozen=True)
 class SweBenchProGrader:
-  required_tests: frozenset[str]      # fail_to_pass ∪ pass_to_pass
-  def grade(self, workspace: Path) -> SweBenchProVerdict: ...
+  """Stateless: grades from the workspace files alone (no per-instance state).
+
+  Reads the parser's ``output.json`` (results) and the compiled
+  ``required_tests.json`` (expectation, staged by ``compile_unit_test``), so
+  the class name means what it says — one general grader, not a per-example
+  closure — and any persisted workspace re-grades without the dataset record.
+  """
+
+  def grade(self, workspace: Path) -> SweBenchProVerdict:
+    required = frozenset(
+        json.loads((workspace / REQUIRED_TESTS_NAME).read_text())
+    )
+    passed, output_state = _parse_output(workspace / OUTPUT_JSON_NAME)
+    return SweBenchProVerdict(passed, required - passed, output_state)
 
 def compile_unit_test(
     instance: SweBenchProInstance,
@@ -160,6 +175,8 @@ def compile_unit_test(
     checkout_golden_tests: bool = True,
     repo_root: Path | None = None,
 ) -> tuple[SandboxSpec, UnitTestSpec[SweBenchProVerdict]]: ...
+    # mounts = {run_script.sh, parser.py, required_tests.json (=fail∪pass),
+    #           patch.diff iff patch}; grader = SweBenchProGrader()  # zero fields
 ```
 
 ## 4. The compile step & grade step — element by element
@@ -172,10 +189,10 @@ def compile_unit_test(
 | `EvalSpec` 4 run-context fields (`benchmark.py:25-28`) | `SandboxSpec` |
 | `EvalSpec` 6 grading fields (`benchmark.py:29-34`) | consumed inside `compile_unit_test`; **no longer exported** |
 | harness fetch (`execution.py:53-73`, pinned commit) | unchanged, feeds mounts |
-| `evaluate` writing run_script/parser/patch (`grading.py:170-179`) | `UnitTestSpec.mounts` |
+| `evaluate` writing run_script/parser/patch (`grading.py:170-179`) | `UnitTestSpec.mounts` (+ the compiled `required_tests.json`) |
 | `build_eval_script` (`grading.py:61-126`) | private `_build_eval_script`, same logic, `$SANDBOX_WORKSPACE` instead of `MOUNT_AT` |
 | `evaluate`'s post-run parse (`grading.py:197-210`) + `_passed_tests` (`grading.py:213-225`) | `SweBenchProGrader.grade` |
-| `EvalSpec.required_tests`/`is_resolved` (`benchmark.py:36-43`) | `SweBenchProGrader.required_tests` / verdict construction |
+| `EvalSpec.required_tests`/`is_resolved` (`benchmark.py:36-43`) | compiled into `required_tests.json` (a mount); `grade` reads it back (see §5.4) |
 
 Ported script semantics that MUST survive verbatim (each is a test):
 
@@ -226,12 +243,30 @@ byte-comparable to the old builder in tests (a fixture pins the old output
 with `MOUNT_AT=/workspace` substituted, so the port is diffable — parity at
 the text level *before* CP1 proves it at the container level).
 
-### 5.4 The grader owns `required_tests`; `is_resolved` dissolves
-`EvalSpec.is_resolved` (`benchmark.py:41-43`) was the one method on an
-otherwise-inert record. The grader is the natural owner (it is *the* judgment
-object); the verdict exposes the result. `BenchmarkAdapter` (`benchmark.py:49-54`)
-is not extended — it is *retired at 10b* along with `EvalSpec`; the compile
-function is the new adapter surface for this dataset.
+### 5.4 The grader is stateless; `required_tests` travels through the workspace
+*(Settled with the user 2026-07-21.)* An earlier draft gave `SweBenchProGrader`
+a `required_tests: frozenset[str]` field — but that made a general-*sounding*
+class secretly per-instance: a reader sees `SweBenchProGrader` and reasonably
+expects one dataset-wide grader, not a per-example closure. Instead,
+`compile_unit_test` writes the expectation (`fail_to_pass ∪ pass_to_pass`) to
+**`required_tests.json`** as a mount, and `grade(workspace)` reads it back
+alongside `output.json`. The grader carries **zero fields** — the name now
+means what it says, and `EvalSpec.required_tests`/`is_resolved`
+(`benchmark.py:36-43`) dissolve into a compiled file + the grader's set math.
+
+The deeper win: the workspace becomes a **self-describing grading record** —
+result (`output.json`) + expectation (`required_tests.json`) + how
+(`run_script`/`parser`) all in one dir. A workspace persisted to T1 (task 12)
+re-grades from files alone, without the original dataset record — directly
+useful for the audit/reproducibility this project exists for. Cost: one
+write-then-read of a tiny JSON, and the file is inert in-container (it rides
+the mounts mechanism but nothing in `/workspace` reads it; the git diff is
+`/app`). Alternatives rejected: adding `required_tests` to the `grade`
+signature (leaks a unit-test concept into the general `Grader` protocol —
+model-judge has no such thing); merely renaming to `…InstanceGrader` (labels
+the smell, keeps the per-instance object, loses the self-describing workspace).
+`BenchmarkAdapter` (`benchmark.py:49-54`) is not extended — retired at 10b with
+`EvalSpec`; `compile_unit_test` is the new adapter surface.
 
 ### 5.5 The verdict lives on the stateful `EvalParseObserver`
 Task 02 §5.4 (settled with the user 2026-07-18): the observer keeps
@@ -259,14 +294,17 @@ surface — unit-test grading simply pins it to {0.0, 1.0}.
   multi-line `before_repo_set_cmd` → last line only; empty
   `before_repo_set_cmd` → no restore line; `$`/`[...]` test names quoted;
   text-level parity with the pinned old-builder fixture (§5.3).
-- **Grader tri-state (audit P0-2):** absent / corrupt JSON / non-dict JSON /
-  valid with mixed statuses → the exact `OutputState` + `score`/`resolved` +
-  `missing` table of §4; unreadable-file (permission) → UNPARSEABLE; a full
-  pass → `score == 1.0`, a partial pass → `score == 0.0` (binary for unit
-  tests).
-- **Compile:** mounts contain run_script/parser (+ patch iff given) with
-  correct content from a faked harness cache (no network — files pre-written
-  to `harness_dir`); `SandboxSpec` fields map from the record
+- **Grader tri-state (audit P0-2):** with `output.json` **and**
+  `required_tests.json` pre-written into a temp workspace, `grade(workspace)`
+  over absent / corrupt / non-dict / mixed-status output → the exact
+  `OutputState` + `score`/`resolved` + `missing` table of §4; unreadable
+  output → UNPARSEABLE; full pass → `score == 1.0`, partial → `0.0`. The
+  grader is a zero-field object — the test constructs `SweBenchProGrader()`
+  and feeds it only a workspace (proving statelessness).
+- **Compile:** mounts contain run_script/parser + **required_tests.json**
+  (= `sorted(fail_to_pass ∪ pass_to_pass)`) (+ patch iff given) with correct
+  content from a faked harness cache (no network — files pre-written to
+  `harness_dir`); `SandboxSpec` fields map from the record
   (`execution.py:97-108` equivalence).
 - **Composition:** `run_unit_test` on FakeBackend — the eval script is the
   single body exec; the verdict lands on the observer and in the returned
