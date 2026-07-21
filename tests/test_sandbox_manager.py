@@ -318,18 +318,18 @@ def test_nonempty_workspace_refused_unless_reuse(tmp_path: Path):
   assert reusing.result.status is RunStatus.SUCCESS
 
 
-def test_exec_plumbing_and_streaming(tmp_path: Path):
-  backend = FakeBackend(exec_results=[ExecResult(0, "line1\nline2\n", "")])
+def test_run_plumbing_and_streaming(tmp_path: Path):
+  backend = FakeBackend(run_results=[ExecResult(0, "line1\nline2\n", "")])
   mgr = _manager(tmp_path, backend=backend)
   log = tmp_path / "out.log"
   with mgr.sandbox() as sb:
-    streamed = sb.exec("echo hi", timeout=5.0, stream_to=log)
-  assert backend.execs == ["echo hi"]
+    streamed = sb.run("entryscript.sh", timeout=5.0, stream_to=log)
+  assert backend.scripts == ["entryscript.sh"]
   assert streamed.stdout == ""  # streamed, not captured
   assert log.read_text() == "line1\nline2\n"
 
 
-def test_exec_before_live_raises(tmp_path: Path):
+def test_run_before_live_raises(tmp_path: Path):
   events: list[str] = []
 
   class Prober(RecordingObserver):
@@ -338,7 +338,7 @@ def test_exec_before_live_raises(tmp_path: Path):
     def before_create(self, sb: Sandbox) -> None:
       super().before_create(sb)
       with pytest.raises(SandboxError, match="not live"):
-        sb.exec("echo", timeout=1.0)
+        sb.run("x.sh", timeout=1.0)
 
   mgr = _manager(tmp_path, observers=[Prober("a", events)])
   with mgr.sandbox():

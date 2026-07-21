@@ -124,27 +124,29 @@ class DockerHostBackend:
       )
     return handle
 
-  def exec(
+  def run_script(
       self,
       handle: str,
-      script: str,
+      script_name: str,
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
       stream_to: Path | None = None,
   ) -> ExecResult:
-    """Run a bash script inside the live container.
+    """Run a workspace script (by name) inside the live container.
 
-    The script text is fed to ``bash`` on stdin (no scratch file on disk), so
-    it references workspace files through the ``SANDBOX_WORKSPACE`` variable
-    this method always sets, never a hardcoded path.
+    Runs the file at ``$SANDBOX_WORKSPACE/<script_name>`` (a mount, or one an
+    observer wrote there) with ``SANDBOX_WORKSPACE`` set — a persisted file on
+    disk, not stdin, so the exact script survives for audit and scripts
+    reference workspace files only through the variable, never a hardcoded
+    path.
 
     Args:
       handle: The container id returned by ``up``.
-      script: Bash source text to run.
+      script_name: The script's workspace-relative filename.
       timeout: Seconds before the exec process is killed (the container
-        stays up so later execs remain possible).
-      env: Extra ``KEY=VALUE`` variables for this exec only.
+        stays up so later runs remain possible).
+      env: Extra ``KEY=VALUE`` variables for this run only.
       stream_to: When set, stdout is written here as it arrives instead of
         being captured in memory.
 
@@ -154,16 +156,15 @@ class DockerHostBackend:
     Raises:
       SandboxError: If the Docker CLI is missing.
     """
-    args = ["exec", "-i", "-e", f"{WORKSPACE_ENV}={self.mount_at}"]
+    args = ["exec", "-e", f"{WORKSPACE_ENV}={self.mount_at}"]
     for key, value in (env or {}).items():
       args += ["-e", f"{key}={value}"]
-    args += [handle, "/bin/bash", "-s"]
+    args += [handle, "/bin/bash", f"{self.mount_at}/{script_name}"]
     try:
       if stream_to is not None:
         with stream_to.open("w", encoding="utf-8") as out:
           done = subprocess.run(
               ["docker", *args],
-              input=script,
               stdout=out,
               stderr=subprocess.PIPE,
               text=True,
@@ -173,7 +174,6 @@ class DockerHostBackend:
         return ExecResult(done.returncode, "", done.stderr)
       done = subprocess.run(
           ["docker", *args],
-          input=script,
           capture_output=True,
           text=True,
           timeout=timeout,

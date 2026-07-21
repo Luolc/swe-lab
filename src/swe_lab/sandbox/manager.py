@@ -38,7 +38,7 @@ class Sandbox:
 
   The shared, inspectable state between observers is the **workspace
   filesystem**, never this object. During ``before_create`` the sandbox is
-  not yet live (``handle`` is empty) and ``exec`` fails.
+  not yet live (``handle`` is empty) and ``run`` fails.
 
   Attributes:
     label: The run's label.
@@ -54,18 +54,22 @@ class Sandbox:
   backend: SandboxBackend
   handle: str
 
-  def exec(
+  def run(
       self,
-      script: str,
+      script_name: str,
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
       stream_to: Path | None = None,
   ) -> ExecResult:
-    """Run a bash script (text) inside the live sandbox.
+    """Run a workspace script (by name) inside the live sandbox.
+
+    The script must already be a file in the workspace — a mount, or one an
+    observer wrote there. Running a persisted file (not stdin) keeps the exact
+    script on disk for audit.
 
     Args:
-      script: Bash source text; the backend places and invokes it.
+      script_name: The script's workspace-relative filename.
       timeout: Seconds before the execution is killed.
       env: Extra variables for this execution only.
       stream_to: Stream stdout to this host file instead of capturing.
@@ -78,8 +82,8 @@ class Sandbox:
     """
     if not self.handle:
       raise SandboxError("sandbox is not live yet (before_create phase)")
-    return self.backend.exec(
-        self.handle, script, timeout=timeout, env=env, stream_to=stream_to
+    return self.backend.run_script(
+        self.handle, script_name, timeout=timeout, env=env, stream_to=stream_to
     )
 
 

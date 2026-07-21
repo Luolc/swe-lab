@@ -9,6 +9,7 @@ import pytest
 
 from swe_lab.sandbox import (
     DockerHostBackend,
+    Mount,
     RunStatus,
     SandboxError,
     SandboxManager,
@@ -141,17 +142,15 @@ def test_missing_docker_cli_raises(
     DockerHostBackend(pull=False).up(SPEC, tmp_path)
 
 
-def test_exec_argv_sets_workspace_env_and_streams(
+def test_run_script_argv_runs_workspace_file_and_streams(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  recorded: dict[str, list[str] | str | None] = {}
+  recorded: dict[str, list[str] | None] = {}
 
   def fake_run(
       argv: list[str], **kwargs: object
   ) -> subprocess.CompletedProcess[str]:
     recorded["argv"] = list(argv)
-    stdin = kwargs.get("input")
-    recorded["input"] = stdin if isinstance(stdin, str) else None
     out = kwargs.get("stdout")
     if isinstance(out, io.TextIOBase):
       _ = out.write("streamed-line\n")
@@ -159,21 +158,21 @@ def test_exec_argv_sets_workspace_env_and_streams(
 
   monkeypatch.setattr(subprocess, "run", fake_run)
   log = tmp_path / "out.log"
-  result = DockerHostBackend(mount_at="/ws").exec(
-      "cid", "echo hi", timeout=5.0, env={"X": "1"}, stream_to=log
+  result = DockerHostBackend(mount_at="/ws").run_script(
+      "cid", "entryscript.sh", timeout=5.0, env={"X": "1"}, stream_to=log
   )
   argv = recorded["argv"]
   assert isinstance(argv, list)
-  assert argv[:3] == ["docker", "exec", "-i"]
+  assert argv[:3] == ["docker", "exec", "-e"]
   assert "SANDBOX_WORKSPACE=/ws" in argv
   assert "X=1" in argv
-  assert argv[-3:] == ["cid", "/bin/bash", "-s"]
-  assert recorded["input"] == "echo hi"
+  # runs the workspace file by its in-container path (not stdin)
+  assert argv[-3:] == ["cid", "/bin/bash", "/ws/entryscript.sh"]
   assert result.stdout == ""  # streamed, not captured
   assert log.read_text() == "streamed-line\n"
 
 
-def test_exec_timeout_maps_to_124(monkeypatch: pytest.MonkeyPatch):
+def test_run_script_timeout_maps_to_124(monkeypatch: pytest.MonkeyPatch):
   def fake_run(
       argv: list[str], **kwargs: object
   ) -> subprocess.CompletedProcess[str]:
@@ -182,7 +181,7 @@ def test_exec_timeout_maps_to_124(monkeypatch: pytest.MonkeyPatch):
     raise subprocess.TimeoutExpired(argv, secs, stderr="slow")
 
   monkeypatch.setattr(subprocess, "run", fake_run)
-  result = DockerHostBackend().exec("cid", "sleep 999", timeout=1.0)
+  result = DockerHostBackend().run_script("cid", "slow.sh", timeout=1.0)
   assert result.exit_code == 124
   assert result.timed_out is True
   assert result.ok is False
@@ -202,26 +201,33 @@ def test_down_never_raises(monkeypatch: pytest.MonkeyPatch):
 _IMAGE = "debian:stable-slim"
 
 
+def _stage(workspace: Path, name: str, script: str) -> None:
+  """Write a script into the workspace (as a mount would), for run_script."""
+  _ = (workspace / name).write_text(script)
+
+
 @pytest.mark.docker
-def test_live_exec_writes_and_persists_state(tmp_path: Path):
+def test_live_run_script_writes_and_persists_state(tmp_path: Path):
   spec = SandboxSpec("debian-probe", _IMAGE, "/", "none")
   workspace = tmp_path / "ws"
   workspace.mkdir()
   backend = DockerHostBackend()
   handle = backend.up(spec, workspace)
   try:
-    # exec writes a file into the workspace via SANDBOX_WORKSPACE
-    first = backend.exec(
-        handle, 'echo hello > "$SANDBOX_WORKSPACE"/out.txt', timeout=30.0
-    )
+    # a staged script writes a file into the workspace via SANDBOX_WORKSPACE
+    _stage(workspace, "write.sh", 'echo hello > "$SANDBOX_WORKSPACE"/out.txt')
+    first = backend.run_script(handle, "write.sh", timeout=30.0)
     assert first.ok
     assert (workspace / "out.txt").read_text().strip() == "hello"
-    # a second exec sees the first's container state (persistence)
-    _ = backend.exec(handle, "touch /tmp/marker", timeout=30.0)
-    second = backend.exec(handle, "test -f /tmp/marker", timeout=30.0)
+    # a second run sees the first's container state (persistence)
+    _stage(workspace, "touch.sh", "touch /tmp/marker")
+    _ = backend.run_script(handle, "touch.sh", timeout=30.0)
+    _stage(workspace, "check.sh", "test -f /tmp/marker")
+    second = backend.run_script(handle, "check.sh", timeout=30.0)
     assert second.ok
     # a nonzero script reports its exit code faithfully
-    failing = backend.exec(handle, "exit 7", timeout=30.0)
+    _stage(workspace, "fail.sh", "exit 7")
+    failing = backend.run_script(handle, "fail.sh", timeout=30.0)
     assert failing.exit_code == 7
   finally:
     backend.down(handle)
@@ -251,10 +257,13 @@ def test_live_manager_teardown_on_body_error(tmp_path: Path):
 def test_no_orphan_containers_left(tmp_path: Path):
   spec = SandboxSpec("debian-orphan", _IMAGE, "/", "none")
   mgr = SandboxManager(
-      spec=spec, backend=DockerHostBackend(), workspace=tmp_path / "ws"
+      spec=spec,
+      backend=DockerHostBackend(),
+      workspace=tmp_path / "ws",
+      mounts={"noop.sh": Mount(content=b"true\n")},
   )
   with mgr.sandbox() as sb:
-    _ = sb.exec("true", timeout=30.0)
+    _ = sb.run("noop.sh", timeout=30.0)
   leftover = subprocess.run(
       [
           "docker",

@@ -66,21 +66,26 @@ class SandboxBackend(Protocol):
     """Bring the sandbox up and return an opaque handle to it."""
     ...
 
-  def exec(
+  def run_script(
       self,
       handle: str,
-      script: str,
+      script_name: str,
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
       stream_to: Path | None = None,
   ) -> ExecResult:
-    """Run a bash script (given as text) inside the live sandbox.
+    """Run a workspace script (by name) inside the live sandbox.
+
+    The script is a file already materialized in the workspace (a mount, or
+    written there by an observer); the backend runs it by its in-sandbox path
+    with ``SANDBOX_WORKSPACE`` set. Running a persisted file (rather than
+    piping text on stdin) keeps the exact script on disk for audit and needs no
+    stdin plumbing on a job-as-container backend.
 
     Args:
       handle: The handle ``up`` returned.
-      script: Bash source text; the backend places it under the workspace
-        and invokes it there.
+      script_name: The script's workspace-relative filename.
       timeout: Seconds before the execution is killed.
       env: Extra variables set for this execution only.
       stream_to: Stream stdout to this host file instead of capturing it

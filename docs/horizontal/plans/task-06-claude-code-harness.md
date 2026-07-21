@@ -60,12 +60,11 @@ observer, all against FakeBackend / fixtures).
 
 ```python
 # ─── harnesses/claude_code/constants.py ─────────────────────────────────────
-BINARY_NAME = "claude"            # copied into the workspace, run from there
 PROMPT_NAME = "prompt.txt"
 TRAJECTORY_NAME = "trajectory.jsonl"
 AGENT_SCRIPT_NAME = "agent.sh"       # the invocation script (a mount, run by path)
 AGENT_STDERR_NAME = "agent.stderr"
-CLAUDE_HOME = "/tmp/claude-home"     # the claude binary's writable HOME (in /tmp,
+AGENT_HOME = "/tmp/agent-home"     # the claude binary's writable HOME (in /tmp,
                                      # ephemeral, NOT a workspace file); harness-owned
 BINARY_AT = "/opt/claude-code/claude"  # dedicated asset path, invoked by ABSOLUTE
                                      # path (no PATH reliance) — NOT in the workspace
@@ -136,7 +135,7 @@ interpolated values `shlex.quote`d (as `entryscript.py:55-61`):
 
 ```bash
 set -u
-export HOME=/tmp/claude-home            # claude's writable HOME (harness-owned)
+export HOME=/tmp/agent-home            # claude's writable HOME (harness-owned)
 mkdir -p "$HOME"
 export IS_SANDBOX=1                     # so the agent accepts --dangerously-… as root
 cd <workdir>                            # spec.workdir, e.g. /app (no git reset — rollout
@@ -246,7 +245,7 @@ functions — no new runtime deps. New code Google-docstring'd.
    backend **asset** at `/opt/claude-code/claude` (read-only, invoked by
    absolute path — no PATH reliance), not a workspace copy (§5.3). Requires the
    task-03 asset-mount amendment.
-3. ~~HOME path~~ — **resolved 2026-07-21**: `CLAUDE_HOME = /tmp/claude-home`,
+3. ~~HOME path~~ — **resolved 2026-07-21**: `AGENT_HOME = /tmp/agent-home`,
    owned by this harness (a claude-specific detail, not an engine/shared
    constant), in-container ephemeral, not a workspace file. A different harness
    sets its own or none.

@@ -1,20 +1,22 @@
 # Task 03 — A-host backend: `docker create/start/exec/rm`
 
-> **Status: DONE (PR #27), with two follow-up amendments pending (2026-07-21).**
+> **Status: DONE (PR #27), amended 2026-07-21.**
 > Class shipped as **`DockerHostBackend`**. §8 open questions resolved as
 > recommended (bash keep-alive; `@pytest.mark.docker` auto-skip; hardening
-> deferred). 11 tests (8 mocked argv + 3 live-Docker). **Two design changes to
-> land before task 04 builds on it** (settled with the user 2026-07-21):
-> 1. **exec runs a persisted workspace file, not stdin** — reverses the §5.6
->    stdin delta. Scripts are materialized in the workspace (as mounts, or
->    written by the generating observer) and run by their `$SANDBOX_WORKSPACE`
->    path, so the exact script survives for audit and A-ghjob needs no stdin
->    plumbing. See [`workspace-layout.md`](../workspace-layout.md).
-> 2. **asset mounts** — a `assets: dict[container_path, host_path]`
->    construction-time field placing read-only host files at fixed container
->    paths (`docker create -v host:container:ro`), so the ~100 MB agent binary
->    lands at a dedicated path (`/opt/claude-code/claude`, invoked by absolute
->    path) outside the workspace instead of being copied in per run.
+> deferred). Two amendments settled with the user:
+> 1. ✅ **exec → `run_script`: runs a persisted workspace file, not stdin**
+>    (reverses the §5.6 stdin delta). `Sandbox.run(name)` runs a workspace
+>    script by its `$SANDBOX_WORKSPACE` path (`docker exec … bash
+>    $mount_at/<name>`); scripts are materialized as mounts or written there by
+>    the generating observer, so the exact script survives for audit and
+>    A-ghjob needs no stdin plumbing. See
+>    [`workspace-layout.md`](../workspace-layout.md).
+> 2. ⬜ **asset mounts** (pending, lands with task 06 which needs it) — a
+>    `assets: dict[container_path, host_path]` construction-time field placing
+>    read-only host files at fixed container paths (`docker create -v
+>    host:container:ro`), so the ~100 MB agent binary lands at
+>    `/opt/claude-code/claude` (invoked by absolute path) outside the
+>    workspace instead of being copied in per run.
 
 ---
 

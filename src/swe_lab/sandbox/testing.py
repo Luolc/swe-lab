@@ -30,22 +30,22 @@ class FakeBackend:
   """In-memory ``SandboxBackend``: scripted results, recorded calls.
 
   Attributes:
-    exec_results: Results returned by successive ``exec`` calls (repeating
+    run_results: Results returned by successive ``run_script`` calls (repeating
       the last one when exhausted); defaults to a single success.
     up_error: Raised by ``up`` when set.
-    exec_error: Raised by ``exec`` when set.
+    run_error: Raised by ``run_script`` when set.
     down_error: Raised by ``down`` when set (to test that the manager
       swallows a misbehaving backend).
     calls: Every call as ``(method, detail)``, in order.
-    execs: The script texts passed to ``exec``, in order.
+    scripts: The script names passed to ``run_script``, in order.
   """
 
-  exec_results: list[ExecResult] = field(default_factory=list)
+  run_results: list[ExecResult] = field(default_factory=list)
   up_error: Exception | None = None
-  exec_error: Exception | None = None
+  run_error: Exception | None = None
   down_error: Exception | None = None
   calls: list[tuple[str, str]] = field(default_factory=list)
-  execs: list[str] = field(default_factory=list)
+  scripts: list[str] = field(default_factory=list)
 
   def up(self, spec: SandboxSpec, workspace: Path) -> str:
     """Return a fake handle (or raise the scripted ``up_error``)."""
@@ -54,10 +54,10 @@ class FakeBackend:
     _maybe_raise(self.up_error)
     return f"fake-{spec.instance_id}"
 
-  def exec(
+  def run_script(
       self,
       handle: str,
-      script: str,
+      script_name: str,
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
@@ -67,7 +67,7 @@ class FakeBackend:
 
     Args:
       handle: The handle ``up`` returned.
-      script: The bash text under test (recorded, not run).
+      script_name: The workspace script name under test (recorded, not run).
       timeout: Recorded only.
       env: Recorded only.
       stream_to: When set, the scripted stdout is written there and the
@@ -78,12 +78,12 @@ class FakeBackend:
       The next scripted ``ExecResult``.
     """
     del timeout, env  # recorded via calls only; irrelevant to the result
-    self.calls.append(("exec", handle))
-    self.execs.append(script)
-    _maybe_raise(self.exec_error)
-    index = min(len(self.execs) - 1, len(self.exec_results) - 1)
+    self.calls.append(("run_script", handle))
+    self.scripts.append(script_name)
+    _maybe_raise(self.run_error)
+    index = min(len(self.scripts) - 1, len(self.run_results) - 1)
     result = (
-        self.exec_results[index] if self.exec_results else ExecResult(0, "", "")
+        self.run_results[index] if self.run_results else ExecResult(0, "", "")
     )
     if stream_to is not None:
       _ = stream_to.write_text(result.stdout)
