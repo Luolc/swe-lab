@@ -17,7 +17,8 @@ every harness converts its native output into, so nothing downstream (persisted
 records, W3 behavioral analysis, future rubric judges) has to parse a
 harness-specific shape. Today the record is an untyped `dict` (`last_stream_record`
 → `build_exchange_from_stream`) misnamed `exchange`/`last_exchange`; this task
-replaces that with a typed `Conversation` + a `ConversationConverter` seam.
+replaces that with a typed `Conversation` + a conversion seam (a
+`Harness.to_conversation` method + the shared observer that runs it).
 
 Naming (decided 2026-07-22): the canonical model is **`conversation`** — *not*
 `trace` (collides with performance tracing), and *not* `trajectory` (that is a
@@ -34,19 +35,15 @@ the first *consumer*.
 - `swe_lab/conversation/model.py`: the Pydantic `Conversation` / `Message` /
   `Role` / `ContentBlock` model — **our own** implementation, shaped after
   `locode-protocol` + the Anthropic SDK.
-- `swe_lab/conversation/convert.py`: the `ConversationConverter` **ABC**
-  (harness-native output → `Conversation`).
 - `swe_lab/conversation/observer.py`: the **shared, harness-agnostic**
-  `ConversationObserver(SandboxObserver)` — parameterized by a converter + the
-  native output filename, it produces `conversation.json` in `before_destroy`
-  and registers the `conversation` + raw artifacts. **Not** a per-harness
-  observer (only the *converter* is harness-specific); no harness-specific
-  concept lives on it.
-- `harnesses/claude_code/convert.py`: the first converter impl — Claude Code
-  `event_stream`
-  (`--output-format stream-json`) → `Conversation` (wraps the existing
-  `parse_stream_events` / `build_exchange_from_stream`, then maps to the typed
-  model). Lands with task 06.
+  `ConversationObserver(SandboxObserver)` — parameterized by a `convert`
+  **callable** + the native output filename, it produces `conversation.json` in
+  `before_destroy` and registers the `conversation` + raw artifacts. **Not** a
+  per-harness observer; nothing harness-specific lives on it.
+- **No `ConversationConverter` ABC** (dropped 2026-07-22, §3): conversion is a
+  `Harness` method (`to_conversation`, task 06), backed by a module-level
+  function per harness. The observer takes a plain `Callable[[Path],
+  Conversation]`.
 - Pydantic added as a runtime dependency (owner-approved 2026-07-22; AGENTS.md
   ask-first boundary satisfied).
 - Round-trip + fixture-based unit tests (no Docker, no network).
@@ -57,10 +54,10 @@ the first *consumer*.
   **already published to Hugging Face** by W1 (731 traces). New code speaks
   `conversation`, but renaming/re-hosting the published artifacts is an
   **ask-first HF change** → a separate backlog item (§6), not this task.
-- The proxy converter (task 08 adds `proxy` → `Conversation` alongside the
-  event-stream converter).
-- Codex/Grok converters — the ABC is designed for them; impls come with their
-  harnesses.
+- Proxy capture (task 08): the harness's `to_conversation` grows to handle the
+  proxy format alongside `event_stream`.
+- Codex/Grok conversion — the seam (`Harness.to_conversation` + shared observer)
+  is designed for them; impls come with their harnesses.
 - Multimodal richness beyond what a coding agent emits (images kept in the model
   for parity with upstream, but not exercised in v0).
 
@@ -125,26 +122,31 @@ Design notes:
   `Conversation.model_validate_json` / `.model_dump_json` round-trip losslessly
   and a reader maps block → shape by its `type` at a glance.
 
-## 3. The converter seam
+## 3. Conversion is a harness method, not a separate ABC
+
+Conversion is a **harness responsibility** — the harness wrote the invocation
+that produced the native output, so reading that output back sits next to
+`mounts()`/`build_body()` as one of its own concerns. There is **no
+`ConversationConverter` ABC** (dropped 2026-07-22): it was a one-method
+indirection whose only job was to *name* "a thing with `to_conversation`", which
+a plain `Callable[[Path], Conversation]` already does — an interceptor, not a
+type worth an abstraction. So:
+
+- the `Harness` ABC (task 06) exposes `to_conversation(self, raw: Path) ->
+  Conversation`;
+- the pure logic lives as a **module-level function** in the harness package, so
+  it is reusable offline (re-processing a stored native output, W1 later) without
+  constructing a harness that needs a `prompt`. `Harness.to_conversation` just
+  delegates:
 
 ```python
-# ─── swe_lab/conversation/convert.py ────────────────────────────────────────
-class ConversationConverter(ABC):
-  """Harness-native output → the canonical Conversation (ADR-0002 ABC)."""
-
-  @abstractmethod
-  def to_conversation(self, raw: Path) -> Conversation:
-    """Read a harness-native output file → a typed Conversation."""
-    ...
-
 # ─── harnesses/claude_code/convert.py ───────────────────────────────────────
-class EventStreamConverter(ConversationConverter):
+def event_stream_to_conversation(raw: Path) -> Conversation:
   """Claude Code `event_stream` (`--output-format stream-json`) → Conversation."""
+  events = parse_stream_events(read_lines(raw))       # reuse trace.py
+  return _events_to_conversation(events)              # map to the typed model
 
-  @override
-  def to_conversation(self, raw: Path) -> Conversation:
-    events = parse_stream_events(read_lines(raw))       # reuse trace.py
-    return _events_to_conversation(events)              # map to the typed model
+# ClaudeCodeHarness.to_conversation(self, raw) -> event_stream_to_conversation(raw)
 ```
 
 The claude_code impl is thin: reuse the battle-tested `parse_stream_events`
@@ -152,24 +154,33 @@ The claude_code impl is thin: reuse the battle-tested `parse_stream_events`
 `Message`/`ContentBlock`s. The raw `event_stream.jsonl` is still kept verbatim as
 an artifact; the `Conversation` is the canonical one.
 
+### The shared observer (kept — it does two load-bearing jobs during the run)
+
+`ConversationObserver` is **shared and harness-agnostic**; it is kept (not folded
+into the composition) because it must run *during* the run to (1) convert + write
+`conversation.json` and (2) **register** `conversation` + `raw_output` as
+artifacts — and artifact registration can only happen through a hook's
+`Contribution` (so the persist observer, task 12, also `before_destroy`, uploads
+them to T1). It takes a `convert` **callable** + the native output filename, so
+nothing harness-specific lives on it:
+
 ```python
 # ─── swe_lab/conversation/observer.py ───────────────────────────────────────
 @dataclass
 class ConversationObserver(SandboxObserver):
   """Shared: convert a harness's native output → conversation.json.
 
-  Harness-agnostic — the harness injects its `converter` + `raw_name` (the
-  native output file it writes). Nothing Claude-specific lives here.
+  Harness-agnostic — the composition injects `convert` (the harness's
+  `to_conversation`) + `raw_name` (the native output file it writes).
   """
 
-  converter: ConversationConverter
+  convert: Callable[[Path], Conversation]
   raw_name: str                       # e.g. "event_stream.jsonl" (harness-owned)
   conversation: Conversation | None = None    # single-run state
-  complete: bool = False
 
   def before_destroy(self, sb: Sandbox) -> Contribution | None:
     raw = sb.workspace / self.raw_name
-    self.conversation = self.converter.to_conversation(raw)
+    self.conversation = self.convert(raw)
     (sb.workspace / CONVERSATION_NAME).write_text(
         self.conversation.model_dump_json(indent=2)
     )
@@ -179,15 +190,16 @@ class ConversationObserver(SandboxObserver):
     return Contribution(artifacts=artifacts)
 ```
 
-The `complete` flag (did the agent finish cleanly?) is harness-specific to
-derive, so it is set by the harness's converter/observer wiring in task 06, not
-baked into this shared shape.
+A `complete` flag (did the agent finish cleanly?) is harness-specific to derive,
+so it is *not* on this shared shape — task 06 surfaces it from the harness where
+needed.
 
 ## 4. Consumers
 
-- **Task 06** wires `ConversationObserver(converter=EventStreamConverter(),
-  raw_name=EVENT_STREAM_NAME)` into the rollout composition.
-- **Task 08** adds a proxy converter behind the same ABC (same observer).
+- **Task 06** wires `ConversationObserver(convert=harness.to_conversation,
+  raw_name=harness.native_output_name())` into the rollout composition.
+- **Task 08** adds proxy capture: the harness's `to_conversation` handles the
+  proxy format too (or dispatches on its `capture`) — same shared observer.
 - **W1 later** (post-cutover) can adopt `Conversation` in place of its
   `last_exchange` dicts — tracked in §6, not done here.
 
@@ -224,3 +236,9 @@ baked into this shared shape.
    `ToolResult` (a coding agent's shapes). `Image` and the finer
    `ReasoningFormat` cross-wire replay contract are deferred until a consumer
    needs them.
+4. ~~`ConversationConverter` ABC~~ — **dropped 2026-07-22** (§3): conversion is a
+   `Harness.to_conversation` method backed by a module-level function; the
+   observer takes a `Callable[[Path], Conversation]`. **Reconcile the shipped
+   code** (PR #37 landed with the ABC + `observer.converter`): a follow-up
+   removes `convert.py`, retypes the observer field to `convert`, and updates the
+   exports + tests.

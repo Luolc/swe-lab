@@ -99,9 +99,10 @@ eval-parse observer. The SBP adapter compiles its record into
 **Description:** `swe_lab/conversation/` — one provider-neutral, well-typed
 **Pydantic `Conversation`** model (role-tagged messages of `type`-discriminated
 content blocks), ported from the sibling `locode-core`'s `locode-protocol` + the
-Anthropic SDK `types`, plus a `ConversationConverter` **ABC** every harness
-implements (claude_code's `event_stream` → `Conversation` lands with task 06).
-Named `conversation`, not `trace` (perf-tracing clash) or `trajectory`
+Anthropic SDK `types`, plus the shared, harness-agnostic `ConversationObserver`
+(conversion is a `Harness.to_conversation` method, not a separate ABC;
+claude_code's `event_stream` → `Conversation` lands with task 06). Named
+`conversation`, not `trace` (perf-tracing clash) or `trajectory`
 (Claude-specific). Retires the misnamed `last_exchange` dict for new code. Adds
 Pydantic (owner-approved runtime dep).
 - **Acceptance:** `Conversation` round-trips through `model_dump_json` /
