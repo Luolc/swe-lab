@@ -27,22 +27,30 @@ Two facts that shape everything below:
   that generates them. Either way the exact script survives in the workspace
   for audit.
 
-## Assets — infrastructure placed *outside* the workspace
+## Assets — read-only infrastructure placed *outside* the workspace
 
-The pinned agent binary is **not** a workspace file (it is ~100 MB, read-only
-infrastructure, and must not be copied per run or persisted with run data).
-It is a backend **asset mount**: a host file placed at a fixed container path,
-read-only.
+An **asset** is read-only infrastructure the run must never mutate — that
+immutability (not its size) is what makes it an asset. It lives at a fixed
+container path **outside** the read/write workspace, and is realized by the
+backend as a construction-time property (like `network`/`env`). The pinned agent
+binary is an asset.
 
 | Asset | Container path | Host source | Realized by |
 |---|---|---|---|
-| Claude Code binary | `/opt/claude-code/claude` | `.cache/bin/claude-code/<version>/linux-x64/claude` | A-host: `-v host:container:ro` · A-ghjob: `mkdir -p /opt/claude-code && cp` |
+| Claude Code binary | `/opt/claude-code/claude` | `.cache/bin/claude-code/<version>/linux-x64/claude` | A-host: `-v host:container:ro` · A-ghjob: `cp` into place (read-only) |
 
-Scripts invoke it by its **absolute path** (`/opt/claude-code/claude`), *not*
-via `PATH` — no image guarantees a given `bin` dir on `PATH`, and a Docker bind
-mount auto-creates the target's parent dirs, so a dedicated path we control is
-the robust choice. Asset mounts are a backend construction-time property, like
-`network`/`env`/`pass_env`.
+Scripts invoke it by its **absolute path** (`/opt/claude-code/claude`), *not* via
+`PATH` — no image guarantees a given `bin` dir on `PATH`, and a Docker bind mount
+auto-creates the target's parent dirs, so a dedicated path we control is robust.
+Keeping the binary out of the busy workspace is deliberate: the workspace stays
+pure run data (a persisted workspace, task 12, isn't polluted) and nothing can
+scribble on the binary.
+
+**Mounts** (the workspace files below), by contrast, are materialized by a
+**per-backend `materialize` seam** that dispatches on the mount's kind
+(`InlineMount` → write, `HostFileMount` → copy today; `UrlMount` /
+`ObjectStoreMount` fetched natively later), never a hardcoded copy — see spec
+§Materialization is a per-backend seam.
 
 ---
 
@@ -81,22 +89,27 @@ default** — whether the verdict is also written to the workspace is a task-12
 ## Rollout composition (tasks 06 / 07)
 
 Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
-`$SANDBOX_WORKSPACE` (`/workspace`). The binary is an **asset**
-(`/opt/claude-code/claude`), not a workspace file.
+`$SANDBOX_WORKSPACE` (`/workspace`). The binary is a read-only **asset** at
+`/opt/claude-code/claude` (above), *not* a workspace file.
 
 ### Staged before the run (mounts)
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `agent.sh` | `$SANDBOX_WORKSPACE/agent.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/tmp/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `cd $WORKDIR` · `/opt/claude-code/claude -p "$(cat prompt.txt)" --model … --output-format stream-json --verbose --dangerously-skip-permissions > trajectory.jsonl 2> agent.stderr \|\| true` |
+| `agent.sh` | `$SANDBOX_WORKSPACE/agent.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/tmp/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `cd $WORKDIR` · `/opt/claude-code/claude -p "$(cat prompt.txt)" --model … --output-format stream-json --verbose --dangerously-skip-permissions > event_stream.jsonl 2> agent.stderr \|\| true` |
 | `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | harness (mount) | the agent | the solve prompt |
 
 ### Produced during the run (in-container, by `agent.sh`)
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `trajectory.jsonl` | `$SANDBOX_WORKSPACE/trajectory.jsonl` | agent stdout redirect | trace observer (host) | stream-json event trace |
+| `event_stream.jsonl` | `$SANDBOX_WORKSPACE/event_stream.jsonl` | agent stdout redirect | trace observer (host) | Claude Code's native `stream-json` output (kept verbatim as the raw artifact) |
 | `agent.stderr` | `$SANDBOX_WORKSPACE/agent.stderr` | agent stderr redirect | — (audit) | agent stderr |
+
+The trace observer (`before_destroy`, host-side) converts the native
+`event_stream.jsonl` into the canonical typed `Conversation` (task 06a) and
+writes `conversation.json` alongside it; both are registered artifacts.
+(`event_stream` is Claude-Code-specific; the canonical `conversation` is shared.)
 
 ### Produced after the run (diff-extract observer, `before_destroy`)
 
@@ -118,8 +131,8 @@ The persist observer pushes only the artifacts a composition **registers**
 never a candidate):
 
 - eval: (verdict — persistence shape TBD in task 12).
-- rollout: `trajectory` (trace observer), `patch` + `patch_raw` (diff-extract
-  observer).
+- rollout: `conversation` + `event_stream` (trace observer), `patch` +
+  `patch_raw` (diff-extract observer).
 
 The staged inputs (`entryscript.sh` / `agent.sh` / `run_script.sh` /
 `parser.py` / `required_tests.json` / `prompt.txt`) remain in the workspace and
@@ -133,7 +146,8 @@ expected*, and *what resulted*, re-gradable without the dataset record.
 - **Filenames are constants**, owned by their axis: the SWE-Bench-Pro names
   (`run_script.sh`, `parser.py`, `output.json`, `required_tests.json`,
   `entryscript.sh`, `stdout.log`, `stderr.log`) in the dataset adapter; the
-  claude_code names (`agent.sh`, `prompt.txt`, `trajectory.jsonl`,
-  `agent.stderr`, `$HOME`, the binary asset path) in the harness;
+  claude_code names (`agent.sh`, `prompt.txt`, `event_stream.jsonl`,
+  `conversation.json`, `agent.stderr`, `$HOME`, the `/opt/claude-code/claude`
+  binary asset path) in the harness;
   `extract.sh` / `patch.raw.diff` / `patch.diff` in the shared diff-extract
   observer.

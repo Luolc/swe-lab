@@ -82,7 +82,7 @@ working until their engine replacements have proven parity. Order of slices:
   engine path; old-vs-new verdict parity on 2–3 instances (including one from
   the truncated-golden-names class). *User reviews before the rollout slice.*
 - **CP2 — rollout regression bar.** Flipt rollout end-to-end on the engine in
-  CI: trajectory + clean `patch.diff` + graded outcome. *User reviews before
+  CI: conversation + clean `patch.diff` + graded outcome. *User reviews before
   the moves.*
 - **CP3 — cutover.** Full golden sweep 731/731 via `workflow_dispatch`
   (`max-parallel` ≤15, ~2.2 h) + a flipt rollout re-run + the harness-stub

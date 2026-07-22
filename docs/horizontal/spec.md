@@ -89,7 +89,7 @@ manager), with one deliberate change (see the Sandbox note).
 The `Sandbox` is **only a handle** to the live container — nothing accumulates on
 it, so its state is always clear. The **shared, inspectable state between
 observers is the workspace filesystem** (`sb.workspace`), where artifacts already
-live (`trajectory.jsonl`, `patch.diff`, `output.json`). The run's outcome is an
+live (`event_stream.jsonl`, `patch.diff`, `output.json`). The run's outcome is an
 explicit **`RunResult`** the manager builds from observer *return values* + what
 it catches (status / error / metrics). Nobody accumulates hidden state on a
 shared object.
@@ -107,7 +107,7 @@ class Sandbox:                       # pure handle — nothing mutable accumulat
 class RunResult:                     # the manager's aggregated return
     label: str
     status: RunStatus                # ok / setup_failed / errored / …
-    artifacts: dict[str, Path]       # refs into the workspace: patch.diff, trajectory.jsonl, …
+    artifacts: dict[str, Path]       # refs into the workspace: patch.diff, event_stream.jsonl, …
     metrics: dict[str, float] = {}
     error: Exception | None = None
 ```
@@ -127,29 +127,52 @@ survives in the workspace for audit. The concrete file inventory per composition
 is [`workspace-layout.md`](workspace-layout.md).
 
 ```python
-@dataclass(frozen=True)
-class Mount:
-    content: bytes | None = None     # small, runtime-generated (scripts, expectations)
-    source: Path | None = None       # host-cached file, copied in
-    executable: bool = False         # chmod +x after materializing
-                                     # exactly one of content/source is set
+# A Mount is KINDED and extensible; the backend's materialize() dispatches on
+# kind, with a default for the simple ones. New kinds (url, object_store) add a
+# member without changing the engine.
+class InlineMount(Mount):  content: bytes; executable: bool = False  # runtime-generated (scripts)
+class HostFileMount(Mount): source: Path;  executable: bool = False  # a host path to copy in
+# future: class UrlMount(Mount): url: str  ·  class ObjectStoreMount(Mount): ref: ObjectRef
 
 type Mounts = dict[str, Mount]       # key = workspace-relative target path
+
+class SandboxBackend(ABC):
+    def materialize(self, mounts: Mounts, workspace: Path) -> None:
+        """Default: InlineMount→write, HostFileMount→copy. Override per kind —
+        e.g. an object-store backend fetches a blob natively."""
+    ...
+
+# Assets are separate: read-only files placed at a fixed container path (outside
+# the workspace), a backend construction-time property like network/env.
+#   binary → /opt/claude-code/claude   (A-host: -v host:container:ro · A-ghjob: cp)
 ```
 
-**Assets vs. mounts.** Large read-only *infrastructure* — the ~100 MB pinned
-agent binary — is **not** a workspace mount: it would be copied per run and
-would pollute a persisted workspace (task 12). It is instead a backend **asset**
-— a host file placed at a fixed container path, read-only — realized by A-host
-as `-v host:container:ro` and by A-ghjob as a `cp` into place. Assets are a
-backend construction-time property (like `network`/`env`). The agent binary
-lands at a dedicated path we control (`/opt/claude-code/claude`) and is invoked
-by **absolute path** — not via `PATH` (no image guarantees a given `bin` dir on
-`PATH`; a bind mount auto-creates the parent). Only run *data* lives in the
-workspace.
+**Assets vs. mounts — two different things.** A **workspace mount** stages a
+file into `sb.workspace`, the run's **read/write scratch area** (scripts, prompt,
+generated outputs churn there). An **asset** is **read-only infrastructure the
+run must never mutate** — that immutability is what makes it an asset, *not* its
+size. Because it is read-only, an asset lives at a fixed container path
+**outside** the busy workspace, anywhere we choose (the pinned ~100 MB agent
+binary → `/opt/claude-code/claude`), invoked by absolute path. The backend
+realizes it as a construction-time property, like `network`/`env`: A-host
+`-v host:container:ro`, A-ghjob a `cp` into place (kept read-only). Keeping the
+binary out of the read/write workspace is deliberate — a persisted workspace
+stays pure run data, and nothing can accidentally scribble on the binary.
 
-This kills the duplicated-staging smell directly and keeps the axes decoupled:
-no axis needs to know what another axis mounts.
+**Materialization is a per-backend seam, not a hardcoded copy.** A `Mount` is a
+**kinded, extensible** declaration — inline bytes and a host-file source today,
+extensible to a **URL to download** or an **object-store reference** (with its
+own fetch client) tomorrow. The backend owns a `materialize(mounts, workspace)`
+method with a **default** implementation for the simple kinds (inline → write,
+host-file → copy); a backend may **override per kind** — an object-store-aware or
+remote backend pulls a blob natively instead of routing bytes through the host.
+The manager calls `backend.materialize(...)` and never assumes "just copy the
+file". This is what lets staging evolve (new sources) without touching the
+engine.
+
+Together this keeps the axes decoupled (no axis knows what another mounts) and
+keeps mutable staging (mounts) and immutable infrastructure (assets) as two
+clean, independently-evolving concepts.
 
 ### The observer — the original five hooks only
 
@@ -179,7 +202,7 @@ observer contributions and exposes it after the block.
 
 ```python
 with manager.sandbox() as sb:          # before_create → backend.up → after_create (setup ran); sb = live handle
-    run_agent(sb)                       # the ONE action: rollout writes trajectory.jsonl into sb.workspace
+    run_agent(sb)                       # the ONE action: rollout writes event_stream.jsonl into sb.workspace
                                         #                 (or run_eval_script(sb) for eval)
 result = manager.result                 # RunResult — before_destroy observers already ran
 ```
@@ -214,6 +237,34 @@ persist pushes the workspace) — never through mutable state on the sandbox.
 
 `rollout` and `eval` are two such compositions. The engine
 (`SandboxManager` + observers) is harness-, dataset-, and eval-method-agnostic.
+
+### Agent output → one typed `Conversation`
+
+Each harness emits its agent output in its **own** native shape, with its own
+name — Claude Code's is an **`event_stream`** (its `stream-json` lines); Codex
+and Grok Build produce different formats produced in different ways (so
+`trajectory`, a Claude-Code-ism, is **not** a shared name). Rather than let a
+native shape leak downstream, every harness **converts its output into one
+provider-neutral, well-typed `Conversation`** — a Pydantic model ported from the
+sibling `locode-core`'s `locode-protocol` (its ADR-0013) and the Anthropic
+Python SDK's `types` (both are role-tagged messages of `type`-discriminated
+content blocks): `Conversation(messages=[Message(role, content=[ContentBlock])])`
+with `Role ∈ {system, developer, user, assistant}` and `ContentBlock ∈ {Text,
+Image, Reasoning, ToolUse, ToolResult}`. We implement our **own** set (not import
+the SDK's) for control and to avoid being boxed in where upstream can't reach.
+The harness-native output is still kept verbatim as a raw artifact; the
+`Conversation` (`conversation.json`) is the canonical one all consumers read.
+Conversion sits behind a small `ConversationConverter` ABC, one impl per harness.
+This is deep enough to be its **own task** (see
+[`plans/README.md`](plans/README.md) task 06a), which the `claude_code` harness's
+trace observer then consumes. (The name is **`conversation`**, not `trace` —
+`trace` collides with performance tracing.)
+
+This also retires the misnamed `last_exchange` (a proxy-era artifact of "read the
+whole trace from the last recall"): new code speaks `conversation`. The
+historical `.last_exchange.json` artifacts **already published to Hugging Face by
+W1** are renamed/re-hosted separately — an ask-first HF change, deferred to a
+backlog item, not this refactor.
 
 ### Two backends, one interface
 
@@ -397,9 +448,10 @@ actually needed; add it then. Candidate ideas recorded for that moment:
 Repo conventions unchanged: pyink (2-space, line 80), strict camelCase acronyms
 (`SweBenchProInstance`), typed frozen dataclasses for records. Interfaces follow
 [ADR-0002](../decisions/ADR-0002-interface-style-abc-vs-protocol.md): **ABC +
-`@abstractmethod` for behavior interfaces** (`Grader`, `SandboxBackend`),
-`Protocol` only for structural data shapes (`Verdict`), a concrete base class
-where partial override is normal (`SandboxObserver`). Each observer / backend /
+`@abstractmethod` for behavior interfaces** (`Grader`, `SandboxBackend`,
+`Harness`, `ConversationConverter`), `Protocol` only for structural data shapes
+(`Verdict`), a concrete base class where partial override is normal
+(`SandboxObserver`). Each observer / backend /
 axis plug is a small self-contained module; the
 engine never imports a concrete harness/dataset/eval-method.
 
