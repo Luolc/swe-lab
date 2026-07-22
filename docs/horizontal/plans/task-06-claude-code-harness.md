@@ -64,7 +64,7 @@ them into `rollout`.
 harnesses/
   __init__.py
   base.py        Harness (ABC): mounts() + assets() + build_body()
-                                + to_conversation() + native_output_name()
+                                + to_conversation() + native_outputs()
   claude_code/
     __init__.py
     harness.py     ClaudeCodeHarness(Harness)
@@ -104,9 +104,9 @@ class Harness(ABC):
   @abstractmethod
   def build_body(self, timeout: float) -> Callable[[Sandbox], None]: ...
   @abstractmethod
-  def to_conversation(self, raw: Path) -> Conversation: ...  # read own native output
+  def to_conversation(self, workspace: Path) -> Conversation: ...  # read own primary output
   @abstractmethod
-  def native_output_name(self) -> str: ...        # the file build_body writes it to
+  def native_outputs(self) -> dict[str, str]: ...  # artifact name → workspace filename (all byproducts)
 
 # ─── harnesses/claude_code/harness.py ───────────────────────────────────────
 @dataclass(frozen=True)
@@ -146,20 +146,24 @@ class ClaudeCodeHarness(Harness):
     return body
 
   @override
-  def native_output_name(self) -> str:
-    return EVENT_STREAM_NAME              # "event_stream.jsonl"
+  def native_outputs(self) -> dict[str, str]:
+    return {                             # every byproduct build_body writes
+        "event_stream": EVENT_STREAM_NAME,   # "event_stream.jsonl" (the primary)
+        "agent_stderr": AGENT_STDERR_NAME,   # "agent.stderr" (the run's stderr log)
+    }
 
   @override
-  def to_conversation(self, raw: Path) -> Conversation:
-    return event_stream_to_conversation(raw)   # the module fn (convert.py)
+  def to_conversation(self, workspace: Path) -> Conversation:
+    return event_stream_to_conversation(workspace / EVENT_STREAM_NAME)  # module fn
 ```
 
 The composition (task 07) builds the **shared** `ConversationObserver` (task 06a)
 from these: `ConversationObserver(convert=harness.to_conversation,
-raw_name=harness.native_output_name())`. It reads the native output in
-`before_destroy`, converts it, writes `conversation.json`, and registers
-`conversation` + the raw output as artifacts. `build_body` returns a closure so
-the composition stays `with manager.sandbox() as sb: body(sb)`.
+native_outputs=harness.native_outputs())`. In `before_destroy` it converts the
+primary output, writes `conversation.json`, and registers `conversation` **plus
+every native byproduct** (`event_stream`, `agent_stderr`, …) as artifacts for
+persistence. `build_body` returns a closure so the composition stays
+`with manager.sandbox() as sb: body(sb)`.
 
 ## 4. The in-container invocation
 

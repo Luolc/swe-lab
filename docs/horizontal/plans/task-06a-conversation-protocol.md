@@ -27,7 +27,7 @@ output keeps its own name — Claude Code's is `event_stream`.
 
 This is pulled **out of task 06** deliberately: the model is shared by every
 harness and every consumer, and the owner wants to grow it (more block kinds,
-metadata) independently of the claude_code harness. Task 06's trace observer is
+metadata) independently of the claude_code harness. Task 06's conversation observer is
 the first *consumer*.
 
 ### In scope
@@ -37,9 +37,11 @@ the first *consumer*.
   `locode-protocol` + the Anthropic SDK.
 - `swe_lab/conversation/observer.py`: the **shared, harness-agnostic**
   `ConversationObserver(SandboxObserver)` — parameterized by a `convert`
-  **callable** + the native output filename, it produces `conversation.json` in
-  `before_destroy` and registers the `conversation` + raw artifacts. **Not** a
-  per-harness observer; nothing harness-specific lives on it.
+  **callable** + the harness's **`native_outputs` dict** (a harness produces more
+  than one byproduct — `event_stream` *and* `agent.stderr`, …), it produces
+  `conversation.json` in `before_destroy` and registers `conversation` + every
+  native byproduct that landed. **Not** a per-harness observer; nothing
+  harness-specific lives on it.
 - **No `ConversationConverter` ABC** (dropped 2026-07-22, §3): conversion is a
   `Harness` method (`to_conversation`, task 06), backed by a module-level
   function per harness. The observer takes a plain `Callable[[Path],
@@ -132,12 +134,13 @@ indirection whose only job was to *name* "a thing with `to_conversation`", which
 a plain `Callable[[Path], Conversation]` already does — an interceptor, not a
 type worth an abstraction. So:
 
-- the `Harness` ABC (task 06) exposes `to_conversation(self, raw: Path) ->
-  Conversation`;
-- the pure logic lives as a **module-level function** in the harness package, so
-  it is reusable offline (re-processing a stored native output, W1 later) without
-  constructing a harness that needs a `prompt`. `Harness.to_conversation` just
-  delegates:
+- the `Harness` ABC (task 06) exposes `to_conversation(self, workspace: Path) ->
+  Conversation` (it reads its *own* primary output file from the workspace, by a
+  name only it knows);
+- the pure logic lives as a **module-level function** in the harness package,
+  taking the specific file, so it is reusable offline (re-processing a stored
+  native output, W1 later) without constructing a harness that needs a `prompt`.
+  `Harness.to_conversation` just resolves its file and delegates:
 
 ```python
 # ─── harnesses/claude_code/convert.py ───────────────────────────────────────
@@ -149,7 +152,8 @@ def event_stream_to_conversation(raw: Path) -> Conversation:
     ...                                                # event → Message/ContentBlock
   return Conversation(messages=messages)
 
-# ClaudeCodeHarness.to_conversation(self, raw) -> event_stream_to_conversation(raw)
+# ClaudeCodeHarness.to_conversation(self, workspace):
+#   return event_stream_to_conversation(workspace / EVENT_STREAM_NAME)
 ```
 
 The claude_code impl is **written fresh** — it parses the stream-json lines
@@ -164,35 +168,39 @@ kept verbatim as an artifact; the `Conversation` is the canonical one.
 
 `ConversationObserver` is **shared and harness-agnostic**; it is kept (not folded
 into the composition) because it must run *during* the run to (1) convert + write
-`conversation.json` and (2) **register** `conversation` + `raw_output` as
-artifacts — and artifact registration can only happen through a hook's
-`Contribution` (so the persist observer, task 12, also `before_destroy`, uploads
-them to T1). It takes a `convert` **callable** + the native output filename, so
-nothing harness-specific lives on it:
+`conversation.json` and (2) **register** `conversation` **plus every native
+byproduct** the harness produced as artifacts — and artifact registration can
+only happen through a hook's `Contribution` (so the persist observer, task 12,
+also `before_destroy`, uploads them to T1). A harness produces **more than one**
+native file (Claude Code: the `event_stream` *and* the `agent.stderr` log, later
+maybe others), so the observer takes the harness's **`native_outputs` dict**
+(artifact name → workspace filename) and registers each that exists. It takes a
+`convert` **callable** + that dict, so nothing harness-specific lives on it:
 
 ```python
 # ─── swe_lab/conversation/observer.py ───────────────────────────────────────
 @dataclass
 class ConversationObserver(SandboxObserver):
-  """Shared: convert a harness's native output → conversation.json.
+  """Shared: convert a harness's primary output + register all its byproducts.
 
   Harness-agnostic — the composition injects `convert` (the harness's
-  `to_conversation`) + `raw_name` (the native output file it writes).
+  `to_conversation`, which reads its own primary file from the workspace) and
+  `native_outputs` (artifact name → workspace filename, the full byproduct set).
   """
 
-  convert: Callable[[Path], Conversation]
-  raw_name: str                       # e.g. "event_stream.jsonl" (harness-owned)
-  conversation: Conversation | None = None    # single-run state
+  convert: Callable[[Path], Conversation]   # given the workspace → the Conversation
+  native_outputs: dict[str, str]            # artifact name → workspace filename
+  conversation: Conversation | None = None  # single-run state
 
   def before_destroy(self, sb: Sandbox) -> Contribution | None:
-    raw = sb.workspace / self.raw_name
-    self.conversation = self.convert(raw)
-    (sb.workspace / CONVERSATION_NAME).write_text(
-        self.conversation.model_dump_json(indent=2)
-    )
-    artifacts = {"conversation": sb.workspace / CONVERSATION_NAME}
-    if raw.is_file():
-      artifacts["raw_output"] = raw     # harness-native, verbatim
+    self.conversation = self.convert(sb.workspace)
+    dest = sb.workspace / CONVERSATION_NAME
+    _ = dest.write_text(self.conversation.model_dump_json(indent=2))
+    artifacts = {"conversation": dest}
+    for name, filename in self.native_outputs.items():
+      path = sb.workspace / filename
+      if path.is_file():                    # only register what actually landed
+        artifacts[name] = path
     return Contribution(artifacts=artifacts)
 ```
 
@@ -203,7 +211,7 @@ needed.
 ## 4. Consumers
 
 - **Task 06** wires `ConversationObserver(convert=harness.to_conversation,
-  raw_name=harness.native_output_name())` into the rollout composition.
+  native_outputs=harness.native_outputs())` into the rollout composition.
 - **Task 08** adds proxy capture: the harness's `to_conversation` handles the
   proxy format too (or dispatches on its `capture`) — same shared observer.
 - **W1 later** (post-cutover) can adopt `Conversation` in place of its
@@ -244,7 +252,9 @@ needed.
    needs them.
 4. ~~`ConversationConverter` ABC~~ — **dropped 2026-07-22** (§3): conversion is a
    `Harness.to_conversation` method backed by a module-level function; the
-   observer takes a `Callable[[Path], Conversation]`. **Reconcile the shipped
-   code** (PR #37 landed with the ABC + `observer.converter`): a follow-up
-   removes `convert.py`, retypes the observer field to `convert`, and updates the
-   exports + tests.
+   observer takes a `Callable[[Path], Conversation]` + a `native_outputs` dict.
+   **Reconcile the shipped code** (PR #37 landed with the ABC +
+   `observer.converter` + `raw_name: str`): a follow-up removes `convert.py`,
+   retypes the observer to `convert` + `native_outputs: dict[str, str]`
+   (registers every byproduct, not one `raw_output`), and updates the exports +
+   tests.

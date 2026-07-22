@@ -103,10 +103,10 @@ Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `event_stream.jsonl` | `$SANDBOX_WORKSPACE/event_stream.jsonl` | agent stdout redirect | trace observer (host) | Claude Code's native `stream-json` output (kept verbatim as the raw artifact) |
-| `agent.stderr` | `$SANDBOX_WORKSPACE/agent.stderr` | agent stderr redirect | — (audit) | agent stderr |
+| `event_stream.jsonl` | `$SANDBOX_WORKSPACE/event_stream.jsonl` | agent stdout redirect | conversation observer (host) | Claude Code's native `stream-json` output (the primary; kept verbatim as the `event_stream` artifact) |
+| `agent.stderr` | `$SANDBOX_WORKSPACE/agent.stderr` | agent stderr redirect | conversation observer (host) | the run's stderr log — registered as the `agent_stderr` artifact (a native byproduct, kept for debugging failed runs) |
 
-The trace observer (`before_destroy`, host-side) converts the native
+The conversation observer (`before_destroy`, host-side) converts the native
 `event_stream.jsonl` into the canonical typed `Conversation` (task 06a) and
 writes `conversation.json` alongside it; both are registered artifacts.
 (`event_stream` is Claude-Code-specific; the canonical `conversation` is shared.)
@@ -131,7 +131,8 @@ The persist observer pushes only the artifacts a composition **registers**
 never a candidate):
 
 - eval: (verdict — persistence shape TBD in task 12).
-- rollout: `conversation` + `event_stream` (trace observer), `patch` +
+- rollout: `conversation` + `event_stream` + `agent_stderr` (conversation
+  observer — every native byproduct), `patch` +
   `patch_raw` (diff-extract observer).
 
 The staged inputs (`entryscript.sh` / `agent.sh` / `run_script.sh` /
