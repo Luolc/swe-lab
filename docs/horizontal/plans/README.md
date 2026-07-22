@@ -13,7 +13,8 @@ indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if 
 | 04 | [`unit_test` eval method + SBP compile](task-04-unit-test-method.md) | ✅ Done |
 | 05 | [Eval CLI on the engine + parity](task-05-eval-cli.md) | ✅ Done (CLI + parity workflow; parity run pending CI dispatch) |
 | — | **CP1 — eval parity** (human gate) | ⬜ |
-| 06 | [`claude_code` harness (stream capture)](task-06-claude-code-harness.md) | 📝 Designed |
+| 06a | [`Conversation` protocol + output converters](task-06a-conversation-protocol.md) | 📝 Designed |
+| 06 | [`claude_code` harness (event-stream capture)](task-06-claude-code-harness.md) | 📝 Designed |
 | 07 | [Diff-extract observer + rollout CLI](task-07-diff-extract-rollout-cli.md) | 📝 Designed |
 | — | **CP2 — rollout regression bar** (human gate) | ⬜ |
 | 08 | Proxy capture mode | ⬜ |
@@ -93,17 +94,42 @@ eval-parse observer. The SBP adapter compiles its record into
 
 ### Checkpoint CP1 — eval parity *(human review before the rollout slice)*
 
-## Task 06: `claude_code` harness (stream capture)
+## Task 06a: `Conversation` protocol + output converters
 
-**Description:** `harnesses/claude_code/` — pinned-binary provisioning (moved
-from `core/agent/binary.py`), the agent-run main body (in-container invocation
-through `sb.exec`, harness mounts incl. the binary), stream-json trace capture
-as observer contributions (moved/split from `core/agent/trace.py`).
-- **Acceptance:** the harness registers as a composition (main + observers +
-  mounts) without the engine importing it; trajectory lands in the workspace;
-  agent errors classify through the (renamed-neutral) error taxonomy.
-- **Verification:** unit tests with a scripted fake agent binary; quality bar.
-- **Dependencies:** 02, 03. **Scope:** M
+**Description:** `swe_lab/conversation/` — one provider-neutral, well-typed
+**Pydantic `Conversation`** model (role-tagged messages of `type`-discriminated
+content blocks), ported from the sibling `locode-core`'s `locode-protocol` + the
+Anthropic SDK `types`, plus a `ConversationConverter` **ABC** every harness
+implements (claude_code's `event_stream` → `Conversation` lands with task 06).
+Named `conversation`, not `trace` (perf-tracing clash) or `trajectory`
+(Claude-specific). Retires the misnamed `last_exchange` dict for new code. Adds
+Pydantic (owner-approved runtime dep).
+- **Acceptance:** `Conversation` round-trips through `model_dump_json` /
+  `model_validate_json`; the `event_stream` fixture converts to the right
+  roles/blocks with `tool_use`↔`tool_result` pairing; empty/absent →
+  `Conversation(messages=[])`.
+- **Verification:** `tests/test_conversation.py` + converter tests, no Docker;
+  quality bar. **Backlog (not here):** rename+re-host W1's published
+  `.last_exchange.json` on HF (ask-first).
+- **Dependencies:** none (consumed by 06/07/08). **Scope:** M
+
+## Task 06: `claude_code` harness (event-stream capture)
+
+**Description:** `harnesses/base.py` (the `Harness` **ABC**, ADR-0002) +
+`harnesses/claude_code/` — pinned-binary provisioning (reused from
+`core/agent/binary.py` by import), the agent-run main body (in-container
+invocation through `sb.run`; the prompt + `agent.sh` as workspace mounts, **the
+binary as a read-only asset at `/opt/claude-code/claude`**), `event_stream`
+capture as a trace observer producing a task-06a `Conversation`.
+- **Acceptance:** `ClaudeCodeHarness(Harness)` registers as a composition (main
+  + observers + mounts + binary asset) without the engine importing it; prompt +
+  `agent.sh` land in the workspace, the binary at its `/opt` asset path; the
+  `event_stream` converts to a typed `Conversation`; a nonzero agent exit still
+  leaves the edits (`|| true`).
+- **Verification:** unit tests with a scripted fake agent binary + an
+  `event_stream` fixture; quality bar. CLI-flag tuning deferred (uses today's
+  defaults).
+- **Dependencies:** 02, 03 (asset + materialize seam), 06a. **Scope:** M
 
 ## Task 07: Diff-extract observer + rollout CLI
 
@@ -113,7 +139,7 @@ as observer contributions (moved/split from `core/agent/trace.py`).
 `cli/rollout.py`, `rollout.yml` switched to `python -m swe_lab rollout`.
 - **Acceptance:** one instance runs agent → `patch.diff` → graded outcome as a
   single engine composition; `empty_patch` never grades as a pass.
-- **Verification:** CI flipt rollout run link with trajectory + patch + verdict.
+- **Verification:** CI flipt rollout run link with conversation + patch + verdict.
 - **Dependencies:** 04, 06. **Scope:** M
 
 ### Checkpoint CP2 — rollout regression bar *(human review before the moves)*

@@ -97,7 +97,7 @@ class RolloutOutcome:
   is_empty: bool
   binary_stripped: bool
   complete: bool                 # from the trace observer
-  exchange: dict[str, object]
+  conversation: Conversation     # canonical typed trace (task 06a)
   status: RunStatus              # engine status
   workspace: Path
 
@@ -107,10 +107,13 @@ def run_rollout(
 ) -> RolloutOutcome: ...
     # harness = ClaudeCodeHarness(prompt=prompt, model=model)
     # trace = harness.trace_observer(); extract = DiffExtractObserver(exclude_globs)
+    # backend carries the binary ASSET (read-only, /opt) — task 06 §5.3:
+    #   backend = replace(backend, assets=dict([harness.binary_asset()]))
     # mgr = SandboxManager(spec, backend, workspace,
-    #                      observers=[trace, extract], mounts=harness.mounts())
-    # with mgr.sandbox() as sb: harness.build_body(spec.workdir, timeout)(sb)
-    # assemble RolloutOutcome from extract.* + trace.* + mgr.result.status
+    #                      observers=[trace, extract],
+    #                      mounts=harness.mounts(spec.workdir))  # run data only
+    # with mgr.sandbox() as sb: harness.build_body(timeout)(sb)
+    # assemble RolloutOutcome from extract.* + trace.conversation + mgr.result.status
 ```
 
 `_read_patch` (bytes → `decode("utf-8", "backslashreplace")`, `""` when absent)

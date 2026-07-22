@@ -11,12 +11,23 @@
 >    the generating observer, so the exact script survives for audit and
 >    A-ghjob needs no stdin plumbing. See
 >    [`workspace-layout.md`](../workspace-layout.md).
-> 2. ⬜ **asset mounts** (pending, lands with task 06 which needs it) — a
->    `assets: dict[container_path, host_path]` construction-time field placing
->    read-only host files at fixed container paths (`docker create -v
->    host:container:ro`), so the ~100 MB agent binary lands at
->    `/opt/claude-code/claude` (invoked by absolute path) outside the
->    workspace instead of being copied in per run.
+> 2. ⬜ **assets** (pending, lands with task 06 which needs it) — a
+>    construction-time `assets` field placing **read-only** host files at fixed
+>    container paths (`docker create -v host:container:ro`; A-ghjob `cp` kept
+>    read-only), so the pinned agent binary lands at `/opt/claude-code/claude`
+>    (invoked by absolute path) *outside* the read/write workspace. An asset is
+>    read-only infrastructure the run must never mutate — that, not its size, is
+>    why it is an asset (spec §Assets vs. mounts).
+> 3. ⬜ **materialize becomes a per-backend seam** (pending, lands with task 06)
+>    — `materialize(mounts, workspace)` moves **onto the backend** (from the free
+>    `sandbox/mounts.py` function the manager calls today), with a **default**
+>    implementation for the simple kinds. `Mount` becomes a **kinded, extensible**
+>    type (`InlineMount` / `HostFileMount` now; `UrlMount` / `ObjectStoreMount`
+>    later); the backend dispatches on kind and may override how any kind is
+>    fetched — an object-store-aware or remote backend pulls a blob natively
+>    rather than routing bytes through the host. The current brute `shutil.copyfile`
+>    stays only as the default `HostFileMount` path (spec §Materialization is a
+>    per-backend seam).
 
 ---
 
