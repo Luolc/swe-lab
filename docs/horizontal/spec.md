@@ -229,7 +229,7 @@ persist pushes the workspace) — never through mutable state on the sandbox.
 ### The three axes compose a task
 
 - **Harness** (Claude Code / Codex / Grok Build) → the `main` body (the agent run:
-  invocation, mounts, **capture = stream \| proxy**) + a trace observer.
+  invocation, mounts, **capture = stream \| proxy**) + a conversation observer.
 - **Dataset** (SWE-Bench Pro / future) → `image/workdir/base_commit` + a setup
   observer + (for eval) the grading inputs.
 - **Eval method** (unit-test now; model/rubric later) → the `main` body (run the
@@ -258,7 +258,7 @@ Conversion is a `Harness` method (`to_conversation`, one per harness); a shared,
 harness-agnostic `ConversationObserver` runs it during the run and registers the
 `conversation` + raw artifacts. This is deep enough to be its **own task** (see
 [`plans/README.md`](plans/README.md) task 06a), which the `claude_code` harness's
-trace observer then consumes. (The name is **`conversation`**, not `trace` —
+conversation observer then consumes. (The name is **`conversation`**, not `trace` —
 `trace` collides with performance tracing.)
 
 This also retires the misnamed `last_exchange` (a proxy-era artifact of "read the

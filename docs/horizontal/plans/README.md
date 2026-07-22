@@ -121,7 +121,7 @@ Pydantic (owner-approved runtime dep).
 `core/agent/binary.py` by import), the agent-run main body (in-container
 invocation through `sb.run`; the prompt + `agent.sh` as workspace mounts, **the
 binary as a read-only asset at `/opt/claude-code/claude`**), `event_stream`
-capture as a trace observer producing a task-06a `Conversation`.
+capture as a conversation observer producing a task-06a `Conversation`.
 - **Acceptance:** `ClaudeCodeHarness(Harness)` registers as a composition (main
   + observers + mounts + binary asset) without the engine importing it; prompt +
   `agent.sh` land in the workspace, the binary at its `/opt` asset path; the
