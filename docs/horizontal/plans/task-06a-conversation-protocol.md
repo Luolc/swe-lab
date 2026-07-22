@@ -143,16 +143,22 @@ type worth an abstraction. So:
 # ─── harnesses/claude_code/convert.py ───────────────────────────────────────
 def event_stream_to_conversation(raw: Path) -> Conversation:
   """Claude Code `event_stream` (`--output-format stream-json`) → Conversation."""
-  events = parse_stream_events(read_lines(raw))       # reuse trace.py
-  return _events_to_conversation(events)              # map to the typed model
+  messages: list[Message] = []
+  for line in raw.read_text().splitlines():           # fresh parse, stdlib json
+    event = json.loads(line)
+    ...                                                # event → Message/ContentBlock
+  return Conversation(messages=messages)
 
 # ClaudeCodeHarness.to_conversation(self, raw) -> event_stream_to_conversation(raw)
 ```
 
-The claude_code impl is thin: reuse the battle-tested `parse_stream_events`
-(already handles partial lines / interleaving), then walk the events into
-`Message`/`ContentBlock`s. The raw `event_stream.jsonl` is still kept verbatim as
-an artifact; the `Conversation` is the canonical one.
+The claude_code impl is **written fresh** — it parses the stream-json lines
+straight into the typed model with stdlib `json`, rather than wrapping
+`core/agent/trace.py`'s `parse_stream_events` / `build_exchange_from_stream`
+(which produce the legacy untyped dict and are **deprecation-bound**; their
+cleanup rides the `core/` removal at 10b). Parsing straight into `Conversation`
+is simpler and leaves nothing to unwind. The raw `event_stream.jsonl` is still
+kept verbatim as an artifact; the `Conversation` is the canonical one.
 
 ### The shared observer (kept — it does two load-bearing jobs during the run)
 

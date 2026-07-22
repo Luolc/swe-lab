@@ -32,8 +32,9 @@ them into `rollout`.
   body + to_conversation), and its constants.
 - `harnesses/claude_code/convert.py`: `event_stream_to_conversation(raw)` — a
   module function (Claude Code `event_stream` → `Conversation`) that
-  `ClaudeCodeHarness.to_conversation` delegates to; wraps the existing
-  `parse_stream_events` / `build_exchange_from_stream`.
+  `ClaudeCodeHarness.to_conversation` delegates to; **written fresh** (stdlib
+  `json` over the stream-json lines), *not* wrapping the soon-deprecated
+  `core/agent/trace.py`.
 - The **shared** `ConversationObserver` (task 06a) is *wired* here (with the
   harness's `to_conversation` + native output name), not redefined.
 - The in-container agent invocation ported from `entryscript.py:63-77`, rewired
@@ -212,16 +213,18 @@ only thing that knows `Harness` — it calls `mounts()`/`assets()`/`build_body()
 harness-specific (the event-stream shape, an observer subclass) lives on the base
 — a harness contributes data + a `to_conversation`; the observer is shared (§5.5).
 
-### 5.2 Reuse `core/agent/` by import; defer the physical move
-`ensure_claude_binary`, `parse_stream_events`, `build_exchange_from_stream`,
-`last_stream_record` are used as-is (`binary.py:85`, `trace.py:46,100,275`) —
-wrapped by the claude `to_conversation` (task 06a) into a typed `Conversation`. W1
-annotation still imports `core/agent/` (`pipelines/related_files/agent_run.py`),
-so **moving** those files now would break W1 — out of scope (the spec keeps W1
-unmigrated). The Claude-specific code relocates into `harnesses/claude_code/` at
-cutover (10b), where W1's import is repointed or a thin shim is left. This task
-adds the harness *around* the existing functions. (§8 Q1 confirms the
-reuse-not-move call.)
+### 5.2 Reuse only `ensure_claude_binary`; write the event-stream parsing fresh
+Binary provisioning is reused as-is: `ensure_claude_binary` (`binary.py:85`) is
+imported unchanged (defer its physical move to 10b). The **event-stream parsing
+is written fresh** in `convert.py` (stdlib `json` over the stream-json lines →
+the typed model) — it does **not** wrap `core/agent/trace.py`'s
+`parse_stream_events` / `build_exchange_from_stream` / `last_stream_record`,
+because those produce the legacy untyped `dict` and `trace.py` is headed for
+**deprecation**. Wrapping a soon-dead dict-parser just to re-shape its output is
+churn; parsing the raw lines straight into `Conversation` is simpler and leaves
+nothing to unwind. W1 annotation still imports `core/agent/`
+(`pipelines/related_files/agent_run.py`), so those legacy files stay put for now
+and are removed with the deprecation cleanup at cutover (10b). (§8 Q1.)
 
 ### 5.3 The binary is a read-only **asset** at `/opt`, via `assets()`
 The pinned binary is **read-only infrastructure the run must never mutate** —
@@ -243,24 +246,23 @@ kept read-only (task 03 assets field). The composition (task 07) wires
 W1's `errors.py` taxonomy (`classify_error_text`, `UsageLimitError`,
 `RetryableError`) drives its retry loop. Rollout's model is different: run the
 agent once, `|| true`, capture whatever resulted; a failed/partial run shows up
-as a not-complete signal the harness derives from the raw output
-(`trace._stream_complete` — `subtype=="success" and not is_error`,
-`trace.py:88-97`) and/or an empty patch (task 07). No raising, no retry here — so
-this task pulls in none of `errors.py`. (A resample tier, if ever wanted, is a
-composition-level concern, not the harness's.)
+as a not-complete signal the harness derives fresh from the terminal `result`
+event of the raw output (`subtype == "success" and not is_error`) and/or an empty
+patch (task 07). No raising, no retry here — so this task pulls in none of
+`errors.py`. (A resample tier, if ever wanted, is a composition-level concern,
+not the harness's.)
 
 ### 5.5 Event-stream capture via a shared observer + a claude `to_conversation`
 The conversation observer is **shared and harness-agnostic** (`ConversationObserver`,
 task 06a): given a `convert` callable + the native output filename, it produces
 `conversation.json`. Only the *conversion* is Claude-specific — the module
 function `event_stream_to_conversation` (which `Harness.to_conversation`
-delegates to) walks `event_stream` (`--output-format stream-json`,
-`last_stream_record` / `parse_stream_events`, `trace.py:100-105`) into the typed
-model. `trace.py`'s proxy branch (`last_proxy_record`, `trace.py:108-125`) is the
-faithful-wire strategy wired in task 08 — the harness's `to_conversation` handles
-the proxy format too (or dispatches on a `capture` selector) behind the same
-shared observer. Stream needs no proxy process and is what rollout uses today
-(`DEFAULT_CAPTURE`, `trace.py:40`).
+delegates to) parses the raw `--output-format stream-json` lines **fresh** (stdlib
+`json`) into the typed model, not via the soon-deprecated `trace.py`. Proxy
+capture (task 08) adds a faithful-wire strategy — the harness's `to_conversation`
+grows to handle that format too (or dispatches on a `capture` selector) behind the
+same shared observer, again parsed fresh. Stream needs no proxy process and is
+what rollout uses today.
 
 ## 6. Tests (all Docker-free)
 
@@ -291,10 +293,11 @@ Pydantic. New code Google-docstring'd.
 
 ## 8. Open questions (need user confirmation)
 
-1. **Reuse-not-move (§5.2)** — OK to have `harnesses/claude_code/` *import*
-   `core/agent/{binary,trace}` now and defer the physical relocation +
-   W1-import repoint to 10b? (Alternative: move now and repoint W1 in this
-   task — bigger blast radius, breaks the strangler's "old path intact".)
+1. **Reuse `ensure_claude_binary` by import (§5.2)** — OK to import
+   `core/agent/binary`'s `ensure_claude_binary` now and defer its physical move
+   to 10b? (The trace parsing is **not** reused — written fresh, per the owner
+   2026-07-22, since `core/agent/trace.py` is deprecation-bound; it stays only
+   because W1 still imports it, and goes with the 10b cleanup.)
 2. ~~Binary copy vs asset~~ — **resolved 2026-07-22**: the binary is a read-only
    **asset** at `/opt/claude-code/claude`, returned by `assets()` (a dict, so it
    generalizes to agent config later) and realized by the backend's assets field
