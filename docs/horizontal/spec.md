@@ -254,8 +254,9 @@ Image, Reasoning, ToolUse, ToolResult}`. We implement our **own** set (not impor
 the SDK's) for control and to avoid being boxed in where upstream can't reach.
 The harness-native output is still kept verbatim as a raw artifact; the
 `Conversation` (`conversation.json`) is the canonical one all consumers read.
-Conversion sits behind a small `ConversationConverter` ABC, one impl per harness.
-This is deep enough to be its **own task** (see
+Conversion is a `Harness` method (`to_conversation`, one per harness); a shared,
+harness-agnostic `ConversationObserver` runs it during the run and registers the
+`conversation` + raw artifacts. This is deep enough to be its **own task** (see
 [`plans/README.md`](plans/README.md) task 06a), which the `claude_code` harness's
 trace observer then consumes. (The name is **`conversation`**, not `trace` —
 `trace` collides with performance tracing.)
@@ -449,7 +450,7 @@ Repo conventions unchanged: pyink (2-space, line 80), strict camelCase acronyms
 (`SweBenchProInstance`), typed frozen dataclasses for records. Interfaces follow
 [ADR-0002](../decisions/ADR-0002-interface-style-abc-vs-protocol.md): **ABC +
 `@abstractmethod` for behavior interfaces** (`Grader`, `SandboxBackend`,
-`Harness`, `ConversationConverter`), `Protocol` only for structural data shapes
+`Harness`), `Protocol` only for structural data shapes
 (`Verdict`), a concrete base class where partial override is normal
 (`SandboxObserver`). Each observer / backend /
 axis plug is a small self-contained module; the

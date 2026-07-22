@@ -6,8 +6,9 @@
 > (observers/mounts/`Sandbox.run`), [task 03](task-03-a-host-backend.md)
 > (`DockerHostBackend`, the **assets** field + the **materialize seam** this
 > harness needs), [task 06a](task-06a-conversation-protocol.md) (the shared
-> `Conversation` model + `ConversationConverter` ABC + `ConversationObserver`
-> this harness plugs into). Grounded in the current Claude-Code-specific code
+> `Conversation` model + the shared `ConversationObserver`; conversion is a
+> `Harness.to_conversation` method, not a separate ABC) this harness plugs into.
+> Grounded in the current Claude-Code-specific code
 > (`src/swe_lab/core/agent/{binary,trace,errors}.py`, `src/swe_lab/rollout/
 > {entryscript,prompt,constants,runner}.py` at `fae1738`). Open items in §8.
 
@@ -19,7 +20,7 @@ Build the **harness axis's first plug**: `claude_code`. A harness supplies the
 run's **main body** (how the agent is invoked in-container), the **mounts** it
 needs (the prompt + the invocation script), the **assets** it needs (read-only
 fixed-path files — the pinned binary now, agent config later), and a
-**converter** that turns its native output into a `Conversation` (task 06a). It
+**`to_conversation`** that turns its native output into a `Conversation` (task 06a). It
 does *not* own the backend, the dataset, patch extraction, or the (shared)
 conversation observer. This task delivers the harness pieces; task 07 assembles
 them into `rollout`.
@@ -28,12 +29,13 @@ them into `rollout`.
 
 - `harnesses/base.py`: the `Harness` **ABC** (the behavior contract, ADR-0002).
 - `harnesses/claude_code/`: `ClaudeCodeHarness(Harness)` (mounts + assets + main
-  body + converter), and its constants.
-- `harnesses/claude_code/convert.py`: `EventStreamConverter(ConversationConverter)`
-  — Claude Code `event_stream` → `Conversation` (wraps the existing
-  `parse_stream_events` / `build_exchange_from_stream`).
-- The **shared** `ConversationObserver` (task 06a) is *wired* here (configured
-  with the claude converter), not redefined.
+  body + to_conversation), and its constants.
+- `harnesses/claude_code/convert.py`: `event_stream_to_conversation(raw)` — a
+  module function (Claude Code `event_stream` → `Conversation`) that
+  `ClaudeCodeHarness.to_conversation` delegates to; wraps the existing
+  `parse_stream_events` / `build_exchange_from_stream`.
+- The **shared** `ConversationObserver` (task 06a) is *wired* here (with the
+  harness's `to_conversation` + native output name), not redefined.
 - The in-container agent invocation ported from `entryscript.py:63-77`, rewired
   to `$SANDBOX_WORKSPACE` paths (run data) + the binary's absolute asset path.
 - Fast, Docker-free tests (fake backend + a scripted event-stream fixture).
@@ -47,8 +49,8 @@ them into `rollout`.
 - The **proxy** capture mode (task 08) — `trace.py`'s proxy branch is untouched;
   this harness uses `capture=stream` only.
 - The agent **error taxonomy** (`errors.py`) — it serves W1's retry loop;
-  rollout records failure via the conversation observer's `complete` flag, it
-  does not raise and retry (see §5.4).
+  rollout records failure via a harness-derived completion signal, it does not
+  raise and retry (see §5.4).
 - **Fine-tuning the `claude` CLI flags** — the invocation uses today's working
   defaults (§4). Verifying the flag set against the pinned binary (`--bare`,
   explicit `--allowedTools`, `--setting-sources`, model handling) is a **later**
@@ -60,11 +62,12 @@ them into `rollout`.
 ```
 harnesses/
   __init__.py
-  base.py        Harness (ABC): mounts() + assets() + build_body() + conversation_observer()
+  base.py        Harness (ABC): mounts() + assets() + build_body()
+                                + to_conversation() + native_output_name()
   claude_code/
     __init__.py
     harness.py     ClaudeCodeHarness(Harness)
-    convert.py     EventStreamConverter(ConversationConverter)  (task-06a ABC)
+    convert.py     event_stream_to_conversation(raw)  (module fn; harness delegates)
     constants.py   BINARY_AT (asset path), prompt/event-stream/stderr names, HOME, model
 ```
 
@@ -72,7 +75,7 @@ The conversation observer is the **shared** `ConversationObserver` (task 06a,
 `swe_lab/conversation/`); this task does not define a harness-specific observer.
 
 Tests: `tests/test_claude_code_harness.py` (mounts + assets + body script +
-converter, all against FakeBackend / fixtures).
+conversion, all against FakeBackend / fixtures).
 
 ## 3. Key types & signatures
 
@@ -90,7 +93,7 @@ class Harness(ABC):
   the harness layer, not the engine core; "engine stays harness-agnostic" and
   "a harness is an ABC" are independent and both hold. Nothing harness-specific
   (event-stream parsing, the observer class) lives on this base — a harness
-  contributes data (mounts, assets) + a converter; the observer is shared.
+  contributes data (mounts, assets) + a `to_conversation`; the observer is shared.
   """
 
   @abstractmethod
@@ -100,8 +103,9 @@ class Harness(ABC):
   @abstractmethod
   def build_body(self, timeout: float) -> Callable[[Sandbox], None]: ...
   @abstractmethod
-  def conversation_observer(self) -> ConversationObserver:  # the SHARED observer,
-    ...                                            # configured with this harness's converter
+  def to_conversation(self, raw: Path) -> Conversation: ...  # read own native output
+  @abstractmethod
+  def native_output_name(self) -> str: ...        # the file build_body writes it to
 
 # ─── harnesses/claude_code/harness.py ───────────────────────────────────────
 @dataclass(frozen=True)
@@ -141,18 +145,20 @@ class ClaudeCodeHarness(Harness):
     return body
 
   @override
-  def conversation_observer(self) -> ConversationObserver:
-    """The shared observer, configured with this harness's converter + output."""
-    return ConversationObserver(
-        converter=EventStreamConverter(), raw_name=EVENT_STREAM_NAME
-    )
+  def native_output_name(self) -> str:
+    return EVENT_STREAM_NAME              # "event_stream.jsonl"
+
+  @override
+  def to_conversation(self, raw: Path) -> Conversation:
+    return event_stream_to_conversation(raw)   # the module fn (convert.py)
 ```
 
-The **shared** `ConversationObserver` (task 06a) reads the harness's native
-output (`raw_name`) in `before_destroy`, runs the injected converter, writes
-`conversation.json`, and registers `conversation` + the raw output as artifacts.
-`build_body` returns a closure so the composition stays
-`with manager.sandbox() as sb: body(sb)`.
+The composition (task 07) builds the **shared** `ConversationObserver` (task 06a)
+from these: `ConversationObserver(convert=harness.to_conversation,
+raw_name=harness.native_output_name())`. It reads the native output in
+`before_destroy`, converts it, writes `conversation.json`, and registers
+`conversation` + the raw output as artifacts. `build_body` returns a closure so
+the composition stays `with manager.sandbox() as sb: body(sb)`.
 
 ## 4. The in-container invocation
 
@@ -202,14 +208,14 @@ an ABC in the **harness layer** (`harnesses/base.py`); the engine
 (`SandboxManager`) still only ever sees `observers` / `mounts` / a `body`
 callable and never imports it. The *composition* (`run_rollout`, task 07) is the
 only thing that knows `Harness` — it calls `mounts()`/`assets()`/`build_body()`/
-`conversation_observer()` and wires them into a manager + backend. Nothing
+`to_conversation()` and wires them into a manager + backend. Nothing
 harness-specific (the event-stream shape, an observer subclass) lives on the base
-— a harness contributes data + a converter; the observer is shared (§5.5).
+— a harness contributes data + a `to_conversation`; the observer is shared (§5.5).
 
 ### 5.2 Reuse `core/agent/` by import; defer the physical move
 `ensure_claude_binary`, `parse_stream_events`, `build_exchange_from_stream`,
 `last_stream_record` are used as-is (`binary.py:85`, `trace.py:46,100,275`) —
-wrapped by the claude converter (task 06a) into a typed `Conversation`. W1
+wrapped by the claude `to_conversation` (task 06a) into a typed `Conversation`. W1
 annotation still imports `core/agent/` (`pipelines/related_files/agent_run.py`),
 so **moving** those files now would break W1 — out of scope (the spec keeps W1
 unmigrated). The Claude-specific code relocates into `harnesses/claude_code/` at
@@ -237,21 +243,24 @@ kept read-only (task 03 assets field). The composition (task 07) wires
 W1's `errors.py` taxonomy (`classify_error_text`, `UsageLimitError`,
 `RetryableError`) drives its retry loop. Rollout's model is different: run the
 agent once, `|| true`, capture whatever resulted; a failed/partial run shows up
-as `complete == False` (`trace._stream_complete` — `subtype=="success" and not
-is_error`, `trace.py:88-97`) and/or an empty patch (task 07). No raising, no
-retry here — so this task pulls in none of `errors.py`. (A resample tier, if
-ever wanted, is a composition-level concern, not the harness's.)
+as a not-complete signal the harness derives from the raw output
+(`trace._stream_complete` — `subtype=="success" and not is_error`,
+`trace.py:88-97`) and/or an empty patch (task 07). No raising, no retry here — so
+this task pulls in none of `errors.py`. (A resample tier, if ever wanted, is a
+composition-level concern, not the harness's.)
 
-### 5.5 Event-stream capture via a shared observer + a claude converter
+### 5.5 Event-stream capture via a shared observer + a claude `to_conversation`
 The conversation observer is **shared and harness-agnostic** (`ConversationObserver`,
-task 06a): given a converter + the native output filename, it produces
-`conversation.json`. Only the *converter* is Claude-specific —
-`EventStreamConverter` walks `event_stream` (`--output-format stream-json`,
+task 06a): given a `convert` callable + the native output filename, it produces
+`conversation.json`. Only the *conversion* is Claude-specific — the module
+function `event_stream_to_conversation` (which `Harness.to_conversation`
+delegates to) walks `event_stream` (`--output-format stream-json`,
 `last_stream_record` / `parse_stream_events`, `trace.py:100-105`) into the typed
 model. `trace.py`'s proxy branch (`last_proxy_record`, `trace.py:108-125`) is the
-faithful-wire strategy wired in task 08 (a second converter behind the same ABC);
-the harness will gain a `capture` selector then. Stream needs no proxy process
-and is what rollout uses today (`DEFAULT_CAPTURE`, `trace.py:40`).
+faithful-wire strategy wired in task 08 — the harness's `to_conversation` handles
+the proxy format too (or dispatches on a `capture` selector) behind the same
+shared observer. Stream needs no proxy process and is what rollout uses today
+(`DEFAULT_CAPTURE`, `trace.py:40`).
 
 ## 6. Tests (all Docker-free)
 
@@ -264,21 +273,21 @@ and is what rollout uses today (`DEFAULT_CAPTURE`, `trace.py:40`).
   `--output-format stream-json`, `--verbose`, `--dangerously-skip-permissions`,
   redirects to `event_stream.jsonl`/`agent.stderr`, ends with `|| true`; values
   are `shlex.quote`d (inject a workdir with a space/quote).
-- **Converter:** against a checked-in `event_stream.jsonl` fixture (a few
+- **Conversion:** against a checked-in `event_stream.jsonl` fixture (a few
   stream-json lines incl. a terminal `result` with `subtype:"success"`),
-  `EventStreamConverter.to_conversation` yields a typed `Conversation` (role-tagged
-  messages, tool-use blocks paired to tool-results); an empty/absent file →
-  `Conversation(messages=[])`. (The shared observer's file-plumbing + `complete`
-  flag are tested with the observer in task 06a / via FakeBackend.)
+  `event_stream_to_conversation(raw)` (and `harness.to_conversation`) yields a
+  typed `Conversation` (role-tagged messages, tool-use blocks paired to
+  tool-results); an empty/absent file → `Conversation(messages=[])`. (The shared
+  observer's file-plumbing is tested in task 06a.)
 - **Body runs via run:** with FakeBackend, `build_body(timeout)(sb)` calls
   `sb.run(AGENT_SCRIPT_NAME, …)` once (assert recorded).
 
 ## 7. Dependencies
 
 Tasks 02, 03 (the **assets** field + the **materialize seam**), **06a** (the
-`Conversation` model + `ConversationConverter` ABC + shared `ConversationObserver`),
-and, at compose time, 04 via task 07. Reuses `core/agent/` functions — no new
-runtime deps beyond 06a's Pydantic. New code Google-docstring'd.
+`Conversation` model + the shared `ConversationObserver`), and, at compose time,
+04 via task 07. Reuses `core/agent/` functions — no new runtime deps beyond 06a's
+Pydantic. New code Google-docstring'd.
 
 ## 8. Open questions (need user confirmation)
 

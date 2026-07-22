@@ -96,7 +96,7 @@ class RolloutOutcome:
   patch: str
   is_empty: bool
   binary_stripped: bool
-  complete: bool                 # from the trace observer
+  complete: bool                 # agent finished cleanly (harness-derived from raw output)
   conversation: Conversation     # canonical typed trace (task 06a)
   status: RunStatus              # engine status
   workspace: Path
@@ -106,14 +106,17 @@ def run_rollout(
     workspace: Path, timeout: float, exclude_globs: tuple[str, ...] = (),
 ) -> RolloutOutcome: ...
     # harness = ClaudeCodeHarness(prompt=prompt, model=model)
-    # trace = harness.trace_observer(); extract = DiffExtractObserver(exclude_globs)
-    # backend carries the binary ASSET (read-only, /opt) — task 06 §5.3:
-    #   backend = replace(backend, assets=dict([harness.binary_asset()]))
+    # conv = ConversationObserver(convert=harness.to_conversation,   # shared observer
+    #                             raw_name=harness.native_output_name())
+    # extract = DiffExtractObserver(exclude_globs)
+    # backend carries the read-only binary ASSET (/opt) — task 06 §5.3:
+    #   backend = replace(backend, assets=harness.assets())          # a dict
     # mgr = SandboxManager(spec, backend, workspace,
-    #                      observers=[trace, extract],
-    #                      mounts=harness.mounts(spec.workdir))  # run data only
+    #                      observers=[conv, extract],
+    #                      mounts=harness.mounts(spec.workdir))       # run data only
     # with mgr.sandbox() as sb: harness.build_body(timeout)(sb)
-    # assemble RolloutOutcome from extract.* + trace.conversation + mgr.result.status
+    # assemble RolloutOutcome from extract.* + conv.conversation +
+    #   the harness completion signal + mgr.result.status
 ```
 
 `_read_patch` (bytes → `decode("utf-8", "backslashreplace")`, `""` when absent)
