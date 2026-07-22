@@ -63,8 +63,8 @@ them into `rollout`.
 ```
 harnesses/
   __init__.py
-  base.py        Harness (ABC): mounts() + assets() + build_body()
-                                + to_conversation() + native_outputs()
+  base.py        Harness(ConversationSource): mounts() + assets() + build_body()
+                                (+ to_conversation() + native_outputs() from 06a)
   claude_code/
     __init__.py
     harness.py     ClaudeCodeHarness(Harness)
@@ -84,7 +84,7 @@ conversion, all against FakeBackend / fixtures).
 # ─── harnesses/base.py ──────────────────────────────────────────────────────
 type Assets = dict[str, Path]        # container_path → host_path, read-only
 
-class Harness(ABC):
+class Harness(ConversationSource):     # + to_conversation + native_outputs (06a ABC)
   """A harness plug: it contributes the pieces a solving run needs.
 
   A behavior interface (ABC, per ADR-0002): claude_code now, codex/grok_build
@@ -103,10 +103,8 @@ class Harness(ABC):
   def assets(self) -> Assets: ...                 # read-only fixed-path files
   @abstractmethod
   def build_body(self, timeout: float) -> Callable[[Sandbox], None]: ...
-  @abstractmethod
-  def to_conversation(self, workspace: Path) -> Conversation: ...  # read own primary output
-  @abstractmethod
-  def native_outputs(self) -> dict[str, str]: ...  # artifact name → workspace filename (all byproducts)
+  # to_conversation(workspace) + native_outputs() are inherited (still abstract)
+  # from ConversationSource (task 06a); ClaudeCodeHarness implements them below.
 
 # ─── harnesses/claude_code/harness.py ───────────────────────────────────────
 @dataclass(frozen=True)
@@ -157,13 +155,13 @@ class ClaudeCodeHarness(Harness):
     return event_stream_to_conversation(workspace / EVENT_STREAM_NAME)  # module fn
 ```
 
-The composition (task 07) builds the **shared** `ConversationObserver` (task 06a)
-from these: `ConversationObserver(convert=harness.to_conversation,
-native_outputs=harness.native_outputs())`. In `before_destroy` it converts the
-primary output, writes `conversation.json`, and registers `conversation` **plus
-every native byproduct** (`event_stream`, `agent_stderr`, …) as artifacts for
-persistence. `build_body` returns a closure so the composition stays
-`with manager.sandbox() as sb: body(sb)`.
+The composition (task 07) just passes the harness to the **shared**
+`ConversationObserver` (task 06a): `ConversationObserver(source=harness)` — the
+harness *is a* `ConversationSource`. In `before_destroy` the observer calls
+`source.to_conversation(workspace)`, writes `conversation.json`, and registers
+`conversation` **plus every native byproduct** (`event_stream`, `agent_stderr`,
+…) via `source.native_outputs()`. `build_body` returns a closure so the
+composition stays `with manager.sandbox() as sb: body(sb)`.
 
 ## 4. The in-container invocation
 
@@ -258,8 +256,9 @@ not the harness's.)
 
 ### 5.5 Event-stream capture via a shared observer + a claude `to_conversation`
 The conversation observer is **shared and harness-agnostic** (`ConversationObserver`,
-task 06a): given a `convert` callable + the native output filename, it produces
-`conversation.json`. Only the *conversion* is Claude-specific — the module
+task 06a): given the harness (a `ConversationSource`), it writes
+`conversation.json` and registers every native byproduct. Only the *conversion*
+is Claude-specific — the module
 function `event_stream_to_conversation` (which `Harness.to_conversation`
 delegates to) parses the raw `--output-format stream-json` lines **fresh** (stdlib
 `json`) into the typed model, not via the soon-deprecated `trace.py`. Proxy
@@ -291,9 +290,10 @@ what rollout uses today.
 ## 7. Dependencies
 
 Tasks 02, 03 (the **assets** field + the **materialize seam**), **06a** (the
-`Conversation` model + the shared `ConversationObserver`), and, at compose time,
-04 via task 07. Reuses `core/agent/` functions — no new runtime deps beyond 06a's
-Pydantic. New code Google-docstring'd.
+`Conversation` model + the shared `ConversationObserver` + the `ConversationSource`
+ABC that `Harness` extends), and, at compose time, 04 via task 07. Reuses
+`ensure_claude_binary` — no new runtime deps beyond 06a's Pydantic. New code
+Google-docstring'd.
 
 ## 8. Open questions (need user confirmation)
 

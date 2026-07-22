@@ -106,8 +106,7 @@ def run_rollout(
     workspace: Path, timeout: float, exclude_globs: tuple[str, ...] = (),
 ) -> RolloutOutcome: ...
     # harness = ClaudeCodeHarness(prompt=prompt, model=model)
-    # conv = ConversationObserver(convert=harness.to_conversation,   # shared observer
-    #                             native_outputs=harness.native_outputs())
+    # conv = ConversationObserver(source=harness)   # shared; harness is a ConversationSource
     # extract = DiffExtractObserver(exclude_globs)
     # backend carries the read-only binary ASSET (/opt) — task 06 §5.3:
     #   backend = replace(backend, assets=harness.assets())          # a dict
