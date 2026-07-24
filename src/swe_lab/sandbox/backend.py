@@ -22,7 +22,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from .mounts import Mounts
+from .mounts import Assets, Mounts
 from .spec import SandboxSpec
 
 # The env var every backend sets on each exec: the workspace's path as seen
@@ -81,6 +81,23 @@ class SandboxBackend(ABC):
       mount.resource.materialize_to(dest)
       if mount.executable:
         dest.chmod(dest.stat().st_mode | 0o755)
+
+  @abstractmethod
+  def with_assets(self, assets: Assets) -> SandboxBackend:
+    """Return a copy of this backend that also realizes ``assets`` at ``up``.
+
+    Assets are a construction-time property, but the composition (which owns the
+    harness that declares them) wires them in here — a type-safe seam so
+    ``run_rollout`` need not know the concrete backend to attach the binary.
+
+    Args:
+      assets: Read-only resources to place at fixed container paths (merged with
+        any the backend already carries).
+
+    Returns:
+      A backend that carries the merged assets.
+    """
+    ...
 
   @abstractmethod
   def up(self, spec: SandboxSpec, workspace: Path) -> str:

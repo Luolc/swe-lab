@@ -7,7 +7,7 @@ Docker-free tests, so they are shipped code, not test-local helpers.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import override
 
@@ -50,6 +50,11 @@ class FakeBackend(SandboxBackend):
   calls: list[tuple[str, str]] = field(default_factory=list)
   scripts: list[str] = field(default_factory=list)
   assets: Assets = field(default_factory=dict)
+
+  @override
+  def with_assets(self, assets: Assets) -> SandboxBackend:
+    """Return a copy carrying the merged assets (recorded, not realized)."""
+    return replace(self, assets={**self.assets, **assets})
 
   @override
   def up(self, spec: SandboxSpec, workspace: Path) -> str:

@@ -29,3 +29,7 @@ EVENT_STREAM_NAME = "event_stream.jsonl"  # stream-json event trace (primary)
 AGENT_STDERR_NAME = "agent.stderr"  # the run's stderr log
 
 DEFAULT_MODEL = "sonnet"
+
+# The subscription OAuth token the agent reads from its env; the rollout backend
+# passes it by reference (never in the docker argv).
+OAUTH_TOKEN_ENV = "CLAUDE_CODE_OAUTH_TOKEN"

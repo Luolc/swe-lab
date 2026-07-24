@@ -220,15 +220,26 @@ def compile_unit_test(
       apply_patch=patch is not None,
       checkout_golden_tests=checkout_golden_tests,
   )
-  sandbox_spec = SandboxSpec(
-      instance_id=instance.instance_id,
-      image_ref=image_ref(instance.dockerhub_tag),
-      workdir=WORKDIR,
-      base_commit=instance.base_commit,
-  )
   unit_spec = UnitTestSpec(
       eval_script=eval_script,
       mounts=mounts,
       grader=SweBenchProGrader(),
   )
-  return sandbox_spec, unit_spec
+  return compile_sandbox_spec(instance), unit_spec
+
+
+def compile_sandbox_spec(instance: SweBenchProInstance) -> SandboxSpec:
+  """Compile an instance's run context (no eval mounts) — used by solving.
+
+  Args:
+    instance: The instance whose sandbox to bring up.
+
+  Returns:
+    The run context: image, workdir, and base commit.
+  """
+  return SandboxSpec(
+      instance_id=instance.instance_id,
+      image_ref=image_ref(instance.dockerhub_tag),
+      workdir=WORKDIR,
+      base_commit=instance.base_commit,
+  )
