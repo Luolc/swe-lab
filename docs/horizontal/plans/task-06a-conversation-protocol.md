@@ -257,9 +257,9 @@ needed.
    needs them.
 4. ~~`ConversationConverter` ABC~~ — **dropped 2026-07-22** (§3): conversion is a
    `Harness.to_conversation` method; the observer takes **the harness** as a
-   `ConversationProducer` (a new small ABC in the conversation package), calling
-   `to_conversation` + `native_outputs`. **Reconcile the shipped code** (PR #37
-   landed with the old ABC + `observer.converter` + `raw_name: str`): a follow-up
-   drops the old ABC, adds `ConversationProducer`, retypes the observer to
-   `producer: ConversationProducer` (registering every byproduct, not one
-   `raw_output`), and updates exports + tests.
+   `ConversationProducer` (a small ABC in the conversation package), calling
+   `to_conversation` + `native_outputs`. ✅ **Reconciled 2026-07-23**: the shipped
+   code now drops the old ABC (`convert.py` removed), defines `ConversationProducer`
+   in `observer.py`, and retypes the observer to `producer: ConversationProducer`
+   (registering every byproduct that landed, not one `raw_output`); exports +
+   tests updated.

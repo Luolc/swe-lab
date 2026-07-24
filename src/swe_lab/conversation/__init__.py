@@ -1,13 +1,13 @@
-"""The canonical conversation model + the converter seam every harness targets.
+"""The canonical conversation model + the producer seam every harness targets.
 
 One provider-neutral, well-typed :class:`Conversation` (role-tagged messages of
 ``type``-discriminated content blocks) that harnesses convert their native agent
-output into via a :class:`ConversationConverter`; the shared
+output into. A harness is a :class:`ConversationProducer` (it yields a
+`Conversation` and names its native byproducts); the shared
 :class:`ConversationObserver` runs the conversion and persists the result. See
 ``docs/horizontal/plans/task-06a-conversation-protocol.md``.
 """
 
-from .convert import ConversationConverter
 from .model import (
     ContentBlock,
     Conversation,
@@ -18,14 +18,18 @@ from .model import (
     ToolResultBlock,
     ToolUseBlock,
 )
-from .observer import CONVERSATION_NAME, ConversationObserver
+from .observer import (
+    CONVERSATION_NAME,
+    ConversationObserver,
+    ConversationProducer,
+)
 
 __all__ = [
     "CONVERSATION_NAME",
     "ContentBlock",
     "Conversation",
-    "ConversationConverter",
     "ConversationObserver",
+    "ConversationProducer",
     "Message",
     "ReasoningBlock",
     "Role",
