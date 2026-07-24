@@ -129,46 +129,55 @@ survives in the workspace for audit. The concrete file inventory per composition
 is [`workspace-layout.md`](workspace-layout.md).
 
 ```python
-# A Mount is KINDED and extensible; the backend's materialize() dispatches on
-# kind, with a default for the simple ones. New kinds (url, object_store) add a
-# member without changing the engine.
-class InlineMount(Mount):  content: bytes; executable: bool = False  # runtime-generated (scripts)
-class HostFileMount(Mount): source: Path;  executable: bool = False  # a host path to copy in
-# future: class UrlMount(Mount): url: str  ·  class ObjectStoreMount(Mount): ref: ObjectRef
+# A Resource is WHERE a file's content comes from — one abstract interface, one
+# concrete impl per source. This is the axis that mounts AND assets share; new
+# sources add a member without touching the engine.
+class Resource(ABC): ...                      # how to obtain the bytes
+class Inline(Resource):    content: bytes     # runtime-generated (a script we built)
+class LocalFile(Resource): path: Path         # a host file
+class Url(Resource):       url: str           # download it
+# future: Computed(fn), ObjectStore(ref), …
 
-type Mounts = dict[str, Mount]       # key = workspace-relative target path
+# Mount and Asset are the two PLACEMENTS of a Resource — they differ in
+# mutability/location, NOT in where the bytes come from:
+@dataclass
+class Mount:  resource: Resource; executable: bool = False   # → workspace (read/write)
+type Mounts = dict[str, Mount]       # workspace-relative target path → mount
+type Assets = dict[str, Resource]    # fixed container path → resource (read-only)
 
 class SandboxBackend(ABC):
     def materialize(self, mounts: Mounts, workspace: Path) -> None:
-        """Default: InlineMount→write, HostFileMount→copy. Override per kind —
-        e.g. an object-store backend fetches a blob natively."""
+        """Realize each mount's Resource into the workspace. Default handles
+        Inline→write / LocalFile→copy; a backend may override per Resource kind
+        (a remote/object-store backend fetches a Url/ref natively). Assets are
+        realized at `up` time at their fixed path, read-only (A-host bind-mounts
+        a LocalFile `:ro`; A-ghjob copies)."""
     ...
-
-# Assets are separate: read-only files placed at a fixed container path (outside
-# the workspace), a backend construction-time property like network/env.
-#   binary → /opt/claude-code/claude   (A-host: -v host:container:ro · A-ghjob: cp)
 ```
 
-**Assets vs. mounts — two different things.** A **workspace mount** stages a
-file into `sb.workspace`, the run's **read/write scratch area** (scripts, prompt,
-generated outputs churn there). An **asset** is **read-only infrastructure the
-run must never mutate** — that immutability is what makes it an asset, *not* its
-size. Because it is read-only, an asset lives at a fixed container path
-**outside** the busy workspace, anywhere we choose (the pinned ~100 MB agent
-binary → `/opt/claude-code/claude`), invoked by absolute path. The backend
-realizes it as a construction-time property, like `network`/`env`: A-host
-`-v host:container:ro`, A-ghjob a `cp` into place (kept read-only). Keeping the
-binary out of the read/write workspace is deliberate — a persisted workspace
-stays pure run data, and nothing can accidentally scribble on the binary.
+**Assets vs. mounts — same `Resource`, two placements.** Both hold a `Resource`
+(the shared content-source above); they differ only in **placement/mutability**,
+not in where the bytes come from. A **workspace mount** stages its resource into
+`sb.workspace`, the run's **read/write scratch area** (scripts, prompt, generated
+outputs churn there). An **asset** is **read-only infrastructure the run must
+never mutate** — that immutability is what makes it an asset, *not* its size — so
+it lives at a fixed container path **outside** the busy workspace, anywhere we
+choose (the pinned ~100 MB agent binary → `/opt/claude-code/claude`), invoked by
+absolute path. The backend realizes an asset as a construction-time property,
+like `network`/`env`: A-host `-v host:container:ro`, A-ghjob a `cp` (kept
+read-only). Keeping the binary out of the read/write workspace is deliberate — a
+persisted workspace stays pure run data, and nothing can scribble on the binary.
 
-**Materialization is a per-backend seam, not a hardcoded copy.** A `Mount` is a
-**kinded, extensible** declaration — inline bytes and a host-file source today,
-extensible to a **URL to download** or an **object-store reference** (with its
-own fetch client) tomorrow. The backend owns a `materialize(mounts, workspace)`
-method with a **default** implementation for the simple kinds (inline → write,
-host-file → copy); a backend may **override per kind** — an object-store-aware or
-remote backend pulls a blob natively instead of routing bytes through the host.
-The manager calls `backend.materialize(...)` and never assumes "just copy the
+**Materialization is a per-backend seam, not a hardcoded copy.** A `Mount` wraps
+a `Resource` — `Inline` bytes and a `LocalFile` source today, extensible to a
+`Url` to download or an object-store reference tomorrow — plus a workspace target
+and an `executable` flag. The backend owns a `materialize(mounts, workspace)`
+method with a **default** for the simple Resource kinds (`Inline` → write,
+`LocalFile` → copy); a backend may **override per kind** — a remote/object-store
+backend fetches a `Url`/ref natively instead of routing bytes through the host.
+Because an asset is *the same `Resource`* at a read-only fixed path, the source
+kinds are defined **once** and reused by both. The manager calls
+`backend.materialize(...)` and never assumes "just copy the
 file". This is what lets staging evolve (new sources) without touching the
 engine.
 

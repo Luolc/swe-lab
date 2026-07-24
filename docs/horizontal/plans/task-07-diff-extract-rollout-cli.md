@@ -112,9 +112,9 @@ def run_rollout(
     #   backend = replace(backend, assets=harness.assets())          # a dict
     # the prompt is dataset-derived (task 06 §5.6); the composition stages it as
     # prompt.txt, merged with the harness's own mounts (agent.sh):
-    #   mounts = {PROMPT_NAME: InlineMount(prompt.encode())} | harness.mounts(spec.workdir)
+    #   mounts = {PROMPT_NAME: Mount(Inline(prompt.encode()))} | harness.mounts(spec.workdir)
     # mgr = SandboxManager(spec, backend, workspace, observers=[conv, extract], mounts=mounts)
-    # with mgr.sandbox() as sb: harness.build_body(timeout)(sb)
+    # with mgr.sandbox() as sb: harness.run(sb, timeout=timeout)   # direct — no factory
     # assemble RolloutOutcome from extract.* + conv.conversation +
     #   the harness completion signal + mgr.result.status
 ```

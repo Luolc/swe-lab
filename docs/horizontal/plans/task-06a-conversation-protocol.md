@@ -128,7 +128,7 @@ Design notes:
 
 Conversion is a **harness responsibility** — the harness wrote the invocation
 that produced the native output, so reading that output back sits next to
-`mounts()`/`build_body()` as one of its own concerns. There is **no
+`mounts()`/`run()` as one of its own concerns. There is **no
 `ConversationConverter` ABC** (dropped 2026-07-22): it was a one-method
 indirection whose only job was to *name* "a thing with `to_conversation`", which
 a plain `Callable[[Path], Conversation]` already does — an interceptor, not a

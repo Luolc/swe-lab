@@ -64,7 +64,7 @@ them into `rollout`.
 ```
 harnesses/
   __init__.py
-  base.py        Harness(ConversationProducer): mounts() + assets() + build_body()
+  base.py        Harness(ConversationProducer): mounts() + assets() + run()
                                 (+ to_conversation() + native_outputs() from 06a)
   claude_code/
     __init__.py
@@ -84,7 +84,7 @@ conversion, all against FakeBackend / fixtures).
 
 ```python
 # ─── harnesses/base.py ──────────────────────────────────────────────────────
-type Assets = dict[str, Path]        # container_path → host_path, read-only
+type Assets = dict[str, Resource]    # container_path → resource, read-only (spec §mounts)
 
 class Harness(ConversationProducer):     # + to_conversation + native_outputs (06a ABC)
   """A harness plug: it contributes the pieces a solving run needs.
@@ -102,9 +102,9 @@ class Harness(ConversationProducer):     # + to_conversation + native_outputs (0
   @abstractmethod
   def mounts(self, workdir: str) -> Mounts: ...
   @abstractmethod
-  def assets(self) -> Assets: ...                 # read-only fixed-path files
+  def assets(self) -> Assets: ...                 # read-only fixed-path resources
   @abstractmethod
-  def build_body(self, timeout: float) -> Callable[[Sandbox], None]: ...
+  def run(self, sb: Sandbox, *, timeout: float) -> None: ...  # the main action, called in the with
   # to_conversation(workspace) + native_outputs() are inherited (still abstract)
   # from ConversationProducer (task 06a); ClaudeCodeHarness implements them below.
 
@@ -128,31 +128,29 @@ class ClaudeCodeHarness(Harness):
     rollout composition; §5.6). The harness only reads it in agent.sh.
     """
     return {
-        AGENT_SCRIPT_NAME: InlineMount(
-            content=self._invocation_script(workdir).encode(), executable=True
+        AGENT_SCRIPT_NAME: Mount(
+            Inline(self._invocation_script(workdir).encode()), executable=True
         ),
     }
 
   @override
   def assets(self) -> Assets:
-    """Read-only files placed at fixed container paths (outside the workspace).
+    """Read-only resources placed at fixed container paths (outside the workspace).
 
     The pinned binary today; a harness may add read-only agent config (e.g. a
     Claude settings JSON) here later — assets are a set, not a single file.
     """
     binary = self.binary_path or ensure_claude_binary()  # provisioner finds/downloads it
-    return {BINARY_AT: binary}          # BINARY_AT = /opt/claude-code/claude
+    return {BINARY_AT: LocalFile(binary)}   # BINARY_AT = /opt/claude-code/claude
 
   @override
-  def build_body(self, timeout: float) -> Callable[[Sandbox], None]:
-    """Return the main action: run the staged agent.sh by its workspace path."""
-    def body(sb: Sandbox) -> None:
-      _ = sb.run(AGENT_SCRIPT_NAME, timeout=timeout)  # run a workspace file by name
-    return body
+  def run(self, sb: Sandbox, *, timeout: float) -> None:
+    """The main action: run the staged agent.sh by its workspace path."""
+    _ = sb.run(AGENT_SCRIPT_NAME, timeout=timeout)  # run a workspace file by name
 
   @override
   def native_outputs(self) -> dict[str, str]:
-    return {                             # every byproduct build_body writes
+    return {                             # every byproduct run() writes
         "event_stream": EVENT_STREAM_NAME,   # "event_stream.jsonl" (the primary)
         "agent_stderr": AGENT_STDERR_NAME,   # "agent.stderr" (the run's stderr log)
     }
@@ -167,8 +165,9 @@ The composition (task 07) just passes the harness to the **shared**
 harness *is a* `ConversationProducer`. In `before_destroy` the observer calls
 `producer.to_conversation(workspace)`, writes `conversation.json`, and registers
 `conversation` **plus every native byproduct** (`event_stream`, `agent_stderr`,
-…) via `producer.native_outputs()`. `build_body` returns a closure so the
-composition stays `with manager.sandbox() as sb: body(sb)`.
+…) via `producer.native_outputs()`. The main action is a **direct call** — no
+factory/closure — the composition runs it inside the block:
+`with manager.sandbox() as sb: harness.run(sb, timeout=timeout)`.
 
 ## 4. The in-container invocation
 
@@ -219,7 +218,7 @@ harness" does **not** require the *absence* of a `Harness` type. So `Harness` is
 an ABC in the **harness layer** (`harnesses/base.py`); the engine
 (`SandboxManager`) still only ever sees `observers` / `mounts` / a `body`
 callable and never imports it. The *composition* (`run_rollout`, task 07) is the
-only thing that knows `Harness` — it calls `mounts()`/`assets()`/`build_body()`/
+only thing that knows `Harness` — it calls `mounts()`/`assets()`/`run()`/
 `to_conversation()` and wires them into a manager + backend. Nothing
 harness-specific (the event-stream shape, an observer subclass) lives on the base
 — a harness contributes data + a `to_conversation`; the observer is shared (§5.5).
@@ -310,7 +309,7 @@ is structural, not data coupling; a second harness (Codex) reads the same file.
   typed `Conversation` (role-tagged messages, tool-use blocks paired to
   tool-results); an empty/absent file → `Conversation(messages=[])`. (The shared
   observer's file-plumbing is tested in task 06a.)
-- **Body runs via run:** with FakeBackend, `build_body(timeout)(sb)` calls
+- **Main action:** with FakeBackend, `harness.run(sb, timeout=…)` calls
   `sb.run(AGENT_SCRIPT_NAME, …)` once (assert recorded).
 
 ## 7. Dependencies

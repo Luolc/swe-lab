@@ -46,11 +46,11 @@ Keeping the binary out of the busy workspace is deliberate: the workspace stays
 pure run data (a persisted workspace, task 12, isn't polluted) and nothing can
 scribble on the binary.
 
-**Mounts** (the workspace files below), by contrast, are materialized by a
-**per-backend `materialize` seam** that dispatches on the mount's kind
-(`InlineMount` → write, `HostFileMount` → copy today; `UrlMount` /
-`ObjectStoreMount` fetched natively later), never a hardcoded copy — see spec
-§Materialization is a per-backend seam.
+**Mounts** (the workspace files below) wrap the same **`Resource`** as assets
+(the shared content-source) and are materialized by a **per-backend `materialize`
+seam** that dispatches on the Resource kind (`Inline` → write, `LocalFile` → copy
+today; `Url` / object-store fetched natively later), never a hardcoded copy — see
+spec §Materialization is a per-backend seam.
 
 ---
 

@@ -12,22 +12,25 @@
 >    A-ghjob needs no stdin plumbing. See
 >    [`workspace-layout.md`](../workspace-layout.md).
 > 2. ⬜ **assets** (pending, lands with task 06 which needs it) — a
->    construction-time `assets` field placing **read-only** host files at fixed
->    container paths (`docker create -v host:container:ro`; A-ghjob `cp` kept
->    read-only), so the pinned agent binary lands at `/opt/claude-code/claude`
->    (invoked by absolute path) *outside* the read/write workspace. An asset is
->    read-only infrastructure the run must never mutate — that, not its size, is
->    why it is an asset (spec §Assets vs. mounts).
-> 3. ⬜ **materialize becomes a per-backend seam** (pending, lands with task 06)
->    — `materialize(mounts, workspace)` moves **onto the backend** (from the free
->    `sandbox/mounts.py` function the manager calls today), with a **default**
->    implementation for the simple kinds. `Mount` becomes a **kinded, extensible**
->    type (`InlineMount` / `HostFileMount` now; `UrlMount` / `ObjectStoreMount`
->    later); the backend dispatches on kind and may override how any kind is
->    fetched — an object-store-aware or remote backend pulls a blob natively
->    rather than routing bytes through the host. The current brute `shutil.copyfile`
->    stays only as the default `HostFileMount` path (spec §Materialization is a
->    per-backend seam).
+>    construction-time `assets` field (`dict[container_path, Resource]`) placing
+>    **read-only** resources at fixed container paths (`docker create
+>    -v host:container:ro` for a `LocalFile`; A-ghjob `cp` kept read-only), so the
+>    pinned agent binary lands at `/opt/claude-code/claude` (invoked by absolute
+>    path) *outside* the read/write workspace. An asset is read-only
+>    infrastructure the run must never mutate — that, not its size, is why it is an
+>    asset (spec §Assets vs. mounts).
+> 3. ⬜ **`Resource` + a per-backend `materialize` seam** (pending, lands with
+>    task 06) — introduce a **`Resource`** abstraction (the shared content-source:
+>    `Inline` / `LocalFile` now; `Url` / object-store later) that **both mounts and
+>    assets wrap** (a `Mount` is `Resource` + workspace target + `executable`; an
+>    asset is a `Resource` at a fixed read-only path — source kinds defined once).
+>    `materialize(mounts, workspace)` moves **onto the backend** (from the free
+>    `sandbox/mounts.py` function the manager calls today), with a **default** for
+>    the simple Resource kinds (`Inline` → write, `LocalFile` → copy); a backend
+>    may **override per kind** — a remote/object-store backend fetches a `Url`/ref
+>    natively rather than routing bytes through the host. The current brute
+>    `shutil.copyfile` stays only as the default `LocalFile` path (spec
+>    §Materialization is a per-backend seam).
 
 ---
 
