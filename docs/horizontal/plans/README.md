@@ -9,13 +9,13 @@ indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if 
 |---|---|---|
 | 01 | [Google-style readability lift](task-01-google-style-readability.md) | ✅ Complete (P3 leftovers deferred to the SandboxRun migration) |
 | 02 | [Engine core (`sandbox/`, fake backend)](task-02-engine-core.md) | ✅ Done |
-| 03 | [A-host backend (`DockerHostBackend`)](task-03-a-host-backend.md) | ✅ Done |
+| 03 | [A-host backend (`DockerHostBackend`)](task-03-a-host-backend.md) | ✅ Done (+ amendments landed: `Resource`, `assets`, materialize seam — PR #46) |
 | 04 | [`unit_test` eval method + SBP compile](task-04-unit-test-method.md) | ✅ Done |
 | 05 | [Eval CLI on the engine + parity](task-05-eval-cli.md) | ✅ Done (CLI + parity workflow; parity run green — flipt + truncated-golden ansible match legacy) |
 | — | **CP1 — eval parity** (human gate) | ⬜ |
 | 06a | [`Conversation` protocol + output converters](task-06a-conversation-protocol.md) | ✅ Done (PR #37) |
-| 06 | [`claude_code` harness (event-stream capture)](task-06-claude-code-harness.md) | 📝 Designed |
-| 07 | [Diff-extract observer + rollout CLI](task-07-diff-extract-rollout-cli.md) | 📝 Designed |
+| 06 | [`claude_code` harness (event-stream capture)](task-06-claude-code-harness.md) | ✅ Done (PR #47) |
+| 07 | [Diff-extract observer + rollout CLI](task-07-diff-extract-rollout-cli.md) | ✅ Done (PR #48; live flipt rollout = CP2, manual) |
 | — | **CP2 — rollout regression bar** (human gate) | ⬜ |
 | 08 | Proxy capture mode | ⬜ |
 | 09 | A-ghjob backend | ⬜ |
