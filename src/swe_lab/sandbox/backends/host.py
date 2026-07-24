@@ -10,7 +10,7 @@ on-error probe run as separate steps against the *same* live container.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import logging
 from pathlib import Path
 import subprocess
@@ -78,6 +78,11 @@ class DockerHostBackend(SandboxBackend):
   env: Mapping[str, str] = field(default_factory=dict)
   pass_env: Sequence[str] = ()
   assets: Assets = field(default_factory=dict)
+
+  @override
+  def with_assets(self, assets: Assets) -> SandboxBackend:
+    """Return a copy carrying the merged read-only assets."""
+    return replace(self, assets={**self.assets, **assets})
 
   @override
   def up(self, spec: SandboxSpec, workspace: Path) -> str:

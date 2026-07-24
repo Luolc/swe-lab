@@ -8,6 +8,7 @@ dispatcher stays a thin table so it never grows into one giant file). Run it as
 import typer
 
 from .eval import eval_cmd
+from .rollout import rollout_cmd
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 
@@ -21,7 +22,7 @@ def root() -> None:
 
 
 _ = app.command("eval")(eval_cmd)
-# _ = app.command("rollout")(rollout_cmd)  # task 07
+_ = app.command("rollout")(rollout_cmd)
 # _ = app.command("verify")(verify_cmd)    # 10b
 
 __all__ = ["app"]
