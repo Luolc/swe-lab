@@ -47,6 +47,22 @@ def test_up_places_assets_read_only(tmp_path: Path):
     assert not mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
 
 
+def test_up_preserves_executable_asset(tmp_path: Path):
+  # an executable source asset (the pinned agent binary) must stay executable —
+  # a plain content copy drops +x and the binary fails with Permission denied
+  src = tmp_path / "claude"
+  _ = src.write_bytes(b"#!/bin/sh\necho ok\n")
+  src.chmod(0o755)
+  at = tmp_path / "opt" / "claude"
+  handle = GitHubJobBackend(assets={str(at): LocalFile(src)}).up(
+      SPEC, _workspace(tmp_path)
+  )
+  del handle
+  mode = at.stat().st_mode
+  assert mode & stat.S_IXUSR  # executable preserved from the source
+  assert not mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)  # read-only
+
+
 def test_run_script_by_workspace_path_with_env(tmp_path: Path):
   ws = _workspace(tmp_path)
   _ = (ws / "main.sh").write_text(
