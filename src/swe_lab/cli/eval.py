@@ -14,7 +14,7 @@ from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.core.datasets.swebench_pro.unit_test import compile_unit_test
 from swe_lab.core.paths import cache_root, find_repo_root
 from swe_lab.evaluation.methods.unit_test import run_unit_test
-from swe_lab.sandbox import DockerHostBackend
+from swe_lab.sandbox import BackendKind, build_backend
 
 _WORKSPACES_SUBDIR = "eval_workspaces"
 
@@ -37,6 +37,10 @@ def eval_cmd(
     pull: Annotated[
         bool, typer.Option(help="Pull the image before running.")
     ] = True,
+    backend: Annotated[
+        BackendKind,
+        typer.Option(help="Sandbox backend (host Docker, or the GH job)."),
+    ] = BackendKind.HOST,
 ) -> None:
   """Grade one instance by running its tests in its container.
 
@@ -65,11 +69,10 @@ def eval_cmd(
   # The manager refuses a non-empty workspace; a fresh grade starts clean.
   shutil.rmtree(workspace, ignore_errors=True)
 
-  backend = DockerHostBackend(network=network, pull=pull)
   result, verdict = run_unit_test(
       sandbox_spec,
       unit_spec,
-      backend=backend,
+      backend=build_backend(backend, network=network, pull=pull),
       workspace=workspace,
       timeout=timeout,
   )
