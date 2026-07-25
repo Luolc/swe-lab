@@ -16,9 +16,9 @@ from pathlib import Path
 from swe_lab.core.agent.errors import AnnotationError, UsageLimitError
 from swe_lab.core.agent.proxy import DEFAULT_BASE_PORT
 from swe_lab.core.agent.trace import DEFAULT_CAPTURE
-from swe_lab.core.datasets.loader import Dataset, load_dataset
-from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.core.paths import find_repo_root
+from swe_lab.datasets.loader import Dataset, load_dataset
+from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.paths import find_repo_root
 
 from .agent_run import DEFAULT_MODEL, RunResult
 from .aggregator import aggregate_instance

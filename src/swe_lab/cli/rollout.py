@@ -10,20 +10,20 @@ from typing import Annotated
 
 import typer
 
-from swe_lab.core.datasets.loader import load_dataset
-from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.core.datasets.swebench_pro.unit_test import (
+from swe_lab.datasets.loader import load_dataset
+from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.datasets.swebench_pro.unit_test import (
     compile_sandbox_spec,
     compile_solve_prompt,
     compile_unit_test,
 )
-from swe_lab.core.paths import cache_root, find_repo_root
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.harnesses.claude_code import Capture
 from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
 )
+from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import BackendKind, build_backend
 from swe_lab.solve import RolloutOutcome, run_rollout
 

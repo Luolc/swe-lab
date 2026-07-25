@@ -52,9 +52,9 @@ from swe_lab.core.agent.trace import (
     last_stream_record,
     parse_stream_events,
 )
-from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.core.paths import cache_root, find_repo_root
-from swe_lab.core.repo.provider import GitCheckoutProvider
+from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.paths import cache_root, find_repo_root
+from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_validator import validate_output
 from .schema import Annotation, parse_agent_output, Snippet

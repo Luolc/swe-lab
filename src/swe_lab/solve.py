@@ -18,7 +18,6 @@ import zlib
 
 from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.core.agent.proxy import build_proxy, port_for_index, ReverseProxy
-from swe_lab.core.paths import find_repo_root
 from swe_lab.harnesses.claude_code import (
     Capture,
     ClaudeCodeHarness,
@@ -31,6 +30,7 @@ from swe_lab.harnesses.claude_code.constants import (
     PROMPT_NAME,
     PROXY_LOG_NAME,
 )
+from swe_lab.paths import find_repo_root
 from swe_lab.sandbox import (
     Inline,
     Mount,

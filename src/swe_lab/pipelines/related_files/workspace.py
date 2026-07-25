@@ -15,8 +15,8 @@ from pathlib import Path
 import shutil
 import subprocess
 
-from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.core.repo.provider import RepoProvider
+from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.repo.provider import RepoProvider
 
 from . import agent_validator
 

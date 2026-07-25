@@ -25,15 +25,15 @@ import os
 from pathlib import Path
 
 from swe_lab.core.benchmark import EvalSpec
-from swe_lab.core.datasets.loader import load_dataset
-from swe_lab.core.datasets.swebench_pro import (
+from swe_lab.core.docker.provider import DockerError, DockerProvider
+from swe_lab.datasets.loader import load_dataset
+from swe_lab.datasets.swebench_pro import (
     EvalResult,
     evaluate,
     SweBenchProAdapter,
     SweBenchProInstance,
 )
-from swe_lab.core.docker.provider import DockerError, DockerProvider
-from swe_lab.core.paths import cache_root, find_repo_root
+from swe_lab.paths import cache_root, find_repo_root
 
 # Verdicts.
 OK = "OK"

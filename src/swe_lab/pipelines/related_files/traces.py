@@ -45,7 +45,7 @@ import subprocess
 from huggingface_hub import hf_hub_download, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
-from swe_lab.core.paths import find_repo_root, outputs_root
+from swe_lab.paths import find_repo_root, outputs_root
 
 from .storage import DEFAULT_DATASET, TASK_DIRNAME
 

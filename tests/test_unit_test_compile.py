@@ -5,21 +5,21 @@ from pathlib import Path
 
 import pytest
 
-from swe_lab.core.datasets.swebench_pro.constants import (
+from swe_lab.datasets.swebench_pro.constants import (
     HARNESS_SUBDIR,
     IMAGE_REPO,
     PARSER_NAME,
     RUN_SCRIPT_NAME,
     WORKDIR,
 )
-from swe_lab.core.datasets.swebench_pro.record import SweBenchProInstance
-from swe_lab.core.datasets.swebench_pro.unit_test import (
+from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
+from swe_lab.datasets.swebench_pro.unit_test import (
     _build_eval_script,
     compile_solve_prompt,
     compile_unit_test,
     REQUIRED_TESTS_NAME,
 )
-from swe_lab.core.paths import cache_root
+from swe_lab.paths import cache_root
 from swe_lab.sandbox import Inline, Mount
 
 _BASE = {
