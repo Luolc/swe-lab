@@ -4,12 +4,13 @@
 > corner-case survey (7 harnesses, ~40 cases) that *informed* our decisions; it
 > is kept for reference only. The **decision of record** is
 > [`docs/decisions/ADR-0001-patch-extraction-and-grading.md`](decisions/ADR-0001-patch-extraction-and-grading.md),
-> and the **code is the source of truth**
-> ([`core/patch.py`](../src/swe_lab/core/patch.py),
-> [`rollout/`](../src/swe_lab/rollout/),
-> [`grading.py`](../src/swe_lab/core/datasets/swebench_pro/grading.py)). Its §
-> numbers are **not** referenced from the code (they drift); don't treat anything
-> here as current behavior — check the ADR and the code.
+> and the **code is the source of truth** — after the SandboxRun cutover:
+> [`sandbox/patch.py`](../src/swe_lab/sandbox/patch.py) + the diff-extract
+> observer in [`sandbox/observers/`](../src/swe_lab/sandbox/observers/), and
+> [`datasets/swebench_pro/unit_test.py`](../src/swe_lab/datasets/swebench_pro/unit_test.py).
+> Any `core/…` / `rollout/…` paths deeper in this survey predate that cutover.
+> Its § numbers are **not** referenced from the code (they drift); don't treat
+> anything here as current behavior — check the ADR and the code.
 
 **Scope.** A *general* engineering reference for one deceptively hard step in the
 `rollout` workstream (see the [W2 workstream](workstreams/w2-solve-eval/)): after a coding

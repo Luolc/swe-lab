@@ -13,7 +13,7 @@ lives — host-side and in-container.
 | workspace (host) | `.cache/eval_workspaces/<instance_id>/` (eval) · `.cache/rollout_workspaces/<instance_id>/` (rollout) | engine + composition | the per-run host dir; gitignored |
 | `$SANDBOX_WORKSPACE` | `/workspace` (A-host bind-mount) · the local dir (A-ghjob) | **backend** | the workspace as seen in-container; every script references staged files only through it |
 | `$WORKDIR` | `/app` for SWE-Bench Pro | **dataset** (`SandboxSpec.workdir`) | where the repo is checked out in the image; the `git diff` / test target |
-| `$HOME` | `/tmp/agent-home` | **harness** (claude_code) | a writable HOME the agent binary needs; set by `export HOME=…` inside `agent.sh` (not a Docker/backend env); in-container `/tmp`, ephemeral, **not** a workspace file |
+| `$HOME` | `/agent-home` | **harness** (claude_code) | a writable HOME the agent binary needs; set by `export HOME=…` inside `run_claude_code.sh` (not a Docker/backend env); in-container `/tmp`, ephemeral, **not** a workspace file |
 
 Two facts that shape everything below:
 
@@ -96,18 +96,18 @@ Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `agent.sh` | `$SANDBOX_WORKSPACE/agent.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/tmp/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `cd $WORKDIR` · `/opt/claude-code/claude -p "$(cat prompt.txt)" --model … --output-format stream-json --verbose --dangerously-skip-permissions > event_stream.jsonl 2> agent.stderr \|\| true` |
-| `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **dataset/composition** (mount) | the agent (via agent.sh) | the solve prompt — **dataset-derived** (`build_solve_prompt`), *not* a harness mount |
+| `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `export CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions < prompt.txt > claude.event_stream.jsonl 2> claude.stderr \|\| true` (the prompt is piped in on **stdin**, not inlined) |
+| `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **dataset/composition** (mount) | the agent (via run_claude_code.sh) | the solve prompt — **dataset-derived** (`compile_solve_prompt`), *not* a harness mount |
 
-### Produced during the run (in-container, by `agent.sh`)
+### Produced during the run (in-container, by `run_claude_code.sh`)
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `event_stream.jsonl` | `$SANDBOX_WORKSPACE/event_stream.jsonl` | agent stdout redirect | conversation observer (host) | Claude Code's native `stream-json` output (the primary; kept verbatim as the `event_stream` artifact) |
-| `agent.stderr` | `$SANDBOX_WORKSPACE/agent.stderr` | agent stderr redirect | conversation observer (host) | the run's stderr log — registered as the `agent_stderr` artifact (a native byproduct, kept for debugging failed runs) |
+| `claude.event_stream.jsonl` | `$SANDBOX_WORKSPACE/claude.event_stream.jsonl` | agent stdout redirect | conversation observer (host) | Claude Code's native `stream-json` output (the primary; kept verbatim as the `event_stream` artifact) |
+| `claude.stderr` | `$SANDBOX_WORKSPACE/claude.stderr` | agent stderr redirect | conversation observer (host) | the run's stderr log — registered as the `stderr` artifact (a native byproduct, kept for debugging failed runs) |
 
 The conversation observer (`before_destroy`, host-side) converts the native
-`event_stream.jsonl` into the canonical typed `Conversation` (task 06a) and
+`claude.event_stream.jsonl` into the canonical typed `Conversation` (task 06a) and
 writes `conversation.json` alongside it; both are registered artifacts.
 (`event_stream` is Claude-Code-specific; the canonical `conversation` is shared.)
 
@@ -131,11 +131,11 @@ The persist observer pushes only the artifacts a composition **registers**
 never a candidate):
 
 - eval: (verdict — persistence shape TBD in task 12).
-- rollout: `conversation` + `event_stream` + `agent_stderr` (conversation
+- rollout: `conversation` + `event_stream` + `stderr` (conversation
   observer — every native byproduct), `patch` +
   `patch_raw` (diff-extract observer).
 
-The staged inputs (`entryscript.sh` / `agent.sh` / `run_script.sh` /
+The staged inputs (`entryscript.sh` / `run_claude_code.sh` / `run_script.sh` /
 `parser.py` / `required_tests.json` / `prompt.txt`) remain in the workspace and
 make it self-describing — a persisted workspace records *what ran*, *what was
 expected*, and *what resulted*, re-gradable without the dataset record.
@@ -147,8 +147,8 @@ expected*, and *what resulted*, re-gradable without the dataset record.
 - **Filenames are constants**, owned by their axis: the SWE-Bench-Pro names
   (`run_script.sh`, `parser.py`, `output.json`, `required_tests.json`,
   `entryscript.sh`, `stdout.log`, `stderr.log`, **and the solve `prompt.txt`**)
-  in the dataset adapter; the claude_code names (`agent.sh`,
-  `event_stream.jsonl`, `agent.stderr`, `$HOME`, the `/opt/claude-code/claude`
+  in the dataset adapter; the claude_code names (`run_claude_code.sh`,
+  `claude.event_stream.jsonl`, `claude.stderr`, `$HOME`, the `/opt/claude-code/claude`
   binary asset path) in the harness; `conversation.json` in the shared
   conversation observer; `extract.sh` / `patch.raw.diff` / `patch.diff` in the
   shared diff-extract observer. `PROMPT_NAME` (`prompt.txt`) is the one

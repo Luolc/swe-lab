@@ -111,17 +111,18 @@ the code so these future directions require extension, not rewrite:
 
 ### Milestone 1 — Data-loading foundation ✅ *(done, 2026-07-06)*
 
-Delivered (under `src/swe_lab/`, since reorganized into `core/`):
+Delivered (under `src/swe_lab/`; the shared infra moved to the top level in the
+SandboxRun cutover — paths below are current):
 
-- `core/datasets/swebench_pro/record.py` — `SweBenchProInstance`, the typed
+- `datasets/swebench_pro/record.py` — `SweBenchProInstance`, the typed
   frozen record over the 16 columns, plus parsing (list columns are Python
   `repr`; three text columns are only sometimes JSON-string-wrapped).
-- `core/datasets/loader.py` — dataset-agnostic `Dataset` container +
+- `datasets/loader.py` — dataset-agnostic `Dataset` container +
   `DatasetRecord` protocol + a name→record-type registry; `load_dataset("swebench_pro")`.
-- `core/repo/provider.py` — `RepoProvider` protocol + `GitCheckoutProvider` (bare
+- `repo/provider.py` — `RepoProvider` protocol + `GitCheckoutProvider` (bare
   mirror per repo + per-instance worktree at `base_commit`, cached under
   gitignored `.cache/repos/`).
-- `core/paths.py` — repo-root / datasets / cache path helpers.
+- `paths.py` — repo-root / datasets / cache path helpers.
 - Tests under `tests/` cover parsing, loading, and provider idempotency.
 
 ### Milestone 2 — Annotation agent runner (single instance) ✅ *(2026-07-07)*

@@ -8,10 +8,12 @@ everything lives. This is the **"read this first"** index (agent rules are in
 evaluation data**. Its shape is **one horizontal shared foundation + several
 independent verticals**:
 
-- **Horizontal** — [`horizontal/`](horizontal/) → the shared, dataset-agnostic infrastructure
-  every vertical builds on (dataset loading, repo checkout, a headless-agent
-  harness, a Docker execution layer, the benchmark contracts). Code:
-  [`src/swe_lab/core/`](../src/swe_lab/core/).
+- **Horizontal** — [`horizontal/`](horizontal/) → the shared **SandboxRun engine**
+  + its three plug-in axes every vertical builds on (harness, dataset,
+  eval-method). Code: [`src/swe_lab/sandbox/`](../src/swe_lab/sandbox/),
+  [`harnesses/`](../src/swe_lab/harnesses/),
+  [`datasets/`](../src/swe_lab/datasets/),
+  [`evaluation/`](../src/swe_lab/evaluation/).
 - **Verticals** — [`workstreams/`](workstreams/) → each an independent unit of
   work over the eval data. A workstream is a folder; the active one carries its
   own `spec` / `plan` / `todo`, a dormant one is just a `README`.
