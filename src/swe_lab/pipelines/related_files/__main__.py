@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 
-from swe_lab.core.agent.trace import CAPTURE_MODES, DEFAULT_CAPTURE
+from swe_lab.harnesses.claude_code.trace import CAPTURE_MODES, DEFAULT_CAPTURE
 
 from .agent_run import DEFAULT_MODEL
 from .pipeline import annotate_by_id_with_aggregation, DEFAULT_SAMPLES

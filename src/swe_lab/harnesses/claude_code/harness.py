@@ -14,8 +14,8 @@ import shlex
 from typing import override
 
 from swe_lab.conversation import Conversation
-from swe_lab.core.agent.binary import ensure_claude_binary
 from swe_lab.harnesses.base import Harness
+from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
 from swe_lab.sandbox import (
     Assets,
     Inline,

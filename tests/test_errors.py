@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from swe_lab.core.agent.errors import (
+from swe_lab.harnesses.claude_code.errors import (
     AnnotationError,
     classify_error_text,
     cli_failure,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from swe_lab.core.agent.proxy import (
+from swe_lab.harnesses.claude_code.proxy import (
     build_proxy,
     DEFAULT_BASE_PORT,
     port_for_index,

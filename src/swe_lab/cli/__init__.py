@@ -9,6 +9,7 @@ import typer
 
 from .eval import eval_cmd
 from .rollout import rollout_in_docker
+from .verify import verify_cmd
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 
@@ -23,6 +24,6 @@ def root() -> None:
 
 _ = app.command("eval")(eval_cmd)
 _ = app.command("rollout")(rollout_in_docker)
-# _ = app.command("verify")(verify_cmd)    # 10b
+_ = app.command("verify")(verify_cmd)
 
 __all__ = ["app"]

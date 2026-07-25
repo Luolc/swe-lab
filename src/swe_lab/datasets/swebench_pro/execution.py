@@ -1,20 +1,16 @@
-"""SWE-Bench Pro execution adapter: build a runnable spec for an instance.
+"""SWE-Bench Pro execution setup: image ref + per-instance test harness.
 
 Everything specific to SWE-Bench Pro about *setting up* a run lives here (the
-data records are in ``record``; grading the run is in ``grading``): the prebuilt
-Docker Hub images, the per-instance test harness (``run_script`` + ``parser``)
-fetched from Scale's repo, and the mapping onto the general
-:class:`~swe_lab.core.benchmark.EvalSpec`.
-Implements ``BenchmarkAdapter[SweBenchProInstance]``.
+data records are in ``record``; compiling a runnable eval is in ``unit_test``):
+the prebuilt Docker Hub images and the per-instance test harness
+(``run_script`` + ``parser``) fetched from Scale's repo and cached.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 import urllib.request
 
-from swe_lab.core.benchmark import EvalSpec
 from swe_lab.paths import cache_root, find_repo_root
 
 from .constants import (
@@ -26,9 +22,7 @@ from .constants import (
     RUN_SCRIPT_NAME,
     SCALE_SWEBENCH_PRO_COMMIT,
     SCALE_SWEBENCH_PRO_REPO,
-    WORKDIR,
 )
-from .record import SweBenchProInstance
 
 
 def image_ref(dockerhub_tag: str) -> str:
@@ -77,32 +71,3 @@ def _download(url: str, dest: Path) -> None:
   with urllib.request.urlopen(url, timeout=HARNESS_FETCH_TIMEOUT_S) as response:
     data = response.read()
   _ = dest.write_bytes(data)
-
-
-@dataclass(frozen=True)
-class SweBenchProAdapter:
-  """``BenchmarkAdapter`` for SWE-Bench Pro."""
-
-  repo_root: Path | None = None
-
-  def eval_spec(self, instance: SweBenchProInstance) -> EvalSpec:
-    """Build the runnable ``EvalSpec`` for one instance.
-
-    Fetches (or reuses) the instance's cached harness files and maps the
-    record's fields onto the general spec.
-    """
-    run_script, parser = fetch_harness(
-        instance.instance_id, repo_root=self.repo_root
-    )
-    return EvalSpec(
-        instance_id=instance.instance_id,
-        image_ref=image_ref(instance.dockerhub_tag),
-        workdir=WORKDIR,
-        base_commit=instance.base_commit,
-        before_repo_set_cmd=instance.before_repo_set_cmd,
-        run_script=run_script.read_text(),
-        parser=parser.read_text(),
-        fail_to_pass=instance.fail_to_pass,
-        pass_to_pass=instance.pass_to_pass,
-        selected_tests=instance.selected_test_files_to_run,
-    )
