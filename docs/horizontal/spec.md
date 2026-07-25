@@ -1,10 +1,15 @@
 # Spec: SandboxRun — unified sandboxed-task engine + pluggable axes
 
-> **Status: Approved (2026-07-18).** The design was confirmed across the
-> 2026-07-18 interview + interface sessions, and the five remaining open items
-> (naming, code placement, persistence, on-error, sampling) were **resolved in
-> the same day's follow-up interview** — see
-> [Resolved questions](#resolved-questions-2026-07-18). Next step: the plan.
+> **Status: Approved (2026-07-18) · Implemented (tasks 02–11).** The design was
+> confirmed across the 2026-07-18 interview + interface sessions; the five
+> remaining open items (naming, code placement, persistence, on-error, sampling)
+> were **resolved in the same day's follow-up interview** — see
+> [Resolved questions](#resolved-questions-2026-07-18). The engine + three axes,
+> both backends, proxy capture, the CLI cutover, and the `core/` dissolution have
+> **landed**; the `Store`/tiers persistence (tasks 12–13) is the remaining slice.
+> Where this spec's prose describes the *pre-cutover* `core/` layout or `EvalSpec`
+> as motivation, the shipped code (per [`plans/README.md`](plans/README.md)) is
+> the source of truth. Below is the design of record.
 >
 > **Date:** 2026-07-18 · **Scope:** the horizontal shared foundation, consumed
 > by every workstream. Names below (`SandboxManager`, `Sandbox`, `SandboxSpec`,

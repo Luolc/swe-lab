@@ -38,34 +38,35 @@ do **not** vendor its ~1000 harness files or take it as a submodule — instead 
 references: **mini-swe-agent** (MIT; Scale's leaderboard scaffold) and the
 **Claude Agent SDK** (MIT).
 
-## Architecture — general flow + per-dataset adapter
+## Architecture — one engine, three axes (post-SandboxRun cutover)
 
-Mirrors the `datasets/` split (general loader + per-dataset record). **General,
-dataset-agnostic** code never learns a dataset's specifics; each dataset provides
-an **adapter**:
+W2 now runs on the shared **SandboxRun engine**: `rollout` and `eval` are two
+compositions of one `SandboxManager` (a main action + observers), not two
+subsystems. **General code never learns a dataset's specifics** — each dataset
+*compiles* its record into the engine's general shapes.
 
-- `core/benchmark.py` — the shared contract: `EvalSpec` (image ref, workdir,
-  base_commit, before_repo_set_cmd, run_script/parser content, test lists,
-  grading) + `BenchmarkAdapter` protocol. NB: `EvalSpec` still carries
-  SWE-Bench-Pro-shaped fields (`run_script`/`parser`); the general/per-dataset
-  boundary here is provisional until a second dataset forces it to firm up.
-- `core/datasets/swebench_pro/` — a **package** holding **all** SWE-Bench-Pro
-  run-knowledge: `record.py` (the record) + `execution.py` (`SweBenchProAdapter`:
-  jefzda image ref, pinned scaleapi harness fetch, `EvalSpec` builder) +
-  `grading.py` (the SBP grader — ports Scale's `create_entryscript`, stages the
-  workspace, runs it, parses `output.json`, grades → `EvalResult`;
-  `build_eval_script` also has `apply_patch` / `checkout_golden_tests` flags for
-  dataset self-checks). The grader is dataset-specific — plain SWE-Bench has no
-  `run_script`/`parser`. Adding a dataset = adding a sibling adapter package.
-- `core/docker/provider.py` — general `DockerProvider` (pull; run a script in a
-  bind-mounted container; `linux/amd64`).
-- `evaluation/` — the general eval **CLI** only (`__main__`): pick a dataset,
-  build its `EvalSpec`, hand it to that dataset's grader. CLI:
-  `python -m swe_lab.evaluation <id> --gold` (grade the gold patch as a
-  self-test) or `--patch-file`. Only SWE-Bench Pro is wired up today.
-- Golden verification runs via `.github/workflows/verify-golden.yml` (the full
-  sharded base-fail + golden-pass sweep). (`eval.yml` — a misnamed
-  single-instance gold grade, redundant with the sweep — was removed 2026-07-22.)
+- `sandbox/` — the engine: `SandboxManager` + lifecycle hooks, `Mounts`/
+  `Resource`, the diff-extract observer, and the two backends —
+  `DockerHostBackend` (A-host: `docker create/start/exec/rm`, workspace
+  bind-mounted) and `GitHubJobBackend` (A-ghjob: the CI job *is* the container).
+  The run context is a small `SandboxSpec` (image/workdir/base_commit/id).
+- `evaluation/` — the **eval-method axis**: the `verdict` contract
+  (`Verdict`/`Grader`/`UnitTestSpec`) + `methods/unit_test/` (`run_unit_test`).
+  The all-in-one `EvalSpec` is retired — a method takes `SandboxSpec` + its own
+  spec.
+- `datasets/swebench_pro/` — all SWE-Bench-Pro run-knowledge: `record.py`,
+  `execution.py` (image ref + pinned scaleapi harness fetch), and `unit_test.py`
+  (`compile_unit_test` → `(SandboxSpec, UnitTestSpec)`; `compile_solve_prompt`;
+  `SweBenchProGrader` reading `output.json` → `SweBenchProVerdict` with
+  `output_state ∈ {ok, absent, unparseable}`). Adding a dataset = a sibling
+  package.
+- `harnesses/claude_code/` — the rollout **harness axis** (the agent run body +
+  its trace → `Conversation`); `solve.py` is the rollout composition.
+- CLI (one entry point): `python -m swe_lab eval <id> (--gold | --patch-file)`,
+  `python -m swe_lab rollout <id> [--grade]`, `python -m swe_lab verify
+  --shard i/N`. A `--backend host|ghjob` selects the sandbox backend.
+- Golden verification runs via `.github/workflows/verify-golden.yml` →
+  `python -m swe_lab verify` (the sharded base-fail + golden-pass sweep).
 
 ## Decisions (2026-07-10)
 
@@ -74,13 +75,13 @@ an **adapter**:
   Apple-Silicon emulation; gold eval needs no secrets). Public-repo (free,
   unlimited minutes) decision deferred; if needed, a minimal public repo can
   wrap this one.
-- **Job model is per-flow (updated 2026-07-13).** Two options: **(A) container
-  job** (`jobs.<x>.container.image: <instance image>` — the whole job *is* the
-  image) vs **(B) ubuntu runner + `docker run`** (job on ubuntu host, image run
-  as a throwaway container). **NOT freely interchangeable with one CLI:** the
-  current `core/docker/provider.py` is B-only (it shells `docker run`); using it
-  under a container job would be docker-in-docker. Supporting A needs a separate
-  "run the entryscript directly in the job, no docker" path.
+- **Job model is per-flow (updated 2026-07-13; resolved by SandboxRun).** Two
+  options: **(A) container job** (`jobs.<x>.container.image: <instance image>` —
+  the whole job *is* the image) vs **(B) ubuntu runner + `docker run`** (job on
+  ubuntu host, image run as a throwaway container). These are now **both
+  backends behind one `Sandbox` interface**, chosen by `--backend`:
+  `GitHubJobBackend` (A) and `DockerHostBackend` (B) — the old "B-only
+  `DockerProvider`" concern dissolved with the engine cutover (tasks 03/09).
   - **Runtime efficiency is equivalent.** A container is namespaced processes on
     the host kernel, not a VM. The only real perf axis is amd64 *emulation*,
     which is a local-Apple-Silicon issue, absent on GH amd64 runners, and
@@ -133,7 +134,7 @@ on the same data — full write-up in
 **Temporary fix (in place):** rather than re-host the parquet yet, the loader
 still downloads the *original* upstream parquet and corrects only these 8 entries
 **in memory at load time** — see
-[`core/datasets/swebench_pro/patches.py`](../../../src/swe_lab/core/datasets/swebench_pro/patches.py)
+[`datasets/swebench_pro/patches.py`](../../../src/swe_lab/datasets/swebench_pro/patches.py)
 (`patch_fail_to_pass`, applied in `record.from_raw`; a no-op on every other row).
 With it, all three gold-eval `resolved = true` locally → the sweep is
 effectively **731/731**. **End state (TODO):** publish one fully-fixed parquet to
@@ -174,11 +175,12 @@ rotate after use).
      in [ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md)
      (Accepted); the [corner-case survey](../../patch-extraction.md) is retained as
      non-authoritative background. The code is the source of truth
-     ([`core/patch.py`](../../../src/swe_lab/core/patch.py),
-     [`rollout/`](../../../src/swe_lab/rollout/)).
-   - Extract the generic "run Claude Code headless + stream-json trace + exchange
-     record" into `core/agent/` so rollout reuses it. *(Done — see
-     `core/agent/`.)*
+     ([`sandbox/patch.py`](../../../src/swe_lab/sandbox/patch.py) + the
+     diff-extract observer in
+     [`sandbox/observers/`](../../../src/swe_lab/sandbox/observers/)).
+   - Extract the generic "run Claude Code headless + trace → `Conversation`" into
+     the harness axis so rollout reuses it. *(Done — see
+     [`harnesses/claude_code/`](../../../src/swe_lab/harnesses/claude_code/).)*
    - Mount a pinned native linux-x64 Claude Code binary (gitignored cache, never
      committed); GH Actions **container job** model (one instance per job).
 2. **Close eval gap** (cheap, do alongside rollout): an **empty-patch guard**

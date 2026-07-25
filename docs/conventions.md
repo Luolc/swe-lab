@@ -23,10 +23,12 @@ uv run pre-commit install            # install the hooks (once)
 uv run pytest                        # run the test suite
 uv run pre-commit run --all-files    # ruff + pyink + isort + basedpyright + uv-lock
 
-# The three product CLIs (module entrypoints):
+# The engine CLI — one entry point, per-subcommand modules (cli/<name>.py):
+python -m swe_lab eval <instance_id> --gold                # grade an instance's gold patch
+python -m swe_lab rollout <instance_id>                    # run the container agent loop
+python -m swe_lab verify --shard i/N                       # golden-sweep one shard
+# W1 annotation keeps its own module entrypoint:
 python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
-python -m swe_lab.evaluation <instance_id> --gold          # grade an instance's gold patch
-python -m swe_lab.rollout <instance_id>                    # run the container agent loop
 ```
 
 ## Formatting & lint (enforced by pre-commit)
@@ -99,17 +101,21 @@ with the following repo-wide choices and deviations (full plan + rationale:
 
 | Path | What it is |
 | --- | --- |
-| `src/swe_lab/core/` | Shared, **dataset-agnostic** infra: `datasets/` (loader + per-dataset adapter packages), `repo/` (checkout providers), `docker/` (execution), `agent/` (headless Claude Code runner + trace/binary/proxy), `patch.py`, `benchmark.py`, `paths.py`. |
-| `src/swe_lab/pipelines/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). |
-| `src/swe_lab/evaluation/` | **W2** — the general eval CLI (apply patch → run tests → grade). |
-| `src/swe_lab/rollout/` | **W2** — the container agent loop (entryscript, prompt, runner, patch extraction). |
+| `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, `Mounts`/`Resource`, backends (`DockerHostBackend` = A-host, `GitHubJobBackend` = A-ghjob), shared observers (diff-extract), `patch.py` (extraction contract). |
+| `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `claude_code/` (invocation, `convert`/`capture`, and the Claude Code runner utilities `binary`/`proxy`/`trace`/`errors`). |
+| `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus per-dataset packages (`swebench_pro/`: record, run setup, unit-test compile + grader). |
+| `src/swe_lab/evaluation/` | The **eval-method axis**: `verdict` contract + `methods/` (`unit_test`). |
+| `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
+| `src/swe_lab/cli/` + `__main__.py` | The one CLI entry point (`eval`/`rollout`/`verify`); `solve.py` is the rollout composition. |
+| `src/swe_lab/repo/`, `paths.py` | Repo checkout providers (W1) + repo-root/cache path helpers. |
+| `src/swe_lab/pipelines/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). Keeps its own module entrypoint; not yet on the engine. |
 | `experiments/` | Exploratory experiments + investigations. Each has a `README` (design/how-to-run) and, when it reaches conclusions, a `REPORT`; raw run artifacts under `runs/<variant>/`. Exempt from code hooks. See the [experiment playbook](experiments/playbook.md). |
 | `outputs/` | **Committed deliverables** (annotation parquet + per-instance JSON). Large trace records are *not* here — they live off-repo on HF. |
 | `datasets/` | Per-dataset READMEs + download instructions. The actual data files are **gitignored** and downloaded locally. |
 | `docs/` | This map, the [workstream](workstreams/) detail, [decisions](decisions/), the [experiment playbook](experiments/playbook.md), and grounded specs (`patch-extraction.md`, `traces.md`). |
 | `submodules/` | `cc-reverse-proxy` (used by the optional `--capture proxy` mode). |
 | `.cache/` | **Gitignored** — cloned repos, the pinned Claude Code linux-x64 binary, batch logs. Reproducible, never committed. |
-| `tests/` | pytest suite over `core` + tasks. |
+| `tests/` | pytest suite over the engine, axes, and tasks. |
 
 ## Source-of-truth rule
 
@@ -119,8 +125,9 @@ with the following repo-wide choices and deviations (full plan + rationale:
   [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted);
   [`docs/patch-extraction.md`](patch-extraction.md) is non-authoritative
   background research. For how patch
-  extraction / diffing / grading actually behave, read `core/patch.py`,
-  `rollout/`, and `core/datasets/swebench_pro/grading.py`.
+  extraction / diffing / grading actually behave, read `sandbox/patch.py`, the
+  diff-extract observer in `sandbox/observers/`, and
+  `datasets/swebench_pro/unit_test.py`.
 - [`README.md`](README.md) is the map (roadmap + status); the
   [workstream docs](workstreams/) carry the detail.
 
