@@ -18,6 +18,7 @@ from dataclasses import dataclass, field, replace
 import logging
 import os
 from pathlib import Path
+import shutil
 import stat
 import subprocess
 from typing import override
@@ -64,7 +65,11 @@ class GitHubJobBackend(SandboxBackend):
 
     No container is created — the job is already the live sandbox. Each asset
     is copied to its fixed path and made read-only (a copy, not a bind-mount,
-    so inline assets work too).
+    so inline assets work too). A file-backed asset's **source permissions are
+    mirrored** first, so an executable asset (the pinned agent binary) stays
+    executable — matching the A-host bind-mount, which preserves the source mode
+    (a plain content copy would drop the ``+x`` bit and the binary would fail
+    with ``Permission denied``).
 
     Args:
       spec: The run context (unused here — the image is already the job).
@@ -81,6 +86,9 @@ class GitHubJobBackend(SandboxBackend):
       dest = Path(container_path)
       try:
         resource.materialize_to(dest)
+        source = resource.local_path()
+        if source is not None:
+          shutil.copymode(source, dest)  # carry the source's execute bits
       except OSError as exc:
         raise SandboxError(
             f"could not place asset {container_path!r}: {exc}"
