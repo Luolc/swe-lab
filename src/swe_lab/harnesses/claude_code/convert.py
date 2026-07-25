@@ -7,7 +7,7 @@ Anthropic-shaped content blocks, which map onto the canonical
 :class:`~swe_lab.conversation.Conversation`.
 
 No PII redaction is needed here: the rollout agent runs **inside** the instance
-container (``HOME`` = ``/tmp/agent-home``, git config = the instance's), so the
+container (``HOME`` = ``/agent-home``, git config = the instance's), so the
 operator's identity is never injected into the trace — unlike a host-subprocess
 run (W1), which redacts separately.
 """
@@ -58,14 +58,21 @@ def event_stream_to_conversation(raw: Path) -> Conversation:
 def event_stream_complete(raw: Path) -> bool:
   """Return whether the run finished cleanly.
 
-  The reliable signal is the terminal ``result`` event (``subtype == "success"``
-  and not ``is_error``); assistant messages may carry a null ``stop_reason``.
+  The terminal ``result`` event is the reliable signal: ``subtype == "success"``
+  marks a clean finish, and every bounded-exit path emits a *distinct* error
+  subtype instead — ``error_max_turns`` (max turns reached),
+  ``error_max_budget_usd``, ``error_max_structured_output_retries``,
+  ``error_during_execution`` — each with ``is_error`` set. A ``success`` subtype
+  can still carry ``is_error`` (the final assistant turn was an API error), so
+  we require both. Assistant messages may carry a null ``stop_reason``, so we
+  never depend on it. (Verified against the Claude Code source
+  ``QueryEngine.ts``.)
 
   Args:
-    raw: Path to the ``event_stream.jsonl`` file.
+    raw: Path to the event-stream file.
 
   Returns:
-    ``True`` iff a terminal success ``result`` event is present.
+    ``True`` iff a terminal success ``result`` event (not an error) is present.
   """
   for event in reversed(_parse_events(raw)):
     if event.get("type") == "result":
@@ -153,7 +160,7 @@ def _flatten_result(content: object) -> str:
   for item in content:
     if isinstance(item, dict) and item.get("type") == "text":
       parts.append(str(item.get("text", "")))
-  return "\n".join(parts)
+  return "\n\n".join(parts)
 
 
 def _as_dict(value: object) -> dict[str, Any]:

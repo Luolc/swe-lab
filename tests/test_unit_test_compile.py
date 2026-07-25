@@ -15,6 +15,7 @@ from swe_lab.core.datasets.swebench_pro.constants import (
 from swe_lab.core.datasets.swebench_pro.record import SweBenchProInstance
 from swe_lab.core.datasets.swebench_pro.unit_test import (
     _build_eval_script,
+    compile_solve_prompt,
     compile_unit_test,
     REQUIRED_TESTS_NAME,
 )
@@ -145,3 +146,29 @@ def test_compile_missing_harness_would_fetch(tmp_path: Path):
   # network (raising) rather than silently succeeding.
   with pytest.raises(Exception):  # noqa: B017 — any network/URL error is fine
     compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
+
+
+def test_compile_solve_prompt_combines_the_three_columns():
+  # mirrors Scale's create_problem_statement verbatim
+  prompt = compile_solve_prompt(
+      _instance(
+          problem_statement="The widget crashes on empty input.",
+          requirements="Must not raise on None.",
+          interface="def render(widget) -> str",
+      )
+  )
+  assert prompt == (
+      "The widget crashes on empty input.\n\n"
+      "Requirements:\nMust not raise on None.\n\n"
+      "New interfaces introduced:\ndef render(widget) -> str"
+  )
+
+
+def test_compile_solve_prompt_keeps_headers_when_columns_empty():
+  # headers are unconditional, like the original (no per-section omission)
+  prompt = compile_solve_prompt(
+      _instance(problem_statement="Just the statement.")
+  )
+  assert "Just the statement." in prompt
+  assert "Requirements:" in prompt
+  assert "New interfaces introduced:" in prompt

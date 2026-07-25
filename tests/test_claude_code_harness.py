@@ -85,13 +85,16 @@ def test_mounts_only_agent_script_no_prompt():
 
 def test_invocation_script_shape_and_quoting():
   script = _script("/weird dir")
-  assert "export HOME=/tmp/agent-home" in script
+  assert "export HOME=/agent-home" in script
   assert "export IS_SANDBOX=1" in script
+  assert "export CLAUDE_CODE_DISABLE_CLAUDE_MDS=1" in script  # repo-context off
   assert "cd '/weird dir'" in script  # shlex.quote'd workdir with a space
-  assert f'{BINARY_AT} -p "$(cat "$SANDBOX_WORKSPACE"/prompt.txt)"' in script
+  assert f"{BINARY_AT} -p " in script  # no inline prompt in the argv
   assert "--output-format stream-json --verbose" in script
   assert "--dangerously-skip-permissions" in script
-  assert '> "$SANDBOX_WORKSPACE"/event_stream.jsonl' in script
+  # the prompt is piped in on stdin (no shell-quoting hazard)
+  assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script
+  assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
   assert script.rstrip().endswith("|| true")
 
 
@@ -104,8 +107,8 @@ def test_assets_binary_at_fixed_path(tmp_path: Path):
 
 def test_native_outputs():
   assert ClaudeCodeHarness().native_outputs() == {
-      "event_stream": "event_stream.jsonl",
-      "agent_stderr": "agent.stderr",
+      "event_stream": "claude.event_stream.jsonl",
+      "stderr": "claude.stderr",
   }
 
 

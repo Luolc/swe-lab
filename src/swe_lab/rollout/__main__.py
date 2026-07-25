@@ -23,6 +23,7 @@ from swe_lab.core.datasets.swebench_pro import (
     SweBenchProAdapter,
     SweBenchProInstance,
 )
+from swe_lab.core.datasets.swebench_pro.unit_test import compile_solve_prompt
 
 from .constants import (
     DEFAULT_MODEL,
@@ -30,7 +31,6 @@ from .constants import (
     PATCH_NAME,
     RAW_PATCH_NAME,
 )
-from .prompt import build_solve_prompt
 from .runner import DEFAULT_TIMEOUT_S, rollout
 
 
@@ -66,11 +66,7 @@ def main() -> int:
   if not isinstance(instance, SweBenchProInstance):
     raise TypeError(f"Unexpected record type: {type(instance).__name__}")
   spec = SweBenchProAdapter().eval_spec(instance)
-  prompt = build_solve_prompt(
-      instance.problem_statement,
-      requirements=instance.requirements,
-      interface=instance.interface,
-  )
+  prompt = compile_solve_prompt(instance)
 
   result = rollout(
       spec,
