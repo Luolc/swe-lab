@@ -29,6 +29,16 @@ PROMPT_NAME = "prompt.txt"
 EVENT_STREAM_NAME = "claude.event_stream.jsonl"  # stream-json trace (primary)
 AGENT_STDERR_NAME = "claude.stderr"  # the run's stderr log
 
+# The proxy-capture trace: the cc-reverse-proxy appends one request/response
+# record per API call here. The proxy is a host process, but the composition
+# points it at the (shared) workspace so the log is a normal workspace artifact.
+PROXY_LOG_NAME = "claude.proxy.jsonl"
+
+# The host, as seen from inside the container, that the Docker host-gateway
+# resolves to — how a containerized agent reaches a host-side proxy. Paired with
+# a ``--add-host`` on the backend (proxy capture only).
+CONTAINER_PROXY_HOST = "host.docker.internal"
+
 DEFAULT_MODEL = "claude-sonnet-5"
 
 # The subscription OAuth token the agent reads from its env; the rollout backend

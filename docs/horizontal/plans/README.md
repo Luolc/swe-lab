@@ -17,7 +17,7 @@ indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if 
 | 06 | [`claude_code` harness (event-stream capture)](task-06-claude-code-harness.md) | ✅ Done (PR #47) |
 | 07 | [Diff-extract observer + rollout CLI](task-07-diff-extract-rollout-cli.md) | ✅ Done (PR #48; live flipt rollout = CP2, manual) |
 | — | **CP2 — rollout regression bar** (human gate) | ⬜ |
-| 08 | Proxy capture mode | ⬜ |
+| 08 | [Proxy capture mode](task-08-proxy-capture.md) | ✅ Done (converter + harness/backend seam; live path = manual) |
 | 09 | A-ghjob backend | ⬜ |
 | 10a | Moves: `datasets/`, `paths`, `repo/` → top level | ⬜ |
 | 10b | Cutover + deletion (old packages, `core/`, workflows) | ⬜ |

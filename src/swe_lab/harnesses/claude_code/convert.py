@@ -1,10 +1,20 @@
-"""Claude Code ``event_stream`` (stream-json) → the canonical ``Conversation``.
+"""Claude Code agent trace → the canonical ``Conversation``.
 
-Written fresh (stdlib ``json`` over the stream-json lines → the typed model),
-*not* wrapping the soon-deprecated ``core/agent/trace.py`` dict parser. Each
-line is one JSON event; ``user`` / ``assistant`` events carry a ``message`` with
-Anthropic-shaped content blocks, which map onto the canonical
-:class:`~swe_lab.conversation.Conversation`.
+Written fresh (stdlib ``json`` → the typed model), *not* wrapping the
+soon-deprecated ``core/agent/trace.py`` dict parser. Both capture strategies
+land here:
+
+- **stream** — the agent's own ``stream-json`` stdout: each line is one event;
+  ``user`` / ``assistant`` events carry a ``message`` with Anthropic-shaped
+  content blocks.
+- **proxy** — the ``cc-reverse-proxy`` request/response log: one record per API
+  call. Anthropic is stateless, so the *last* record's ``request.body.messages``
+  already holds the entire prior conversation and ``response.message`` is the
+  final assistant turn — reading that one record reconstructs the whole trace.
+
+Both map their Anthropic content blocks through the **same** ``_content_blocks``
+/ ``_one_block`` helpers, so a stream and a proxy capture of one session convert
+to the same :class:`~swe_lab.conversation.Conversation` by construction.
 
 No PII redaction is needed here: the rollout agent runs **inside** the instance
 container (``HOME`` = ``/agent-home``, git config = the instance's), so the
@@ -82,6 +92,66 @@ def event_stream_complete(raw: Path) -> bool:
   return False
 
 
+def proxy_log_to_conversation(raw: Path) -> Conversation:
+  """Convert a ``cc-reverse-proxy`` log into a typed ``Conversation``.
+
+  The last record reconstructs the whole session (Anthropic is stateless): its
+  ``request.body`` carries the ``system`` prompt and every prior ``user`` /
+  ``assistant`` turn, and ``response.message`` is the final assistant turn.
+
+  Args:
+    raw: Path to the proxy log file (may be absent — a run that never reached
+      the API leaves no file).
+
+  Returns:
+    The conversation; an empty ``Conversation(messages=[])`` when the file is
+    absent or carries no messages.
+  """
+  record = _last_proxy_record(raw)
+  body = _as_dict(record.get("request")).get("body")
+  body = body if isinstance(body, dict) else {}
+  messages: list[Message] = []
+  system_blocks = _content_blocks(body.get("system"))
+  if system_blocks:
+    messages.append(Message(role=Role.SYSTEM, content=system_blocks))
+  input_messages = body.get("messages")
+  if isinstance(input_messages, list):
+    for message in input_messages:
+      if not isinstance(message, dict):
+        continue
+      role = _role(message.get("role"))
+      blocks = _content_blocks(message.get("content"))
+      if role is not None and blocks:
+        messages.append(Message(role=role, content=blocks))
+  final = _as_dict(record.get("response")).get("message")
+  final_blocks = _content_blocks(_as_dict(final).get("content"))
+  if final_blocks:
+    messages.append(Message(role=Role.ASSISTANT, content=final_blocks))
+  return Conversation(messages=messages)
+
+
+def proxy_log_complete(raw: Path) -> bool:
+  """Return whether the proxied session finished cleanly.
+
+  The proxy stamps each record with its own ``complete`` flag (a
+  ``message_delta`` carrying a ``stop_reason`` for a stream, or a fully-read
+  buffered response); the last record's flag is the session's completion signal.
+
+  Args:
+    raw: Path to the proxy log file.
+
+  Returns:
+    ``True`` iff the last record is marked ``complete``.
+  """
+  return bool(_last_proxy_record(raw).get("complete", False))
+
+
+def _last_proxy_record(raw: Path) -> dict[str, object]:
+  """Return the last JSON record in the proxy log (``{}`` when none)."""
+  records = _parse_events(raw)
+  return records[-1] if records else {}
+
+
 def _parse_events(raw: Path) -> list[dict[str, object]]:
   """Parse the stream-json file (one JSON object per line), skipping junk."""
   if not raw.is_file():
@@ -106,6 +176,8 @@ def _role(value: object) -> Role | None:
     return Role.USER
   if value == "assistant":
     return Role.ASSISTANT
+  if value == "system":
+    return Role.SYSTEM
   return None
 
 

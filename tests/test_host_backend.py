@@ -128,6 +128,21 @@ def test_up_bind_mounts_local_file_assets_read_only(
   assert create[at - 1 : at + 1] == ["-v", spec]
 
 
+def test_up_adds_extra_hosts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+  fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
+  _install(monkeypatch, fake)
+  backend = DockerHostBackend(pull=False).with_extra_hosts(
+      ("host.docker.internal:host-gateway",)
+  )
+  _ = backend.up(SPEC, tmp_path)
+  create = fake.last_matching("create")
+  at = create.index("host.docker.internal:host-gateway")
+  assert create[at - 1 : at + 1] == [
+      "--add-host",
+      "host.docker.internal:host-gateway",
+  ]
+
+
 def test_up_rejects_non_local_asset(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
