@@ -40,9 +40,9 @@ def test_run_rollout_wires_and_assembles(
   assert outcome.complete is False
   assert outcome.conversation == Conversation(messages=[])
   # the dataset-derived prompt was staged as prompt.txt (not a harness mount);
-  # the harness's own agent.sh was staged too
+  # the harness's own run script was staged too
   assert (workspace / "prompt.txt").read_text() == "SOLVE THIS"
-  assert (workspace / "agent.sh").is_file()
+  assert (workspace / "run_claude_code.sh").is_file()
   # the canonical conversation + the (empty) patch were written
   assert (workspace / "conversation.json").is_file()
   assert (workspace / "patch.diff").read_text() == ""

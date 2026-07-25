@@ -243,3 +243,25 @@ def compile_sandbox_spec(instance: SweBenchProInstance) -> SandboxSpec:
       workdir=WORKDIR,
       base_commit=instance.base_commit,
   )
+
+
+def compile_solve_prompt(instance: SweBenchProInstance) -> str:
+  """Compile an instance into the solve prompt handed to the headless agent.
+
+  Mirrors Scale's ``create_problem_statement`` for SWE-Bench Pro: the three text
+  columns are concatenated under fixed headers, unconditionally, so the agent
+  sees the same task text the benchmark's own harness builds. The prompt is
+  dataset-derived, so this mapping lives with the dataset — callers never reach
+  into instance fields themselves.
+
+  Args:
+    instance: The instance to solve.
+
+  Returns:
+    The prompt string staged into the workspace for the agent to read.
+  """
+  return (
+      f"{instance.problem_statement}\n\n"
+      f"Requirements:\n{instance.requirements}\n\n"
+      f"New interfaces introduced:\n{instance.interface}"
+  )

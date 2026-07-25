@@ -1,7 +1,8 @@
-"""Rollout: entryscript generation, prompt composition, patch read/empty guard.
+"""Rollout: entryscript generation, patch read/empty guard.
 
 These cover the logic that runs without Docker; the real container round-trip is
-exercised on GitHub Actions (see .github/workflows/rollout.yml).
+exercised on GitHub Actions (see .github/workflows/rollout.yml). The solve
+prompt composition now lives with the dataset (test_unit_test_compile.py).
 """
 
 from __future__ import annotations
@@ -17,7 +18,6 @@ from swe_lab.rollout.constants import (
     TRAJECTORY_NAME,
 )
 from swe_lab.rollout.entryscript import build_rollout_script
-from swe_lab.rollout.prompt import build_solve_prompt
 from swe_lab.rollout.runner import _read_patch, RolloutResult
 
 
@@ -60,24 +60,6 @@ def test_entryscript_forwards_exclude_globs() -> None:
       exclude_globs=("*.toml",),
   )
   assert ":(exclude)*.toml" in script
-
-
-def test_solve_prompt_includes_problem_and_optional_sections() -> None:
-  full = build_solve_prompt(
-      "The widget crashes on empty input.",
-      requirements="Must not raise on None.",
-      interface="def render(widget) -> str",
-  )
-  assert "The widget crashes on empty input." in full
-  assert "Must not raise on None." in full
-  assert "def render(widget) -> str" in full
-  assert "do not edit tests" in full
-
-  minimal = build_solve_prompt("Just the statement.")
-  assert "Just the statement." in minimal
-  # optional section headers omitted when their content is empty
-  assert "Requirements the fix must satisfy" not in minimal
-  assert "Interface / API" not in minimal
 
 
 def test_read_patch_missing_file_is_empty(tmp_path: Path) -> None:

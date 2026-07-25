@@ -14,6 +14,7 @@ from swe_lab.core.datasets.loader import load_dataset
 from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.core.datasets.swebench_pro.unit_test import (
     compile_sandbox_spec,
+    compile_solve_prompt,
     compile_unit_test,
 )
 from swe_lab.core.paths import cache_root, find_repo_root
@@ -22,7 +23,6 @@ from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
 )
-from swe_lab.rollout.prompt import build_solve_prompt
 from swe_lab.sandbox import DockerHostBackend
 from swe_lab.solve import RolloutOutcome, run_rollout
 
@@ -31,10 +31,16 @@ _EVAL_SUBDIR = "eval_workspaces"
 _DEFAULT_TIMEOUT_S = 1800.0
 
 
-def rollout_cmd(
-    instance_id: str,
-    dataset: str = "swebench_pro",
-    model: str = DEFAULT_MODEL,
+def rollout_in_docker(
+    instance_id: Annotated[
+        str, typer.Argument(help="The instance to solve (e.g. acme__widget-1).")
+    ],
+    dataset: Annotated[
+        str, typer.Option(help="Dataset the instance belongs to.")
+    ] = "swebench_pro",
+    model: Annotated[
+        str, typer.Option(help="Model alias or id the agent runs as.")
+    ] = DEFAULT_MODEL,
     grade: Annotated[
         bool, typer.Option(help="Grade the produced patch afterwards.")
     ] = False,
@@ -64,11 +70,7 @@ def rollout_cmd(
 
   root = find_repo_root()
   spec = compile_sandbox_spec(instance)
-  prompt = build_solve_prompt(
-      instance.problem_statement,
-      requirements=instance.requirements,
-      interface=instance.interface,
-  )
+  prompt = compile_solve_prompt(instance)
   workspace = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
   shutil.rmtree(workspace, ignore_errors=True)
 

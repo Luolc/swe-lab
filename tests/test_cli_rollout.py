@@ -74,11 +74,8 @@ def _wire(
     del instance
     return object()
 
-  def fake_prompt(
-      problem: str, *, requirements: str = "", interface: str = ""
-  ) -> str:
-    del requirements, interface
-    return f"PROMPT: {problem}"
+  def fake_prompt(instance: _Instance) -> str:
+    return f"PROMPT: {instance.problem_statement}"
 
   def fake_run_rollout(
       spec: object,
@@ -98,7 +95,7 @@ def _wire(
   monkeypatch.setattr(rollout_mod, "load_dataset", fake_load)
   monkeypatch.setattr(rollout_mod, "SweBenchProInstance", _Instance)
   monkeypatch.setattr(rollout_mod, "compile_sandbox_spec", fake_spec)
-  monkeypatch.setattr(rollout_mod, "build_solve_prompt", fake_prompt)
+  monkeypatch.setattr(rollout_mod, "compile_solve_prompt", fake_prompt)
   monkeypatch.setattr(rollout_mod, "run_rollout", fake_run_rollout)
   return calls
 

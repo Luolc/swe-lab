@@ -20,9 +20,8 @@ from swe_lab.sandbox import Assets, Mounts, Sandbox
 class Harness(ConversationProducer, ABC):
   """An off-the-shelf agent CLI plugged into the sandbox engine as a run body.
 
-  A behavior interface (ABC, per ADR-0002): claude_code now, codex / grok_build
-  next. It also inherits ``to_conversation`` + ``native_outputs`` from
-  ``ConversationProducer``.
+  A behavior interface (ABC, per ADR-0002). It also inherits ``to_conversation``
+  and ``native_outputs`` from ``ConversationProducer``.
   """
 
   @abstractmethod
