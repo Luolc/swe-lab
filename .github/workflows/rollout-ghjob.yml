@@ -72,3 +72,30 @@ jobs:
             --model "${{ inputs.model }}" \
             ${{ inputs.grade && '--grade' || '' }} \
             --timeout 3000
+
+      # Diagnostics printed straight into the log — the agent script swallows its
+      # own failure (`|| true`) so an empty patch looks like success. Surface the
+      # binary's runnability + the agent's own stderr to tell "agent errored" from
+      # "agent genuinely made no edits".
+      - name: Diagnose the agent run
+        if: always()
+        run: |
+          echo "== the pinned claude binary in this image =="
+          file /opt/claude-code/claude || true
+          /opt/claude-code/claude --version || echo "::warning::claude --version failed (rc=$?)"
+          echo "-- shared-lib resolution (missing libs => native binary can't run) --"
+          ldd /opt/claude-code/claude 2>&1 | head -40 || true
+          echo "== agent stderr (the direct error, if any) =="
+          find .cache/rollout_workspaces -name claude.stderr \
+            -exec sh -c 'echo "--- $1 ($(wc -c < "$1") bytes) ---"; cat "$1"' _ {} \; || true
+          echo "== event stream (size + last events) =="
+          find .cache/rollout_workspaces -name claude.event_stream.jsonl \
+            -exec sh -c 'echo "$1: $(wc -l < "$1") lines"; tail -3 "$1"' _ {} \; || true
+
+      - name: Upload rollout workspace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghjob-rollout-workspace
+          path: .cache/rollout_workspaces/**
+          if-no-files-found: warn
