@@ -1,0 +1,74 @@
+name: rollout-ghjob
+
+# Manual trigger — the **container-job** (A-ghjob) model: the whole job runs
+# INSIDE the instance's prebuilt image (`container: image:`), so the target repo
+# is already present at its `$WORKDIR` and the agent + eval scripts exec in the
+# job's own shell. There is no `docker run` / bind-mount here — the CLI selects
+# the `ghjob` backend, whose "container" is this job. Contrast `rollout.yml`,
+# the ubuntu-runner + `docker run` (A-host) model.
+#
+# This is the second backend behind the one `Sandbox` interface (spec Success
+# #4). It is validated by manual dispatch (the per-instance image is large and
+# lives on Docker Hub); CI does not run it.
+#
+# Assumes the instance image provides a POSIX shell + `git` at `$WORKDIR`;
+# `astral-sh/setup-uv` brings its own standalone Python, so the image need not
+# ship Python. The agent binary is copied read-only to /opt (root in-image).
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: Instance id to solve + grade
+        required: true
+      image_ref:
+        description: The instance's container image (the job runs inside it)
+        required: true
+      model:
+        description: Agent model
+        required: false
+        default: claude-sonnet-5
+      grade:
+        description: Grade the produced patch after solving
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  rollout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # The job IS the container: it runs inside the instance image.
+    container:
+      image: ${{ inputs.image_ref }}
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv (brings its own Python)
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install deps
+        run: uv sync
+
+      - name: Download dataset parquet (public HF)
+        run: |
+          mkdir -p datasets/swebench_pro/data
+          curl -fL -o datasets/swebench_pro/data/test-00000-of-00001.parquet \
+            "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro/resolve/main/data/test-00000-of-00001.parquet?download=true"
+
+      - name: Preflight — token present
+        run: |
+          if [ -z "${CLAUDE_CODE_OAUTH_TOKEN}" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret is not set" >&2
+            exit 1
+          fi
+
+      - name: Rollout (solve + grade) on the ghjob backend
+        run: |
+          uv run python -m swe_lab rollout \
+            "${{ inputs.instance_id }}" \
+            --backend ghjob \
+            --model "${{ inputs.model }}" \
+            ${{ inputs.grade && '--grade' || '' }} \
+            --timeout 3000

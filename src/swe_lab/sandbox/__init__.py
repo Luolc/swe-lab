@@ -8,7 +8,12 @@ engine. Test doubles live in :mod:`swe_lab.sandbox.testing`.
 """
 
 from .backend import ExecResult, SandboxBackend, WORKSPACE_ENV
-from .backends import DockerHostBackend
+from .backends import (
+    BackendKind,
+    build_backend,
+    DockerHostBackend,
+    GitHubJobBackend,
+)
 from .errors import SandboxError
 from .manager import Sandbox, SandboxManager
 from .mounts import Assets, merge_mounts, Mount, Mounts
@@ -19,10 +24,12 @@ from .spec import SandboxSpec
 
 __all__ = [
     "Assets",
+    "BackendKind",
     "CompositeObserver",
     "Contribution",
     "DockerHostBackend",
     "ExecResult",
+    "GitHubJobBackend",
     "Inline",
     "LocalFile",
     "Mount",
@@ -37,5 +44,6 @@ __all__ = [
     "SandboxObserver",
     "SandboxSpec",
     "WORKSPACE_ENV",
+    "build_backend",
     "merge_mounts",
 ]
