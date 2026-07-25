@@ -80,9 +80,20 @@ jobs:
       - name: Diagnose the agent run
         if: always()
         run: |
+          echo "== who + where =="
+          id || true
           echo "== the pinned claude binary in this image =="
-          file /opt/claude-code/claude || true
+          ls -la /opt/claude-code/claude || true
+          stat -c '%A %U:%G %s bytes  %n' /opt/claude-code/claude || true
+          echo "-- is /opt mounted noexec? --"
+          { findmnt -no SOURCE,TARGET,OPTIONS -T /opt/claude-code/claude \
+            || mount | grep -E ' /opt | / '; } 2>/dev/null || true
+          echo "-- does the RUNNING code carry the copymode fix? --"
+          uv run python -c "import inspect,swe_lab.sandbox.backends.ghjob as m; print('copymode in up():', 'copymode' in inspect.getsource(m.GitHubJobBackend.up))" || true
           /opt/claude-code/claude --version || echo "::warning::claude --version failed (rc=$?)"
+          echo "-- retry after an explicit chmod +x (rules noexec in/out) --"
+          chmod +x /opt/claude-code/claude 2>/dev/null || true
+          /opt/claude-code/claude --version || echo "::warning::still fails after chmod +x (rc=$?) => likely noexec mount"
           echo "-- shared-lib resolution (missing libs => native binary can't run) --"
           ldd /opt/claude-code/claude 2>&1 | head -40 || true
           echo "== agent stderr (the direct error, if any) =="
