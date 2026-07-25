@@ -19,7 +19,7 @@ indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if 
 | — | **CP2 — rollout regression bar** (human gate) | ⬜ |
 | 08 | [Proxy capture mode](task-08-proxy-capture.md) | ✅ Done (converter + harness/backend seam; live path = manual) |
 | 09 | [A-ghjob backend](task-09-a-ghjob-backend.md) | ✅ Done (`GitHubJobBackend` + `--backend` seam; container-job workflow = manual) |
-| 10a | Moves: `datasets/`, `paths`, `repo/` → top level | ⬜ |
+| 10a | [Moves: `datasets/`, `paths`, `repo/` → top level](task-10a-moves.md) | ✅ Done (pure rename; 190 green, W1 CLI runs) |
 | 10b | Cutover + deletion (old packages, `core/`, workflows) | ⬜ |
 | 11 | Docs sync | ⬜ |
 | — | **CP3 — cutover: 731 sweep + stub seam test** (human gate) | ⬜ |
