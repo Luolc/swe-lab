@@ -7,7 +7,7 @@ reconciles several such annotations into one. Both are thin wrappers over
 
 from __future__ import annotations
 
-from swe_lab.core.agent.errors import (
+from swe_lab.harnesses.claude_code.errors import (
     AnnotationError,
     MissingOutputError,
     RetryableError,

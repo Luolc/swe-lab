@@ -66,8 +66,10 @@ reconciliation decision table.
 | `traces.py` | Push/fetch the large conversation traces to a HF dataset repo; keeps a git-tracked manifest. |
 | `__main__.py` | CLI entry point. |
 
-Shared infrastructure (dataset loading, repo checkout, the reverse proxy, and
-run-error types) lives under `swe_lab.core`.
+Shared infrastructure lives at the top level after the SandboxRun cutover:
+dataset loading in `swe_lab.datasets`, repo checkout in `swe_lab.repo`, and the
+reverse proxy / trace parser / run-error types in `swe_lab.harnesses.claude_code`
+(`proxy` / `trace` / `errors`).
 
 ## Experiments
 

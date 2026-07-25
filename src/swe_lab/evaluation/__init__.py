@@ -1,9 +1,10 @@
-"""Evaluation CLI: grade a patch by running an instance's tests in a container.
+"""The evaluation axis: judge a run's workspace into a typed verdict.
 
-This package is only the user-facing command surface (``__main__``): pick a
-dataset, build its ``EvalSpec``, and hand it to that dataset's grader. The
-grading itself is dataset-specific and lives with the dataset — for SWE-Bench
-Pro that is ``datasets.swebench_pro.grading`` (it stages ``run_script.sh``
-/ ``parser.py`` / the entryscript and decides resolved iff
-``(fail_to_pass ∪ pass_to_pass)`` all pass). Only SWE-Bench Pro is wired today.
+The general contract lives in ``verdict`` (``Verdict`` / ``Grader`` /
+``UnitTestSpec``); each **method** under ``methods/`` is one way to judge —
+``unit_test`` (run the dataset's tests and grade the parser output) today,
+model-/rubric-based judgment later. The dataset owns the concrete grader (for
+SWE-Bench Pro, ``datasets.swebench_pro.unit_test``); this package stays
+method-general and never hard-codes a dataset. The ``eval`` / ``verify``
+commands compose a method over the sandbox engine.
 """

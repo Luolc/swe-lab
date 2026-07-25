@@ -13,13 +13,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import override
 
-from swe_lab.core.patch import (
+from swe_lab.sandbox.manager import Sandbox
+from swe_lab.sandbox.observer import SandboxObserver
+from swe_lab.sandbox.patch import (
     build_extraction_script,
     is_effectively_empty,
     strip_binary_hunks,
 )
-from swe_lab.sandbox.manager import Sandbox
-from swe_lab.sandbox.observer import SandboxObserver
 from swe_lab.sandbox.result import Contribution
 
 RAW_PATCH_NAME = "patch.raw.diff"  # raw git-diff bytes (audit)

@@ -15,9 +15,9 @@ from collections.abc import Sequence
 import json
 from pathlib import Path
 
-from swe_lab.core.agent.trace import DEFAULT_CAPTURE
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.harnesses.claude_code.trace import DEFAULT_CAPTURE
 
 from .agent_run import (
     DEFAULT_CLAUDE_TIMEOUT_S,
