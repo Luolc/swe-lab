@@ -9,11 +9,11 @@ from typing import Annotated
 
 import typer
 
-from swe_lab.core.datasets.loader import load_dataset
-from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.core.datasets.swebench_pro.unit_test import compile_unit_test
-from swe_lab.core.paths import cache_root, find_repo_root
+from swe_lab.datasets.loader import load_dataset
+from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.datasets.swebench_pro.unit_test import compile_unit_test
 from swe_lab.evaluation.methods.unit_test import run_unit_test
+from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import BackendKind, build_backend
 
 _WORKSPACES_SUBDIR = "eval_workspaces"

@@ -15,7 +15,7 @@ from pathlib import Path
 import urllib.request
 
 from swe_lab.core.benchmark import EvalSpec
-from swe_lab.core.paths import cache_root, find_repo_root
+from swe_lab.paths import cache_root, find_repo_root
 
 from .constants import (
     GITHUB_RAW_BASE,

@@ -17,13 +17,13 @@ from dataclasses import asdict
 import json
 import os
 
-from swe_lab.core.datasets.loader import load_dataset
-from swe_lab.core.datasets.swebench_pro import (
+from swe_lab.datasets.loader import load_dataset
+from swe_lab.datasets.swebench_pro import (
     evaluate,
     SweBenchProAdapter,
     SweBenchProInstance,
 )
-from swe_lab.core.datasets.swebench_pro.unit_test import compile_solve_prompt
+from swe_lab.datasets.swebench_pro.unit_test import compile_solve_prompt
 
 from .constants import (
     DEFAULT_MODEL,

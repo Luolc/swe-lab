@@ -16,7 +16,7 @@ import subprocess
 import time
 from types import TracebackType
 
-from ..paths import cache_root, find_repo_root
+from swe_lab.paths import cache_root, find_repo_root
 
 DEFAULT_BASE_PORT = 20000
 _ANTHROPIC_API = "https://api.anthropic.com"

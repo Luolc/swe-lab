@@ -15,8 +15,8 @@ import argparse
 from dataclasses import asdict
 import json
 
-from swe_lab.core.datasets.loader import load_dataset
-from swe_lab.core.datasets.swebench_pro import (
+from swe_lab.datasets.loader import load_dataset
+from swe_lab.datasets.swebench_pro import (
     evaluate,
     SweBenchProAdapter,
     SweBenchProInstance,

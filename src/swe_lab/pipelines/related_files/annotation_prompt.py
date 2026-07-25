@@ -12,7 +12,7 @@ separately in ``aggregator``.
 
 from __future__ import annotations
 
-from swe_lab.core.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.datasets.swebench_pro import SweBenchProInstance
 
 from .schema import SnippetCategory
 from .workspace import ANNOTATION_OUTPUT, CONTEXT_DIR, VALIDATOR_SCRIPT

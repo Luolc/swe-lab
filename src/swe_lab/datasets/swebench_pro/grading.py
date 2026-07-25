@@ -17,7 +17,7 @@ import shlex
 
 from swe_lab.core.benchmark import EvalSpec
 from swe_lab.core.docker.provider import DockerProvider
-from swe_lab.core.paths import cache_root, find_repo_root
+from swe_lab.paths import cache_root, find_repo_root
 
 from .constants import (
     BASH,

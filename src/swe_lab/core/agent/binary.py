@@ -27,7 +27,7 @@ import json
 from pathlib import Path
 import urllib.request
 
-from ..paths import cache_root, find_repo_root
+from swe_lab.paths import cache_root, find_repo_root
 
 DOWNLOAD_BASE_URL = "https://downloads.claude.ai/claude-code-releases"
 # Pinned so the agent build is reproducible across a rollout batch. This was the

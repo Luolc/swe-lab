@@ -27,7 +27,7 @@ from swe_lab.core.patch import (
     is_effectively_empty,
     strip_binary_hunks,
 )
-from swe_lab.core.paths import cache_root, find_repo_root
+from swe_lab.paths import cache_root, find_repo_root
 
 from .constants import (
     AGENT_STDERR_NAME,

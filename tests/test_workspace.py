@@ -5,16 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import final, override
 
-from swe_lab.core.datasets.swebench_pro import (
+from swe_lab.datasets.swebench_pro import (
     COLUMNS,
     SweBenchProInstance,
 )
-from swe_lab.core.repo.provider import RepoInstance, RepoProvider
 from swe_lab.pipelines.related_files.workspace import (
     ANNOTATION_OUTPUT,
     CONTEXT_DIR,
     prepare_workspace,
 )
+from swe_lab.repo.provider import RepoInstance, RepoProvider
 
 
 @final

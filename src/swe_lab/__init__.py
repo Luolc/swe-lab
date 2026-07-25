@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .core.datasets import Dataset, load_dataset, SweBenchProInstance
-from .core.repo import GitCheckoutProvider, RepoProvider
+from .datasets import Dataset, load_dataset, SweBenchProInstance
+from .repo import GitCheckoutProvider, RepoProvider
 
 __all__ = [
     "Dataset",

@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from swe_lab.core.datasets.swebench_pro.unit_test import (
+from swe_lab.datasets.swebench_pro.unit_test import (
     OutputState,
     REQUIRED_TESTS_NAME,
     SweBenchProGrader,

@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 
 from swe_lab.cli import app
 import swe_lab.cli.eval as eval_mod
-from swe_lab.core.datasets.swebench_pro.unit_test import (
+from swe_lab.datasets.swebench_pro.unit_test import (
     OutputState,
     SweBenchProVerdict,
 )
