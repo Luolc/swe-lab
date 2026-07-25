@@ -69,6 +69,9 @@ class DockerHostBackend(SandboxBackend):
     assets: Read-only resources placed at fixed container paths (outside the
       workspace), bind-mounted ``:ro`` at create time — the pinned agent binary
       and the like.
+    extra_hosts: ``--add-host`` entries (``name:ip``, e.g.
+      ``host.docker.internal:host-gateway``) so the container can reach a
+      host-side service such as the proxy-capture recorder.
   """
 
   platform: str = DEFAULT_PLATFORM
@@ -78,11 +81,16 @@ class DockerHostBackend(SandboxBackend):
   env: Mapping[str, str] = field(default_factory=dict)
   pass_env: Sequence[str] = ()
   assets: Assets = field(default_factory=dict)
+  extra_hosts: Sequence[str] = ()
 
   @override
   def with_assets(self, assets: Assets) -> SandboxBackend:
     """Return a copy carrying the merged read-only assets."""
     return replace(self, assets={**self.assets, **assets})
+
+  def with_extra_hosts(self, hosts: Sequence[str]) -> DockerHostBackend:
+    """Return a copy carrying the merged ``--add-host`` entries."""
+    return replace(self, extra_hosts=(*self.extra_hosts, *hosts))
 
   @override
   def up(self, spec: SandboxSpec, workspace: Path) -> str:
@@ -107,6 +115,8 @@ class DockerHostBackend(SandboxBackend):
     if not self.network:
       create_args += ["--network", "none"]
     create_args += ["-v", f"{workspace}:{self.mount_at}"]
+    for host_entry in self.extra_hosts:
+      create_args += ["--add-host", host_entry]
     for container_path, resource in self.assets.items():
       host = resource.local_path()
       if host is None:

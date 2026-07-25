@@ -11,17 +11,25 @@ still exists; it moves to ``rollout.py`` at cutover (10b). (task 07)
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
 from pathlib import Path
+import zlib
 
 from swe_lab.conversation import Conversation, ConversationObserver
+from swe_lab.core.agent.proxy import build_proxy, port_for_index, ReverseProxy
+from swe_lab.core.paths import find_repo_root
 from swe_lab.harnesses.claude_code import (
+    Capture,
     ClaudeCodeHarness,
     event_stream_complete,
+    proxy_log_complete,
 )
 from swe_lab.harnesses.claude_code.constants import (
+    CONTAINER_PROXY_HOST,
     EVENT_STREAM_NAME,
     PROMPT_NAME,
+    PROXY_LOG_NAME,
 )
 from swe_lab.sandbox import (
     Inline,
@@ -31,7 +39,13 @@ from swe_lab.sandbox import (
     SandboxManager,
     SandboxSpec,
 )
+from swe_lab.sandbox.backends import DockerHostBackend
 from swe_lab.sandbox.observers import DiffExtractObserver
+
+# Proxy ports are drawn from a wide band by a stable hash of the instance id, so
+# concurrent rollouts on one host never collide (mirrors W1's per-run distinct
+# port discipline, which keyed off the dataset index).
+_PROXY_PORT_SPAN = 10000
 
 
 @dataclass(frozen=True)
@@ -68,6 +82,7 @@ def run_rollout(
     workspace: Path,
     timeout: float,
     exclude_globs: tuple[str, ...] = (),
+    capture: Capture = Capture.STREAM,
 ) -> RolloutOutcome:
   """Run one agent rollout and extract its patch + trace.
 
@@ -79,11 +94,16 @@ def run_rollout(
     workspace: The run's workspace directory (created fresh).
     timeout: Seconds before the agent run is killed.
     exclude_globs: Build-noise denylist for the diff extraction.
+    capture: The output-capture strategy — ``STREAM`` (default) reads the
+      agent's ``event_stream``; ``PROXY`` records via a host-side
+      ``cc-reverse-proxy`` writing into the workspace.
 
   Returns:
     The rollout outcome (patch, flags, conversation, status).
   """
-  harness = ClaudeCodeHarness(model=model)
+  harness, backend, proxy = _capture_setup(
+      spec, model, backend, workspace, capture
+  )
   conversation = ConversationObserver(producer=harness)
   extract = DiffExtractObserver(exclude_globs=exclude_globs)
   backend = backend.with_assets(harness.assets())  # the binary at /opt
@@ -99,7 +119,7 @@ def run_rollout(
       observers=[conversation, extract],
       mounts=mounts,
   )
-  with manager.sandbox() as sb:
+  with proxy, manager.sandbox() as sb:
     harness.run(sb, timeout=timeout)
 
   return RolloutOutcome(
@@ -107,8 +127,50 @@ def run_rollout(
       patch=extract.patch,
       is_empty=extract.is_empty,
       binary_stripped=extract.binary_stripped,
-      complete=event_stream_complete(workspace / EVENT_STREAM_NAME),
+      complete=_run_complete(workspace, capture),
       conversation=conversation.conversation or Conversation(messages=[]),
       status=manager.result.status,
       workspace=workspace,
   )
+
+
+def _capture_setup(
+    spec: SandboxSpec,
+    model: str,
+    backend: SandboxBackend,
+    workspace: Path,
+    capture: Capture,
+) -> tuple[
+    ClaudeCodeHarness, SandboxBackend, contextlib.AbstractContextManager[object]
+]:
+  """Build the harness, backend, and proxy context for the capture strategy.
+
+  For ``STREAM`` the proxy context is a no-op. For ``PROXY`` it starts a
+  ``cc-reverse-proxy`` writing into the workspace, points the agent at it, and —
+  for the Docker backend — opens the host-gateway so the container can reach the
+  host-side proxy.
+  """
+  if capture is Capture.STREAM:
+    return ClaudeCodeHarness(model=model), backend, contextlib.nullcontext()
+  port = port_for_index(
+      zlib.crc32(spec.instance_id.encode()) % _PROXY_PORT_SPAN
+  )
+  base_url = f"http://{CONTAINER_PROXY_HOST}:{port}"
+  harness = ClaudeCodeHarness(
+      model=model, capture=capture, proxy_base_url=base_url
+  )
+  if isinstance(backend, DockerHostBackend):
+    backend = backend.with_extra_hosts(
+        (f"{CONTAINER_PROXY_HOST}:host-gateway",)
+    )
+  proxy = ReverseProxy(
+      port, workspace / PROXY_LOG_NAME, build_proxy(find_repo_root())
+  )
+  return harness, backend, proxy
+
+
+def _run_complete(workspace: Path, capture: Capture) -> bool:
+  """Read the agent-completion signal from whichever trace the run captured."""
+  if capture is Capture.PROXY:
+    return proxy_log_complete(workspace / PROXY_LOG_NAME)
+  return event_stream_complete(workspace / EVENT_STREAM_NAME)

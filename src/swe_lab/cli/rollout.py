@@ -19,6 +19,7 @@ from swe_lab.core.datasets.swebench_pro.unit_test import (
 )
 from swe_lab.core.paths import cache_root, find_repo_root
 from swe_lab.evaluation.methods.unit_test import run_unit_test
+from swe_lab.harnesses.claude_code import Capture
 from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
@@ -50,6 +51,9 @@ def rollout_in_docker(
     pull: Annotated[
         bool, typer.Option(help="Pull the image before running.")
     ] = True,
+    capture: Annotated[
+        Capture, typer.Option(help="Agent-trace capture strategy.")
+    ] = Capture.STREAM,
 ) -> None:
   """Run a headless agent to solve one instance in its container.
 
@@ -84,6 +88,7 @@ def rollout_in_docker(
       backend=backend,
       workspace=workspace,
       timeout=timeout,
+      capture=capture,
   )
 
   summary: dict[str, object] = {
