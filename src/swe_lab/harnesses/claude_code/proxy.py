@@ -10,6 +10,7 @@ and the session-success (``complete``) flag.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import socket
 import subprocess
@@ -20,7 +21,30 @@ from swe_lab.paths import cache_root, find_repo_root
 
 DEFAULT_BASE_PORT = 20000
 _ANTHROPIC_API = "https://api.anthropic.com"
-_PROXY_SOURCE = "submodules/cc-reverse-proxy/reverse_proxy.go"
+
+# The cc-reverse-proxy Go source lives OUTSIDE this repo — it is a standalone
+# project, not a vendored/submoduled file. By default we look for a sibling
+# checkout next to the repo (``../cc-reverse-proxy/reverse_proxy.go``); set
+# ``CC_REVERSE_PROXY_SRC`` to an explicit ``reverse_proxy.go`` path to override.
+PROXY_SOURCE_ENV = "CC_REVERSE_PROXY_SRC"
+_SIBLING_SOURCE = Path("cc-reverse-proxy") / "reverse_proxy.go"
+
+
+def proxy_source_path(repo_root: Path | None = None) -> Path:
+  """Return the cc-reverse-proxy Go source path (env override, else sibling).
+
+  Args:
+    repo_root: The repo root; used only to locate the default sibling checkout.
+
+  Returns:
+    ``CC_REVERSE_PROXY_SRC`` if set, else ``<repo_root>/../cc-reverse-proxy/
+    reverse_proxy.go`` (a sibling checkout of the standalone project).
+  """
+  override = os.environ.get(PROXY_SOURCE_ENV)
+  if override:
+    return Path(override)
+  root = repo_root or find_repo_root()
+  return root.parent / _SIBLING_SOURCE
 
 
 def proxy_binary_path(repo_root: Path | None = None) -> Path:
@@ -32,12 +56,14 @@ def build_proxy(repo_root: Path | None = None, *, force: bool = False) -> Path:
   """Compile the proxy binary into the cache if missing; return its path."""
   root = repo_root or find_repo_root()
   binary = proxy_binary_path(root)
-  source = root / _PROXY_SOURCE
+  source = proxy_source_path(root)
   if binary.is_file() and not force:
     return binary
   if not source.is_file():
     raise FileNotFoundError(
-        f"Proxy source not found at {source}. Did you init the git submodule?"
+        f"cc-reverse-proxy source not found at {source}. Clone the standalone"
+        f" project beside this repo, or set {PROXY_SOURCE_ENV} to its"
+        " reverse_proxy.go path."
     )
   binary.parent.mkdir(parents=True, exist_ok=True)
   result = subprocess.run(

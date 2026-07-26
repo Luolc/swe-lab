@@ -25,21 +25,19 @@ The overall roadmap and design live in [`docs/README.md`](docs/README.md).
 - [direnv](https://direnv.net/) for auto-activating the environment
 - Python 3.13 (uv will install it automatically if missing)
 
-### 1. Clone with submodules
+### 1. Clone
 
 ```bash
-git clone --recurse-submodules https://github.com/Luolc/swe-lab.git
+git clone https://github.com/Luolc/swe-lab.git
 cd swe-lab
 ```
 
-If you already cloned without `--recurse-submodules`, initialize the
-submodules afterwards:
-
-```bash
-git submodule update --init --recursive
-```
-
-This checks out `cc-reverse-proxy` under `submodules/`.
+Optional — the `--capture proxy` mode compiles the standalone
+[`cc-reverse-proxy`](https://github.com/Luolc/cc-reverse-proxy) Go project. It is
+**not** a submodule: by default it is looked up as a sibling checkout next to
+this repo (`../cc-reverse-proxy/reverse_proxy.go`); clone it there, or point
+`CC_REVERSE_PROXY_SRC` at its `reverse_proxy.go`. The default `stream` capture
+needs none of this.
 
 ### 2. Set up the environment
 
