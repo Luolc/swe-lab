@@ -1,3 +1,0 @@
-[submodule "cc-reverse-proxy"]
-	path = submodules/cc-reverse-proxy
-	url = https://github.com/Luolc/cc-reverse-proxy.git

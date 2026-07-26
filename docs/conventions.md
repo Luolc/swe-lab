@@ -113,7 +113,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `outputs/` | **Committed deliverables** (annotation parquet + per-instance JSON). Large trace records are *not* here — they live off-repo on HF. |
 | `datasets/` | Per-dataset READMEs + download instructions. The actual data files are **gitignored** and downloaded locally. |
 | `docs/` | This map, the [workstream](workstreams/) detail, [decisions](decisions/), the [experiment playbook](experiments/playbook.md), and grounded specs (`patch-extraction.md`, `traces.md`). |
-| `submodules/` | `cc-reverse-proxy` (used by the optional `--capture proxy` mode). |
+| (external) `cc-reverse-proxy` | The optional `--capture proxy` mode compiles this **standalone** Go project — not a submodule. Default: a sibling checkout `../cc-reverse-proxy/`; override with `CC_REVERSE_PROXY_SRC`. |
 | `.cache/` | **Gitignored** — cloned repos, the pinned Claude Code linux-x64 binary, batch logs. Reproducible, never committed. |
 | `tests/` | pytest suite over the engine, axes, and tasks. |
 
