@@ -1,0 +1,52 @@
+name: publish
+
+# Publish the package to PyPI via Trusted Publishing (OIDC — no API token in a
+# secret). Fires when a GitHub Release is published; the tag's version must match
+# `project.version` in pyproject.toml.
+#
+# One-time setup (on PyPI, https://pypi.org/manage/account/publishing/): add a
+# trusted publisher for this repository with workflow `publish.yml` and
+# environment `pypi`. Until then the publish step will fail the OIDC exchange.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv (+ Python)
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Validate metadata renders on PyPI
+        run: uvx twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/swe-lab
+    permissions:
+      id-token: write # mint the OIDC token Trusted Publishing verifies
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
