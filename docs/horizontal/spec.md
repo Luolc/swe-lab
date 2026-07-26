@@ -11,6 +11,13 @@
 > as motivation, the shipped code (per [`plans/README.md`](plans/README.md)) is
 > the source of truth. Below is the design of record.
 >
+> **Amended by [ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md)
+> (2026-07-26, P0):** the core-model assumption that "the shared state is the
+> **host** workspace filesystem (`sb.workspace: Path`)" does not extend to
+> remote / model-hosted sandboxes. ADR-0003 supersedes it with an **up-first
+> lifecycle** and a **`sb.fs: SandboxFs`** capability (host backends realize it
+> as a directory). Read ADR-0003 for the workspace/lifecycle design.
+>
 > **Date:** 2026-07-18 · **Scope:** the horizontal shared foundation, consumed
 > by every workstream. Names below (`SandboxManager`, `Sandbox`, `SandboxSpec`,
 > `Grader`, …) are **final**.
