@@ -1,4 +1,4 @@
-# ADR-0003: Remote-sandbox support — up-first lifecycle + workspace as a sandbox FS capability
+# ADR-0003: Remote-sandbox support — up-first lifecycle + one lifecycle-bearing `Sandbox`
 
 ## Status
 
@@ -61,9 +61,11 @@ host-FS-bound.
 
 ## Decision
 
-Generalize the engine so the sandbox's filesystem is an **interface obtained
-from the live sandbox**, not a host path known before it exists. Four coupled
-changes:
+Generalize the engine so **one lifecycle-bearing `Sandbox` object is the whole
+thing** — config, lifecycle, and operations — with no separate host workspace
+path and no separate "backend" object. Two things are settled here; the
+**transfer interface is deliberately deferred** (see §3) so we don't freeze a
+wrong assumption.
 
 ### 1. Up-first lifecycle
 
@@ -71,73 +73,133 @@ Reorder `SandboxManager.sandbox()` so nothing touches the sandbox filesystem
 before it is live:
 
 ```
-before_create → backend.up(spec) → [stage mounts + place assets THROUGH the
-live sandbox] → after_create → yield sb (body) → before_destroy → backend.down
+before_create → sb.up() → [place inputs] → after_create → yield sb (body)
+→ before_destroy → sb.down()
 ```
 
-`up` provisions the sandbox and returns the handle; **it no longer receives a
-host workspace path for staging**. This ordering is *strictly more general*:
-A-host (bind-mount the backend-owned dir, then stage into it) and A-ghjob
-(local dir) work unchanged under it, and it is the only ordering a remote
-sandbox can satisfy.
+`up` provisions the sandbox; nothing is staged before it exists. This ordering
+is *strictly more general*: A-host and A-ghjob work unchanged under it, and it is
+the only ordering a remote sandbox can satisfy. Provisioning (today's
+`SandboxManager._prepare_workspace`) moves **into `up`** — the manager never
+touches a host directory.
 
-### 2. `workspace: Path` → `sb.fs: SandboxFs`
+### 2. Merge `Sandbox` and `SandboxBackend` into one lifecycle-bearing `Sandbox`
 
-Replace the raw host path on `Sandbox` with a **filesystem capability bound to
-the live sandbox**:
+Drop `workspace: Path`, and **collapse the `Backend`/`Sandbox` split**. Today the
+backend is framed as a "frozen factory" that produces a thin `Sandbox` handle —
+but a sandbox genuinely **has a lifecycle** (`up` / `down`) and **internal
+state** (its live handle/connection, what has been placed in it). The
+frozen-factory framing is a fiction, and the only thing it enables — *one backend
+: many sandboxes* reuse — is **never used**: the engine's worldview is
+explicitly *one sandbox, one run, one `RunResult`* (batching lives outside, per
+the spec §Boundaries). So the split costs a thin wrapper + handle-threading and
+buys nothing. The filesystem is likewise **intrinsic to the sandbox**, so there
+is no separable `fs` to mis-match either.
+
+One object; the concrete subclasses *are* the backends:
 
 ```python
-class SandboxFs(ABC):                       # obtained from a live sandbox
-  def write(self, name: str, data: bytes, *, executable: bool = False) -> None: ...
-  def read(self, name: str) -> bytes: ...
-  def exists(self, name: str) -> bool: ...
-
-@dataclass(frozen=True)
-class Sandbox:
-  label: str
+class Sandbox(ABC):            # config + lifecycle + ops, in ONE object
   spec: SandboxSpec
-  backend: SandboxBackend
-  handle: str
-  fs: SandboxFs            # replaces `workspace: Path`
+  def up(self) -> None: ...               # provision (subsumes _prepare_workspace)
+  def place(self, placements) -> None: ...# stage inputs — §3/§4
   def run(self, script_name, *, timeout, ...) -> ExecResult: ...
+  def read(self, name) -> bytes: ...       # + the minimal ad-hoc read/write
+  def down(self) -> None: ...              # best-effort teardown; never raises
+
+class DockerHostSandbox(Sandbox): ...      # constructed with its own config
+class GitHubJobSandbox(Sandbox): ...        #   (network / image / env / creds / …)
+class RemoteSandbox(Sandbox): ...
 ```
 
-Host backends realize `SandboxFs` over a real directory (a plain read/write);
-remote backends realize it over the provider's file API (upload/download). The
-manager and observers depend only on `SandboxFs` — the host directory becomes a
-backend-internal detail, exposed (for persistence/debug) only through an
-explicit escape hatch (e.g. `fs.local_path(name) -> Path | None`, mirroring
-`Resource.local_path`).
+"Choosing a backend" is choosing which `Sandbox` subclass + config to construct;
+the `SandboxManager` drives the lifecycle on this one object. This also removes
+the frozen + `replace(handle=…)` gymnastics and settles the earlier "why is
+`Sandbox` a thin wrapper?" question — there is no wrapper.
 
-### 3. `materialize` → `stage`, after `up`, through the sandbox
+- **Capability narrowing** (observers must not call `up`/`down`) is preserved by
+  handing observers a **narrower view** — a `run`/`read`/`write`/`place`
+  interface without the lifecycle methods — an interface split, not a second
+  stateful class.
+- **The one real split, deferred:** if a provider needs a shared authenticated
+  **client / connection pool** across many sandboxes, that is a stateful
+  `Client : Session` split (the client has its *own* `up`/`down` + state), **not**
+  the frozen-factory fiction — introduce it as a construction dependency of the
+  `Sandbox` if/when a real provider demands it; do not keep the split on its
+  behalf now.
 
-Staging becomes "push these mounts into the *live* sandbox," keyed by handle,
-run **after** `up`. `Resource` grows a `read_bytes()` (Inline returns its bytes;
-LocalFile reads the file; Url downloads) so staging is
-`sb.fs.write(name, resource.read_bytes(), executable=...)` regardless of
-backend — no host `dest` path required. `materialize_to(dest: Path)` stays as a
-host convenience but is no longer on the staging hot path. Read-only **assets**
-are likewise placed after `up` (A-host, which bind-mounts assets at
-`docker create`, keeps a backend-owned host dir it can bind-mount and then
-populate; remote copies via API).
+### 3. Materialize-in / persist-out is an OPEN host↔sandbox transfer seam — interface deferred
 
-### 4. Provisioning moves into the backend
+Getting mount **inputs** into the sandbox and pulling **artifacts** out is owned
+by **neither** the sandbox alone nor the host alone: it is a transfer *both*
+decide, and the only/best path depends on the **(source × backend)** pair. All
+of these must remain expressible — so we must **not** bake a fixed method or
+direction:
 
-Delete `SandboxManager._prepare_workspace`. Workspace/sandbox provisioning
-(mkdir + empty-check for host backends; API provisioning for remote) becomes the
-backend's `up` responsibility. The manager never touches a host dir.
+- the host downloads a `Url` / reads a `LocalFile`, then uploads it via the
+  sandbox's own FS API;
+- the sandbox fetches the `Url` / object-store ref **itself** (the host never
+  touches it — sometimes cannot even reach it);
+- A-host shares a directory, so the host writes and the sandbox sees it with
+  **zero transfer**;
+- persist: the host pulls declared artifacts through the sandbox API, **or** the
+  sandbox pushes them to the store directly.
 
-### Backend ABC (new shape)
+So there is **no** `stage(bytes)`, no "sandbox pulls everything", no "host writes
+a dir" — and, crucially, **materialization is not a method on `Resource`.** The
+same `LocalFile` is copied into a shared dir by a host backend but uploaded by a
+remote one; for an object-store ref we may not know *until the concrete
+(sandbox × host) pair* whether it is fetched from the host or from inside the
+sandbox. A resource therefore cannot own "how I am materialized".
+
+Instead:
+
+- **`Resource` is pure data** — a tagged variant (`Inline` / `LocalFile` / `Url`
+  / `ObjectStore` / …) carrying **enough info** for any receiver to decide a
+  transfer. It has **no behavior** (today's `materialize_to` / `local_path` are
+  removed). This also re-classifies `Resource` under [ADR-0002](ADR-0002-interface-style-abc-vs-protocol.md)
+  as a **data shape**, not a behavior interface.
+- The **receiver decides the transfer** — the live `Sandbox`, coordinated by the
+  manager, inspects the resource variant + its own nature and picks the strategy
+  (shared-dir copy, host-mediated upload, sandbox-direct fetch, …),
+  falling back to host-bytes when nothing better matches and **failing loudly**
+  when even that is impossible (a ref only the sandbox can reach).
+
+The **concrete transfer/persist interface and the exact `Resource` variant
+surface are deferred to the Task-14 design**, after the real (source × backend)
+matrix is enumerated — precisely so this ADR does not over-assume them.
+
+### 4. Unify `Mount` and `Asset` into one placement
+
+Today there are **two** placement types with two interfaces: `Mounts =
+dict[str, Mount]` (`Mount(resource, executable)`, workspace-relative, read/write)
+and `Assets = dict[str, Resource]` (bare `Resource`, fixed path, read-only). But
+"place a resource into the sandbox" is **the same operation** for both — the
+difference is only in **constraints** (read-only vs read/write; a workspace-
+relative name vs an absolute path). They must not be two interfaces.
+
+Collapse them into **one placement** whose *attributes* carry the constraints —
+roughly:
 
 ```python
-class SandboxBackend(ABC):
-  def up(self, spec: SandboxSpec) -> str: ...              # provision; return handle (no host path)
-  def fs(self, handle: str) -> SandboxFs: ...              # file capability for this live sandbox
-  def stage(self, handle: str, mounts: Mounts) -> None: ...# push mounts in, AFTER up
-  def run_script(self, handle, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...
-  def down(self, handle: str) -> None: ...
-  # with_assets stays construction-time config; asset PLACEMENT happens in up/stage.
+@dataclass(frozen=True)
+class Placement:
+  resource: Resource     # what content (pure data, §3)
+  path: str              # where in the sandbox
+  executable: bool = False
+  read_only: bool = False
+  # workspace-relative vs absolute path resolution → a Task-14 detail
 ```
+
+An "asset" is just a `read_only` placement at an absolute path; a "mount" a
+read/write placement at a workspace-relative one. The composition provides **one**
+collection of placements; the receiver stages them all through the §3 seam,
+honoring each placement's constraints (a host backend bind-mounts `read_only`
+ones `:ro`, a remote copies + revokes write, etc.). This also fixes a real
+inconsistency: **`Assets` has no `executable` field**, yet the pinned agent
+binary *is* an executable asset — the omission is why the A-ghjob backend had to
+*infer* the bit from the source mode (the exec-bit fix); a unified `Placement`
+declares `executable` explicitly for assets and mounts alike.
 
 ## Alternatives Considered
 
@@ -154,6 +216,23 @@ class SandboxBackend(ABC):
 - **Keep host-only; run remote work outside this engine.** Rejected: remote is
   P0 and must compose with the same harness/dataset/eval-method axes and
   observers; a parallel path would fork the whole stack.
+- **Keep the `Backend` / `Sandbox` split** (a frozen backend factory producing a
+  thin sandbox handle). Rejected: the sandbox genuinely has a lifecycle + state,
+  so "frozen factory" is a fiction, and its only payoff — *one backend : many
+  sandboxes* reuse — is never used (the engine is one-sandbox-per-run; batching
+  is outside). The split costs a wrapper + handle-threading for nothing.
+  Capability-narrowing (no `up`/`down` for observers) is kept with a narrower
+  view, not a second class.
+- **A separate `SandboxFs` type paired with the backend.** Rejected: a
+  sandbox's FS is intrinsic to it (a remote-only FS can't run against a host
+  sandbox), so a separable `fs` field is a mis-matchable footgun — the file ops
+  belong on the one live `Sandbox`.
+- **Pin a concrete staging/transfer interface now** (e.g. `stage(bytes)` /
+  "the sandbox owns all file transfer"). Rejected: materialize-in and
+  persist-out are **(source × backend) joint decisions** — host-mediated
+  upload, sandbox-direct fetch, and shared-dir zero-copy are all valid and
+  differ per pair. Freezing one method/direction bakes a wrong assumption;
+  the transfer seam's shape is designed in Task 14 against the real matrix.
 
 ## Consequences
 
@@ -161,47 +240,55 @@ class SandboxBackend(ABC):
 
 | File | Change |
 |---|---|
-| `sandbox/manager.py` | Reorder `sandbox()` to up-first; delete `_prepare_workspace`; `Sandbox.workspace: Path` → `fs: SandboxFs`; `sb.run` unchanged (still handle-bound). |
-| `sandbox/backend.py` | New ABC: `up(spec)->handle` (no path), `fs(handle)->SandboxFs`, `stage(handle, mounts)`; `materialize(mounts, workspace)` removed. New `SandboxFs` ABC + `ExecResult` unchanged. |
-| `sandbox/resources.py` | Add `Resource.read_bytes()`; `materialize_to`/`local_path` retained for host convenience. |
-| `sandbox/backends/host.py` | `DockerHostBackend` owns its workspace dir; `up` creates + bind-mounts it (create → start), returns handle; `fs` reads/writes that dir; `stage` writes host-side; assets bind-mounted at create as today. |
-| `sandbox/backends/ghjob.py` | `GitHubJobBackend.up` provisions the local dir + places assets (the exec-bit fix stays); `fs`/`stage` over the local dir. |
-| `sandbox/backends/remote.py` **(new)** | The P0 remote backend against the provider API: `up` provisions; `fs`/`stage` via upload/download; `run_script` via the exec API; `down` tears down. |
-| `sandbox/testing.py` | `FakeBackend` gains `fs`/`stage`; add a `FakeRemoteBackend` (in-memory FS) proving the seam without a network. |
-| `sandbox/observers/diff_extract.py`, `conversation/observer.py`, `evaluation/methods/unit_test/run.py` (grader call) | `sb.workspace / name` → `sb.fs.read/write`; `grade` takes an fs, not a `Path`. |
-| `Contribution.artifacts` / `RunResult.artifacts` (`dict[str, Path]`) | Generalize to logical names resolved through `sb.fs` (a host `Path` is not meaningful for remote). Ripple into `PersistObserver` (Task 12), which must pull declared artifacts via `sb.fs`. |
-| `docs/horizontal/spec.md`, `docs/horizontal/workspace-layout.md` | Supersede the "shared state = host workspace directory" model → "shared state = the sandbox's filesystem via `sb.fs`; host backends realize it as a directory." |
+| `sandbox/manager.py` | Reorder `sandbox()` to up-first; delete `_prepare_workspace`; the manager holds no host `workspace: Path` — it drives the one `Sandbox`'s lifecycle (`up → place → … → down`). |
+| `sandbox/backend.py` → `sandbox/sandbox.py` | Merge `Sandbox` + `SandboxBackend` into one `Sandbox` **ABC** (config + `up`/`place`/`run`/`read`/`down`); concrete subclasses are the backends. `materialize`/`with_assets`/the handle field are gone. `ExecResult` unchanged. Observers get a narrower view (no `up`/`down`). |
+| `sandbox/resources.py` | `Resource` becomes **pure data** — a tagged variant (`Inline`/`LocalFile`/`Url`/`ObjectStore`/…) with enough info; its behavior methods (`materialize_to`/`local_path`) are **removed** (the receiver decides the transfer). **Exact variant surface designed in Task 14.** |
+| `sandbox/mounts.py` | Unify `Mount` + `Assets` into one `Placement` (`resource`, `path`, `executable`, `read_only`); `executable` now applies to what were assets (the binary). The backend's `with_assets` / `Assets` seam dissolves into the single placement collection. |
+| `sandbox/backends/host.py` | `DockerHostBackend` → `DockerHostSandbox(Sandbox)`: `up` = `docker create`+`start` over a self-owned dir; shared-dir zero-copy `place`; `run`/`read`/`down` over that container. |
+| `sandbox/backends/ghjob.py` | `GitHubJobBackend` → `GitHubJobSandbox(Sandbox)`: `up` provisions the local dir; `place` handles read-only + executable (the exec-bit fix stays); `run`/`read`/`down` local. |
+| `sandbox/backends/remote.py` **(new)** | `RemoteSandbox(Sandbox)` — the P0 backend against the provider API: `up` provisions; `place`/`read` via native/host-mediated transfer; `run` via the exec API; `down` tears down. |
+| `sandbox/testing.py` | `FakeBackend` → `FakeSandbox(Sandbox)`; add a `FakeRemoteSandbox` (in-memory, no host dir) proving the seam without a network. |
+| `cli/*.py` (`build_backend`) | `--backend host\|ghjob` selects which `Sandbox` subclass to construct (was: which backend). |
+| `sandbox/observers/diff_extract.py`, `conversation/observer.py`, `evaluation/methods/unit_test/run.py` (grader call) | `sb.workspace / name` → the live sandbox's read/write ops; `grade` takes the sandbox (or its read op), not a host `Path`. |
+| `Contribution.artifacts` / `RunResult.artifacts` (`dict[str, Path]`) | Generalize away from host `Path` (not meaningful for remote) → logical names resolved through the transfer seam; `PersistObserver` (Task 12) pulls declared artifacts via that seam. |
+| `docs/horizontal/spec.md`, `docs/horizontal/workspace-layout.md` | Supersede "shared state = host workspace directory" → "shared state is the live sandbox's own filesystem, reached through its ops; host backends realize it as a directory." |
 
 ### Migration (phased; suite green at each step)
 
-1. **Enabling refactor (host-only, no behavior change).** Introduce `SandboxFs`
-   + up-first lifecycle; back `fs` with the existing dir in A-host/A-ghjob; port
-   observers/grader to `sb.fs`; generalize `Resource.read_bytes` + `stage`.
-   A-host/A-ghjob behave identically; full suite + the flipt `eval`/`rollout`
-   E2E stay green. This lands the abstraction with zero functional change.
+1. **Enabling refactor (host-only, no behavior change).** Merge Backend/Sandbox
+   into one lifecycle-bearing `Sandbox` + up-first lifecycle; `Resource` → pure
+   data; the receiver-decides transfer seam realized for A-host/A-ghjob
+   (shared-dir); port observers/grader off the host `Path` onto the sandbox's
+   ops. A-host/A-ghjob behave identically;
+   full suite + the flipt `eval`/`rollout` E2E stay green. This lands the
+   abstraction with zero functional change and enumerates the (source × backend)
+   matrix that pins the transfer interface.
 2. **Remote backend (the P0 capability).** Add `sandbox/backends/remote.py`
-   against the target provider + a Docker-free `FakeRemoteBackend` for tests;
+   against the target provider + a Docker-free `FakeRemoteSandbox` for tests;
    prove `claude_code × swebench_pro × unit_test` composes on it unchanged
    (spec Success #3/#4). Live validation is a manual run (like CP2/CP3).
-3. **Artifacts + persistence generalization.** Move `RunResult.artifacts` to
-   fs-resolved names and make `PersistObserver` pull via `sb.fs`, so persistence
-   (Task 12) works for remote too.
+3. **Artifacts + persistence generalization.** Move `RunResult.artifacts` off
+   host `Path` and make `PersistObserver` pull declared artifacts through the
+   same transfer seam, so persistence (Task 12) works for remote too.
 
 ### Sequencing
 
 - **This refactor precedes Task 12 (`Store` seam + persistence).** Task 12 adds
-  another observer that reads the workspace to persist artifacts; building it on
-  the host-`Path` assumption would weld that assumption deeper. Do the
-  workspace-fs abstraction (Phase 1) first, then Task 12 on top of `sb.fs`.
-- Proposed task index entries (horizontal `plans/`): **Task 14** — workspace-fs
-  abstraction + up-first lifecycle (Phase 1); **Task 15** — remote sandbox
-  backend (Phase 2). Task 12 rebases onto `sb.fs` (Phase 3).
+  an observer that persists artifacts; building it on the host-`Path` assumption
+  would weld that assumption deeper. Land the lifecycle + transfer seam first,
+  then Task 12 on top of it.
+- Proposed task index entries (horizontal `plans/`): **Task 14** — merged
+  lifecycle-bearing `Sandbox` + up-first lifecycle + the receiver-decides
+  transfer seam (Phase 1); **Task 15** — remote sandbox backend (Phase 2).
+  Task 12 rebases onto the transfer seam (Phase 3).
 
 ### Notes
 
 - `up`-first is strictly more general, so A-host/A-ghjob lose nothing; the
   reorder is not a compatibility break for them.
-- This ADR **amends the spec's core model** (the host-FS workspace assumption);
-  the spec's status note should point here for the workspace/lifecycle design.
-- Backends stay behind one ABC (ADR-0002); the new `SandboxFs` is a behavior
-  interface (ABC), and `Resource` remains the shared content source.
+- This ADR **amends the spec's core model** (the host-FS workspace assumption
+  *and* the Backend/Sandbox split); the spec's status note points here.
+- `Sandbox` is a behavior interface (ABC, per ADR-0002); its concrete subclasses
+  are the backends. `Resource` is **re-classified** by this ADR from a behavior
+  ABC to a **data shape** (a tagged variant) — the transfer behavior it used to
+  carry (`materialize_to`) moves to the receiver.

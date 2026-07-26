@@ -15,8 +15,11 @@
 > (2026-07-26, P0):** the core-model assumption that "the shared state is the
 > **host** workspace filesystem (`sb.workspace: Path`)" does not extend to
 > remote / model-hosted sandboxes. ADR-0003 supersedes it with an **up-first
-> lifecycle** and a **`sb.fs: SandboxFs`** capability (host backends realize it
-> as a directory). Read ADR-0003 for the workspace/lifecycle design.
+> lifecycle** where `up()` returns a live, backend-owned `Sandbox` (the
+> filesystem is intrinsic to the backend, not a separable field), a
+> **receiver-decides** input/artifact transfer seam (`Resource` becomes pure
+> data), and **one placement concept** (assets/mounts unified). Read ADR-0003
+> for the workspace/lifecycle design.
 >
 > **Date:** 2026-07-18 · **Scope:** the horizontal shared foundation, consumed
 > by every workstream. Names below (`SandboxManager`, `Sandbox`, `SandboxSpec`,
