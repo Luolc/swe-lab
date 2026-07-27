@@ -27,12 +27,14 @@ indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if 
 | — | **CP4 — R2 provisioning** (ask-first) | ⬜ |
 | 13 | R2 store + CI wiring | ⬜ |
 | 14 | **Up-first lifecycle + live-`Sandbox` model + transfer seam** ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
-| 15 | **Remote / model-hosted sandbox backend** ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
+| 15 | **Extensibility seam proof + author guide** (no shipped remote backend — [ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
 
-**P0 — remote sandbox (ADR-0003).** Task 14 (the enabling refactor: up-first
-lifecycle, `up()` returns a live backend-owned `Sandbox`, `Resource` → pure data,
-a receiver-decides input/artifact transfer seam) **precedes Task 12** — building
-the persistence observer on the host-`Path` assumption would weld it deeper.
+**P0 — remote sandbox (ADR-0003).** swe-lab ships host + ghjob only; a remote /
+internal sandbox is a consuming company's **own** `Sandbox` subclass (import-only).
+Task 14 (the enabling refactor: up-first lifecycle, merged lifecycle-bearing
+`Sandbox`, `Resource` → extensible data, a receiver-decides transfer seam)
+**precedes Task 12** — building the persistence observer on the host-`Path`
+assumption would weld it deeper.
 Order: **14 → 15 → (12 rebased onto the transfer seam)**.
 
 Write a `task-NN-*.md` deep design before starting any task marked non-trivial
