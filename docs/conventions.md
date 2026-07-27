@@ -101,13 +101,13 @@ with the following repo-wide choices and deviations (full plan + rationale:
 
 | Path | What it is |
 | --- | --- |
-| `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, shared observers (diff-extract), `patch.py` (extraction contract). |
+| `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, shared observers (diff-extract). |
 | `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `claude_code/` (invocation, `convert`/`capture`, and the Claude Code runner utilities `binary`/`proxy`/`trace`/`errors`). |
 | `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus per-dataset packages (`swebench_pro/`: record, run setup, unit-test compile + grader). |
 | `src/swe_lab/evaluation/` | The **eval-method axis**: `verdict` contract + `methods/` (`unit_test`). |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
 | `src/swe_lab/cli/` + `__main__.py` | The one CLI entry point (`eval`/`rollout`/`verify`); `solve.py` is the rollout composition. |
-| `src/swe_lab/repo/`, `paths.py` | Repo checkout providers (W1) + repo-root/cache path helpers. |
+| `src/swe_lab/repo/`, `paths.py`, `patch.py` | Repo checkout providers (W1) + repo-root/cache path helpers + the git-patch extraction/apply utility (extraction script, binary-hunk strip, emptiness — [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)). |
 | `src/swe_lab/pipelines/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). Keeps its own module entrypoint; not yet on the engine. |
 | `experiments/` | Exploratory experiments + investigations. Each has a `README` (design/how-to-run) and, when it reaches conclusions, a `REPORT`; raw run artifacts under `runs/<variant>/`. Exempt from code hooks. See the [experiment playbook](experiments/playbook.md). |
 | `outputs/` | **Committed deliverables** (annotation parquet + per-instance JSON). Large trace records are *not* here — they live off-repo on HF. |
@@ -125,7 +125,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
   [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted);
   [`docs/patch-extraction.md`](patch-extraction.md) is non-authoritative
   background research. For how patch
-  extraction / diffing / grading actually behave, read `sandbox/patch.py`, the
+  extraction / diffing / grading actually behave, read `patch.py`, the
   diff-extract observer in `sandbox/observers/`, and
   `datasets/swebench_pro/unit_test.py`.
 - [`README.md`](README.md) is the map (roadmap + status); the

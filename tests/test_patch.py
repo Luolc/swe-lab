@@ -1,4 +1,4 @@
-"""Tests for :mod:`swe_lab.sandbox.patch`.
+"""Tests for :mod:`swe_lab.patch`.
 
 The pure helpers (``strip_binary_hunks``, ``is_effectively_empty``) are unit
 tested. ``build_extraction_script`` runs against a **real** temporary git repo
@@ -14,7 +14,7 @@ import subprocess
 
 import pytest
 
-from swe_lab.sandbox.patch import (
+from swe_lab.patch import (
     build_extraction_script,
     is_effectively_empty,
     strip_binary_hunks,

@@ -12,12 +12,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import override
 
-from swe_lab.sandbox.observer import SandboxObserver
-from swe_lab.sandbox.patch import (
+from swe_lab.patch import (
     build_extraction_script,
     is_effectively_empty,
     strip_binary_hunks,
 )
+from swe_lab.sandbox.observer import SandboxObserver
 from swe_lab.sandbox.result import Contribution
 from swe_lab.sandbox.sandbox import SandboxFs
 
