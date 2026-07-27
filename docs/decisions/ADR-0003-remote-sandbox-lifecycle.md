@@ -107,9 +107,10 @@ class Sandbox(ABC):            # config + lifecycle + ops, in ONE object
   def read(self, name) -> bytes: ...       # + the minimal ad-hoc read/write
   def down(self) -> None: ...              # best-effort teardown; never raises
 
-class DockerHostSandbox(Sandbox): ...      # constructed with its own config
-class GitHubJobSandbox(Sandbox): ...        #   (network / image / env / creds / …)
-class RemoteSandbox(Sandbox): ...
+class DockerHostSandbox(Sandbox): ...      # shipped by swe-lab
+class GitHubJobSandbox(Sandbox): ...        # shipped by swe-lab
+# class AcmeSandbox(Sandbox): ...          # a company's OWN infra — user-authored,
+                                            #   out-of-tree, import-only (not shipped)
 ```
 
 "Choosing a backend" is choosing which `Sandbox` subclass + config to construct;
@@ -260,8 +261,8 @@ source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
 | `sandbox/mounts.py` | Keep `Mount`/`Mounts`; add `read_only` (and keep `executable`) to `Mount`. Drop the `Assets` type + `with_assets` seam — "asset" becomes a wording convention for a read-only `Mount` (the binary is an executable read-only mount). |
 | `sandbox/backends/host.py` | `DockerHostBackend` → `DockerHostSandbox(Sandbox)`: `up` = `docker create`+`start` over a self-owned dir; shared-dir zero-copy `place`; `run`/`read`/`down` over that container. |
 | `sandbox/backends/ghjob.py` | `GitHubJobBackend` → `GitHubJobSandbox(Sandbox)`: `up` provisions the local dir; `place` handles read-only + executable (the exec-bit fix stays); `run`/`read`/`down` local. |
-| `sandbox/backends/remote.py` **(new)** | `RemoteSandbox(Sandbox)` — the P0 backend against the provider API: `up` provisions; `place`/`read` via native/host-mediated transfer; `run` via the exec API; `down` tears down. |
-| `sandbox/testing.py` | `FakeBackend` → `FakeSandbox(Sandbox)`; add a `FakeRemoteSandbox` (in-memory, no host dir) proving the seam without a network. |
+| _(no shipped remote backend)_ | swe-lab ships only `DockerHostSandbox` + `GitHubJobSandbox`. A **remote / internal** sandbox is authored by the consuming company as their own `Sandbox` subclass (import-only) — see Extensibility. |
+| `sandbox/testing.py` | `FakeBackend` → `FakeSandbox(Sandbox)`; add a `FakeRemoteSandbox` (in-memory, no host dir) — an out-of-tree-style subclass proving the seam without a network. |
 | `cli/*.py` (`build_backend`) | `--backend host\|ghjob` selects which `Sandbox` subclass to construct (was: which backend). |
 | `sandbox/observers/diff_extract.py`, `conversation/observer.py`, `evaluation/methods/unit_test/run.py` (grader call) | `sb.workspace / name` → the live sandbox's read/write ops; `grade` takes the sandbox (or its read op), not a host `Path`. |
 | `Contribution.artifacts` / `RunResult.artifacts` (`dict[str, Path]`) | Generalize away from host `Path` (not meaningful for remote) → logical names resolved through the transfer seam; `PersistObserver` (Task 12) pulls declared artifacts via that seam. |
@@ -277,13 +278,15 @@ source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
    full suite + the flipt `eval`/`rollout` E2E stay green. This lands the
    abstraction with zero functional change and enumerates the (source × backend)
    matrix that pins the transfer interface.
-2. **Remote backend (the P0 capability).** Add `sandbox/backends/remote.py`
-   against the target provider + a Docker-free `FakeRemoteSandbox` for tests;
-   prove `claude_code × swebench_pro × unit_test` composes on it unchanged
-   (spec Success #3/#4). Live validation is a manual run (like CP2/CP3).
+2. **Prove the seam + author guide (no shipped remote backend).** swe-lab does
+   **not** ship a remote backend — internal users own theirs. Instead: a
+   Docker-free `FakeRemoteSandbox` (an out-of-tree-style subclass with its own
+   `Resource` kind) proves `claude_code × swebench_pro × unit_test` composes on
+   it unchanged and that a company can add a `Sandbox` + `Resource` by import
+   only (spec Success #3/#4); plus a short author guide/example.
 3. **Artifacts + persistence generalization.** Move `RunResult.artifacts` off
    host `Path` and make `PersistObserver` pull declared artifacts through the
-   same transfer seam, so persistence (Task 12) works for remote too.
+   same transfer seam, so persistence (Task 12) works off-host too.
 
 ### Sequencing
 
@@ -293,11 +296,17 @@ source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
   then Task 12 on top of it.
 - Proposed task index entries (horizontal `plans/`): **Task 14** — merged
   lifecycle-bearing `Sandbox` + up-first lifecycle + the receiver-decides
-  transfer seam (Phase 1); **Task 15** — remote sandbox backend (Phase 2).
-  Task 12 rebases onto the transfer seam (Phase 3).
+  transfer seam (Phase 1); **Task 15** — extensibility seam proof + author guide
+  (Phase 2; no shipped remote backend). Task 12 rebases onto the transfer seam
+  (Phase 3).
 
 ### Notes
 
+- **Scope:** swe-lab ships `DockerHostSandbox` + `GitHubJobSandbox` only.
+  Remote / model-hosted / company-internal sandboxes are authored by the
+  consuming company as their **own** `Sandbox` subclasses (import-only). This
+  ADR makes that possible and proves it (Task 15's seam test + guide); it does
+  **not** ship a remote backend.
 - `up`-first is strictly more general, so A-host/A-ghjob lose nothing; the
   reorder is not a compatibility break for them.
 - This ADR **amends the spec's core model** (the host-FS workspace assumption
