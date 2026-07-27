@@ -46,7 +46,7 @@ E2E stay green.
 
 ```
 sandbox/
-  sandbox.py       NEW home: the `Sandbox` ABC + `SandboxReader` view + `ExecResult`
+  sandbox.py       NEW home: the `Sandbox` ABC + `SandboxFs` view + `ExecResult`
                    (absorbs today's backend.py; backend.py deleted)
   manager.py       up-first lifecycle; drop `_prepare_workspace`; drive one Sandbox
   mounts.py        `Mount(resource, executable, read_only)`; drop `Assets`
@@ -62,32 +62,48 @@ sandbox/
 
 ```python
 # ─── sandbox/sandbox.py ─────────────────────────────────────────────────────
-class SandboxReader(ABC):          # the narrow view observers/graders receive
+class SandboxFs(ABC):              # the narrow view observers/graders receive
   @property
   def spec(self) -> SandboxSpec: ...
   def read(self, name: str) -> bytes: ...
   def exists(self, name: str) -> bool: ...
-  def run(self, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...
   def write(self, name: str, data: bytes, *, executable=False) -> None: ...
+  def run(self, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # staged file, by name
+  def run_shell(self, command: str, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # bash -c
   def host_path(self, name: str) -> Path | None: ...   # host backends only; else None
+  # NOTE: no `mount` here, and no `up`/`down` — see below.
 
-class Sandbox(SandboxReader, ABC):   # config + lifecycle + ops, in ONE object
+class Sandbox(SandboxFs, ABC):     # config + lifecycle + ops, in ONE object
   spec: SandboxSpec
   def up(self) -> None: ...                 # provision (subsumes _prepare_workspace)
-  def mount(self, mounts: Mounts) -> None:  # stage inputs, AFTER up
+  def mount(self, mounts: Mounts) -> None:  # stage declared inputs, AFTER up — MANAGER-only
     for name, m in mounts.items():
-      self._mount_one(name, m)              # dispatch on m.resource; subclass extends
+      self._mount_one(name, m)              # the sandbox handles it; subclass extends
   def down(self) -> None: ...               # best-effort; never raises
-  # `run`/`read`/`write`/`exists`/`host_path` from SandboxReader
+  # read/write/run/run_shell/exists/host_path inherited from SandboxFs
 
   def _mount_one(self, name: str, m: Mount) -> None:
-    """Default handler for the built-in Resource kinds; a subclass overrides
-    for its own kinds and calls super() for the rest."""
+    """Handle the built-in Resource kinds; a subclass overrides for its own
+    kinds and calls super() for the rest (import-only extension)."""
     match m.resource:
       case Inline(content):   self._put_bytes(name, content, m)
       case LocalFile(path):   self._put_file(name, path, m)
       case _: raise SandboxError(f"{type(self).__name__} cannot mount {m.resource!r}")
-  # `_put_bytes` / `_put_file` are the backend's transfer primitives (§4).
+  # `_put_bytes` / `_put_file` are the sandbox's transfer primitives (§4).
+```
+
+**Who does what.** `mount` is **not** on `SandboxFs` and is **not** an observer
+capability — it is the declarative staging of the composition's `Mounts`
+(prompt, binary, run_script, …), called **once by the manager** after `up`, and
+**handled by the sandbox itself** (`_mount_one` dispatch). Observers receive the
+narrow `SandboxFs` and only `read` / `write` / `run` / `run_shell` — a
+mid-run observer writes an ad-hoc file (`write`) or runs a command, it does not
+re-stage declared mounts. `run` executes a **staged file by name** (persisted for
+audit, per the workspace-layout principle); `run_shell` runs an **inline
+`bash -c` string** for short/diagnostic commands (both backends: a one-line argv
+change — `/bin/bash -c "<cmd>"` vs `/bin/bash <ws>/<name>`).
+
+```python
 
 # ─── sandbox/mounts.py ──────────────────────────────────────────────────────
 @dataclass(frozen=True, slots=True)
@@ -164,12 +180,12 @@ finally:
   changes to take the reader; `event_stream_to_conversation` reads via `sb.read`.
 
 ### 6.2 Grader takes the reader, not a `Path`
-`Grader.grade(workspace: Path)` → `grade(reader: SandboxReader)`;
+`Grader.grade(workspace: Path)` → `grade(reader: SandboxFs)`;
 `SweBenchProGrader` reads `output.json` + `required_tests.json` via
 `reader.read(...)`. The `output_state` logic is unchanged.
 
-### 6.3 Observers get the narrow `SandboxReader` view
-Hooks are typed `(sb: SandboxReader)` so an observer **cannot** call `up`/`down`
+### 6.3 Observers get the narrow `SandboxFs` view
+Hooks are typed `(sb: SandboxFs)` so an observer **cannot** call `up`/`down`
 (capability narrowing, ADR-0003 §2). The manager holds the full `Sandbox`.
 
 ### 6.4 Artifacts stay host-paths via an escape hatch (Phase-1 scope)
@@ -204,14 +220,21 @@ Depends on nothing new; it is a refactor of the shipped engine. **Precedes
 Task 12** (persistence rebases onto §6.4). Task 15 (seam proof + author guide)
 follows. No runtime deps added.
 
-## 9. Open questions (decide at implementation)
-1. **`SandboxReader.write`** — observers need to write generated scripts, so the
-   reader view includes `write`. If that feels too wide for "read-only observer",
-   split into `SandboxReader` (read/exists/run) + a `writable` the diff-extract
-   observer needs. Lean: keep `write` on the view (observers legitimately stage
-   `extract.sh`), exclude only `up`/`down`.
-2. **`run` on the reader** — observers (`diff_extract`) exec, so `run` stays on
-   the view; only lifecycle (`up`/`down`) is withheld.
-3. **`host_path` escape hatch name/shape** — `host_path(name) -> Path | None`
-   vs a single `host_dir() -> Path | None`. Lean: per-name, so remote can back
-   individual artifacts later without implying a dir.
+## 9. Open questions
+
+**Settled in review:** the observer view is named **`SandboxFs`**; it carries
+`read`/`write`/`exists`/`run`/`run_shell`/`host_path` but **not** `mount` /
+`up` / `down` (mount is the manager's staging step, handled by the sandbox).
+`run_shell(command)` (inline `bash -c`) is added alongside `run(name)` (staged
+file) — short/diagnostic commands need no persisted script.
+
+**Still open:**
+1. **`host_path` escape hatch** — `host_path(name) -> Path | None` (host backends
+   return the real path; remote returns `None`) is the Phase-1 way to keep
+   `RunResult.artifacts` as host paths without generalizing them yet. Pending a
+   look at `sandbox/backends/host.py` (the workspace is a bind-mounted host dir,
+   so `host_path(name)` = that dir `/ name`). Confirm the shape, or fold artifact
+   handling forward into Task 12.
+2. **`SandboxFs.write` breadth** — `write` stays on the view (diff-extract
+   legitimately stages `extract.sh`); only `up`/`down`/`mount` are withheld.
+   Flag if a stricter read-only observer view is wanted.
