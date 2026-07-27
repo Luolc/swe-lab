@@ -31,16 +31,18 @@ E2E stay green.
   read-only mount).
 - `Resource` → data (no `materialize_to`/`local_path`); the sandbox switches on
   it, with a reusable base handler subclasses extend via `super()`.
-- Observers + grader ported off `sb.workspace: Path` onto `sb` ops; artifacts
-  kept as host paths via a host-only escape hatch (§6.4).
+- Observers + grader ported off `sb.workspace: Path` onto `sb` ops; the
+  **artifact-out seam** (`sb.fetch` + a manager collect step, §6.4) — the output
+  half of the transfer seam, working for host and remote.
 - Backend selection is **open**: the composition takes a `Sandbox` by value
   (programmatic), and the CLI resolves `--backend` through a **name registry**
   (not a closed enum) — see §6.5.
 
 ### Out of scope (later ADR-0003 phases)
 - A shipped remote backend (Task 15 proves the seam with a `FakeRemoteSandbox`).
-- Full `RunResult.artifacts` generalization off host `Path` + `PersistObserver`
-  (Task 12, Phase 3).
+- The `Store` (filesystem / R2), tiers, and `PersistObserver` that *consume* the
+  collected artifacts, plus the ~20% direct-persist branch (Task 12) — Task 14
+  lands only the `fetch` + collect interface they build on.
 - New `Resource` kinds (`Url`/`ObjectStore`) — the data shape allows them; no
   built-in impl here.
 
@@ -73,8 +75,7 @@ class SandboxFs(ABC):              # the narrow view observers/graders receive
   def write(self, name: str, data: bytes, *, executable=False) -> None: ...
   def run_script(self, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # <shell> <ws>/<name>
   def run_command(self, command: str, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # <shell> -c <command>
-  def host_path(self, name: str) -> Path | None: ...   # host backends only; else None
-  # NOTE: no `mount` here, and no `up`/`down` — see below.
+  # NOTE: no `mount` / `fetch` / `up` / `down` here — those are manager ops (below).
 
 class Sandbox(SandboxFs, ABC):     # config + lifecycle + ops, in ONE object
   spec: SandboxSpec
@@ -82,8 +83,9 @@ class Sandbox(SandboxFs, ABC):     # config + lifecycle + ops, in ONE object
   def mount(self, mounts: Mounts) -> None:  # stage declared inputs, AFTER up — MANAGER-only
     for name, m in mounts.items():
       self._mount_one(name, m)              # the sandbox handles it; subclass extends
+  def fetch(self, name: str, dest: Path) -> None: ...  # dump one artifact to a host path (§6.4) — MANAGER-only
   def down(self) -> None: ...               # best-effort; never raises
-  # read/write/run_script/run_command/exists/host_path inherited from SandboxFs
+  # read/write/run_script/run_command/exists inherited from SandboxFs
 
   def _mount_one(self, name: str, m: Mount) -> None:
     """Handle the built-in Resource kinds; a subclass overrides for its own
@@ -164,7 +166,9 @@ try:
   for o in observers: o.after_create(sb)
   yield sb                                 # body
 finally:
-  self._teardown(sb, contributions)        # before_destroy → sb.down()
+  for o in observers: contributions += [o.before_destroy(sb)]  # produce + register artifact NAMES
+  self._collect(sb, contributions, staging) # sb.fetch(name, staging/name) for each — WHILE LIVE
+  sb.down()                                  # then tear down
 ```
 
 - `Sandbox.__init__` sets state; `up()` marks it live (a `_live` flag replaces
@@ -172,6 +176,10 @@ finally:
   `SandboxError` before `up()`.
 - `_prepare_workspace` (`manager.py:226-237`) moves **into each sandbox's `up`**
   (host backends `mkdir` + the empty-check; ghjob provisions its dir).
+- **Artifacts are collected before `down`** (§6.4): `before_destroy` registers
+  names, the manager `fetch`es them to a host staging dir *while the sandbox is
+  still live*, then `down`. So `RunResult.artifacts` are host paths for host and
+  remote alike. (`on_error` teardown paths collect too, where the sandbox is live.)
 - The frozen `Sandbox` + `replace(handle=…)` gymnastics (`manager.py:158-174`)
   are gone; the sandbox is a normal mutable object.
 
@@ -187,6 +195,9 @@ finally:
   `conversation.json` → `sb.write`; `native_outputs` existence → `sb.exists`.
 - The `Harness.to_conversation(workspace: Path)` and `native_outputs()` seam
   changes to take the reader; `event_stream_to_conversation` reads via `sb.read`.
+- Both observers now register artifacts by **name** (canonical name →
+  in-sandbox filename), not by host `Path` — the manager collect step (§6.4)
+  fetches them out.
 
 ### 6.2 Grader takes the reader, not a `Path`
 `Grader.grade(workspace: Path)` → `grade(reader: SandboxFs)`;
@@ -197,12 +208,32 @@ finally:
 Hooks are typed `(sb: SandboxFs)` so an observer **cannot** call `up`/`down`
 (capability narrowing, ADR-0003 §2). The manager holds the full `Sandbox`.
 
-### 6.4 Artifacts stay host-paths via an escape hatch (Phase-1 scope)
-`Contribution.artifacts: dict[str, Path]` and `RunResult.artifacts` are **kept**
-this task: observers resolve a name to a host path with `sb.host_path(name)`
-(host backends return the real path; a remote returns `None`). Full
-generalization to fs-resolved names is **Task 12 / Phase 3** — deliberately not
-here, to keep Task 14 a zero-behavior-change refactor for host backends.
+### 6.4 Artifacts are the OUTPUT half of the transfer seam — `fetch` / dump-to-host
+Artifacts are files a run **produces inside the sandbox** (patch.diff,
+conversation.json, output.json, …) that we ultimately **persist**. Getting them
+**out** is symmetric to getting inputs **in** (`mount`), and is likewise
+**receiver-decides**: ~80% the sandbox **dumps to the host** and persistence
+happens host-side; ~20% the sandbox persists directly (same-cloud Store). We
+design the interface now — not punt it.
+
+- **`Sandbox.fetch(name, dest: Path) -> None`** — dump one produced artifact to a
+  host path. A host sandbox **copies (or hard-links) from its own dir** (its
+  files are already host-visible — near-zero cost); a remote **downloads** to
+  `dest`. Symmetric to `_mount_one`'s per-`Resource` transfer.
+- **A collect step in teardown.** Observers register artifacts by **name** (not
+  host `Path` — meaningless for a remote sandbox). The manager, **after
+  `before_destroy` and while the sandbox is still live** (before `down`),
+  `fetch`es each registered artifact into a host staging dir, so
+  `RunResult.artifacts: dict[str, Path]` holds **host paths for host *and*
+  remote** runs. Symmetric to `mount` (manager stages inputs after `up`; manager
+  collects outputs before `down`).
+- **Types:** `Contribution.artifacts` becomes canonical-name → in-sandbox
+  filename (`dict[str, str]`); `RunResult.artifacts` stays `dict[str, Path]`
+  (the host staging copies).
+- The **`Store`** (filesystem / R2, tiers) that consumes the host copies — and
+  the ~20% *direct-persist* branch — are **Task 12**; Task 14 lands `fetch` +
+  the collect step so both host and remote runs already yield host-side
+  artifacts. `sb.host_path` is dropped (`fetch` subsumes it).
 
 ### 6.5 Compositions & backend selection (open, not an enum)
 - `solve.py`: drop `backend.with_assets(harness.assets())`; the harness's binary
@@ -238,20 +269,20 @@ follows. No runtime deps added.
 
 ## 9. Open questions
 
-**Settled in review:** the observer view is named **`SandboxFs`**; it carries
-`read`/`write`/`exists`/`run_script`/`run_command`/`host_path` but **not** `mount` /
-`up` / `down` (mount is the manager's staging step, handled by the sandbox).
-`run_command(command)` (inline command via a per-sandbox shell, default `bash`,
-configurable for `sh`-only images) is added alongside `run_script(name)` (staged
-file) — short/diagnostic commands need no persisted script.
+**Settled in review:** the observer view is named **`SandboxFs`**
+(`read`/`write`/`exists`/`run_script`/`run_command`) — **not** `mount` / `fetch` /
+`up` / `down`, which are the manager's staging/collect/lifecycle ops on the full
+`Sandbox`. `run_command` uses a per-sandbox shell (default `bash`, configurable
+for `sh`-only images). Artifacts are collected **out** via `sb.fetch(name, dest)`
++ a manager collect step (§6.4) — the output half of the transfer seam — so the
+earlier `host_path` escape hatch is dropped.
 
 **Still open:**
-1. **`host_path` escape hatch** — `host_path(name) -> Path | None` (host backends
-   return the real path; remote returns `None`) is the Phase-1 way to keep
-   `RunResult.artifacts` as host paths without generalizing them yet. Pending a
-   look at `sandbox/backends/host.py` (the workspace is a bind-mounted host dir,
-   so `host_path(name)` = that dir `/ name`). Confirm the shape, or fold artifact
-   handling forward into Task 12.
+1. **`fetch` vs `read` for artifacts** — `read(name) -> bytes` (in-memory, small)
+   vs `fetch(name, dest) -> None` (streamed to a host file, large). Lean: keep
+   both — the collect step uses `fetch` (files, no buffering); observers use
+   `read` for content they process inline. Confirm the collect step lives in the
+   manager (symmetric to `mount`) vs a shared `CollectObserver`.
 2. **`SandboxFs.write` breadth** — `write` stays on the view (diff-extract
    legitimately stages `extract.sh`); only `up`/`down`/`mount` are withheld.
    Flag if a stricter read-only observer view is wanted.
