@@ -281,9 +281,7 @@ collect step) and `read` (bytes, inline — observers) are kept. **`write` stays
 on `SandboxFs`** (diff-extract legitimately stages `extract.sh`); only
 `up`/`down`/`mount`/`fetch` are withheld from observers.
 
-**Remaining decision:** `--backend` CLI selection — keep the **name registry**
-(§6.5, open to import-registered custom names) or simplify to a **built-in-only
-choice** (`host`/`ghjob`) since custom sandboxes are used programmatically. Both
-leave the programmatic pass-a-`Sandbox` seam fully open; the registry only adds
-CLI-extensibility no internal user needs. Lean: built-in-only (simpler), decide
-before implementing §6.5.
+**`--backend` selection:** the **name registry** (§6.5) is kept (built-ins
+register `host`/`ghjob`; a custom name is import-registrable). The programmatic
+pass-a-`Sandbox` seam stays fully open regardless. All open questions resolved;
+plan finalized for implementation.
