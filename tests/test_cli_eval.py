@@ -72,9 +72,11 @@ def _wire(
       backend: object,
       workspace: object,
       timeout: object,
+      **kwargs: object,
   ) -> tuple[RunResult, SweBenchProVerdict | None]:
-    del sandbox_spec, unit_spec, backend, workspace, timeout
+    del sandbox_spec, unit_spec, workspace, timeout, kwargs
     calls["ran"] = True
+    calls["backend"] = backend
     result = RunResult(
         label="acme__widget-1",
         status=RunStatus.SUCCESS,
@@ -143,8 +145,9 @@ def test_setup_failure_none_verdict_exits_one(
       backend: object,
       workspace: object,
       timeout: object,
+      **kwargs: object,
   ) -> tuple[RunResult, None]:
-    del sandbox_spec, unit_spec, backend, workspace, timeout
+    del sandbox_spec, unit_spec, backend, workspace, timeout, kwargs
     result = RunResult(
         label="acme__widget-1",
         status=RunStatus.SETUP_ERROR,

@@ -2,7 +2,7 @@
 
 Spec Success #3 — "a second harness (or a stub) registers **without touching the
 engine**." This stub implements the ``Harness`` ABC and runs end-to-end through
-the real ``SandboxManager`` + ``ConversationObserver`` + ``GitHubJobBackend``
+the real ``SandboxManager`` + ``ConversationObserver`` + ``GitHubJobSandbox``
 (local bash, no Docker), importing only the public engine surface — nothing in
 ``sandbox/`` or ``conversation/`` is modified to make it work.
 """
@@ -19,13 +19,12 @@ from swe_lab.conversation import (
 )
 from swe_lab.harnesses.base import Harness
 from swe_lab.sandbox import (
-    Assets,
-    GitHubJobBackend,
+    GitHubJobSandbox,
     Inline,
     Mount,
     Mounts,
     RunStatus,
-    Sandbox,
+    SandboxFs,
     SandboxManager,
     SandboxSpec,
 )
@@ -40,24 +39,23 @@ class StubHarness(Harness):
   @override
   def mounts(self, workdir: str) -> Mounts:
     del workdir
+    # No pinned binary to fold in — the whole "agent" is this one script (an
+    # asset would just be another read-only mount here).
     script = f'echo hello > "$SANDBOX_WORKSPACE/{_TRACE_NAME}"\n'
     return {"stub.sh": Mount(Inline(script.encode()), executable=True)}
 
   @override
-  def assets(self) -> Assets:
-    return {}
-
-  @override
-  def run(self, sb: Sandbox, *, timeout: float) -> None:
-    _ = sb.run("stub.sh", timeout=timeout)
+  def run(self, sb: SandboxFs, *, timeout: float) -> None:
+    _ = sb.run_script("stub.sh", timeout=timeout)
 
   @override
   def native_outputs(self) -> dict[str, str]:
     return {"trace": _TRACE_NAME}
 
   @override
-  def to_conversation(self, workspace: Path) -> Conversation:
-    text = (workspace / _TRACE_NAME).read_text().strip()
+  def to_conversation(self, sb: SandboxFs) -> Conversation:
+    raw = sb.read(_TRACE_NAME) if sb.exists(_TRACE_NAME) else b""
+    text = raw.decode().strip()
     return Conversation(
         messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text=text)])]
     )
@@ -68,13 +66,12 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   observer = ConversationObserver(producer=harness)
   workspace = tmp_path / "run"
   manager = SandboxManager(
-      spec=_SPEC,
-      backend=GitHubJobBackend(),
-      workspace=workspace,
+      sandbox=GitHubJobSandbox(spec=_SPEC, workspace=workspace),
+      output_dir=workspace,
       observers=[observer],
       mounts=harness.mounts(_SPEC.workdir),
   )
-  with manager.sandbox() as sb:
+  with manager.session() as sb:
     harness.run(sb, timeout=10.0)
 
   # the engine ran the new harness end-to-end, with no engine change

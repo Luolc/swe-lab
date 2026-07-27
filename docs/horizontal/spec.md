@@ -12,15 +12,19 @@
 > the source of truth. Below is the design of record.
 >
 > **Amended by [ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md)
-> (2026-07-26, P0):** the core-model assumption that "the shared state is the
-> **host** workspace filesystem (`sb.workspace: Path`)" does not extend to
-> remote / model-hosted sandboxes. ADR-0003 supersedes it with an **up-first
-> lifecycle** where `up()` returns a live, backend-owned `Sandbox` (the
-> filesystem is intrinsic to the backend, not a separable field), a
+> (2026-07-26, P0) — landed in [task 14](plans/task-14-sandbox-lifecycle-refactor.md):**
+> the core-model assumption that "the shared state is the **host** workspace
+> filesystem (`sb.workspace: Path`)" does not extend to remote / model-hosted
+> sandboxes. ADR-0003 supersedes it, and task 14 implemented it: `Sandbox` and
+> `SandboxBackend` are **merged** into one live, lifecycle-bearing `Sandbox`
+> (observers/graders get the narrow `SandboxFs` view), an **up-first lifecycle**
+> (`up()` → `mount()` → body → collect via `fetch` → `down()`), a
 > **receiver-decides** input/artifact transfer seam (`Resource` is extensible
 > data; the receiver handles it — a company subclasses `Sandbox` + `Resource`
-> together, import-only), and **one `Mount` type** (an "asset" is just a
-> read-only mount). Read ADR-0003 for the workspace/lifecycle design.
+> together, import-only), **one `Mount` type** (an "asset" is just a read-only
+> mount), and an **open `build_sandbox` name registry** (not a closed enum).
+> Where this spec's body still shows `SandboxBackend` / `Assets` / a `materialize`
+> seam / `sb.workspace`, ADR-0003 + the shipped code are the source of truth.
 >
 > **Date:** 2026-07-18 · **Scope:** the horizontal shared foundation, consumed
 > by every workstream. Names below (`SandboxManager`, `Sandbox`, `SandboxSpec`,

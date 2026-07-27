@@ -1,13 +1,49 @@
-"""Tests for run_rollout: the composition on a fake backend (no Docker)."""
+"""Tests for run_rollout: the composition on a fake sandbox (no Docker).
+
+``run_rollout`` now selects its sandbox by a registered *name* (not a backend
+object) and builds it via ``build_sandbox``. This test registers a throwaway
+backend name whose factory builds a :class:`FakeSandbox` — real local-dir file
+ops, scripted exec — so the whole composition (``build_sandbox`` → manager →
+observers → harness) runs docker-free while no agent process ever spawns.
+"""
 
 from pathlib import Path
+from typing import override
 
 import pytest
 
 from swe_lab.conversation import Conversation
-from swe_lab.sandbox import RunStatus, SandboxSpec
-from swe_lab.sandbox.testing import FakeBackend
+from swe_lab.sandbox import (
+    register_sandbox,
+    RunStatus,
+    SandboxSpec,
+)
+from swe_lab.sandbox.backends import SandboxConfig
+from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.solve import run_rollout
+
+
+class _LocalFakeSandbox(FakeSandbox):
+  """A ``FakeSandbox`` that keeps absolute mounts inside the workspace.
+
+  The harness stages its pinned binary at a fixed absolute path (``/opt/...``);
+  writing there on the host needs root, so redirect every mount under the real
+  workspace dir. Exec stays scripted, so the agent never actually runs.
+  """
+
+  @override
+  def _dest(self, target: str) -> Path:
+    return self.workspace / target.lstrip("/")
+
+
+def _build_local_fake(
+    spec: SandboxSpec, workspace: Path, config: SandboxConfig
+) -> FakeSandbox:
+  del config
+  return _LocalFakeSandbox(spec=spec, workspace=workspace)
+
+
+register_sandbox("local-fake", _build_local_fake)
 
 
 def test_run_rollout_wires_and_assembles(
@@ -15,7 +51,7 @@ def test_run_rollout_wires_and_assembles(
 ):
   binary = tmp_path / "claude"
   _ = binary.write_bytes(b"BIN")
-  # avoid provisioning (network): the harness assets() calls this
+  # avoid provisioning (network): the harness's mounts() calls this
   monkeypatch.setattr(
       "swe_lab.harnesses.claude_code.harness.ensure_claude_binary",
       lambda: binary,
@@ -27,7 +63,7 @@ def test_run_rollout_wires_and_assembles(
       spec,
       prompt="SOLVE THIS",
       model="sonnet",
-      backend=FakeBackend(),
+      backend="local-fake",
       workspace=workspace,
       timeout=60.0,
   )

@@ -31,13 +31,16 @@ Two facts that shape everything below:
 
 An **asset** is read-only infrastructure the run must never mutate — that
 immutability (not its size) is what makes it an asset. It lives at a fixed
-container path **outside** the read/write workspace, and is realized by the
-backend as a construction-time property (like `network`/`env`). The pinned agent
-binary is an asset.
+container path **outside** the read/write workspace. Per
+[ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md) (task 14) an asset
+is **not a separate type**: it is just a **read-only `Mount`**
+(`Mount(resource, executable=…, read_only=True)`) at an absolute target,
+contributed through the same `mounts` seam and staged by the sandbox after
+`up()`. The pinned agent binary is an asset.
 
 | Asset | Container path | Host source | Realized by |
 |---|---|---|---|
-| Claude Code binary | `/opt/claude-code/claude` | `.cache/bin/claude-code/<version>/linux-x64/claude` | A-host: `-v host:container:ro` · A-ghjob: `cp` into place (read-only) |
+| Claude Code binary | `/opt/claude-code/claude` | `.cache/bin/claude-code/<version>/linux-x64/claude` | A-host: `docker cp` in, then `chmod 0555` · A-ghjob: `cp` into place at mode `0555` (executable + read-only) |
 
 Scripts invoke it by its **absolute path** (`/opt/claude-code/claude`), *not* via
 `PATH` — no image guarantees a given `bin` dir on `PATH`, and a Docker bind mount

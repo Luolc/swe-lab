@@ -1,15 +1,14 @@
-"""Declarative staging: a resource placed into the workspace at a target path.
+"""Declarative staging: a resource mounted into the sandbox at a target path.
 
 Every axis (dataset, harness, eval-method) declares what it needs staged as a
-``Mounts`` value; the manager merges the contributions and the backend
-materializes the union into the workspace before a run, replacing the imperative
-per-flow staging code the engine supersedes. A duplicate target path is an
-error, never a silent overwrite.
+``Mounts`` value; the manager merges the contributions and the sandbox mounts
+the union after ``up`` (ADR-0003). A duplicate target path is an error, never a
+silent overwrite.
 
 A ``Mount`` is a :class:`~swe_lab.sandbox.resources.Resource` (where the bytes
-come from) plus a workspace target and an ``executable`` flag; an **asset** is
-the same resource at a fixed, read-only container path (``Assets``). The
-content-source kinds are defined once, in ``resources``, and reused by both.
+come from) plus a target path and ``executable`` / ``read_only`` flags. There is
+**one** placement type: an "asset" is just a **read-only** mount (typically at a
+fixed absolute path, e.g. the pinned binary) — not a separate interface.
 """
 
 from __future__ import annotations
@@ -22,23 +21,31 @@ from .resources import Resource
 
 @dataclass(frozen=True, slots=True)
 class Mount:
-  """A resource staged into the workspace at its target path.
+  """A resource mounted into the sandbox at its target path.
 
   Attributes:
     resource: Where the file's content comes from.
-    executable: Whether to ``chmod +x`` the materialized file.
+    executable: Whether the mounted file is executable.
+    read_only: Whether the run must not modify it (an "asset"). A host sandbox
+      may realize a read-only mount by a bind-mount ``:ro``; others copy it and
+      revoke write.
   """
 
   resource: Resource
   executable: bool = False
+  read_only: bool = False
+
+  @property
+  def mode(self) -> int:
+    """The POSIX mode a sandbox gives this mount: executable / read-only."""
+    mode = 0o755 if self.executable else 0o644
+    if self.read_only:
+      mode &= ~0o222  # strip write bits → 0o555 / 0o444
+    return mode
 
 
 type Mounts = dict[str, Mount]
-"""Workspace-relative target path → the mount to place there."""
-
-type Assets = dict[str, Resource]
-"""Fixed container path → a read-only resource (bind-mounted / copied by the
-backend at ``up``, outside the read/write workspace)."""
+"""Target path (workspace-relative, or absolute for an asset) → Mount."""
 
 
 def merge_mounts(*contributions: Mounts) -> Mounts:

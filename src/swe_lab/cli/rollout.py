@@ -24,7 +24,6 @@ from swe_lab.harnesses.claude_code.constants import (
     OAUTH_TOKEN_ENV,
 )
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import BackendKind, build_backend
 from swe_lab.solve import RolloutOutcome, run_rollout
 
 _ROLLOUT_SUBDIR = "rollout_workspaces"
@@ -55,9 +54,9 @@ def rollout_in_docker(
         Capture, typer.Option(help="Agent-trace capture strategy.")
     ] = Capture.STREAM,
     backend: Annotated[
-        BackendKind,
-        typer.Option(help="Sandbox backend (host Docker, or the GH job)."),
-    ] = BackendKind.HOST,
+        str,
+        typer.Option(help="Sandbox backend name (host Docker, or the GH job)."),
+    ] = "host",
 ) -> None:
   """Run a headless agent to solve one instance in its container.
 
@@ -82,17 +81,16 @@ def rollout_in_docker(
   workspace = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
   shutil.rmtree(workspace, ignore_errors=True)
 
-  run_backend = build_backend(
-      backend, network=True, pull=pull, pass_env=[OAUTH_TOKEN_ENV]
-  )
   outcome = run_rollout(
       spec,
       prompt=prompt,
       model=model,
-      backend=run_backend,
+      backend=backend,
       workspace=workspace,
       timeout=timeout,
       capture=capture,
+      pull=pull,
+      pass_env=(OAUTH_TOKEN_ENV,),
   )
 
   summary: dict[str, object] = {
@@ -119,7 +117,7 @@ def _finish(
     root: Path,
     pull: bool,
     timeout: float,
-    backend: BackendKind,
+    backend: str,
 ) -> bool:
   """Record the run's ``outcome`` string (and grade), returning ``resolved``.
 
@@ -156,9 +154,10 @@ def _finish(
   _, verdict = run_unit_test(
       sandbox_spec,
       unit_spec,
-      backend=build_backend(backend, network=False, pull=pull),
+      backend=backend,
       workspace=eval_ws,
       timeout=timeout,
+      pull=pull,
   )
   resolved = bool(verdict and verdict.resolved)
   summary["outcome"] = "resolved" if resolved else "unresolved_tests_failed"

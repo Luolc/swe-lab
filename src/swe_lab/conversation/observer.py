@@ -17,10 +17,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import override
 
-from swe_lab.sandbox import Contribution, Sandbox, SandboxObserver
+from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
 
 from .model import Conversation
 
@@ -36,12 +35,12 @@ class ConversationProducer(ABC):
   """
 
   @abstractmethod
-  def to_conversation(self, workspace: Path) -> Conversation:
-    """Read this producer's own output from the workspace into a `Conversation`.
+  def to_conversation(self, sb: SandboxFs) -> Conversation:
+    """Read this producer's own output from the sandbox into a `Conversation`.
 
     Args:
-      workspace: The run's workspace directory; the producer reads its own
-        native output files from it, by names only it knows.
+      sb: The live sandbox; the producer reads its own native output files
+        from it, by names only it knows.
 
     Returns:
       The converted conversation; an empty ``Conversation(messages=[])`` when
@@ -74,22 +73,23 @@ class ConversationObserver(SandboxObserver):
   conversation: Conversation | None = None
 
   @override
-  def before_destroy(self, sb: Sandbox) -> Contribution | None:
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     """Convert the primary output, persist it, and register every byproduct.
 
     Args:
-      sb: The sandbox being torn down; only its workspace is read.
+      sb: The sandbox being torn down; its files are read/written.
 
     Returns:
       A contribution referencing ``conversation.json`` plus every native
       byproduct the producer declared that actually landed.
     """
-    self.conversation = self.producer.to_conversation(sb.workspace)
-    destination = sb.workspace / CONVERSATION_NAME
-    _ = destination.write_text(self.conversation.model_dump_json(indent=2))
-    artifacts = {"conversation": destination}
+    self.conversation = self.producer.to_conversation(sb)
+    sb.write(
+        CONVERSATION_NAME,
+        self.conversation.model_dump_json(indent=2).encode("utf-8"),
+    )
+    artifacts = {"conversation": CONVERSATION_NAME}
     for name, filename in self.producer.native_outputs().items():
-      path = sb.workspace / filename
-      if path.is_file():  # only register what actually landed
-        artifacts[name] = path
+      if sb.exists(filename):  # only register what actually landed
+        artifacts[name] = filename
     return Contribution(artifacts=artifacts)

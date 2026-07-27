@@ -1,4 +1,4 @@
-"""Tests for the claude_code harness: mounts, assets, invocation, conversion."""
+"""Tests for the claude_code harness: mounts, binary, invocation, conversion."""
 
 import json
 from pathlib import Path
@@ -22,17 +22,18 @@ from swe_lab.harnesses.claude_code import (
 from swe_lab.harnesses.claude_code.constants import (
     AGENT_SCRIPT_NAME,
     BINARY_AT,
-    EVENT_STREAM_NAME,
     PROXY_LOG_NAME,
 )
 from swe_lab.sandbox import (
     Inline,
     LocalFile,
-    Sandbox,
+    Mount,
     SandboxError,
     SandboxSpec,
 )
-from swe_lab.sandbox.testing import FakeBackend
+from swe_lab.sandbox.testing import FakeSandbox
+
+_SPEC = SandboxSpec("x", "img:tag", "/app", "abc")
 
 _EVENTS: list[dict[str, object]] = [
     {"type": "system", "subtype": "init"},
@@ -77,8 +78,22 @@ _EVENTS: list[dict[str, object]] = [
 ]
 
 
-def _write_stream(path: Path, events: list[dict[str, object]]) -> None:
-  path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+@pytest.fixture(autouse=True)
+def _fake_binary(  # pyright: ignore[reportUnusedFunction]  # autouse fixture
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+  """Stand in for the pinned binary so ``mounts`` never provisions (network)."""
+  binary = tmp_path / "claude"
+  _ = binary.write_bytes(b"BIN")
+  monkeypatch.setattr(
+      "swe_lab.harnesses.claude_code.harness.ensure_claude_binary",
+      lambda: binary,
+  )
+  return binary
+
+
+def _stream_text(events: list[dict[str, object]]) -> str:
+  return "\n".join(json.dumps(e) for e in events) + "\n"
 
 
 def _script(workdir: str, harness: ClaudeCodeHarness | None = None) -> str:
@@ -87,9 +102,10 @@ def _script(workdir: str, harness: ClaudeCodeHarness | None = None) -> str:
   return mount.resource.content.decode()
 
 
-def test_mounts_only_agent_script_no_prompt():
+def test_mounts_stage_agent_script_and_binary_not_prompt():
   mounts = ClaudeCodeHarness().mounts("/app")
-  assert set(mounts) == {AGENT_SCRIPT_NAME}  # NOT the prompt (dataset's)
+  # the agent script and the pinned binary — NOT the prompt (dataset's)
+  assert set(mounts) == {AGENT_SCRIPT_NAME, BINARY_AT}
   assert mounts[AGENT_SCRIPT_NAME].executable is True
 
 
@@ -108,11 +124,15 @@ def test_invocation_script_shape_and_quoting():
   assert script.rstrip().endswith("|| true")
 
 
-def test_assets_binary_at_fixed_path(tmp_path: Path):
-  binary = tmp_path / "claude"
-  _ = binary.write_bytes(b"BIN")
-  assets = ClaudeCodeHarness(binary_path=binary).assets()
-  assert assets == {BINARY_AT: LocalFile(binary)}
+def test_binary_is_a_read_only_executable_mount_at_fixed_path(
+    _fake_binary: Path,
+):
+  # the pinned binary is now a read-only executable mount (ADR-0003: an asset is
+  # just a read-only mount), not a separate assets() seam
+  binary_mount = ClaudeCodeHarness().mounts("/app")[BINARY_AT]
+  assert binary_mount == Mount(
+      LocalFile(_fake_binary), executable=True, read_only=True
+  )
 
 
 def test_native_outputs():
@@ -154,6 +174,7 @@ def test_proxy_native_outputs_registers_proxy_log():
 
 def test_proxy_to_conversation_reads_proxy_log(tmp_path: Path):
   # the proxy branch reads the proxy log, not the (absent) event stream
+  sb = FakeSandbox(spec=_SPEC, workspace=tmp_path)
   (tmp_path / PROXY_LOG_NAME).write_text(
       json.dumps(
           {
@@ -178,27 +199,18 @@ def test_proxy_to_conversation_reads_proxy_log(tmp_path: Path):
       )
       + "\n"
   )
-  conv = _proxy_harness().to_conversation(tmp_path)
+  conv = _proxy_harness().to_conversation(sb)
   assert [m.role.value for m in conv.messages] == ["user", "assistant"]
 
 
 def test_run_executes_agent_script(tmp_path: Path):
-  backend = FakeBackend()
-  sb = Sandbox(
-      label="x",
-      spec=SandboxSpec("x", "img:tag", "/app", "abc"),
-      workspace=tmp_path,
-      backend=backend,
-      handle="fake",
-  )
+  sb = FakeSandbox(spec=_SPEC, workspace=tmp_path)
   ClaudeCodeHarness().run(sb, timeout=30.0)
-  assert backend.scripts == [AGENT_SCRIPT_NAME]
+  assert sb.scripts == [AGENT_SCRIPT_NAME]
 
 
-def test_to_conversation_maps_roles_and_blocks(tmp_path: Path):
-  raw = tmp_path / EVENT_STREAM_NAME
-  _write_stream(raw, _EVENTS)
-  conv = event_stream_to_conversation(raw)
+def test_to_conversation_maps_roles_and_blocks():
+  conv = event_stream_to_conversation(_stream_text(_EVENTS))
 
   assert [m.role for m in conv.messages] == [
       Role.ASSISTANT,
@@ -215,21 +227,18 @@ def test_to_conversation_maps_roles_and_blocks(tmp_path: Path):
   )
 
 
-def test_to_conversation_absent_file_is_empty(tmp_path: Path):
-  assert event_stream_to_conversation(tmp_path / "nope.jsonl") == Conversation(
-      messages=[]
-  )
+def test_to_conversation_empty_text_is_empty():
+  # an absent event stream reaches the converter as "" (the harness reads the
+  # file and passes its text, or "" when it never landed)
+  assert event_stream_to_conversation("") == Conversation(messages=[])
 
 
-def test_event_stream_complete(tmp_path: Path):
-  ok = tmp_path / "ok.jsonl"
-  _write_stream(ok, _EVENTS)
-  assert event_stream_complete(ok) is True
+def test_event_stream_complete():
+  assert event_stream_complete(_stream_text(_EVENTS)) is True
 
-  errored = tmp_path / "err.jsonl"
-  _write_stream(
-      errored, [{"type": "result", "subtype": "error", "is_error": True}]
+  errored = _stream_text(
+      [{"type": "result", "subtype": "error", "is_error": True}]
   )
   assert event_stream_complete(errored) is False
 
-  assert event_stream_complete(tmp_path / "absent.jsonl") is False
+  assert event_stream_complete("") is False

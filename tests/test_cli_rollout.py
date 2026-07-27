@@ -86,11 +86,13 @@ def _wire(
       workspace: object,
       timeout: object,
       capture: object,
+      **kwargs: object,
   ) -> RolloutOutcome:
-    del spec, backend, workspace, timeout
+    del spec, workspace, timeout, kwargs
     calls["prompt"] = prompt
     calls["model"] = model
     calls["capture"] = capture
+    calls["backend"] = backend
     return outcome
 
   monkeypatch.setenv(TOKEN, "tok")
