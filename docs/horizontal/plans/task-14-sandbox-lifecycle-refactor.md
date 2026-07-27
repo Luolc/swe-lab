@@ -277,9 +277,13 @@ for `sh`-only images). Artifacts are collected **out** via `sb.fetch(name, dest)
 + a **manager collect step** (§6.4, symmetric to `mount` — **not** a
 `CollectObserver`) — the output half of the transfer seam; the earlier
 `host_path` escape hatch is dropped. Both `fetch` (files, no buffering — the
-collect step) and `read` (bytes, inline — observers) are kept.
+collect step) and `read` (bytes, inline — observers) are kept. **`write` stays
+on `SandboxFs`** (diff-extract legitimately stages `extract.sh`); only
+`up`/`down`/`mount`/`fetch` are withheld from observers.
 
-**Still open:**
-1. **`SandboxFs.write` breadth** — `write` stays on the view (diff-extract
-   legitimately stages `extract.sh`); only `up`/`down`/`mount`/`fetch` are
-   withheld. Flag if a stricter read-only observer view is wanted.
+**Remaining decision:** `--backend` CLI selection — keep the **name registry**
+(§6.5, open to import-registered custom names) or simplify to a **built-in-only
+choice** (`host`/`ghjob`) since custom sandboxes are used programmatically. Both
+leave the programmatic pass-a-`Sandbox` seam fully open; the registry only adds
+CLI-extensibility no internal user needs. Lean: built-in-only (simpler), decide
+before implementing §6.5.
