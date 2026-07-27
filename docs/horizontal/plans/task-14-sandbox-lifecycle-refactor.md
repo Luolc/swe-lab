@@ -71,8 +71,8 @@ class SandboxFs(ABC):              # the narrow view observers/graders receive
   def read(self, name: str) -> bytes: ...
   def exists(self, name: str) -> bool: ...
   def write(self, name: str, data: bytes, *, executable=False) -> None: ...
-  def run_script(self, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # staged file, by name
-  def run_command(self, command: str, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # bash -c
+  def run_script(self, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # <shell> <ws>/<name>
+  def run_command(self, command: str, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # <shell> -c <command>
   def host_path(self, name: str) -> Path | None: ...   # host backends only; else None
   # NOTE: no `mount` here, and no `up`/`down` — see below.
 
@@ -103,8 +103,14 @@ narrow `SandboxFs` and only `read` / `write` / `run_script` / `run_command` — 
 mid-run observer writes an ad-hoc file (`write`) or runs a command, it does not
 re-stage declared mounts. `run_script` executes a **staged file by name** (persisted for
 audit, per the workspace-layout principle); `run_command` runs an **inline
-`bash -c` string** for short/diagnostic commands (both backends: a one-line argv
-change — `/bin/bash -c "<cmd>"` vs `/bin/bash <ws>/<name>`).
+command string** for short/diagnostic commands (both backends: a one-line argv
+change — `<shell> -c "<cmd>"` vs `<shell> <ws>/<name>`).
+
+**Configurable shell.** Both `run_script` and `run_command` invoke a
+**per-sandbox shell**, a construction config **defaulting to `bash`** (e.g.
+`DockerHostSandbox(spec, …, shell="sh")`) — some minimal images ship only `sh`,
+so hard-coding `/bin/bash` would break them. The shell string is used directly:
+`[shell, ws/name]` / `[shell, "-c", command]`.
 
 ```python
 
@@ -235,7 +241,8 @@ follows. No runtime deps added.
 **Settled in review:** the observer view is named **`SandboxFs`**; it carries
 `read`/`write`/`exists`/`run_script`/`run_command`/`host_path` but **not** `mount` /
 `up` / `down` (mount is the manager's staging step, handled by the sandbox).
-`run_command(command)` (inline `bash -c`) is added alongside `run_script(name)` (staged
+`run_command(command)` (inline command via a per-sandbox shell, default `bash`,
+configurable for `sh`-only images) is added alongside `run_script(name)` (staged
 file) — short/diagnostic commands need no persisted script.
 
 **Still open:**
