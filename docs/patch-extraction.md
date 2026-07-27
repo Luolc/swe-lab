@@ -5,7 +5,7 @@
 > is kept for reference only. The **decision of record** is
 > [`docs/decisions/ADR-0001-patch-extraction-and-grading.md`](decisions/ADR-0001-patch-extraction-and-grading.md),
 > and the **code is the source of truth** — after the SandboxRun cutover:
-> [`sandbox/patch.py`](../src/swe_lab/sandbox/patch.py) + the diff-extract
+> [`patch.py`](../src/swe_lab/patch.py) + the diff-extract
 > observer in [`sandbox/observers/`](../src/swe_lab/sandbox/observers/), and
 > [`datasets/swebench_pro/unit_test.py`](../src/swe_lab/datasets/swebench_pro/unit_test.py).
 > Any `core/…` / `rollout/…` paths deeper in this survey predate that cutover.
