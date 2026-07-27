@@ -26,7 +26,7 @@ indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if 
 | 12 | `Store` seam + tier mechanics | ⬜ |
 | — | **CP4 — R2 provisioning** (ask-first) | ⬜ |
 | 13 | R2 store + CI wiring | ⬜ |
-| 14 | **Up-first lifecycle + live-`Sandbox` model + transfer seam** ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
+| 14 | [**Merged lifecycle-bearing `Sandbox` + up-first + transfer seam**](task-14-sandbox-lifecycle-refactor.md) ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
 | 15 | **Extensibility seam proof + author guide** (no shipped remote backend — [ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
 
 **P0 — remote sandbox (ADR-0003).** swe-lab ships host + ghjob only; a remote /

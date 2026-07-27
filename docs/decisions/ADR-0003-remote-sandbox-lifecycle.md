@@ -73,7 +73,7 @@ Reorder `SandboxManager.sandbox()` so nothing touches the sandbox filesystem
 before it is live:
 
 ```
-before_create → sb.up() → [place inputs] → after_create → yield sb (body)
+before_create → sb.up() → [mount inputs] → after_create → yield sb (body)
 → before_destroy → sb.down()
 ```
 
@@ -88,7 +88,7 @@ touches a host directory.
 Drop `workspace: Path`, and **collapse the `Backend`/`Sandbox` split**. Today the
 backend is framed as a "frozen factory" that produces a thin `Sandbox` handle —
 but a sandbox genuinely **has a lifecycle** (`up` / `down`) and **internal
-state** (its live handle/connection, what has been placed in it). The
+state** (its live handle/connection, what has been mounted in it). The
 frozen-factory framing is a fiction, and the only thing it enables — *one backend
 : many sandboxes* reuse — is **never used**: the engine's worldview is
 explicitly *one sandbox, one run, one `RunResult`* (batching lives outside, per
@@ -102,7 +102,7 @@ One object; the concrete subclasses *are* the backends:
 class Sandbox(ABC):            # config + lifecycle + ops, in ONE object
   spec: SandboxSpec
   def up(self) -> None: ...               # provision (subsumes _prepare_workspace)
-  def place(self, mounts: Mounts) -> None: ...# stage inputs — §3/§4
+  def mount(self, mounts: Mounts) -> None: ...# stage inputs — §3/§4
   def run(self, script_name, *, timeout, ...) -> ExecResult: ...
   def read(self, name) -> bytes: ...       # + the minimal ad-hoc read/write
   def down(self) -> None: ...              # best-effort teardown; never raises
@@ -119,7 +119,7 @@ the frozen + `replace(handle=…)` gymnastics and settles the earlier "why is
 `Sandbox` a thin wrapper?" question — there is no wrapper.
 
 - **Capability narrowing** (observers must not call `up`/`down`) is preserved by
-  handing observers a **narrower view** — a `run`/`read`/`write`/`place`
+  handing observers a **narrower view** — a `run`/`read`/`write`/`mount`
   interface without the lifecycle methods — an interface split, not a second
   stateful class.
 - **The one real split, deferred:** if a provider needs a shared authenticated
@@ -188,7 +188,7 @@ enumerated — precisely so this ADR does not over-assume them.
 
 Today there are **two** types with two interfaces: `Mounts = dict[str, Mount]`
 (`Mount(resource, executable)`, workspace-relative, read/write) and `Assets =
-dict[str, Resource]` (bare `Resource`, fixed path, read-only). But "place a
+dict[str, Resource]` (bare `Resource`, fixed path, read-only). But "mount a
 resource into the sandbox" is **the same operation** for both — the difference
 is only in **constraints** (read-only vs read/write; a workspace-relative name
 vs an absolute path). They must not be two interfaces.
@@ -255,12 +255,12 @@ source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
 
 | File | Change |
 |---|---|
-| `sandbox/manager.py` | Reorder `sandbox()` to up-first; delete `_prepare_workspace`; the manager holds no host `workspace: Path` — it drives the one `Sandbox`'s lifecycle (`up → place → … → down`). |
-| `sandbox/backend.py` → `sandbox/sandbox.py` | Merge `Sandbox` + `SandboxBackend` into one `Sandbox` **ABC** (config + `up`/`place`/`run`/`read`/`down`); concrete subclasses are the backends. `materialize`/`with_assets`/the handle field are gone. `ExecResult` unchanged. Observers get a narrower view (no `up`/`down`). |
+| `sandbox/manager.py` | Reorder `sandbox()` to up-first; delete `_prepare_workspace`; the manager holds no host `workspace: Path` — it drives the one `Sandbox`'s lifecycle (`up → mount → … → down`). |
+| `sandbox/backend.py` → `sandbox/sandbox.py` | Merge `Sandbox` + `SandboxBackend` into one `Sandbox` **ABC** (config + `up`/`mount`/`run`/`read`/`down`); concrete subclasses are the backends. `materialize`/`with_assets`/the handle field are gone. `ExecResult` unchanged. Observers get a narrower view (no `up`/`down`). |
 | `sandbox/resources.py` | `Resource` is **extensible data** — variants + enough info, **no transfer behavior** (`materialize_to`/`local_path` removed). A new kind is a subclass (import-only), handled by a backend that knows it. **Exact surface designed in Task 14.** |
 | `sandbox/mounts.py` | Keep `Mount`/`Mounts`; add `read_only` (and keep `executable`) to `Mount`. Drop the `Assets` type + `with_assets` seam — "asset" becomes a wording convention for a read-only `Mount` (the binary is an executable read-only mount). |
-| `sandbox/backends/host.py` | `DockerHostBackend` → `DockerHostSandbox(Sandbox)`: `up` = `docker create`+`start` over a self-owned dir; shared-dir zero-copy `place`; `run`/`read`/`down` over that container. |
-| `sandbox/backends/ghjob.py` | `GitHubJobBackend` → `GitHubJobSandbox(Sandbox)`: `up` provisions the local dir; `place` handles read-only + executable (the exec-bit fix stays); `run`/`read`/`down` local. |
+| `sandbox/backends/host.py` | `DockerHostBackend` → `DockerHostSandbox(Sandbox)`: `up` = `docker create`+`start` over a self-owned dir; shared-dir zero-copy `mount`; `run`/`read`/`down` over that container. |
+| `sandbox/backends/ghjob.py` | `GitHubJobBackend` → `GitHubJobSandbox(Sandbox)`: `up` provisions the local dir; `mount` handles read-only + executable (the exec-bit fix stays); `run`/`read`/`down` local. |
 | _(no shipped remote backend)_ | swe-lab ships only `DockerHostSandbox` + `GitHubJobSandbox`. A **remote / internal** sandbox is authored by the consuming company as their own `Sandbox` subclass (import-only) — see Extensibility. |
 | `sandbox/testing.py` | `FakeBackend` → `FakeSandbox(Sandbox)`; add a `FakeRemoteSandbox` (in-memory, no host dir) — an out-of-tree-style subclass proving the seam without a network. |
 | `cli/*.py` (`build_backend`) | `--backend host\|ghjob` selects which `Sandbox` subclass to construct (was: which backend). |
