@@ -15,6 +15,7 @@ from swe_lab.solve import RolloutOutcome
 
 runner = CliRunner()
 TOKEN = "CLAUDE_CODE_OAUTH_TOKEN"
+API_KEY = "ANTHROPIC_API_KEY"
 
 
 @final
@@ -88,11 +89,13 @@ def _wire(
       capture: object,
       **kwargs: object,
   ) -> RolloutOutcome:
-    del spec, workspace, timeout, kwargs
+    del spec, workspace, timeout
     calls["prompt"] = prompt
     calls["model"] = model
     calls["capture"] = capture
     calls["backend"] = backend
+    calls["bare"] = kwargs.get("bare")
+    calls["pass_env"] = kwargs.get("pass_env")
     return outcome
 
   monkeypatch.setenv(TOKEN, "tok")
@@ -113,6 +116,27 @@ def test_solve_not_graded_exits_zero(monkeypatch: pytest.MonkeyPatch):
   assert (
       calls["prompt"] == "PROMPT: fix it"
   )  # dataset-derived, threaded through
+  # non-bare passes the OAuth token by reference
+  assert calls["bare"] is False
+  assert calls["pass_env"] == (TOKEN,)
+
+
+def test_bare_requires_api_key_env(monkeypatch: pytest.MonkeyPatch):
+  _ = _wire(monkeypatch, outcome=_outcome(is_empty=False, patch="D"))
+  monkeypatch.delenv(API_KEY, raising=False)
+  result = runner.invoke(app, ["rollout", "acme__widget-1", "--bare"])
+  assert result.exit_code != 0
+  assert API_KEY in result.output
+
+
+def test_bare_passes_api_key_env_by_reference(monkeypatch: pytest.MonkeyPatch):
+  calls = _wire(monkeypatch, outcome=_outcome(is_empty=False, patch="D"))
+  monkeypatch.setenv(API_KEY, "sk-x")
+  result = runner.invoke(app, ["rollout", "acme__widget-1", "--bare"])
+  assert result.exit_code == 0
+  assert calls["bare"] is True
+  # the key is passed by NAME (like the OAuth token), never its value
+  assert calls["pass_env"] == (API_KEY,)
 
 
 def test_empty_patch_graded_exits_one(monkeypatch: pytest.MonkeyPatch):
