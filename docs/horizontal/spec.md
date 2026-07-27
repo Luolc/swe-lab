@@ -18,7 +18,7 @@
 > lifecycle** where `up()` returns a live, backend-owned `Sandbox` (the
 > filesystem is intrinsic to the backend, not a separable field), a
 > **receiver-decides** input/artifact transfer seam (`Resource` becomes pure
-> data), and **one placement concept** (assets/mounts unified). Read ADR-0003
+> data), and **one `Mount` type** (an "asset" is just a read-only mount). Read ADR-0003
 > for the workspace/lifecycle design.
 >
 > **Date:** 2026-07-18 · **Scope:** the horizontal shared foundation, consumed
