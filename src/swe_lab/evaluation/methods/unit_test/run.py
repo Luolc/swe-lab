@@ -14,13 +14,13 @@ from typing import override
 
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.sandbox import (
+    build_sandbox,
     Contribution,
     Inline,
     Mount,
     RunResult,
-    Sandbox,
-    SandboxBackend,
     SandboxError,
+    SandboxFs,
     SandboxManager,
     SandboxObserver,
     SandboxSpec,
@@ -45,9 +45,9 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
   verdict: V | None = None
 
   @override
-  def before_destroy(self, sb: Sandbox) -> Contribution | None:
-    """Grade the workspace, storing the verdict on this observer."""
-    self.verdict = self.grader.grade(sb.workspace)
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+    """Grade the run's output files, storing the verdict on this observer."""
+    self.verdict = self.grader.grade(sb)
     return None
 
 
@@ -55,9 +55,11 @@ def run_unit_test[V: Verdict](
     sandbox_spec: SandboxSpec,
     unit_spec: UnitTestSpec[V],
     *,
-    backend: SandboxBackend,
+    backend: str,
     workspace: Path,
     timeout: float = _DEFAULT_TIMEOUT_S,
+    pull: bool = True,
+    network: bool = False,
     observers: Sequence[SandboxObserver] = (),
 ) -> tuple[RunResult, V | None]:
   """Run and grade one instance's unit-test evaluation.
@@ -65,34 +67,38 @@ def run_unit_test[V: Verdict](
   Args:
     sandbox_spec: The run context (image, workdir, base commit).
     unit_spec: The compiled eval script, mounts, and grader.
-    backend: The backend that realizes the sandbox.
+    backend: The registered backend name that realizes the sandbox.
     workspace: The host workspace directory for this run.
     timeout: Seconds before the eval script is killed.
+    pull: Whether to pull the image before the run (A-host only).
+    network: Whether the grading container gets network access.
     observers: Extra observers composed alongside the eval-parse observer
       (e.g. a persist observer).
 
   Returns:
     The engine ``RunResult`` and the verdict. A setup failure (bad mounts, or
-    the backend failing to bring the sandbox up) is captured in
-    ``RunResult.status`` / ``RunResult.error`` rather than raised, and leaves
-    the verdict ``None`` (grading never ran) — so a caller has one code path
-    and gates on ``RunResult.status``.
+    the sandbox failing to come up) is captured in ``RunResult.status`` /
+    ``RunResult.error`` rather than raised, and leaves the verdict ``None``
+    (grading never ran) — so a caller has one code path and gates on
+    ``RunResult.status``.
   """
   parse: EvalParseObserver[V] = EvalParseObserver(unit_spec.grader)
   mounts = dict(unit_spec.mounts)
   mounts[ENTRYSCRIPT_NAME] = Mount(
       Inline(unit_spec.eval_script.encode()), executable=True
   )
+  sandbox = build_sandbox(
+      backend, sandbox_spec, workspace, network=network, pull=pull
+  )
   manager = SandboxManager(
-      spec=sandbox_spec,
-      backend=backend,
-      workspace=workspace,
+      sandbox=sandbox,
+      output_dir=workspace,
       observers=[*observers, parse],
       mounts=mounts,
   )
   try:
-    with manager.sandbox() as sb:
-      _ = sb.run(ENTRYSCRIPT_NAME, timeout=timeout)
+    with manager.session() as sb:
+      _ = sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout)
   except SandboxError:
     pass  # the failure is recorded in manager.result; return it, don't raise
   return manager.result, parse.verdict

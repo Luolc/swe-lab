@@ -13,13 +13,13 @@ from swe_lab.sandbox import (
     SandboxObserver,
     SandboxSpec,
 )
-from swe_lab.sandbox.manager import Sandbox
-from swe_lab.sandbox.testing import FakeBackend, RecordingObserver
+from swe_lab.sandbox.testing import FakeSandbox, RecordingObserver
+
+SPEC = SandboxSpec("inst", "img:tag", "/app", "abc123")
 
 
-def _sb(tmp_path: Path) -> Sandbox:
-  spec = SandboxSpec("inst", "img:tag", "/app", "abc123")
-  return Sandbox("inst", spec, tmp_path, FakeBackend(), "fake-inst")
+def _sb(tmp_path: Path) -> FakeSandbox:
+  return FakeSandbox(spec=SPEC, workspace=tmp_path)
 
 
 def test_base_observer_hooks_are_noops(tmp_path: Path):
@@ -57,7 +57,7 @@ def test_composite_merges_mounts_and_contributions(tmp_path: Path):
   a = RecordingObserver(
       "a",
       events,
-      contribution=Contribution(artifacts={"patch": tmp_path / "p"}),
+      contribution=Contribution(artifacts={"patch": "patch.diff"}),
       extra_mounts={"a.sh": Mount(Inline(b"a"))},
   )
   b = RecordingObserver(
@@ -70,7 +70,7 @@ def test_composite_merges_mounts_and_contributions(tmp_path: Path):
   assert set(composite.mounts()) == {"a.sh", "b.sh"}
   merged = composite.before_destroy(_sb(tmp_path))
   assert merged is not None
-  assert merged.artifacts == {"patch": tmp_path / "p"}
+  assert merged.artifacts == {"patch": "patch.diff"}
   assert merged.metrics == {"secs": 1.0}
 
 

@@ -25,7 +25,6 @@ run (W1), which redacts separately.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 from swe_lab.conversation import (
@@ -40,16 +39,16 @@ from swe_lab.conversation import (
 )
 
 
-def event_stream_to_conversation(raw: Path) -> Conversation:
-  """Convert a Claude Code ``event_stream`` file into a typed ``Conversation``.
+def event_stream_to_conversation(raw: str) -> Conversation:
+  """Convert a Claude Code ``event_stream`` text into a typed ``Conversation``.
 
   Args:
-    raw: Path to the ``event_stream.jsonl`` file (may be absent — an agent that
+    raw: The ``event_stream.jsonl`` contents (may be ``""`` — an agent that
       never started leaves no file).
 
   Returns:
-    The conversation; an empty ``Conversation(messages=[])`` when the file is
-    absent or carries no user/assistant messages.
+    The conversation; an empty ``Conversation(messages=[])`` when the text is
+    empty or carries no user/assistant messages.
   """
   messages: list[Message] = []
   for event in _parse_events(raw):
@@ -65,7 +64,7 @@ def event_stream_to_conversation(raw: Path) -> Conversation:
   return Conversation(messages=messages)
 
 
-def event_stream_complete(raw: Path) -> bool:
+def event_stream_complete(raw: str) -> bool:
   """Return whether the run finished cleanly.
 
   The terminal ``result`` event is the reliable signal: ``subtype == "success"``
@@ -79,7 +78,7 @@ def event_stream_complete(raw: Path) -> bool:
   ``QueryEngine.ts``.)
 
   Args:
-    raw: Path to the event-stream file.
+    raw: The event-stream file contents.
 
   Returns:
     ``True`` iff a terminal success ``result`` event (not an error) is present.
@@ -92,7 +91,7 @@ def event_stream_complete(raw: Path) -> bool:
   return False
 
 
-def proxy_log_to_conversation(raw: Path) -> Conversation:
+def proxy_log_to_conversation(raw: str) -> Conversation:
   """Convert a ``cc-reverse-proxy`` log into a typed ``Conversation``.
 
   The last record reconstructs the whole session (Anthropic is stateless): its
@@ -100,8 +99,8 @@ def proxy_log_to_conversation(raw: Path) -> Conversation:
   ``assistant`` turn, and ``response.message`` is the final assistant turn.
 
   Args:
-    raw: Path to the proxy log file (may be absent — a run that never reached
-      the API leaves no file).
+    raw: The proxy log contents (may be "" — a run that never reached the API
+      leaves no file).
 
   Returns:
     The conversation; an empty ``Conversation(messages=[])`` when the file is
@@ -130,7 +129,7 @@ def proxy_log_to_conversation(raw: Path) -> Conversation:
   return Conversation(messages=messages)
 
 
-def proxy_log_complete(raw: Path) -> bool:
+def proxy_log_complete(raw: str) -> bool:
   """Return whether the proxied session finished cleanly.
 
   The proxy stamps each record with its own ``complete`` flag (a
@@ -138,7 +137,7 @@ def proxy_log_complete(raw: Path) -> bool:
   buffered response); the last record's flag is the session's completion signal.
 
   Args:
-    raw: Path to the proxy log file.
+    raw: The proxy log contents.
 
   Returns:
     ``True`` iff the last record is marked ``complete``.
@@ -146,18 +145,16 @@ def proxy_log_complete(raw: Path) -> bool:
   return bool(_last_proxy_record(raw).get("complete", False))
 
 
-def _last_proxy_record(raw: Path) -> dict[str, object]:
+def _last_proxy_record(raw: str) -> dict[str, object]:
   """Return the last JSON record in the proxy log (``{}`` when none)."""
   records = _parse_events(raw)
   return records[-1] if records else {}
 
 
-def _parse_events(raw: Path) -> list[dict[str, object]]:
-  """Parse the stream-json file (one JSON object per line), skipping junk."""
-  if not raw.is_file():
-    return []
+def _parse_events(raw: str) -> list[dict[str, object]]:
+  """Parse the stream-json text (one JSON object per line), skipping junk."""
   events: list[dict[str, object]] = []
-  for line in raw.read_text().splitlines():
+  for line in raw.splitlines():
     stripped = line.strip()
     if not stripped:
       continue

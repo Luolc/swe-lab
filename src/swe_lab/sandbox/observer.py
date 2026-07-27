@@ -18,40 +18,43 @@ from .mounts import merge_mounts, Mounts
 from .result import Contribution, merge_contributions
 
 if TYPE_CHECKING:
-  from .manager import Sandbox
+  from .sandbox import SandboxFs
 
 
 class SandboxObserver:
   """No-op base for lifecycle observers; override what you need.
 
-  Hook order in a run: ``mounts`` (collected before anything runs) →
-  ``before_create`` → *(backend up)* → ``after_create`` (setup) → *(body)* →
-  ``before_destroy`` (always, even on failure) → *(backend down)* →
-  ``after_destroy``. ``on_error`` fires between the failure and
-  ``before_destroy`` while the sandbox is still live.
+  Hooks receive the narrow :class:`~swe_lab.sandbox.sandbox.SandboxFs` view —
+  files + exec, never the lifecycle. Hook order in a run: ``mounts`` (collected
+  before anything runs) → ``before_create`` → *(sandbox up + mount)* →
+  ``after_create`` (setup) → *(body)* → ``before_destroy`` (always, even on
+  failure) → *(collect + sandbox down)* → ``after_destroy``. ``on_error`` fires
+  between the failure and ``before_destroy`` while the sandbox is still live.
   """
 
   def mounts(self) -> Mounts:
     """Return the files this observer needs staged into the workspace."""
     return {}
 
-  def before_create(self, sb: Sandbox) -> None:
+  def before_create(self, sb: SandboxFs) -> None:
     """Run before the sandbox exists (``sb`` is not yet live)."""
     del sb
 
-  def after_create(self, sb: Sandbox) -> None:
+  def after_create(self, sb: SandboxFs) -> None:
     """Run setup against the live sandbox; a raise aborts the run."""
     del sb
 
-  def before_destroy(self, sb: Sandbox) -> Contribution | None:
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     """Post-process the run; always called once the sandbox was live."""
     del sb
 
-  def after_destroy(self, sb: Sandbox) -> None:
+  def after_destroy(self, sb: SandboxFs) -> None:
     """Run after the sandbox is gone (``sb`` is no longer live)."""
     del sb
 
-  def on_error(self, sb: Sandbox, error: BaseException) -> Contribution | None:
+  def on_error(
+      self, sb: SandboxFs, error: BaseException
+  ) -> Contribution | None:
     """React to a failed setup/body while the sandbox is still live."""
     del sb, error
 
@@ -76,32 +79,34 @@ class CompositeObserver(SandboxObserver):
     return merge_mounts(*(child.mounts() for child in self.observers))
 
   @override
-  def before_create(self, sb: Sandbox) -> None:
+  def before_create(self, sb: SandboxFs) -> None:
     """Fan out ``before_create``."""
     for child in self.observers:
       child.before_create(sb)
 
   @override
-  def after_create(self, sb: Sandbox) -> None:
+  def after_create(self, sb: SandboxFs) -> None:
     """Fan out ``after_create``."""
     for child in self.observers:
       child.after_create(sb)
 
   @override
-  def before_destroy(self, sb: Sandbox) -> Contribution | None:
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     """Fan out ``before_destroy`` and merge the children's contributions."""
     return self._merged(
         [c for child in self.observers if (c := child.before_destroy(sb))]
     )
 
   @override
-  def after_destroy(self, sb: Sandbox) -> None:
+  def after_destroy(self, sb: SandboxFs) -> None:
     """Fan out ``after_destroy``."""
     for child in self.observers:
       child.after_destroy(sb)
 
   @override
-  def on_error(self, sb: Sandbox, error: BaseException) -> Contribution | None:
+  def on_error(
+      self, sb: SandboxFs, error: BaseException
+  ) -> Contribution | None:
     """Fan out ``on_error`` and merge the children's contributions."""
     return self._merged(
         [c for child in self.observers if (c := child.on_error(sb, error))]

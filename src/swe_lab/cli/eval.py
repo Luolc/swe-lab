@@ -14,7 +14,6 @@ from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import compile_unit_test
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import BackendKind, build_backend
 
 _WORKSPACES_SUBDIR = "eval_workspaces"
 
@@ -38,9 +37,9 @@ def eval_cmd(
         bool, typer.Option(help="Pull the image before running.")
     ] = True,
     backend: Annotated[
-        BackendKind,
-        typer.Option(help="Sandbox backend (host Docker, or the GH job)."),
-    ] = BackendKind.HOST,
+        str,
+        typer.Option(help="Sandbox backend name (host Docker, or the GH job)."),
+    ] = "host",
 ) -> None:
   """Grade one instance by running its tests in its container.
 
@@ -72,9 +71,11 @@ def eval_cmd(
   result, verdict = run_unit_test(
       sandbox_spec,
       unit_spec,
-      backend=build_backend(backend, network=network, pull=pull),
+      backend=backend,
       workspace=workspace,
       timeout=timeout,
+      pull=pull,
+      network=network,
   )
 
   summary: dict[str, object] = {

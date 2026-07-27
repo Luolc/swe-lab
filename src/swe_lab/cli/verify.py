@@ -44,7 +44,7 @@ from swe_lab.datasets.swebench_pro.unit_test import (
 )
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import BackendKind, build_backend, RunResult, RunStatus
+from swe_lab.sandbox import RunResult, RunStatus
 
 # Verdicts.
 OK = "OK"
@@ -141,15 +141,16 @@ def _graded_run(
   sandbox_spec, unit_spec = compile_unit_test(
       instance, patch=patch, repo_root=repo_root
   )
-  # The engine manager refuses a non-empty workspace; start each run clean.
+  # The sandbox refuses a non-empty workspace; start each run clean.
   shutil.rmtree(workspace, ignore_errors=True)
-  backend = build_backend(BackendKind.HOST, network=not no_network, pull=True)
   return run_unit_test(
       sandbox_spec,
       unit_spec,
-      backend=backend,
+      backend="host",
       workspace=workspace,
       timeout=timeout,
+      network=not no_network,
+      pull=True,
   )
 
 

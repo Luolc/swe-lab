@@ -7,7 +7,6 @@ extra SYSTEM turn — a richer capture). Fixtures are inline literals, mirroring
 """
 
 import json
-from pathlib import Path
 
 from swe_lab.conversation import (
     Conversation,
@@ -128,8 +127,9 @@ _PROXY_RECORDS: list[dict[str, object]] = [
 ]
 
 
-def _write_jsonl(path: Path, records: list[dict[str, object]]) -> None:
-  path.write_text("\n".join(json.dumps(r) for r in records) + "\n")
+def _jsonl(records: list[dict[str, object]]) -> str:
+  """Render records as proxy-log text (the converters take text, not a path)."""
+  return "\n".join(json.dumps(r) for r in records) + "\n"
 
 
 def _non_system(conv: Conversation) -> Conversation:
@@ -138,10 +138,8 @@ def _non_system(conv: Conversation) -> Conversation:
   )
 
 
-def test_proxy_conversion_maps_the_expected_messages(tmp_path: Path):
-  raw = tmp_path / "claude.proxy.jsonl"
-  _write_jsonl(raw, _PROXY_RECORDS)
-  conv = proxy_log_to_conversation(raw)
+def test_proxy_conversion_maps_the_expected_messages():
+  conv = proxy_log_to_conversation(_jsonl(_PROXY_RECORDS))
   assert conv == Conversation(
       messages=[
           Message(
@@ -169,29 +167,25 @@ def test_proxy_conversion_maps_the_expected_messages(tmp_path: Path):
   )
 
 
-def test_proxy_capture_is_equivalent_to_stream(tmp_path: Path):
-  stream = tmp_path / "claude.event_stream.jsonl"
-  stream.write_text("\n".join(json.dumps(e) for e in _STREAM_EVENTS) + "\n")
-  proxy = tmp_path / "claude.proxy.jsonl"
-  _write_jsonl(proxy, _PROXY_RECORDS)
+def test_proxy_capture_is_equivalent_to_stream():
+  stream = "\n".join(json.dumps(e) for e in _STREAM_EVENTS) + "\n"
   # the proxy additionally carries the SYSTEM turn; the shared user/assistant
   # surface is identical — proven by construction (same block mappers).
-  assert _non_system(proxy_log_to_conversation(proxy)) == (
+  assert _non_system(proxy_log_to_conversation(_jsonl(_PROXY_RECORDS))) == (
       event_stream_to_conversation(stream)
   )
 
 
-def test_proxy_conversion_absent_file_is_empty(tmp_path: Path):
-  assert proxy_log_to_conversation(tmp_path / "nope.jsonl") == Conversation(
-      messages=[]
-  )
+def test_proxy_conversion_empty_text_is_empty():
+  # An absent proxy log reaches the converter as "" (the harness reads the file
+  # and passes its text, or "" when it never landed).
+  assert proxy_log_to_conversation("") == Conversation(messages=[])
 
 
-def test_proxy_complete_reads_last_record(tmp_path: Path):
-  raw = tmp_path / "claude.proxy.jsonl"
-  _write_jsonl(raw, _PROXY_RECORDS)
-  assert proxy_log_complete(raw) is True
+def test_proxy_complete_reads_last_record():
+  assert proxy_log_complete(_jsonl(_PROXY_RECORDS)) is True
   # last record's flag wins over the earlier stub's False
-  _write_jsonl(raw, [_PROXY_RECORDS[1], _PROXY_RECORDS[0]])
-  assert proxy_log_complete(raw) is False
-  assert proxy_log_complete(tmp_path / "nope.jsonl") is False
+  assert proxy_log_complete(_jsonl([_PROXY_RECORDS[1], _PROXY_RECORDS[0]])) is (
+      False
+  )
+  assert proxy_log_complete("") is False

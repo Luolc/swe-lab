@@ -12,8 +12,8 @@ from swe_lab.conversation import (
     Role,
     TextBlock,
 )
-from swe_lab.sandbox import Sandbox, SandboxSpec
-from swe_lab.sandbox.testing import FakeBackend
+from swe_lab.sandbox import SandboxFs, SandboxSpec
+from swe_lab.sandbox.testing import FakeSandbox
 
 EVENT_STREAM = "event_stream.jsonl"
 STDERR = "agent.stderr"
@@ -24,11 +24,11 @@ class _StubProducer(ConversationProducer):
 
   def __init__(self, conversation: Conversation) -> None:
     self._conversation = conversation
-    self.seen: Path | None = None
+    self.seen: SandboxFs | None = None
 
   @override
-  def to_conversation(self, workspace: Path) -> Conversation:
-    self.seen = workspace
+  def to_conversation(self, sb: SandboxFs) -> Conversation:
+    self.seen = sb
     return self._conversation
 
   @override
@@ -36,13 +36,10 @@ class _StubProducer(ConversationProducer):
     return {"event_stream": EVENT_STREAM, "agent_stderr": STDERR}
 
 
-def _sandbox(workspace: Path) -> Sandbox:
-  return Sandbox(
-      label="acme__widget-1",
+def _sandbox(workspace: Path) -> FakeSandbox:
+  return FakeSandbox(
       spec=SandboxSpec("acme__widget-1", "img:tag", "/app", "abc"),
       workspace=workspace,
-      backend=FakeBackend(),
-      handle="fake",
   )
 
 
@@ -54,17 +51,19 @@ def test_writes_conversation_and_registers_every_byproduct(tmp_path: Path):
   )
   producer = _StubProducer(conv)
   observer = ConversationObserver(producer=producer)
+  sb = _sandbox(tmp_path)
 
-  contribution = observer.before_destroy(_sandbox(tmp_path))
+  contribution = observer.before_destroy(sb)
 
-  assert producer.seen == tmp_path  # the producer reads from the workspace
+  assert producer.seen is sb  # the producer reads from the sandbox
   assert observer.conversation == conv
   written = tmp_path / CONVERSATION_NAME
   assert Conversation.model_validate_json(written.read_text()) == conv
   assert contribution is not None
-  assert contribution.artifacts["conversation"] == written
-  assert contribution.artifacts["event_stream"] == tmp_path / EVENT_STREAM
-  assert contribution.artifacts["agent_stderr"] == tmp_path / STDERR
+  # Artifacts are now in-sandbox filenames, not host paths.
+  assert contribution.artifacts["conversation"] == CONVERSATION_NAME
+  assert contribution.artifacts["event_stream"] == EVENT_STREAM
+  assert contribution.artifacts["agent_stderr"] == STDERR
 
 
 def test_absent_byproducts_are_not_registered(tmp_path: Path):

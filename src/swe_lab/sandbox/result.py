@@ -28,15 +28,18 @@ class RunStatus(StrEnum):
 class Contribution:
   """What one observer hook hands back for the manager to aggregate.
 
-  Only engine-generic shapes live here: artifact *references* into the
-  workspace (the persist index — never file content) and scalar metrics.
+  Only engine-generic shapes live here: artifact *references* by name (the
+  persist index — never file content) and scalar metrics. An artifact is
+  referenced by its **in-sandbox filename** (a host `Path` is not meaningful for
+  a remote sandbox); the manager's collect step fetches each to the host and
+  ``RunResult.artifacts`` holds the resulting host paths.
 
   Attributes:
-    artifacts: Canonical artifact name → its path inside the workspace.
+    artifacts: Canonical artifact name → its in-sandbox filename.
     metrics: Metric name → value.
   """
 
-  artifacts: dict[str, Path] = field(default_factory=dict)
+  artifacts: dict[str, str] = field(default_factory=dict)
   metrics: dict[str, float] = field(default_factory=dict)
 
 
@@ -61,26 +64,27 @@ class RunResult:
 
 def merge_contributions(
     contributions: list[Contribution],
-) -> tuple[dict[str, Path], dict[str, float]]:
+) -> tuple[dict[str, str], dict[str, float]]:
   """Union observers' contributions, refusing key collisions.
 
   Args:
     contributions: Every non-``None`` contribution, in hook order.
 
   Returns:
-    The merged ``(artifacts, metrics)`` pair.
+    The merged ``(artifacts, metrics)`` pair, artifacts keyed by canonical
+    name → in-sandbox filename.
 
   Raises:
     SandboxError: If two contributions claim the same artifact or metric
       name (no silent last-writer-wins).
   """
-  artifacts: dict[str, Path] = {}
+  artifacts: dict[str, str] = {}
   metrics: dict[str, float] = {}
   for contribution in contributions:
-    for name, path in contribution.artifacts.items():
+    for name, filename in contribution.artifacts.items():
       if name in artifacts:
         raise SandboxError(f"two observers contributed artifact {name!r}")
-      artifacts[name] = path
+      artifacts[name] = filename
     for name, value in contribution.metrics.items():
       if name in metrics:
         raise SandboxError(f"two observers contributed metric {name!r}")

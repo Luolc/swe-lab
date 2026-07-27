@@ -10,10 +10,8 @@ residual ``Binary files … differ`` stripped host-side) byte-for-byte.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import override
 
-from swe_lab.sandbox.manager import Sandbox
 from swe_lab.sandbox.observer import SandboxObserver
 from swe_lab.sandbox.patch import (
     build_extraction_script,
@@ -21,6 +19,7 @@ from swe_lab.sandbox.patch import (
     strip_binary_hunks,
 )
 from swe_lab.sandbox.result import Contribution
+from swe_lab.sandbox.sandbox import SandboxFs
 
 RAW_PATCH_NAME = "patch.raw.diff"  # raw git-diff bytes (audit)
 PATCH_NAME = "patch.diff"  # clean, text-only patch that gets graded
@@ -28,21 +27,22 @@ EXTRACT_SCRIPT_NAME = "extract.sh"  # persisted for audit
 _EXTRACT_TIMEOUT_S = 120.0
 
 
-def _read_patch(path: Path) -> str:
-  """Read the extracted patch as text, tolerant of odd bytes.
+def _read_patch(sb: SandboxFs, name: str) -> str:
+  """Read an extracted patch file as text, tolerant of odd bytes.
 
   The extractor writes raw bytes; decode with ``backslashreplace`` so an
   exotic-encoding hunk can never crash the read (ported from the runner).
 
   Args:
-    path: The host-side raw patch file.
+    sb: The live sandbox to read from.
+    name: The workspace-relative patch filename.
 
   Returns:
     The decoded patch text, or ``""`` when the file is absent.
   """
-  if not path.is_file():
+  if not sb.exists(name):
     return ""
-  return path.read_bytes().decode("utf-8", "backslashreplace")
+  return sb.read(name).decode("utf-8", "backslashreplace")
 
 
 @dataclass
@@ -64,7 +64,7 @@ class DiffExtractObserver(SandboxObserver):
   binary_stripped: bool = False
 
   @override
-  def before_destroy(self, sb: Sandbox) -> Contribution | None:
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     """Run the extraction in-container, then clean + register the patch."""
     body = build_extraction_script(
         workdir=sb.spec.workdir,
@@ -77,17 +77,16 @@ class DiffExtractObserver(SandboxObserver):
     # works on A-host and A-ghjob alike, and the persisted extract.sh lands
     # in the workspace for audit.
     script = f'cd "$SANDBOX_WORKSPACE"\n{body}'
-    _ = (sb.workspace / EXTRACT_SCRIPT_NAME).write_text(script)
-    _ = sb.run(EXTRACT_SCRIPT_NAME, timeout=_EXTRACT_TIMEOUT_S)
+    sb.write(EXTRACT_SCRIPT_NAME, script.encode("utf-8"))
+    _ = sb.run_script(EXTRACT_SCRIPT_NAME, timeout=_EXTRACT_TIMEOUT_S)
 
-    raw = _read_patch(sb.workspace / RAW_PATCH_NAME)
+    raw = _read_patch(sb, RAW_PATCH_NAME)
     self.patch = strip_binary_hunks(raw)
     self.binary_stripped = self.patch != raw
     self.is_empty = is_effectively_empty(self.patch)
-    _ = (sb.workspace / PATCH_NAME).write_text(self.patch)
+    sb.write(PATCH_NAME, self.patch.encode("utf-8"))
 
-    artifacts = {"patch": sb.workspace / PATCH_NAME}
-    raw_path = sb.workspace / RAW_PATCH_NAME
-    if raw_path.is_file():
-      artifacts["patch_raw"] = raw_path
+    artifacts = {"patch": PATCH_NAME}
+    if sb.exists(RAW_PATCH_NAME):
+      artifacts["patch_raw"] = RAW_PATCH_NAME
     return Contribution(artifacts=artifacts)

@@ -1,55 +1,29 @@
-"""Resources: where a file's content comes from, independent of placement.
+"""Resources: where a file's content comes from — pure data.
 
-A ``Resource`` is the shared content-source abstraction that both workspace
-mounts and read-only assets wrap (spec §Assets vs. mounts). One concrete impl
-per source — inline bytes and a host file now, a URL / object-store reference
-later — so a new source is a new class, not a change to the engine. Each
-resource knows how to materialize itself to a destination path; one already
-backed by a host file also exposes that path, so a read-only asset can be
-bind-mounted rather than copied.
+A ``Resource`` is a **data descriptor** of a content source (inline bytes, a
+host file now; a URL / object-store reference later). It carries **enough info**
+for a sandbox to transfer it, but owns **no transfer behavior**: the same
+resource is materialized differently by different sandboxes (a host sandbox
+copies a ``LocalFile`` into its dir; a remote uploads it), and for some sources
+only the sandbox can reach the bytes — so the **receiver decides the transfer**
+(ADR-0003 §3). New kinds are added by subclassing (``import``-only); the sandbox
+handling them is added alongside (its own, or a built-in that already knows the
+kind).
 """
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-import shutil
-from typing import override
-
-from .errors import SandboxError
 
 
-class Resource(ABC):
-  """A file's content source, independent of where it is placed.
+class Resource:
+  """A file's content source — data only, no transfer behavior (ADR-0003).
 
-  A behavior interface (ABC, per ADR-0002); mounts and assets both wrap one.
+  A base for the built-in variants (:class:`Inline`, :class:`LocalFile`) and any
+  a consumer adds by subclassing. The receiving sandbox dispatches on the
+  concrete kind (see ``Sandbox._mount_one``).
   """
-
-  @abstractmethod
-  def materialize_to(self, dest: Path) -> None:
-    """Write this resource's content to ``dest``, creating parent directories.
-
-    Args:
-      dest: The host path to materialize the content into.
-
-    Raises:
-      SandboxError: If the content cannot be obtained (e.g. a missing source).
-    """
-    ...
-
-  @abstractmethod
-  def local_path(self) -> Path | None:
-    """Return a host path to this resource when it already exists as a file.
-
-    A read-only asset backed by a local file can be bind-mounted rather than
-    copied; resources without a backing file (inline bytes, a remote URL)
-    return ``None`` and must be materialized.
-
-    Returns:
-      The host path, or ``None`` when there is no backing file.
-    """
-    ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,44 +36,13 @@ class Inline(Resource):
 
   content: bytes
 
-  @override
-  def materialize_to(self, dest: Path) -> None:
-    """Write the inline bytes to ``dest``, creating parent directories."""
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    _ = dest.write_bytes(self.content)
-
-  @override
-  def local_path(self) -> Path | None:
-    """Return ``None`` — inline bytes have no backing file."""
-    return None
-
 
 @dataclass(frozen=True, slots=True)
 class LocalFile(Resource):
-  """A file taken from a host path — copied in, or bind-mounted as an asset.
+  """A file taken from a host path.
 
   Attributes:
     path: The host path to read the content from.
   """
 
   path: Path
-
-  @override
-  def materialize_to(self, dest: Path) -> None:
-    """Copy the host file to ``dest``, creating parent directories.
-
-    Args:
-      dest: The host path to copy the content into.
-
-    Raises:
-      SandboxError: If the source path is not an existing file.
-    """
-    if not self.path.is_file():
-      raise SandboxError(f"resource source does not exist: {self.path}")
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    _ = shutil.copyfile(self.path, dest)
-
-  @override
-  def local_path(self) -> Path | None:
-    """Return the backing host path (bind-mountable as a read-only asset)."""
-    return self.path

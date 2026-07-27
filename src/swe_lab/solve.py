@@ -36,14 +36,13 @@ from swe_lab.harnesses.claude_code.proxy import (
 )
 from swe_lab.paths import find_repo_root
 from swe_lab.sandbox import (
+    build_sandbox,
     Inline,
     Mount,
     RunStatus,
-    SandboxBackend,
     SandboxManager,
     SandboxSpec,
 )
-from swe_lab.sandbox.backends import DockerHostBackend
 from swe_lab.sandbox.observers import DiffExtractObserver
 
 # Proxy ports are drawn from a wide band by a stable hash of the instance id, so
@@ -82,11 +81,13 @@ def run_rollout(
     *,
     prompt: str,
     model: str,
-    backend: SandboxBackend,
+    backend: str,
     workspace: Path,
     timeout: float,
     exclude_globs: tuple[str, ...] = (),
     capture: Capture = Capture.STREAM,
+    pull: bool = True,
+    pass_env: tuple[str, ...] = (),
 ) -> RolloutOutcome:
   """Run one agent rollout and extract its patch + trace.
 
@@ -94,36 +95,44 @@ def run_rollout(
     spec: The run context (image / workdir / base_commit / instance_id).
     prompt: The dataset-derived solve prompt (staged as ``prompt.txt``).
     model: The ``--model`` alias for the agent.
-    backend: The sandbox backend (its binary asset is wired in here).
+    backend: The registered backend name to run on (e.g. ``host`` / ``ghjob``).
     workspace: The run's workspace directory (created fresh).
     timeout: Seconds before the agent run is killed.
     exclude_globs: Build-noise denylist for the diff extraction.
     capture: The output-capture strategy — ``STREAM`` (default) reads the
       agent's ``event_stream``; ``PROXY`` records via a host-side
       ``cc-reverse-proxy`` writing into the workspace.
+    pull: Whether to pull the image before the run (A-host only).
+    pass_env: Variables inherited by reference into the sandbox (the agent's
+      OAuth token).
 
   Returns:
     The rollout outcome (patch, flags, conversation, status).
   """
-  harness, backend, proxy = _capture_setup(
-      spec, model, backend, workspace, capture
-  )
+  harness, extra_hosts, proxy = _capture_setup(spec, model, workspace, capture)
   conversation = ConversationObserver(producer=harness)
   extract = DiffExtractObserver(exclude_globs=exclude_globs)
-  backend = backend.with_assets(harness.assets())  # the binary at /opt
-  # prompt.txt is dataset-derived (task 06 §5.6), staged by the composition
+  # prompt.txt is dataset-derived (task 06 §5.6), staged by the composition; the
+  # harness contributes its script and the pinned binary (a read-only mount).
   mounts = {PROMPT_NAME: Mount(Inline(prompt.encode()))} | harness.mounts(
       spec.workdir
   )
-
+  sandbox = build_sandbox(
+      backend,
+      spec,
+      workspace,
+      network=True,
+      pull=pull,
+      pass_env=pass_env,
+      extra_hosts=extra_hosts,
+  )
   manager = SandboxManager(
-      spec=spec,
-      backend=backend,
-      workspace=workspace,
+      sandbox=sandbox,
+      output_dir=workspace,
       observers=[conversation, extract],
       mounts=mounts,
   )
-  with proxy, manager.sandbox() as sb:
+  with proxy, manager.session() as sb:
     harness.run(sb, timeout=timeout)
 
   return RolloutOutcome(
@@ -141,21 +150,22 @@ def run_rollout(
 def _capture_setup(
     spec: SandboxSpec,
     model: str,
-    backend: SandboxBackend,
     workspace: Path,
     capture: Capture,
 ) -> tuple[
-    ClaudeCodeHarness, SandboxBackend, contextlib.AbstractContextManager[object]
+    ClaudeCodeHarness,
+    tuple[str, ...],
+    contextlib.AbstractContextManager[object],
 ]:
-  """Build the harness, backend, and proxy context for the capture strategy.
+  """Build the harness, host entries, and proxy context for the capture mode.
 
-  For ``STREAM`` the proxy context is a no-op. For ``PROXY`` it starts a
-  ``cc-reverse-proxy`` writing into the workspace, points the agent at it, and —
-  for the Docker backend — opens the host-gateway so the container can reach the
-  host-side proxy.
+  For ``STREAM`` there are no extra hosts and the proxy context is a no-op. For
+  ``PROXY`` it starts a ``cc-reverse-proxy`` writing into the workspace, points
+  the agent at it, and returns the host-gateway ``--add-host`` entry so an
+  A-host container can reach the host-side proxy (A-ghjob ignores it).
   """
   if capture is Capture.STREAM:
-    return ClaudeCodeHarness(model=model), backend, contextlib.nullcontext()
+    return ClaudeCodeHarness(model=model), (), contextlib.nullcontext()
   port = port_for_index(
       zlib.crc32(spec.instance_id.encode()) % _PROXY_PORT_SPAN
   )
@@ -163,18 +173,18 @@ def _capture_setup(
   harness = ClaudeCodeHarness(
       model=model, capture=capture, proxy_base_url=base_url
   )
-  if isinstance(backend, DockerHostBackend):
-    backend = backend.with_extra_hosts(
-        (f"{CONTAINER_PROXY_HOST}:host-gateway",)
-    )
+  extra_hosts = (f"{CONTAINER_PROXY_HOST}:host-gateway",)
   proxy = ReverseProxy(
       port, workspace / PROXY_LOG_NAME, build_proxy(find_repo_root())
   )
-  return harness, backend, proxy
+  return harness, extra_hosts, proxy
 
 
 def _run_complete(workspace: Path, capture: Capture) -> bool:
   """Read the agent-completion signal from whichever trace the run captured."""
+  name = PROXY_LOG_NAME if capture is Capture.PROXY else EVENT_STREAM_NAME
+  path = workspace / name
+  text = path.read_text() if path.is_file() else ""
   if capture is Capture.PROXY:
-    return proxy_log_complete(workspace / PROXY_LOG_NAME)
-  return event_stream_complete(workspace / EVENT_STREAM_NAME)
+    return proxy_log_complete(text)
+  return event_stream_complete(text)

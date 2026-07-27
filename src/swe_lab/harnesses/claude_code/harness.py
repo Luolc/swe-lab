@@ -1,9 +1,9 @@
 """The ``claude_code`` harness: run Claude Code headless in the sandbox.
 
-Stages its invocation script, declares the pinned binary as a read-only asset,
-runs the agent, and converts the event-stream output into a canonical
-``Conversation``. It is dataset-agnostic — the prompt is staged by the
-composition (dataset-derived); the invocation script only reads it.
+Stages its invocation script and the pinned binary (a read-only executable
+mount at a fixed path), runs the agent, and converts the event-stream output
+into a canonical ``Conversation``. It is dataset-agnostic — the prompt is staged
+by the composition (dataset-derived); the invocation script only reads it.
 """
 
 from __future__ import annotations
@@ -17,13 +17,12 @@ from swe_lab.conversation import Conversation
 from swe_lab.harnesses.base import Harness
 from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
 from swe_lab.sandbox import (
-    Assets,
     Inline,
     LocalFile,
     Mount,
     Mounts,
-    Sandbox,
     SandboxError,
+    SandboxFs,
 )
 
 from .capture import Capture
@@ -38,6 +37,13 @@ from .constants import (
     PROXY_LOG_NAME,
 )
 from .convert import event_stream_to_conversation, proxy_log_to_conversation
+
+
+def _read_text(sb: SandboxFs, name: str) -> str:
+  """Read a workspace file as text, tolerant of odd bytes and absence."""
+  if not sb.exists(name):
+    return ""
+  return sb.read(name).decode("utf-8", "backslashreplace")
 
 
 @dataclass(frozen=True)
@@ -60,23 +66,19 @@ class ClaudeCodeHarness(Harness):
 
   @override
   def mounts(self, workdir: str) -> Mounts:
-    """Stage the harness's own file — the invocation script (not the prompt)."""
+    """Stage the invocation script and the pinned binary (a read-only mount)."""
+    binary = self.binary_path or ensure_claude_binary()
     return {
         AGENT_SCRIPT_NAME: Mount(
             Inline(self._invocation_script(workdir).encode()), executable=True
-        )
+        ),
+        BINARY_AT: Mount(LocalFile(binary), executable=True, read_only=True),
     }
 
   @override
-  def assets(self) -> Assets:
-    """Place the pinned binary as a read-only asset at its fixed path."""
-    binary = self.binary_path or ensure_claude_binary()
-    return {BINARY_AT: LocalFile(binary)}
-
-  @override
-  def run(self, sb: Sandbox, *, timeout: float) -> None:
+  def run(self, sb: SandboxFs, *, timeout: float) -> None:
     """Run the staged ``agent.sh`` by its workspace path."""
-    _ = sb.run(AGENT_SCRIPT_NAME, timeout=timeout)
+    _ = sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
 
   @override
   def native_outputs(self) -> dict[str, str]:
@@ -93,15 +95,15 @@ class ClaudeCodeHarness(Harness):
     return trace | {"stderr": AGENT_STDERR_NAME}
 
   @override
-  def to_conversation(self, workspace: Path) -> Conversation:
+  def to_conversation(self, sb: SandboxFs) -> Conversation:
     """Convert the run's captured trace into a ``Conversation``.
 
     Both strategies land on the same typed model — ``STREAM`` from the
     ``event_stream``, ``PROXY`` from the proxy log.
     """
     if self.capture is Capture.PROXY:
-      return proxy_log_to_conversation(workspace / PROXY_LOG_NAME)
-    return event_stream_to_conversation(workspace / EVENT_STREAM_NAME)
+      return proxy_log_to_conversation(_read_text(sb, PROXY_LOG_NAME))
+    return event_stream_to_conversation(_read_text(sb, EVENT_STREAM_NAME))
 
   def _invocation_script(self, workdir: str) -> str:
     """Build the run script: run the agent, redirect its outputs, never fail.

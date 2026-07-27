@@ -1,19 +1,19 @@
 """The evaluation axis's cross-dataset contracts.
 
 A ``Verdict`` is the minimal thing sweeps and aggregation depend on: a scalar
-``score`` in ``[0, 1]``. A ``Grader`` turns the workspace a run left behind into
-a verdict. A ``UnitTestSpec`` is what the unit-test method needs to run and
-grade one instance; each dataset compiles its own record into one.
+``score`` in ``[0, 1]``. A ``Grader`` turns the files a run left behind (read
+through the sandbox) into a verdict. A ``UnitTestSpec`` is what the unit-test
+method needs to run and grade one instance; each dataset compiles its own record
+into one.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Protocol
 
-from swe_lab.sandbox import Mounts
+from swe_lab.sandbox import Mounts, SandboxFs
 
 
 class Verdict(Protocol):
@@ -37,17 +37,18 @@ class Verdict(Protocol):
 
 
 class Grader[V: Verdict](ABC):
-  """Dataset-owned judgment: the workspace files a run left → a verdict.
+  """Dataset-owned judgment: the files a run left → a verdict.
 
   A behavior interface (ABC, per ADR-0002): datasets implement it in-repo and
-  benefit from explicit inheritance + instantiation-time enforcement. Pure over
-  the workspace (reads files, touches no container), so it is unit-testable
-  without Docker and can re-grade any persisted workspace.
+  benefit from explicit inheritance + instantiation-time enforcement. Reads the
+  run's output files through the narrow ``SandboxFs`` view (never the
+  lifecycle), so it is unit-testable without Docker (a ``FakeSandbox`` over a
+  local dir) and can re-grade any persisted workspace.
   """
 
   @abstractmethod
-  def grade(self, workspace: Path) -> V:
-    """Grade the run from the files under ``workspace``."""
+  def grade(self, sb: SandboxFs) -> V:
+    """Grade the run from the output files read through ``sb``."""
     ...
 
 

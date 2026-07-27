@@ -2,8 +2,9 @@
 
 Everything SWE-Bench-Pro-specific about *grading* lives here: the eval script
 (ported from Scale's ``create_entryscript``), the compiled expectation, and a
-stateless grader that reads the workspace back. ``compile_unit_test`` turns a
-record into the general ``(SandboxSpec, UnitTestSpec)`` the method consumes.
+stateless grader that reads the run's output files back. ``compile_unit_test``
+turns a record into the general ``(SandboxSpec, UnitTestSpec)`` the method
+consumes.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ import shlex
 from typing import override
 
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec
-from swe_lab.sandbox import Inline, Mount, Mounts, SandboxSpec
+from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs, SandboxSpec
 
 from .constants import (
     BASH,
@@ -74,28 +75,27 @@ class SweBenchProVerdict:
 
 @dataclass(frozen=True)
 class SweBenchProGrader(Grader[SweBenchProVerdict]):
-  """Stateless grader: reads the workspace files a run left behind.
+  """Stateless grader: reads the output files a run left behind.
 
   Reads the parser's ``output.json`` (results) and the compiled
-  ``required_tests.json`` (expectation), so it carries no per-instance state
-  and any persisted workspace re-grades without the dataset record.
+  ``required_tests.json`` (expectation) through the sandbox, so it carries no
+  per-instance state and any persisted workspace re-grades without the dataset
+  record.
   """
 
   @override
-  def grade(self, workspace: Path) -> SweBenchProVerdict:
+  def grade(self, sb: SandboxFs) -> SweBenchProVerdict:
     """Grade one run from ``output.json`` + ``required_tests.json``.
 
     Args:
-      workspace: The workspace the run left behind.
+      sb: The sandbox to read the run's output files through.
 
     Returns:
       The verdict; ``resolved`` iff the output parsed and the required tests
       (``fail_to_pass ∪ pass_to_pass``) all passed.
     """
-    required = frozenset(
-        json.loads((workspace / REQUIRED_TESTS_NAME).read_text())
-    )
-    passed, output_state = _parse_output(workspace / OUTPUT_JSON_NAME)
+    required = frozenset(json.loads(sb.read(REQUIRED_TESTS_NAME)))
+    passed, output_state = _parse_output(sb)
     return SweBenchProVerdict(
         passed=passed,
         missing=required - passed,
@@ -103,20 +103,18 @@ class SweBenchProGrader(Grader[SweBenchProVerdict]):
     )
 
 
-def _parse_output(
-    output_json: Path,
-) -> tuple[frozenset[str], OutputState]:
+def _parse_output(sb: SandboxFs) -> tuple[frozenset[str], OutputState]:
   """Read the passed-test set + a state distinguishing absent from corrupt.
 
   Distinguishing "absent" from "unparseable" from "parsed" is what keeps a
   crashed parser (a harness fault) from masquerading as "no tests passed" (a
   real result).
   """
-  if not output_json.is_file():
+  if not sb.exists(OUTPUT_JSON_NAME):
     return frozenset(), OutputState.ABSENT
   try:
-    data = json.loads(output_json.read_text())
-  except (json.JSONDecodeError, OSError):
+    data = json.loads(sb.read(OUTPUT_JSON_NAME))
+  except (json.JSONDecodeError, OSError, ValueError):
     return frozenset(), OutputState.UNPARSEABLE
   if not isinstance(data, dict):
     return frozenset(), OutputState.UNPARSEABLE

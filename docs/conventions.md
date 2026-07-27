@@ -80,7 +80,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
   ([ADR-0002](decisions/ADR-0002-interface-style-abc-vs-protocol.md)): a
   behavior interface whose implementers live in-repo is an `abc.ABC` with
   `@abstractmethod` (implementers write `class Impl(Base)` + `@override`) — for
-  navigation and instantiation-time enforcement (`Grader`, `SandboxBackend`,
+  navigation and instantiation-time enforcement (`Grader`, `Sandbox`,
   `RepoProvider`). Use `typing.Protocol` **only** for a structural shape on data
   that records satisfy without inheriting (`Verdict`, `RepoInstance`,
   `DatasetRecord`). Where partial override is normal, use a concrete base class
@@ -101,7 +101,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 
 | Path | What it is |
 | --- | --- |
-| `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, `Mounts`/`Resource`, backends (`DockerHostBackend` = A-host, `GitHubJobBackend` = A-ghjob), shared observers (diff-extract), `patch.py` (extraction contract). |
+| `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, shared observers (diff-extract), `patch.py` (extraction contract). |
 | `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `claude_code/` (invocation, `convert`/`capture`, and the Claude Code runner utilities `binary`/`proxy`/`trace`/`errors`). |
 | `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus per-dataset packages (`swebench_pro/`: record, run setup, unit-test compile + grader). |
 | `src/swe_lab/evaluation/` | The **eval-method axis**: `verdict` contract + `methods/` (`unit_test`). |

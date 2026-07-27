@@ -2,20 +2,25 @@
 
 Later tasks (the eval method, the harness) reuse these for their own
 Docker-free tests, so they are shipped code, not test-local helpers.
+
+``FakeSandbox`` is a real ``Sandbox``: file ops (read/write/mount/fetch) hit a
+real local ``workspace`` directory so observers and graders exercise genuine
+filesystem behavior, while ``run_script`` / ``run_command`` return **scripted**
+``ExecResult``s (no process is spawned) and every call is recorded.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
+import shutil
 from typing import override
 
-from .backend import ExecResult, SandboxBackend
-from .manager import Sandbox
-from .mounts import Assets, Mounts
+from .mounts import Mount, Mounts
 from .observer import SandboxObserver
 from .result import Contribution
+from .sandbox import ExecResult, Sandbox, SandboxFs
 from .spec import SandboxSpec
 
 
@@ -26,73 +31,132 @@ def _maybe_raise(error: Exception | None) -> None:
 
 
 @dataclass
-class FakeBackend(SandboxBackend):
-  """In-memory ``SandboxBackend``: scripted results, recorded calls.
+class FakeSandbox(Sandbox):
+  """In-memory ``Sandbox``: real file ops, scripted exec, recorded calls.
 
   Attributes:
-    run_results: Results returned by successive ``run_script`` calls (repeating
-      the last one when exhausted); defaults to a single success.
+    spec: The run context.
+    workspace: A real local directory backing the file ops.
+    run_results: Results returned by successive ``run_script`` / ``run_command``
+      calls (repeating the last when exhausted); defaults to a single success.
     up_error: Raised by ``up`` when set.
-    run_error: Raised by ``run_script`` when set.
-    down_error: Raised by ``down`` when set (to test that the manager
-      swallows a misbehaving backend).
+    run_error: Raised by ``run_script`` / ``run_command`` when set.
+    down_error: Raised by ``down`` when set (to test that the manager swallows
+      a misbehaving sandbox).
     calls: Every call as ``(method, detail)``, in order.
     scripts: The script names passed to ``run_script``, in order.
-    assets: Recorded only (no container to bind-mount into) — lets a
-      composition set them via ``dataclasses.replace``. Mounts still
-      materialize into the workspace via the inherited default.
+    commands: The command strings passed to ``run_command``, in order.
   """
 
+  spec: SandboxSpec
+  workspace: Path
   run_results: list[ExecResult] = field(default_factory=list)
   up_error: Exception | None = None
   run_error: Exception | None = None
   down_error: Exception | None = None
   calls: list[tuple[str, str]] = field(default_factory=list)
   scripts: list[str] = field(default_factory=list)
-  assets: Assets = field(default_factory=dict)
+  commands: list[str] = field(default_factory=list)
+  _execs: int = field(default=0, init=False, repr=False)
+
+  # --- lifecycle -----------------------------------------------------------
 
   @override
-  def with_assets(self, assets: Assets) -> SandboxBackend:
-    """Return a copy carrying the merged assets (recorded, not realized)."""
-    return replace(self, assets={**self.assets, **assets})
-
-  @override
-  def up(self, spec: SandboxSpec, workspace: Path) -> str:
-    """Return a fake handle (or raise the scripted ``up_error``)."""
-    del workspace
-    self.calls.append(("up", spec.instance_id))
+  def up(self) -> None:
+    """Create the workspace and record the call (or raise ``up_error``)."""
+    self.workspace.mkdir(parents=True, exist_ok=True)
+    self.calls.append(("up", self.spec.instance_id))
     _maybe_raise(self.up_error)
-    return f"fake-{spec.instance_id}"
+
+  @override
+  def down(self) -> None:
+    """Record the teardown (or raise the scripted ``down_error``)."""
+    self.calls.append(("down", self.spec.instance_id))
+    _maybe_raise(self.down_error)
+
+  @override
+  def fetch(self, name: str, dest: Path) -> None:
+    """Copy a produced workspace file out to a host path."""
+    self.calls.append(("fetch", name))
+    src = self.workspace / name
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if src.resolve() != dest.resolve():
+      _ = shutil.copyfile(src, dest)
+
+  # --- files ---------------------------------------------------------------
+
+  @override
+  def read(self, name: str) -> bytes:
+    """Read a workspace file's bytes."""
+    return (self.workspace / name).read_bytes()
+
+  @override
+  def exists(self, name: str) -> bool:
+    """Whether a workspace file exists."""
+    return (self.workspace / name).is_file()
+
+  @override
+  def write(self, name: str, data: bytes, *, executable: bool = False) -> None:
+    """Write an ad-hoc workspace file."""
+    dest = self.workspace / name
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    _ = dest.write_bytes(data)
+    if executable:
+      dest.chmod(0o755)
+
+  @override
+  def _put_bytes(self, target: str, data: bytes, mount: Mount) -> None:
+    dest = self._dest(target)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    _ = dest.write_bytes(data)
+    dest.chmod(mount.mode)
+
+  @override
+  def _put_file(self, target: str, src: Path, mount: Mount) -> None:
+    dest = self._dest(target)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    _ = shutil.copyfile(src, dest)
+    dest.chmod(mount.mode)
+
+  def _dest(self, target: str) -> Path:
+    return Path(target) if target.startswith("/") else self.workspace / target
+
+  # --- exec ----------------------------------------------------------------
 
   @override
   def run_script(
       self,
-      handle: str,
-      script_name: str,
+      name: str,
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
       stream_to: Path | None = None,
   ) -> ExecResult:
-    """Return the next scripted result, honoring ``stream_to``.
+    """Record the script name and return the next scripted result."""
+    del timeout, env
+    self.calls.append(("run_script", name))
+    self.scripts.append(name)
+    return self._next_result(stream_to)
 
-    Args:
-      handle: The handle ``up`` returned.
-      script_name: The workspace script name under test (recorded, not run).
-      timeout: Recorded only.
-      env: Recorded only.
-      stream_to: When set, the scripted stdout is written there and the
-        returned result carries an empty ``stdout`` — mirroring a real
-        backend's streaming contract.
+  @override
+  def run_command(
+      self,
+      command: str,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
+      stream_to: Path | None = None,
+  ) -> ExecResult:
+    """Record the command and return the next scripted result."""
+    del timeout, env
+    self.calls.append(("run_command", command))
+    self.commands.append(command)
+    return self._next_result(stream_to)
 
-    Returns:
-      The next scripted ``ExecResult``.
-    """
-    del timeout, env  # recorded via calls only; irrelevant to the result
-    self.calls.append(("run_script", handle))
-    self.scripts.append(script_name)
+  def _next_result(self, stream_to: Path | None) -> ExecResult:
     _maybe_raise(self.run_error)
-    index = min(len(self.scripts) - 1, len(self.run_results) - 1)
+    index = min(self._execs, len(self.run_results) - 1)
+    self._execs += 1
     result = (
         self.run_results[index] if self.run_results else ExecResult(0, "", "")
     )
@@ -100,12 +164,6 @@ class FakeBackend(SandboxBackend):
       _ = stream_to.write_text(result.stdout)
       return ExecResult(result.exit_code, "", result.stderr, result.timed_out)
     return result
-
-  @override
-  def down(self, handle: str) -> None:
-    """Record the teardown (or raise the scripted ``down_error``)."""
-    self.calls.append(("down", handle))
-    _maybe_raise(self.down_error)
 
 
 @dataclass
@@ -141,28 +199,30 @@ class RecordingObserver(SandboxObserver):
     return self.extra_mounts
 
   @override
-  def before_create(self, sb: Sandbox) -> None:
+  def before_create(self, sb: SandboxFs) -> None:
     """Record the hook."""
     self._hit("before_create")
 
   @override
-  def after_create(self, sb: Sandbox) -> None:
+  def after_create(self, sb: SandboxFs) -> None:
     """Record the hook."""
     self._hit("after_create")
 
   @override
-  def before_destroy(self, sb: Sandbox) -> Contribution | None:
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     """Record the hook and return the scripted contribution."""
     self._hit("before_destroy")
     return self.contribution
 
   @override
-  def after_destroy(self, sb: Sandbox) -> None:
+  def after_destroy(self, sb: SandboxFs) -> None:
     """Record the hook."""
     self._hit("after_destroy")
 
   @override
-  def on_error(self, sb: Sandbox, error: BaseException) -> Contribution | None:
+  def on_error(
+      self, sb: SandboxFs, error: BaseException
+  ) -> Contribution | None:
     """Record the hook and return the scripted error contribution."""
     self._hit("on_error")
     return self.error_contribution

@@ -1,4 +1,4 @@
-"""Tests for DockerHostBackend: argv construction (mocked) + live Docker."""
+"""Tests for DockerHostSandbox: argv construction (mocked) + live Docker."""
 
 from dataclasses import dataclass, field
 import io
@@ -8,7 +8,7 @@ import subprocess
 import pytest
 
 from swe_lab.sandbox import (
-    DockerHostBackend,
+    DockerHostSandbox,
     Inline,
     LocalFile,
     Mount,
@@ -67,8 +67,10 @@ def _install(monkeypatch: pytest.MonkeyPatch, fake: _FakeDocker) -> None:
 def test_up_argv_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
   fake = _FakeDocker(results=[_ok(), _ok("container-xyz\n"), _ok()])
   _install(monkeypatch, fake)
-  handle = DockerHostBackend().up(SPEC, tmp_path)
-  assert handle == "container-xyz"
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path)
+  sandbox.up()
+  # the container id is now internal state, not a return value
+  assert sandbox._container == "container-xyz"
   pull = fake.last_matching("pull")
   assert pull == ["docker", "pull", "--platform", "linux/amd64", SPEC.image_ref]
   create = fake.last_matching("create")
@@ -92,13 +94,15 @@ def test_up_network_off_env_and_pass_env(
 ):
   fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
   _install(monkeypatch, fake)
-  backend = DockerHostBackend(
+  sandbox = DockerHostSandbox(
+      spec=SPEC,
+      workspace=tmp_path,
       network=False,
       pull=False,
       env={"FOO": "bar"},
       pass_env=["SECRET_TOKEN"],
   )
-  _ = backend.up(SPEC, tmp_path)
+  sandbox.up()
   create = fake.last_matching("create")
   net = create.index("--network")
   assert create[net : net + 2] == ["--network", "none"]
@@ -111,30 +115,52 @@ def test_up_network_off_env_and_pass_env(
   assert ["docker", "pull"] not in [c[:2] for c in fake.calls]
 
 
-def test_up_bind_mounts_local_file_assets_read_only(
+def test_mount_absolute_asset_copied_read_only(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
+  # an asset is a read-only mount at an absolute path now: the host sandbox
+  # ``docker cp``s it into the live container, then chmods it read-only there
   fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
   _install(monkeypatch, fake)
-  binary = tmp_path / "claude"
+  binary = tmp_path / "claude"  # outside the workspace, like the pinned binary
   _ = binary.write_bytes(b"BIN")
-  backend = DockerHostBackend(
-      pull=False, assets={"/opt/claude-code/claude": LocalFile(binary)}
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path / "ws", pull=False)
+  sandbox.up()
+  sandbox.mount(
+      {
+          "/opt/claude-code/claude": Mount(
+              LocalFile(binary), executable=True, read_only=True
+          )
+      }
   )
-  _ = backend.up(SPEC, tmp_path)
-  create = fake.last_matching("create")
-  spec = f"{binary}:/opt/claude-code/claude:ro"
-  at = create.index(spec)
-  assert create[at - 1 : at + 1] == ["-v", spec]
+  cp = fake.last_matching("cp")
+  assert cp == [
+      "docker",
+      "cp",
+      str(binary),
+      "cid:/opt/claude-code/claude",
+  ]
+  # chmod to 0o555: executable + read-only
+  assert fake.last_matching("exec") == [
+      "docker",
+      "exec",
+      "cid",
+      "chmod",
+      "555",
+      "/opt/claude-code/claude",
+  ]
 
 
 def test_up_adds_extra_hosts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
   fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
   _install(monkeypatch, fake)
-  backend = DockerHostBackend(pull=False).with_extra_hosts(
-      ("host.docker.internal:host-gateway",)
+  sandbox = DockerHostSandbox(
+      spec=SPEC,
+      workspace=tmp_path,
+      pull=False,
+      extra_hosts=("host.docker.internal:host-gateway",),
   )
-  _ = backend.up(SPEC, tmp_path)
+  sandbox.up()
   create = fake.last_matching("create")
   at = create.index("host.docker.internal:host-gateway")
   assert create[at - 1 : at + 1] == [
@@ -143,23 +169,13 @@ def test_up_adds_extra_hosts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
   ]
 
 
-def test_up_rejects_non_local_asset(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
-  fake = _FakeDocker(results=[_ok("cid\n")])
-  _install(monkeypatch, fake)
-  backend = DockerHostBackend(pull=False, assets={"/opt/x": Inline(b"x")})
-  with pytest.raises(SandboxError, match="needs a local file"):
-    _ = backend.up(SPEC, tmp_path)
-
-
 def test_up_create_failure_raises(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   fake = _FakeDocker(results=[subprocess.CompletedProcess([], 1, "", "boom")])
   _install(monkeypatch, fake)
   with pytest.raises(SandboxError, match="docker create.*failed"):
-    DockerHostBackend(pull=False).up(SPEC, tmp_path)
+    DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False).up()
 
 
 def test_up_start_failure_removes_partial_container(
@@ -174,7 +190,7 @@ def test_up_start_failure_removes_partial_container(
   )
   _install(monkeypatch, fake)
   with pytest.raises(SandboxError, match="docker start.*failed"):
-    DockerHostBackend(pull=False).up(SPEC, tmp_path)
+    DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False).up()
   assert fake.last_matching("rm") == ["docker", "rm", "-f", "cid"]
 
 
@@ -183,7 +199,7 @@ def test_missing_docker_cli_raises(
 ):
   _install(monkeypatch, _FakeDocker(raise_missing=True))
   with pytest.raises(SandboxError, match="docker CLI not found"):
-    DockerHostBackend(pull=False).up(SPEC, tmp_path)
+    DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False).up()
 
 
 def test_run_script_argv_runs_workspace_file_and_streams(
@@ -202,8 +218,10 @@ def test_run_script_argv_runs_workspace_file_and_streams(
 
   monkeypatch.setattr(subprocess, "run", fake_run)
   log = tmp_path / "out.log"
-  result = DockerHostBackend(mount_at="/ws").run_script(
-      "cid", "entryscript.sh", timeout=5.0, env={"X": "1"}, stream_to=log
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path, mount_at="/ws")
+  sandbox._container = "cid"  # pretend it is live
+  result = sandbox.run_script(
+      "entryscript.sh", timeout=5.0, env={"X": "1"}, stream_to=log
   )
   argv = recorded["argv"]
   assert isinstance(argv, list)
@@ -216,7 +234,33 @@ def test_run_script_argv_runs_workspace_file_and_streams(
   assert log.read_text() == "streamed-line\n"
 
 
-def test_run_script_timeout_maps_to_124(monkeypatch: pytest.MonkeyPatch):
+def test_run_command_argv_runs_inline_command(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  recorded: dict[str, list[str]] = {}
+
+  def fake_run(
+      argv: list[str], **kwargs: object
+  ) -> subprocess.CompletedProcess[str]:
+    del kwargs
+    recorded["argv"] = list(argv)
+    return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+  monkeypatch.setattr(subprocess, "run", fake_run)
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path, mount_at="/ws")
+  sandbox._container = "cid"  # pretend it is live
+  result = sandbox.run_command("echo ok", timeout=5.0)
+  argv = recorded["argv"]
+  assert argv[:3] == ["docker", "exec", "-e"]
+  assert "SANDBOX_WORKSPACE=/ws" in argv
+  # runs the command inline under the shell (<shell> -c command)
+  assert argv[-4:] == ["cid", "/bin/bash", "-c", "echo ok"]
+  assert result.stdout == "ok\n"
+
+
+def test_run_script_timeout_maps_to_124(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
   def fake_run(
       argv: list[str], **kwargs: object
   ) -> subprocess.CompletedProcess[str]:
@@ -225,18 +269,22 @@ def test_run_script_timeout_maps_to_124(monkeypatch: pytest.MonkeyPatch):
     raise subprocess.TimeoutExpired(argv, secs, stderr="slow")
 
   monkeypatch.setattr(subprocess, "run", fake_run)
-  result = DockerHostBackend().run_script("cid", "slow.sh", timeout=1.0)
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path)
+  sandbox._container = "cid"  # pretend it is live
+  result = sandbox.run_script("slow.sh", timeout=1.0)
   assert result.exit_code == 124
   assert result.timed_out is True
   assert result.ok is False
 
 
-def test_down_never_raises(monkeypatch: pytest.MonkeyPatch):
+def test_down_never_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
   fake = _FakeDocker(
       results=[subprocess.CompletedProcess([], 1, "", "no such")]
   )
   _install(monkeypatch, fake)
-  DockerHostBackend().down("gone-cid")  # must not raise
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path)
+  sandbox._container = "gone-cid"
+  sandbox.down()  # must not raise
   assert fake.last_matching("rm") == ["docker", "rm", "-f", "gone-cid"]
 
 
@@ -255,41 +303,40 @@ def test_live_run_script_writes_and_persists_state(tmp_path: Path):
   spec = SandboxSpec("debian-probe", _IMAGE, "/", "none")
   workspace = tmp_path / "ws"
   workspace.mkdir()
-  backend = DockerHostBackend()
-  handle = backend.up(spec, workspace)
+  sandbox = DockerHostSandbox(spec=spec, workspace=workspace)
+  sandbox.up()
   try:
     # a staged script writes a file into the workspace via SANDBOX_WORKSPACE
     _stage(workspace, "write.sh", 'echo hello > "$SANDBOX_WORKSPACE"/out.txt')
-    first = backend.run_script(handle, "write.sh", timeout=30.0)
+    first = sandbox.run_script("write.sh", timeout=30.0)
     assert first.ok
     assert (workspace / "out.txt").read_text().strip() == "hello"
     # a second run sees the first's container state (persistence)
     _stage(workspace, "touch.sh", "touch /tmp/marker")
-    _ = backend.run_script(handle, "touch.sh", timeout=30.0)
+    _ = sandbox.run_script("touch.sh", timeout=30.0)
     _stage(workspace, "check.sh", "test -f /tmp/marker")
-    second = backend.run_script(handle, "check.sh", timeout=30.0)
+    second = sandbox.run_script("check.sh", timeout=30.0)
     assert second.ok
     # a nonzero script reports its exit code faithfully
     _stage(workspace, "fail.sh", "exit 7")
-    failing = backend.run_script(handle, "fail.sh", timeout=30.0)
+    failing = sandbox.run_script("fail.sh", timeout=30.0)
     assert failing.exit_code == 7
   finally:
-    backend.down(handle)
+    sandbox.down()
 
 
 @pytest.mark.docker
 def test_live_manager_teardown_on_body_error(tmp_path: Path):
   spec = SandboxSpec("debian-teardown", _IMAGE, "/", "none")
-  mgr = SandboxManager(
-      spec=spec, backend=DockerHostBackend(), workspace=tmp_path / "ws"
-  )
-  with mgr.sandbox() as sb:
-    handle = sb.handle
+  sandbox = DockerHostSandbox(spec=spec, workspace=tmp_path / "ws")
+  mgr = SandboxManager(sandbox=sandbox, output_dir=tmp_path / "out")
+  with mgr.session():
+    container = sandbox._container  # the concrete host sandbox's container id
     _boom(ValueError("body boom"))
   assert mgr.result.status is RunStatus.RUN_ERROR
   # the container is gone: inspecting it fails
   probe = subprocess.run(
-      ["docker", "inspect", handle],
+      ["docker", "inspect", container],
       capture_output=True,
       text=True,
       check=False,
@@ -300,14 +347,14 @@ def test_live_manager_teardown_on_body_error(tmp_path: Path):
 @pytest.mark.docker
 def test_no_orphan_containers_left(tmp_path: Path):
   spec = SandboxSpec("debian-orphan", _IMAGE, "/", "none")
+  ws = tmp_path / "ws"
   mgr = SandboxManager(
-      spec=spec,
-      backend=DockerHostBackend(),
-      workspace=tmp_path / "ws",
+      sandbox=DockerHostSandbox(spec=spec, workspace=ws),
+      output_dir=ws,
       mounts={"noop.sh": Mount(Inline(b"true\n"))},
   )
-  with mgr.sandbox() as sb:
-    _ = sb.run("noop.sh", timeout=30.0)
+  with mgr.session() as sb:
+    _ = sb.run_script("noop.sh", timeout=30.0)
   leftover = subprocess.run(
       [
           "docker",
