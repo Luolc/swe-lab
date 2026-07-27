@@ -102,7 +102,7 @@ One object; the concrete subclasses *are* the backends:
 class Sandbox(ABC):            # config + lifecycle + ops, in ONE object
   spec: SandboxSpec
   def up(self) -> None: ...               # provision (subsumes _prepare_workspace)
-  def place(self, placements) -> None: ...# stage inputs — §3/§4
+  def place(self, mounts: Mounts) -> None: ...# stage inputs — §3/§4
   def run(self, script_name, *, timeout, ...) -> ExecResult: ...
   def read(self, name) -> bytes: ...       # + the minimal ad-hoc read/write
   def down(self) -> None: ...              # best-effort teardown; never raises
@@ -169,37 +169,37 @@ The **concrete transfer/persist interface and the exact `Resource` variant
 surface are deferred to the Task-14 design**, after the real (source × backend)
 matrix is enumerated — precisely so this ADR does not over-assume them.
 
-### 4. Unify `Mount` and `Asset` into one placement
+### 4. One `Mount` type; "asset" is a wording convention, not an interface
 
-Today there are **two** placement types with two interfaces: `Mounts =
-dict[str, Mount]` (`Mount(resource, executable)`, workspace-relative, read/write)
-and `Assets = dict[str, Resource]` (bare `Resource`, fixed path, read-only). But
-"place a resource into the sandbox" is **the same operation** for both — the
-difference is only in **constraints** (read-only vs read/write; a workspace-
-relative name vs an absolute path). They must not be two interfaces.
+Today there are **two** types with two interfaces: `Mounts = dict[str, Mount]`
+(`Mount(resource, executable)`, workspace-relative, read/write) and `Assets =
+dict[str, Resource]` (bare `Resource`, fixed path, read-only). But "place a
+resource into the sandbox" is **the same operation** for both — the difference
+is only in **constraints** (read-only vs read/write; a workspace-relative name
+vs an absolute path). They must not be two interfaces.
 
-Collapse them into **one placement** whose *attributes* carry the constraints —
-roughly:
+Keep **`Mount` / `Mounts`** as the one type; carry the constraints as
+*attributes*:
 
 ```python
 @dataclass(frozen=True)
-class Placement:
+class Mount:
   resource: Resource     # what content (pure data, §3)
-  path: str              # where in the sandbox
   executable: bool = False
   read_only: bool = False
-  # workspace-relative vs absolute path resolution → a Task-14 detail
+type Mounts = dict[str, Mount]   # target path (workspace-relative or absolute) → mount
 ```
 
-An "asset" is just a `read_only` placement at an absolute path; a "mount" a
-read/write placement at a workspace-relative one. The composition provides **one**
-collection of placements; the receiver stages them all through the §3 seam,
-honoring each placement's constraints (a host backend bind-mounts `read_only`
-ones `:ro`, a remote copies + revokes write, etc.). This also fixes a real
-inconsistency: **`Assets` has no `executable` field**, yet the pinned agent
-binary *is* an executable asset — the omission is why the A-ghjob backend had to
-*infer* the bit from the source mode (the exec-bit fix); a unified `Placement`
-declares `executable` explicitly for assets and mounts alike.
+**"Asset" stops being a type and becomes a wording convention** — it just means
+"a mount the model shouldn't normally modify" (a `read_only` mount, typically at
+an absolute path, e.g. the pinned binary). No `Asset`/`Assets` type, no
+`with_assets` seam. The composition provides **one** `Mounts` collection; the
+receiver stages them all through the §3 seam, honoring each mount's constraints
+(a host backend bind-mounts `read_only` ones `:ro`, a remote copies + revokes
+write, etc.). This also fixes a real inconsistency: **the old `Assets` had no
+`executable` field**, yet the pinned agent binary *is* an executable read-only
+mount — the omission is why the A-ghjob backend had to *infer* the bit from the
+source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
 
 ## Alternatives Considered
 
@@ -243,7 +243,7 @@ declares `executable` explicitly for assets and mounts alike.
 | `sandbox/manager.py` | Reorder `sandbox()` to up-first; delete `_prepare_workspace`; the manager holds no host `workspace: Path` — it drives the one `Sandbox`'s lifecycle (`up → place → … → down`). |
 | `sandbox/backend.py` → `sandbox/sandbox.py` | Merge `Sandbox` + `SandboxBackend` into one `Sandbox` **ABC** (config + `up`/`place`/`run`/`read`/`down`); concrete subclasses are the backends. `materialize`/`with_assets`/the handle field are gone. `ExecResult` unchanged. Observers get a narrower view (no `up`/`down`). |
 | `sandbox/resources.py` | `Resource` becomes **pure data** — a tagged variant (`Inline`/`LocalFile`/`Url`/`ObjectStore`/…) with enough info; its behavior methods (`materialize_to`/`local_path`) are **removed** (the receiver decides the transfer). **Exact variant surface designed in Task 14.** |
-| `sandbox/mounts.py` | Unify `Mount` + `Assets` into one `Placement` (`resource`, `path`, `executable`, `read_only`); `executable` now applies to what were assets (the binary). The backend's `with_assets` / `Assets` seam dissolves into the single placement collection. |
+| `sandbox/mounts.py` | Keep `Mount`/`Mounts`; add `read_only` (and keep `executable`) to `Mount`. Drop the `Assets` type + `with_assets` seam — "asset" becomes a wording convention for a read-only `Mount` (the binary is an executable read-only mount). |
 | `sandbox/backends/host.py` | `DockerHostBackend` → `DockerHostSandbox(Sandbox)`: `up` = `docker create`+`start` over a self-owned dir; shared-dir zero-copy `place`; `run`/`read`/`down` over that container. |
 | `sandbox/backends/ghjob.py` | `GitHubJobBackend` → `GitHubJobSandbox(Sandbox)`: `up` provisions the local dir; `place` handles read-only + executable (the exec-bit fix stays); `run`/`read`/`down` local. |
 | `sandbox/backends/remote.py` **(new)** | `RemoteSandbox(Sandbox)` — the P0 backend against the provider API: `up` provisions; `place`/`read` via native/host-mediated transfer; `run` via the exec API; `down` tears down. |
