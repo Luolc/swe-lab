@@ -274,15 +274,12 @@ follows. No runtime deps added.
 `up` / `down`, which are the manager's staging/collect/lifecycle ops on the full
 `Sandbox`. `run_command` uses a per-sandbox shell (default `bash`, configurable
 for `sh`-only images). Artifacts are collected **out** via `sb.fetch(name, dest)`
-+ a manager collect step (§6.4) — the output half of the transfer seam — so the
-earlier `host_path` escape hatch is dropped.
++ a **manager collect step** (§6.4, symmetric to `mount` — **not** a
+`CollectObserver`) — the output half of the transfer seam; the earlier
+`host_path` escape hatch is dropped. Both `fetch` (files, no buffering — the
+collect step) and `read` (bytes, inline — observers) are kept.
 
 **Still open:**
-1. **`fetch` vs `read` for artifacts** — `read(name) -> bytes` (in-memory, small)
-   vs `fetch(name, dest) -> None` (streamed to a host file, large). Lean: keep
-   both — the collect step uses `fetch` (files, no buffering); observers use
-   `read` for content they process inline. Confirm the collect step lives in the
-   manager (symmetric to `mount`) vs a shared `CollectObserver`.
-2. **`SandboxFs.write` breadth** — `write` stays on the view (diff-extract
-   legitimately stages `extract.sh`); only `up`/`down`/`mount` are withheld.
-   Flag if a stricter read-only observer view is wanted.
+1. **`SandboxFs.write` breadth** — `write` stays on the view (diff-extract
+   legitimately stages `extract.sh`); only `up`/`down`/`mount`/`fetch` are
+   withheld. Flag if a stricter read-only observer view is wanted.
