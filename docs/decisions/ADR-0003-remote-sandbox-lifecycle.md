@@ -154,20 +154,34 @@ sandbox. A resource therefore cannot own "how I am materialized".
 
 Instead:
 
-- **`Resource` is pure data** — a tagged variant (`Inline` / `LocalFile` / `Url`
-  / `ObjectStore` / …) carrying **enough info** for any receiver to decide a
-  transfer. It has **no behavior** (today's `materialize_to` / `local_path` are
-  removed). This also re-classifies `Resource` under [ADR-0002](ADR-0002-interface-style-abc-vs-protocol.md)
-  as a **data shape**, not a behavior interface.
-- The **receiver decides the transfer** — the live `Sandbox`, coordinated by the
-  manager, inspects the resource variant + its own nature and picks the strategy
-  (shared-dir copy, host-mediated upload, sandbox-direct fetch, …),
-  falling back to host-bytes when nothing better matches and **failing loudly**
-  when even that is impossible (a ref only the sandbox can reach).
+- **`Resource` is extensible data** — variants (`Inline` / `LocalFile` / `Url` /
+  `ObjectStore` / …) carrying **enough info**, with **no transfer behavior** on
+  it (today's `materialize_to` / `local_path` removed). Adding a kind is a new
+  subclass — **import-only**.
+- **The receiver decides the transfer** — the live `Sandbox`, coordinated by the
+  manager, inspects the resource and materializes it (shared-dir copy,
+  host-mediated upload, sandbox-direct fetch, …), handling the kinds it knows and
+  **failing loudly** on ones it does not.
 
-The **concrete transfer/persist interface and the exact `Resource` variant
-surface are deferred to the Task-14 design**, after the real (source × backend)
-matrix is enumerated — precisely so this ADR does not over-assume them.
+**Extensibility (library requirement), kept simple.** swe-lab is imported, not
+edited, and the real internal case is a company with its **own sandbox infra**.
+The target: *"at Company A I write `AcmeSandbox(Sandbox)` against our infra, and
+because we stage from our internal object store I also add
+`AcmeObjectStore(Resource)` — using only `import` + subclassing, without touching
+swe-lab."* Both axes are subclassed **together and paired**: `AcmeSandbox`'s
+transfer logic handles `AcmeObjectStore` (its own kind) plus the built-in kinds
+the composition still produces (the prompt is `Inline`, the binary a
+`LocalFile`). The mechanism is ordinary override + `super()`: swe-lab's base
+`Sandbox` handles the built-in kinds via reusable helpers, and a subclass adds
+its own kinds and delegates the rest — so `AcmeSandbox` writes only the
+object-store transfer, not the `Inline`/`LocalFile` plumbing. We deliberately do
+**not** build a capability-negotiation framework to make an arbitrary resource
+work with *every* built-in backend — since a user writes their own paired
+backend, that machinery is unnecessary abstraction.
+
+The **concrete transfer/persist interface and the exact `Resource` surface are
+deferred to the Task-14 design**, after the real (source × backend) matrix is
+enumerated — precisely so this ADR does not over-assume them.
 
 ### 4. One `Mount` type; "asset" is a wording convention, not an interface
 
@@ -184,7 +198,7 @@ Keep **`Mount` / `Mounts`** as the one type; carry the constraints as
 ```python
 @dataclass(frozen=True)
 class Mount:
-  resource: Resource     # what content (pure data, §3)
+  resource: Resource     # what content (extensible data, §3)
   executable: bool = False
   read_only: bool = False
 type Mounts = dict[str, Mount]   # target path (workspace-relative or absolute) → mount
@@ -242,7 +256,7 @@ source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
 |---|---|
 | `sandbox/manager.py` | Reorder `sandbox()` to up-first; delete `_prepare_workspace`; the manager holds no host `workspace: Path` — it drives the one `Sandbox`'s lifecycle (`up → place → … → down`). |
 | `sandbox/backend.py` → `sandbox/sandbox.py` | Merge `Sandbox` + `SandboxBackend` into one `Sandbox` **ABC** (config + `up`/`place`/`run`/`read`/`down`); concrete subclasses are the backends. `materialize`/`with_assets`/the handle field are gone. `ExecResult` unchanged. Observers get a narrower view (no `up`/`down`). |
-| `sandbox/resources.py` | `Resource` becomes **pure data** — a tagged variant (`Inline`/`LocalFile`/`Url`/`ObjectStore`/…) with enough info; its behavior methods (`materialize_to`/`local_path`) are **removed** (the receiver decides the transfer). **Exact variant surface designed in Task 14.** |
+| `sandbox/resources.py` | `Resource` is **extensible data** — variants + enough info, **no transfer behavior** (`materialize_to`/`local_path` removed). A new kind is a subclass (import-only), handled by a backend that knows it. **Exact surface designed in Task 14.** |
 | `sandbox/mounts.py` | Keep `Mount`/`Mounts`; add `read_only` (and keep `executable`) to `Mount`. Drop the `Assets` type + `with_assets` seam — "asset" becomes a wording convention for a read-only `Mount` (the binary is an executable read-only mount). |
 | `sandbox/backends/host.py` | `DockerHostBackend` → `DockerHostSandbox(Sandbox)`: `up` = `docker create`+`start` over a self-owned dir; shared-dir zero-copy `place`; `run`/`read`/`down` over that container. |
 | `sandbox/backends/ghjob.py` | `GitHubJobBackend` → `GitHubJobSandbox(Sandbox)`: `up` provisions the local dir; `place` handles read-only + executable (the exec-bit fix stays); `run`/`read`/`down` local. |
@@ -289,6 +303,12 @@ source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
 - This ADR **amends the spec's core model** (the host-FS workspace assumption
   *and* the Backend/Sandbox split); the spec's status note points here.
 - `Sandbox` is a behavior interface (ABC, per ADR-0002); its concrete subclasses
-  are the backends. `Resource` is **re-classified** by this ADR from a behavior
-  ABC to a **data shape** (a tagged variant) — the transfer behavior it used to
-  carry (`materialize_to`) moves to the receiver.
+  are the backends. `Resource` is **re-classified** to a **data shape** (extensible
+  variants) — the *transfer* behavior it carried (`materialize_to`) moves to the
+  receiver.
+- **Extensibility is a first-class constraint, kept simple:** swe-lab is
+  imported, not edited, and users subclass **both** `Resource` and `Sandbox`.
+  A new `Resource` kind ships with (or reduces to something handled by) a backend
+  — all import-only. No capability-negotiation framework (a user can write their
+  own backend, so it is unnecessary). Task 14 must preserve import-only
+  extensibility on both axes.

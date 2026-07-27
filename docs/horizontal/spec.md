@@ -17,9 +17,10 @@
 > remote / model-hosted sandboxes. ADR-0003 supersedes it with an **up-first
 > lifecycle** where `up()` returns a live, backend-owned `Sandbox` (the
 > filesystem is intrinsic to the backend, not a separable field), a
-> **receiver-decides** input/artifact transfer seam (`Resource` becomes pure
-> data), and **one `Mount` type** (an "asset" is just a read-only mount). Read ADR-0003
-> for the workspace/lifecycle design.
+> **receiver-decides** input/artifact transfer seam (`Resource` is extensible
+> data; the receiver handles it — a company subclasses `Sandbox` + `Resource`
+> together, import-only), and **one `Mount` type** (an "asset" is just a
+> read-only mount). Read ADR-0003 for the workspace/lifecycle design.
 >
 > **Date:** 2026-07-18 · **Scope:** the horizontal shared foundation, consumed
 > by every workstream. Names below (`SandboxManager`, `Sandbox`, `SandboxSpec`,
