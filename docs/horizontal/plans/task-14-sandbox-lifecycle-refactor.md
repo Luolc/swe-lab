@@ -24,7 +24,7 @@ and A-ghjob behave identically**; the full suite + the flipt `eval`/`rollout`
 E2E stay green.
 
 ### In scope
-- One `Sandbox` ABC (`up`/`mount`/`run`/`read`/`write`/`down`); `DockerHostSandbox`
+- One `Sandbox` ABC (`up`/`mount`/`run_script`/`read`/`write`/`down`); `DockerHostSandbox`
   + `GitHubJobSandbox` as subclasses; `FakeSandbox` for tests.
 - Up-first `SandboxManager` lifecycle; `_prepare_workspace` deleted.
 - `Mount` gains `read_only`; `Assets`/`with_assets` removed ("asset" = a
@@ -33,7 +33,9 @@ E2E stay green.
   it, with a reusable base handler subclasses extend via `super()`.
 - Observers + grader ported off `sb.workspace: Path` onto `sb` ops; artifacts
   kept as host paths via a host-only escape hatch (§6.4).
-- CLIs select a `Sandbox` subclass (was `build_backend`).
+- Backend selection is **open**: the composition takes a `Sandbox` by value
+  (programmatic), and the CLI resolves `--backend` through a **name registry**
+  (not a closed enum) — see §6.5.
 
 ### Out of scope (later ADR-0003 phases)
 - A shipped remote backend (Task 15 proves the seam with a `FakeRemoteSandbox`).
@@ -54,7 +56,8 @@ sandbox/
   backends/
     host.py        `DockerHostSandbox(Sandbox)`
     ghjob.py       `GitHubJobSandbox(Sandbox)`
-    __init__.py    `SandboxKind` + `build_sandbox(kind, spec, …)` (was build_backend)
+    __init__.py    a sandbox **registry** — `register_sandbox`/`build_sandbox(name,…)`;
+                   built-ins register `host`/`ghjob` (an open registry, NOT a closed enum)
   testing.py       `FakeSandbox(Sandbox)`
 ```
 
@@ -68,8 +71,8 @@ class SandboxFs(ABC):              # the narrow view observers/graders receive
   def read(self, name: str) -> bytes: ...
   def exists(self, name: str) -> bool: ...
   def write(self, name: str, data: bytes, *, executable=False) -> None: ...
-  def run(self, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # staged file, by name
-  def run_shell(self, command: str, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # bash -c
+  def run_script(self, name, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # staged file, by name
+  def run_command(self, command: str, *, timeout, env=None, stream_to=None) -> ExecResult: ...  # bash -c
   def host_path(self, name: str) -> Path | None: ...   # host backends only; else None
   # NOTE: no `mount` here, and no `up`/`down` — see below.
 
@@ -80,7 +83,7 @@ class Sandbox(SandboxFs, ABC):     # config + lifecycle + ops, in ONE object
     for name, m in mounts.items():
       self._mount_one(name, m)              # the sandbox handles it; subclass extends
   def down(self) -> None: ...               # best-effort; never raises
-  # read/write/run/run_shell/exists/host_path inherited from SandboxFs
+  # read/write/run_script/run_command/exists/host_path inherited from SandboxFs
 
   def _mount_one(self, name: str, m: Mount) -> None:
     """Handle the built-in Resource kinds; a subclass overrides for its own
@@ -96,10 +99,10 @@ class Sandbox(SandboxFs, ABC):     # config + lifecycle + ops, in ONE object
 capability — it is the declarative staging of the composition's `Mounts`
 (prompt, binary, run_script, …), called **once by the manager** after `up`, and
 **handled by the sandbox itself** (`_mount_one` dispatch). Observers receive the
-narrow `SandboxFs` and only `read` / `write` / `run` / `run_shell` — a
+narrow `SandboxFs` and only `read` / `write` / `run_script` / `run_command` — a
 mid-run observer writes an ad-hoc file (`write`) or runs a command, it does not
-re-stage declared mounts. `run` executes a **staged file by name** (persisted for
-audit, per the workspace-layout principle); `run_shell` runs an **inline
+re-stage declared mounts. `run_script` executes a **staged file by name** (persisted for
+audit, per the workspace-layout principle); `run_command` runs an **inline
 `bash -c` string** for short/diagnostic commands (both backends: a one-line argv
 change — `/bin/bash -c "<cmd>"` vs `/bin/bash <ws>/<name>`).
 
@@ -149,7 +152,7 @@ company sandbox overrides `_mount_one` to add its own `Resource` kinds and calls
 sb = self._sandbox(spec, config)          # construct the chosen Sandbox subclass (not live)
 try:
   merged = merge_mounts(dict(self.mounts), *(o.mounts() for o in observers))
-  for o in observers: o.before_create(sb) # sb not live yet; run/read/mount fail
+  for o in observers: o.before_create(sb) # sb not live yet; run_script/read/mount fail
   sb.up()                                  # provision (was backend.up; subsumes _prepare_workspace)
   sb.mount(merged)                         # AFTER up
   for o in observers: o.after_create(sb)
@@ -159,7 +162,7 @@ finally:
 ```
 
 - `Sandbox.__init__` sets state; `up()` marks it live (a `_live` flag replaces
-  the `handle == ""` guard at `manager.py:83-84`). `run`/`read`/`mount` raise
+  the `handle == ""` guard at `manager.py:83-84`). `run_script`/`read`/`mount` raise
   `SandboxError` before `up()`.
 - `_prepare_workspace` (`manager.py:226-237`) moves **into each sandbox's `up`**
   (host backends `mkdir` + the empty-check; ghjob provisions its dir).
@@ -170,7 +173,7 @@ finally:
 
 ### 6.1 Observers use `sb` ops, not `sb.workspace`
 - `diff_extract.py`: `(sb.workspace / "extract.sh").write_text(script)` →
-  `sb.write("extract.sh", script.encode(), executable=True)`; `sb.run("extract.sh")`
+  `sb.write("extract.sh", script.encode(), executable=True)`; `sb.run_script("extract.sh")`
   unchanged; `_read_patch(sb.workspace / "patch.raw.diff")` →
   `_read_patch(sb.read("patch.raw.diff"))`; write `patch.diff` → `sb.write(...)`.
 - `conversation/observer.py`: `to_conversation(sb.workspace)` →
@@ -195,14 +198,21 @@ this task: observers resolve a name to a host path with `sb.host_path(name)`
 generalization to fs-resolved names is **Task 12 / Phase 3** — deliberately not
 here, to keep Task 14 a zero-behavior-change refactor for host backends.
 
-### 6.5 Compositions
+### 6.5 Compositions & backend selection (open, not an enum)
 - `solve.py`: drop `backend.with_assets(harness.assets())`; the harness's binary
   becomes a `read_only` executable `Mount` at `BINARY_AT` in the merged mounts.
   `run_rollout`/`RolloutOutcome` otherwise unchanged (`event_stream_complete`
-  reads via `sb`).
-- `cli/*` : `build_backend(kind, …)` → `build_sandbox(kind, spec, …)` returning
-  the subclass; `--backend host|ghjob` semantics unchanged (it now selects a
-  subclass). `--capture proxy` wiring in `solve.py` unchanged.
+  reads via `sb`). **The composition/manager takes a `Sandbox` (or a factory) by
+  value** — a company passes `AcmeSandbox(spec, …)` programmatically, fully open,
+  import-only, no enum.
+- **Backend selection is a name registry, not a closed enum.** Today's
+  `BackendKind` enum + `build_backend` re-close extensibility (a company can't add
+  an enum member). Replace with `register_sandbox(name, factory)` +
+  `build_sandbox(name, spec, **cfg)`; built-ins register `host` / `ghjob` at
+  import. `--backend` becomes a **`str` validated against the registered names**
+  (not a Typer enum), so a company's `register_sandbox("acme", AcmeSandbox)` (in
+  their wrapper / an entry point) makes `--backend acme` work with **no swe-lab
+  edit**. `--capture proxy` wiring in `solve.py` unchanged.
 
 ## 7. Testing
 - `FakeSandbox(Sandbox)` (in-memory dir) replaces `FakeBackend`; the 8 engine
@@ -223,9 +233,9 @@ follows. No runtime deps added.
 ## 9. Open questions
 
 **Settled in review:** the observer view is named **`SandboxFs`**; it carries
-`read`/`write`/`exists`/`run`/`run_shell`/`host_path` but **not** `mount` /
+`read`/`write`/`exists`/`run_script`/`run_command`/`host_path` but **not** `mount` /
 `up` / `down` (mount is the manager's staging step, handled by the sandbox).
-`run_shell(command)` (inline `bash -c`) is added alongside `run(name)` (staged
+`run_command(command)` (inline `bash -c`) is added alongside `run_script(name)` (staged
 file) — short/diagnostic commands need no persisted script.
 
 **Still open:**
