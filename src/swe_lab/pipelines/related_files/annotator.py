@@ -13,7 +13,7 @@ from pathlib import Path
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.harnesses.claude_code.proxy import DEFAULT_BASE_PORT
-from swe_lab.harnesses.claude_code.trace import DEFAULT_CAPTURE
+from swe_lab.pipelines.related_files.exchange import DEFAULT_CAPTURE
 from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_run import (

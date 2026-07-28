@@ -27,7 +27,7 @@ See ``docs/traces.md`` for the full model and the reconciliation decision table.
 
 Auth: set ``HF_TOKEN`` (e.g. in ``.envrc.local``) or run ``hf auth login``.
 
-    python -m ...tasks.related_files.traces <action> [--dataset ...]
+    python -m swe_lab.pipelines.related_files.traces <action> [--dataset ...]
 """
 
 from __future__ import annotations

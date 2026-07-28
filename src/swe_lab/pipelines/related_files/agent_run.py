@@ -38,12 +38,12 @@ from swe_lab.harnesses.claude_code.proxy import (
     port_for_index,
     ReverseProxy,
 )
+from swe_lab.paths import cache_root, find_repo_root
 
-# The stream/proxy trace parsing + unified exchange record now live in
-# ``core.agent.trace`` so ``rollout`` (agent runs in-container) reuses them
-# without a core→tasks dependency. Re-exported here for back-compat: existing
-# callers and tests still import these names from ``agent_run``.
-from swe_lab.harnesses.claude_code.trace import (
+# The stream/proxy trace parsing + unified exchange record live in the sibling
+# ``exchange`` module. Re-exported here for back-compat: existing callers and
+# tests still import these names from ``agent_run``.
+from swe_lab.pipelines.related_files.exchange import (
     CAPTURE_MODES,
     CAPTURE_PROXY,
     DEFAULT_CAPTURE,
@@ -53,7 +53,6 @@ from swe_lab.harnesses.claude_code.trace import (
     last_stream_record,
     parse_stream_events,
 )
-from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_validator import validate_output
