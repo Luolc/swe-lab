@@ -53,7 +53,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
 
 def run_unit_test[V: Verdict](
     sandbox_spec: SandboxSpec,
-    unit_spec: UnitTestSpec[V],
+    unit_test_spec: UnitTestSpec[V],
     *,
     backend: str,
     workspace: Path,
@@ -66,7 +66,7 @@ def run_unit_test[V: Verdict](
 
   Args:
     sandbox_spec: The run context (image, workdir, base commit).
-    unit_spec: The compiled eval script, mounts, and grader.
+    unit_test_spec: The compiled eval script, mounts, and grader.
     backend: The registered backend name that realizes the sandbox.
     workspace: The host workspace directory for this run.
     timeout: Seconds before the eval script is killed.
@@ -82,10 +82,10 @@ def run_unit_test[V: Verdict](
     (grading never ran) — so a caller has one code path and gates on
     ``RunResult.status``.
   """
-  parse: EvalParseObserver[V] = EvalParseObserver(unit_spec.grader)
-  mounts = dict(unit_spec.mounts)
+  parse: EvalParseObserver[V] = EvalParseObserver(unit_test_spec.grader)
+  mounts = dict(unit_test_spec.mounts)
   mounts[ENTRYSCRIPT_NAME] = Mount(
-      Inline(unit_spec.eval_script.encode()), executable=True
+      Inline(unit_test_spec.eval_script.encode()), executable=True
   )
   sandbox = build_sandbox(
       backend, sandbox_spec, workspace, network=network, pull=pull

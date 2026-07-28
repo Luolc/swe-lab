@@ -180,12 +180,12 @@ def _finish(
     return False
 
   sandbox_spec = instance.sandbox_spec()
-  unit_spec = instance.unit_test_spec(patch=outcome.patch)
+  unit_test_spec = instance.unit_test_spec(patch=outcome.patch)
   eval_ws = cache_root(root) / _EVAL_SUBDIR / instance.instance_id
   shutil.rmtree(eval_ws, ignore_errors=True)
   _, verdict = run_unit_test(
       sandbox_spec,
-      unit_spec,
+      unit_test_spec,
       backend=backend,
       workspace=eval_ws,
       timeout=timeout,
