@@ -464,10 +464,15 @@ single-HF-repo approach conflated them (it was designed for one task, W1).
 
 Mechanics:
 
-- **`Store` seam.** The `PersistObserver` talks to a tiny `Store` interface
-  (put + manifest append). The vendor is **configuration, not architecture** —
-  swapping stores later is a config change. **The manifest indexes T1 only**; it
-  is the ledger of formal intermediates and is never polluted by debug residue.
+- **`Store` seam.** A tiny `Store` interface (put / get / manifest append) fed
+  by a **post-run `persist` step** — *amended 2026-07-30 (task 12): a post-run
+  consumer of the finished `RunResult`, not a `PersistObserver`, because the
+  manifest needs the final status / metrics the manager assembles after teardown
+  and the `fetch`/collect seam (ADR-0003) has already landed the artifacts on
+  the host.* The vendor is **configuration, not architecture** (an open
+  `build_store` registry) — swapping stores later is a config change. **The
+  manifest indexes T1 only** (per-run shards, aggregated on read); it is the
+  ledger of formal intermediates and is never polluted by debug residue.
 - **Tier = explicit entry-point default + one flag, no inference.** Formal sweep
   workflows default `formal`; `workflow_dispatch` one-offs and local CLI default
   `debug` (opt in via `--persist`). The tier is stamped into the run record at
