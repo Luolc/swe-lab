@@ -9,7 +9,7 @@ from typing import Annotated
 
 import typer
 
-from swe_lab.cli._persist import persist_run
+from swe_lab.cli.persist_wiring import persist_run
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import compile_unit_test
