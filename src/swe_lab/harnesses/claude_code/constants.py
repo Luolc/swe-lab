@@ -35,8 +35,8 @@ AGENT_STDERR_NAME = "claude.stderr"  # the run's stderr log
 PROXY_LOG_NAME = "claude.proxy.jsonl"
 
 # The host, as seen from inside the container, that the Docker host-gateway
-# resolves to — how a containerized agent reaches a host-side proxy. Paired with
-# a ``--add-host`` on the backend (proxy capture only).
+# resolves to — how a containerized agent reaches a host-side proxy. The host
+# backend maps it via ``--add-host`` on every container.
 CONTAINER_PROXY_HOST = "host.docker.internal"
 
 DEFAULT_MODEL = "claude-sonnet-5"
