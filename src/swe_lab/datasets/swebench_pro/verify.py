@@ -15,9 +15,11 @@ For each instance we do two graded runs in its image and check the pair:
 A mismatch means the instance is suspect: its tests don't detect the bug
 (``BASE_UNEXPECTED_PASS``) or its golden patch doesn't fix it under our harness
 (``GOLDEN_FAIL``). Runs are stride-sharded (``--shard i/N``) so a GitHub Actions
-matrix can burst the whole dataset in parallel; each shard writes one JSON per
-instance under ``--out-dir`` (resumable — an instance with a result is skipped),
-and ``--aggregate`` merges them into a summary + report.
+matrix can burst the whole dataset in parallel; each shard appends one **T1
+store shard** per instance (``RunRecord``, keyed under ``--sweep``) — resumable
+(a done instance is skipped) and object-store-backed, not committed to git.
+``--aggregate`` reads the sweep's shards into a summary + report. The store is a
+local ``FilesystemStore`` today; task 13 points it at R2 with no change here.
 
 The two graded runs go through ``compile_unit_test`` + ``run_unit_test`` on the
 sandbox engine, so the verdict is a ``SweBenchProVerdict`` and the run outcome a
@@ -42,7 +44,7 @@ import typer
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import RunResult, RunStatus
+from swe_lab.sandbox import build_store, RunRecord, RunResult, RunStatus, Store
 
 from .record import SweBenchProInstance
 from .unit_test import (
@@ -59,8 +61,12 @@ GOLDEN_FAIL = "GOLDEN_FAIL"
 ERROR = "ERROR"  # inconclusive: harness/infra failure, not a dataset finding
 _VERDICTS = (OK, BASE_UNEXPECTED_PASS, GOLDEN_FAIL, ERROR)
 
-_DEFAULT_OUT = "outputs/swebench_pro/patch_validation"
-_RESULTS_SUBDIR = "instances"  # per-instance JSONs under out_dir
+# Verify persists each instance's result to the T1 object-store seam (one
+# RunRecord shard per instance), not a committed outputs/ dir. A fixed run-ts
+# segment keeps one shard per instance per sweep (a re-verify overwrites it).
+_DEFAULT_SWEEP = "golden-verify"
+_STORE_SUBDIR = "store"  # the FilesystemStore root under cache_root
+_RUN_TS = "latest"  # one shard per instance per sweep (idempotent re-verify)
 _WS_SUBDIR = "golden_verify"  # scratch workspaces under cache_root
 
 # One graded run: the engine outcome paired with the verdict it produced
@@ -181,25 +187,27 @@ def verify_instance(
     instance: SweBenchProInstance,
     *,
     repo_root: Path,
-    results_dir: Path,
+    store: Store,
+    sweep: str,
     ws_root: Path,
     timeout: float,
     no_network: bool,
     prune_images: bool,
 ) -> dict[str, object]:
-  """Run base + golden for one instance, classify, and persist the result.
+  """Run base + golden for one instance, classify, and persist a T1 shard.
 
   Args:
     instance: The dataset record to verify.
     repo_root: Repo root, used to locate the cached harness.
-    results_dir: Directory receiving this instance's JSON result file.
+    store: The T1 store the result shard is appended to.
+    sweep: The sweep id this verification is keyed under.
     ws_root: Root under which the instance's scratch workspaces are staged.
     timeout: Wall-clock limit for each graded run, in seconds.
     no_network: Run the containers offline.
     prune_images: Remove the instance's image after both runs.
 
   Returns:
-    The persisted result record, including the verdict.
+    The result record (``instance_id`` + ``verdict`` + run detail).
   """
   iid = instance.instance_id
   result: dict[str, object] = {"instance_id": iid}
@@ -237,7 +245,24 @@ def verify_instance(
     if prune_images:
       _prune_image(image_ref)
   result["finished_at"] = datetime.now(UTC).isoformat()
-  _write_json(results_dir / f"{iid}.json", result)
+  # One T1 shard per instance: the verdict is the record status; the base/golden
+  # detail (and any error) lives in `extra`. A fixed run-ts overwrites on
+  # re-verify, so a sweep holds exactly one shard per instance.
+  store.append_manifest(
+      RunRecord(
+          sweep_id=sweep,
+          instance_id=iid,
+          run_ts=_RUN_TS,
+          status=str(result["verdict"]),
+          tier="formal",
+          backend="host",
+          extra={
+              key: value
+              for key, value in result.items()
+              if key not in ("instance_id", "verdict")
+          },
+      )
+  )
   return result
 
 
@@ -271,15 +296,10 @@ def _parse_shard(value: str) -> tuple[int, int]:
   return i, n
 
 
-def _out_dir(root: Path, raw: str) -> Path:
-  path = Path(raw)
-  return path if path.is_absolute() else root / path
-
-
 def run(
     *,
     dataset: str,
-    out_dir: str,
+    sweep: str,
     shard: tuple[int, int],
     jobs: int,
     limit: int,
@@ -288,11 +308,11 @@ def run(
     prune_images: bool,
     refresh: bool,
 ) -> int:
-  """Verify this shard's instances, writing one JSON result per instance.
+  """Verify this shard's instances, appending one T1 shard per instance.
 
   Args:
     dataset: The dataset to verify.
-    out_dir: Output directory (absolute, or relative to the repo root).
+    sweep: The sweep id results are keyed under in the store.
     shard: The ``(i, N)`` stride shard to run.
     jobs: Worker threads.
     limit: Cap instances this shard runs, after sharding (0 = no cap).
@@ -305,8 +325,7 @@ def run(
     A process exit code (always 0).
   """
   root = find_repo_root()
-  out_path = _out_dir(root, out_dir)
-  results_dir = out_path / _RESULTS_SUBDIR
+  store = build_store("filesystem", root=cache_root(root) / _STORE_SUBDIR)
   ws_root = cache_root(root) / _WS_SUBDIR
 
   records = [
@@ -317,11 +336,8 @@ def run(
   shard_i, shard_n = shard
   todo = records[shard_i::shard_n]
   if not refresh:
-    todo = [
-        rec
-        for rec in todo
-        if not (results_dir / f"{rec.instance_id}.json").is_file()
-    ]
+    done = {r.instance_id for r in store.read_manifest(sweep)}
+    todo = [rec for rec in todo if rec.instance_id not in done]
   if limit:
     todo = todo[:limit]  # smoke/debug: cap instances this shard runs
   print(
@@ -334,7 +350,8 @@ def run(
     return verify_instance(
         rec,
         repo_root=root,
-        results_dir=results_dir,
+        store=store,
+        sweep=sweep,
         ws_root=ws_root,
         timeout=timeout,
         no_network=no_network,
@@ -356,56 +373,54 @@ def run(
   return 0
 
 
-def aggregate(*, dataset: str, out_dir: str) -> int:
-  """Merge per-instance results into ``summary.json`` + ``report.md``.
+def aggregate(*, dataset: str, sweep: str) -> int:
+  """Merge the sweep's per-instance shards into a summary + report.
 
   Args:
     dataset: The dataset the results belong to (recorded in the summary).
-    out_dir: Output directory (absolute, or relative to the repo root).
+    sweep: The sweep id whose shards to aggregate.
 
   Returns:
     A process exit code (always 0).
   """
   root = find_repo_root()
-  out_path = _out_dir(root, out_dir)
-  results_dir = out_path / _RESULTS_SUBDIR
-  results = [
-      json.loads(path.read_text())
-      for path in sorted(results_dir.glob("*.json"))
-  ]
+  store = build_store("filesystem", root=cache_root(root) / _STORE_SUBDIR)
+  report_dir = cache_root(root) / _STORE_SUBDIR / "runs" / sweep
+  records = store.read_manifest(sweep)
   counts: collections.Counter[str] = collections.Counter(
-      str(r.get("verdict", "MISSING")) for r in results
+      r.status for r in records
   )
   non_ok = sorted(
-      (r for r in results if r.get("verdict") != OK),
-      key=lambda r: (str(r.get("verdict")), str(r.get("instance_id"))),
+      (r for r in records if r.status != OK),
+      key=lambda r: (r.status, r.instance_id),
   )
   total = len(load_dataset(dataset))
   # Span of the underlying runs, from the per-instance stamps. ISO-8601 UTC
   # strings sort lexicographically, so min/max give the earliest/latest finish.
   finished = sorted(
-      str(r["finished_at"]) for r in results if r.get("finished_at")
+      str(r.extra["finished_at"]) for r in records if r.extra.get("finished_at")
   )
   summary: dict[str, object] = {
       "dataset": dataset,
+      "sweep": sweep,
       "generated_at": datetime.now(UTC).isoformat(),
       "first_verified_at": finished[0] if finished else None,
       "last_verified_at": finished[-1] if finished else None,
       "total": total,
-      "verified": len(results),
+      "verified": len(records),
       "counts": {v: counts.get(v, 0) for v in _VERDICTS},
       "non_ok": [
           {
-              "instance_id": r.get("instance_id"),
-              "verdict": r.get("verdict"),
-              "error": r.get("error"),
+              "instance_id": r.instance_id,
+              "verdict": r.status,
+              "error": r.extra.get("error"),
           }
           for r in non_ok
       ],
   }
-  _write_json(out_path / "summary.json", summary)
+  _write_json(report_dir / "summary.json", summary)
   report = _render_report(summary)
-  _ = (out_path / "report.md").write_text(report)
+  _ = (report_dir / "report.md").write_text(report)
   print(report, flush=True)
   step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
   if step_summary:
@@ -454,10 +469,10 @@ def verify_cmd(
     dataset: Annotated[
         str, typer.Option(help="Dataset to verify.")
     ] = "swebench_pro",
-    out_dir: Annotated[
+    sweep: Annotated[
         str,
-        typer.Option(help="Output dir (absolute, or relative to repo root)."),
-    ] = _DEFAULT_OUT,
+        typer.Option(help="Sweep id results are keyed under in the T1 store."),
+    ] = _DEFAULT_SWEEP,
     aggregate_: Annotated[
         bool,
         typer.Option(
@@ -496,11 +511,11 @@ def verify_cmd(
   """
   parsed_shard = _parse_shard(shard)
   code = (
-      aggregate(dataset=dataset, out_dir=out_dir)
+      aggregate(dataset=dataset, sweep=sweep)
       if aggregate_
       else run(
           dataset=dataset,
-          out_dir=out_dir,
+          sweep=sweep,
           shard=parsed_shard,
           jobs=jobs,
           limit=limit,

@@ -29,10 +29,6 @@ on:
         description: Re-verify instances even if a result already exists
         type: boolean
         default: false
-      push_results:
-        description: Commit the merged results back to the repo
-        type: boolean
-        default: false
 
 concurrency:
   group: verify-golden
@@ -113,7 +109,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: verify-${{ matrix.shard }}
-          path: outputs/swebench_pro/patch_validation/instances
+          path: .cache/store/runs/golden-verify
           if-no-files-found: ignore
 
   aggregate:
@@ -121,7 +117,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -137,10 +133,10 @@ jobs:
           name: dataset-parquet
           path: datasets/swebench_pro/data
 
-      - name: Merge shard artifacts into the results dir
+      - name: Merge shard artifacts into the store
         uses: actions/download-artifact@v4
         with:
-          path: outputs/swebench_pro/patch_validation/instances
+          path: .cache/store/runs/golden-verify
           pattern: verify-*
           merge-multiple: true
 
@@ -152,27 +148,10 @@ jobs:
         with:
           name: verification-summary
           path: |
-            outputs/swebench_pro/patch_validation/summary.json
-            outputs/swebench_pro/patch_validation/report.md
+            .cache/store/runs/golden-verify/summary.json
+            .cache/store/runs/golden-verify/report.md
 
-      - name: Commit results
-        if: ${{ inputs.push_results }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add outputs/swebench_pro/patch_validation
-          git commit -m "verify: golden verification results (run ${{ github.run_id }})" \
-            || { echo "nothing to commit"; exit 0; }
-          # A full sweep takes hours, during which main usually moves ahead (e.g.
-          # concurrent annotation commits), so a bare push races and is rejected
-          # "fetch first". Rebase our single results commit onto the latest main
-          # and retry a few times before giving up.
-          for attempt in 1 2 3 4 5; do
-            git pull --rebase origin "${GITHUB_REF_NAME}" || true
-            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-              echo "pushed on attempt ${attempt}"; exit 0
-            fi
-            echo "push attempt ${attempt} lost the race; retrying"
-            sleep 5
-          done
-          echo "::error::could not push results after 5 rebase attempts"; exit 1
+      # Results are T1 (object-store) intermediates, not committed to git: the
+      # per-instance shards + summary ride as run artifacts here (transitional
+      # T0/T1) and move to R2 when task 13 wires the S3 store. The report is
+      # also written to the job summary above.
