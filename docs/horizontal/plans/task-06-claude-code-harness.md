@@ -1,16 +1,8 @@
 # Task 06 — `claude_code` harness (event-stream capture)
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) (§The three axes — harness, §Agent output → one typed
-> `Conversation`, §Assets vs. mounts), [task 02](task-02-engine-core.md)
-> (observers/mounts/`Sandbox.run`), [task 03](task-03-a-host-backend.md)
-> (`DockerHostBackend`, the **assets** field + the **materialize seam** this
-> harness needs), [task 06a](task-06a-conversation-protocol.md) (the shared
-> `Conversation` model + the shared `ConversationObserver`; conversion is a
-> `Harness.to_conversation` method, not a separate ABC) this harness plugs into.
-> Grounded in the current Claude-Code-specific code
-> (`src/swe_lab/core/agent/{binary,trace,errors}.py`, `src/swe_lab/rollout/
-> {entryscript,prompt,constants,runner}.py` at `fae1738`). Open items in §8.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

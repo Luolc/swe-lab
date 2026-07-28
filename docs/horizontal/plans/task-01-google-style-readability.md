@@ -1,7 +1,9 @@
 # Task 01 — Google-style readability lift (full repo)
 
-**Status: ✅ Complete (P0–P2 + gates; P3 leftovers below)** · Decided & executed
-2026-07-18 · Preceded the SandboxRun plan.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**. (Written 2026-07-18, before the SandboxRun plan;
+> P3 leftovers are described below.)
 
 Bring the whole repo up to the
 [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html),

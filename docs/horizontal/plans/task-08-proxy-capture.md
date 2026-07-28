@@ -1,14 +1,8 @@
 # Task 08 — Proxy capture mode
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) (§"capture = stream | proxy", §"proxy is not legacy"),
-> tasks [06](task-06-claude-code-harness.md)/[06a](task-06a-conversation-protocol.md)/
-> [07](task-07-diff-extract-rollout-cli.md). Grounded in the current code at
-> `8fd0741`: `src/swe_lab/core/agent/proxy.py`, `core/agent/trace.py`
-> (`CAPTURE_*` vocabulary + `build_exchange_from_proxy`),
-> `harnesses/claude_code/{harness,convert,constants}.py`, `solve.py`, and W1's
-> proven usage in `pipelines/related_files/agent_run.py`. Decisions taken under
-> full-auto in §7 (revisit on review).
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 
