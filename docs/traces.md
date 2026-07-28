@@ -10,8 +10,9 @@ annotation task produces large per-run traces that want the same off-repo +
 manifest treatment. It is documented here at the repo level for that reason. The
 implementation currently lives in
 [`pipelines/related_files/traces.py`](../src/swe_lab/pipelines/related_files/traces.py)
-(the first annotation task); it will be promoted to `core/` when the second task
-lands — see [§7](#7-multi-task-note-future). The model below is task-agnostic.
+(the first annotation task); it will be promoted to a shared top-level module
+when the second task lands — see [§7](#7-multi-task-note-future). The model below
+is task-agnostic.
 
 ---
 
@@ -175,8 +176,9 @@ What guarantees each property:
 Today `traces.py` lives under `pipelines/related_files/` and the HF repo layout is
 `<dataset>/intermediate/<id>/…` — no `<task>/` segment. A second annotation task
 pushing to the same repo could collide. When the second task lands, promote this
-module to `core/` parameterised by `(task, dataset, repo_id)`, and shift the
-upload root up to `outputs/` so paths become `<task>/<dataset>/intermediate/…`
+module to a shared top-level home parameterised by `(task, dataset, repo_id)`,
+and shift the upload root up to `outputs/` so paths become
+`<task>/<dataset>/intermediate/…`
 (mirroring the git layout, collision-free in one repo). Because everything is
 manifest-driven and all blobs are held locally, that migration is a small,
 reversible re-push.
