@@ -13,6 +13,7 @@ from typing import override
 import pytest
 
 from swe_lab.conversation import Conversation
+from swe_lab.rollout import run_rollout
 from swe_lab.sandbox import (
     register_sandbox,
     RunStatus,
@@ -20,7 +21,6 @@ from swe_lab.sandbox import (
 )
 from swe_lab.sandbox.backends import SandboxConfig
 from swe_lab.sandbox.testing import FakeSandbox
-from swe_lab.solve import run_rollout
 
 
 class _LocalFakeSandbox(FakeSandbox):
