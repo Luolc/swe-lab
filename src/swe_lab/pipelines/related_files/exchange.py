@@ -1,6 +1,6 @@
 """Headless-agent trace capture → one source-agnostic exchange record.
 
-A headless Claude Code run can be captured two ways (see ``CAPTURE_MODES``):
+A headless Claude Code run can be captured two ways (see ``Capture``):
 ``proxy`` (a ``cc-reverse-proxy`` logs the raw wire request/response) or
 ``stream`` (``claude --output-format stream-json`` writes every event to
 stdout). Both normalize here to a single **unified exchange record** so
@@ -29,17 +29,16 @@ from pathlib import Path
 import re
 import subprocess
 
-# Where the run's trace (the audit record + the ``complete`` signal) comes from.
-# ``proxy``  — a ``cc-reverse-proxy`` in front of the API logs the raw wire
+from swe_lab.harnesses.claude_code.capture import Capture
+
+# Where the run's trace (the audit record + the ``complete`` signal) comes from,
+# named by the shared ``Capture`` enum:
+# ``PROXY``  — a ``cc-reverse-proxy`` in front of the API logs the raw wire
 #              request/response (exact system prompt + payload); most faithful.
-# ``stream`` — ``claude --output-format stream-json`` writes every event to the
+# ``STREAM`` — ``claude --output-format stream-json`` writes every event to the
 #              CLI's own stdout; no proxy (no submodule build, no port), but the
 #              record is Claude Code's message view, without the raw system
 #              prompt. See :func:`last_stream_record`.
-CAPTURE_PROXY = "proxy"
-CAPTURE_STREAM = "stream"
-CAPTURE_MODES = (CAPTURE_PROXY, CAPTURE_STREAM)
-DEFAULT_CAPTURE = CAPTURE_STREAM
 
 
 # --- stream-json event parsing -----------------------------------------------
@@ -255,7 +254,7 @@ def build_exchange_from_proxy(raw: dict[str, object]) -> dict[str, object]:
 
   return _redact_pii(
       {
-          "source": CAPTURE_PROXY,
+          "source": Capture.PROXY.value,
           "complete": bool(raw.get("complete", False)),
           "model": body.get("model"),
           "messages": [_normalize_message(m) for m in messages_src],
@@ -296,7 +295,7 @@ def build_exchange_from_stream(
   model = final_message.get("model") if final_message else None
   return _redact_pii(
       {
-          "source": CAPTURE_STREAM,
+          "source": Capture.STREAM.value,
           "complete": _stream_complete(result_event),
           "model": model,
           "messages": [_normalize_message(m) for m in messages_src],

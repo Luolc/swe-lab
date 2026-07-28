@@ -3,7 +3,7 @@
 Both the single-instance annotator (`annotator`) and the sample aggregator
 (`aggregator`) do the same thing: provision an isolated workspace, invoke a
 headless Claude Code agent (capturing its trace via ``stream-json`` by default,
-or a per-call reverse proxy — see ``CAPTURE_MODES``), with retries and failure
+or a per-call reverse proxy — see ``Capture``), with retries and failure
 classification, then read / validate / store the result. That flow lives here as
 :func:`run_agent`; the two callers differ only in the prompt and in a couple of
 extra context files.
@@ -26,6 +26,10 @@ import subprocess
 import time
 
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
+
+# The stream/proxy trace parsing + unified exchange record live in the sibling
+# ``exchange`` module.
+from swe_lab.harnesses.claude_code.capture import Capture
 from swe_lab.harnesses.claude_code.errors import (
     AnnotationError,
     cli_failure,
@@ -39,14 +43,7 @@ from swe_lab.harnesses.claude_code.proxy import (
     ReverseProxy,
 )
 from swe_lab.paths import cache_root, find_repo_root
-
-# The stream/proxy trace parsing + unified exchange record live in the sibling
-# ``exchange`` module. Re-exported here for back-compat: existing callers and
-# tests still import these names from ``agent_run``.
 from swe_lab.pipelines.related_files.exchange import (
-    CAPTURE_MODES,
-    CAPTURE_PROXY,
-    DEFAULT_CAPTURE,
     final_result_event,
     last_assistant_stop_reason,
     last_proxy_record,
@@ -112,7 +109,7 @@ def run_agent(
     variant: str = "",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: str = DEFAULT_CAPTURE,
+    capture: Capture = Capture.STREAM,
 ) -> RunResult:
   """Run an agent in an isolated workspace and return its validated result.
 
@@ -141,25 +138,18 @@ def run_agent(
     max_attempts: Total attempts for transient (retryable) failures, with
       backoff between them.
     claude_timeout: Per-attempt wall-clock limit for the claude call.
-    capture: Trace source (see ``CAPTURE_MODES``): ``proxy`` keeps a reverse
+    capture: Trace source (see ``Capture``): ``proxy`` keeps a reverse
       proxy in front of the API; ``stream`` reads the CLI's own
       ``stream-json`` output and needs no proxy.
 
   Returns:
     The run result; persisting it is the caller's job (see ``storage``).
-
-  Raises:
-    ValueError: If ``capture`` is not one of ``CAPTURE_MODES``.
   """
-  if capture not in CAPTURE_MODES:
-    raise ValueError(
-        f"unknown capture mode {capture!r}; use one of {CAPTURE_MODES}"
-    )
   started = time.monotonic()
   instance_id = instance.instance_id
   root = repo_root or find_repo_root()
   provider = provider or GitCheckoutProvider()
-  binary = build_proxy(root) if capture == CAPTURE_PROXY else None
+  binary = build_proxy(root) if capture == Capture.PROXY else None
 
   workspace = prepare_workspace(instance, provider, variant=variant)
   for name, content in (context_files or {}).items():
@@ -169,7 +159,7 @@ def run_agent(
       port if port is not None else port_for_index(index, base_port=base_port)
   )
   tag = instance_id if not variant else f"{instance_id}__{variant}"
-  if capture == CAPTURE_PROXY:
+  if capture == Capture.PROXY:
     trace_log = cache_root(root) / "proxy-logs" / f"{tag}.jsonl"
   else:
     trace_log = cache_root(root) / "agent-traces" / f"{tag}.stream.jsonl"
@@ -190,7 +180,7 @@ def run_agent(
   )
 
   validation_problems = validate_workspace(workspace)
-  if capture == CAPTURE_PROXY:
+  if capture == Capture.PROXY:
     last_record = last_proxy_record(trace_log)
   else:
     last_record = last_stream_record(trace_log)
@@ -199,7 +189,7 @@ def run_agent(
   metadata = _build_metadata(
       cli_result, model, run_port, complete, snippets, validation_problems, kind
   )
-  metadata["capture"] = capture
+  metadata["capture"] = capture.value
   # Wall-clock of this whole run (provision + agent + validate + store) vs the
   # agent's own duration reveals stalls: if wall_clock >> the run's active time,
   # the box was starved (e.g. swap-thrashing under too much concurrency).
@@ -253,7 +243,7 @@ def invoke_with_retries(
     port: int,
     trace_log: Path,
     binary: Path | None,
-    capture: str,
+    capture: Capture,
     model: str,
     timeout: float,
     diag_path: Path,
@@ -274,7 +264,7 @@ def invoke_with_retries(
       ``proxy`` capture, or holding the CLI's own ``stream-json`` output in
       ``stream`` capture.
     binary: The built reverse-proxy binary; required for ``proxy`` capture.
-    capture: Trace source (see ``CAPTURE_MODES``).
+    capture: Trace source (see ``Capture``).
     model: The Claude model alias to run.
     timeout: Per-attempt wall-clock limit for the claude call.
     diag_path: Where raw CLI output of failed attempts is appended.
@@ -295,7 +285,7 @@ def invoke_with_retries(
   """
   for attempt in range(1, max_attempts + 1):
     try:
-      if capture == CAPTURE_PROXY:
+      if capture == Capture.PROXY:
         assert binary is not None  # built by run_agent for proxy capture
         with ReverseProxy(port, trace_log, binary) as proxy:
           cli_result = _invoke_claude(
