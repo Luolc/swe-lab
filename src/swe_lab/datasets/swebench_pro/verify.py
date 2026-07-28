@@ -44,7 +44,14 @@ import typer
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import build_store, RunRecord, RunResult, RunStatus, Store
+from swe_lab.sandbox import (
+    build_sandbox,
+    build_store,
+    RunRecord,
+    RunResult,
+    RunStatus,
+    Store,
+)
 
 from .record import SweBenchProInstance
 from .unit_test import (
@@ -148,18 +155,18 @@ def _graded_run(
   Returns:
     The engine ``RunResult`` and the verdict (``None`` if grading never ran).
   """
-  sandbox_spec = compile_sandbox_spec(instance)
   unit_test_spec = compile_unit_test(instance, patch=patch)
   # The sandbox refuses a non-empty workspace; start each run clean.
   shutil.rmtree(workspace, ignore_errors=True)
-  return run_unit_test(
-      sandbox_spec,
-      unit_test_spec,
-      backend="host",
-      workspace=workspace,
-      timeout=timeout,
+  sandbox = build_sandbox(
+      "host",
+      compile_sandbox_spec(instance),
+      workspace,
       network=not no_network,
       pull=True,
+  )
+  return run_unit_test(
+      sandbox, unit_test_spec, output_dir=workspace, timeout=timeout
   )
 
 

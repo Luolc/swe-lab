@@ -14,16 +14,15 @@ from typing import override
 
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.sandbox import (
-    build_sandbox,
     Contribution,
     Inline,
     Mount,
     RunResult,
+    Sandbox,
     SandboxError,
     SandboxFs,
     SandboxManager,
     SandboxObserver,
-    SandboxSpec,
 )
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
@@ -52,26 +51,26 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
 
 
 def run_unit_test[V: Verdict](
-    sandbox_spec: SandboxSpec,
+    sandbox: Sandbox,
     unit_test_spec: UnitTestSpec[V],
     *,
-    backend: str,
-    workspace: Path,
+    output_dir: Path,
     timeout: float = _DEFAULT_TIMEOUT_S,
-    pull: bool = True,
-    network: bool = False,
     observers: Sequence[SandboxObserver] = (),
 ) -> tuple[RunResult, V | None]:
   """Run and grade one instance's unit-test evaluation.
 
+  The sandbox is **injected, already constructed** — this function neither
+  chooses a backend nor threads its construction options (workspace / pull /
+  network / …). The caller builds it (``build_sandbox(...)`` or a fake) and owns
+  every construction knob, so adding one never touches this signature and a test
+  passes a ``FakeSandbox`` directly.
+
   Args:
-    sandbox_spec: The run context (image, workdir, base commit).
+    sandbox: The live sandbox to run the eval in.
     unit_test_spec: The compiled eval script, mounts, and grader.
-    backend: The registered backend name that realizes the sandbox.
-    workspace: The host workspace directory for this run.
+    output_dir: The host directory collected artifacts are fetched into.
     timeout: Seconds before the eval script is killed.
-    pull: Whether to pull the image before the run (A-host only).
-    network: Whether the grading container gets network access.
     observers: Extra observers composed alongside the eval-parse observer
       (e.g. a persist observer).
 
@@ -87,12 +86,9 @@ def run_unit_test[V: Verdict](
   mounts[ENTRYSCRIPT_NAME] = Mount(
       Inline(unit_test_spec.eval_script.encode()), executable=True
   )
-  sandbox = build_sandbox(
-      backend, sandbox_spec, workspace, network=network, pull=pull
-  )
   manager = SandboxManager(
       sandbox=sandbox,
-      output_dir=workspace,
+      output_dir=output_dir,
       observers=[*observers, parse],
       mounts=mounts,
   )

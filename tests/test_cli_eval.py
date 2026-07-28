@@ -87,17 +87,15 @@ def _wire(
     return _Dataset()
 
   def fake_run(
-      sandbox_spec: object,
+      sandbox: object,
       unit_test_spec: object,
       *,
-      backend: object,
-      workspace: object,
+      output_dir: object,
       timeout: object,
       **kwargs: object,
   ) -> tuple[RunResult, SweBenchProVerdict | None]:
-    del sandbox_spec, unit_test_spec, workspace, timeout, kwargs
+    del sandbox, unit_test_spec, output_dir, timeout, kwargs
     calls["ran"] = True
-    calls["backend"] = backend
     result = RunResult(
         label="acme__widget-1",
         status=RunStatus.SUCCESS,
@@ -174,15 +172,14 @@ def test_setup_failure_none_verdict_exits_one(
   _ = _wire(monkeypatch, verdict=None)
 
   def fake_run_err(
-      sandbox_spec: object,
+      sandbox: object,
       unit_test_spec: object,
       *,
-      backend: object,
-      workspace: object,
+      output_dir: object,
       timeout: object,
       **kwargs: object,
   ) -> tuple[RunResult, None]:
-    del sandbox_spec, unit_test_spec, backend, workspace, timeout, kwargs
+    del sandbox, unit_test_spec, output_dir, timeout, kwargs
     result = RunResult(
         label="acme__widget-1",
         status=RunStatus.SETUP_ERROR,
