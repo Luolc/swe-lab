@@ -35,6 +35,14 @@ class Verdict(Protocol):
     """Whether the run is a full pass (``score >= 1.0``)."""
     ...
 
+  def summary(self) -> dict[str, object]:
+    """Dataset-specific detail for a report, beyond ``score`` / ``resolved``.
+
+    Keeps a caller (a CLI, a report) from having to know a concrete verdict's
+    fields — it prints ``score`` + ``resolved`` + whatever this returns.
+    """
+    ...
+
 
 class Grader[V: Verdict](ABC):
   """Dataset-owned judgment: the files a run left → a verdict.

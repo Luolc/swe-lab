@@ -2,17 +2,19 @@
 
 import json
 from pathlib import Path
-from typing import final
+from typing import cast, final, override
 
 import pytest
 from typer.testing import CliRunner
 
 from swe_lab.cli import app
 import swe_lab.cli.eval as eval_mod
+from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
     OutputState,
     SweBenchProVerdict,
 )
+from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
 
 runner = CliRunner()
@@ -42,10 +44,37 @@ def _wire(
   """Mock the dataset + engine so the CLI runs without Docker; record calls."""
   calls: dict[str, object] = {}
 
+  spec = SandboxSpec("acme__widget-1", "img:tag", "/app", "abc")
+
   @final
-  class _Instance:
+  class _Instance(
+      TaskInstance[Verdict]
+  ):  # a runnable instance, no concrete dataset
     instance_id: str = "acme__widget-1"
-    patch: str = "GOLD DIFF"
+
+    @override
+    def sandbox_spec(self) -> SandboxSpec:
+      return spec
+
+    @override
+    def solve_prompt(self) -> str:
+      return "PROMPT"
+
+    @override
+    def gold_patch(self) -> str:
+      return "GOLD DIFF"
+
+    @override
+    def unit_test(
+        self,
+        *,
+        patch: str | None,
+        checkout_golden_tests: bool = True,
+        repo_root: Path | None = None,
+    ) -> tuple[SandboxSpec, UnitTestSpec[Verdict]]:
+      del checkout_golden_tests, repo_root
+      calls["patch"] = patch  # the spec is discarded by the mocked run
+      return spec, cast(UnitTestSpec[Verdict], object())
 
   @final
   class _Dataset:
@@ -57,13 +86,6 @@ def _wire(
   def fake_load_dataset(name: str) -> _Dataset:
     calls["dataset"] = name
     return _Dataset()
-
-  def fake_compile(
-      instance: object, *, patch: str, repo_root: Path | None = None
-  ) -> tuple[SandboxSpec, object]:
-    del instance, repo_root
-    calls["patch"] = patch
-    return SandboxSpec("acme__widget-1", "img:tag", "/app", "abc"), object()
 
   def fake_run(
       sandbox_spec: object,
@@ -86,9 +108,6 @@ def _wire(
     return result, verdict
 
   monkeypatch.setattr(eval_mod, "load_dataset", fake_load_dataset)
-  # bypass the SweBenchProInstance isinstance guard
-  monkeypatch.setattr(eval_mod, "SweBenchProInstance", _Instance)
-  monkeypatch.setattr(eval_mod, "compile_unit_test", fake_compile)
   monkeypatch.setattr(eval_mod, "run_unit_test", fake_run)
   return calls
 

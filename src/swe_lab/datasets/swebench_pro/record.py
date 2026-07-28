@@ -29,9 +29,20 @@ import ast
 from collections.abc import Mapping
 from dataclasses import dataclass
 import json
-from typing import ClassVar
+from pathlib import Path
+from typing import ClassVar, override
+
+from swe_lab.datasets.instance import TaskInstance
+from swe_lab.evaluation.verdict import UnitTestSpec
+from swe_lab.sandbox import SandboxSpec
 
 from .patches import patch_fail_to_pass
+from .unit_test import (
+    compile_sandbox_spec,
+    compile_solve_prompt,
+    compile_unit_test,
+    SweBenchProVerdict,
+)
 
 # The exact column set of the SWE-Bench Pro parquet, in file order. Used to
 # validate that a raw row matches what this record type expects.
@@ -81,8 +92,14 @@ def _unwrap_text(raw: str) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class SweBenchProInstance:
-  """A single SWE-Bench Pro task instance with normalized, typed fields."""
+class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
+  """A single SWE-Bench Pro task instance with normalized, typed fields.
+
+  Both a ``DatasetRecord`` (the loader parses it) and a ``TaskInstance`` (the
+  CLIs run it): the ``sandbox_spec`` / ``solve_prompt`` / ``gold_patch`` /
+  ``unit_test`` methods delegate to this package's compile functions, so a CLI
+  drives it without importing anything SWE-Bench-Pro-specific.
+  """
 
   # Column set this record type is built from; consumed by the generic loader.
   COLUMNS: ClassVar[tuple[str, ...]] = COLUMNS
@@ -145,4 +162,35 @@ class SweBenchProInstance:
             raw["selected_test_files_to_run"]
         ),
         dockerhub_tag=raw["dockerhub_tag"],
+    )
+
+  @override
+  def sandbox_spec(self) -> SandboxSpec:
+    """Return the run context (image / workdir / base commit)."""
+    return compile_sandbox_spec(self)
+
+  @override
+  def solve_prompt(self) -> str:
+    """Return the SWE-Bench-Pro solve prompt for the agent."""
+    return compile_solve_prompt(self)
+
+  @override
+  def gold_patch(self) -> str:
+    """Return the instance's own (gold) patch."""
+    return self.patch
+
+  @override
+  def unit_test(
+      self,
+      *,
+      patch: str | None,
+      checkout_golden_tests: bool = True,
+      repo_root: Path | None = None,
+  ) -> tuple[SandboxSpec, UnitTestSpec[SweBenchProVerdict]]:
+    """Compile this instance into a runnable unit-test evaluation."""
+    return compile_unit_test(
+        self,
+        patch=patch,
+        checkout_golden_tests=checkout_golden_tests,
+        repo_root=repo_root,
     )

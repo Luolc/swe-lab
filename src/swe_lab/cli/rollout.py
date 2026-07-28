@@ -11,14 +11,10 @@ from typing import Annotated
 import typer
 
 from swe_lab.cli.persist_wiring import persist_run
+from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.datasets.swebench_pro.unit_test import (
-    compile_sandbox_spec,
-    compile_solve_prompt,
-    compile_unit_test,
-)
 from swe_lab.evaluation.methods.unit_test import run_unit_test
+from swe_lab.evaluation.verdict import Verdict
 from swe_lab.harnesses.claude_code import Capture
 from swe_lab.harnesses.claude_code.constants import (
     API_KEY_ENV,
@@ -91,14 +87,12 @@ def rollout_in_docker(
     )
 
   instance = load_dataset(dataset).require(instance_id)
-  if not isinstance(instance, SweBenchProInstance):
-    raise typer.BadParameter(
-        f"dataset {dataset!r} is not wired for rollout yet"
-    )
+  if not isinstance(instance, TaskInstance):
+    raise typer.BadParameter(f"dataset {dataset!r} is not runnable for rollout")
 
   root = find_repo_root()
-  spec = compile_sandbox_spec(instance)
-  prompt = compile_solve_prompt(instance)
+  spec = instance.sandbox_spec()
+  prompt = instance.solve_prompt()
   workspace = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
   shutil.rmtree(workspace, ignore_errors=True)
 
@@ -150,7 +144,7 @@ def rollout_in_docker(
 
 def _finish(
     summary: dict[str, object],
-    instance: SweBenchProInstance,
+    instance: TaskInstance[Verdict],
     outcome: RolloutOutcome,
     grade: bool,
     root: Path,
@@ -185,8 +179,8 @@ def _finish(
     summary["grade"] = {"resolved": False, "reason": "empty_patch"}
     return False
 
-  sandbox_spec, unit_spec = compile_unit_test(
-      instance, patch=outcome.patch, repo_root=root
+  sandbox_spec, unit_spec = instance.unit_test(
+      patch=outcome.patch, repo_root=root
   )
   eval_ws = cache_root(root) / _EVAL_SUBDIR / instance.instance_id
   shutil.rmtree(eval_ws, ignore_errors=True)
@@ -204,8 +198,5 @@ def _finish(
     summary["grade"] = {
         "resolved": verdict.resolved,
         "score": verdict.score,
-        "output_state": verdict.output_state.value,
-        "passed": sorted(verdict.passed),
-        "missing": sorted(verdict.missing),
-    }
+    } | verdict.summary()
   return resolved
