@@ -20,8 +20,8 @@ from swe_lab.harnesses.claude_code.errors import (
     UsageLimitError,
 )
 from swe_lab.harnesses.claude_code.proxy import DEFAULT_BASE_PORT
-from swe_lab.harnesses.claude_code.trace import DEFAULT_CAPTURE
 from swe_lab.paths import find_repo_root
+from swe_lab.pipelines.related_files.exchange import DEFAULT_CAPTURE
 
 from .agent_run import DEFAULT_MODEL, RunResult
 from .aggregator import aggregate_instance

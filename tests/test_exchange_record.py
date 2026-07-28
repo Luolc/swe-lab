@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from swe_lab.harnesses.claude_code.trace import (
+from swe_lab.pipelines.related_files.exchange import (
     build_exchange_from_proxy,
     CAPTURE_PROXY,
 )

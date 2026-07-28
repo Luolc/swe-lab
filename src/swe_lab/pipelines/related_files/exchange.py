@@ -15,9 +15,11 @@ Source-specific data (wire headers, run summary) goes in ``extra_info``, with
 secrets (the auth header, ``metadata.user_id``) stripped as it is built, and
 operator PII (home path, git name/email) swapped for a stable placeholder.
 
-This module is dataset- and task-agnostic: both the related-files annotator
-(host subprocess) and ``rollout`` (agent runs inside the instance container,
-writing its ``stream-json`` trajectory to a mounted file) reuse it.
+This is W1 (related-files annotation) infrastructure: the annotator runs
+``claude`` as a **host subprocess**, so operator PII must be redacted here. The
+sandbox rollout path is separate — it runs the agent *inside* the container
+(operator identity never leaks) and converts its trace with
+``harnesses.claude_code.convert`` into a typed ``Conversation`` instead.
 """
 
 from __future__ import annotations
