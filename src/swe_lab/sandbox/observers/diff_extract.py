@@ -2,9 +2,9 @@
 
 Runs in ``before_destroy`` against the still-live container, so it works for
 **any** harness that edits the repo — extraction is not baked into the agent
-script (spec §core model). Reuses ``core/patch.py``'s extraction contract
-(ADR-0001: worktree diff vs ``base_commit``, ``git add -N``, no ``--binary``,
-residual ``Binary files … differ`` stripped host-side) byte-for-byte.
+script. Reuses ``swe_lab.patch``'s extraction contract (ADR-0001: worktree diff
+vs ``base_commit``, ``git add -N``, no ``--binary``, residual
+``Binary files … differ`` stripped host-side) byte-for-byte.
 """
 
 from __future__ import annotations

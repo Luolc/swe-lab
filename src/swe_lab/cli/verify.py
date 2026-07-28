@@ -13,10 +13,9 @@ matrix can burst the whole dataset in parallel; each shard writes one JSON per
 instance under ``--out-dir`` (resumable — an instance with a result is skipped),
 and ``--aggregate`` merges them into a summary + report.
 
-This is the engine port of the legacy ``swe_lab.evaluation.verify``: the two
-graded runs go through ``compile_unit_test`` + ``run_unit_test`` on the sandbox
-engine, so the verdict is a ``SweBenchProVerdict`` and the run outcome a
-``RunResult`` instead of the retired ``EvalResult``.
+The two graded runs go through ``compile_unit_test`` + ``run_unit_test`` on the
+sandbox engine, so the verdict is a ``SweBenchProVerdict`` and the run outcome a
+``RunResult``.
 """
 
 from __future__ import annotations

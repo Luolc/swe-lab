@@ -50,10 +50,11 @@ pure run data (a persisted workspace, task 12, isn't polluted) and nothing can
 scribble on the binary.
 
 **Mounts** (the workspace files below) wrap the same **`Resource`** as assets
-(the shared content-source) and are materialized by a **per-backend `materialize`
-seam** that dispatches on the Resource kind (`Inline` → write, `LocalFile` → copy
-today; `Url` / object-store fetched natively later), never a hardcoded copy — see
-spec §Materialization is a per-backend seam.
+(the shared content-source) and are transferred by the sandbox's **`mount` /
+`_mount_one`** step that dispatches on the Resource kind (`Inline` → write,
+`LocalFile` → copy today; `Url` / object-store fetched natively later), never a
+hardcoded copy — the receiver decides the transfer
+([ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md)).
 
 ---
 
@@ -145,8 +146,8 @@ expected*, and *what resulted*, re-gradable without the dataset record.
 
 ## Notes
 
-- **Non-empty-workspace guard.** The manager refuses a non-empty workspace
-  unless `reuse=True`; mounts materialize into a fresh dir.
+- **Non-empty-workspace guard.** The sandbox's `up()` refuses a non-empty
+  workspace unless `reuse=True`; mounts are transferred into a fresh dir.
 - **Filenames are constants**, owned by their axis: the SWE-Bench-Pro names
   (`run_script.sh`, `parser.py`, `output.json`, `required_tests.json`,
   `entryscript.sh`, `stdout.log`, `stderr.log`, **and the solve `prompt.txt`**)

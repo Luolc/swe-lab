@@ -8,7 +8,7 @@ own shell. ``up`` only prepares the workspace; ``mount`` writes files locally
 with ``SANDBOX_WORKSPACE`` set. Because the manager, observers, and every
 generated script reference staged files only through ``$SANDBOX_WORKSPACE`` (and
 the repo through ``spec.workdir``), the exact same composition runs unchanged on
-either backend (spec §"Two backends, one interface").
+either backend.
 """
 
 from __future__ import annotations
