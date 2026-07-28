@@ -21,7 +21,7 @@ class TaskInstance[V: Verdict](ABC):
 
   A behavior interface implemented by a dataset's record type (which is also a
   ``DatasetRecord`` for the loader). Generic over the dataset's verdict type so
-  ``unit_test`` returns a correctly-typed spec; a CLI uses only the base
+  ``unit_test_spec`` returns a correctly-typed spec; a CLI uses only the base
   ``Verdict`` surface (``score`` / ``resolved`` / ``summary``).
   """
 

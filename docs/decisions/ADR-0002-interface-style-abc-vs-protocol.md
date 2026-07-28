@@ -47,7 +47,7 @@ Choose the interface mechanism by what the interface *is*:
 2. **Behavior interface, all methods required → `abc.ABC` + `@abstractmethod`.**
    Implementers write `class Impl(TheInterface)` and mark methods `@override`.
    Gains explicit navigation, and enforcement at instantiation (an incomplete
-   subclass cannot be constructed). Examples: `Grader`, `SandboxBackend`,
+   subclass cannot be constructed). Examples: `Grader`, `Sandbox`,
    `RepoProvider`.
 3. **Behavior interface where partial override is normal → a concrete base
    class with default (usually no-op) methods.** `@abstractmethod` would wrongly
@@ -72,8 +72,8 @@ Generic interfaces use PEP 695 brackets in every case
 ## Consequences
 
 - Converted to `ABC` + `@abstractmethod` (implementers gain `class Impl(Base)` +
-  `@override`): `Grader` (`SweBenchProGrader`), `SandboxBackend`
-  (`DockerHostBackend`, `FakeBackend`), `RepoProvider` (`GitCheckoutProvider`).
+  `@override`): `Grader` (`SweBenchProGrader`), `Sandbox` (`DockerHostSandbox`,
+  `GitHubJobSandbox`, `FakeSandbox`), `RepoProvider` (`GitCheckoutProvider`).
 - Kept `Protocol` (structural shapes): `Verdict`, `RepoInstance`,
   `DatasetRecord`.
 - Kept the concrete-base-class pattern: `SandboxObserver`.

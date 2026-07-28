@@ -46,9 +46,10 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
 *compiles* its record into the engine's general shapes.
 
 - `sandbox/` — the engine: `SandboxManager` + lifecycle hooks, `Mounts`/
-  `Resource`, the diff-extract observer, and the two backends —
-  `DockerHostBackend` (A-host: `docker create/start/exec/rm`, workspace
-  bind-mounted) and `GitHubJobBackend` (A-ghjob: the CI job *is* the container).
+  `Resource`, the diff-extract observer, and the two backends (concrete
+  `Sandbox`es) — `DockerHostSandbox` (A-host: `docker create/start/exec/rm`,
+  workspace bind-mounted) and `GitHubJobSandbox` (A-ghjob: the CI job *is* the
+  container).
   The run context is a small `SandboxSpec` (image/workdir/base_commit/id).
 - `evaluation/` — the **eval-method axis**: the `verdict` contract
   (`Verdict`/`Grader`/`UnitTestSpec`) + `methods/unit_test/` (`run_unit_test`).
@@ -82,7 +83,7 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
   the whole job *is* the image) vs **(B) ubuntu runner + `docker run`** (job on
   ubuntu host, image run as a throwaway container). These are now **both
   backends behind one `Sandbox` interface**, chosen by `--backend`:
-  `GitHubJobBackend` (A) and `DockerHostBackend` (B) — the old "B-only
+  `GitHubJobSandbox` (A) and `DockerHostSandbox` (B) — the old "B-only
   `DockerProvider`" concern dissolved with the engine cutover (tasks 03/09).
   - **Runtime efficiency is equivalent.** A container is namespaced processes on
     the host kernel, not a VM. The only real perf axis is amd64 *emulation*,

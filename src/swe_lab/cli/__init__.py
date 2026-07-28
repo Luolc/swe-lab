@@ -17,9 +17,9 @@ app = typer.Typer(add_completion=False, no_args_is_help=True)
 @app.callback()
 def root() -> None:
   """swe-lab: build, run, and evaluate SWE-agent evaluation data."""
-  # A top-level callback keeps this a multi-command group: subcommands are
-  # required even while `eval` is the only one registered (Typer otherwise
-  # collapses a single-command app into that command).
+  # A top-level callback keeps this a multi-command group, so an explicit
+  # subcommand (eval / rollout / promote) is always required — Typer otherwise
+  # collapses a single-command app into that one command.
 
 
 _ = app.command("eval")(eval_cmd)
