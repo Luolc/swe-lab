@@ -11,6 +11,7 @@ from swe_lab.datasets.swebench_pro import (
     COLUMNS,
     SweBenchProInstance,
 )
+import swe_lab.datasets.swebench_pro.auxiliary as auxiliary
 from swe_lab.datasets.swebench_pro.constants import (
     HARNESS_SUBDIR,
     IMAGE_REPO,
@@ -18,7 +19,6 @@ from swe_lab.datasets.swebench_pro.constants import (
     RUN_SCRIPT_NAME,
     WORKDIR,
 )
-import swe_lab.datasets.swebench_pro.execution as execution
 from swe_lab.paths import cache_root
 
 
@@ -153,7 +153,7 @@ def test_run_script_and_parser_read_the_cached_harness(
 ) -> None:
   # the default properties fetch-and-cache under find_repo_root(); point that
   # at a pre-staged cache so no network is touched.
-  monkeypatch.setattr(execution, "find_repo_root", lambda: tmp_path)
+  monkeypatch.setattr(auxiliary, "find_repo_root", lambda: tmp_path)
   _stage_harness(tmp_path, "instance_acme__widget-abc-vnan")
   inst = SweBenchProInstance.from_raw(_raw())
   assert inst.run_script == b"echo run"
@@ -165,7 +165,7 @@ def test_missing_harness_triggers_a_fetch(
 ) -> None:
   # nothing staged → the default property fetches; assert it reaches for the
   # network (raising) rather than silently succeeding.
-  monkeypatch.setattr(execution, "find_repo_root", lambda: tmp_path)
+  monkeypatch.setattr(auxiliary, "find_repo_root", lambda: tmp_path)
   inst = SweBenchProInstance.from_raw(_raw())
   with pytest.raises(Exception):  # noqa: B017 — any network/URL error is fine
     _ = inst.run_script

@@ -35,8 +35,8 @@ from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import SandboxSpec
 
-from .constants import WORKDIR
-from .execution import fetch_harness, image_ref
+from .auxiliary import fetch_auxiliary
+from .constants import IMAGE_REPO, WORKDIR
 from .patches import patch_fail_to_pass
 from .unit_test import compile_unit_test, SweBenchProVerdict
 
@@ -167,19 +167,19 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     """The test-harness run script for this instance (its content).
 
     How the harness is obtained is the instance's own business: the default
-    fetches it from the upstream harness repo and caches it (see
-    ``fetch_harness``). **Override this (and ``parser``) in a subclass to source
-    it another way** — e.g. embedded in a future dataset column — and grading
-    then needs no network or repo checkout. Grading consumes only this content
-    (never how it was obtained), so it depends on neither.
+    fetches it from the upstream repo and caches it (see ``fetch_auxiliary``).
+    **Override this (and ``parser``) in a subclass to source it another way** —
+    e.g. embedded in a future dataset column — and grading then needs no network
+    or repo checkout. Grading consumes only this content (never how it was
+    obtained), so it depends on neither.
     """
-    run_script_path, _ = fetch_harness(self.instance_id)
+    run_script_path, _ = fetch_auxiliary(self.instance_id)
     return run_script_path.read_bytes()
 
   @property
   def parser(self) -> bytes:
     """The output parser for this instance (its content); see ``run_script``."""
-    _, parser_path = fetch_harness(self.instance_id)
+    _, parser_path = fetch_auxiliary(self.instance_id)
     return parser_path.read_bytes()
 
   @property
@@ -206,7 +206,7 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     """
     return SandboxSpec(
         instance_id=self.instance_id,
-        image_ref=image_ref(self.dockerhub_tag),
+        image_ref=f"{IMAGE_REPO}:{self.dockerhub_tag}",
         workdir=WORKDIR,
         base_commit=self.base_commit,
     )
