@@ -8,6 +8,7 @@ dispatcher stays a thin table so it never grows into one giant file). Run it as
 import typer
 
 from .eval import eval_cmd
+from .promote import promote_cmd
 from .rollout import rollout_in_docker
 from .verify import verify_cmd
 
@@ -25,5 +26,6 @@ def root() -> None:
 _ = app.command("eval")(eval_cmd)
 _ = app.command("rollout")(rollout_in_docker)
 _ = app.command("verify")(verify_cmd)
+_ = app.command("promote")(promote_cmd)
 
 __all__ = ["app"]

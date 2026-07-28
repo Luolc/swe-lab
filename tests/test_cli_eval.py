@@ -107,6 +107,23 @@ def test_gold_resolved_exits_zero(monkeypatch: pytest.MonkeyPatch):
   assert calls["patch"] == "GOLD DIFF"  # --gold used the instance's patch
 
 
+def test_persist_writes_a_manifest_shard(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  verdict = SweBenchProVerdict(
+      passed=frozenset({"a"}), missing=frozenset(), output_state=OutputState.OK
+  )
+  _ = _wire(monkeypatch, verdict=verdict)
+  monkeypatch.setattr(eval_mod, "find_repo_root", lambda: tmp_path)
+  result = runner.invoke(
+      app, ["eval", "acme__widget-1", "--gold", "--persist", "--sweep", "sw1"]
+  )
+  assert result.exit_code == 0
+  shards = list((tmp_path / ".cache" / "store").rglob("run.json"))
+  assert len(shards) == 1  # the grading run's shard (the verdict is in extra)
+  assert "persisted" in json.loads(result.output)
+
+
 def test_unresolved_exits_one(monkeypatch: pytest.MonkeyPatch):
   verdict = SweBenchProVerdict(
       passed=frozenset(),

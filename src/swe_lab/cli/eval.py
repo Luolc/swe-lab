@@ -9,6 +9,7 @@ from typing import Annotated
 
 import typer
 
+from swe_lab.cli._persist import persist_run
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import compile_unit_test
@@ -40,6 +41,13 @@ def eval_cmd(
         str,
         typer.Option(help="Sandbox backend name (host Docker, or the GH job)."),
     ] = "host",
+    persist: Annotated[
+        bool,
+        typer.Option(help="Persist the run's result to the T1 store."),
+    ] = False,
+    sweep: Annotated[
+        str, typer.Option(help="Sweep id the persisted run is keyed under.")
+    ] = "adhoc",
 ) -> None:
   """Grade one instance by running its tests in its container.
 
@@ -92,5 +100,17 @@ def eval_cmd(
     }
   if result.error is not None:
     summary["error"] = repr(result.error)
+  if persist:
+    record = persist_run(
+        root,
+        sweep=sweep,
+        instance_id=instance.instance_id,
+        status=result.status.value,
+        backend=backend,
+        artifacts=result.artifacts,
+        metrics=result.metrics,
+        extra={"resolved": bool(verdict and verdict.resolved)},
+    )
+    summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
   print(json.dumps(summary, indent=2))
   raise typer.Exit(0 if summary["resolved"] else 1)

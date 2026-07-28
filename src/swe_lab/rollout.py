@@ -61,6 +61,9 @@ class RolloutOutcome:
     conversation: The canonical typed trace.
     status: The engine-level run status.
     workspace: The run's workspace directory.
+    artifacts: Collected artifacts (canonical name → host path) — the persist
+      input.
+    metrics: Scalar run metrics.
   """
 
   instance_id: str
@@ -71,6 +74,8 @@ class RolloutOutcome:
   conversation: Conversation
   status: RunStatus
   workspace: Path
+  artifacts: dict[str, Path]
+  metrics: dict[str, float]
 
 
 def run_rollout(
@@ -146,6 +151,8 @@ def run_rollout(
       conversation=conversation.conversation or Conversation(messages=[]),
       status=manager.result.status,
       workspace=workspace,
+      artifacts=manager.result.artifacts,
+      metrics=manager.result.metrics,
   )
 
 
