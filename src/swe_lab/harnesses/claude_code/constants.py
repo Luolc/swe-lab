@@ -44,3 +44,8 @@ DEFAULT_MODEL = "claude-sonnet-5"
 # The subscription OAuth token the agent reads from its env; the rollout backend
 # passes it by reference (never in the docker argv).
 OAUTH_TOKEN_ENV = "CLAUDE_CODE_OAUTH_TOKEN"
+
+# The API-key env var Claude Code authenticates with when an API key (not the
+# subscription OAuth token) is used — required by ``--bare``, which disables
+# OAuth. Set by the harness for the agent exec when an ``api_key`` is given.
+API_KEY_ENV = "ANTHROPIC_API_KEY"

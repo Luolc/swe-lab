@@ -113,15 +113,20 @@ def test_invocation_script_shape_and_quoting():
   script = _script("/weird dir")
   assert "export HOME=/agent-home" in script
   assert "export IS_SANDBOX=1" in script
-  assert "export CLAUDE_CODE_DISABLE_CLAUDE_MDS=1" in script  # repo-context off
   assert "cd '/weird dir'" in script  # shlex.quote'd workdir with a space
   assert f"{BINARY_AT} -p " in script  # no inline prompt in the argv
+  assert "--bare" not in script  # bare defaults off
   assert "--output-format stream-json --verbose" in script
   assert "--dangerously-skip-permissions" in script
   # the prompt is piped in on stdin (no shell-quoting hazard)
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
   assert script.rstrip().endswith("|| true")
+
+
+def test_bare_flag_added_when_set():
+  script = _script("/app", ClaudeCodeHarness(bare=True))
+  assert f"{BINARY_AT} -p --bare " in script
 
 
 def test_binary_is_a_read_only_executable_mount_at_fixed_path(

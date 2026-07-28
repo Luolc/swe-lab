@@ -20,6 +20,7 @@ from swe_lab.datasets.swebench_pro.unit_test import (
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.harnesses.claude_code import Capture
 from swe_lab.harnesses.claude_code.constants import (
+    API_KEY_ENV,
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
 )
@@ -57,6 +58,13 @@ def rollout_in_docker(
         str,
         typer.Option(help="Sandbox backend name (host Docker, or the GH job)."),
     ] = "host",
+    bare: Annotated[
+        bool,
+        typer.Option(
+            help="Run the agent with --bare (API-key auth; needs "
+            f"{API_KEY_ENV} set)."
+        ),
+    ] = False,
 ) -> None:
   """Run a headless agent to solve one instance in its container.
 
@@ -64,9 +72,14 @@ def rollout_in_docker(
   With ``--grade`` the patch is then run through the instance's tests. An empty
   patch is never graded as a pass. Exit code is 0 unless a graded run fails.
   """
-  if not os.environ.get(OAUTH_TOKEN_ENV):
+  # Bare mode disables the subscription OAuth token and authenticates with an
+  # API key instead, so it needs a different secret. Either way the secret is
+  # read from the ambient env and passed to the sandbox by reference (its name,
+  # never its value on the command line) — see pass_env below.
+  auth_env = API_KEY_ENV if bare else OAUTH_TOKEN_ENV
+  if not os.environ.get(auth_env):
     raise typer.BadParameter(
-        f"{OAUTH_TOKEN_ENV} is not set; the agent cannot authenticate."
+        f"{auth_env} is not set; the agent cannot authenticate."
     )
 
   instance = load_dataset(dataset).require(instance_id)
@@ -90,7 +103,8 @@ def rollout_in_docker(
       timeout=timeout,
       capture=capture,
       pull=pull,
-      pass_env=(OAUTH_TOKEN_ENV,),
+      pass_env=(auth_env,),
+      bare=bare,
   )
 
   summary: dict[str, object] = {

@@ -57,12 +57,17 @@ class ClaudeCodeHarness(Harness):
     capture: The output-capture strategy — ``STREAM`` (default) or ``PROXY``.
     proxy_base_url: The API base URL the agent uses in ``PROXY`` capture (the
       composition points this at the host-side proxy); unused for ``STREAM``.
+    bare: Run the agent with ``--bare`` — API-key auth mode, which disables the
+      subscription OAuth token. The API key itself is supplied to the sandbox
+      by the composition via the environment (``ANTHROPIC_API_KEY``, by
+      reference — like the OAuth token), not held by this harness.
   """
 
   model: str = DEFAULT_MODEL
   binary_path: Path | None = None
   capture: Capture = Capture.STREAM
   proxy_base_url: str | None = None
+  bare: bool = False
 
   @override
   def mounts(self, workdir: str) -> Mounts:
@@ -133,11 +138,6 @@ class ClaudeCodeHarness(Harness):
         # Some builds refuse --dangerously-skip-permissions as root unless a
         # sandbox is signalled; the throwaway container is our sandbox.
         "export IS_SANDBOX=1",
-        # Isolate the run from the target repo's CLAUDE.md auto-discovery, so
-        # the agent's context is the prompt — not repo-shipped instructions.
-        # (--bare would also do this but forces API-key auth, disabling the
-        # OAuth token we run on; this env var is the auth-safe equivalent.)
-        "export CLAUDE_CODE_DISABLE_CLAUDE_MDS=1",
     ]
     if self.capture is Capture.PROXY:
       if not self.proxy_base_url:
@@ -153,13 +153,14 @@ class ClaudeCodeHarness(Harness):
       event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
       output_format = "stream-json --verbose"
       capture_redirect = f"> {event_stream}"
+    bare = " --bare" if self.bare else ""
     lines += [
         f"cd {shlex.quote(workdir)}",
         # Feed the prompt on stdin (``-p`` with no argument reads it) rather
         # than inlining it into the argv — no shell-quoting hazard for a large,
         # arbitrary prompt.
         (
-            f"{binary} -p"
+            f"{binary} -p{bare}"
             f" --model {shlex.quote(self.model)}"
             f" --output-format {output_format}"
             " --dangerously-skip-permissions"

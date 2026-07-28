@@ -88,6 +88,7 @@ def run_rollout(
     capture: Capture = Capture.STREAM,
     pull: bool = True,
     pass_env: tuple[str, ...] = (),
+    bare: bool = False,
 ) -> RolloutOutcome:
   """Run one agent rollout and extract its patch + trace.
 
@@ -103,13 +104,17 @@ def run_rollout(
       agent's ``event_stream``; ``PROXY`` records via a host-side
       ``cc-reverse-proxy`` writing into the workspace.
     pull: Whether to pull the image before the run (A-host only).
-    pass_env: Variables inherited by reference into the sandbox (the agent's
-      OAuth token).
+    pass_env: Variables inherited by reference into the sandbox — the agent's
+      auth secret (the OAuth token, or ``ANTHROPIC_API_KEY`` in ``bare`` mode).
+    bare: Run the agent with ``--bare`` (API-key auth; the key is supplied via
+      ``pass_env``, not here).
 
   Returns:
     The rollout outcome (patch, flags, conversation, status).
   """
-  harness, extra_hosts, proxy = _capture_setup(spec, model, workspace, capture)
+  harness, extra_hosts, proxy = _capture_setup(
+      spec, model, workspace, capture, bare=bare
+  )
   conversation = ConversationObserver(producer=harness)
   extract = DiffExtractObserver(exclude_globs=exclude_globs)
   # prompt.txt is dataset-derived (task 06 §5.6), staged by the composition; the
@@ -152,6 +157,8 @@ def _capture_setup(
     model: str,
     workspace: Path,
     capture: Capture,
+    *,
+    bare: bool = False,
 ) -> tuple[
     ClaudeCodeHarness,
     tuple[str, ...],
@@ -165,13 +172,20 @@ def _capture_setup(
   A-host container can reach the host-side proxy (A-ghjob ignores it).
   """
   if capture is Capture.STREAM:
-    return ClaudeCodeHarness(model=model), (), contextlib.nullcontext()
+    return (
+        ClaudeCodeHarness(model=model, bare=bare),
+        (),
+        contextlib.nullcontext(),
+    )
   port = port_for_index(
       zlib.crc32(spec.instance_id.encode()) % _PROXY_PORT_SPAN
   )
   base_url = f"http://{CONTAINER_PROXY_HOST}:{port}"
   harness = ClaudeCodeHarness(
-      model=model, capture=capture, proxy_base_url=base_url
+      model=model,
+      capture=capture,
+      proxy_base_url=base_url,
+      bare=bare,
   )
   extra_hosts = (f"{CONTAINER_PROXY_HOST}:host-gateway",)
   proxy = ReverseProxy(
