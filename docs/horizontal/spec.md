@@ -106,6 +106,15 @@ manager), with one deliberate change (see the Sandbox note).
 
 ### The `Sandbox` is a pure handle; the outcome is a `RunResult`
 
+> ⚠️ **Superseded by [ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md)
+> (landed, task 14).** `Sandbox` is no longer a pure handle with a separate
+> `SandboxBackend`: the two are **merged** into one live, lifecycle-bearing
+> `Sandbox` (`up`/`down`/`mount`/`fetch` + exec), and observers/graders get the
+> narrow **`SandboxFs`** view. There is **no** `sb.workspace: Path` on the
+> interface (a remote sandbox has no host dir); shared state is reached through
+> `SandboxFs` ops. `RunResult` is unchanged. The block below is the pre-ADR-0003
+> design, kept as a record.
+
 The `Sandbox` is **only a handle** to the live container — nothing accumulates on
 it, so its state is always clear. The **shared, inspectable state between
 observers is the workspace filesystem** (`sb.workspace`), where artifacts already
@@ -133,6 +142,16 @@ class RunResult:                     # the manager's aggregated return
 ```
 
 ### Declarative mounts — staging as data, not code
+
+> ⚠️ **Superseded by [ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md)
+> (landed, task 14).** `Resource` is now **pure data** (`Inline`/`LocalFile`, no
+> `materialize_to`); there is **one** `Mount` type with a `read_only` flag (an
+> "asset" is just a read-only mount — the `Assets` type is deleted). Transfer is
+> **not** a per-backend `materialize` seam: the receiving sandbox transfers each
+> mount in `mount` / `_mount_one`, dispatching on the `Resource` kind (the
+> **receiver decides**), and a company adds a kind by subclassing + `super()`.
+> The declarative-staging idea below still holds; the `Assets`/`materialize`
+> mechanics do not.
 
 Everything a run needs staged into the workspace is declared as a **`Mounts`**
 value instead of imperative per-flow staging code (today rollout and eval each
@@ -315,6 +334,14 @@ backlog item, not this refactor.
 
 ### Two backends, one interface
 
+> ⚠️ **Superseded by [ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md)
+> (landed, task 14).** The two backends are now concrete **`Sandbox` subclasses**
+> (`DockerHostSandbox`, `GitHubJobSandbox`) selected by an **open name registry**
+> (`build_sandbox("host" | "ghjob" | …)`), not one `SandboxBackend` ABC behind a
+> closed enum — a consuming company registers its own. A-host transfers absolute
+> read-only mounts by `docker cp` (up-first: the container exists before mounts),
+> so "no `docker cp`" no longer holds. Two-backends-one-composition still holds.
+
 `SandboxBackend` is implemented by **A-host** (`docker create/start/exec/rm`,
 workspace bind-mounted, host outside the container) and **A-ghjob** (the job *is*
 the container; workspace is a local dir) — the manager and observers are
@@ -343,7 +370,7 @@ A-host, local for A-ghjob) — no `docker cp`.
   ```python
   class Grader[V: Verdict](ABC):      # dataset-owned judgment (ABC — ADR-0002)
       @abstractmethod
-      def grade(self, workspace: Path) -> V: ...   # pure: reads files, no container
+      def grade(self, sb: SandboxFs) -> V: ...   # ADR-0003: reads via the reader, not a workspace Path
 
   @dataclass(frozen=True)
   class UnitTestSpec[V: Verdict]:
