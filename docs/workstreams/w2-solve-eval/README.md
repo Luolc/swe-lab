@@ -57,8 +57,9 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
   spec.
 - `datasets/swebench_pro/` — all SWE-Bench-Pro run-knowledge: `record.py`
   (the record + its runnable surface — `sandbox_spec` / `solve_prompt` /
-  `unit_test_spec` / the harness properties), `execution.py` (image ref +
-  pinned scaleapi harness fetch), and `unit_test.py` (`compile_unit_test`:
+  `unit_test_spec` / the harness properties), `auxiliary.py` (fetches the
+  per-instance run_script + parser from scaleapi at a pinned commit), and
+  `unit_test.py` (`compile_unit_test`:
   the instance's fields → `UnitTestSpec`; `SweBenchProGrader` reading
   `output.json` → `SweBenchProVerdict` with
   `output_state ∈ {ok, absent, unparseable}`). Adding a dataset = a sibling
