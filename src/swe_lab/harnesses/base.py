@@ -4,9 +4,9 @@ A ``Harness`` is a ``ConversationProducer`` (it yields a ``Conversation`` and
 names its native output files) that also supplies the run's **mounts** (its own
 staged files, including any fixed-path read-only asset like the pinned binary)
 and the **main action** (``run``). The engine never imports a concrete harness —
-the rollout composition (task 07) calls these and wires them into a manager +
-sandbox. Nothing dataset-specific lives here: a harness is agnostic to the task
-(the prompt is the dataset's).
+the rollout composition calls these and wires them into a manager + sandbox.
+Nothing dataset-specific lives here: a harness is agnostic to the task (the
+prompt is the dataset's).
 """
 
 from __future__ import annotations

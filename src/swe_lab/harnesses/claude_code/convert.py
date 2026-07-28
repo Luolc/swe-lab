@@ -1,8 +1,7 @@
 """Claude Code agent trace → the canonical ``Conversation``.
 
-Written fresh (stdlib ``json`` → the typed model), *not* wrapping the
-soon-deprecated ``core/agent/trace.py`` dict parser. Both capture strategies
-land here:
+Written fresh: stdlib ``json`` → the typed ``Conversation`` model directly (no
+intermediate dict parser). Both capture strategies land here:
 
 - **stream** — the agent's own ``stream-json`` stdout: each line is one event;
   ``user`` / ``assistant`` events carry a ``message`` with Anthropic-shaped

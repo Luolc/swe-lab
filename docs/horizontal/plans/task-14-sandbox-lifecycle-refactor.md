@@ -1,6 +1,7 @@
 # Task 14 — Merged lifecycle-bearing `Sandbox` + up-first lifecycle + transfer seam
 
-> **Status: PLANNED — pre-implementation.** Source of truth:
+> **Status: ✅ IMPLEMENTED** (PR #64, merged). This doc is now the retrospective
+> record of the landed design; the **code is the source of truth**, with
 > [ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md) (the decision)
 > and the [spec](../spec.md). Grounded in the current engine at the
 > post-cutover `main`: `sandbox/{manager,backend,resources,mounts,result}.py`,

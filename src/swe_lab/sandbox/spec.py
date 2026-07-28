@@ -2,8 +2,7 @@
 
 ``SandboxSpec`` is the four-field slice every flow needs (rollout and eval
 alike); everything grading-specific lives in the eval method's own spec
-instead (``UnitTestSpec``), per the EvalSpec split settled in the SandboxRun
-spec.
+instead (``UnitTestSpec``).
 """
 
 from __future__ import annotations
