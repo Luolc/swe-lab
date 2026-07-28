@@ -15,6 +15,7 @@ from swe_lab.datasets.swebench_pro.constants import (
 from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
     _build_eval_script,
+    compile_sandbox_spec,
     compile_solve_prompt,
     compile_unit_test,
     REQUIRED_TESTS_NAME,
@@ -111,9 +112,8 @@ def test_script_quotes_selected_tests():
 
 def test_compile_mounts_and_spec(tmp_path: Path):
   _stage_harness(tmp_path, "acme__widget-1")
-  spec, unit = compile_unit_test(
-      _instance(), patch="MY DIFF", repo_root=tmp_path
-  )
+  spec = compile_sandbox_spec(_instance())
+  unit = compile_unit_test(_instance(), patch="MY DIFF", repo_root=tmp_path)
   assert spec.instance_id == "acme__widget-1"
   assert spec.image_ref == f"{IMAGE_REPO}:widget-tag"
   assert spec.workdir == WORKDIR
@@ -129,7 +129,7 @@ def test_compile_mounts_and_spec(tmp_path: Path):
 
 def test_compile_without_patch_omits_patch_mount_and_apply(tmp_path: Path):
   _stage_harness(tmp_path, "acme__widget-1")
-  _, unit = compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
+  unit = compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
   assert "patch.diff" not in unit.mounts
   assert "git apply" not in unit.eval_script
 
@@ -137,7 +137,7 @@ def test_compile_without_patch_omits_patch_mount_and_apply(tmp_path: Path):
 def test_compile_reuses_cached_harness_no_network(tmp_path: Path):
   # no network: fetch_harness must reuse the pre-staged files
   _stage_harness(tmp_path, "acme__widget-1")
-  _, unit = compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
+  unit = compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
   assert _content(unit.mounts[RUN_SCRIPT_NAME]) == b"echo run"
 
 

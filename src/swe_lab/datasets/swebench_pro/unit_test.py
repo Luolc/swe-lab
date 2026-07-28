@@ -199,8 +199,11 @@ def compile_unit_test(
     patch: str | None,
     checkout_golden_tests: bool = True,
     repo_root: Path | None = None,
-) -> tuple[SandboxSpec, UnitTestSpec[SweBenchProVerdict]]:
-  """Compile one instance into a runnable unit-test evaluation.
+) -> UnitTestSpec[SweBenchProVerdict]:
+  """Compile one instance's unit-test evaluation spec.
+
+  The run context is ``compile_sandbox_spec(instance)`` — the same for solving
+  and grading — so it is not returned here; a caller gets it from there.
 
   Args:
     instance: The instance to grade.
@@ -212,7 +215,7 @@ def compile_unit_test(
       when omitted.
 
   Returns:
-    The run context and the compiled unit-test spec.
+    The compiled unit-test spec.
   """
   run_script, parser = fetch_harness(instance.instance_id, repo_root=repo_root)
   required = sorted(
@@ -230,12 +233,11 @@ def compile_unit_test(
       apply_patch=patch is not None,
       checkout_golden_tests=checkout_golden_tests,
   )
-  unit_spec = UnitTestSpec(
+  return UnitTestSpec(
       eval_script=eval_script,
       mounts=mounts,
       grader=SweBenchProGrader(),
   )
-  return compile_sandbox_spec(instance), unit_spec
 
 
 def compile_sandbox_spec(instance: SweBenchProInstance) -> SandboxSpec:

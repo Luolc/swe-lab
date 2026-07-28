@@ -65,16 +65,16 @@ def _wire(
       return "GOLD DIFF"
 
     @override
-    def unit_test(
+    def unit_test_spec(
         self,
         *,
         patch: str | None,
         checkout_golden_tests: bool = True,
         repo_root: Path | None = None,
-    ) -> tuple[SandboxSpec, UnitTestSpec[Verdict]]:
+    ) -> UnitTestSpec[Verdict]:
       del checkout_golden_tests, repo_root
       calls["patch"] = patch  # the spec is discarded by the mocked run
-      return spec, cast(UnitTestSpec[Verdict], object())
+      return cast(UnitTestSpec[Verdict], object())
 
   @final
   class _Dataset:

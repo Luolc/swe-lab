@@ -180,14 +180,14 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     return self.patch
 
   @override
-  def unit_test(
+  def unit_test_spec(
       self,
       *,
       patch: str | None,
       checkout_golden_tests: bool = True,
       repo_root: Path | None = None,
-  ) -> tuple[SandboxSpec, UnitTestSpec[SweBenchProVerdict]]:
-    """Compile this instance into a runnable unit-test evaluation."""
+  ) -> UnitTestSpec[SweBenchProVerdict]:
+    """Compile this instance's unit-test evaluation spec."""
     return compile_unit_test(
         self,
         patch=patch,

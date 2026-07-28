@@ -44,14 +44,17 @@ class TaskInstance[V: Verdict](ABC):
     ...
 
   @abstractmethod
-  def unit_test(
+  def unit_test_spec(
       self,
       *,
       patch: str | None,
       checkout_golden_tests: bool = True,
       repo_root: Path | None = None,
-  ) -> tuple[SandboxSpec, UnitTestSpec[V]]:
-    """Compile this instance into a runnable unit-test evaluation.
+  ) -> UnitTestSpec[V]:
+    """Compile this instance's unit-test evaluation spec.
+
+    Pair it with :meth:`sandbox_spec` for the run context (that is not returned
+    here — it is the same context solving uses).
 
     Args:
       patch: The candidate diff to apply, or ``None`` to grade the base commit
@@ -62,6 +65,6 @@ class TaskInstance[V: Verdict](ABC):
         omitted.
 
     Returns:
-      The run context and the compiled unit-test spec.
+      The compiled unit-test spec.
     """
     ...
