@@ -69,7 +69,7 @@ def eval_cmd(
 
   root = find_repo_root()
   sandbox_spec = instance.sandbox_spec()
-  unit_spec = instance.unit_test_spec(patch=patch, repo_root=root)
+  unit_spec = instance.unit_test_spec(patch=patch)
   workspace = cache_root(root) / _WORKSPACES_SUBDIR / instance.instance_id
   # The manager refuses a non-empty workspace; a fresh grade starts clean.
   shutil.rmtree(workspace, ignore_errors=True)

@@ -132,7 +132,6 @@ def _graded_run(
     instance: SweBenchProInstance,
     *,
     patch: str | None,
-    repo_root: Path,
     workspace: Path,
     timeout: float,
     no_network: bool,
@@ -142,7 +141,6 @@ def _graded_run(
   Args:
     instance: The instance to grade.
     patch: The diff to apply (``None`` for the base self-check).
-    repo_root: Repo root, used to locate the cached harness.
     workspace: Host workspace for this run (wiped clean first).
     timeout: Wall-clock limit for the run, in seconds.
     no_network: Run the container offline.
@@ -151,7 +149,7 @@ def _graded_run(
     The engine ``RunResult`` and the verdict (``None`` if grading never ran).
   """
   sandbox_spec = compile_sandbox_spec(instance)
-  unit_spec = compile_unit_test(instance, patch=patch, repo_root=repo_root)
+  unit_spec = compile_unit_test(instance, patch=patch)
   # The sandbox refuses a non-empty workspace; start each run clean.
   shutil.rmtree(workspace, ignore_errors=True)
   return run_unit_test(
@@ -185,7 +183,6 @@ def _prune_image(image_ref: str) -> None:
 def verify_instance(
     instance: SweBenchProInstance,
     *,
-    repo_root: Path,
     store: Store,
     sweep: str,
     ws_root: Path,
@@ -197,7 +194,6 @@ def verify_instance(
 
   Args:
     instance: The dataset record to verify.
-    repo_root: Repo root, used to locate the cached harness.
     store: The T1 store the result shard is appended to.
     sweep: The sweep id this verification is keyed under.
     ws_root: Root under which the instance's scratch workspaces are staged.
@@ -221,7 +217,6 @@ def verify_instance(
     base = _graded_run(
         instance,
         patch=None,
-        repo_root=repo_root,
         workspace=ws_root / iid / "base",
         timeout=timeout,
         no_network=no_network,
@@ -229,7 +224,6 @@ def verify_instance(
     golden = _graded_run(
         instance,
         patch=instance.patch,
-        repo_root=repo_root,
         workspace=ws_root / iid / "golden",
         timeout=timeout,
         no_network=no_network,
@@ -348,7 +342,6 @@ def run(
   def _task(rec: SweBenchProInstance) -> dict[str, object]:
     return verify_instance(
         rec,
-        repo_root=root,
         store=store,
         sweep=sweep,
         ws_root=ws_root,
