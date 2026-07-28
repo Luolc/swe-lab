@@ -23,6 +23,7 @@ from swe_lab.harnesses.claude_code.constants import (
 )
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.rollout import RolloutOutcome, run_rollout
+from swe_lab.sandbox import build_sandbox
 
 _ROLLOUT_SUBDIR = "rollout_workspaces"
 _EVAL_SUBDIR = "eval_workspaces"
@@ -179,17 +180,14 @@ def _finish(
     summary["grade"] = {"resolved": False, "reason": "empty_patch"}
     return False
 
-  sandbox_spec = instance.sandbox_spec()
   unit_test_spec = instance.unit_test_spec(patch=outcome.patch)
   eval_ws = cache_root(root) / _EVAL_SUBDIR / instance.instance_id
   shutil.rmtree(eval_ws, ignore_errors=True)
+  sandbox = build_sandbox(
+      backend, instance.sandbox_spec(), eval_ws, network=False, pull=pull
+  )
   _, verdict = run_unit_test(
-      sandbox_spec,
-      unit_test_spec,
-      backend=backend,
-      workspace=eval_ws,
-      timeout=timeout,
-      pull=pull,
+      sandbox, unit_test_spec, output_dir=eval_ws, timeout=timeout
   )
   resolved = bool(verdict and verdict.resolved)
   summary["outcome"] = "resolved" if resolved else "unresolved_tests_failed"

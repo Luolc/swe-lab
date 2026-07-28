@@ -85,6 +85,15 @@ with the following repo-wide choices and deviations (full plan + rationale:
   that records satisfy without inheriting (`Verdict`, `RepoInstance`,
   `DatasetRecord`). Where partial override is normal, use a concrete base class
   with default methods (`SandboxObserver`).
+- **Inject collaborators; don't construct them inside.** An entry function takes
+  the *built* dependency (e.g. `run_unit_test(sandbox: Sandbox, …)`), never a
+  name + its construction knobs (`backend: str`, `workspace`, `pull`, `network`,
+  …) that it then feeds to a builder. Coupling construction into the callee
+  forces every new construction option down the whole call chain and forces a
+  test to patch the builder instead of passing a `FakeSandbox`. The *caller* owns
+  construction (`build_sandbox(...)`), so the builder can change freely without
+  touching the entry point. (`output_dir` is the manager's own host concern — a
+  legitimate parameter, distinct from the sandbox's internal `workspace`.)
 - **Dataclass wherever the class is field-shaped** — records are
   `frozen=True` dataclasses; even stateful classes (e.g. a manager holding
   config fields + a private state slot via

@@ -14,6 +14,7 @@ from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.paths import cache_root, find_repo_root
+from swe_lab.sandbox import build_sandbox
 
 _WORKSPACES_SUBDIR = "eval_workspaces"
 
@@ -68,20 +69,18 @@ def eval_cmd(
     patch = patch_file.read_text()
 
   root = find_repo_root()
-  sandbox_spec = instance.sandbox_spec()
   unit_test_spec = instance.unit_test_spec(patch=patch)
   workspace = cache_root(root) / _WORKSPACES_SUBDIR / instance.instance_id
-  # The manager refuses a non-empty workspace; a fresh grade starts clean.
+  # The sandbox refuses a non-empty workspace; a fresh grade starts clean.
   shutil.rmtree(workspace, ignore_errors=True)
 
+  # Construct the sandbox here (the caller owns backend + its options); the eval
+  # runner just receives it.
+  sandbox = build_sandbox(
+      backend, instance.sandbox_spec(), workspace, network=network, pull=pull
+  )
   result, verdict = run_unit_test(
-      sandbox_spec,
-      unit_test_spec,
-      backend=backend,
-      workspace=workspace,
-      timeout=timeout,
-      pull=pull,
-      network=network,
+      sandbox, unit_test_spec, output_dir=workspace, timeout=timeout
   )
 
   summary: dict[str, object] = {
