@@ -149,12 +149,12 @@ def _graded_run(
     The engine ``RunResult`` and the verdict (``None`` if grading never ran).
   """
   sandbox_spec = compile_sandbox_spec(instance)
-  unit_spec = compile_unit_test(instance, patch=patch)
+  unit_test_spec = compile_unit_test(instance, patch=patch)
   # The sandbox refuses a non-empty workspace; start each run clean.
   shutil.rmtree(workspace, ignore_errors=True)
   return run_unit_test(
       sandbox_spec,
-      unit_spec,
+      unit_test_spec,
       backend="host",
       workspace=workspace,
       timeout=timeout,

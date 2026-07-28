@@ -65,7 +65,7 @@ def _register_fake(
   return built
 
 
-def _unit_spec(
+def _unit_test_spec(
     required: list[str], passed: list[str]
 ) -> UnitTestSpec[SweBenchProVerdict]:
   # The fake sandbox does not run the eval script, so the "results" are the
@@ -87,7 +87,7 @@ def test_run_stages_entryscript_and_grades(tmp_path: Path):
   built = _register_fake("fake-stages")
   result, verdict = run_unit_test(
       SPEC,
-      _unit_spec(["a", "b"], ["a", "b"]),
+      _unit_test_spec(["a", "b"], ["a", "b"]),
       backend="fake-stages",
       workspace=tmp_path / "ws",
   )
@@ -103,7 +103,7 @@ def test_run_partial_pass_not_resolved(tmp_path: Path):
   _register_fake("fake-partial")
   _, verdict = run_unit_test(
       SPEC,
-      _unit_spec(["a", "b"], ["a"]),
+      _unit_test_spec(["a", "b"], ["a"]),
       backend="fake-partial",
       workspace=tmp_path / "ws",
   )
@@ -116,7 +116,7 @@ def test_grader_runs_even_when_body_exec_fails(tmp_path: Path):
   _register_fake("fake-bodyfail", run_results=[ExecResult(1, "", "boom")])
   result, verdict = run_unit_test(
       SPEC,
-      _unit_spec(["a"], ["a"]),
+      _unit_test_spec(["a"], ["a"]),
       backend="fake-bodyfail",
       workspace=tmp_path / "ws",
   )
@@ -129,7 +129,7 @@ def test_setup_failure_is_captured_not_raised(tmp_path: Path):
   _register_fake("fake-setupfail", up_error=SandboxError("no docker"))
   result, verdict = run_unit_test(
       SPEC,
-      _unit_spec(["a"], ["a"]),
+      _unit_test_spec(["a"], ["a"]),
       backend="fake-setupfail",
       workspace=tmp_path / "ws",
   )

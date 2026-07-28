@@ -179,3 +179,10 @@ test for is a wish, and it silently decays into a lie.
   `JsonParser`, not `JSONParser`; `httpClient`, not `HTTPClient`. This keeps word
   boundaries unambiguous and casing mechanical. (snake_case identifiers such as
   module names are unaffected.)
+- **Don't shorten names unnecessarily.** Name a value for what it *is*; a saved
+  keystroke is never worth a reader's guess, and an ad-hoc truncation that
+  drops information is confusing. A `UnitTestSpec` value is `unit_test_spec`,
+  **not** `unit_spec`; spell the word out rather than clip it. (A short name that
+  *is* the established term — a well-known abbreviation, or a deliberate
+  convention like `sb` for the narrow `SandboxFs` view — is fine; the rule is
+  against inventing a cryptic short form for a name that already reads clearly.)
