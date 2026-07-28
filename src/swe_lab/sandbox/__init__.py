@@ -19,22 +19,32 @@ from .errors import SandboxError
 from .manager import SandboxManager
 from .mounts import merge_mounts, Mount, Mounts
 from .observer import CompositeObserver, SandboxObserver
+from .persist import index, persist, promote, RunRecord
 from .resources import Inline, LocalFile, Resource
 from .result import Contribution, RunResult, RunStatus
 from .sandbox import ExecResult, Sandbox, SandboxFs, WORKSPACE_ENV
 from .spec import SandboxSpec
+from .store import (
+    build_store,
+    FilesystemStore,
+    register_store,
+    registered_stores,
+    Store,
+)
 
 __all__ = [
     "CompositeObserver",
     "Contribution",
     "DockerHostSandbox",
     "ExecResult",
+    "FilesystemStore",
     "GitHubJobSandbox",
     "Inline",
     "LocalFile",
     "Mount",
     "Mounts",
     "Resource",
+    "RunRecord",
     "RunResult",
     "RunStatus",
     "Sandbox",
@@ -44,9 +54,16 @@ __all__ = [
     "SandboxManager",
     "SandboxObserver",
     "SandboxSpec",
+    "Store",
     "WORKSPACE_ENV",
     "build_sandbox",
+    "build_store",
+    "index",
     "merge_mounts",
+    "persist",
+    "promote",
     "register_sandbox",
+    "register_store",
     "registered_backends",
+    "registered_stores",
 ]
