@@ -53,9 +53,10 @@ current focus** → [w2](workstreams/w2-solve-eval/). Patch extraction is settle
 
 ## How we work
 
-See [`../AGENTS.md`](../AGENTS.md). In brief: **building** a feature runs
-`/spec → /plan → /build → /review → /ship` (a non-trivial effort starts from a
-`spec.md`; the active component — a workstream or the horizontal `core` — owns its
-`plan.md` strategy + `plans/` per-task designs indexed by `plans/README.md`);
-**experimenting** follows the [experiment playbook](experiments/playbook.md).
+See [`../AGENTS.md`](../AGENTS.md). In brief: **building** a feature runs the
+**spec → plan → build → review → ship** lifecycle (a non-trivial effort starts
+from a `spec.md`; the active component — a workstream or the horizontal
+foundation — owns its `plan.md` strategy + `plans/` per-task designs indexed by
+`plans/README.md`); **experimenting** follows the
+[experiment playbook](experiments/playbook.md).
 Each fact has one canonical home — link to it, don't restate a fact that drifts.

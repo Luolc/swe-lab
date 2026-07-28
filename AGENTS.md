@@ -12,11 +12,13 @@ exactly one home; other docs link to it, never copy it.
 
 Two modes, and the mode picks the method:
 
-- **Building** (a feature or change): follow the lifecycle
-  `/spec → /plan → /build → /review → /ship` (slash commands in
-  [`.claude/commands/`](.claude/commands/), skills in
-  [`.claude/skills/`](.claude/skills/)), with test-driven development and small
-  atomic commits as the default. **An active component owns its planning docs in
+- **Building** (a feature or change): follow the lifecycle **spec → plan →
+  build → review → ship**, guided by the skills in
+  [`.claude/skills/`](.claude/skills/) (`spec-driven-development`,
+  `planning-and-task-breakdown`, `incremental-implementation`,
+  `test-driven-development`, `code-review-and-quality`, `shipping-and-launch`),
+  with test-driven development and small atomic commits as the default. **An
+  active component owns its planning docs in
   its own folder** — a workstream (`docs/workstreams/<w>/`) or the horizontal
   `docs/horizontal/` for cross-cutting / foundational work:
   - `spec.md` — the target design (what we're building and why).
@@ -36,7 +38,7 @@ Two modes, and the mode picks the method:
   **[experiment playbook](docs/experiments/playbook.md)** — hypothesis → logged,
   timestamped run → empirical results → attributable conclusion → a `REPORT.md`.
   This is the ML side the coding skills don't cover. An experiment's report
-  *feeds* a `/spec` or a decision; don't build straight from a hunch.
+  *feeds* a spec or a decision; don't build straight from a hunch.
 
 Before touching code, read [`docs/conventions.md`](docs/conventions.md) (codebase
 map, commands, hazards). **Source-of-truth rule:** where a doc and the code
