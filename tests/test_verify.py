@@ -8,18 +8,18 @@ consumes now.
 
 from __future__ import annotations
 
-from swe_lab.cli.verify import (
+from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
+from swe_lab.datasets.swebench_pro.unit_test import (
+    OutputState,
+    SweBenchProVerdict,
+)
+from swe_lab.datasets.swebench_pro.verify import (
     _base_json,
     BASE_UNEXPECTED_PASS,
     classify,
     ERROR,
     GOLDEN_FAIL,
     OK,
-)
-from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
-from swe_lab.datasets.swebench_pro.unit_test import (
-    OutputState,
-    SweBenchProVerdict,
 )
 from swe_lab.sandbox import RunResult, RunStatus
 

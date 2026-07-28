@@ -1,4 +1,10 @@
-"""The ``verify`` subcommand: full-dataset golden verification.
+"""Full-dataset golden verification — a SWE-Bench-Pro dataset QA tool.
+
+Lives inside ``datasets/swebench_pro/`` (not the generic ``cli/``): its
+classification is SWE-Bench-Pro semantics (``fail_to_pass`` must fail at base,
+the golden patch must resolve), so it is dataset-specific by design. When more
+SWE-like datasets are ported, the shared parts can be lifted to a dataset-
+agnostic seam. Run it as ``python -m swe_lab.datasets.swebench_pro.verify``.
 
 For each instance we do two graded runs in its image and check the pair:
 
@@ -34,16 +40,17 @@ from typing import Annotated
 import typer
 
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.datasets.swebench_pro.unit_test import (
+from swe_lab.evaluation.methods.unit_test import run_unit_test
+from swe_lab.paths import cache_root, find_repo_root
+from swe_lab.sandbox import RunResult, RunStatus
+
+from .record import SweBenchProInstance
+from .unit_test import (
     compile_sandbox_spec,
     compile_unit_test,
     OutputState,
     SweBenchProVerdict,
 )
-from swe_lab.evaluation.methods.unit_test import run_unit_test
-from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import RunResult, RunStatus
 
 # Verdicts.
 OK = "OK"
@@ -504,3 +511,12 @@ def verify_cmd(
       )
   )
   raise typer.Exit(code)
+
+
+def main() -> None:
+  """Entry point for ``python -m swe_lab.datasets.swebench_pro.verify``."""
+  typer.run(verify_cmd)
+
+
+if __name__ == "__main__":
+  main()

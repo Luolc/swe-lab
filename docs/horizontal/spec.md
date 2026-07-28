@@ -415,7 +415,7 @@ is refactored *into* this model.
 ```sh
 python -m swe_lab rollout <instance_id> [--grade] [--model] [--timeout] [--no-pull]
 python -m swe_lab eval    <instance_id> (--gold | --patch-file <p>) [--no-network]
-python -m swe_lab verify  --shard i/N [--aggregate]   # golden sweep
+python -m swe_lab.datasets.swebench_pro.verify  --shard i/N [--aggregate]   # golden sweep
 ```
 
 **Growth guard:** the dispatcher (`swe_lab/__main__.py`) is a table only; every
