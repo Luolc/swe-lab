@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import final
+from typing import cast, final, override
 
 import pytest
 from typer.testing import CliRunner
@@ -10,20 +10,46 @@ from typer.testing import CliRunner
 from swe_lab.cli import app
 import swe_lab.cli.rollout as rollout_mod
 from swe_lab.conversation import Conversation
+from swe_lab.datasets.instance import TaskInstance
+from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.rollout import RolloutOutcome
-from swe_lab.sandbox import RunStatus
+from swe_lab.sandbox import RunStatus, SandboxSpec
 
 runner = CliRunner()
 TOKEN = "CLAUDE_CODE_OAUTH_TOKEN"
 API_KEY = "ANTHROPIC_API_KEY"
+_SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "abc")
 
 
 @final
-class _Instance:
+class _Instance(
+    TaskInstance[Verdict]
+):  # a runnable instance, no concrete dataset
   instance_id: str = "acme__widget-1"
   problem_statement: str = "fix it"
-  requirements: str = ""
-  interface: str = ""
+
+  @override
+  def sandbox_spec(self) -> SandboxSpec:
+    return _SPEC
+
+  @override
+  def solve_prompt(self) -> str:
+    return f"PROMPT: {self.problem_statement}"
+
+  @override
+  def gold_patch(self) -> str:
+    return "GOLD"
+
+  @override
+  def unit_test(
+      self,
+      *,
+      patch: str | None,
+      checkout_golden_tests: bool = True,
+      repo_root: Path | None = None,
+  ) -> tuple[SandboxSpec, UnitTestSpec[Verdict]]:
+    del patch, checkout_golden_tests, repo_root
+    return _SPEC, cast(UnitTestSpec[Verdict], object())
 
 
 def test_help_lists_rollout():
@@ -75,13 +101,6 @@ def _wire(
     calls["dataset"] = name
     return _Dataset()
 
-  def fake_spec(instance: object) -> object:
-    del instance
-    return object()
-
-  def fake_prompt(instance: _Instance) -> str:
-    return f"PROMPT: {instance.problem_statement}"
-
   def fake_run_rollout(
       spec: object,
       *,
@@ -104,9 +123,6 @@ def _wire(
 
   monkeypatch.setenv(TOKEN, "tok")
   monkeypatch.setattr(rollout_mod, "load_dataset", fake_load)
-  monkeypatch.setattr(rollout_mod, "SweBenchProInstance", _Instance)
-  monkeypatch.setattr(rollout_mod, "compile_sandbox_spec", fake_spec)
-  monkeypatch.setattr(rollout_mod, "compile_solve_prompt", fake_prompt)
   monkeypatch.setattr(rollout_mod, "run_rollout", fake_run_rollout)
   return calls
 

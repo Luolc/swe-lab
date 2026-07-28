@@ -14,7 +14,7 @@ from enum import StrEnum
 import json
 from pathlib import Path
 import shlex
-from typing import override
+from typing import override, TYPE_CHECKING
 
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec
 from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs, SandboxSpec
@@ -31,7 +31,11 @@ from .constants import (
     WORKDIR,
 )
 from .execution import fetch_harness, image_ref
-from .record import SweBenchProInstance
+
+if TYPE_CHECKING:
+  # Hints only — importing the record at runtime would cycle (record.py's
+  # TaskInstance methods delegate to the compile_* functions below).
+  from .record import SweBenchProInstance
 
 # The compiled expectation, staged into the workspace and read by the grader.
 REQUIRED_TESTS_NAME = "required_tests.json"
@@ -71,6 +75,14 @@ class SweBenchProVerdict:
   def resolved(self) -> bool:
     """Whether the run is a full pass (``score >= 1.0``)."""
     return self.score >= 1.0
+
+  def summary(self) -> dict[str, object]:
+    """SWE-Bench-Pro report detail: output state + passed / missing."""
+    return {
+        "output_state": self.output_state.value,
+        "passed": sorted(self.passed),
+        "missing": sorted(self.missing),
+    }
 
 
 @dataclass(frozen=True)
