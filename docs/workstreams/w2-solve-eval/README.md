@@ -61,7 +61,7 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
   `output_state ∈ {ok, absent, unparseable}`). Adding a dataset = a sibling
   package.
 - `harnesses/claude_code/` — the rollout **harness axis** (the agent run body +
-  its trace → `Conversation`); `solve.py` is the rollout composition.
+  its trace → `Conversation`); `rollout.py` is the rollout composition.
 - CLI (one entry point): `python -m swe_lab eval <id> (--gold | --patch-file)`,
   `python -m swe_lab rollout <id> [--grade]`, `python -m swe_lab verify
   --shard i/N`. A `--backend host|ghjob` selects the sandbox backend.

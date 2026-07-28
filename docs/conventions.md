@@ -106,7 +106,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus per-dataset packages (`swebench_pro/`: record, run setup, unit-test compile + grader). |
 | `src/swe_lab/evaluation/` | The **eval-method axis**: `verdict` contract + `methods/` (`unit_test`). |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
-| `src/swe_lab/cli/` + `__main__.py` | The one CLI entry point (`eval`/`rollout`/`verify`); `solve.py` is the rollout composition. |
+| `src/swe_lab/cli/` + `__main__.py` | The one CLI entry point (`eval`/`rollout`/`verify`); `rollout.py` is the rollout composition. |
 | `src/swe_lab/repo/`, `paths.py`, `patch.py` | Repo checkout providers (W1) + repo-root/cache path helpers + the git-patch extraction/apply utility (extraction script, binary-hunk strip, emptiness — [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)). |
 | `src/swe_lab/pipelines/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). Keeps its own module entrypoint; not yet on the engine. |
 | `experiments/` | Exploratory experiments + investigations. Each has a `README` (design/how-to-run) and, when it reaches conclusions, a `REPORT`; raw run artifacts under `runs/<variant>/`. Exempt from code hooks. See the [experiment playbook](experiments/playbook.md). |

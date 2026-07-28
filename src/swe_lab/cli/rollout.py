@@ -25,7 +25,7 @@ from swe_lab.harnesses.claude_code.constants import (
     OAUTH_TOKEN_ENV,
 )
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.solve import RolloutOutcome, run_rollout
+from swe_lab.rollout import RolloutOutcome, run_rollout
 
 _ROLLOUT_SUBDIR = "rollout_workspaces"
 _EVAL_SUBDIR = "eval_workspaces"

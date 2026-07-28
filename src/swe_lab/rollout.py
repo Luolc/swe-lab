@@ -1,12 +1,9 @@
 """The rollout composition: one agent run → a graded-ready patch + trace.
 
 ``run_rollout`` composes a harness + the shared conversation observer + the
-shared diff-extract observer over the sandbox engine (spec §The three axes).
-Backend-agnostic and dataset-agnostic: the caller passes the run context
-(``SandboxSpec``), the dataset-derived prompt, and a backend.
-
-Named ``solve`` (not ``rollout``) only because the legacy ``rollout/`` package
-still exists; it moves to ``rollout.py`` at cutover (10b). (task 07)
+shared diff-extract observer over the sandbox engine. Backend-agnostic and
+dataset-agnostic: the caller passes the run context (``SandboxSpec``), the
+dataset-derived prompt, and a backend name.
 """
 
 from __future__ import annotations
@@ -117,7 +114,7 @@ def run_rollout(
   )
   conversation = ConversationObserver(producer=harness)
   extract = DiffExtractObserver(exclude_globs=exclude_globs)
-  # prompt.txt is dataset-derived (task 06 §5.6), staged by the composition; the
+  # prompt.txt is dataset-derived, staged by the composition; the
   # harness contributes its script and the pinned binary (a read-only mount).
   mounts = {PROMPT_NAME: Mount(Inline(prompt.encode()))} | harness.mounts(
       spec.workdir

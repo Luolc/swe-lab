@@ -10,8 +10,8 @@ from typer.testing import CliRunner
 from swe_lab.cli import app
 import swe_lab.cli.rollout as rollout_mod
 from swe_lab.conversation import Conversation
+from swe_lab.rollout import RolloutOutcome
 from swe_lab.sandbox import RunStatus
-from swe_lab.solve import RolloutOutcome
 
 runner = CliRunner()
 TOKEN = "CLAUDE_CODE_OAUTH_TOKEN"
