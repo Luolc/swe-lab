@@ -29,7 +29,7 @@ read status from them. A task that shipped with notable deltas gets a dated
 | 10b | [Cutover + deletion (old packages, `core/`, workflows)](task-10b-cutover.md) | ✅ Done (`core/` gone; verify on engine; stub-seam test; 184 green) |
 | 11 | Docs sync | ✅ Done (maps + commands match the post-cutover tree; spec noted Implemented) |
 | — | **CP3 — cutover: 731 sweep + stub seam test** (human gate) | ⬜ |
-| 12 | `Store` seam + tier mechanics | ⬜ |
+| 12 | [`Store` seam + post-run persist + manifest](task-12-persistence.md) | ⬜ |
 | — | **CP4 — R2 provisioning** (ask-first) | ⬜ |
 | 13 | R2 store + CI wiring | ⬜ |
 | 14 | [**Merged lifecycle-bearing `Sandbox` + up-first + transfer seam**](task-14-sandbox-lifecycle-refactor.md) ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ✅ Done (merged `Sandbox`/`SandboxBackend`; up-first + collect; `Resource` = data; `Mount.read_only` drops `Assets`; open backend registry) |
@@ -222,26 +222,31 @@ Implemented.
 ### Checkpoint CP3 — cutover *(user triggers the full 731 sweep,*
 *`max-parallel` ≤15, ~2.2 h; reviews 731/731 + a flipt rollout re-run)*
 
-## Task 12: `Store` seam + tier mechanics
+## Task 12: `Store` seam + post-run persist + manifest
 
-**Description:** `sandbox/store.py` — `Store` protocol + `FilesystemStore`;
-`PersistObserver` (T1 manifest append, run-keyed prefixes with injected
-timestamps); tier stamped at launch via entry-point defaults + `--persist`;
-`promote` subcommand against `FilesystemStore`. Manifest indexes T1 only.
-- **Acceptance:** a formal run persists artifacts + manifest entry; a debug run
-  persists nothing; `promote` moves a debug workspace into T1 with a manifest
-  entry.
-- **Verification:** unit tests over `FilesystemStore`; quality bar.
-- **Dependencies:** 02 (05/07 wire the flags). **Scope:** M
+Deep design: [`task-12-persistence.md`](task-12-persistence.md).
+
+**Description:** `sandbox/store.py` — `Store` ABC + `FilesystemStore` +
+`build_store` open registry; a **post-run `persist` step** (not an observer —
+consumes the finished `RunResult` the collect seam produced) writing run-keyed
+prefixes with injected timestamps and **one per-run manifest shard**; tier
+stamped at launch via entry-point defaults + `--persist`; `promote` against
+`FilesystemStore`. Manifest indexes T1 only.
+- **Acceptance:** a formal run persists artifacts + a manifest shard; a debug run
+  persists nothing; `promote` moves a debug workspace into T1 with a shard;
+  `get` re-fetches.
+- **Verification:** unit tests over `FilesystemStore` / `FakeStore` (no cloud);
+  quality bar.
+- **Dependencies:** 14 (the `fetch`/collect seam). **Scope:** M
 
 ### Checkpoint CP4 — R2 provisioning *(ask-first: user creates the R2 bucket*
 *+ scoped API token before task 13 wires secrets into CI)*
 
 ## Task 13: R2 store + CI wiring
 
-**Description:** `R2Store` over the S3 API (boto3 or a thin client — runtime
-dep needs the ask-first boundary), CI secrets, `promote` against R2; retention
-= keep-all per the spec.
+**Description:** `S3Store` over the S3 API (boto3 — a runtime dep behind the
+ask-first boundary) registered as `build_store("s3", …)` and pointed at **R2**,
+CI secrets, `promote` against R2; retention = keep-all per the spec.
 - **Acceptance:** a CI rollout run lands its artifacts in R2 under
   `runs/<sweep>/<instance>/<ts>/…` with a manifest entry; laptop fetch works.
 - **Verification:** a dispatched run + a local download; quality bar.
