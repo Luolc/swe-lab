@@ -14,7 +14,7 @@ from typing import Annotated
 
 import typer
 
-from swe_lab.cli._persist import local_store, new_record
+from swe_lab.cli.persist_wiring import local_store, new_record
 from swe_lab.paths import find_repo_root
 from swe_lab.sandbox import promote
 
