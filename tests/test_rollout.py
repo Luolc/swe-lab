@@ -1,10 +1,10 @@
-"""Tests for run_rollout: the composition on a fake sandbox (no Docker).
+"""Tests for run_rollout: the composition on an injected fake sandbox.
 
-``run_rollout`` now selects its sandbox by a registered *name* (not a backend
-object) and builds it via ``build_sandbox``. This test registers a throwaway
-backend name whose factory builds a :class:`FakeSandbox` — real local-dir file
-ops, scripted exec — so the whole composition (``build_sandbox`` → manager →
-observers → harness) runs docker-free while no agent process ever spawns.
+``run_rollout`` takes the sandbox by **injection**, so a test just constructs a
+:class:`FakeSandbox` (real local-dir file ops, scripted exec, no Docker) and
+passes it — no backend registry, no patching a construction function. The whole
+composition (manager → observers → harness) runs docker-free while no agent
+process ever spawns.
 """
 
 from pathlib import Path
@@ -14,12 +14,7 @@ import pytest
 
 from swe_lab.conversation import Conversation
 from swe_lab.rollout import run_rollout
-from swe_lab.sandbox import (
-    register_sandbox,
-    RunStatus,
-    SandboxSpec,
-)
-from swe_lab.sandbox.backends import SandboxConfig
+from swe_lab.sandbox import RunStatus, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 
 
@@ -36,16 +31,6 @@ class _LocalFakeSandbox(FakeSandbox):
     return self.workspace / target.lstrip("/")
 
 
-def _build_local_fake(
-    spec: SandboxSpec, workspace: Path, config: SandboxConfig
-) -> FakeSandbox:
-  del config
-  return _LocalFakeSandbox(spec=spec, workspace=workspace)
-
-
-register_sandbox("local-fake", _build_local_fake)
-
-
 def test_run_rollout_wires_and_assembles(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -58,13 +43,13 @@ def test_run_rollout_wires_and_assembles(
   )
   workspace = tmp_path / "ws"
   spec = SandboxSpec("acme__widget-1", "img:tag", "/app", "base")
+  sandbox = _LocalFakeSandbox(spec=spec, workspace=workspace)
 
   outcome = run_rollout(
-      spec,
+      sandbox,
       prompt="SOLVE THIS",
       model="sonnet",
-      backend="local-fake",
-      workspace=workspace,
+      output_dir=workspace,
       timeout=60.0,
   )
 

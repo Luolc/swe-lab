@@ -151,15 +151,14 @@ def test_mount_absolute_asset_copied_read_only(
   ]
 
 
-def test_up_adds_extra_hosts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_up_always_maps_host_gateway(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  # Every container maps host.docker.internal so a host-side proxy is always
+  # reachable; construction stays independent of the capture mode.
   fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
   _install(monkeypatch, fake)
-  sandbox = DockerHostSandbox(
-      spec=SPEC,
-      workspace=tmp_path,
-      pull=False,
-      extra_hosts=("host.docker.internal:host-gateway",),
-  )
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False)
   sandbox.up()
   create = fake.last_matching("create")
   at = create.index("host.docker.internal:host-gateway")

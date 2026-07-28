@@ -100,28 +100,37 @@ def _wire(
     calls["dataset"] = name
     return _Dataset()
 
-  def fake_run_rollout(
+  def fake_build_sandbox(
+      backend: object,
       spec: object,
+      workspace: object,
+      **kwargs: object,
+  ) -> object:
+    del spec, workspace
+    calls["backend"] = backend
+    calls["pass_env"] = kwargs.get("pass_env")
+    return object()  # a sentinel sandbox; the mocked run_rollout ignores it
+
+  def fake_run_rollout(
+      sandbox: object,
       *,
       prompt: str,
       model: str,
-      backend: object,
-      workspace: object,
+      output_dir: object,
       timeout: object,
       capture: object,
       **kwargs: object,
   ) -> RolloutOutcome:
-    del spec, workspace, timeout
+    del sandbox, output_dir, timeout
     calls["prompt"] = prompt
     calls["model"] = model
     calls["capture"] = capture
-    calls["backend"] = backend
     calls["bare"] = kwargs.get("bare")
-    calls["pass_env"] = kwargs.get("pass_env")
     return outcome
 
   monkeypatch.setenv(TOKEN, "tok")
   monkeypatch.setattr(rollout_mod, "load_dataset", fake_load)
+  monkeypatch.setattr(rollout_mod, "build_sandbox", fake_build_sandbox)
   monkeypatch.setattr(rollout_mod, "run_rollout", fake_run_rollout)
   return calls
 

@@ -2,8 +2,8 @@
 
 ``run_rollout`` composes a harness + the shared conversation observer + the
 shared diff-extract observer over the sandbox engine. Backend-agnostic and
-dataset-agnostic: the caller passes the run context (``SandboxSpec``), the
-dataset-derived prompt, and a backend name.
+dataset-agnostic: the caller builds the sandbox and passes it in, along with the
+dataset-derived prompt and a host output directory.
 """
 
 from __future__ import annotations
@@ -33,12 +33,11 @@ from swe_lab.harnesses.claude_code.proxy import (
 )
 from swe_lab.paths import find_repo_root
 from swe_lab.sandbox import (
-    build_sandbox,
     Inline,
     Mount,
     RunStatus,
+    Sandbox,
     SandboxManager,
-    SandboxSpec,
 )
 from swe_lab.sandbox.observers import DiffExtractObserver
 
@@ -79,43 +78,44 @@ class RolloutOutcome:
 
 
 def run_rollout(
-    spec: SandboxSpec,
+    sandbox: Sandbox,
     *,
     prompt: str,
     model: str,
-    backend: str,
-    workspace: Path,
+    output_dir: Path,
     timeout: float,
     exclude_globs: tuple[str, ...] = (),
     capture: Capture = Capture.STREAM,
-    pull: bool = True,
-    pass_env: tuple[str, ...] = (),
     bare: bool = False,
 ) -> RolloutOutcome:
   """Run one agent rollout and extract its patch + trace.
 
+  The sandbox is injected already built — the caller owns its construction
+  (``build_sandbox(...)``: backend, network, pull, the auth secret passed by
+  reference), so a new construction option never ripples through this signature.
+
   Args:
-    spec: The run context (image / workdir / base_commit / instance_id).
+    sandbox: The built (not-yet-up) sandbox to run in; its ``spec`` carries the
+      run context (image / workdir / base_commit / instance_id).
     prompt: The dataset-derived solve prompt (staged as ``prompt.txt``).
     model: The ``--model`` alias for the agent.
-    backend: The registered backend name to run on (e.g. ``host`` / ``ghjob``).
-    workspace: The run's workspace directory (created fresh).
+    output_dir: The manager's host-side output directory (created fresh). For a
+      host backend it is also the sandbox's bind-mounted workspace, so a
+      host-side proxy log lands where the in-sandbox observer reads it.
     timeout: Seconds before the agent run is killed.
     exclude_globs: Build-noise denylist for the diff extraction.
     capture: The output-capture strategy — ``STREAM`` (default) reads the
       agent's ``event_stream``; ``PROXY`` records via a host-side
-      ``cc-reverse-proxy`` writing into the workspace.
-    pull: Whether to pull the image before the run (A-host only).
-    pass_env: Variables inherited by reference into the sandbox — the agent's
-      auth secret (the OAuth token, or ``ANTHROPIC_API_KEY`` in ``bare`` mode).
-    bare: Run the agent with ``--bare`` (API-key auth; the key is supplied via
-      ``pass_env``, not here).
+      ``cc-reverse-proxy`` writing into ``output_dir``.
+    bare: Run the agent with ``--bare`` (API-key auth; the key is supplied to
+      the sandbox by the caller's ``pass_env``, not here).
 
   Returns:
     The rollout outcome (patch, flags, conversation, status).
   """
-  harness, extra_hosts, proxy = _capture_setup(
-      spec, model, workspace, capture, bare=bare
+  spec = sandbox.spec
+  harness, proxy = _capture_setup(
+      spec.instance_id, model, output_dir, capture, bare=bare
   )
   conversation = ConversationObserver(producer=harness)
   extract = DiffExtractObserver(exclude_globs=exclude_globs)
@@ -124,18 +124,9 @@ def run_rollout(
   mounts = {PROMPT_NAME: Mount(Inline(prompt.encode()))} | harness.mounts(
       spec.workdir
   )
-  sandbox = build_sandbox(
-      backend,
-      spec,
-      workspace,
-      network=True,
-      pull=pull,
-      pass_env=pass_env,
-      extra_hosts=extra_hosts,
-  )
   manager = SandboxManager(
       sandbox=sandbox,
-      output_dir=workspace,
+      output_dir=output_dir,
       observers=[conversation, extract],
       mounts=mounts,
   )
@@ -147,43 +138,33 @@ def run_rollout(
       patch=extract.patch,
       is_empty=extract.is_empty,
       binary_stripped=extract.binary_stripped,
-      complete=_run_complete(workspace, capture),
+      complete=_run_complete(output_dir, capture),
       conversation=conversation.conversation or Conversation(messages=[]),
       status=manager.result.status,
-      workspace=workspace,
+      workspace=output_dir,
       artifacts=manager.result.artifacts,
       metrics=manager.result.metrics,
   )
 
 
 def _capture_setup(
-    spec: SandboxSpec,
+    instance_id: str,
     model: str,
-    workspace: Path,
+    output_dir: Path,
     capture: Capture,
     *,
     bare: bool = False,
-) -> tuple[
-    ClaudeCodeHarness,
-    tuple[str, ...],
-    contextlib.AbstractContextManager[object],
-]:
-  """Build the harness, host entries, and proxy context for the capture mode.
+) -> tuple[ClaudeCodeHarness, contextlib.AbstractContextManager[object]]:
+  """Build the harness + proxy context for the capture mode.
 
-  For ``STREAM`` there are no extra hosts and the proxy context is a no-op. For
-  ``PROXY`` it starts a ``cc-reverse-proxy`` writing into the workspace, points
-  the agent at it, and returns the host-gateway ``--add-host`` entry so an
-  A-host container can reach the host-side proxy (A-ghjob ignores it).
+  For ``STREAM`` the proxy context is a no-op. For ``PROXY`` it starts a
+  ``cc-reverse-proxy`` writing into ``output_dir`` and points the agent at it
+  (the container reaches the host-side proxy via the ``host.docker.internal``
+  gateway the host backend always maps).
   """
   if capture is Capture.STREAM:
-    return (
-        ClaudeCodeHarness(model=model, bare=bare),
-        (),
-        contextlib.nullcontext(),
-    )
-  port = port_for_index(
-      zlib.crc32(spec.instance_id.encode()) % _PROXY_PORT_SPAN
-  )
+    return ClaudeCodeHarness(model=model, bare=bare), contextlib.nullcontext()
+  port = port_for_index(zlib.crc32(instance_id.encode()) % _PROXY_PORT_SPAN)
   base_url = f"http://{CONTAINER_PROXY_HOST}:{port}"
   harness = ClaudeCodeHarness(
       model=model,
@@ -191,17 +172,16 @@ def _capture_setup(
       proxy_base_url=base_url,
       bare=bare,
   )
-  extra_hosts = (f"{CONTAINER_PROXY_HOST}:host-gateway",)
   proxy = ReverseProxy(
-      port, workspace / PROXY_LOG_NAME, build_proxy(find_repo_root())
+      port, output_dir / PROXY_LOG_NAME, build_proxy(find_repo_root())
   )
-  return harness, extra_hosts, proxy
+  return harness, proxy
 
 
-def _run_complete(workspace: Path, capture: Capture) -> bool:
+def _run_complete(output_dir: Path, capture: Capture) -> bool:
   """Read the agent-completion signal from whichever trace the run captured."""
   name = PROXY_LOG_NAME if capture is Capture.PROXY else EVENT_STREAM_NAME
-  path = workspace / name
+  path = output_dir / name
   text = path.read_text() if path.is_file() else ""
   if capture is Capture.PROXY:
     return proxy_log_complete(text)

@@ -38,9 +38,9 @@ __all__ = [
 class SandboxConfig:
   """The common run settings a factory maps onto whichever sandbox it builds.
 
-  A-ghjob ignores ``network`` / ``pull`` / ``extra_hosts`` (Docker-only — the
-  job is already the live container), so callers pass one option set and each
-  factory takes what applies.
+  A-ghjob ignores ``network`` / ``pull`` (Docker-only — the job is already the
+  live container), so callers pass one option set and each factory takes what
+  applies.
 
   Attributes:
     network: Whether the container gets network access (A-host only).
@@ -48,7 +48,6 @@ class SandboxConfig:
     env: Variables set on each exec as ``KEY=VALUE``.
     pass_env: Names of variables inherited by reference (value never on argv).
     shell: The interpreter each ``run_script`` / ``run_command`` uses.
-    extra_hosts: ``--add-host`` entries for the container (A-host only).
   """
 
   network: bool = True
@@ -56,7 +55,6 @@ class SandboxConfig:
   env: Mapping[str, str] = field(default_factory=dict)
   pass_env: Sequence[str] = ()
   shell: str = "/bin/bash"
-  extra_hosts: Sequence[str] = ()
 
 
 type SandboxFactory = Callable[[SandboxSpec, Path, SandboxConfig], Sandbox]
@@ -90,7 +88,6 @@ def build_sandbox(
     env: Mapping[str, str] | None = None,
     pass_env: Sequence[str] = (),
     shell: str = "/bin/bash",
-    extra_hosts: Sequence[str] = (),
 ) -> Sandbox:
   """Construct the named sandbox from a common set of run settings.
 
@@ -103,7 +100,6 @@ def build_sandbox(
     env: Variables set on each exec as ``KEY=VALUE``.
     pass_env: Names of variables inherited by reference.
     shell: The interpreter each script / command runs under.
-    extra_hosts: ``--add-host`` entries (A-host only).
 
   Returns:
     The constructed sandbox (not yet up).
@@ -123,7 +119,6 @@ def build_sandbox(
       env=dict(env or {}),
       pass_env=tuple(pass_env),
       shell=shell,
-      extra_hosts=tuple(extra_hosts),
   )
   return factory(spec, workspace, config)
 
@@ -139,7 +134,6 @@ def _build_host(
       shell=config.shell,
       env=dict(config.env),
       pass_env=config.pass_env,
-      extra_hosts=config.extra_hosts,
   )
 
 

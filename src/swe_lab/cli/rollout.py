@@ -97,16 +97,16 @@ def rollout_in_docker(
   workspace = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
   shutil.rmtree(workspace, ignore_errors=True)
 
+  sandbox = build_sandbox(
+      backend, spec, workspace, network=True, pull=pull, pass_env=(auth_env,)
+  )
   outcome = run_rollout(
-      spec,
+      sandbox,
       prompt=prompt,
       model=model,
-      backend=backend,
-      workspace=workspace,
+      output_dir=workspace,
       timeout=timeout,
       capture=capture,
-      pull=pull,
-      pass_env=(auth_env,),
       bare=bare,
   )
 

@@ -43,6 +43,11 @@ _DOCKER_TIMEOUT_S = 120.0
 _OWNER_LABEL = "swe-lab"
 _INSTANCE_LABEL = "swe-lab-instance"
 
+# Mapped on every container via ``--add-host`` so an in-container process can
+# always reach a host-side service (the optional proxy-capture recorder) at
+# ``host.docker.internal``. Harmless when nothing on the host is listening.
+_HOST_GATEWAY = "host.docker.internal:host-gateway"
+
 
 @dataclass
 class DockerHostSandbox(Sandbox):
@@ -71,9 +76,6 @@ class DockerHostSandbox(Sandbox):
     pass_env: Names of variables inherited by reference from the host process
       (``-e NAME`` with no value), so a secret's value never appears in the
       ``docker`` command line, process list, or logs.
-    extra_hosts: ``--add-host`` entries (``name:ip``, e.g.
-      ``host.docker.internal:host-gateway``) so the container can reach a
-      host-side service such as the proxy-capture recorder.
     reuse: Allow ``up`` to run in a non-empty workspace.
   """
 
@@ -86,7 +88,6 @@ class DockerHostSandbox(Sandbox):
   shell: str = "/bin/bash"
   env: Mapping[str, str] = field(default_factory=dict)
   pass_env: Sequence[str] = ()
-  extra_hosts: Sequence[str] = ()
   reuse: bool = False
   _container: str = field(default="", init=False, repr=False)
 
@@ -115,8 +116,7 @@ class DockerHostSandbox(Sandbox):
     if not self.network:
       create_args += ["--network", "none"]
     create_args += ["-v", f"{self.workspace}:{self.mount_at}"]
-    for host_entry in self.extra_hosts:
-      create_args += ["--add-host", host_entry]
+    create_args += ["--add-host", _HOST_GATEWAY]
     for key, value in self.env.items():
       create_args += ["-e", f"{key}={value}"]
     for key in self.pass_env:
