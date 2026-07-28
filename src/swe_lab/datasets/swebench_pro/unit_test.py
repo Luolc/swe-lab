@@ -174,8 +174,6 @@ def _build_eval_script(
   ]
   if apply_patch:
     lines.append(f"git apply -v {_WS}/{PATCH_NAME}")
-  # The golden-test restore command is the instance's business (see
-  # ``golden_test_checkout_cmd``), so this script needn't know where it's from.
   if checkout_golden_tests and instance.golden_test_checkout_cmd:
     lines.append(instance.golden_test_checkout_cmd)
   lines.append(
