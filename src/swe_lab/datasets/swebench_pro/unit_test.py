@@ -163,9 +163,6 @@ def _build_eval_script(
   # per-instance Dockerfiles: Docker's ``ENV`` bakes them into the image, so
   # every container process already inherits them.
   #
-  # The golden-test restore command is the instance's business (see
-  # ``golden_test_checkout_cmd``), so this script needn't know where it's from.
-  golden_test_checkout = instance.golden_test_checkout_cmd
   # shlex.quote wraps the joined test list in single quotes so bash cannot
   # expand a ``$`` in a test name or glob-expand ``[...]`` from a
   # pytest parametrize id.
@@ -177,8 +174,10 @@ def _build_eval_script(
   ]
   if apply_patch:
     lines.append(f"git apply -v {_WS}/{PATCH_NAME}")
-  if checkout_golden_tests and golden_test_checkout:
-    lines.append(golden_test_checkout)
+  # The golden-test restore command is the instance's business (see
+  # ``golden_test_checkout_cmd``), so this script needn't know where it's from.
+  if checkout_golden_tests and instance.golden_test_checkout_cmd:
+    lines.append(instance.golden_test_checkout_cmd)
   lines.append(
       f"{BASH} {_WS}/{RUN_SCRIPT_NAME} {selected}"
       f" > {_WS}/{STDOUT_LOG_NAME} 2> {_WS}/{STDERR_LOG_NAME}"
