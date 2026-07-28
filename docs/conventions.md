@@ -26,7 +26,7 @@ uv run pre-commit run --all-files    # ruff + pyink + isort + basedpyright + uv-
 # The engine CLI — one entry point, per-subcommand modules (cli/<name>.py):
 python -m swe_lab eval <instance_id> --gold                # grade an instance's gold patch
 python -m swe_lab rollout <instance_id>                    # run the container agent loop
-python -m swe_lab verify --shard i/N                       # golden-sweep one shard
+python -m swe_lab.datasets.swebench_pro.verify --shard i/N                       # golden-sweep one shard
 # W1 annotation keeps its own module entrypoint:
 python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
 ```
@@ -106,7 +106,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus per-dataset packages (`swebench_pro/`: record, run setup, unit-test compile + grader). |
 | `src/swe_lab/evaluation/` | The **eval-method axis**: `verdict` contract + `methods/` (`unit_test`). |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
-| `src/swe_lab/cli/` + `__main__.py` | The one CLI entry point (`eval`/`rollout`/`verify`); `rollout.py` is the rollout composition. |
+| `src/swe_lab/cli/` + `__main__.py` | The CLI entry point (`eval`/`rollout`/`promote`); `rollout.py` is the rollout composition. (`verify` — golden QA — moved into `datasets/swebench_pro/`, it is dataset-specific.) |
 | `src/swe_lab/repo/`, `paths.py`, `patch.py` | Repo checkout providers (W1) + repo-root/cache path helpers + the git-patch extraction/apply utility (extraction script, binary-hunk strip, emptiness — [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)). |
 | `src/swe_lab/pipelines/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). Keeps its own module entrypoint; not yet on the engine. |
 | `experiments/` | Exploratory experiments + investigations. Each has a `README` (design/how-to-run) and, when it reaches conclusions, a `REPORT`; raw run artifacts under `runs/<variant>/`. Exempt from code hooks. See the [experiment playbook](experiments/playbook.md). |

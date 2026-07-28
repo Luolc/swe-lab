@@ -50,5 +50,5 @@ repos:
       - id: no-stale-module-refs
         name: no references to deleted/renamed modules
         language: pygrep
-        entry: 'swe_lab\.core\b|core\.agent\.trace|swe_lab\.solve\b|harnesses\.claude_code\.trace\b|swe_lab\.evaluation\.verify\b|\b(CAPTURE_MODES|DEFAULT_CAPTURE|CAPTURE_PROXY|CAPTURE_STREAM|with_assets|materialize_to|BackendKind|build_backend)\b'
+        entry: 'swe_lab\.core\b|core\.agent\.trace|swe_lab\.solve\b|swe_lab\.cli\.verify\b|harnesses\.claude_code\.trace\b|swe_lab\.evaluation\.verify\b|\b(CAPTURE_MODES|DEFAULT_CAPTURE|CAPTURE_PROXY|CAPTURE_STREAM|with_assets|materialize_to|BackendKind|build_backend)\b'
         files: '^(src|tests)/.*\.py$'
