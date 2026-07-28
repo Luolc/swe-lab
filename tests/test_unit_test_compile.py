@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import override
 
 import pytest
 
@@ -12,6 +13,7 @@ from swe_lab.datasets.swebench_pro.constants import (
     RUN_SCRIPT_NAME,
     WORKDIR,
 )
+import swe_lab.datasets.swebench_pro.execution as execution
 from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
     _build_eval_script,
@@ -110,10 +112,25 @@ def test_script_quotes_selected_tests():
 # ─── compile ─────────────────────────────────────────────────────────────────
 
 
-def test_compile_mounts_and_spec(tmp_path: Path):
+def _use_staged_harness(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+  """Point the default harness cache at tmp_path (where _stage_harness writes).
+
+  `compile_unit_test` no longer takes a repo_root — the harness comes from the
+  instance's ``run_script`` / ``parser`` properties, whose default fetch caches
+  under ``find_repo_root()``. Redirect that to tmp_path so the staged files win.
+  """
+  monkeypatch.setattr(execution, "find_repo_root", lambda: tmp_path)
+
+
+def test_compile_mounts_and_spec(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  _use_staged_harness(monkeypatch, tmp_path)
   _stage_harness(tmp_path, "acme__widget-1")
   spec = compile_sandbox_spec(_instance())
-  unit = compile_unit_test(_instance(), patch="MY DIFF", repo_root=tmp_path)
+  unit = compile_unit_test(_instance(), patch="MY DIFF")
   assert spec.instance_id == "acme__widget-1"
   assert spec.image_ref == f"{IMAGE_REPO}:widget-tag"
   assert spec.workdir == WORKDIR
@@ -127,25 +144,54 @@ def test_compile_mounts_and_spec(tmp_path: Path):
   assert "git apply" in unit.eval_script
 
 
-def test_compile_without_patch_omits_patch_mount_and_apply(tmp_path: Path):
+def test_compile_without_patch_omits_patch_mount_and_apply(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  _use_staged_harness(monkeypatch, tmp_path)
   _stage_harness(tmp_path, "acme__widget-1")
-  unit = compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
+  unit = compile_unit_test(_instance(), patch=None)
   assert "patch.diff" not in unit.mounts
   assert "git apply" not in unit.eval_script
 
 
-def test_compile_reuses_cached_harness_no_network(tmp_path: Path):
-  # no network: fetch_harness must reuse the pre-staged files
+def test_compile_reuses_cached_harness_no_network(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  # no network: the property reuses the pre-staged cache
+  _use_staged_harness(monkeypatch, tmp_path)
   _stage_harness(tmp_path, "acme__widget-1")
-  unit = compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
+  unit = compile_unit_test(_instance(), patch=None)
   assert _content(unit.mounts[RUN_SCRIPT_NAME]) == b"echo run"
 
 
-def test_compile_missing_harness_would_fetch(tmp_path: Path):
-  # nothing staged → fetch_harness attempts a download; assert it tries the
+def test_compile_missing_harness_would_fetch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  # nothing staged → the default property fetches; assert it tries the
   # network (raising) rather than silently succeeding.
+  _use_staged_harness(monkeypatch, tmp_path)
   with pytest.raises(Exception):  # noqa: B017 — any network/URL error is fine
-    compile_unit_test(_instance(), patch=None, repo_root=tmp_path)
+    compile_unit_test(_instance(), patch=None)
+
+
+def test_run_script_and_parser_are_overridable():
+  # the harness is the instance's business: a subclass supplies it directly,
+  # so compile needs no network and no repo_root.
+  class _Embedded(SweBenchProInstance):
+
+    @property
+    @override
+    def run_script(self) -> bytes:
+      return b"EMBEDDED RUN"
+
+    @property
+    @override
+    def parser(self) -> bytes:
+      return b"EMBEDDED PARSE"
+
+  unit = compile_unit_test(_Embedded.from_raw(_BASE), patch=None)
+  assert _content(unit.mounts[RUN_SCRIPT_NAME]) == b"EMBEDDED RUN"
+  assert _content(unit.mounts[PARSER_NAME]) == b"EMBEDDED PARSE"
 
 
 def test_compile_solve_prompt_combines_the_three_columns():

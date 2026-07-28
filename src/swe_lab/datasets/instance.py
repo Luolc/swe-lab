@@ -11,7 +11,6 @@ type that implements this ABC, with no CLI change.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.sandbox import SandboxSpec
@@ -49,7 +48,6 @@ class TaskInstance[V: Verdict](ABC):
       *,
       patch: str | None,
       checkout_golden_tests: bool = True,
-      repo_root: Path | None = None,
   ) -> UnitTestSpec[V]:
     """Compile this instance's unit-test evaluation spec.
 
@@ -61,8 +59,6 @@ class TaskInstance[V: Verdict](ABC):
         untouched (a self-check that the required tests fail without a fix).
       checkout_golden_tests: Restore the held-out golden test files after the
         reset (so a candidate patch cannot game them).
-      repo_root: Repo root used to locate cached assets; auto-detected when
-        omitted.
 
     Returns:
       The compiled unit-test spec.

@@ -29,13 +29,13 @@ import ast
 from collections.abc import Mapping
 from dataclasses import dataclass
 import json
-from pathlib import Path
 from typing import ClassVar, override
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import SandboxSpec
 
+from .execution import fetch_harness
 from .patches import patch_fail_to_pass
 from .unit_test import (
     compile_sandbox_spec,
@@ -96,9 +96,11 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
   """A single SWE-Bench Pro task instance with normalized, typed fields.
 
   Both a ``DatasetRecord`` (the loader parses it) and a ``TaskInstance`` (the
-  CLIs run it): the ``sandbox_spec`` / ``solve_prompt`` / ``gold_patch`` /
-  ``unit_test`` methods delegate to this package's compile functions, so a CLI
-  drives it without importing anything SWE-Bench-Pro-specific.
+  CLIs run it). The runnable surface — ``sandbox_spec`` / ``solve_prompt`` /
+  ``gold_patch`` / ``unit_test_spec`` plus the ``run_script`` / ``parser`` /
+  ``golden_test_checkout_cmd`` properties — is where "how this instance is run"
+  lives, so a CLI drives it without importing anything SWE-Bench-Pro-specific,
+  and a downstream user can subclass to override how any of it is obtained.
   """
 
   # Column set this record type is built from; consumed by the generic loader.
@@ -164,6 +166,40 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
         dockerhub_tag=raw["dockerhub_tag"],
     )
 
+  @property
+  def run_script(self) -> bytes:
+    """The test-harness run script for this instance (its content).
+
+    How the harness is obtained is the instance's own business: the default
+    fetches it from the upstream harness repo and caches it (see
+    ``fetch_harness``). **Override this (and ``parser``) in a subclass to source
+    it another way** — e.g. embedded in a future dataset column — and grading
+    then needs no network or repo checkout. ``compile_unit_test`` only reads
+    this content, so it depends on neither.
+    """
+    run_script_path, _ = fetch_harness(self.instance_id)
+    return run_script_path.read_bytes()
+
+  @property
+  def parser(self) -> bytes:
+    """The output parser for this instance (its content); see ``run_script``."""
+    _, parser_path = fetch_harness(self.instance_id)
+    return parser_path.read_bytes()
+
+  @property
+  def golden_test_checkout_cmd(self) -> str:
+    """The command restoring the held-out golden test files after a reset.
+
+    In SWE-Bench Pro this is the **last line** of ``before_repo_set_cmd`` — a
+    block whose final line restores the golden tests by path, so a candidate
+    patch cannot game them (Scale takes the same ``splitlines()[-1]``); ``""``
+    when absent. Exposed as a property so ``_build_eval_script`` need not know
+    where it comes from: a downstream dataset can store just this line (not the
+    whole block), or a subclass can override how it is derived.
+    """
+    before = self.before_repo_set_cmd.strip()
+    return before.splitlines()[-1] if before else ""
+
   @override
   def sandbox_spec(self) -> SandboxSpec:
     """Return the run context (image / workdir / base commit)."""
@@ -185,12 +221,10 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
       *,
       patch: str | None,
       checkout_golden_tests: bool = True,
-      repo_root: Path | None = None,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     """Compile this instance's unit-test evaluation spec."""
     return compile_unit_test(
         self,
         patch=patch,
         checkout_golden_tests=checkout_golden_tests,
-        repo_root=repo_root,
     )

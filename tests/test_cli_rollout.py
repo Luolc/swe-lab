@@ -46,9 +46,8 @@ class _Instance(
       *,
       patch: str | None,
       checkout_golden_tests: bool = True,
-      repo_root: Path | None = None,
   ) -> UnitTestSpec[Verdict]:
-    del patch, checkout_golden_tests, repo_root
+    del patch, checkout_golden_tests
     return cast(UnitTestSpec[Verdict], object())
 
 

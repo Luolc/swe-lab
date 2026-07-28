@@ -12,7 +12,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 import json
-from pathlib import Path
 import shlex
 from typing import override, TYPE_CHECKING
 
@@ -30,7 +29,7 @@ from .constants import (
     STDOUT_LOG_NAME,
     WORKDIR,
 )
-from .execution import fetch_harness, image_ref
+from .execution import image_ref
 
 if TYPE_CHECKING:
   # Hints only — importing the record at runtime would cycle (record.py's
@@ -164,11 +163,9 @@ def _build_eval_script(
   # per-instance Dockerfiles: Docker's ``ENV`` bakes them into the image, so
   # every container process already inherits them.
   #
-  # In SWE-Bench Pro, ``before_repo_set_cmd`` is a block whose last line
-  # restores the golden test files by path (so a candidate patch cannot game
-  # the held-out tests); Scale takes the same ``splitlines()[-1]``.
-  before = instance.before_repo_set_cmd.strip()
-  golden_test_checkout = before.splitlines()[-1] if before else ""
+  # The golden-test restore command is the instance's business (see
+  # ``golden_test_checkout_cmd``), so this script needn't know where it's from.
+  golden_test_checkout = instance.golden_test_checkout_cmd
   # shlex.quote wraps the joined test list in single quotes so bash cannot
   # expand a ``$`` in a test name or glob-expand ``[...]`` from a
   # pytest parametrize id.
@@ -198,12 +195,14 @@ def compile_unit_test(
     *,
     patch: str | None,
     checkout_golden_tests: bool = True,
-    repo_root: Path | None = None,
 ) -> UnitTestSpec[SweBenchProVerdict]:
   """Compile one instance's unit-test evaluation spec.
 
   The run context is ``compile_sandbox_spec(instance)`` — the same for solving
-  and grading — so it is not returned here; a caller gets it from there.
+  and grading — so it is not returned here; a caller gets it from there. The
+  test harness comes straight from ``instance.run_script`` / ``instance.parser``
+  (the instance decides how to obtain them), so this depends on no ``repo_root``
+  and does no file round-trip.
 
   Args:
     instance: The instance to grade.
@@ -211,19 +210,16 @@ def compile_unit_test(
       untouched (a self-check that the required tests fail without a fix).
     checkout_golden_tests: Forwarded to the eval script (see its self-check
       modes).
-    repo_root: Repo root used to locate the cached harness; auto-detected
-      when omitted.
 
   Returns:
     The compiled unit-test spec.
   """
-  run_script, parser = fetch_harness(instance.instance_id, repo_root=repo_root)
   required = sorted(
       frozenset(instance.fail_to_pass) | frozenset(instance.pass_to_pass)
   )
   mounts: Mounts = {
-      RUN_SCRIPT_NAME: Mount(Inline(run_script.read_bytes())),
-      PARSER_NAME: Mount(Inline(parser.read_bytes())),
+      RUN_SCRIPT_NAME: Mount(Inline(instance.run_script)),
+      PARSER_NAME: Mount(Inline(instance.parser)),
       REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(required).encode())),
   }
   if patch is not None:

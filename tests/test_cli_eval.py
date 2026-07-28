@@ -70,9 +70,8 @@ def _wire(
         *,
         patch: str | None,
         checkout_golden_tests: bool = True,
-        repo_root: Path | None = None,
     ) -> UnitTestSpec[Verdict]:
-      del checkout_golden_tests, repo_root
+      del checkout_golden_tests
       calls["patch"] = patch  # the spec is discarded by the mocked run
       return cast(UnitTestSpec[Verdict], object())
 
