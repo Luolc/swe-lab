@@ -7,8 +7,15 @@ alternatives rejected. Format follows the `documentation-and-adrs` skill:
 - **Don't re-litigate an accepted ADR.** If a decision must change, write a new
   ADR that references and supersedes the old one; don't edit the old in place or
   delete it (it is the historical record).
+- **Amend vs. supersede, ADR-first, in the same PR.** When a finding or the
+  user's latest instruction conflicts with an accepted ADR, don't just change
+  the code. In the **same change**: a **minor** delta → a dated
+  `## Amendment (YYYY-MM-DD)` note inside the ADR; a **large** delta → a **new
+  ADR that supersedes** it (mark the old one `Superseded by ADR-NNNN`). Then make
+  the code edit. A reader must be able to trust an ADR without checking the code.
 - **The code is the source of truth.** An ADR records the *why*; where an ADR and
-  the code disagree, the code wins and the ADR should be superseded to match.
+  the code disagree, the code wins and the ADR should be amended or superseded to
+  match.
 
 ## Index
 

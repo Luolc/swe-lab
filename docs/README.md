@@ -43,6 +43,7 @@ current focus** → [w2](workstreams/w2-solve-eval/). Patch extraction is settle
 | [horizontal/](horizontal/) | The **horizontal** shared foundation — design of the shared execution core and any cross-cutting shared-code work. |
 | [workstreams/](workstreams/) | The **verticals** — one folder per workstream (design/history, plus `spec`/`plan`/`todo` when active). |
 | [conventions.md](conventions.md) | Codebase map, build/test/lint commands, directory meanings, hazards, source-of-truth rule. |
+| [doc-map.md](doc-map.md) | Which doc answers which question, where a new learning belongs, and the single-source-of-truth guards. |
 | [decisions/](decisions/) | Architectural decisions (ADRs). ADR-0001 = patch extraction + grading (Accepted). |
 | [reviews/](reviews/) | Point-in-time engineering audits of the codebase (dated snapshots, not specs). |
 | [experiments/playbook.md](experiments/playbook.md) | How we run experiments + investigations in this ML/eval repo. |

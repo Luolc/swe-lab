@@ -4,7 +4,9 @@ Working rules for AI agents in this repo.
 
 The project map — roadmap, status, and where everything lives — is
 [`docs/README.md`](docs/README.md). Read it before starting work; it points to
-everything else.
+everything else. For **which doc answers which question, and where a new
+learning belongs**, see [`docs/doc-map.md`](docs/doc-map.md) — every fact has
+exactly one home; other docs link to it, never copy it.
 
 ## How we work
 
@@ -90,12 +92,24 @@ uv run pytest                         # the test suite
 Scope to what you touched while iterating; run the full set before merge. New
 behavior gets a test; `experiments/` is exempt from the hooks.
 
+**An invariant needs a test, or downgrade the claim.** When a `spec.md`, an ADR,
+or a docstring asserts an *always / never / every path / exactly one*, the same
+change adds a named test that fails when it's violated — otherwise reword the
+sentence to "intended / today / not enforced". An invariant you cannot name a
+test for is a wish, and it silently decays into a lie.
+
 ## Boundaries
 
 - **Always:** run the quality bar before merge; keep the docs map
   ([`docs/README.md`](docs/README.md)) thin (detail lives in each workstream
   folder); redact operator PII in any trace record; treat the **code** as
-  source of truth over a doc flagged *provisional*.
+  source of truth over a doc flagged *provisional*; keep every fact in **one
+  home** (route via [`docs/doc-map.md`](docs/doc-map.md); status lives only in a
+  component's `plans/README.md` / the workstream snapshot, never in a plan
+  header); **reconcile a component's `spec.md` at each checkpoint and on any
+  workstream-status change** — the spec has no other forcing function, so it
+  rots without this (fix its Success Criteria, Open Questions, and any body
+  section a landed ADR superseded).
 - **Ask first:** adding a runtime dependency; changing the annotation schema or
   the `EvalSpec` / report contract; re-hosting or renaming the HF dataset repos;
   the deferred `outputs/` restructure; deleting anything under `outputs/` (it is a
