@@ -41,15 +41,15 @@ class _Instance(
     return "GOLD"
 
   @override
-  def unit_test(
+  def unit_test_spec(
       self,
       *,
       patch: str | None,
       checkout_golden_tests: bool = True,
       repo_root: Path | None = None,
-  ) -> tuple[SandboxSpec, UnitTestSpec[Verdict]]:
+  ) -> UnitTestSpec[Verdict]:
     del patch, checkout_golden_tests, repo_root
-    return _SPEC, cast(UnitTestSpec[Verdict], object())
+    return cast(UnitTestSpec[Verdict], object())
 
 
 def test_help_lists_rollout():
