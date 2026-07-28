@@ -41,7 +41,9 @@ def test_requires_oauth_token(monkeypatch: pytest.MonkeyPatch):
   assert "not set" in result.output
 
 
-def _outcome(*, is_empty: bool, patch: str) -> RolloutOutcome:
+def _outcome(
+    *, is_empty: bool, patch: str, artifacts: dict[str, Path] | None = None
+) -> RolloutOutcome:
   return RolloutOutcome(
       instance_id="acme__widget-1",
       patch=patch,
@@ -51,6 +53,8 @@ def _outcome(*, is_empty: bool, patch: str) -> RolloutOutcome:
       conversation=Conversation(messages=[]),
       status=RunStatus.SUCCESS,
       workspace=Path("/tmp/ws"),
+      artifacts=artifacts or {},
+      metrics={},
   )
 
 
@@ -137,6 +141,37 @@ def test_bare_passes_api_key_env_by_reference(monkeypatch: pytest.MonkeyPatch):
   assert calls["bare"] is True
   # the key is passed by NAME (like the OAuth token), never its value
   assert calls["pass_env"] == (API_KEY,)
+
+
+def test_persist_writes_a_manifest_shard(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  art = tmp_path / "patch.diff"
+  _ = art.write_text("DIFF")
+  _ = _wire(
+      monkeypatch,
+      outcome=_outcome(is_empty=False, patch="D", artifacts={"patch": art}),
+  )
+  monkeypatch.setattr(rollout_mod, "find_repo_root", lambda: tmp_path)
+  result = runner.invoke(
+      app, ["rollout", "acme__widget-1", "--persist", "--sweep", "sw1"]
+  )
+  assert result.exit_code == 0
+  shards = list((tmp_path / ".cache" / "store").rglob("run.json"))
+  assert len(shards) == 1  # one per-run shard under the sweep
+  assert (tmp_path / ".cache" / "store" / "runs" / "sw1").is_dir()
+  assert "persisted" in json.loads(result.output)
+
+
+def test_no_persist_writes_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  _ = _wire(monkeypatch, outcome=_outcome(is_empty=False, patch="D"))
+  monkeypatch.setattr(rollout_mod, "find_repo_root", lambda: tmp_path)
+  result = runner.invoke(app, ["rollout", "acme__widget-1"])
+  assert result.exit_code == 0
+  assert not (tmp_path / ".cache" / "store").exists()  # debug persists nothing
+  assert "persisted" not in json.loads(result.output)
 
 
 def test_empty_patch_graded_exits_one(monkeypatch: pytest.MonkeyPatch):

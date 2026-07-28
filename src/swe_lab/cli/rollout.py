@@ -10,6 +10,7 @@ from typing import Annotated
 
 import typer
 
+from swe_lab.cli._persist import persist_run
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
@@ -65,6 +66,13 @@ def rollout_in_docker(
             f"{API_KEY_ENV} set)."
         ),
     ] = False,
+    persist: Annotated[
+        bool,
+        typer.Option(help="Persist the run's artifacts to the T1 store."),
+    ] = False,
+    sweep: Annotated[
+        str, typer.Option(help="Sweep id the persisted run is keyed under.")
+    ] = "adhoc",
 ) -> None:
   """Run a headless agent to solve one instance in its container.
 
@@ -116,6 +124,23 @@ def rollout_in_docker(
       "patch_file": str(outcome.workspace / "patch.diff"),
       "workspace": str(outcome.workspace),
   }
+  if persist:
+    record = persist_run(
+        root,
+        sweep=sweep,
+        instance_id=outcome.instance_id,
+        status=outcome.status.value,
+        backend=backend,
+        artifacts=outcome.artifacts,
+        model=model,
+        metrics=outcome.metrics,
+        extra={
+            "agent_complete": outcome.complete,
+            "is_empty_patch": outcome.is_empty,
+            "binary_stripped": outcome.binary_stripped,
+        },
+    )
+    summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
   resolved = _finish(
       summary, instance, outcome, grade, root, pull, timeout, backend
   )

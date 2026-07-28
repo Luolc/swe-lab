@@ -29,7 +29,7 @@ read status from them. A task that shipped with notable deltas gets a dated
 | 10b | [Cutover + deletion (old packages, `core/`, workflows)](task-10b-cutover.md) | ✅ Done (`core/` gone; verify on engine; stub-seam test; 184 green) |
 | 11 | Docs sync | ✅ Done (maps + commands match the post-cutover tree; spec noted Implemented) |
 | — | **CP3 — cutover: 731 sweep + stub seam test** (human gate) | ⬜ |
-| 12 | [`Store` seam + post-run persist + manifest](task-12-persistence.md) | ⬜ |
+| 12 | [`Store` seam + post-run persist + manifest](task-12-persistence.md) | ✅ Done (FilesystemStore; `--persist`/`--sweep` on rollout+eval; `promote` subcommand. S3/R2 = task 13) |
 | — | **CP4 — R2 provisioning** (ask-first) | ⬜ |
 | 13 | R2 store + CI wiring | ⬜ |
 | 14 | [**Merged lifecycle-bearing `Sandbox` + up-first + transfer seam**](task-14-sandbox-lifecycle-refactor.md) ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ✅ Done (merged `Sandbox`/`SandboxBackend`; up-first + collect; `Resource` = data; `Mount.read_only` drops `Assets`; open backend registry) |
