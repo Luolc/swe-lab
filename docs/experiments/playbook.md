@@ -3,8 +3,8 @@
 This repo is an **ML / eval** project: a large part of the work is not "implement
 a spec" but "**run an experiment to learn something**" — try a prompt, measure
 variance, reproduce a failure, decide whether an approach is worth building. The
-coding-lifecycle skills (`/spec → /plan → /build → /review → /ship`) don't cover
-this mode. This playbook does.
+coding-lifecycle skills (spec → plan → build → review → ship) don't cover this
+mode. This playbook does.
 
 It is **descriptive first**: the conventions below are the ones the repo's best
 experiments already follow. Two exemplars to imitate:
