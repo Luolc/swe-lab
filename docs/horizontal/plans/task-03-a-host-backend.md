@@ -1,36 +1,8 @@
 # Task 03 — A-host backend: `docker create/start/exec/rm`
 
-> **Status: DONE (PR #27), amended 2026-07-21.**
-> Class shipped as **`DockerHostBackend`**. §8 open questions resolved as
-> recommended (bash keep-alive; `@pytest.mark.docker` auto-skip; hardening
-> deferred). Two amendments settled with the user:
-> 1. ✅ **exec → `run_script`: runs a persisted workspace file, not stdin**
->    (reverses the §5.6 stdin delta). `Sandbox.run(name)` runs a workspace
->    script by its `$SANDBOX_WORKSPACE` path (`docker exec … bash
->    $mount_at/<name>`); scripts are materialized as mounts or written there by
->    the generating observer, so the exact script survives for audit and
->    A-ghjob needs no stdin plumbing. See
->    [`workspace-layout.md`](../workspace-layout.md).
-> 2. ⬜ **assets** (pending, lands with task 06 which needs it) — a
->    construction-time `assets` field (`dict[container_path, Resource]`) placing
->    **read-only** resources at fixed container paths (`docker create
->    -v host:container:ro` for a `LocalFile`; A-ghjob `cp` kept read-only), so the
->    pinned agent binary lands at `/opt/claude-code/claude` (invoked by absolute
->    path) *outside* the read/write workspace. An asset is read-only
->    infrastructure the run must never mutate — that, not its size, is why it is an
->    asset (spec §Assets vs. mounts).
-> 3. ⬜ **`Resource` + a per-backend `materialize` seam** (pending, lands with
->    task 06) — introduce a **`Resource`** abstraction (the shared content-source:
->    `Inline` / `LocalFile` now; `Url` / object-store later) that **both mounts and
->    assets wrap** (a `Mount` is `Resource` + workspace target + `executable`; an
->    asset is a `Resource` at a fixed read-only path — source kinds defined once).
->    `materialize(mounts, workspace)` moves **onto the backend** (from the free
->    `sandbox/mounts.py` function the manager calls today), with a **default** for
->    the simple Resource kinds (`Inline` → write, `LocalFile` → copy); a backend
->    may **override per kind** — a remote/object-store backend fetches a `Url`/ref
->    natively rather than routing bytes through the host. The current brute
->    `shutil.copyfile` stays only as the default `LocalFile` path (spec
->    §Materialization is a per-backend seam).
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

@@ -1,16 +1,8 @@
 # Task 14 — Merged lifecycle-bearing `Sandbox` + up-first lifecycle + transfer seam
 
-> **Status: ✅ IMPLEMENTED** (PR #64, merged). This doc is now the retrospective
-> record of the landed design; the **code is the source of truth**, with
-> [ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md) (the decision)
-> and the [spec](../spec.md). Grounded in the current engine at the
-> post-cutover `main`: `sandbox/{manager,backend,resources,mounts,result}.py`,
-> `sandbox/backends/{host,ghjob}.py`, `sandbox/testing.py`, the observers
-> (`sandbox/observers/diff_extract.py`, `conversation/observer.py`,
-> `evaluation/methods/unit_test/run.py`), and the compositions (`solve.py`,
-> `evaluation/methods/unit_test/run.py`). **P0.** This is Phase 1 of ADR-0003
-> (host-only, zero functional change); Task 15 (seam proof + guide) and Task 12
-> (persistence, rebased) follow.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

@@ -1,12 +1,8 @@
 # Task 07 — Diff-extract observer + rollout CLI
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md), [ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md)
-> (settled patch-extraction contract), tasks [02](task-02-engine-core.md)/
-> [03](task-03-a-host-backend.md)/[04](task-04-unit-test-method.md)/
-> [06](task-06-claude-code-harness.md). Grounded in the current rollout
-> (`src/swe_lab/core/patch.py`, `src/swe_lab/rollout/{runner,entryscript,
-> __main__}.py` at `fae1738`). Open items in §8.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

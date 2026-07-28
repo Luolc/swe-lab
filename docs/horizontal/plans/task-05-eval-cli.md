@@ -1,12 +1,8 @@
 # Task 05 — Eval CLI on the engine + parity
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md), [task 02](task-02-engine-core.md) (engine),
-> [task 03](task-03-a-host-backend.md) (`DockerHostBackend`), and
-> [task 04](task-04-unit-test-method.md) (`compile_unit_test` / `run_unit_test`
-> / `SweBenchProVerdict`). Grounded in the current eval CLI + golden verify
-> (`src/swe_lab/evaluation/{__main__,verify}.py`, `.github/workflows/{eval,
-> verify-golden}.yml` at `fae1738`). Open items in §8.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

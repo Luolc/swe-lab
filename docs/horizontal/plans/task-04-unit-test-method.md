@@ -1,10 +1,8 @@
 # Task 04 — `unit_test` eval method + SWE-Bench-Pro compile
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) (§Decoupling that follows — the `Grader[V: Verdict]`
-> contract; §The three axes) and tasks [02](task-02-engine-core.md)/[03](task-03-a-host-backend.md).
-> Grounded in the current grader with `file:line` citations
-> (`src/swe_lab/core/datasets/swebench_pro/` at `9667fff`). Open items in §7.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

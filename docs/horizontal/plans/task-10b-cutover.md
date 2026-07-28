@@ -1,9 +1,8 @@
 # Task 10b — Cutover + deletion (core/ dissolves)
 
-> **Status: DONE.** Source of truth: the approved [spec](../spec.md) §"Project
-> Structure" (core/ dissolves entirely) + §"Commands" (one entry, per-subcommand
-> modules) + Success #3 (a harness stub registers without engine changes).
-> Follows [10a](task-10a-moves.md). Grounded in the post-`#52` tree.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

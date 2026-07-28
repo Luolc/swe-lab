@@ -1,12 +1,8 @@
 # Task 09 — A-ghjob backend
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) (§"Two backends, one interface"; assumption 3 — model A
-> with two backends), tasks [02](task-02-engine-core.md)/[03](task-03-a-host-backend.md).
-> Grounded in the current code at `8fd0741`: `sandbox/backend.py` (the ABC),
-> `sandbox/backends/host.py` (`DockerHostBackend`), `sandbox/testing.py`
-> (`FakeBackend`), `sandbox/manager.py` (lifecycle), `sandbox/resources.py`.
-> Decisions under full-auto in §7.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

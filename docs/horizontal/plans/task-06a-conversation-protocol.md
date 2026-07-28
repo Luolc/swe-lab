@@ -1,12 +1,8 @@
 # Task 06a — `Conversation` protocol + output converters
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) (§Agent output → one typed `Conversation`). References:
-> the sibling `locode-core`'s `crates/locode-protocol/src/lib.rs` (its ADR-0013
-> conversation protocol) and the Anthropic Python SDK's `anthropic.types`
-> (`Message`, `ContentBlock` — Pydantic `BaseModel`s, `type`-discriminated
-> unions). Grounded in the current Claude-Code trace code
-> (`src/swe_lab/core/agent/trace.py` at `fae1738`). Open items in §7.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

@@ -5,6 +5,12 @@ planning convention: [`spec.md`](../spec.md) = target design,
 [`plan.md`](../plan.md) = strategy, `plans/` = one deep design per task,
 indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if larger).
 
+**Single source of truth for status:** this table is the *only* live status for
+the horizontal tasks. The `plans/task-*.md` docs are point-in-time **design
+records** — a header may predate the landed code and never says "done"; don't
+read status from them. A task that shipped with notable deltas gets a dated
+`## Result` note at the foot of its plan, not a status flip.
+
 | # | Task | Status |
 |---|---|---|
 | 01 | [Google-style readability lift](task-01-google-style-readability.md) | ✅ Complete (P3 leftovers deferred to the SandboxRun migration) |

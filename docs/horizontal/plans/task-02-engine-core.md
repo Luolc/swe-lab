@@ -1,9 +1,8 @@
 # Task 02 — Engine core: `sandbox/` package + fake backend
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) (§The core model, §Declarative mounts, §Phase→hook
-> mapping). Grounded in the current code with `file:line` citations (all
-> `src/swe_lab/…` at commit `9667fff`). Open items for the user are in §8.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 

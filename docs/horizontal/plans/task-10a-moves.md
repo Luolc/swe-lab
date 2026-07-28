@@ -1,11 +1,8 @@
 # Task 10a — Moves: `datasets/`, `paths`, `repo/` to top level
 
-> **Status: PLANNED — pre-implementation.** Source of truth: the approved
-> [spec](../spec.md) §"Project Structure (DECIDED 2026-07-18)" (flat top-level
-> axis packages; `core/` dissolves). Purely mechanical, **zero behavior change**.
-> Grounded in the current tree at the post-`#51` `main`. The full core-dissolve
-> (relocating `agent/`, `patch.py`; deleting `docker/`, `benchmark.py`) belongs
-> to [10b](task-10b-cutover.md) — 10a is only the three clean package moves.
+> **Design record** (point-in-time; may predate the landed code). **Status is
+> tracked only in [`plans/README.md`](README.md)**; where this doc and the code
+> disagree, the **code wins**.
 
 ---
 
