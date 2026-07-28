@@ -10,10 +10,7 @@ from __future__ import annotations
 
 import argparse
 
-from swe_lab.pipelines.related_files.exchange import (
-    CAPTURE_MODES,
-    DEFAULT_CAPTURE,
-)
+from swe_lab.harnesses.claude_code.capture import Capture
 
 from .agent_run import DEFAULT_MODEL
 from .pipeline import annotate_by_id_with_aggregation, DEFAULT_SAMPLES
@@ -41,11 +38,12 @@ def main() -> int:
   )
   _ = parser.add_argument(
       "--capture",
-      choices=CAPTURE_MODES,
-      default=DEFAULT_CAPTURE,
+      type=Capture,
+      choices=list(Capture),
+      default=Capture.STREAM,
       help=(
           "Trace source: 'proxy' (reverse proxy, raw wire record) or 'stream'"
-          f" (claude stream-json, no proxy). Default: {DEFAULT_CAPTURE}."
+          f" (claude stream-json, no proxy). Default: {Capture.STREAM.value}."
       ),
   )
   args = parser.parse_args()

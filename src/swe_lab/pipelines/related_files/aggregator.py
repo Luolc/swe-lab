@@ -17,7 +17,7 @@ from pathlib import Path
 
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
-from swe_lab.pipelines.related_files.exchange import DEFAULT_CAPTURE
+from swe_lab.harnesses.claude_code.capture import Capture
 
 from .agent_run import (
     DEFAULT_CLAUDE_TIMEOUT_S,
@@ -96,7 +96,7 @@ def aggregate_instance(
     variant: str = "agg",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: str = DEFAULT_CAPTURE,
+    capture: Capture = Capture.STREAM,
 ) -> RunResult:
   """Reconcile ``candidates`` (each an object with a ``snippets`` array).
 
@@ -130,7 +130,7 @@ def aggregate_by_id(
     dataset: Dataset | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_AGG_BASE_PORT,
-    capture: str = DEFAULT_CAPTURE,
+    capture: Capture = Capture.STREAM,
 ) -> RunResult:
   """Look an instance up by id and aggregate ``candidates`` for it."""
   dataset = dataset or load_dataset()

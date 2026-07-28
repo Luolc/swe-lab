@@ -6,10 +6,8 @@ import json
 from pathlib import Path
 from typing import cast
 
-from swe_lab.pipelines.related_files.exchange import (
-    build_exchange_from_proxy,
-    CAPTURE_PROXY,
-)
+from swe_lab.harnesses.claude_code.capture import Capture
+from swe_lab.pipelines.related_files.exchange import build_exchange_from_proxy
 
 _MESSAGE_KEYS = {"role", "content", "id", "model", "stop_reason", "usage"}
 _RECORD_KEYS = {
@@ -66,7 +64,7 @@ def _raw_proxy_record(home: str) -> dict[str, object]:
 def test_proxy_exchange_schema() -> None:
   rec = build_exchange_from_proxy(_raw_proxy_record(str(Path.home())))
   assert set(rec) == _RECORD_KEYS
-  assert rec["source"] == CAPTURE_PROXY
+  assert rec["source"] == Capture.PROXY
   assert rec["complete"] is True
   assert rec["model"] == "claude-sonnet-4-6"
   # full history through the final answer; canonical keys, null-filled

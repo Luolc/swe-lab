@@ -15,13 +15,13 @@ from pathlib import Path
 
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.harnesses.claude_code.capture import Capture
 from swe_lab.harnesses.claude_code.errors import (
     AnnotationError,
     UsageLimitError,
 )
 from swe_lab.harnesses.claude_code.proxy import DEFAULT_BASE_PORT
 from swe_lab.paths import find_repo_root
-from swe_lab.pipelines.related_files.exchange import DEFAULT_CAPTURE
 
 from .agent_run import DEFAULT_MODEL, RunResult
 from .aggregator import aggregate_instance
@@ -68,7 +68,7 @@ def annotate_with_aggregation(
     repo_root: Path | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
-    capture: str = DEFAULT_CAPTURE,
+    capture: Capture = Capture.STREAM,
 ) -> PipelineResult:
   """Sample ``instance`` ``samples`` times (in parallel), then aggregate.
 
@@ -92,7 +92,7 @@ def annotate_with_aggregation(
     repo_root: This repo's root; discovered when omitted.
     model: The Claude model alias to run.
     base_port: Base of the per-instance proxy-port blocks.
-    capture: Trace source (see ``CAPTURE_MODES``).
+    capture: Trace source (see ``Capture``).
 
   Returns:
     The pipeline result carrying every candidate and the aggregate.
@@ -180,7 +180,7 @@ def annotate_by_id_with_aggregation(
     dataset: str = DEFAULT_DATASET,
     samples: int = DEFAULT_SAMPLES,
     model: str = DEFAULT_MODEL,
-    capture: str = DEFAULT_CAPTURE,
+    capture: Capture = Capture.STREAM,
 ) -> PipelineResult:
   """Look an instance up by id and run the sample-and-aggregate pipeline.
 
@@ -192,7 +192,7 @@ def annotate_by_id_with_aggregation(
       picks the output directory.
     samples: Number of independent annotation samples to aggregate.
     model: The Claude model alias to run.
-    capture: Trace source (see ``CAPTURE_MODES``).
+    capture: Trace source (see ``Capture``).
 
   Returns:
     The pipeline result carrying every candidate and the aggregate.

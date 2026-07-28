@@ -12,8 +12,8 @@ from pathlib import Path
 
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
+from swe_lab.harnesses.claude_code.capture import Capture
 from swe_lab.harnesses.claude_code.proxy import DEFAULT_BASE_PORT
-from swe_lab.pipelines.related_files.exchange import DEFAULT_CAPTURE
 from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_run import (
@@ -45,7 +45,7 @@ def annotate_instance(
     variant: str = "",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: str = DEFAULT_CAPTURE,
+    capture: Capture = Capture.STREAM,
 ) -> RunResult:
   """Annotate one instance; return the result (the caller persists it)."""
   return run_agent(
@@ -71,7 +71,7 @@ def annotate_by_id(
     dataset: Dataset | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
-    capture: str = DEFAULT_CAPTURE,
+    capture: Capture = Capture.STREAM,
 ) -> RunResult:
   """Look an instance up by id and annotate it (using its dataset index)."""
   dataset = dataset or load_dataset()
