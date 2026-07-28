@@ -35,14 +35,10 @@ from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import SandboxSpec
 
-from .execution import fetch_harness
+from .constants import WORKDIR
+from .execution import fetch_harness, image_ref
 from .patches import patch_fail_to_pass
-from .unit_test import (
-    compile_sandbox_spec,
-    compile_solve_prompt,
-    compile_unit_test,
-    SweBenchProVerdict,
-)
+from .unit_test import compile_unit_test, SweBenchProVerdict
 
 # The exact column set of the SWE-Bench Pro parquet, in file order. Used to
 # validate that a raw row matches what this record type expects.
@@ -174,8 +170,8 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     fetches it from the upstream harness repo and caches it (see
     ``fetch_harness``). **Override this (and ``parser``) in a subclass to source
     it another way** — e.g. embedded in a future dataset column — and grading
-    then needs no network or repo checkout. ``compile_unit_test`` only reads
-    this content, so it depends on neither.
+    then needs no network or repo checkout. Grading consumes only this content
+    (never how it was obtained), so it depends on neither.
     """
     run_script_path, _ = fetch_harness(self.instance_id)
     return run_script_path.read_bytes()
@@ -202,13 +198,32 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
 
   @override
   def sandbox_spec(self) -> SandboxSpec:
-    """Return the run context (image / workdir / base commit)."""
-    return compile_sandbox_spec(self)
+    """Return the run context (image / workdir / base commit).
+
+    A run context is a general sandbox spec, not a grading concern, so it is
+    built here from the instance's own fields rather than in the unit-test
+    module.
+    """
+    return SandboxSpec(
+        instance_id=self.instance_id,
+        image_ref=image_ref(self.dockerhub_tag),
+        workdir=WORKDIR,
+        base_commit=self.base_commit,
+    )
 
   @override
   def solve_prompt(self) -> str:
-    """Return the SWE-Bench-Pro solve prompt for the agent."""
-    return compile_solve_prompt(self)
+    """Return the SWE-Bench-Pro solve prompt handed to the headless agent.
+
+    Mirrors Scale's ``create_problem_statement``: the three text columns are
+    concatenated under fixed headers, unconditionally, so the agent sees the
+    same task text the benchmark's own harness builds.
+    """
+    return (
+        f"{self.problem_statement}\n\n"
+        f"Requirements:\n{self.requirements}\n\n"
+        f"New interfaces introduced:\n{self.interface}"
+    )
 
   @override
   def gold_patch(self) -> str:
@@ -222,9 +237,19 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
       patch: str | None,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
-    """Compile this instance's unit-test evaluation spec."""
+    """Compile this instance's unit-test evaluation spec.
+
+    Passes the instance's fields to the grading compiler directly, so the
+    unit-test module need never import this record (the dependency is one-way).
+    """
     return compile_unit_test(
-        self,
         patch=patch,
         checkout_golden_tests=checkout_golden_tests,
+        base_commit=self.base_commit,
+        selected_test_files_to_run=self.selected_test_files_to_run,
+        golden_test_checkout_cmd=self.golden_test_checkout_cmd,
+        fail_to_pass=self.fail_to_pass,
+        pass_to_pass=self.pass_to_pass,
+        run_script=self.run_script,
+        parser=self.parser,
     )

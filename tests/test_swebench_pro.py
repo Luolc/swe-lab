@@ -1,6 +1,9 @@
-"""Tests for the SWE-Bench Pro record type and its parsing rules."""
+"""Tests for the SWE-Bench Pro record type: parsing + its runnable surface."""
 
 from __future__ import annotations
+
+from pathlib import Path
+from typing import override
 
 import pytest
 
@@ -8,6 +11,15 @@ from swe_lab.datasets.swebench_pro import (
     COLUMNS,
     SweBenchProInstance,
 )
+from swe_lab.datasets.swebench_pro.constants import (
+    HARNESS_SUBDIR,
+    IMAGE_REPO,
+    PARSER_NAME,
+    RUN_SCRIPT_NAME,
+    WORKDIR,
+)
+import swe_lab.datasets.swebench_pro.execution as execution
+from swe_lab.paths import cache_root
 
 
 def _raw(**overrides: str) -> dict[str, str]:
@@ -79,3 +91,101 @@ def test_missing_columns_raise() -> None:
 def test_columns_constant_has_16_entries() -> None:
   assert len(COLUMNS) == 16
   assert len(set(COLUMNS)) == 16
+
+
+# ─── the runnable surface (TaskInstance) ─────────────────────────────────────
+
+
+def test_sandbox_spec_is_built_from_the_instance_fields() -> None:
+  spec = SweBenchProInstance.from_raw(_raw()).sandbox_spec()
+  assert spec.instance_id == "instance_acme__widget-abc-vnan"
+  assert spec.image_ref == f"{IMAGE_REPO}:acme.widget-abc"
+  assert spec.workdir == WORKDIR
+  assert spec.base_commit == "0" * 40
+
+
+def test_solve_prompt_combines_the_three_columns() -> None:
+  # mirrors Scale's create_problem_statement verbatim
+  prompt = SweBenchProInstance.from_raw(
+      _raw(
+          problem_statement="The widget crashes on empty input.",
+          requirements="Must not raise on None.",
+          interface="def render(widget) -> str",
+      )
+  ).solve_prompt()
+  assert prompt == (
+      "The widget crashes on empty input.\n\n"
+      "Requirements:\nMust not raise on None.\n\n"
+      "New interfaces introduced:\ndef render(widget) -> str"
+  )
+
+
+def test_solve_prompt_keeps_headers_when_columns_empty() -> None:
+  # headers are unconditional, like the original (no per-section omission)
+  prompt = SweBenchProInstance.from_raw(
+      _raw(problem_statement="Just the statement.")
+  ).solve_prompt()
+  assert "Just the statement." in prompt
+  assert "Requirements:" in prompt
+  assert "New interfaces introduced:" in prompt
+
+
+def test_golden_test_checkout_cmd_is_the_last_line_of_before_cmd() -> None:
+  inst = SweBenchProInstance.from_raw(
+      _raw(
+          before_repo_set_cmd="setup one\nsetup two\ngit checkout GOLD -- t.py"
+      )
+  )
+  assert inst.golden_test_checkout_cmd == "git checkout GOLD -- t.py"
+  empty = SweBenchProInstance.from_raw(_raw(before_repo_set_cmd="  "))
+  assert empty.golden_test_checkout_cmd == ""
+
+
+def _stage_harness(repo_root: Path, instance_id: str) -> None:
+  harness = cache_root(repo_root) / HARNESS_SUBDIR / instance_id
+  harness.mkdir(parents=True)
+  _ = (harness / RUN_SCRIPT_NAME).write_text("echo run")
+  _ = (harness / PARSER_NAME).write_text("print('parse')")
+
+
+def test_run_script_and_parser_read_the_cached_harness(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+  # the default properties fetch-and-cache under find_repo_root(); point that
+  # at a pre-staged cache so no network is touched.
+  monkeypatch.setattr(execution, "find_repo_root", lambda: tmp_path)
+  _stage_harness(tmp_path, "instance_acme__widget-abc-vnan")
+  inst = SweBenchProInstance.from_raw(_raw())
+  assert inst.run_script == b"echo run"
+  assert inst.parser == b"print('parse')"
+
+
+def test_missing_harness_triggers_a_fetch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+  # nothing staged → the default property fetches; assert it reaches for the
+  # network (raising) rather than silently succeeding.
+  monkeypatch.setattr(execution, "find_repo_root", lambda: tmp_path)
+  inst = SweBenchProInstance.from_raw(_raw())
+  with pytest.raises(Exception):  # noqa: B017 — any network/URL error is fine
+    _ = inst.run_script
+
+
+def test_run_script_and_parser_are_overridable() -> None:
+  # the harness is the instance's business: a subclass supplies it directly,
+  # so grading needs no network and no repo checkout.
+  class _Embedded(SweBenchProInstance):
+
+    @property
+    @override
+    def run_script(self) -> bytes:
+      return b"EMBEDDED RUN"
+
+    @property
+    @override
+    def parser(self) -> bytes:
+      return b"EMBEDDED PARSE"
+
+  inst = _Embedded.from_raw(_raw())
+  assert inst.run_script == b"EMBEDDED RUN"
+  assert inst.parser == b"EMBEDDED PARSE"

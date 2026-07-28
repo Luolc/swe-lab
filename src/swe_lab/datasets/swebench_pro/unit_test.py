@@ -1,22 +1,24 @@
-"""Compile a SWE-Bench Pro instance into the unit-test evaluation method.
+"""Compile a SWE-Bench Pro instance's fields into the unit-test method.
 
 Everything SWE-Bench-Pro-specific about *grading* lives here: the eval script
 (ported from Scale's ``create_entryscript``), the compiled expectation, and a
 stateless grader that reads the run's output files back. ``compile_unit_test``
-turns a record into the general ``(SandboxSpec, UnitTestSpec)`` the method
-consumes.
+takes the instance's fields directly (not the record) and returns the general
+``UnitTestSpec`` the method consumes, so this module never imports the dataset
+record — the dependency runs one way, ``record`` → ``unit_test``.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 import json
 import shlex
-from typing import override, TYPE_CHECKING
+from typing import override
 
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec
-from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs, SandboxSpec
+from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs
 
 from .constants import (
     BASH,
@@ -29,12 +31,6 @@ from .constants import (
     STDOUT_LOG_NAME,
     WORKDIR,
 )
-from .execution import image_ref
-
-if TYPE_CHECKING:
-  # Hints only — importing the record at runtime would cycle (record.py's
-  # TaskInstance methods delegate to the compile_* functions below).
-  from .record import SweBenchProInstance
 
 # The compiled expectation, staged into the workspace and read by the grader.
 REQUIRED_TESTS_NAME = "required_tests.json"
@@ -139,8 +135,10 @@ def _parse_output(sb: SandboxFs) -> tuple[frozenset[str], OutputState]:
 
 
 def _build_eval_script(
-    instance: SweBenchProInstance,
     *,
+    base_commit: str,
+    selected_test_files_to_run: Sequence[str],
+    golden_test_checkout_cmd: str,
     apply_patch: bool,
     checkout_golden_tests: bool,
 ) -> str:
@@ -152,7 +150,10 @@ def _build_eval_script(
   mount point.
 
   Args:
-    instance: The instance to grade.
+    base_commit: The commit the working tree is reset to before grading.
+    selected_test_files_to_run: The test files passed to the run script.
+    golden_test_checkout_cmd: The command restoring the held-out golden tests
+      after the reset (``""`` when the instance has none).
     apply_patch: Apply ``patch.diff`` after resetting to the base commit.
     checkout_golden_tests: Restore the golden test files after the reset.
 
@@ -166,16 +167,16 @@ def _build_eval_script(
   # shlex.quote wraps the joined test list in single quotes so bash cannot
   # expand a ``$`` in a test name or glob-expand ``[...]`` from a
   # pytest parametrize id.
-  selected = shlex.quote(",".join(instance.selected_test_files_to_run))
+  selected = shlex.quote(",".join(selected_test_files_to_run))
   lines = [
       f"cd {WORKDIR}",
-      f"git reset --hard {instance.base_commit}",
-      f"git checkout {instance.base_commit}",
+      f"git reset --hard {base_commit}",
+      f"git checkout {base_commit}",
   ]
   if apply_patch:
     lines.append(f"git apply -v {_WS}/{PATCH_NAME}")
-  if checkout_golden_tests and instance.golden_test_checkout_cmd:
-    lines.append(instance.golden_test_checkout_cmd)
+  if checkout_golden_tests and golden_test_checkout_cmd:
+    lines.append(golden_test_checkout_cmd)
   lines.append(
       f"{BASH} {_WS}/{RUN_SCRIPT_NAME} {selected}"
       f" > {_WS}/{STDOUT_LOG_NAME} 2> {_WS}/{STDERR_LOG_NAME}"
@@ -188,41 +189,55 @@ def _build_eval_script(
 
 
 def compile_unit_test(
-    instance: SweBenchProInstance,
     *,
     patch: str | None,
     checkout_golden_tests: bool = True,
+    base_commit: str,
+    selected_test_files_to_run: Sequence[str],
+    golden_test_checkout_cmd: str,
+    fail_to_pass: Sequence[str],
+    pass_to_pass: Sequence[str],
+    run_script: bytes,
+    parser: bytes,
 ) -> UnitTestSpec[SweBenchProVerdict]:
-  """Compile one instance's unit-test evaluation spec.
+  """Compile one instance's unit-test evaluation spec from its fields.
 
-  The run context is ``compile_sandbox_spec(instance)`` — the same for solving
-  and grading — so it is not returned here; a caller gets it from there. The
-  test harness comes straight from ``instance.run_script`` / ``instance.parser``
-  (the instance decides how to obtain them), so this depends on no ``repo_root``
-  and does no file round-trip.
+  Takes the instance's fields directly rather than the record, so this grading
+  module never imports the dataset (no import cycle). The test harness arrives
+  as raw ``run_script`` / ``parser`` bytes — how the instance obtained them
+  (fetch, cache, or an embedded column) is not this function's concern, so it
+  needs no ``repo_root`` and does no file round-trip. The run context is a
+  separate concern (``SweBenchProInstance.sandbox_spec``) and is not built here.
 
   Args:
-    instance: The instance to grade.
     patch: The candidate diff to apply, or ``None`` to grade the base commit
       untouched (a self-check that the required tests fail without a fix).
     checkout_golden_tests: Forwarded to the eval script (see its self-check
       modes).
+    base_commit: The commit the working tree is reset to before grading.
+    selected_test_files_to_run: The test files passed to the run script.
+    golden_test_checkout_cmd: The command restoring the held-out golden tests
+      after the reset (``""`` when the instance has none).
+    fail_to_pass: Tests that must flip to passing (part of the expectation).
+    pass_to_pass: Tests that must stay passing (part of the expectation).
+    run_script: The test-harness run script's content.
+    parser: The output parser's content.
 
   Returns:
     The compiled unit-test spec.
   """
-  required = sorted(
-      frozenset(instance.fail_to_pass) | frozenset(instance.pass_to_pass)
-  )
+  required = sorted(frozenset(fail_to_pass) | frozenset(pass_to_pass))
   mounts: Mounts = {
-      RUN_SCRIPT_NAME: Mount(Inline(instance.run_script)),
-      PARSER_NAME: Mount(Inline(instance.parser)),
+      RUN_SCRIPT_NAME: Mount(Inline(run_script)),
+      PARSER_NAME: Mount(Inline(parser)),
       REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(required).encode())),
   }
   if patch is not None:
     mounts[PATCH_NAME] = Mount(Inline(patch.encode()))
   eval_script = _build_eval_script(
-      instance,
+      base_commit=base_commit,
+      selected_test_files_to_run=selected_test_files_to_run,
+      golden_test_checkout_cmd=golden_test_checkout_cmd,
       apply_patch=patch is not None,
       checkout_golden_tests=checkout_golden_tests,
   )
@@ -230,43 +245,4 @@ def compile_unit_test(
       eval_script=eval_script,
       mounts=mounts,
       grader=SweBenchProGrader(),
-  )
-
-
-def compile_sandbox_spec(instance: SweBenchProInstance) -> SandboxSpec:
-  """Compile an instance's run context (no eval mounts) — used by solving.
-
-  Args:
-    instance: The instance whose sandbox to bring up.
-
-  Returns:
-    The run context: image, workdir, and base commit.
-  """
-  return SandboxSpec(
-      instance_id=instance.instance_id,
-      image_ref=image_ref(instance.dockerhub_tag),
-      workdir=WORKDIR,
-      base_commit=instance.base_commit,
-  )
-
-
-def compile_solve_prompt(instance: SweBenchProInstance) -> str:
-  """Compile an instance into the solve prompt handed to the headless agent.
-
-  Mirrors Scale's ``create_problem_statement`` for SWE-Bench Pro: the three text
-  columns are concatenated under fixed headers, unconditionally, so the agent
-  sees the same task text the benchmark's own harness builds. The prompt is
-  dataset-derived, so this mapping lives with the dataset — callers never reach
-  into instance fields themselves.
-
-  Args:
-    instance: The instance to solve.
-
-  Returns:
-    The prompt string staged into the workspace for the agent to read.
-  """
-  return (
-      f"{instance.problem_statement}\n\n"
-      f"Requirements:\n{instance.requirements}\n\n"
-      f"New interfaces introduced:\n{instance.interface}"
   )

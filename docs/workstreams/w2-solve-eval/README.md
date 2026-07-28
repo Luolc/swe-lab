@@ -54,10 +54,12 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
   (`Verdict`/`Grader`/`UnitTestSpec`) + `methods/unit_test/` (`run_unit_test`).
   The all-in-one `EvalSpec` is retired — a method takes `SandboxSpec` + its own
   spec.
-- `datasets/swebench_pro/` — all SWE-Bench-Pro run-knowledge: `record.py`,
-  `execution.py` (image ref + pinned scaleapi harness fetch), and `unit_test.py`
-  (`compile_unit_test` → `(SandboxSpec, UnitTestSpec)`; `compile_solve_prompt`;
-  `SweBenchProGrader` reading `output.json` → `SweBenchProVerdict` with
+- `datasets/swebench_pro/` — all SWE-Bench-Pro run-knowledge: `record.py`
+  (the record + its runnable surface — `sandbox_spec` / `solve_prompt` /
+  `unit_test_spec` / the harness properties), `execution.py` (image ref +
+  pinned scaleapi harness fetch), and `unit_test.py` (`compile_unit_test`:
+  the instance's fields → `UnitTestSpec`; `SweBenchProGrader` reading
+  `output.json` → `SweBenchProVerdict` with
   `output_state ∈ {ok, absent, unparseable}`). Adding a dataset = a sibling
   package.
 - `harnesses/claude_code/` — the rollout **harness axis** (the agent run body +

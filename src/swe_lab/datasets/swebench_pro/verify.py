@@ -21,9 +21,9 @@ store shard** per instance (``RunRecord``, keyed under ``--sweep``) — resumabl
 ``--aggregate`` reads the sweep's shards into a summary + report. The store is a
 local ``FilesystemStore`` today; task 13 points it at R2 with no change here.
 
-The two graded runs go through ``compile_unit_test`` + ``run_unit_test`` on the
-sandbox engine, so the verdict is a ``SweBenchProVerdict`` and the run outcome a
-``RunResult``.
+The two graded runs go through ``instance.unit_test_spec`` + ``run_unit_test``
+on the sandbox engine, so the verdict is a ``SweBenchProVerdict`` and the run
+outcome a ``RunResult``.
 """
 
 from __future__ import annotations
@@ -54,12 +54,7 @@ from swe_lab.sandbox import (
 )
 
 from .record import SweBenchProInstance
-from .unit_test import (
-    compile_sandbox_spec,
-    compile_unit_test,
-    OutputState,
-    SweBenchProVerdict,
-)
+from .unit_test import OutputState, SweBenchProVerdict
 
 # Verdicts.
 OK = "OK"
@@ -155,12 +150,12 @@ def _graded_run(
   Returns:
     The engine ``RunResult`` and the verdict (``None`` if grading never ran).
   """
-  unit_test_spec = compile_unit_test(instance, patch=patch)
+  unit_test_spec = instance.unit_test_spec(patch=patch)
   # The sandbox refuses a non-empty workspace; start each run clean.
   shutil.rmtree(workspace, ignore_errors=True)
   sandbox = build_sandbox(
       "host",
-      compile_sandbox_spec(instance),
+      instance.sandbox_spec(),
       workspace,
       network=not no_network,
       pull=True,
@@ -218,7 +213,7 @@ def verify_instance(
   result["started_at"] = datetime.now(UTC).isoformat()
   # The image is fixed by the instance; capture it up front so pruning still
   # runs even if compiling the graded runs fails.
-  image_ref = compile_sandbox_spec(instance).image_ref
+  image_ref = instance.sandbox_spec().image_ref
   result["image_ref"] = image_ref
   try:
     base = _graded_run(
