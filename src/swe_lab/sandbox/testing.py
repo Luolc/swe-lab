@@ -7,6 +7,7 @@ Docker-free tests, so they are shipped code, not test-local helpers.
 real local ``workspace`` directory so observers and graders exercise genuine
 filesystem behavior, while ``run_script`` / ``run_command`` return **scripted**
 ``ExecResult``s (no process is spawned) and every call is recorded.
+``FakeStore`` is an in-memory ``Store`` for exercising the persist flow.
 """
 
 from __future__ import annotations
@@ -17,11 +18,14 @@ from pathlib import Path
 import shutil
 from typing import override
 
+from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
+from .persist import RunRecord
 from .result import Contribution
 from .sandbox import ExecResult, Sandbox, SandboxFs
 from .spec import SandboxSpec
+from .store import Store
 
 
 def _maybe_raise(error: Exception | None) -> None:
@@ -226,3 +230,38 @@ class RecordingObserver(SandboxObserver):
     """Record the hook and return the scripted error contribution."""
     self._hit("on_error")
     return self.error_contribution
+
+
+@dataclass
+class FakeStore(Store):
+  """In-memory ``Store``: real semantics, no filesystem or network.
+
+  Attributes:
+    objects: Key → uploaded bytes.
+    manifests: Appended run shards, in order.
+    puts: Keys passed to ``put``, in order (for assertions).
+  """
+
+  objects: dict[str, bytes] = field(default_factory=dict)
+  manifests: list[RunRecord] = field(default_factory=list)
+  puts: list[str] = field(default_factory=list)
+
+  @override
+  def put(self, key: str, src: Path) -> None:
+    self.objects[key] = src.read_bytes()
+    self.puts.append(key)
+
+  @override
+  def get(self, key: str, dest: Path) -> None:
+    if key not in self.objects:
+      raise SandboxError(f"store key not found: {key}")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    _ = dest.write_bytes(self.objects[key])
+
+  @override
+  def append_manifest(self, record: RunRecord) -> None:
+    self.manifests.append(record)
+
+  @override
+  def read_manifest(self, sweep_id: str) -> list[RunRecord]:
+    return [m for m in self.manifests if m.sweep_id == sweep_id]
