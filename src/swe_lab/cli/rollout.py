@@ -98,7 +98,12 @@ def rollout_in_docker(
   shutil.rmtree(workspace, ignore_errors=True)
 
   sandbox = build_sandbox(
-      backend, spec, workspace, network=True, pull=pull, pass_env=(auth_env,)
+      backend,
+      spec,
+      workspace=workspace,
+      network=True,
+      pull=pull,
+      pass_env=(auth_env,),
   )
   outcome = run_rollout(
       sandbox,
@@ -184,7 +189,11 @@ def _finish(
   eval_ws = cache_root(root) / _EVAL_SUBDIR / instance.instance_id
   shutil.rmtree(eval_ws, ignore_errors=True)
   sandbox = build_sandbox(
-      backend, instance.sandbox_spec(), eval_ws, network=False, pull=pull
+      backend,
+      instance.sandbox_spec(),
+      workspace=eval_ws,
+      network=False,
+      pull=pull,
   )
   _, verdict = run_unit_test(
       sandbox, unit_test_spec, output_dir=eval_ws, timeout=timeout

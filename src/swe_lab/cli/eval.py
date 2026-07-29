@@ -77,7 +77,11 @@ def eval_cmd(
   # Construct the sandbox here (the caller owns backend + its options); the eval
   # runner just receives it.
   sandbox = build_sandbox(
-      backend, instance.sandbox_spec(), workspace, network=network, pull=pull
+      backend,
+      instance.sandbox_spec(),
+      workspace=workspace,
+      network=network,
+      pull=pull,
   )
   result, verdict = run_unit_test(
       sandbox, unit_test_spec, output_dir=workspace, timeout=timeout

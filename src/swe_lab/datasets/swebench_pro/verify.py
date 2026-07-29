@@ -156,7 +156,7 @@ def _graded_run(
   sandbox = build_sandbox(
       "host",
       instance.sandbox_spec(),
-      workspace,
+      workspace=workspace,
       network=not no_network,
       pull=True,
   )
