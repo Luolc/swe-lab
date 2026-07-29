@@ -264,5 +264,18 @@ class FakeStore(Store):
     self.manifests.append(record)
 
   @override
-  def read_manifest(self, sweep_id: str) -> list[RunRecord]:
-    return [m for m in self.manifests if m.sweep_id == sweep_id]
+  def read_manifests(self, sweep_id: str) -> list[RunRecord]:
+    return sorted(
+        (m for m in self.manifests if m.sweep_id == sweep_id),
+        key=lambda record: record.sort_key,
+    )
+
+  @override
+  def read_manifest(
+      self, sweep_id: str, instance_id: str, rollout_id: int
+  ) -> list[RunRecord]:
+    return [
+        m
+        for m in self.read_manifests(sweep_id)
+        if m.instance_id == instance_id and m.rollout_id == rollout_id
+    ]

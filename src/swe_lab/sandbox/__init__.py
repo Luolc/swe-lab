@@ -19,7 +19,7 @@ from .errors import SandboxError
 from .manager import SandboxManager
 from .mounts import merge_mounts, Mount, Mounts
 from .observer import CompositeObserver, SandboxObserver
-from .persist import index, persist, promote, RunRecord
+from .persist import index, persist, promote, RunRecord, RUNS_NAMESPACE
 from .resources import Inline, LocalFile, Resource
 from .result import Contribution, RunResult, RunStatus
 from .sandbox import ExecResult, Sandbox, SandboxFs, WORKSPACE_ENV
@@ -44,6 +44,7 @@ __all__ = [
     "Mount",
     "Mounts",
     "Resource",
+    "RUNS_NAMESPACE",
     "RunRecord",
     "RunResult",
     "RunStatus",

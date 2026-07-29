@@ -18,11 +18,18 @@ from swe_lab.sandbox import (
 
 
 def _record(
-    sweep: str = "sw", instance: str = "inst", ts: str = "ts"
+    sweep: str = "sw",
+    instance: str = "inst",
+    ts: str = "ts",
+    *,
+    rollout_id: int = 0,
+    attempt: int = 0,
 ) -> RunRecord:
   return RunRecord(
       sweep_id=sweep,
       instance_id=instance,
+      rollout_id=rollout_id,
+      attempt=attempt,
       run_ts=ts,
       status="SUCCESS",
       tier="formal",
@@ -34,26 +41,66 @@ def test_put_get_roundtrip(tmp_path: Path):
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   src = tmp_path / "patch.diff"
   _ = src.write_text("DIFF")
-  store.put("runs/sw/inst/ts/patch.diff", src)
+  store.put("sw/inst/r0/a0/patch.diff", src)
   out = tmp_path / "back.diff"
-  store.get("runs/sw/inst/ts/patch.diff", out)
+  store.get("sw/inst/r0/a0/patch.diff", out)
   assert out.read_text() == "DIFF"
 
 
 def test_get_missing_key_raises(tmp_path: Path):
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   with pytest.raises(SandboxError, match="not found"):
-    store.get("runs/sw/inst/ts/nope", tmp_path / "x")
+    store.get("sw/inst/r0/a0/nope", tmp_path / "x")
 
 
-def test_append_and_read_manifest(tmp_path: Path):
+def test_read_manifests_returns_the_whole_sweep(tmp_path: Path):
   store = FilesystemStore(epath.Path(tmp_path / "store"))
-  store.append_manifest(_record(ts="a"))
-  store.append_manifest(_record(ts="b"))
-  store.append_manifest(_record(sweep="other", ts="c"))
-  records = store.read_manifest("sw")
-  assert [r.run_ts for r in records] == ["a", "b"]  # only this sweep, sorted
-  assert store.read_manifest("missing") == []  # unknown sweep → empty
+  store.append_manifest(_record(instance="a"))
+  store.append_manifest(_record(instance="b"))
+  store.append_manifest(_record(sweep="other", instance="c"))
+  records = store.read_manifests("sw")
+  assert [r.instance_id for r in records] == ["a", "b"]  # only this sweep
+  assert store.read_manifests("missing") == []  # unknown sweep → empty
+
+
+def test_rollouts_and_attempts_get_distinct_shards(tmp_path: Path):
+  # The point of ADR-0004: K samples of one instance coexist, and a retry of a
+  # given rollout is its own shard — none of them overwrite each other.
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  for rollout_id in (0, 1, 2):
+    store.append_manifest(_record(rollout_id=rollout_id))
+  store.append_manifest(_record(rollout_id=1, attempt=1))
+  identities = [(r.rollout_id, r.attempt) for r in store.read_manifests("sw")]
+  assert identities == [(0, 0), (1, 0), (1, 1), (2, 0)]
+
+
+def test_read_manifests_sorts_rollouts_numerically(tmp_path: Path):
+  # 10 must sort after 2 — a lexical key sort would interleave them.
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  for rollout_id in (10, 2, 1):
+    store.append_manifest(_record(rollout_id=rollout_id))
+  assert [r.rollout_id for r in store.read_manifests("sw")] == [1, 2, 10]
+
+
+def test_read_manifest_targets_one_rollout(tmp_path: Path):
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  store.append_manifest(_record(rollout_id=0))
+  store.append_manifest(_record(rollout_id=1, attempt=0))
+  store.append_manifest(_record(rollout_id=1, attempt=1))
+  store.append_manifest(_record(instance="other", rollout_id=1))
+  attempts = store.read_manifest("sw", "inst", 1)
+  assert [r.attempt for r in attempts] == [0, 1]  # this rollout's tries only
+  assert store.read_manifest("sw", "inst", 9) == []  # never ran
+
+
+def test_reappending_the_same_identity_overwrites(tmp_path: Path):
+  # The key carries no timestamp, so re-running an attempt is idempotent.
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  store.append_manifest(_record(ts="first"))
+  store.append_manifest(_record(ts="second"))
+  records = store.read_manifests("sw")
+  assert len(records) == 1
+  assert records[0].run_ts == "second"  # recorded, but not part of the key
 
 
 def test_build_store_filesystem(tmp_path: Path):

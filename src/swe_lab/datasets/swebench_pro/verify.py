@@ -48,6 +48,7 @@ from swe_lab.sandbox import (
     build_store,
     RunRecord,
     RunResult,
+    RUNS_NAMESPACE,
     RunStatus,
     Store,
 )
@@ -63,16 +64,33 @@ ERROR = "ERROR"  # inconclusive: harness/infra failure, not a dataset finding
 _VERDICTS = (OK, BASE_UNEXPECTED_PASS, GOLDEN_FAIL, ERROR)
 
 # Verify persists each instance's result to the T1 object-store seam (one
-# RunRecord shard per instance), not a committed outputs/ dir. A fixed run-ts
-# segment keeps one shard per instance per sweep (a re-verify overwrites it).
+# RunRecord shard per instance), not a committed outputs/ dir. Verification is
+# inherently single-rollout (base + golden together decide one verdict), so
+# every shard is rollout 0 / attempt 0; that key is deterministic, so a
+# re-verify overwrites its own shard (ADR-0004 — no fake timestamp needed).
 _DEFAULT_SWEEP = "golden-verify"
 _STORE_SUBDIR = "store"  # the FilesystemStore root under cache_root
-_RUN_TS = "latest"  # one shard per instance per sweep (idempotent re-verify)
+# One verification per instance; K-sampling is a solving concern, not a QA one.
+_ROLLOUT_ID = 0
 _WS_SUBDIR = "golden_verify"  # scratch workspaces under cache_root
 
 # One graded run: the engine outcome paired with the verdict it produced
 # (``None`` when grading never ran because the run failed to come up).
 _Run = tuple[RunResult, SweBenchProVerdict | None]
+
+
+def _store_root(root: epath.PathLike) -> epath.Path:
+  """Return the run store's root directory.
+
+  The ``runs`` namespace lives here rather than in any key (ADR-0004), so this
+  is also where a sweep's aggregated report is written.
+  """
+  return cache_root(root) / _STORE_SUBDIR / RUNS_NAMESPACE
+
+
+def _store(root: epath.PathLike) -> Store:
+  """Return the T1 store verification persists its shards to."""
+  return build_store("filesystem", root=_store_root(root))
 
 
 def classify(instance: SweBenchProInstance, base: _Run, golden: _Run) -> str:
@@ -240,13 +258,14 @@ def verify_instance(
       _prune_image(image_ref)
   result["finished_at"] = datetime.now(UTC).isoformat()
   # One T1 shard per instance: the verdict is the record status; the base/golden
-  # detail (and any error) lives in `extra`. A fixed run-ts overwrites on
-  # re-verify, so a sweep holds exactly one shard per instance.
+  # detail (and any error) lives in `extra`. The key is deterministic, so a
+  # re-verify overwrites in place and a sweep holds one shard per instance.
   store.append_manifest(
       RunRecord(
           sweep_id=sweep,
           instance_id=iid,
-          run_ts=_RUN_TS,
+          rollout_id=_ROLLOUT_ID,
+          run_ts=datetime.now(UTC).isoformat(),
           status=str(result["verdict"]),
           tier="formal",
           backend="host",
@@ -320,7 +339,7 @@ def run(
     A process exit code (always 0).
   """
   root = find_repo_root()
-  store = build_store("filesystem", root=cache_root(root) / _STORE_SUBDIR)
+  store = _store(root)
   ws_root = cache_root(root) / _WS_SUBDIR
 
   records = [
@@ -331,8 +350,11 @@ def run(
   shard_i, shard_n = shard
   todo = records[shard_i::shard_n]
   if not refresh:
-    done = {r.instance_id for r in store.read_manifest(sweep)}
-    todo = [rec for rec in todo if rec.instance_id not in done]
+    # Done is keyed by (instance, rollout), not instance alone, so a future
+    # multi-rollout sweep resumes per sample. A recorded failure still counts as
+    # done (ADR-0004): retrying it is `attempt`'s job, not resume's.
+    done = {(r.instance_id, r.rollout_id) for r in store.read_manifests(sweep)}
+    todo = [rec for rec in todo if (rec.instance_id, _ROLLOUT_ID) not in done]
   if limit:
     todo = todo[:limit]  # smoke/debug: cap instances this shard runs
   print(
@@ -378,9 +400,9 @@ def aggregate(*, dataset: str, sweep: str) -> int:
     A process exit code (always 0).
   """
   root = find_repo_root()
-  store = build_store("filesystem", root=cache_root(root) / _STORE_SUBDIR)
-  report_dir = cache_root(root) / _STORE_SUBDIR / "runs" / sweep
-  records = store.read_manifest(sweep)
+  store = _store(root)
+  report_dir = _store_root(root) / sweep
+  records = store.read_manifests(sweep)
   counts: collections.Counter[str] = collections.Counter(
       r.status for r in records
   )

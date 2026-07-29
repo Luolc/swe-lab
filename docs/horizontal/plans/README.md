@@ -34,7 +34,7 @@ read status from them. A task that shipped with notable deltas gets a dated
 | 13 | R2 store + CI wiring | ⬜ |
 | 14 | [**Merged lifecycle-bearing `Sandbox` + up-first + transfer seam**](task-14-sandbox-lifecycle-refactor.md) ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ✅ Done (merged `Sandbox`/`SandboxBackend`; up-first + collect; `Resource` = data; `Mount.read_only` drops `Assets`; open backend registry) |
 | 15 | **Extensibility seam proof + author guide** (no shipped remote backend — [ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
-| 16 | **Multi-rollout run-record layout** (`rollout_id` + `attempt`; split manifest read — [ADR-0004](../../decisions/ADR-0004-multi-rollout-run-record-layout.md)) | ⬜ (extends task 12; K-rollouts sampling in eval/rollout is the W2 follow-on) |
+| 16 | **Multi-rollout run-record layout** (`rollout_id` + `attempt`; split manifest read — [ADR-0004](../../decisions/ADR-0004-multi-rollout-run-record-layout.md)) | ✅ Done (key `<sweep>/<instance>/r<rollout>/a<attempt>`; `runs/` → store root; `run_ts` recorded only; `read_manifests` + targeted `read_manifest`). K-rollouts **sampling** in eval/rollout is the W2 follow-on |
 
 **P0 — remote sandbox (ADR-0003).** swe-lab ships host + ghjob only; a remote /
 internal sandbox is a consuming company's **own** `Sandbox` subclass (import-only).
