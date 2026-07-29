@@ -7,6 +7,8 @@ the real ``SandboxManager`` + ``ConversationObserver`` + ``GitHubJobSandbox``
 ``sandbox/`` or ``conversation/`` is modified to make it work.
 """
 
+from collections.abc import Iterator
+import contextlib
 from pathlib import Path
 from typing import override
 
@@ -19,7 +21,8 @@ from swe_lab.conversation import (
     Role,
     TextBlock,
 )
-from swe_lab.harnesses.base import Harness
+from swe_lab.harnesses.base import Harness, PROMPT_NAME
+from swe_lab.rollout import run_rollout
 from swe_lab.sandbox import (
     GitHubJobSandbox,
     Inline,
@@ -62,6 +65,12 @@ class StubHarness(Harness):
         messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text=text)])]
     )
 
+  @override
+  def completed(self, sb: SandboxFs) -> bool:
+    # This "agent" reads as finished once it wrote its own trace — the signal
+    # is the harness's business, in its own format.
+    return sb.exists(_TRACE_NAME)
+
 
 def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   harness = StubHarness()
@@ -85,3 +94,36 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   )
   assert (workspace / "conversation.json").is_file()
   assert manager.result.artifacts["trace"] == workspace / _TRACE_NAME
+
+
+def test_run_rollout_takes_a_foreign_harness_and_proxy(tmp_path: Path):
+  # The composition is harness-agnostic: a downstream user's own Harness and
+  # their own recorder (any context manager) are injected, and run_rollout
+  # never reaches for a concrete agent.
+  entered: list[str] = []
+
+  @contextlib.contextmanager
+  def stub_proxy() -> Iterator[None]:
+    entered.append("open")
+    yield
+    entered.append("closed")
+
+  workspace = tmp_path / "run"
+  outcome = run_rollout(
+      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+      StubHarness(),
+      prompt="SOLVE THIS",
+      output_dir=workspace,
+      timeout=10.0,
+      proxy=stub_proxy(),
+  )
+
+  assert outcome.status is RunStatus.SUCCESS
+  assert entered == ["open", "closed"]  # the recorder wrapped the whole run
+  # the prompt was staged for the harness under the shared contract name
+  assert (workspace / PROMPT_NAME).read_text() == "SOLVE THIS"
+  # the stub's own completion signal + trace conversion drove the outcome
+  assert outcome.complete is True
+  assert outcome.conversation == Conversation(
+      messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
+  )

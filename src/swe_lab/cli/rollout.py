@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 from typing import Annotated
+import zlib
 
 from etils import epath
 import typer
@@ -14,11 +16,18 @@ from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.evaluation.verdict import Verdict
-from swe_lab.harnesses.claude_code import Capture
+from swe_lab.harnesses.claude_code import Capture, ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     API_KEY_ENV,
+    CONTAINER_PROXY_HOST,
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
+    PROXY_LOG_NAME,
+)
+from swe_lab.harnesses.claude_code.proxy import (
+    build_proxy,
+    port_for_index,
+    ReverseProxy,
 )
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.rollout import RolloutOutcome, run_rollout
@@ -27,6 +36,55 @@ from swe_lab.sandbox import build_sandbox
 _ROLLOUT_SUBDIR = "rollout_workspaces"
 _EVAL_SUBDIR = "eval_workspaces"
 _DEFAULT_TIMEOUT_S = 1800.0
+# Proxy ports are drawn from a wide band by a stable hash of the instance id, so
+# concurrent rollouts on one host never collide (mirrors W1's per-run distinct
+# port discipline, which keyed off the dataset index).
+_PROXY_PORT_SPAN = 10000
+
+
+def _build_agent(
+    instance_id: str,
+    *,
+    model: str,
+    capture: Capture,
+    bare: bool,
+    output_dir: epath.PathLike,
+) -> tuple[ClaudeCodeHarness, contextlib.AbstractContextManager[object]]:
+  """Build this CLI's harness + its trace recorder for the capture mode.
+
+  Construction lives here, not in ``run_rollout``: the caller picks the agent
+  (this CLI ships Claude Code) and hands the composition the built pair.
+
+  For ``STREAM`` the agent's own event stream is the trace, so there is no
+  recorder. For ``PROXY`` a host-side ``cc-reverse-proxy`` records into
+  ``output_dir`` and the agent is pointed at it (the container reaches the host
+  through the ``host.docker.internal`` gateway the host backend always maps).
+
+  Args:
+    instance_id: Keys the proxy port, so concurrent rollouts never collide.
+    model: The ``--model`` alias the agent runs as.
+    capture: The trace-capture strategy.
+    bare: Run the agent with ``--bare`` (API-key auth).
+    output_dir: Where a proxy recording is written.
+
+  Returns:
+    The harness and a context manager held open around the run.
+  """
+  if capture is Capture.STREAM:
+    return ClaudeCodeHarness(model=model, bare=bare), contextlib.nullcontext()
+  port = port_for_index(zlib.crc32(instance_id.encode()) % _PROXY_PORT_SPAN)
+  harness = ClaudeCodeHarness(
+      model=model,
+      capture=capture,
+      proxy_base_url=f"http://{CONTAINER_PROXY_HOST}:{port}",
+      bare=bare,
+  )
+  proxy = ReverseProxy(
+      port,
+      epath.Path(output_dir) / PROXY_LOG_NAME,
+      build_proxy(find_repo_root()),
+  )
+  return harness, proxy
 
 
 def rollout_in_docker(
@@ -104,14 +162,20 @@ def rollout_in_docker(
       pull=pull,
       pass_env=(auth_env,),
   )
-  outcome = run_rollout(
-      sandbox,
-      prompt=prompt,
+  harness, proxy = _build_agent(
+      instance.instance_id,
       model=model,
-      output_dir=workspace,
-      timeout=timeout,
       capture=capture,
       bare=bare,
+      output_dir=workspace,
+  )
+  outcome = run_rollout(
+      sandbox,
+      harness,
+      prompt=prompt,
+      output_dir=workspace,
+      timeout=timeout,
+      proxy=proxy,
   )
 
   summary: dict[str, object] = {

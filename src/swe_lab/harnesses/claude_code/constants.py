@@ -21,9 +21,9 @@ AGENT_HOME = "/agent-home"
 # drives Claude Code in headless (``-p``) mode.
 AGENT_SCRIPT_NAME = "run_claude_code.sh"
 
-# The solve prompt the harness reads; staged by the composition (it is
-# dataset-derived, not the harness's).
-PROMPT_NAME = "prompt.txt"
+# (The solve prompt this harness reads is staged by the composition under the
+# shared ``harnesses.base.PROMPT_NAME`` — it is the composition↔harness
+# contract, not this agent's own file.)
 
 # Native outputs the run writes into the workspace (registered as artifacts).
 EVENT_STREAM_NAME = "claude.event_stream.jsonl"  # stream-json trace (primary)
