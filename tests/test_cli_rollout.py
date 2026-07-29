@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import cast, final, override
 
+from etils import epath
 import pytest
 from typer.testing import CliRunner
 
@@ -67,7 +68,10 @@ def test_requires_oauth_token(monkeypatch: pytest.MonkeyPatch):
 
 
 def _outcome(
-    *, is_empty: bool, patch: str, artifacts: dict[str, Path] | None = None
+    *,
+    is_empty: bool,
+    patch: str,
+    artifacts: dict[str, epath.Path] | None = None,
 ) -> RolloutOutcome:
   return RolloutOutcome(
       instance_id="acme__widget-1",
@@ -77,7 +81,7 @@ def _outcome(
       complete=True,
       conversation=Conversation(messages=[]),
       status=RunStatus.SUCCESS,
-      workspace=Path("/tmp/ws"),
+      workspace=epath.Path("/tmp/ws"),
       artifacts=artifacts or {},
       metrics={},
   )
@@ -173,7 +177,9 @@ def test_persist_writes_a_manifest_shard(
   _ = art.write_text("DIFF")
   _ = _wire(
       monkeypatch,
-      outcome=_outcome(is_empty=False, patch="D", artifacts={"patch": art}),
+      outcome=_outcome(
+          is_empty=False, patch="D", artifacts={"patch": epath.Path(art)}
+      ),
   )
   monkeypatch.setattr(rollout_mod, "find_repo_root", lambda: tmp_path)
   result = runner.invoke(

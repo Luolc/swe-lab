@@ -21,7 +21,8 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 import logging
-from pathlib import Path
+
+from etils import epath
 
 from .errors import SandboxError
 from .mounts import merge_mounts, Mounts
@@ -48,7 +49,7 @@ class SandboxManager:
   """
 
   sandbox: Sandbox
-  output_dir: Path
+  output_dir: epath.Path
   observers: Sequence[SandboxObserver] = ()
   mounts: Mounts = field(default_factory=dict)
   label: str = ""
@@ -141,7 +142,7 @@ class SandboxManager:
       sb: Sandbox,
       live: bool,
       contributions: list[Contribution],
-  ) -> tuple[dict[str, Path], dict[str, float], Exception | None]:
+  ) -> tuple[dict[str, epath.Path], dict[str, float], Exception | None]:
     """Run post-processing hooks, collect artifacts out, tear the sandbox down.
 
     ``before_destroy`` runs (each hook caught) only if the sandbox was live;
@@ -158,7 +159,7 @@ class SandboxManager:
       ``(artifacts, metrics, first_error)`` — artifacts as host paths.
     """
     first_error: Exception | None = None
-    artifacts: dict[str, Path] = {}
+    artifacts: dict[str, epath.Path] = {}
     metrics: dict[str, float] = {}
     if not live:
       return artifacts, metrics, first_error
@@ -191,7 +192,9 @@ class SandboxManager:
         first_error = first_error or exc
     return artifacts, metrics, first_error
 
-  def _collect(self, sb: Sandbox, names: dict[str, str]) -> dict[str, Path]:
+  def _collect(
+      self, sb: Sandbox, names: dict[str, str]
+  ) -> dict[str, epath.Path]:
     """Fetch each registered artifact out to the host output dir.
 
     Args:
@@ -202,7 +205,7 @@ class SandboxManager:
       Canonical artifact name → the host path it was fetched to.
     """
     self.output_dir.mkdir(parents=True, exist_ok=True)
-    collected: dict[str, Path] = {}
+    collected: dict[str, epath.Path] = {}
     for name, filename in names.items():
       dest = self.output_dir / filename
       sb.fetch(filename, dest)

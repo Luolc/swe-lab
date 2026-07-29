@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import shutil
 from typing import Annotated
 
+from etils import epath
 import typer
 
 from swe_lab.cli.persist_wiring import persist_run
@@ -153,7 +153,7 @@ def _finish(
     instance: TaskInstance[Verdict],
     outcome: RolloutOutcome,
     grade: bool,
-    root: Path,
+    root: epath.PathLike,
     pull: bool,
     timeout: float,
     backend: str,

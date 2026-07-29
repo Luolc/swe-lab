@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
@@ -40,13 +41,13 @@ def test_mount_stages_inline_localfile_and_executable(tmp_path: Path):
   src = tmp_path / "big.bin"
   _ = src.write_bytes(b"binary!")
   workspace = tmp_path / "ws"
-  sb = FakeSandbox(spec=SPEC, workspace=workspace)
+  sb = FakeSandbox(spec=SPEC, workspace=epath.Path(workspace))
   sb.up()
   sb.mount(
       {
           "run.sh": Mount(Inline(b"#!/bin/bash\n"), executable=True),
           "nested/dir/parser.py": Mount(Inline(b"print()")),
-          "agent": Mount(LocalFile(src)),
+          "agent": Mount(LocalFile(epath.Path(src))),
       }
   )
   assert (workspace / "run.sh").read_bytes() == b"#!/bin/bash\n"

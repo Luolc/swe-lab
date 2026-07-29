@@ -22,7 +22,8 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 import json
-from pathlib import Path
+
+from etils import epath
 
 from swe_lab.paths import find_repo_root, outputs_root
 
@@ -39,8 +40,8 @@ COMBINED_PARQUET_NAME = "annotations.parquet"
 def dataset_dir(
     dataset: str = DEFAULT_DATASET,
     *,
-    repo_root: Path | None = None,
-) -> Path:
+    repo_root: epath.PathLike | None = None,
+) -> epath.Path:
   """Return the per-dataset folder of ``intermediate/`` and the parquet."""
   root = outputs_root(repo_root or find_repo_root())
   return root / TASK_DIRNAME / dataset
@@ -49,8 +50,8 @@ def dataset_dir(
 def intermediate_dir(
     dataset: str = DEFAULT_DATASET,
     *,
-    repo_root: Path | None = None,
-) -> Path:
+    repo_root: epath.PathLike | None = None,
+) -> epath.Path:
   """Return the folder of every instance's per-run intermediates."""
   return dataset_dir(dataset, repo_root=repo_root) / INTERMEDIATE_DIRNAME
 
@@ -58,8 +59,8 @@ def intermediate_dir(
 def combined_parquet_path(
     dataset: str = DEFAULT_DATASET,
     *,
-    repo_root: Path | None = None,
-) -> Path:
+    repo_root: epath.PathLike | None = None,
+) -> epath.Path:
   """Return the path of the combined deliverable parquet for a dataset."""
   return dataset_dir(dataset, repo_root=repo_root) / COMBINED_PARQUET_NAME
 
@@ -68,8 +69,8 @@ def instance_dir(
     instance_id: str,
     *,
     dataset: str = DEFAULT_DATASET,
-    repo_root: Path | None = None,
-) -> Path:
+    repo_root: epath.PathLike | None = None,
+) -> epath.Path:
   """Return the directory of one instance's intermediate artifacts."""
   return intermediate_dir(dataset, repo_root=repo_root) / instance_id
 
@@ -77,8 +78,8 @@ def instance_dir(
 def iter_aggregate_paths(
     dataset: str = DEFAULT_DATASET,
     *,
-    repo_root: Path | None = None,
-) -> Iterator[Path]:
+    repo_root: epath.PathLike | None = None,
+) -> Iterator[epath.Path]:
   """Yield every instance's ``aggregate.json`` under ``intermediate/``.
 
   Sorted by instance id (the parent directory name) for deterministic output.
@@ -89,9 +90,9 @@ def iter_aggregate_paths(
   yield from sorted(base.glob(f"*/{AGGREGATE_LABEL}.json"))
 
 
-def load_aggregate(path: Path) -> Annotation:
+def load_aggregate(path: epath.PathLike) -> Annotation:
   """Load one ``aggregate.json`` into an :class:`Annotation`."""
-  return Annotation.from_dict(json.loads(path.read_text()))
+  return Annotation.from_dict(json.loads(epath.Path(path).read_text()))
 
 
 def store_run(
@@ -100,8 +101,8 @@ def store_run(
     result: RunResult,
     *,
     dataset: str = DEFAULT_DATASET,
-    repo_root: Path | None = None,
-) -> tuple[Path, Path]:
+    repo_root: epath.PathLike | None = None,
+) -> tuple[epath.Path, epath.Path]:
   """Write one run's annotation + last exchange under the instance dir.
 
   ``label`` is e.g. ``candidate_1`` or ``aggregate``. Returns the two paths.
@@ -120,11 +121,12 @@ def candidate_label(index: int) -> str:
 
 
 def _write(
-    directory: Path,
+    directory: epath.PathLike,
     label: str,
     annotation: Annotation,
     last_record: dict[str, object],
-) -> tuple[Path, Path]:
+) -> tuple[epath.Path, epath.Path]:
+  directory = epath.Path(directory)
   directory.mkdir(parents=True, exist_ok=True)
   annotation_path = directory / f"{label}.json"
   _ = annotation_path.write_text(annotation.to_json())

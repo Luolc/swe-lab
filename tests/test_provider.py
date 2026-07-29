@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import subprocess
 
+from etils import epath
 import pytest
 
 from swe_lab.datasets.swebench_pro import (
@@ -14,7 +15,7 @@ from swe_lab.datasets.swebench_pro import (
 from swe_lab.repo.provider import GitCheckoutProvider
 
 
-def _git(*args: str, cwd: Path) -> str:
+def _git(*args: str, cwd: epath.PathLike) -> str:
   env_flags = [
       "-c",
       "user.email=test@example.com",
@@ -73,7 +74,7 @@ def test_provision_checks_out_base_commit(
 ) -> None:
   remote_base, c1, _ = remote
   provider = GitCheckoutProvider(
-      cache_dir=tmp_path / "cache", remote_base=str(remote_base)
+      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   checkout = provider.provision(_instance(c1))
@@ -89,7 +90,7 @@ def test_provision_is_idempotent(
 ) -> None:
   remote_base, c1, _ = remote
   provider = GitCheckoutProvider(
-      cache_dir=tmp_path / "cache", remote_base=str(remote_base)
+      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   first = provider.provision(_instance(c1))
@@ -103,7 +104,7 @@ def test_provision_reuses_dir_when_commit_changes(
 ) -> None:
   remote_base, c1, c2 = remote
   provider = GitCheckoutProvider(
-      cache_dir=tmp_path / "cache", remote_base=str(remote_base)
+      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   provider.provision(_instance(c1))
@@ -120,7 +121,7 @@ def test_variant_gives_isolated_checkouts(
   # runs don't share a working directory), both at the commit.
   remote_base, c1, _ = remote
   provider = GitCheckoutProvider(
-      cache_dir=tmp_path / "cache", remote_base=str(remote_base)
+      cache_dir=epath.Path(tmp_path / "cache"), remote_base=str(remote_base)
   )
 
   default = provider.provision(_instance(c1))

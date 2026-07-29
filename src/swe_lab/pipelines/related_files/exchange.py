@@ -25,9 +25,10 @@ sandbox rollout path is separate — it runs the agent *inside* the container
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import re
 import subprocess
+
+from etils import epath
 
 from swe_lab.harnesses.claude_code.capture import Capture
 
@@ -98,21 +99,23 @@ def _stream_complete(result_event: dict[str, object]) -> bool:
   )
 
 
-def last_stream_record(stream_log: Path) -> dict[str, object]:
+def last_stream_record(stream_log: epath.PathLike) -> dict[str, object]:
   """Read a ``stream-json`` trace file, normalized to the exchange schema."""
+  stream_log = epath.Path(stream_log)
   if not stream_log.is_file():
     return {}
   events = parse_stream_events(stream_log.read_text())
   return build_exchange_from_stream(events)
 
 
-def last_proxy_record(proxy_log: Path) -> dict[str, object]:
+def last_proxy_record(proxy_log: epath.PathLike) -> dict[str, object]:
   """Read the last proxy log record, normalized to the exchange schema."""
   raw = _last_proxy_raw(proxy_log)
   return build_exchange_from_proxy(raw) if raw else {}
 
 
-def _last_proxy_raw(proxy_log: Path) -> dict[str, object]:
+def _last_proxy_raw(proxy_log: epath.PathLike) -> dict[str, object]:
+  proxy_log = epath.Path(proxy_log)
   if not proxy_log.is_file():
     return {}
   last_line = ""
@@ -221,7 +224,7 @@ def _redact_pii(record: dict[str, object]) -> dict[str, object]:
   Header-level secrets (auth token, org id) are handled separately by
   :func:`_scrub_headers`.
   """
-  home = str(Path.home())
+  home = str(epath.Path("~").expanduser())
   name = _git_config("user.name")
   email = _git_config("user.email")
   return {

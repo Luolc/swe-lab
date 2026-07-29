@@ -8,7 +8,7 @@ The shared workspace / proxy / validate / store machinery lives in
 
 from __future__ import annotations
 
-from pathlib import Path
+from etils import epath
 
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
@@ -37,7 +37,7 @@ def annotate_instance(
     instance: SweBenchProInstance,
     index: int,
     *,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
     provider: GitCheckoutProvider | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,

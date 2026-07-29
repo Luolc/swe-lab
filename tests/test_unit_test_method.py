@@ -8,6 +8,8 @@ passes it — no backend registry, no patching a construction function.
 import json
 from pathlib import Path
 
+from etils import epath
+
 from swe_lab.datasets.swebench_pro.unit_test import (
     REQUIRED_TESTS_NAME,
     SweBenchProGrader,
@@ -39,7 +41,7 @@ def _fake(
 ) -> FakeSandbox:
   return FakeSandbox(
       spec=SPEC,
-      workspace=tmp_path / "ws",
+      workspace=epath.Path(tmp_path / "ws"),
       run_results=list(run_results or []),
       up_error=up_error,
   )

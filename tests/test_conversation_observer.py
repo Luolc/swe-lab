@@ -3,6 +3,8 @@
 from pathlib import Path
 from typing import final, override
 
+from etils import epath
+
 from swe_lab.conversation import (
     Conversation,
     CONVERSATION_NAME,
@@ -39,7 +41,7 @@ class _StubProducer(ConversationProducer):
 def _sandbox(workspace: Path) -> FakeSandbox:
   return FakeSandbox(
       spec=SandboxSpec("acme__widget-1", "img:tag", "/app", "abc"),
-      workspace=workspace,
+      workspace=epath.Path(workspace),
   )
 
 

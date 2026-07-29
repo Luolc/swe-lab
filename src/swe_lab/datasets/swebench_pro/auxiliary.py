@@ -10,8 +10,9 @@ submodule.
 
 from __future__ import annotations
 
-from pathlib import Path
 import urllib.request
+
+from etils import epath
 
 from swe_lab.paths import cache_root, find_repo_root
 
@@ -34,7 +35,9 @@ def github_raw_url(instance_id: str, filename: str) -> str:
   )
 
 
-def auxiliary_dir(instance_id: str, *, repo_root: Path | None = None) -> Path:
+def auxiliary_dir(
+    instance_id: str, *, repo_root: epath.PathLike | None = None
+) -> epath.Path:
   """Return the gitignored cache dir for one instance's auxiliary files."""
   root = repo_root or find_repo_root()
   return cache_root(root) / HARNESS_SUBDIR / instance_id
@@ -43,9 +46,9 @@ def auxiliary_dir(instance_id: str, *, repo_root: Path | None = None) -> Path:
 def fetch_auxiliary(
     instance_id: str,
     *,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
     refresh: bool = False,
-) -> tuple[Path, Path]:
+) -> tuple[epath.Path, epath.Path]:
   """Ensure ``run_script.sh`` + ``parser.py`` are cached; return their paths.
 
   Idempotent: already-cached files are reused unless ``refresh`` is set. This is
@@ -54,7 +57,7 @@ def fetch_auxiliary(
   """
   directory = auxiliary_dir(instance_id, repo_root=repo_root)
   directory.mkdir(parents=True, exist_ok=True)
-  fetched: list[Path] = []
+  fetched: list[epath.Path] = []
   for name in (RUN_SCRIPT_NAME, PARSER_NAME):
     dest = directory / name
     if refresh or not dest.is_file():
@@ -63,7 +66,7 @@ def fetch_auxiliary(
   return fetched[0], fetched[1]
 
 
-def _download(url: str, dest: Path) -> None:
+def _download(url: str, dest: epath.PathLike) -> None:
   with urllib.request.urlopen(url, timeout=HARNESS_FETCH_TIMEOUT_S) as response:
     data = response.read()
-  _ = dest.write_bytes(data)
+  _ = epath.Path(dest).write_bytes(data)

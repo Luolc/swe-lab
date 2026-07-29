@@ -14,7 +14,8 @@ kind).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+
+from etils import epath
 
 
 class Resource:
@@ -45,4 +46,4 @@ class LocalFile(Resource):
     path: The host path to read the content from.
   """
 
-  path: Path
+  path: epath.Path

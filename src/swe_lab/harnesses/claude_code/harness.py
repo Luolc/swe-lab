@@ -9,9 +9,10 @@ by the composition (dataset-derived); the invocation script only reads it.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 import shlex
 from typing import override
+
+from etils import epath
 
 from swe_lab.conversation import Conversation
 from swe_lab.harnesses.base import Harness
@@ -64,7 +65,7 @@ class ClaudeCodeHarness(Harness):
   """
 
   model: str = DEFAULT_MODEL
-  binary_path: Path | None = None
+  binary_path: epath.Path | None = None
   capture: Capture = Capture.STREAM
   proxy_base_url: str | None = None
   bare: bool = False

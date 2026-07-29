@@ -34,11 +34,11 @@ import contextlib
 from datetime import datetime, UTC
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 from typing import Annotated
 
+from etils import epath
 import typer
 
 from swe_lab.datasets.loader import load_dataset
@@ -134,7 +134,7 @@ def _graded_run(
     instance: SweBenchProInstance,
     *,
     patch: str | None,
-    workspace: Path,
+    workspace: epath.PathLike,
     timeout: float,
     no_network: bool,
 ) -> _Run:
@@ -187,7 +187,7 @@ def verify_instance(
     *,
     store: Store,
     sweep: str,
-    ws_root: Path,
+    ws_root: epath.PathLike,
     timeout: float,
     no_network: bool,
     prune_images: bool,
@@ -219,14 +219,14 @@ def verify_instance(
     base = _graded_run(
         instance,
         patch=None,
-        workspace=ws_root / iid / "base",
+        workspace=epath.Path(ws_root) / iid / "base",
         timeout=timeout,
         no_network=no_network,
     )
     golden = _graded_run(
         instance,
         patch=instance.patch,
-        workspace=ws_root / iid / "golden",
+        workspace=epath.Path(ws_root) / iid / "golden",
         timeout=timeout,
         no_network=no_network,
     )
@@ -261,8 +261,9 @@ def verify_instance(
   return result
 
 
-def _write_json(dest: Path, data: dict[str, object]) -> None:
+def _write_json(dest: epath.PathLike, data: dict[str, object]) -> None:
   """Write ``data`` as pretty JSON atomically (tmp file + rename)."""
+  dest = epath.Path(dest)
   dest.parent.mkdir(parents=True, exist_ok=True)
   tmp = dest.with_name(dest.name + ".tmp")
   _ = tmp.write_text(json.dumps(data, indent=2, sort_keys=True))

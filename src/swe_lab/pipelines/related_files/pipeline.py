@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from pathlib import Path
+
+from etils import epath
 
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
@@ -51,7 +52,7 @@ class PipelineResult:
   instance_id: str
   candidates: list[RunResult]
   aggregate: RunResult
-  directory: Path
+  directory: epath.Path
 
   @property
   def is_valid(self) -> bool:
@@ -65,7 +66,7 @@ def annotate_with_aggregation(
     *,
     dataset: str = DEFAULT_DATASET,
     samples: int = DEFAULT_SAMPLES,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
     capture: Capture = Capture.STREAM,

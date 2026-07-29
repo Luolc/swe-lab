@@ -7,6 +7,7 @@ need no Docker and no marker: they stage a script, run it, and observe output.
 from pathlib import Path
 import stat
 
+from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
@@ -35,12 +36,14 @@ def test_mount_places_assets_read_only(tmp_path: Path):
   file_src = tmp_path / "src.bin"
   _ = file_src.write_bytes(b"BIN")
   file_at = tmp_path / "assets" / "bin"
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=_workspace(tmp_path))
+  sandbox = GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+  )
   sandbox.up()
   sandbox.mount(
       {
           str(inline_at): Mount(Inline(b"hi"), read_only=True),
-          str(file_at): Mount(LocalFile(file_src), read_only=True),
+          str(file_at): Mount(LocalFile(epath.Path(file_src)), read_only=True),
       }
   )
   assert inline_at.read_bytes() == b"hi"
@@ -57,10 +60,16 @@ def test_mount_preserves_executable_asset(tmp_path: Path):
   _ = src.write_bytes(b"#!/bin/sh\necho ok\n")
   src.chmod(0o755)
   at = tmp_path / "opt" / "claude"
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=_workspace(tmp_path))
+  sandbox = GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+  )
   sandbox.up()
   sandbox.mount(
-      {str(at): Mount(LocalFile(src), executable=True, read_only=True)}
+      {
+          str(at): Mount(
+              LocalFile(epath.Path(src)), executable=True, read_only=True
+          )
+      }
   )
   mode = at.stat().st_mode
   assert mode & stat.S_IXUSR  # executable
@@ -69,7 +78,9 @@ def test_mount_preserves_executable_asset(tmp_path: Path):
 
 def test_run_script_by_workspace_path_with_env(tmp_path: Path):
   ws = _workspace(tmp_path)
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=ws, env={"X": "1"})
+  sandbox = GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(ws), env={"X": "1"}
+  )
   sandbox.up()
   _ = (ws / "main.sh").write_text(
       'echo "ws=$SANDBOX_WORKSPACE x=$X tok=$TOK"\n'
@@ -83,7 +94,9 @@ def test_run_script_by_workspace_path_with_env(tmp_path: Path):
 
 def test_run_command_inline_with_env(tmp_path: Path):
   ws = _workspace(tmp_path)
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=ws, env={"X": "1"})
+  sandbox = GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(ws), env={"X": "1"}
+  )
   sandbox.up()
   result = sandbox.run_command('echo "x=$X"', timeout=5.0)
   assert result.ok
@@ -92,7 +105,7 @@ def test_run_command_inline_with_env(tmp_path: Path):
 
 def test_run_script_nonzero_exit_is_reported(tmp_path: Path):
   ws = _workspace(tmp_path)
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=ws)
+  sandbox = GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws))
   sandbox.up()
   _ = (ws / "main.sh").write_text("echo boom >&2\nexit 3\n")
   result = sandbox.run_script("main.sh", timeout=5.0)
@@ -103,7 +116,7 @@ def test_run_script_nonzero_exit_is_reported(tmp_path: Path):
 
 def test_run_script_timeout_maps_to_124(tmp_path: Path):
   ws = _workspace(tmp_path)
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=ws)
+  sandbox = GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws))
   sandbox.up()
   _ = (ws / "main.sh").write_text("sleep 5\n")
   result = sandbox.run_script("main.sh", timeout=0.2)
@@ -116,7 +129,9 @@ def test_pass_env_inherits_by_reference(
 ):
   monkeypatch.setenv("SECRET_TOKEN", "s3cr3t")
   ws = _workspace(tmp_path)
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=ws, pass_env=["SECRET_TOKEN"])
+  sandbox = GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(ws), pass_env=["SECRET_TOKEN"]
+  )
   sandbox.up()
   _ = (ws / "main.sh").write_text('echo "tok=$SECRET_TOKEN"\n')
   result = sandbox.run_script("main.sh", timeout=5.0)
@@ -124,15 +139,17 @@ def test_pass_env_inherits_by_reference(
 
 
 def test_down_never_raises(tmp_path: Path):
-  GitHubJobSandbox(spec=SPEC, workspace=_workspace(tmp_path)).down()  # no throw
+  GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+  ).down()  # no throw
 
 
 def test_manager_composition_runs_end_to_end(tmp_path: Path):
   # the whole engine over the real sandbox: a staged main writes an artifact
   ws = tmp_path / "run"
   manager = SandboxManager(
-      sandbox=GitHubJobSandbox(spec=SPEC, workspace=ws),
-      output_dir=ws,
+      sandbox=GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws)),
+      output_dir=epath.Path(ws),
       mounts={
           "main.sh": Mount(
               Inline(b'echo done > "$SANDBOX_WORKSPACE/out.txt"\n'),

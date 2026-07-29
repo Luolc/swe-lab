@@ -18,11 +18,13 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import logging
-from pathlib import Path
+import os
 import shutil
 import subprocess
 import tempfile
 from typing import override
+
+from etils import epath
 
 from ..errors import SandboxError
 from ..mounts import Mount
@@ -80,7 +82,7 @@ class DockerHostSandbox(Sandbox):
   """
 
   spec: SandboxSpec
-  workspace: Path
+  workspace: epath.Path
   platform: str = DEFAULT_PLATFORM
   network: bool = True
   pull: bool = True
@@ -169,7 +171,7 @@ class DockerHostSandbox(Sandbox):
     self._container = ""
 
   @override
-  def fetch(self, name: str, dest: Path) -> None:
+  def fetch(self, name: str, dest: epath.PathLike) -> None:
     """Copy a produced workspace file out to a host path (near-zero on host).
 
     The workspace is bind-mounted, so the file already exists on the host; this
@@ -180,6 +182,7 @@ class DockerHostSandbox(Sandbox):
       dest: The host path to write it to (parents created).
     """
     src = self.workspace / name
+    dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     if src.resolve() != dest.resolve():
       _ = shutil.copyfile(src, dest)
@@ -203,7 +206,7 @@ class DockerHostSandbox(Sandbox):
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = dest.write_bytes(data)
     if executable:
-      dest.chmod(0o755)
+      os.chmod(dest, 0o755)
 
   # --- mounts (transfer) ---------------------------------------------------
 
@@ -213,27 +216,27 @@ class DockerHostSandbox(Sandbox):
       dest = self.workspace / target
       dest.parent.mkdir(parents=True, exist_ok=True)
       _ = dest.write_bytes(data)
-      dest.chmod(mount.mode)
+      os.chmod(dest, mount.mode)
       return
     with tempfile.NamedTemporaryFile(dir=self.workspace, delete=False) as tmp:
       _ = tmp.write(data)
-      staged = Path(tmp.name)
+      staged = epath.Path(tmp.name)
     try:
       self._cp_into(staged, target, mount)
     finally:
       staged.unlink(missing_ok=True)
 
   @override
-  def _put_file(self, target: str, src: Path, mount: Mount) -> None:
+  def _put_file(self, target: str, src: epath.PathLike, mount: Mount) -> None:
     if not target.startswith("/"):
       dest = self.workspace / target
       dest.parent.mkdir(parents=True, exist_ok=True)
       _ = shutil.copyfile(src, dest)
-      dest.chmod(mount.mode)
+      os.chmod(dest, mount.mode)
       return
     self._cp_into(src, target, mount)
 
-  def _cp_into(self, src: Path, target: str, mount: Mount) -> None:
+  def _cp_into(self, src: epath.PathLike, target: str, mount: Mount) -> None:
     """Copy a host file to an absolute container path and fix its mode."""
     copied = self._docker(
         ["cp", str(src), f"{self._container}:{target}"],

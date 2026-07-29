@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
@@ -30,7 +31,7 @@ def _record(
 
 
 def test_put_get_roundtrip(tmp_path: Path):
-  store = FilesystemStore(tmp_path / "store")
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
   src = tmp_path / "patch.diff"
   _ = src.write_text("DIFF")
   store.put("runs/sw/inst/ts/patch.diff", src)
@@ -40,13 +41,13 @@ def test_put_get_roundtrip(tmp_path: Path):
 
 
 def test_get_missing_key_raises(tmp_path: Path):
-  store = FilesystemStore(tmp_path / "store")
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
   with pytest.raises(SandboxError, match="not found"):
     store.get("runs/sw/inst/ts/nope", tmp_path / "x")
 
 
 def test_append_and_read_manifest(tmp_path: Path):
-  store = FilesystemStore(tmp_path / "store")
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
   store.append_manifest(_record(ts="a"))
   store.append_manifest(_record(ts="b"))
   store.append_manifest(_record(sweep="other", ts="c"))

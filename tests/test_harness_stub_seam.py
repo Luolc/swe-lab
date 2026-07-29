@@ -10,6 +10,8 @@ the real ``SandboxManager`` + ``ConversationObserver`` + ``GitHubJobSandbox``
 from pathlib import Path
 from typing import override
 
+from etils import epath
+
 from swe_lab.conversation import (
     Conversation,
     ConversationObserver,
@@ -66,8 +68,8 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   observer = ConversationObserver(producer=harness)
   workspace = tmp_path / "run"
   manager = SandboxManager(
-      sandbox=GitHubJobSandbox(spec=_SPEC, workspace=workspace),
-      output_dir=workspace,
+      sandbox=GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+      output_dir=epath.Path(workspace),
       observers=[observer],
       mounts=harness.mounts(_SPEC.workdir),
   )

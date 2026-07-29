@@ -20,10 +20,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, UTC
 import json
 import os
-from pathlib import Path
+import pathlib
 import signal
 import subprocess
 import time
+
+from etils import epath
 
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 
@@ -83,7 +85,7 @@ class RunResult:
   instance_id: str
   annotation: Annotation
   last_record: dict[str, object]
-  proxy_log_path: Path
+  proxy_log_path: epath.Path
   complete: bool
   validation_problems: dict[str, list[str]] = field(default_factory=dict)
 
@@ -101,7 +103,7 @@ def run_agent(
     kind: str = "annotation",
     context_files: Mapping[str, str] | None = None,
     extra_metadata: Mapping[str, object] | None = None,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
     provider: GitCheckoutProvider | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
@@ -239,14 +241,14 @@ def _build_metadata(
 def invoke_with_retries(
     *,
     prompt: str,
-    cwd: Path,
+    cwd: epath.PathLike,
     port: int,
-    trace_log: Path,
-    binary: Path | None,
+    trace_log: epath.PathLike,
+    binary: epath.PathLike | None,
     capture: Capture,
     model: str,
     timeout: float,
-    diag_path: Path,
+    diag_path: epath.PathLike,
     max_attempts: int,
     workspace: Workspace,
 ) -> tuple[dict[str, object], tuple[Snippet, ...]]:
@@ -287,7 +289,9 @@ def invoke_with_retries(
     try:
       if capture == Capture.PROXY:
         assert binary is not None  # built by run_agent for proxy capture
-        with ReverseProxy(port, trace_log, binary) as proxy:
+        with ReverseProxy(
+            port, epath.Path(trace_log), epath.Path(binary)
+        ) as proxy:
           cli_result = _invoke_claude(
               prompt=prompt,
               cwd=cwd,
@@ -318,11 +322,11 @@ def invoke_with_retries(
 def _invoke_claude_stream(
     *,
     prompt: str,
-    cwd: Path,
+    cwd: epath.PathLike,
     model: str,
     timeout: float,
-    diag_path: Path | None,
-    stream_log: Path,
+    diag_path: epath.PathLike | None,
+    stream_log: epath.PathLike,
 ) -> dict[str, object]:
   """Invoke headless claude with ``stream-json`` and persist the event stream.
 
@@ -350,6 +354,7 @@ def _invoke_claude_stream(
   # stdout pipe open, which makes the post-timeout communicate() block forever
   # (this once hung an aggregate call for ~3h). File output + group-kill make
   # the timeout actually terminate the run.
+  stream_log = epath.Path(stream_log)
   stream_log.parent.mkdir(parents=True, exist_ok=True)
   timed_out = False
   with stream_log.open("w") as out:
@@ -408,11 +413,11 @@ def _kill_process_group(proc: subprocess.Popen[str]) -> None:
 def _invoke_claude(
     *,
     prompt: str,
-    cwd: Path,
+    cwd: epath.PathLike,
     base_url: str,
     model: str,
     timeout: float,
-    diag_path: Path | None = None,
+    diag_path: epath.PathLike | None = None,
 ) -> dict[str, object]:
   env = os.environ.copy()
   env["ANTHROPIC_BASE_URL"] = base_url
@@ -494,7 +499,7 @@ def _invoke_claude(
 
 
 def _save_diagnostics(
-    diag_path: Path | None,
+    diag_path: epath.PathLike | None,
     exit_code: object,
     stdout: str | bytes | None,
     stderr: str | bytes | None,
@@ -502,6 +507,7 @@ def _save_diagnostics(
   """Append raw CLI output for a failed run, to study unknown errors later."""
   if diag_path is None:
     return
+  diag_path = epath.Path(diag_path)
   diag_path.parent.mkdir(parents=True, exist_ok=True)
   stamp = datetime.now(UTC).isoformat()
   with diag_path.open("a") as handle:
@@ -528,5 +534,7 @@ def read_snippets(workspace: Workspace) -> tuple[Snippet, ...]:
 
 def validate_workspace(workspace: Workspace) -> dict[str, list[str]]:
   """Re-check the output via the validator the agent ran (single source)."""
-  problems = validate_output(workspace.output_path, workspace.checkout)
+  problems = validate_output(
+      pathlib.Path(workspace.output_path), pathlib.Path(workspace.checkout)
+  )
   return {f"{p.index}:{p.file_path}": p.messages for p in problems}

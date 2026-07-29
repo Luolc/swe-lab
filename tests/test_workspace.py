@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import final, override
 
+from etils import epath
+
 from swe_lab.datasets.swebench_pro import (
     COLUMNS,
     SweBenchProInstance,
@@ -25,9 +27,11 @@ class _StubProvider(RepoProvider):
     self._checkout = checkout
 
   @override
-  def provision(self, instance: RepoInstance, *, variant: str = "") -> Path:
+  def provision(
+      self, instance: RepoInstance, *, variant: str = ""
+  ) -> epath.Path:
     _ = (instance, variant)
-    return self._checkout
+    return epath.Path(self._checkout)
 
 
 def _instance() -> SweBenchProInstance:

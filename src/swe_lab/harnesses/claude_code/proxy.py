@@ -11,11 +11,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from pathlib import Path
 import socket
 import subprocess
 import time
 from types import TracebackType
+
+from etils import epath
 
 from swe_lab.paths import cache_root, find_repo_root
 
@@ -27,10 +28,10 @@ _ANTHROPIC_API = "https://api.anthropic.com"
 # checkout next to the repo (``../cc-reverse-proxy/reverse_proxy.go``); set
 # ``CC_REVERSE_PROXY_SRC`` to an explicit ``reverse_proxy.go`` path to override.
 PROXY_SOURCE_ENV = "CC_REVERSE_PROXY_SRC"
-_SIBLING_SOURCE = Path("cc-reverse-proxy") / "reverse_proxy.go"
+_SIBLING_SOURCE = epath.Path("cc-reverse-proxy") / "reverse_proxy.go"
 
 
-def proxy_source_path(repo_root: Path | None = None) -> Path:
+def proxy_source_path(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Return the cc-reverse-proxy Go source path (env override, else sibling).
 
   Args:
@@ -42,17 +43,19 @@ def proxy_source_path(repo_root: Path | None = None) -> Path:
   """
   override = os.environ.get(PROXY_SOURCE_ENV)
   if override:
-    return Path(override)
-  root = repo_root or find_repo_root()
+    return epath.Path(override)
+  root = epath.Path(repo_root or find_repo_root())
   return root.parent / _SIBLING_SOURCE
 
 
-def proxy_binary_path(repo_root: Path | None = None) -> Path:
+def proxy_binary_path(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Return the cache path of the built ``cc-reverse-proxy`` binary."""
   return cache_root(repo_root) / "bin" / "cc-reverse-proxy"
 
 
-def build_proxy(repo_root: Path | None = None, *, force: bool = False) -> Path:
+def build_proxy(
+    repo_root: epath.PathLike | None = None, *, force: bool = False
+) -> epath.Path:
   """Compile the proxy binary into the cache if missing; return its path."""
   root = repo_root or find_repo_root()
   binary = proxy_binary_path(root)
@@ -99,8 +102,8 @@ class ReverseProxy:
   """
 
   port: int
-  output_path: Path
-  binary: Path
+  output_path: epath.Path
+  binary: epath.Path
   target: str = _ANTHROPIC_API
   startup_timeout_s: float = 15.0
 

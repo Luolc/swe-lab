@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from etils import epath
+
 from swe_lab.sandbox import (
     FilesystemStore,
     index,
@@ -90,7 +92,7 @@ def test_promote_uploads_whole_workspace_preserving_nesting(tmp_path: Path):
 
 
 def test_index_aggregates_a_sweeps_shards(tmp_path: Path):
-  store = FilesystemStore(tmp_path / "store")
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
   a = tmp_path / "a.txt"
   _ = a.write_text("a")
   persist(store, _record("inst-a", "1000-0"), {"a.txt": a})

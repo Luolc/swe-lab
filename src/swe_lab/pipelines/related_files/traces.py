@@ -38,10 +38,12 @@ from dataclasses import dataclass
 from datetime import datetime, UTC
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
 
+from etils import epath
 from huggingface_hub import hf_hub_download, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
@@ -60,37 +62,41 @@ class SyncError(RuntimeError):
   """A push/pull was refused because the three states have diverged."""
 
 
-def _task_dir(repo_root: Path | None = None) -> Path:
+def _task_dir(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Return the related-files output root (``outputs/related_files/``)."""
   return outputs_root(repo_root or find_repo_root()) / TASK_DIRNAME
 
 
 def manifest_path(
-    dataset: str = DEFAULT_DATASET, *, repo_root: Path | None = None
-) -> Path:
+    dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
+) -> epath.Path:
   """Return the path of a dataset's version-controlled trace manifest."""
   return _task_dir(repo_root) / dataset / MANIFEST_NAME
 
 
 def iter_trace_files(
-    dataset: str = DEFAULT_DATASET, *, repo_root: Path | None = None
-) -> Iterator[Path]:
+    dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
+) -> Iterator[epath.Path]:
   """Yield every trace file for a dataset, sorted for deterministic output."""
   base = _task_dir(repo_root) / dataset / "intermediate"
   if not base.is_dir():
     return
-  yield from sorted(base.rglob(f"*{TRACE_SUFFIX}"))
+  # ``epath.Path`` has no working recursive glob (its ``rglob`` / ``**`` raises
+  # NotImplementedError), so recurse via ``pathlib`` and wrap the results back.
+  yield from (
+      epath.Path(path) for path in sorted(Path(base).rglob(f"*{TRACE_SUFFIX}"))
+  )
 
 
-def _sha256(path: Path) -> str:
+def _sha256(path: epath.PathLike) -> str:
   digest = hashlib.sha256()
-  with path.open("rb") as handle:
+  with open(path, "rb") as handle:
     for chunk in iter(lambda: handle.read(1 << 20), b""):
       digest.update(chunk)
   return digest.hexdigest()
 
 
-def _git_head(root: Path) -> str | None:
+def _git_head(root: epath.PathLike) -> str | None:
   """Return the repo's current commit sha, or None if git is unavailable."""
   try:
     out = subprocess.run(
@@ -114,7 +120,9 @@ def _hf_head(repo_id: str, api: HfApi) -> str | None:
   return getattr(info, "sha", None)
 
 
-def _load_manifest(dataset: str, root: Path) -> dict[str, object] | None:
+def _load_manifest(
+    dataset: str, root: epath.PathLike
+) -> dict[str, object] | None:
   path = manifest_path(dataset, repo_root=root)
   if not path.is_file():
     return None
@@ -122,13 +130,17 @@ def _load_manifest(dataset: str, root: Path) -> dict[str, object] | None:
 
 
 def _build_manifest(
-    dataset: str, repo_id: str, revision: str | None, base: Path, root: Path
+    dataset: str,
+    repo_id: str,
+    revision: str | None,
+    base: epath.PathLike,
+    root: epath.PathLike,
 ) -> dict[str, object]:
   traces: dict[str, object] = {}
   total = 0
   for path in iter_trace_files(dataset, repo_root=root):
     rel = path.relative_to(base).as_posix()
-    size = path.stat().st_size
+    size = os.path.getsize(path)
     traces[rel] = {"sha256": _sha256(path), "bytes": size}
     total += size
   return {
@@ -145,8 +157,8 @@ def _build_manifest(
 
 
 def _write_manifest(
-    manifest: dict[str, object], dataset: str, root: Path
-) -> Path:
+    manifest: dict[str, object], dataset: str, root: epath.PathLike
+) -> epath.Path:
   out = manifest_path(dataset, repo_root=root)
   _ = out.write_text(json.dumps(manifest, indent=2) + "\n")
   return out
@@ -156,11 +168,11 @@ def push_traces(
     dataset: str = DEFAULT_DATASET,
     *,
     repo_id: str = DEFAULT_REPO_ID,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
     private: bool = True,
     mirror: bool = False,
     force: bool = False,
-) -> Path:
+) -> epath.Path:
   """Upload all trace files to the HF dataset repo; write the git manifest.
 
   The repo mirrors the local layout (``<dataset>/intermediate/<id>/<label>``);
@@ -220,7 +232,7 @@ def push_traces(
 
 
 def fetch_traces(
-    dataset: str = DEFAULT_DATASET, *, repo_root: Path | None = None
+    dataset: str = DEFAULT_DATASET, *, repo_root: epath.PathLike | None = None
 ) -> tuple[int, int]:
   """Download every trace named in the manifest, verifying sha256.
 
@@ -277,8 +289,8 @@ def adopt_remote(
     dataset: str = DEFAULT_DATASET,
     *,
     repo_id: str = DEFAULT_REPO_ID,
-    repo_root: Path | None = None,
-) -> Path:
+    repo_root: epath.PathLike | None = None,
+) -> epath.Path:
   """Take HF head as truth: download its traces and rewrite the manifest.
 
   For the case where HF was pushed but its manifest was never committed to
@@ -381,7 +393,7 @@ def status(
     dataset: str = DEFAULT_DATASET,
     *,
     repo_id: str = DEFAULT_REPO_ID,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
 ) -> Status:
   """Compare local files, the git manifest, and the HF head."""
   root = repo_root or find_repo_root()

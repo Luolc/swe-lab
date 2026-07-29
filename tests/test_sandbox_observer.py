@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
@@ -19,7 +20,7 @@ SPEC = SandboxSpec("inst", "img:tag", "/app", "abc123")
 
 
 def _sb(tmp_path: Path) -> FakeSandbox:
-  return FakeSandbox(spec=SPEC, workspace=tmp_path)
+  return FakeSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
 
 
 def test_base_observer_hooks_are_noops(tmp_path: Path):

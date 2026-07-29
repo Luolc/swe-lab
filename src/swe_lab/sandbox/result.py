@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from pathlib import Path
+
+from etils import epath
 
 from .errors import SandboxError
 
@@ -57,7 +58,7 @@ class RunResult:
 
   label: str
   status: RunStatus
-  artifacts: dict[str, Path]
+  artifacts: dict[str, epath.Path]
   metrics: dict[str, float]
   error: BaseException | None = None
 
