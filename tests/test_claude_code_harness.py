@@ -21,6 +21,7 @@ from swe_lab.harnesses.claude_code import (
     event_stream_to_conversation,
 )
 from swe_lab.harnesses.claude_code.constants import (
+    AGENT_ENV_NAME,
     AGENT_SCRIPT_NAME,
     BINARY_AT,
     PROXY_LOG_NAME,
@@ -103,11 +104,15 @@ def _script(workdir: str, harness: ClaudeCodeHarness | None = None) -> str:
   return mount.resource.content.decode()
 
 
-def test_mounts_stage_agent_script_and_binary_not_prompt():
+def test_mounts_stage_agent_script_env_and_binary_not_prompt():
   mounts = ClaudeCodeHarness().mounts("/app")
-  # the agent script and the pinned binary — NOT the prompt (dataset's)
-  assert set(mounts) == {AGENT_SCRIPT_NAME, BINARY_AT}
+  # the agent script, its (empty) env file, and the pinned binary — NOT the
+  # prompt, which is the dataset's and staged by the composition
+  assert set(mounts) == {AGENT_SCRIPT_NAME, AGENT_ENV_NAME, BINARY_AT}
   assert mounts[AGENT_SCRIPT_NAME].executable is True
+  env_mount = mounts[AGENT_ENV_NAME]
+  assert isinstance(env_mount.resource, Inline)
+  assert env_mount.resource.content == b""  # filled in by run(env=...)
 
 
 def test_invocation_script_shape_and_quoting():
@@ -213,6 +218,51 @@ def test_run_executes_agent_script(tmp_path: Path):
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   ClaudeCodeHarness().run(sb, timeout=30.0)
   assert sb.scripts == [AGENT_SCRIPT_NAME]
+  # no injected env → the staged env file is left untouched (still empty)
+  assert not sb.exists(AGENT_ENV_NAME)
+
+
+def test_script_sources_the_env_file_after_its_own_defaults():
+  script = _script("/app")
+  lines = script.splitlines()
+  source_line = f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}'
+  # after the harness's own exports (so a caller can override them) ...
+  assert lines.index("export IS_SANDBOX=1") < lines.index(source_line)
+  # ... but before the agent invocation that consumes them
+  assert lines.index(source_line) < len(lines) - 1
+
+
+def test_proxy_url_is_not_overridable_by_injected_env():
+  # The composition wired this run to a recording proxy; caller env is sourced
+  # before that export, so it cannot redirect the agent away from it.
+  script = _script("/app", _proxy_harness())
+  lines = script.splitlines()
+  source_line = f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}'
+  base_url = next(line for line in lines if "ANTHROPIC_BASE_URL" in line)
+  assert lines.index(source_line) < lines.index(base_url)
+
+
+def test_run_writes_injected_env_as_quoted_exports(tmp_path: Path):
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  ClaudeCodeHarness().run(
+      sb,
+      timeout=30.0,
+      env={"MY_FLAG": "1", "ENDPOINT": "http://host:8080/x y"},
+  )
+  written = sb.read(AGENT_ENV_NAME).decode()
+  assert "export MY_FLAG=1" in written
+  # a value with a space is shell-quoted, so sourcing it cannot word-split
+  assert "export ENDPOINT='http://host:8080/x y'" in written
+  assert sb.scripts == [AGENT_SCRIPT_NAME]  # the script still drives the run
+
+
+def test_run_rejects_an_invalid_env_name(tmp_path: Path):
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  # a name that is not a shell identifier would corrupt the sourced file, which
+  # `set -u` would surface as a silent no-run — fail loudly instead
+  with pytest.raises(SandboxError, match="invalid environment variable name"):
+    ClaudeCodeHarness().run(sb, timeout=30.0, env={"BAD NAME": "x"})
+  assert sb.scripts == []  # nothing ran
 
 
 def test_to_conversation_maps_roles_and_blocks():

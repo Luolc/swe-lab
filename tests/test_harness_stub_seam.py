@@ -7,7 +7,7 @@ the real ``SandboxManager`` + ``ConversationObserver`` + ``GitHubJobSandbox``
 ``sandbox/`` or ``conversation/`` is modified to make it work.
 """
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 import contextlib
 from pathlib import Path
 from typing import override
@@ -50,8 +50,16 @@ class StubHarness(Harness):
     return {"stub.sh": Mount(Inline(script.encode()), executable=True)}
 
   @override
-  def run(self, sb: SandboxFs, *, timeout: float) -> None:
-    _ = sb.run_script("stub.sh", timeout=timeout)
+  def run(
+      self,
+      sb: SandboxFs,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
+  ) -> None:
+    # A foreign harness decides for itself how injected env reaches its agent;
+    # this one hands it straight to the exec.
+    _ = sb.run_script("stub.sh", timeout=timeout, env=env)
 
   @override
   def native_outputs(self) -> dict[str, str]:

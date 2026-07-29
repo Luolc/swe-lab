@@ -10,6 +10,7 @@ user's own ``Harness`` and their own internal proxy compose unchanged.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import contextlib
 from dataclasses import dataclass
 from typing import override
@@ -89,6 +90,7 @@ def run_rollout(
     output_dir: epath.PathLike,
     timeout: float,
     proxy: contextlib.AbstractContextManager[object] | None = None,
+    agent_env: Mapping[str, str] | None = None,
     exclude_globs: tuple[str, ...] = (),
 ) -> RolloutOutcome:
   """Run one agent rollout and extract its patch + trace.
@@ -113,6 +115,9 @@ def run_rollout(
     proxy: A recorder held open around the run (e.g. a host-side reverse proxy
       capturing the agent's API traffic). Any context manager will do; ``None``
       means record nothing.
+    agent_env: Extra environment for the agent process, handed to the harness.
+      For a secret, use the sandbox's ``pass_env`` instead — that passes it by
+      reference, so the value never reaches a command line or a staged file.
     exclude_globs: Build-noise denylist for the diff extraction.
 
   Returns:
@@ -134,7 +139,7 @@ def run_rollout(
       mounts=mounts,
   )
   with proxy or contextlib.nullcontext(), manager.session() as sb:
-    harness.run(sb, timeout=timeout)
+    harness.run(sb, timeout=timeout, env=agent_env)
 
   return RolloutOutcome(
       instance_id=spec.instance_id,
