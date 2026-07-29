@@ -16,9 +16,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 import shutil
 from typing import override
+
+from etils import epath
 
 from .errors import SandboxError
 from .persist import MANIFEST_NAME, run_prefix, RunRecord, RUNS_PREFIX
@@ -32,12 +33,12 @@ class Store(ABC):
   """
 
   @abstractmethod
-  def put(self, key: str, src: Path) -> None:
+  def put(self, key: str, src: epath.PathLike) -> None:
     """Upload one file to ``key`` (overwriting)."""
     ...
 
   @abstractmethod
-  def get(self, key: str, dest: Path) -> None:
+  def get(self, key: str, dest: epath.PathLike) -> None:
     """Download ``key`` to the host path ``dest`` (parents created)."""
     ...
 
@@ -64,24 +65,25 @@ class FilesystemStore(Store):
     root: The directory keys are resolved under (created on write).
   """
 
-  root: Path
+  root: epath.Path
 
-  def _path(self, key: str) -> Path:
+  def _path(self, key: str) -> epath.Path:
     return self.root / key
 
   @override
-  def put(self, key: str, src: Path) -> None:
+  def put(self, key: str, src: epath.PathLike) -> None:
     """Copy ``src`` to ``root/key``."""
     dest = self._path(key)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = shutil.copyfile(src, dest)
 
   @override
-  def get(self, key: str, dest: Path) -> None:
+  def get(self, key: str, dest: epath.PathLike) -> None:
     """Copy ``root/key`` to ``dest``."""
     src = self._path(key)
     if not src.is_file():
       raise SandboxError(f"store key not found: {key}")
+    dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = shutil.copyfile(src, dest)
 
@@ -141,8 +143,8 @@ def build_store(name: str, **cfg: object) -> Store:
   return factory(**cfg)
 
 
-def _build_filesystem(root: str | Path) -> Store:
-  return FilesystemStore(Path(root))
+def _build_filesystem(root: epath.PathLike) -> Store:
+  return FilesystemStore(epath.Path(root))
 
 
 register_store("filesystem", _build_filesystem)

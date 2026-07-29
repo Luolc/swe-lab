@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from etils import epath
+
 from swe_lab.pipelines.related_files.agent_run import RunResult
 from swe_lab.pipelines.related_files.schema import Annotation
 from swe_lab.pipelines.related_files.storage import (
@@ -20,7 +22,7 @@ def _result(instance_id: str) -> RunResult:
       instance_id=instance_id,
       annotation=annotation,
       last_record={"complete": True, "response": {"message": "hi"}},
-      proxy_log_path=Path("/tmp/x.jsonl"),
+      proxy_log_path=epath.Path("/tmp/x.jsonl"),
       complete=True,
   )
 

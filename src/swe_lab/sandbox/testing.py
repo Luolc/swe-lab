@@ -14,9 +14,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from pathlib import Path
+import os
 import shutil
 from typing import override
+
+from etils import epath
 
 from .errors import SandboxError
 from .mounts import Mount, Mounts
@@ -53,7 +55,7 @@ class FakeSandbox(Sandbox):
   """
 
   spec: SandboxSpec
-  workspace: Path
+  workspace: epath.Path
   run_results: list[ExecResult] = field(default_factory=list)
   up_error: Exception | None = None
   run_error: Exception | None = None
@@ -79,10 +81,11 @@ class FakeSandbox(Sandbox):
     _maybe_raise(self.down_error)
 
   @override
-  def fetch(self, name: str, dest: Path) -> None:
+  def fetch(self, name: str, dest: epath.PathLike) -> None:
     """Copy a produced workspace file out to a host path."""
     self.calls.append(("fetch", name))
     src = self.workspace / name
+    dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     if src.resolve() != dest.resolve():
       _ = shutil.copyfile(src, dest)
@@ -106,24 +109,28 @@ class FakeSandbox(Sandbox):
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = dest.write_bytes(data)
     if executable:
-      dest.chmod(0o755)
+      os.chmod(dest, 0o755)
 
   @override
   def _put_bytes(self, target: str, data: bytes, mount: Mount) -> None:
     dest = self._dest(target)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = dest.write_bytes(data)
-    dest.chmod(mount.mode)
+    os.chmod(dest, mount.mode)
 
   @override
-  def _put_file(self, target: str, src: Path, mount: Mount) -> None:
+  def _put_file(self, target: str, src: epath.PathLike, mount: Mount) -> None:
     dest = self._dest(target)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = shutil.copyfile(src, dest)
-    dest.chmod(mount.mode)
+    os.chmod(dest, mount.mode)
 
-  def _dest(self, target: str) -> Path:
-    return Path(target) if target.startswith("/") else self.workspace / target
+  def _dest(self, target: str) -> epath.Path:
+    return (
+        epath.Path(target)
+        if target.startswith("/")
+        else self.workspace / target
+    )
 
   # --- exec ----------------------------------------------------------------
 
@@ -241,14 +248,15 @@ class FakeStore(Store):
   puts: list[str] = field(default_factory=list)
 
   @override
-  def put(self, key: str, src: Path) -> None:
-    self.objects[key] = src.read_bytes()
+  def put(self, key: str, src: epath.PathLike) -> None:
+    self.objects[key] = epath.Path(src).read_bytes()
     self.puts.append(key)
 
   @override
-  def get(self, key: str, dest: Path) -> None:
+  def get(self, key: str, dest: epath.PathLike) -> None:
     if key not in self.objects:
       raise SandboxError(f"store key not found: {key}")
+    dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = dest.write_bytes(self.objects[key])
 

@@ -26,7 +26,8 @@ def eval_cmd(
         bool, typer.Option(help="Grade the instance's own gold patch.")
     ] = False,
     patch_file: Annotated[
-        Path | None, typer.Option(help="Path to a candidate .diff to grade.")
+        Path | None,
+        typer.Option(help="Path to a candidate .diff to grade."),
     ] = None,
     timeout: Annotated[
         float, typer.Option(help="Seconds before the eval run is killed.")

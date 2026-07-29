@@ -10,6 +10,7 @@ process ever spawns.
 from pathlib import Path
 from typing import override
 
+from etils import epath
 import pytest
 
 from swe_lab.conversation import Conversation
@@ -27,8 +28,8 @@ class _LocalFakeSandbox(FakeSandbox):
   """
 
   @override
-  def _dest(self, target: str) -> Path:
-    return self.workspace / target.lstrip("/")
+  def _dest(self, target: str) -> epath.Path:
+    return epath.Path(self.workspace / target.lstrip("/"))
 
 
 def test_run_rollout_wires_and_assembles(
@@ -43,7 +44,7 @@ def test_run_rollout_wires_and_assembles(
   )
   workspace = tmp_path / "ws"
   spec = SandboxSpec("acme__widget-1", "img:tag", "/app", "base")
-  sandbox = _LocalFakeSandbox(spec=spec, workspace=workspace)
+  sandbox = _LocalFakeSandbox(spec=spec, workspace=epath.Path(workspace))
 
   outcome = run_rollout(
       sandbox,

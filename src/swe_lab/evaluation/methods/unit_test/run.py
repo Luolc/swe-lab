@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import override
+
+from etils import epath
 
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.sandbox import (
@@ -54,7 +55,7 @@ def run_unit_test[V: Verdict](
     sandbox: Sandbox,
     unit_test_spec: UnitTestSpec[V],
     *,
-    output_dir: Path,
+    output_dir: epath.PathLike,
     timeout: float = _DEFAULT_TIMEOUT_S,
     observers: Sequence[SandboxObserver] = (),
 ) -> tuple[RunResult, V | None]:
@@ -88,7 +89,7 @@ def run_unit_test[V: Verdict](
   )
   manager = SandboxManager(
       sandbox=sandbox,
-      output_dir=output_dir,
+      output_dir=epath.Path(output_dir),
       observers=[*observers, parse],
       mounts=mounts,
   )

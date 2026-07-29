@@ -17,10 +17,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import logging
 import os
-from pathlib import Path
 import shutil
 import subprocess
 from typing import override
+
+from etils import epath
 
 from ..errors import SandboxError
 from ..mounts import Mount
@@ -51,7 +52,7 @@ class GitHubJobSandbox(Sandbox):
   """
 
   spec: SandboxSpec
-  workspace: Path
+  workspace: epath.Path
   shell: str = "/bin/bash"
   env: Mapping[str, str] = field(default_factory=dict)
   pass_env: Sequence[str] = ()
@@ -78,7 +79,7 @@ class GitHubJobSandbox(Sandbox):
     """No container to remove; best-effort, never raises."""
 
   @override
-  def fetch(self, name: str, dest: Path) -> None:
+  def fetch(self, name: str, dest: epath.PathLike) -> None:
     """Copy a produced workspace file out to a host path.
 
     Args:
@@ -86,6 +87,7 @@ class GitHubJobSandbox(Sandbox):
       dest: The host path to write it to (parents created).
     """
     src = self.workspace / name
+    dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     if src.resolve() != dest.resolve():
       _ = shutil.copyfile(src, dest)
@@ -109,7 +111,7 @@ class GitHubJobSandbox(Sandbox):
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = dest.write_bytes(data)
     if executable:
-      dest.chmod(0o755)
+      os.chmod(dest, 0o755)
 
   # --- mounts (transfer) ---------------------------------------------------
 
@@ -118,18 +120,22 @@ class GitHubJobSandbox(Sandbox):
     dest = self._dest(target)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = dest.write_bytes(data)
-    dest.chmod(mount.mode)
+    os.chmod(dest, mount.mode)
 
   @override
-  def _put_file(self, target: str, src: Path, mount: Mount) -> None:
+  def _put_file(self, target: str, src: epath.PathLike, mount: Mount) -> None:
     dest = self._dest(target)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = shutil.copyfile(src, dest)
-    dest.chmod(mount.mode)
+    os.chmod(dest, mount.mode)
 
-  def _dest(self, target: str) -> Path:
+  def _dest(self, target: str) -> epath.Path:
     """Resolve a mount target: absolute as-is, else workspace-relative."""
-    return Path(target) if target.startswith("/") else self.workspace / target
+    return (
+        epath.Path(target)
+        if target.startswith("/")
+        else self.workspace / target
+    )
 
   # --- exec ----------------------------------------------------------------
 

@@ -8,6 +8,7 @@ teardown happened, and the resulting status/error.
 from pathlib import Path
 from typing import Any, override
 
+from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
@@ -94,7 +95,7 @@ def test_mounts_materialize_after_up(tmp_path: Path):
       seen.append((self.workspace / "run.sh").is_file())
       super().up()
 
-  sb = Probe(spec=SPEC, workspace=tmp_path / "ws")
+  sb = Probe(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
   mgr = _manager(sb, mounts={"run.sh": Mount(Inline(b"hi"))})
   with mgr.session():
     pass
@@ -144,7 +145,9 @@ def test_unstageable_mount_is_setup_error(tmp_path: Path):
   # up() (up-first), before the body — so the run is a SETUP_ERROR that
   # propagates and the sandbox is still torn down.
   sb = _sandbox(tmp_path)
-  mgr = _manager(sb, mounts={"agent": Mount(LocalFile(tmp_path / "absent"))})
+  mgr = _manager(
+      sb, mounts={"agent": Mount(LocalFile(epath.Path(tmp_path / "absent")))}
+  )
   with pytest.raises(FileNotFoundError), mgr.session():
     pytest.fail("body must not run")
   assert sb.calls[0] == ("up", "inst")
@@ -312,10 +315,10 @@ def test_nonempty_workspace_refused_unless_reuse(tmp_path: Path):
   ws = tmp_path / "ws"
   ws.mkdir()
   _ = (ws / "stale.txt").write_text("old")
-  refusing = GitHubJobSandbox(spec=SPEC, workspace=ws)
+  refusing = GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws))
   with pytest.raises(SandboxError, match="not empty"):
     refusing.up()
-  reusing = GitHubJobSandbox(spec=SPEC, workspace=ws, reuse=True)
+  reusing = GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws), reuse=True)
   reusing.up()  # reuse=True runs in the non-empty workspace without raising
 
 
@@ -331,6 +334,6 @@ def test_run_plumbing(tmp_path: Path):
 def test_run_before_live_raises(tmp_path: Path):
   # The liveness guard lives on the real host sandbox (docker-free until an
   # exec is attempted): exec before up() raises without touching Docker.
-  sb = DockerHostSandbox(spec=SPEC, workspace=tmp_path / "ws")
+  sb = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
   with pytest.raises(SandboxError, match="not live"):
     sb.run_script("x.sh", timeout=1.0)

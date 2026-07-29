@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass
-from pathlib import Path
 import zlib
+
+from etils import epath
 
 from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.claude_code import (
@@ -72,8 +73,8 @@ class RolloutOutcome:
   complete: bool
   conversation: Conversation
   status: RunStatus
-  workspace: Path
-  artifacts: dict[str, Path]
+  workspace: epath.Path
+  artifacts: dict[str, epath.Path]
   metrics: dict[str, float]
 
 
@@ -82,7 +83,7 @@ def run_rollout(
     *,
     prompt: str,
     model: str,
-    output_dir: Path,
+    output_dir: epath.PathLike,
     timeout: float,
     exclude_globs: tuple[str, ...] = (),
     capture: Capture = Capture.STREAM,
@@ -126,7 +127,7 @@ def run_rollout(
   )
   manager = SandboxManager(
       sandbox=sandbox,
-      output_dir=output_dir,
+      output_dir=epath.Path(output_dir),
       observers=[conversation, extract],
       mounts=mounts,
   )
@@ -141,7 +142,7 @@ def run_rollout(
       complete=_run_complete(output_dir, capture),
       conversation=conversation.conversation or Conversation(messages=[]),
       status=manager.result.status,
-      workspace=output_dir,
+      workspace=epath.Path(output_dir),
       artifacts=manager.result.artifacts,
       metrics=manager.result.metrics,
   )
@@ -150,7 +151,7 @@ def run_rollout(
 def _capture_setup(
     instance_id: str,
     model: str,
-    output_dir: Path,
+    output_dir: epath.PathLike,
     capture: Capture,
     *,
     bare: bool = False,
@@ -173,15 +174,17 @@ def _capture_setup(
       bare=bare,
   )
   proxy = ReverseProxy(
-      port, output_dir / PROXY_LOG_NAME, build_proxy(find_repo_root())
+      port,
+      epath.Path(output_dir) / PROXY_LOG_NAME,
+      build_proxy(find_repo_root()),
   )
   return harness, proxy
 
 
-def _run_complete(output_dir: Path, capture: Capture) -> bool:
+def _run_complete(output_dir: epath.PathLike, capture: Capture) -> bool:
   """Read the agent-completion signal from whichever trace the run captured."""
   name = PROXY_LOG_NAME if capture is Capture.PROXY else EVENT_STREAM_NAME
-  path = output_dir / name
+  path = epath.Path(output_dir) / name
   text = path.read_text() if path.is_file() else ""
   if capture is Capture.PROXY:
     return proxy_log_complete(text)

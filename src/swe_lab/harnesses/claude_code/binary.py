@@ -24,8 +24,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
+import os
 import urllib.request
+
+from etils import epath
 
 from swe_lab.paths import cache_root, find_repo_root
 
@@ -47,8 +49,8 @@ def binary_cache_path(
     *,
     version: str = PINNED_CLAUDE_CODE_VERSION,
     platform: str = LINUX_X64,
-    repo_root: Path | None = None,
-) -> Path:
+    repo_root: epath.PathLike | None = None,
+) -> epath.Path:
   """Return the on-disk cache path of the ``version``/``platform`` binary."""
   root = repo_root or find_repo_root()
   return (
@@ -86,9 +88,9 @@ def ensure_claude_binary(
     *,
     version: str = PINNED_CLAUDE_CODE_VERSION,
     platform: str = LINUX_X64,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
     refresh: bool = False,
-) -> Path:
+) -> epath.Path:
   """Ensure the pinned native binary is cached and checksum-verified.
 
   Idempotent: a cached binary whose sha256 matches the release manifest is
@@ -128,7 +130,7 @@ def ensure_claude_binary(
         f"expected {expected}, got {actual}"
     )
   _ = dest.write_bytes(data)
-  dest.chmod(0o755)
+  os.chmod(dest, 0o755)
   return dest
 
 
@@ -137,9 +139,9 @@ def _get(url: str, *, timeout: float = _FETCH_TIMEOUT_S) -> bytes:
     return response.read()
 
 
-def _sha256(path: Path) -> str:
+def _sha256(path: epath.PathLike) -> str:
   digest = hashlib.sha256()
-  with path.open("rb") as handle:
+  with open(path, "rb") as handle:
     for chunk in iter(lambda: handle.read(1 << 20), b""):
       digest.update(chunk)
   return digest.hexdigest()

@@ -13,7 +13,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 import json
-from pathlib import Path
+
+from etils import epath
 
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
@@ -89,7 +90,7 @@ def aggregate_instance(
     index: int,
     candidates: Sequence[object],
     *,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_AGG_BASE_PORT,
     port: int | None = None,

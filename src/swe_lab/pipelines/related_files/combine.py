@@ -24,8 +24,8 @@ from collections.abc import Iterable
 from datetime import datetime, UTC
 import hashlib
 import json
-from pathlib import Path
 
+from etils import epath
 import polars as pl
 
 from .schema import Annotation
@@ -78,7 +78,7 @@ def _rows(annotations: Iterable[Annotation]) -> list[dict[str, object]]:
 def build_dataframe(
     dataset: str = DEFAULT_DATASET,
     *,
-    repo_root: Path | None = None,
+    repo_root: epath.PathLike | None = None,
 ) -> pl.DataFrame:
   """Build the combined per-instance table for a dataset from its aggregates."""
   annotations = [
@@ -93,17 +93,17 @@ def _total_snippets(frame: pl.DataFrame) -> int:
   return sum(len(json.loads(value)) for value in frame["relevant_snippets"])
 
 
-def _sha256(path: Path) -> str:
+def _sha256(path: epath.PathLike) -> str:
   """Return the SHA-256 hex digest of a file's bytes."""
-  return hashlib.sha256(path.read_bytes()).hexdigest()
+  return hashlib.sha256(epath.Path(path).read_bytes()).hexdigest()
 
 
 def build_metadata(
-    parquet_path: Path, frame: pl.DataFrame
+    parquet_path: epath.PathLike, frame: pl.DataFrame
 ) -> dict[str, object]:
   """Describe one parquet build: counts, timestamp, and checksum."""
   return {
-      "parquet": parquet_path.name,
+      "parquet": epath.Path(parquet_path).name,
       "num_rows": frame.height,
       "num_snippets": _total_snippets(frame),
       "generated_at": datetime.now(UTC).isoformat(),
@@ -114,17 +114,19 @@ def build_metadata(
 def combine(
     dataset: str = DEFAULT_DATASET,
     *,
-    repo_root: Path | None = None,
-    output: Path | None = None,
-) -> tuple[Path, Path, pl.DataFrame]:
+    repo_root: epath.PathLike | None = None,
+    output: epath.PathLike | None = None,
+) -> tuple[epath.Path, epath.Path, pl.DataFrame]:
   """Write the combined parquet and its ``metadata.json`` sidecar.
 
   Returns the parquet path, the metadata path, and the frame.
   """
   frame = build_dataframe(dataset, repo_root=repo_root)
-  out = output or combined_parquet_path(dataset, repo_root=repo_root)
+  out = epath.Path(
+      output or combined_parquet_path(dataset, repo_root=repo_root)
+  )
   out.parent.mkdir(parents=True, exist_ok=True)
-  frame.write_parquet(out)
+  frame.write_parquet(str(out))
 
   metadata_path = out.with_name(METADATA_NAME)
   metadata = build_metadata(out, frame)
@@ -147,7 +149,7 @@ def main() -> int:
   )
   _ = parser.add_argument(
       "--output",
-      type=Path,
+      type=epath.Path,
       default=None,
       help="Parquet output path (default: outputs/related_files/<dataset>/"
       "annotations.parquet).",

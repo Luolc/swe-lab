@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from etils import epath
+
 from swe_lab.sandbox import SandboxSpec
 from swe_lab.sandbox.observers.diff_extract import (
     DiffExtractObserver,
@@ -15,7 +17,7 @@ from swe_lab.sandbox.testing import FakeSandbox
 def _sandbox(workspace: Path) -> FakeSandbox:
   return FakeSandbox(
       spec=SandboxSpec("x", "img:tag", "/app", "base"),
-      workspace=workspace,
+      workspace=epath.Path(workspace),
   )
 
 

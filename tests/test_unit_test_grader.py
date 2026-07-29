@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from etils import epath
+
 from swe_lab.datasets.swebench_pro.unit_test import (
     OutputState,
     REQUIRED_TESTS_NAME,
@@ -33,7 +35,9 @@ def _grade(
   _ = (ws / REQUIRED_TESTS_NAME).write_text(json.dumps(required))
   if output is not None:
     _ = (ws / "output.json").write_text(output)
-  return SweBenchProGrader().grade(FakeSandbox(spec=_SPEC, workspace=ws))
+  return SweBenchProGrader().grade(
+      FakeSandbox(spec=_SPEC, workspace=epath.Path(ws))
+  )
 
 
 def _passed(*names: str) -> str:
@@ -87,5 +91,11 @@ def test_grader_is_stateless(tmp_path: Path):
   ws2.mkdir()
   _ = (ws2 / REQUIRED_TESTS_NAME).write_text(json.dumps(["a", "b"]))
   _ = (ws2 / "output.json").write_text(_passed("a"))
-  assert grader.grade(FakeSandbox(spec=_SPEC, workspace=ws1)).resolved is True
-  assert grader.grade(FakeSandbox(spec=_SPEC, workspace=ws2)).resolved is False
+  assert (
+      grader.grade(FakeSandbox(spec=_SPEC, workspace=epath.Path(ws1))).resolved
+      is True
+  )
+  assert (
+      grader.grade(FakeSandbox(spec=_SPEC, workspace=epath.Path(ws2))).resolved
+      is False
+  )

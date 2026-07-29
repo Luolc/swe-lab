@@ -9,10 +9,11 @@ taken from ``PROJECT_ROOT`` when set by ``.envrc``).
 from __future__ import annotations
 
 import os
-from pathlib import Path
+
+from etils import epath
 
 
-def find_repo_root(start: Path | None = None) -> Path:
+def find_repo_root(start: epath.PathLike | None = None) -> epath.Path:
   """Return the repository root directory.
 
   Prefers the ``PROJECT_ROOT`` environment variable (exported by ``.envrc``);
@@ -30,9 +31,9 @@ def find_repo_root(start: Path | None = None) -> Path:
   """
   env_root = os.environ.get("PROJECT_ROOT")
   if env_root:
-    return Path(env_root).resolve()
+    return epath.Path(env_root).resolve()
 
-  origin = (start or Path(__file__)).resolve()
+  origin = epath.Path(start or __file__).resolve()
   for candidate in (origin, *origin.parents):
     if (candidate / "pyproject.toml").is_file():
       return candidate
@@ -42,26 +43,26 @@ def find_repo_root(start: Path | None = None) -> Path:
   )
 
 
-def datasets_root(repo_root: Path | None = None) -> Path:
+def datasets_root(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Return the directory holding per-dataset folders (``datasets/``)."""
-  return (repo_root or find_repo_root()) / "datasets"
+  return epath.Path(repo_root or find_repo_root()) / "datasets"
 
 
-def cache_root(repo_root: Path | None = None) -> Path:
+def cache_root(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Return the root of the gitignored local cache (``.cache/``)."""
-  return (repo_root or find_repo_root()) / ".cache"
+  return epath.Path(repo_root or find_repo_root()) / ".cache"
 
 
-def repo_cache_dir(repo_root: Path | None = None) -> Path:
+def repo_cache_dir(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Return the gitignored cache for provisioned repository checkouts."""
   return cache_root(repo_root) / "repos"
 
 
-def outputs_root(repo_root: Path | None = None) -> Path:
+def outputs_root(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Return the version-controlled root for deliverables (``outputs/``).
 
   Each task keeps its results under ``outputs/<task>/`` (e.g. the related-files
   annotations live in ``outputs/related_files/``), so a new task adds a sibling
   folder rather than colliding with the existing output.
   """
-  return (repo_root or find_repo_root()) / "outputs"
+  return epath.Path(repo_root or find_repo_root()) / "outputs"

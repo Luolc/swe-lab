@@ -16,8 +16,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 import json
-from pathlib import Path
+import pathlib
 from typing import TYPE_CHECKING
+
+from etils import epath
 
 if TYPE_CHECKING:
   from .store import Store
@@ -76,7 +78,7 @@ def run_prefix(record: RunRecord) -> str:
 
 
 def persist(
-    store: Store, record: RunRecord, files: Mapping[str, Path]
+    store: Store, record: RunRecord, files: Mapping[str, epath.PathLike]
 ) -> RunRecord:
   """Upload a run's files under its key and append its manifest shard.
 
@@ -100,7 +102,9 @@ def persist(
   return completed
 
 
-def promote(store: Store, record: RunRecord, workspace: Path) -> RunRecord:
+def promote(
+    store: Store, record: RunRecord, workspace: epath.PathLike
+) -> RunRecord:
   """Push a whole debug workspace into T1 (the misclassification safety valve).
 
   Uploads every file under ``workspace`` (keyed by its workspace-relative path,
@@ -114,9 +118,13 @@ def promote(store: Store, record: RunRecord, workspace: Path) -> RunRecord:
   Returns:
     The completed record.
   """
+  # epath.Path has no recursive glob (`rglob`/`**` raise NotImplementedError to
+  # avoid unbounded cloud listing), so walk the local workspace via pathlib and
+  # wrap the results back into epath.Path.
+  base = pathlib.Path(workspace)
   files = {
-      path.relative_to(workspace).as_posix(): path
-      for path in sorted(workspace.rglob("*"))
+      path.relative_to(base).as_posix(): epath.Path(path)
+      for path in sorted(base.rglob("*"))
       if path.is_file()
   }
   return persist(store, record, files)

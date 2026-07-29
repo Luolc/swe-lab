@@ -91,7 +91,7 @@ def test_combine_writes_parquet(tmp_path: Path) -> None:
       / "annotations.parquet"
   )
   assert out.is_file()
-  reloaded = pl.read_parquet(out)
+  reloaded = pl.read_parquet(str(out))
   assert reloaded.equals(frame)
   snippets = json.loads(reloaded["relevant_snippets"][0])
   assert snippets[0]["category"] == "context-file"

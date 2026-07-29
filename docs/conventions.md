@@ -10,8 +10,9 @@ behavior rules) and [`README.md`](README.md) (the map — roadmap / status).
 - **Python 3.13** (`>=3.13,<3.14`), managed with **[uv](https://docs.astral.sh/uv/)**.
 - **[direnv](https://direnv.net/)** auto-activates the venv (`.envrc`).
 - Runtime deps are deliberately thin: `polars` (parquet), `huggingface-hub`
-  (off-repo trace storage). Everything else (Docker, git, Claude Code) is invoked
-  as an external process, not imported.
+  (off-repo trace storage), `etils` (its `epath` filesystem-path API — see
+  Style). Everything else (Docker, git, Claude Code) is invoked as an external
+  process, not imported.
 
 ## Commands
 
@@ -76,6 +77,30 @@ with the following repo-wide choices and deviations (full plan + rationale:
   (`type Mounts = dict[str, Mount]`, never bare `Mounts = …` or
   `TypeAlias`); generics use the bracket form
   (`class Grader[V: Verdict](ABC)`), not `TypeVar` boilerplate.
+- **Filesystem paths use `etils.epath`, not `pathlib` — loose in, strict out.**
+  Annotate a path-taking **parameter** as `epath.PathLike` (accepts `str` /
+  `os.PathLike` / an `epath.Path`), and a **return** — or a dataclass field /
+  stored attribute holding a path — as the concrete `epath.Path`. Build paths
+  with `epath.Path(...)`. Because `PathLike` includes `str`, **coerce a
+  `PathLike` argument to `epath.Path` before doing path ops on it or storing it**
+  (`p = epath.Path(p)`); a value merely *passed through* to another
+  `PathLike`-accepting call needs no coercion. basedpyright enforces this — a
+  path method on an un-coerced `PathLike` is a type error, so a missing coercion
+  fails the type check rather than at runtime. Why `epath`: it is a drop-in for
+  `pathlib.Path` that also addresses cloud URIs (`gs://`, `s3://`), keeping the
+  store / cloud-backend direction open. Scope: library code under `src/`; test
+  code may use pytest's `pathlib` `tmp_path` directly and coerce only where a
+  comparison needs it (`epath.Path != pathlib.Path`). Known `epath` gaps — reach
+  for the `os` module or `pathlib` at just that spot: no `.chmod()` (use
+  `os.chmod(p, mode)`), no recursive `.rglob()` / `**` glob (walk with `pathlib`
+  then wrap results), no `.cwd()` / `.home()`, and `.stat()` lacks `st_size`
+  (use `os.path.getsize(p)`); pass `str(p)` to APIs typed for only
+  `str | pathlib.Path` (e.g. polars I/O). Single/multi-`*` globs (`*.parquet`,
+  `*/*/run.json`) do work. A script that must stay standard-library-only (e.g.
+  the in-container annotation validator) keeps `pathlib`. **Typer CLI
+  entry-point parameters that take a path stay `pathlib.Path`** — Typer rejects a
+  `Union` (and `PathLike` *is* `str | os.PathLike`), so a command option/argument
+  uses the concrete `Path` and the body coerces to `epath.Path` where needed.
 - **Interfaces — ABC/base class over Protocol**
   ([ADR-0002](decisions/ADR-0002-interface-style-abc-vs-protocol.md)): a
   behavior interface whose implementers live in-repo is an `abc.ABC` with

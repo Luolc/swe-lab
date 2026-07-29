@@ -14,7 +14,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
+
+from etils import epath
 
 from .errors import SandboxError
 from .mounts import Mount, Mounts
@@ -137,7 +138,7 @@ class Sandbox(SandboxFs, ABC):
     ...
 
   @abstractmethod
-  def fetch(self, name: str, dest: Path) -> None:
+  def fetch(self, name: str, dest: epath.PathLike) -> None:
     """Dump one produced artifact to a host path (the collect step, ADR-0003).
 
     A host sandbox copies from its own dir (near-zero); a remote downloads.
@@ -186,6 +187,6 @@ class Sandbox(SandboxFs, ABC):
     ...
 
   @abstractmethod
-  def _put_file(self, target: str, src: Path, mount: Mount) -> None:
+  def _put_file(self, target: str, src: epath.PathLike, mount: Mount) -> None:
     """Place a host file at ``target`` (honoring executable / read_only)."""
     ...

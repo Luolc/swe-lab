@@ -16,9 +16,9 @@ given file — later milestones derive a per-instance proxy port from it
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping
-from pathlib import Path
 from typing import ClassVar, Protocol
 
+from etils import epath
 import polars as pl
 
 from ..paths import datasets_root
@@ -53,7 +53,7 @@ class Dataset:
   """An ordered collection of records loaded from one parquet file."""
 
   def __init__(
-      self, name: str, path: Path, records: tuple[DatasetRecord, ...]
+      self, name: str, path: epath.PathLike, records: tuple[DatasetRecord, ...]
   ) -> None:
     """Initialize the dataset and index its records by instance id.
 
@@ -66,7 +66,7 @@ class Dataset:
       ValueError: If two records share an ``instance_id``.
     """
     self.name: str = name
-    self.path: Path = path
+    self.path: epath.Path = epath.Path(path)
     self._records: tuple[DatasetRecord, ...] = records
     self._by_id: dict[str, int] = {
         rec.instance_id: i for i, rec in enumerate(records)
@@ -116,9 +116,11 @@ class Dataset:
     return tuple(rec for rec in self._records if predicate(rec))
 
 
-def find_parquet(name: str, *, root: Path | None = None) -> Path:
+def find_parquet(
+    name: str, *, root: epath.PathLike | None = None
+) -> epath.Path:
   """Locate the single parquet file for a dataset under ``datasets/<name>``."""
-  data_dir = (root or datasets_root()) / name / "data"
+  data_dir = epath.Path(root or datasets_root()) / name / "data"
   if not data_dir.is_dir():
     raise FileNotFoundError(
         f"Dataset directory not found: {data_dir}. See datasets/README.md for"
@@ -139,10 +141,13 @@ def find_parquet(name: str, *, root: Path | None = None) -> Path:
 
 
 def load_parquet(
-    path: Path, record_type: type[DatasetRecord], *, name: str | None = None
+    path: epath.PathLike,
+    record_type: type[DatasetRecord],
+    *,
+    name: str | None = None,
 ) -> Dataset:
   """Load a :class:`Dataset` from a parquet file using ``record_type``."""
-  frame = pl.read_parquet(path)
+  frame = pl.read_parquet(str(path))
   missing = [c for c in record_type.COLUMNS if c not in frame.columns]
   if missing:
     raise ValueError(f"{path} is missing expected columns: {missing}")
@@ -150,11 +155,11 @@ def load_parquet(
   records = tuple(
       record_type.from_raw(row) for row in frame.iter_rows(named=True)
   )
-  return Dataset(name or path.stem, path, records)
+  return Dataset(name or epath.Path(path).stem, path, records)
 
 
 def load_dataset(
-    name: str = "swebench_pro", *, root: Path | None = None
+    name: str = "swebench_pro", *, root: epath.PathLike | None = None
 ) -> Dataset:
   """Load a registered dataset by name from the ``datasets/<name>`` layout."""
   record_type = _DATASET_RECORDS.get(name)

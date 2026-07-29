@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import datetime, UTC
-from pathlib import Path
+
+from etils import epath
 
 from swe_lab.paths import cache_root
 from swe_lab.sandbox import build_store, persist, RunRecord, Store
@@ -23,7 +24,7 @@ def _run_ts() -> str:
   return datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
 
 
-def local_store(root: Path) -> Store:
+def local_store(root: epath.PathLike) -> Store:
   """Return the default T1 store: a ``FilesystemStore`` under the cache."""
   return build_store("filesystem", root=cache_root(root) / _STORE_SUBDIR)
 
@@ -53,13 +54,13 @@ def new_record(
 
 
 def persist_run(
-    root: Path,
+    root: epath.PathLike,
     *,
     sweep: str,
     instance_id: str,
     status: str,
     backend: str,
-    artifacts: Mapping[str, Path],
+    artifacts: Mapping[str, epath.PathLike],
     model: str = "",
     metrics: Mapping[str, float] | None = None,
     extra: Mapping[str, object] | None = None,
@@ -89,5 +90,5 @@ def persist_run(
       metrics=metrics,
       extra=extra,
   )
-  files = {path.name: path for path in artifacts.values()}
+  files = {epath.Path(path).name: path for path in artifacts.values()}
   return persist(local_store(root), record, files)

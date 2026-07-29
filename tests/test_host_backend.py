@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import subprocess
 
+from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
@@ -66,7 +67,7 @@ def _install(monkeypatch: pytest.MonkeyPatch, fake: _FakeDocker) -> None:
 def test_up_argv_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
   fake = _FakeDocker(results=[_ok(), _ok("container-xyz\n"), _ok()])
   _install(monkeypatch, fake)
-  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path)
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
   sandbox.up()
   # the container id is now internal state, not a return value
   assert sandbox._container == "container-xyz"
@@ -95,7 +96,7 @@ def test_up_network_off_env_and_pass_env(
   _install(monkeypatch, fake)
   sandbox = DockerHostSandbox(
       spec=SPEC,
-      workspace=tmp_path,
+      workspace=epath.Path(tmp_path),
       network=False,
       pull=False,
       env={"FOO": "bar"},
@@ -123,12 +124,14 @@ def test_mount_absolute_asset_copied_read_only(
   _install(monkeypatch, fake)
   binary = tmp_path / "claude"  # outside the workspace, like the pinned binary
   _ = binary.write_bytes(b"BIN")
-  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path / "ws", pull=False)
+  sandbox = DockerHostSandbox(
+      spec=SPEC, workspace=epath.Path(tmp_path / "ws"), pull=False
+  )
   sandbox.up()
   sandbox.mount(
       {
           "/opt/claude-code/claude": Mount(
-              LocalFile(binary), executable=True, read_only=True
+              LocalFile(epath.Path(binary)), executable=True, read_only=True
           )
       }
   )
@@ -157,7 +160,9 @@ def test_up_always_maps_host_gateway(
   # reachable; construction stays independent of the capture mode.
   fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
   _install(monkeypatch, fake)
-  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False)
+  sandbox = DockerHostSandbox(
+      spec=SPEC, workspace=epath.Path(tmp_path), pull=False
+  )
   sandbox.up()
   create = fake.last_matching("create")
   at = create.index("host.docker.internal:host-gateway")
@@ -173,7 +178,9 @@ def test_up_create_failure_raises(
   fake = _FakeDocker(results=[subprocess.CompletedProcess([], 1, "", "boom")])
   _install(monkeypatch, fake)
   with pytest.raises(SandboxError, match="docker create.*failed"):
-    DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False).up()
+    DockerHostSandbox(
+        spec=SPEC, workspace=epath.Path(tmp_path), pull=False
+    ).up()
 
 
 def test_up_start_failure_removes_partial_container(
@@ -188,7 +195,9 @@ def test_up_start_failure_removes_partial_container(
   )
   _install(monkeypatch, fake)
   with pytest.raises(SandboxError, match="docker start.*failed"):
-    DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False).up()
+    DockerHostSandbox(
+        spec=SPEC, workspace=epath.Path(tmp_path), pull=False
+    ).up()
   assert fake.last_matching("rm") == ["docker", "rm", "-f", "cid"]
 
 
@@ -197,7 +206,9 @@ def test_missing_docker_cli_raises(
 ):
   _install(monkeypatch, _FakeDocker(raise_missing=True))
   with pytest.raises(SandboxError, match="docker CLI not found"):
-    DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False).up()
+    DockerHostSandbox(
+        spec=SPEC, workspace=epath.Path(tmp_path), pull=False
+    ).up()
 
 
 def test_run_script_argv_runs_workspace_file(
@@ -213,7 +224,9 @@ def test_run_script_argv_runs_workspace_file(
     return subprocess.CompletedProcess(argv, 0, "captured-out\n", "")
 
   monkeypatch.setattr(subprocess, "run", fake_run)
-  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path, mount_at="/ws")
+  sandbox = DockerHostSandbox(
+      spec=SPEC, workspace=epath.Path(tmp_path), mount_at="/ws"
+  )
   sandbox._container = "cid"  # pretend it is live
   result = sandbox.run_script("entryscript.sh", timeout=5.0, env={"X": "1"})
   argv = recorded["argv"]
@@ -238,7 +251,9 @@ def test_run_command_argv_runs_inline_command(
     return subprocess.CompletedProcess(argv, 0, "ok\n", "")
 
   monkeypatch.setattr(subprocess, "run", fake_run)
-  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path, mount_at="/ws")
+  sandbox = DockerHostSandbox(
+      spec=SPEC, workspace=epath.Path(tmp_path), mount_at="/ws"
+  )
   sandbox._container = "cid"  # pretend it is live
   result = sandbox.run_command("echo ok", timeout=5.0)
   argv = recorded["argv"]
@@ -260,7 +275,7 @@ def test_run_script_timeout_maps_to_124(
     raise subprocess.TimeoutExpired(argv, secs, stderr="slow")
 
   monkeypatch.setattr(subprocess, "run", fake_run)
-  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path)
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
   sandbox._container = "cid"  # pretend it is live
   result = sandbox.run_script("slow.sh", timeout=1.0)
   assert result.exit_code == 124
@@ -273,7 +288,7 @@ def test_down_never_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
       results=[subprocess.CompletedProcess([], 1, "", "no such")]
   )
   _install(monkeypatch, fake)
-  sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path)
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
   sandbox._container = "gone-cid"
   sandbox.down()  # must not raise
   assert fake.last_matching("rm") == ["docker", "rm", "-f", "gone-cid"]
@@ -294,7 +309,7 @@ def test_live_run_script_writes_and_persists_state(tmp_path: Path):
   spec = SandboxSpec("debian-probe", _IMAGE, "/", "none")
   workspace = tmp_path / "ws"
   workspace.mkdir()
-  sandbox = DockerHostSandbox(spec=spec, workspace=workspace)
+  sandbox = DockerHostSandbox(spec=spec, workspace=epath.Path(workspace))
   sandbox.up()
   try:
     # a staged script writes a file into the workspace via SANDBOX_WORKSPACE
@@ -319,8 +334,8 @@ def test_live_run_script_writes_and_persists_state(tmp_path: Path):
 @pytest.mark.docker
 def test_live_manager_teardown_on_body_error(tmp_path: Path):
   spec = SandboxSpec("debian-teardown", _IMAGE, "/", "none")
-  sandbox = DockerHostSandbox(spec=spec, workspace=tmp_path / "ws")
-  mgr = SandboxManager(sandbox=sandbox, output_dir=tmp_path / "out")
+  sandbox = DockerHostSandbox(spec=spec, workspace=epath.Path(tmp_path / "ws"))
+  mgr = SandboxManager(sandbox=sandbox, output_dir=epath.Path(tmp_path / "out"))
   with mgr.session():
     container = sandbox._container  # the concrete host sandbox's container id
     _boom(ValueError("body boom"))
@@ -340,8 +355,8 @@ def test_no_orphan_containers_left(tmp_path: Path):
   spec = SandboxSpec("debian-orphan", _IMAGE, "/", "none")
   ws = tmp_path / "ws"
   mgr = SandboxManager(
-      sandbox=DockerHostSandbox(spec=spec, workspace=ws),
-      output_dir=ws,
+      sandbox=DockerHostSandbox(spec=spec, workspace=epath.Path(ws)),
+      output_dir=epath.Path(ws),
       mounts={"noop.sh": Mount(Inline(b"true\n"))},
   )
   with mgr.session() as sb:

@@ -15,7 +15,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from pathlib import Path
+
+from etils import epath
 
 from ..errors import SandboxError
 from ..sandbox import Sandbox
@@ -57,7 +58,7 @@ class SandboxConfig:
     shell: The interpreter each ``run_script`` / ``run_command`` uses.
   """
 
-  workspace: Path | None = None
+  workspace: epath.Path | None = None
   network: bool = True
   pull: bool = True
   env: Mapping[str, str] = field(default_factory=dict)
@@ -90,7 +91,7 @@ def build_sandbox(
     name: str,
     spec: SandboxSpec,
     *,
-    workspace: Path | None = None,
+    workspace: epath.PathLike | None = None,
     network: bool = True,
     pull: bool = True,
     env: Mapping[str, str] | None = None,
@@ -124,7 +125,7 @@ def build_sandbox(
         f"unknown backend {name!r}; registered: {registered_backends()}"
     ) from None
   config = SandboxConfig(
-      workspace=workspace,
+      workspace=epath.Path(workspace) if workspace is not None else None,
       network=network,
       pull=pull,
       env=dict(env or {}),
@@ -134,7 +135,7 @@ def build_sandbox(
   return factory(spec, config)
 
 
-def _local_workspace(config: SandboxConfig, name: str) -> Path:
+def _local_workspace(config: SandboxConfig, name: str) -> epath.Path:
   """Return the required host workspace, or fail if a local backend has none."""
   if config.workspace is None:
     raise SandboxError(

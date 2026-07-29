@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+from etils import epath
 import pytest
 
 from swe_lab.conversation import (
@@ -136,7 +137,7 @@ def test_binary_is_a_read_only_executable_mount_at_fixed_path(
   # just a read-only mount), not a separate assets() seam
   binary_mount = ClaudeCodeHarness().mounts("/app")[BINARY_AT]
   assert binary_mount == Mount(
-      LocalFile(_fake_binary), executable=True, read_only=True
+      LocalFile(epath.Path(_fake_binary)), executable=True, read_only=True
   )
 
 
@@ -179,7 +180,7 @@ def test_proxy_native_outputs_registers_proxy_log():
 
 def test_proxy_to_conversation_reads_proxy_log(tmp_path: Path):
   # the proxy branch reads the proxy log, not the (absent) event stream
-  sb = FakeSandbox(spec=_SPEC, workspace=tmp_path)
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   (tmp_path / PROXY_LOG_NAME).write_text(
       json.dumps(
           {
@@ -209,7 +210,7 @@ def test_proxy_to_conversation_reads_proxy_log(tmp_path: Path):
 
 
 def test_run_executes_agent_script(tmp_path: Path):
-  sb = FakeSandbox(spec=_SPEC, workspace=tmp_path)
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   ClaudeCodeHarness().run(sb, timeout=30.0)
   assert sb.scripts == [AGENT_SCRIPT_NAME]
 

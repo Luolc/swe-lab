@@ -17,11 +17,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import Path
 import shutil
 import subprocess
 import threading
 from typing import override, Protocol
+
+from etils import epath
 
 from ..paths import repo_cache_dir
 
@@ -62,7 +63,9 @@ class RepoProvider(ABC):
   """
 
   @abstractmethod
-  def provision(self, instance: RepoInstance, *, variant: str = "") -> Path:
+  def provision(
+      self, instance: RepoInstance, *, variant: str = ""
+  ) -> epath.Path:
     """Return a path to a checkout of ``instance`` ready to read.
 
     Args:
@@ -100,19 +103,19 @@ class GitCheckoutProvider(RepoProvider):
     remote_base: Base URL repositories are cloned from.
   """
 
-  cache_dir: Path = field(default_factory=repo_cache_dir)
+  cache_dir: epath.Path = field(default_factory=repo_cache_dir)
   remote_base: str = "https://github.com"
 
   def __post_init__(self) -> None:
-    self.cache_dir = Path(self.cache_dir)
+    self.cache_dir = epath.Path(self.cache_dir)
 
   @property
-  def mirrors_dir(self) -> Path:
+  def mirrors_dir(self) -> epath.Path:
     """The directory of bare mirror clones, one per repository."""
     return self.cache_dir / "mirrors"
 
   @property
-  def checkouts_dir(self) -> Path:
+  def checkouts_dir(self) -> epath.Path:
     """The directory of per-instance worktree checkouts."""
     return self.cache_dir / "checkouts"
 
@@ -120,11 +123,13 @@ class GitCheckoutProvider(RepoProvider):
     """Return the clone URL for ``repo``."""
     return f"{self.remote_base}/{repo}.git"
 
-  def mirror_path(self, repo: str) -> Path:
+  def mirror_path(self, repo: str) -> epath.Path:
     """Return the bare-mirror path for ``repo``."""
     return self.mirrors_dir / f"{_repo_slug(repo)}.git"
 
-  def checkout_path(self, instance: RepoInstance, *, variant: str = "") -> Path:
+  def checkout_path(
+      self, instance: RepoInstance, *, variant: str = ""
+  ) -> epath.Path:
     """Return the checkout path for ``instance`` (suffixed by ``variant``)."""
     name = instance.instance_id
     if variant:
@@ -132,7 +137,9 @@ class GitCheckoutProvider(RepoProvider):
     return self.checkouts_dir / name
 
   @override
-  def provision(self, instance: RepoInstance, *, variant: str = "") -> Path:
+  def provision(
+      self, instance: RepoInstance, *, variant: str = ""
+  ) -> epath.Path:
     """Return a worktree of ``instance.repo`` checked out at its base commit."""
     with _PROVISION_LOCK:
       mirror = self._ensure_mirror(instance.repo)
@@ -141,7 +148,10 @@ class GitCheckoutProvider(RepoProvider):
   # -- internals -------------------------------------------------------------
 
   def _git(
-      self, *args: str, cwd: Path | None = None, timeout: float = 600.0
+      self,
+      *args: str,
+      cwd: epath.PathLike | None = None,
+      timeout: float = 600.0,
   ) -> str:
     # Always bound git ops: a stalled clone/fetch (network) must not hang the
     # whole pipeline forever.
@@ -165,7 +175,7 @@ class GitCheckoutProvider(RepoProvider):
       )
     return result.stdout.strip()
 
-  def _ensure_mirror(self, repo: str) -> Path:
+  def _ensure_mirror(self, repo: str) -> epath.Path:
     mirror = self.mirror_path(repo)
     if (mirror / "HEAD").is_file():
       return mirror
@@ -173,14 +183,14 @@ class GitCheckoutProvider(RepoProvider):
     _ = self._git("clone", "--mirror", self.remote_url(repo), str(mirror))
     return mirror
 
-  def _mirror_has_commit(self, mirror: Path, commit: str) -> bool:
+  def _mirror_has_commit(self, mirror: epath.PathLike, commit: str) -> bool:
     try:
       _ = self._git("cat-file", "-e", f"{commit}^{{commit}}", cwd=mirror)
     except GitError:
       return False
     return True
 
-  def _ensure_commit(self, mirror: Path, commit: str) -> None:
+  def _ensure_commit(self, mirror: epath.PathLike, commit: str) -> None:
     if self._mirror_has_commit(mirror, commit):
       return
     # The mirror may predate this commit; refresh refs, then try the sha
@@ -193,8 +203,8 @@ class GitCheckoutProvider(RepoProvider):
       raise GitError(f"Commit {commit} not available in mirror {mirror}.")
 
   def _ensure_checkout(
-      self, mirror: Path, instance: RepoInstance, *, variant: str = ""
-  ) -> Path:
+      self, mirror: epath.PathLike, instance: RepoInstance, *, variant: str = ""
+  ) -> epath.Path:
     checkout = self.checkout_path(instance, variant=variant)
     commit = instance.base_commit
 

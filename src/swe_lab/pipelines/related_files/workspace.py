@@ -11,9 +11,10 @@ fixed filename (``ANNOTATION_OUTPUT``) in the working directory.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 import shutil
 import subprocess
+
+from etils import epath
 
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.repo.provider import RepoProvider
@@ -35,20 +36,20 @@ class Workspace:
   """Paths for one prepared annotation working directory."""
 
   instance_id: str
-  checkout: Path
+  checkout: epath.Path
 
   @property
-  def context_dir(self) -> Path:
+  def context_dir(self) -> epath.Path:
     """The hint-materials directory inside the checkout."""
     return self.checkout / CONTEXT_DIR
 
   @property
-  def output_path(self) -> Path:
+  def output_path(self) -> epath.Path:
     """The file the agent must write its snippet list to."""
     return self.checkout / ANNOTATION_OUTPUT
 
   @property
-  def validator_path(self) -> Path:
+  def validator_path(self) -> epath.Path:
     """The standalone validator script inside the checkout."""
     return self.checkout / VALIDATOR_SCRIPT
 
@@ -77,11 +78,13 @@ def prepare_workspace(
   return workspace
 
 
-def _write(path: Path, content: str) -> None:
-  _ = path.write_text(content if content.endswith("\n") else content + "\n")
+def _write(path: epath.PathLike, content: str) -> None:
+  _ = epath.Path(path).write_text(
+      content if content.endswith("\n") else content + "\n"
+  )
 
 
-def _git_log(checkout: Path) -> str:
+def _git_log(checkout: epath.PathLike) -> str:
   result = subprocess.run(
       ["git", "log", f"-n{_GIT_LOG_LIMIT}", "--stat", "--date=short"],
       cwd=str(checkout),

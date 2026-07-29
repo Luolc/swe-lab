@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import override
 
+from etils import epath
+
 from swe_lab.sandbox import Inline, Mount, Resource, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 
@@ -44,7 +46,7 @@ class ExtendedSandbox(FakeSandbox):
 
 def test_custom_resource_kind_mounts_via_override(tmp_path: Path) -> None:
   """A subclass handles its own ``Resource`` kind; built-ins still work."""
-  sandbox = ExtendedSandbox(spec=_SPEC, workspace=tmp_path)
+  sandbox = ExtendedSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   sandbox.up()
 
   sandbox.mount(
