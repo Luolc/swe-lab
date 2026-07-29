@@ -17,6 +17,7 @@ from swe_lab.sandbox import (
     ExecResult,
     GitHubJobSandbox,
     Inline,
+    InlineArtifact,
     LocalFile,
     Mount,
     RunStatus,
@@ -276,6 +277,59 @@ def test_contributions_aggregate_across_observers(tmp_path: Path):
   assert mgr.result.artifacts == {"patch": out / "p.diff"}
   assert (out / "p.diff").read_bytes() == b"diff"
   assert mgr.result.metrics == {"secs": 2.0}
+
+
+def test_inline_artifacts_land_without_touching_the_sandbox(tmp_path: Path):
+  sb = _sandbox(tmp_path)
+  out = tmp_path / "out"
+  mgr = _manager(
+      sb,
+      output_dir=out,
+      observers=[
+          RecordingObserver(
+              "a",
+              contribution=Contribution(
+                  inline_artifacts={
+                      "conversation": InlineArtifact(
+                          "conversation.json", b'{"messages":[]}'
+                      )
+                  }
+              ),
+          )
+      ],
+  )
+  with mgr.session():
+    pass
+  # Written straight from the observer's own bytes: no write into the sandbox
+  # and no fetch back out (two transfers a remote sandbox would pay twice for).
+  assert mgr.result.artifacts == {"conversation": out / "conversation.json"}
+  assert (out / "conversation.json").read_bytes() == b'{"messages":[]}'
+  assert not any(call[0] == "fetch" for call in sb.calls)
+  assert not (sb.workspace / "conversation.json").exists()
+
+
+def test_an_artifact_name_cannot_be_claimed_by_both_channels(tmp_path: Path):
+  # Which channel an observer used is an implementation detail, so the same name
+  # from two observers is a collision either way — caught before any fetch.
+  sb = _sandbox(tmp_path)
+  mgr = _manager(
+      sb,
+      observers=[
+          RecordingObserver(
+              "a", contribution=Contribution(artifacts={"patch": "p.diff"})
+          ),
+          RecordingObserver(
+              "b",
+              contribution=Contribution(
+                  inline_artifacts={"patch": InlineArtifact("p.diff", b"x")}
+              ),
+          ),
+      ],
+  )
+  with mgr.session():
+    pass
+  assert mgr.result.status is RunStatus.RUN_ERROR
+  assert isinstance(mgr.result.error, SandboxError)
 
 
 def test_colliding_contributions_error_a_clean_run(tmp_path: Path):

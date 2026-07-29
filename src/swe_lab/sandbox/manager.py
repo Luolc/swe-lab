@@ -175,8 +175,9 @@ class SandboxManager:
         contributions.append(contribution)
 
     try:
-      names, metrics = merge_contributions(contributions)
-      artifacts = self._collect(sb, names)  # fetch out WHILE LIVE
+      merged = merge_contributions(contributions)
+      metrics = merged.metrics
+      artifacts = self._collect(sb, merged)  # fetch out WHILE LIVE
     except SandboxError as exc:
       first_error = first_error or exc
 
@@ -193,22 +194,30 @@ class SandboxManager:
     return artifacts, metrics, first_error
 
   def _collect(
-      self, sb: Sandbox, names: dict[str, str]
+      self, sb: Sandbox, merged: Contribution
   ) -> dict[str, epath.Path]:
-    """Fetch each registered artifact out to the host output dir.
+    """Land every registered artifact in the host output dir.
+
+    In-sandbox artifacts are fetched out (the sandbox must still be live);
+    inline ones are written straight from the content the observer already had,
+    which is why a derived output costs no sandbox round trip.
 
     Args:
       sb: The still-live sandbox to fetch from.
-      names: Canonical artifact name → its in-sandbox filename.
+      merged: The merged contribution naming both artifact channels.
 
     Returns:
-      Canonical artifact name → the host path it was fetched to.
+      Canonical artifact name → the host path it landed at.
     """
     self.output_dir.mkdir(parents=True, exist_ok=True)
     collected: dict[str, epath.Path] = {}
-    for name, filename in names.items():
+    for name, filename in merged.artifacts.items():
       dest = self.output_dir / filename
       sb.fetch(filename, dest)
+      collected[name] = dest
+    for name, produced in merged.inline_artifacts.items():
+      dest = self.output_dir / produced.filename
+      _ = dest.write_bytes(produced.content)
       collected[name] = dest
     return collected
 

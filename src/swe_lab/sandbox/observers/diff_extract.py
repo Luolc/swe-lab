@@ -18,7 +18,7 @@ from swe_lab.patch import (
     strip_binary_hunks,
 )
 from swe_lab.sandbox.observer import SandboxObserver
-from swe_lab.sandbox.result import Contribution
+from swe_lab.sandbox.result import Contribution, InlineArtifact
 from swe_lab.sandbox.sandbox import SandboxFs
 
 RAW_PATCH_NAME = "patch.raw.diff"  # raw git-diff bytes (audit)
@@ -84,9 +84,16 @@ class DiffExtractObserver(SandboxObserver):
     self.patch = strip_binary_hunks(raw)
     self.binary_stripped = self.patch != raw
     self.is_empty = is_effectively_empty(self.patch)
-    sb.write(PATCH_NAME, self.patch.encode("utf-8"))
 
-    artifacts = {"patch": PATCH_NAME}
-    if sb.exists(RAW_PATCH_NAME):
-      artifacts["patch_raw"] = RAW_PATCH_NAME
-    return Contribution(artifacts=artifacts)
+    # The raw diff was produced *in* the sandbox, so it is fetched out; the
+    # clean one was derived here, so it is handed over inline rather than
+    # written back into the sandbox only to be fetched again.
+    artifacts = (
+        {"patch_raw": RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
+    )
+    return Contribution(
+        artifacts=artifacts,
+        inline_artifacts={
+            "patch": InlineArtifact(PATCH_NAME, self.patch.encode("utf-8"))
+        },
+    )

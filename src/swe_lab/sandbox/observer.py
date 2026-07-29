@@ -115,5 +115,4 @@ class CompositeObserver(SandboxObserver):
   def _merged(self, contributions: list[Contribution]) -> Contribution | None:
     if not contributions:
       return None
-    artifacts, metrics = merge_contributions(contributions)
-    return Contribution(artifacts=artifacts, metrics=metrics)
+    return merge_contributions(contributions)

@@ -19,7 +19,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import override
 
-from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
+from swe_lab.sandbox import (
+    Contribution,
+    InlineArtifact,
+    SandboxFs,
+    SandboxObserver,
+)
 
 from .model import Conversation
 
@@ -70,17 +75,25 @@ class ConversationObserver(SandboxObserver):
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
-    """Convert the producer's output, persist it, and register the result.
+    """Convert the producer's output and hand the JSON over for collection.
+
+    The converted JSON is contributed **inline**: this observer already holds
+    the bytes, so writing them into the sandbox just to have the manager fetch
+    them back out would be two pointless transfers — two network round trips
+    against a remote sandbox.
 
     Args:
-      sb: The sandbox being torn down; its files are read/written.
+      sb: The sandbox being torn down; the producer reads its output from it.
 
     Returns:
-      A contribution referencing the written ``conversation.json``.
+      A contribution carrying ``conversation.json``'s content.
     """
     self.conversation = self.producer.to_conversation(sb)
-    sb.write(
-        CONVERSATION_NAME,
-        self.conversation.model_dump_json(indent=2).encode("utf-8"),
+    return Contribution(
+        inline_artifacts={
+            "conversation": InlineArtifact(
+                CONVERSATION_NAME,
+                self.conversation.model_dump_json(indent=2).encode("utf-8"),
+            )
+        }
     )
-    return Contribution(artifacts={"conversation": CONVERSATION_NAME})
