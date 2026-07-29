@@ -81,6 +81,11 @@ the GitHub UI — do it, and report the PR link.
 - **Commit messages:** imperative mood, explain the *why*; end with a
   `Co-Authored-By:` trailer for the model that wrote the change.
 - **Escape hatch:** direct-to-`main` is reserved for trivial or urgent fixes.
+- **Releasing.** When the user says "release", it means **both** a GitHub
+  tag/Release **and** a PyPI publish — they go together. Bump `project.version`
+  to match the tag, land it, then `gh release create vX.Y.Z --generate-notes`
+  (which triggers the `publish.yml` Trusted-Publishing workflow). Full steps:
+  [`docs/conventions.md`](docs/conventions.md#releasing).
 
 ## Quality bar
 

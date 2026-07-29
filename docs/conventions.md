@@ -32,6 +32,28 @@ python -m swe_lab.datasets.swebench_pro.verify --shard i/N                      
 python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
 ```
 
+## Releasing
+
+**"Release" means both** (a) a **GitHub tag + Release** and (b) a **PyPI
+publish** — they always go together; one without the other is not a release.
+Publishing is automated: [`publish.yml`](../.github/workflows/publish.yml) fires
+when a GitHub **Release is published** and pushes to PyPI via **Trusted
+Publishing** (OIDC — no stored token; the one-time trusted-publisher link is
+already set up). The tag's version **must** match `project.version` in
+`pyproject.toml` (the single source of the version — there is no `__version__`).
+
+Steps (the agent drives all of it):
+
+1. Bump `project.version` in `pyproject.toml`; land it on `main` via the normal
+   PR flow (CI green).
+2. `gh release create vX.Y.Z --generate-notes` on the merged commit — this makes
+   the tag **and** the Release, which triggers `publish.yml`.
+3. Watch the run (`gh run watch`) and confirm the new version appears at
+   <https://pypi.org/p/swe-lab>.
+
+A PyPI version is **immutable** — never reuse a number; a bad publish needs a new
+patch version.
+
 ## Formatting & lint (enforced by pre-commit)
 
 - **pyink** — the formatter (Google's black fork): **line length 80, 2-space
