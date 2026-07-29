@@ -15,7 +15,7 @@ from typing import override
 from etils import epath
 
 from swe_lab.conversation import Conversation
-from swe_lab.harnesses.base import Harness
+from swe_lab.harnesses.base import Harness, PROMPT_NAME
 from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
 from swe_lab.sandbox import (
     Inline,
@@ -34,10 +34,14 @@ from .constants import (
     BINARY_AT,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
-    PROMPT_NAME,
     PROXY_LOG_NAME,
 )
-from .convert import event_stream_to_conversation, proxy_log_to_conversation
+from .convert import (
+    event_stream_complete,
+    event_stream_to_conversation,
+    proxy_log_complete,
+    proxy_log_to_conversation,
+)
 
 
 def _read_text(sb: SandboxFs, name: str) -> str:
@@ -110,6 +114,19 @@ class ClaudeCodeHarness(Harness):
     if self.capture is Capture.PROXY:
       return proxy_log_to_conversation(_read_text(sb, PROXY_LOG_NAME))
     return event_stream_to_conversation(_read_text(sb, EVENT_STREAM_NAME))
+
+  @override
+  def completed(self, sb: SandboxFs) -> bool:
+    """Read the clean-finish signal from whichever trace the run captured.
+
+    ``STREAM`` reads the terminal ``result`` event; ``PROXY`` reads the last
+    record's ``complete`` flag. An absent trace reads as ``False``
+    (``_read_text`` is absence-tolerant), so a crashed run reports incomplete
+    rather than raising.
+    """
+    if self.capture is Capture.PROXY:
+      return proxy_log_complete(_read_text(sb, PROXY_LOG_NAME))
+    return event_stream_complete(_read_text(sb, EVENT_STREAM_NAME))
 
   def _invocation_script(self, workdir: str) -> str:
     """Build the run script: run the agent, redirect its outputs, never fail.

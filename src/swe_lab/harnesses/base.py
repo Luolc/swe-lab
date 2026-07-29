@@ -16,6 +16,12 @@ from abc import ABC, abstractmethod
 from swe_lab.conversation import ConversationProducer
 from swe_lab.sandbox import Mounts, SandboxFs
 
+# Where the rollout composition stages the task prompt, as a workspace-relative
+# name. This is the composition↔harness contract — the composition writes it
+# (the text is the dataset's), every harness reads it — so it belongs here
+# rather than to any one agent's constants.
+PROMPT_NAME = "prompt.txt"
+
 
 class Harness(ConversationProducer, ABC):
   """An off-the-shelf agent CLI plugged into the sandbox engine as a run body.
@@ -36,4 +42,22 @@ class Harness(ConversationProducer, ABC):
   @abstractmethod
   def run(self, sb: SandboxFs, *, timeout: float) -> None:
     """Run the main action (the agent) in the live sandbox."""
+    ...
+
+  @abstractmethod
+  def completed(self, sb: SandboxFs) -> bool:
+    """Whether the agent finished cleanly, read from its own captured trace.
+
+    Only the harness knows which file carries the signal and how to read it, so
+    the composition asks rather than parsing an agent-specific format itself.
+    Read through the sandbox (like ``to_conversation``), never a host path, and
+    return ``False`` — don't raise — when the trace is absent or unreadable: a
+    crashed run is a legitimate outcome to report.
+
+    Args:
+      sb: The live sandbox, for reading the harness's own output files.
+
+    Returns:
+      Whether the run reached a clean finish.
+    """
     ...

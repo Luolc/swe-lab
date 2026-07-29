@@ -13,6 +13,7 @@ import swe_lab.cli.rollout as rollout_mod
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
+from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.rollout import RolloutOutcome
 from swe_lab.sandbox import RunStatus, SandboxSpec
 
@@ -116,19 +117,20 @@ def _wire(
 
   def fake_run_rollout(
       sandbox: object,
+      harness: ClaudeCodeHarness,
       *,
       prompt: str,
-      model: str,
       output_dir: object,
       timeout: object,
-      capture: object,
       **kwargs: object,
   ) -> RolloutOutcome:
-    del sandbox, output_dir, timeout
+    del sandbox, output_dir, timeout, kwargs
     calls["prompt"] = prompt
-    calls["model"] = model
-    calls["capture"] = capture
-    calls["bare"] = kwargs.get("bare")
+    # model / capture / bare now ride on the injected harness, which the CLI
+    # builds — assert them there rather than as run_rollout arguments.
+    calls["model"] = harness.model
+    calls["capture"] = harness.capture
+    calls["bare"] = harness.bare
     return outcome
 
   monkeypatch.setenv(TOKEN, "tok")

@@ -14,6 +14,7 @@ from etils import epath
 import pytest
 
 from swe_lab.conversation import Conversation
+from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.rollout import run_rollout
 from swe_lab.sandbox import RunStatus, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
@@ -48,8 +49,8 @@ def test_run_rollout_wires_and_assembles(
 
   outcome = run_rollout(
       sandbox,
+      ClaudeCodeHarness(model="sonnet"),
       prompt="SOLVE THIS",
-      model="sonnet",
       output_dir=workspace,
       timeout=60.0,
   )
