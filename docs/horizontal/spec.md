@@ -459,7 +459,7 @@ single-HF-repo approach conflated them (it was designed for one task, W1).
 | Tier | What | Lifecycle | Home |
 |---|---|---|---|
 | **T0 debug residue** | ad-hoc runs, format-unstable intermediates | disposable, auto-expiring | **no infra built**: local runs → the workspace dir under `.cache/`; CI runs → GitHub Actions artifacts (built-in TTL, ≤90 days, free on the public repo) |
-| **T1 formal intermediates** | trajectories, patches, per-run results, diagnostics — **including failed runs** | **keep everything** (failures are research material for W3 / behavioral analysis); private | **S3-compatible object store** (below), keyed `runs/<sweep-id>/<instance>/<run-ts>/…` |
+| **T1 formal intermediates** | trajectories, patches, per-run results, diagnostics — **including failed runs** | **keep everything** (failures are research material for W3 / behavioral analysis); private | **S3-compatible object store** (below), keyed `<sweep-id>/<instance>/r<rollout>/a<attempt>/…` under a `runs/` root ([ADR-0004](../decisions/ADR-0004-multi-rollout-run-record-layout.md)) |
 | **T2 formal publishes** | the final parquet, curated traces | versioned, public | **Hugging Face** (what it is actually for) |
 
 Mechanics:

@@ -21,7 +21,7 @@ from typing import override
 from etils import epath
 
 from .errors import SandboxError
-from .persist import MANIFEST_NAME, run_prefix, RunRecord, RUNS_PREFIX
+from .persist import MANIFEST_NAME, run_prefix, RunRecord
 
 
 class Store(ABC):
@@ -43,12 +43,42 @@ class Store(ABC):
 
   @abstractmethod
   def append_manifest(self, record: RunRecord) -> None:
-    """Write one run's manifest shard (``<run-prefix>/run.json``)."""
+    """Write one run's manifest shard (``<run-key>/run.json``)."""
     ...
 
   @abstractmethod
-  def read_manifest(self, sweep_id: str) -> list[RunRecord]:
-    """Read every run shard under a sweep (the aggregation the index uses)."""
+  def read_manifests(self, sweep_id: str) -> list[RunRecord]:
+    """Read every run shard under a sweep, ordered by identity.
+
+    The bulk read, for aggregation (``index``) and pass@K metrics. On a cloud
+    store this is a broad listing — prefer :meth:`read_manifest` when only one
+    rollout is in question.
+
+    Args:
+      sweep_id: The sweep to aggregate.
+
+    Returns:
+      Every shard, sorted by ``(instance_id, rollout_id, attempt)``.
+    """
+    ...
+
+  @abstractmethod
+  def read_manifest(
+      self, sweep_id: str, instance_id: str, rollout_id: int
+  ) -> list[RunRecord]:
+    """Read the attempts of **one** rollout (usually one shard).
+
+    The targeted read a resume/retry check wants: a narrow prefix lookup rather
+    than scanning the whole sweep.
+
+    Args:
+      sweep_id: The sweep the rollout belongs to.
+      instance_id: The dataset instance.
+      rollout_id: Which sample of that instance.
+
+    Returns:
+      That rollout's shards, ordered by ``attempt``; empty if it never ran.
+    """
     ...
 
 
@@ -94,13 +124,33 @@ class FilesystemStore(Store):
     _ = shard.write_text(record.to_json())
 
   @override
-  def read_manifest(self, sweep_id: str) -> list[RunRecord]:
-    """Read every ``run.json`` shard under the sweep, ordered by key."""
-    sweep_dir = self._path(f"{RUNS_PREFIX}/{sweep_id}")
-    if not sweep_dir.is_dir():
+  def read_manifests(self, sweep_id: str) -> list[RunRecord]:
+    """Read every shard under the sweep (``<instance>/r<n>/a<n>``)."""
+    return self._read(f"{sweep_id}/*/r*/a*/{MANIFEST_NAME}")
+
+  @override
+  def read_manifest(
+      self, sweep_id: str, instance_id: str, rollout_id: int
+  ) -> list[RunRecord]:
+    """Read just one rollout's attempts, without scanning the sweep."""
+    return self._read(
+        f"{sweep_id}/{instance_id}/r{rollout_id}/a*/{MANIFEST_NAME}"
+    )
+
+  def _read(self, pattern: str) -> list[RunRecord]:
+    """Load the shards matching a glob, sorted numerically by identity.
+
+    Sorting the parsed records (not the path strings) is what keeps rollout
+    ``10`` after ``2``: a lexical key sort would interleave them, and this needs
+    no zero-padding in the key.
+    """
+    if not self.root.is_dir():
       return []
-    shards = sorted(sweep_dir.glob(f"*/*/{MANIFEST_NAME}"))
-    return [RunRecord.from_json(shard.read_text()) for shard in shards]
+    records = [
+        RunRecord.from_json(shard.read_text())
+        for shard in self.root.glob(pattern)
+    ]
+    return sorted(records, key=lambda record: record.sort_key)
 
 
 type StoreFactory = Callable[..., Store]

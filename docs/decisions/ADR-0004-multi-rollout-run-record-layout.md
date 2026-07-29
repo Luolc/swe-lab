@@ -137,3 +137,22 @@ This ADR is the decision; the code lands as two sequenced tasks:
    `rollout_id`; wire a `--samples K` option into `eval` / `rollout`; compute
    pass@K / +K from `read_manifests`. Retry-on-failure (bumping `attempt`) is a
    further increment on top.
+
+## Amendment (2026-07-29): the rollout / attempt segments carry `r` / `a` prefixes
+
+Decision 2 wrote the key as `<sweep_id>/<instance_id>/<rollout_id>/<attempt>`.
+The **implemented** key labels the two numeric segments:
+
+```
+<sweep_id>/<instance_id>/r<rollout_id>/a<attempt>/run.json
+```
+
+Rationale: the layout is self-describing when browsing the store or an artifact
+bundle — `r3/a0` reads as "rollout 3, attempt 0", where a bare `3/0` is ambiguous
+about which number is which. It also keeps the run levels distinguishable from an
+instance id that happens to be numeric, and gives the manifest globs a shape that
+matches only real run directories (`*/r*/a*/run.json`).
+
+Everything else in decision 2 stands: no `runs/` segment in the key (it is the
+store root), and no `run_ts` (it is recorded on the shard). Task 1 landed with
+this format; the numeric fields on `RunRecord` are unchanged.

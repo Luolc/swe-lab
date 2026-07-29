@@ -24,24 +24,33 @@ from etils import epath
 if TYPE_CHECKING:
   from .store import Store
 
-# Every run's artifacts + shard live under this key prefix.
-RUNS_PREFIX = "runs"
+# The namespace a run store's *root* is configured with (ADR-0004): it is not
+# part of any key, so a shared bucket keeps runs separated from future siblings
+# (traces, datasets, indexes) without repeating the segment in every key.
+RUNS_NAMESPACE = "runs"
 # The manifest shard each run writes (one per run → race-free under a sweep).
 MANIFEST_NAME = "run.json"
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class RunRecord:
   """One T1 manifest shard — the ledger entry for a single persisted run.
 
-  Failures are recorded too (persistence gates on tier, not success). The
-  timestamp is *injected* at launch (``run_ts``), never read inside the engine,
-  so a run is reproducible and the record is testable.
+  Failures are recorded too (persistence gates on tier, not success). A run is
+  identified by ``(sweep_id, instance_id, rollout_id, attempt)`` — which is
+  exactly its store key (ADR-0004) — so K rollouts of one instance are
+  addressable and a retry of one rollout is distinguishable. ``run_ts`` is
+  *injected* at launch, never read inside the engine (so a run is reproducible
+  and the record is testable), and is recorded rather than keying anything.
 
   Attributes:
     sweep_id: The sweep this run belongs to (``adhoc`` for a one-off).
     instance_id: The dataset instance.
-    run_ts: Launch timestamp, injected by the caller (keys the run).
+    rollout_id: Which sample of this instance, ``0..K-1`` for pass@K. ``0`` for
+      a single-rollout job.
+    attempt: Retry index of *this* rollout, for a re-run after an
+      infrastructure failure. ``0`` unless something re-ran it.
+    run_ts: Launch timestamp, injected by the caller (recorded, not a key).
     status: The engine ``RunStatus`` value the run ended with.
     tier: The persistence tier — always ``formal`` here (debug never persists).
     backend: The sandbox backend name the run used.
@@ -53,6 +62,8 @@ class RunRecord:
 
   sweep_id: str
   instance_id: str
+  rollout_id: int = 0
+  attempt: int = 0
   run_ts: str
   status: str
   tier: str
@@ -71,10 +82,25 @@ class RunRecord:
     """Read a shard back from its JSON."""
     return cls(**json.loads(text))
 
+  @property
+  def sort_key(self) -> tuple[str, int, int]:
+    """Identity within a sweep, ordered numerically (not by key string)."""
+    return (self.instance_id, self.rollout_id, self.attempt)
+
 
 def run_prefix(record: RunRecord) -> str:
-  """Return the run key prefix ``runs/<sweep>/<instance>/<run-ts>``."""
-  return f"{RUNS_PREFIX}/{record.sweep_id}/{record.instance_id}/{record.run_ts}"
+  """Return the run key ``<sweep>/<instance>/r<rollout>/a<attempt>`` (ADR-0004).
+
+  The ``r`` / ``a`` prefixes keep the layout self-describing when browsing the
+  store — ``r3/a0`` reads as "rollout 3, attempt 0" where a bare ``3/0`` would
+  not. The ``runs/`` namespace lives in the store's configured root, and
+  ``run_ts`` is recorded on the shard rather than keying it, so re-running a
+  given attempt deterministically overwrites it.
+  """
+  return (
+      f"{record.sweep_id}/{record.instance_id}"
+      f"/r{record.rollout_id}/a{record.attempt}"
+  )
 
 
 def persist(
@@ -131,5 +157,5 @@ def promote(
 
 
 def index(store: Store, sweep_id: str) -> list[RunRecord]:
-  """Aggregate a sweep's per-run shards into one list (ordered by key)."""
-  return store.read_manifest(sweep_id)
+  """Aggregate a sweep's per-run shards into one list (ordered by identity)."""
+  return store.read_manifests(sweep_id)
