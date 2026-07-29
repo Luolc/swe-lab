@@ -7,21 +7,32 @@ from typing import final, override
 from etils import epath
 
 from swe_lab.conversation import Conversation
-from swe_lab.harnesses import COMPLETE_METRIC, Harness, HarnessOutcomeObserver
-from swe_lab.sandbox import Mounts, SandboxFs, SandboxSpec
+from swe_lab.harnesses import (
+    COMPLETE_METRIC,
+    Harness,
+    HarnessOutcomeObserver,
+    NAME_SEPARATOR,
+    qualified_name,
+)
+from swe_lab.sandbox import Contribution, Mounts, SandboxFs, SandboxSpec
+from swe_lab.sandbox.result import merge_contributions
 from swe_lab.sandbox.testing import FakeSandbox
 
 EVENT_STREAM = "event_stream.jsonl"
 STDERR = "agent.stderr"
 
 
-@final
 class _StubHarness(Harness):
   """A harness that declares two byproducts and a scripted completion."""
 
   def __init__(self, *, complete: bool = True) -> None:
-    self._complete = complete
+    self._complete: bool = complete
     self.seen: SandboxFs | None = None
+
+  @property
+  @override
+  def name(self) -> str:
+    return "stub"
 
   @override
   def mounts(self, workdir: str) -> Mounts:
@@ -71,9 +82,11 @@ def test_registers_every_byproduct_that_landed(tmp_path: Path):
 
   assert harness.seen is sb  # the completion signal is read from the sandbox
   assert contribution is not None
+  # namespaced by the harness: the roles themselves are generic, so unqualified
+  # they would collide between harnesses and lose their provenance
   assert contribution.artifacts == {
-      "event_stream": EVENT_STREAM,
-      "agent_stderr": STDERR,
+      "stub.event_stream": EVENT_STREAM,
+      "stub.agent_stderr": STDERR,
   }
   assert observer.collected == contribution.artifacts
 
@@ -86,7 +99,7 @@ def test_absent_byproducts_are_skipped_best_effort(tmp_path: Path):
 
   assert contribution is not None
   # a run that died early yields fewer artifacts, never a broken reference
-  assert contribution.artifacts == {"event_stream": EVENT_STREAM}
+  assert contribution.artifacts == {"stub.event_stream": EVENT_STREAM}
 
 
 def test_completion_is_kept_and_exported_as_a_metric(tmp_path: Path):
@@ -105,6 +118,41 @@ def test_incomplete_run_is_recorded_not_dropped(tmp_path: Path):
   # 0.0, not absent: "the agent crashed" must be distinguishable downstream
   # from "this run reported no completion metric at all".
   assert contribution.metrics == {COMPLETE_METRIC: 0.0}
+
+
+def test_two_harnesses_sharing_a_role_do_not_collide(tmp_path: Path):
+  # Without namespacing both would claim "agent_stderr" and the engine would
+  # refuse the merge; qualified by harness they coexist.
+  @final
+  class _Other(_StubHarness):
+
+    @property
+    @override
+    def name(self) -> str:
+      return "other_agent"
+
+  _ = (tmp_path / STDERR).write_text("err\n")
+  sb = _sandbox(tmp_path)
+  first = HarnessOutcomeObserver(harness=_StubHarness())
+  second = HarnessOutcomeObserver(harness=_Other())
+  _ = first.before_destroy(sb)
+  _ = second.before_destroy(sb)
+  # merge just the artifact halves: the completion *metric* stays unqualified on
+  # purpose (one run has one agent), so it is not what this asserts.
+  merged = merge_contributions(
+      [
+          Contribution(artifacts=first.collected),
+          Contribution(artifacts=second.collected),
+      ]
+  )  # would raise if the names collided
+  assert "stub.agent_stderr" in merged.artifacts
+  assert "other_agent.agent_stderr" in merged.artifacts
+
+
+def test_qualified_name_uses_a_dot_not_a_path_separator():
+  # These are logical names in a manifest, not store key paths.
+  assert qualified_name("claude_code", "stderr") == "claude_code.stderr"
+  assert "/" not in NAME_SEPARATOR
 
 
 def test_complete_defaults_false_before_the_hook_runs():

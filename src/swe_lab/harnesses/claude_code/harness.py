@@ -101,6 +101,12 @@ class ClaudeCodeHarness(Harness):
   proxy_base_url: str | None = None
   bare: bool = False
 
+  @property
+  @override
+  def name(self) -> str:
+    """This harness's identifier; namespaces its artifacts."""
+    return "claude_code"
+
   @override
   def mounts(self, workdir: str) -> Mounts:
     """Stage the invocation script, its env file, and the pinned binary.

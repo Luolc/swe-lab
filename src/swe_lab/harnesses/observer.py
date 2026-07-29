@@ -11,7 +11,9 @@ this observer's whole job, in ``before_destroy``:
   not solve the task";
 - **native outputs** — every file the harness declared, *best effort*: only the
   ones that actually landed are registered, so a run that died early yields
-  fewer artifacts rather than a broken reference.
+  fewer artifacts rather than a broken reference. Each is namespaced
+  ``<harness>.<role>``, because the roles themselves are generic (``stderr``)
+  and would otherwise collide between harnesses and lose their provenance.
 
 Paired with ``ConversationObserver``, which owns the *converted* conversation.
 Between them each artifact name is claimed exactly once (the engine refuses a
@@ -30,7 +32,27 @@ from .base import Harness
 
 # Metric name for the agent's clean-finish signal (1.0 / 0.0 — ``Contribution``
 # carries scalars, and completion has no file of its own to register).
+# Deliberately *not* namespaced by harness, unlike the artifacts below: one run
+# has one agent, so a consumer reading pass@K metrics should not have to know
+# which harness produced the run to find its completion flag.
 COMPLETE_METRIC = "agent_complete"
+# Separator between a harness's name and its byproduct's role in an artifact
+# name. A dot, not a slash: these are logical names in a manifest, not key
+# paths.
+NAME_SEPARATOR = "."
+
+
+def qualified_name(harness_name: str, role: str) -> str:
+  """Return the namespaced artifact name for one harness byproduct.
+
+  Args:
+    harness_name: The harness's :attr:`~swe_lab.harnesses.base.Harness.name`.
+    role: The byproduct's role, as declared in ``native_outputs``.
+
+  Returns:
+    The artifact name, e.g. ``claude_code.stderr``.
+  """
+  return f"{harness_name}{NAME_SEPARATOR}{role}"
 
 
 @dataclass
@@ -44,8 +66,8 @@ class HarnessOutcomeObserver(SandboxObserver):
     complete: Whether the agent finished cleanly; ``False`` until
       ``before_destroy`` has run (and on a run whose sandbox never came up, so
       the hook never fired).
-    collected: The native outputs that actually landed — artifact name →
-      workspace-relative filename. Empty until ``before_destroy``.
+    collected: The native outputs that actually landed — namespaced artifact
+      name → workspace-relative filename. Empty until ``before_destroy``.
   """
 
   harness: Harness
@@ -60,13 +82,13 @@ class HarnessOutcomeObserver(SandboxObserver):
       sb: The still-live sandbox, read through rather than a host path.
 
     Returns:
-      A contribution referencing every native output present, plus the
-      completion metric.
+      A contribution referencing every native output present (namespaced by the
+      harness), plus the completion metric.
     """
     self.complete = self.harness.completed(sb)
     self.collected = {
-        name: filename
-        for name, filename in self.harness.native_outputs().items()
+        qualified_name(self.harness.name, role): filename
+        for role, filename in self.harness.native_outputs().items()
         if sb.exists(filename)  # only register what actually landed
     }
     return Contribution(
