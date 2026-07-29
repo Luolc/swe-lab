@@ -34,11 +34,16 @@ def test_extracts_cleans_and_registers(tmp_path: Path):
   assert obs.patch == raw
   assert obs.is_empty is False
   assert obs.binary_stripped is False  # a pure-text patch
-  assert (tmp_path / PATCH_NAME).read_text() == raw
   assert contribution is not None
-  # Artifacts are now in-sandbox filenames, not host paths.
-  assert contribution.artifacts["patch"] == PATCH_NAME
-  assert contribution.artifacts["patch_raw"] == RAW_PATCH_NAME
+  # The raw diff came from the sandbox, so it is referenced by its in-sandbox
+  # filename for the manager to fetch out.
+  assert contribution.artifacts == {"patch_raw": RAW_PATCH_NAME}
+  # The clean patch was derived here, so it travels inline — never written back
+  # into the sandbox just to be fetched again.
+  inline = contribution.inline_artifacts["patch"]
+  assert inline.filename == PATCH_NAME
+  assert inline.content.decode() == raw
+  assert not (tmp_path / PATCH_NAME).exists()  # no round trip through the box
   # the extraction script is staged (persisted for audit) and run
   extract = (tmp_path / EXTRACT_SCRIPT_NAME).read_text()
   assert 'cd "$SANDBOX_WORKSPACE"' in extract

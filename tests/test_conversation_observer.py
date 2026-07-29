@@ -50,10 +50,13 @@ def test_writes_the_converted_conversation_and_registers_it(tmp_path: Path):
 
   assert producer.seen is sb  # the producer reads from the sandbox
   assert observer.conversation == conv
-  written = tmp_path / CONVERSATION_NAME
-  assert Conversation.model_validate_json(written.read_text()) == conv
   assert contribution is not None
-  # Artifacts are in-sandbox filenames, not host paths. Only the conversion is
-  # this observer's: the producer's raw byproducts belong to the harness-outcome
-  # observer, so exactly one observer claims each artifact name.
-  assert contribution.artifacts == {"conversation": CONVERSATION_NAME}
+  # The JSON travels inline: this observer already parsed it, so writing it back
+  # into the sandbox for the manager to fetch out would be two wasted transfers.
+  inline = contribution.inline_artifacts["conversation"]
+  assert inline.filename == CONVERSATION_NAME
+  assert Conversation.model_validate_json(inline.content.decode()) == conv
+  assert not (tmp_path / CONVERSATION_NAME).exists()  # no sandbox round trip
+  # Only the conversion is this observer's: the producer's raw byproducts belong
+  # to the harness-outcome observer, so one observer claims each artifact name.
+  assert contribution.artifacts == {}
