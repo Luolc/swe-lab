@@ -80,7 +80,6 @@ class SandboxFs(ABC):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Run a staged workspace file by name (``<shell> $WORKSPACE/name``).
 
@@ -90,7 +89,6 @@ class SandboxFs(ABC):
       name: The script's workspace-relative filename.
       timeout: Seconds before the execution is killed.
       env: Extra variables set for this execution only.
-      stream_to: Stream stdout to this host file instead of capturing it.
 
     Returns:
       The exit status and output.
@@ -104,7 +102,6 @@ class SandboxFs(ABC):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Run an inline command string (``<shell> -c command``).
 
@@ -114,7 +111,6 @@ class SandboxFs(ABC):
       command: The shell command to run.
       timeout: Seconds before the execution is killed.
       env: Extra variables set for this execution only.
-      stream_to: Stream stdout to this host file instead of capturing it.
 
     Returns:
       The exit status and output.

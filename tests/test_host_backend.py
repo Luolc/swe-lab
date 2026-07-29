@@ -1,7 +1,6 @@
 """Tests for DockerHostSandbox: argv construction (mocked) + live Docker."""
 
 from dataclasses import dataclass, field
-import io
 from pathlib import Path
 import subprocess
 
@@ -201,36 +200,29 @@ def test_missing_docker_cli_raises(
     DockerHostSandbox(spec=SPEC, workspace=tmp_path, pull=False).up()
 
 
-def test_run_script_argv_runs_workspace_file_and_streams(
+def test_run_script_argv_runs_workspace_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  recorded: dict[str, list[str] | None] = {}
+  recorded: dict[str, list[str]] = {}
 
   def fake_run(
       argv: list[str], **kwargs: object
   ) -> subprocess.CompletedProcess[str]:
+    del kwargs
     recorded["argv"] = list(argv)
-    out = kwargs.get("stdout")
-    if isinstance(out, io.TextIOBase):
-      _ = out.write("streamed-line\n")
-    return subprocess.CompletedProcess(argv, 0, "", "")
+    return subprocess.CompletedProcess(argv, 0, "captured-out\n", "")
 
   monkeypatch.setattr(subprocess, "run", fake_run)
-  log = tmp_path / "out.log"
   sandbox = DockerHostSandbox(spec=SPEC, workspace=tmp_path, mount_at="/ws")
   sandbox._container = "cid"  # pretend it is live
-  result = sandbox.run_script(
-      "entryscript.sh", timeout=5.0, env={"X": "1"}, stream_to=log
-  )
+  result = sandbox.run_script("entryscript.sh", timeout=5.0, env={"X": "1"})
   argv = recorded["argv"]
-  assert isinstance(argv, list)
   assert argv[:3] == ["docker", "exec", "-e"]
   assert "SANDBOX_WORKSPACE=/ws" in argv
   assert "X=1" in argv
   # runs the workspace file by its in-container path (not stdin)
   assert argv[-3:] == ["cid", "/bin/bash", "/ws/entryscript.sh"]
-  assert result.stdout == ""  # streamed, not captured
-  assert log.read_text() == "streamed-line\n"
+  assert result.stdout == "captured-out\n"  # captured in the result
 
 
 def test_run_command_argv_runs_inline_command(

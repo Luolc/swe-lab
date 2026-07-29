@@ -134,13 +134,12 @@ class FakeSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Record the script name and return the next scripted result."""
     del timeout, env
     self.calls.append(("run_script", name))
     self.scripts.append(name)
-    return self._next_result(stream_to)
+    return self._next_result()
 
   @override
   def run_command(
@@ -149,25 +148,20 @@ class FakeSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Record the command and return the next scripted result."""
     del timeout, env
     self.calls.append(("run_command", command))
     self.commands.append(command)
-    return self._next_result(stream_to)
+    return self._next_result()
 
-  def _next_result(self, stream_to: Path | None) -> ExecResult:
+  def _next_result(self) -> ExecResult:
     _maybe_raise(self.run_error)
     index = min(self._execs, len(self.run_results) - 1)
     self._execs += 1
-    result = (
+    return (
         self.run_results[index] if self.run_results else ExecResult(0, "", "")
     )
-    if stream_to is not None:
-      _ = stream_to.write_text(result.stdout)
-      return ExecResult(result.exit_code, "", result.stderr, result.timed_out)
-    return result
 
 
 @dataclass
