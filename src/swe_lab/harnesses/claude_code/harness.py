@@ -8,7 +8,9 @@ by the composition (dataset-derived); the invocation script only reads it.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+import re
 import shlex
 from typing import override
 
@@ -28,6 +30,7 @@ from swe_lab.sandbox import (
 
 from .capture import Capture
 from .constants import (
+    AGENT_ENV_NAME,
     AGENT_HOME,
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
@@ -49,6 +52,30 @@ def _read_text(sb: SandboxFs, name: str) -> str:
   if not sb.exists(name):
     return ""
   return sb.read(name).decode("utf-8", "backslashreplace")
+
+
+# A shell variable name; anything else would make the sourced file a syntax
+# error, which `set -u` would turn into "the agent never ran" with no clue why.
+_ENV_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+
+
+def _env_exports(env: Mapping[str, str]) -> str:
+  """Render caller env as ``export K=V`` lines, values shell-quoted.
+
+  Args:
+    env: Variable name → value.
+
+  Returns:
+    The sourceable script text, in the given order.
+
+  Raises:
+    SandboxError: If a name is not a valid shell identifier.
+  """
+  bad = sorted(name for name in env if not _ENV_NAME_RE.match(name))
+  if bad:
+    raise SandboxError(f"invalid environment variable name(s): {bad}")
+  lines = [f"export {name}={shlex.quote(value)}" for name, value in env.items()]
+  return "\n".join(lines) + "\n"
 
 
 @dataclass(frozen=True)
@@ -76,18 +103,41 @@ class ClaudeCodeHarness(Harness):
 
   @override
   def mounts(self, workdir: str) -> Mounts:
-    """Stage the invocation script and the pinned binary (a read-only mount)."""
+    """Stage the invocation script, its env file, and the pinned binary.
+
+    The env file is staged **empty**: the script always sources it, and
+    ``run(env=...)`` fills it in, so injected variables need no second version
+    of the script.
+    """
     binary = self.binary_path or ensure_claude_binary()
     return {
         AGENT_SCRIPT_NAME: Mount(
             Inline(self._invocation_script(workdir).encode()), executable=True
         ),
+        AGENT_ENV_NAME: Mount(Inline(b"")),
         BINARY_AT: Mount(LocalFile(binary), executable=True, read_only=True),
     }
 
   @override
-  def run(self, sb: SandboxFs, *, timeout: float) -> None:
-    """Run the staged ``agent.sh`` by its workspace path."""
+  def run(
+      self,
+      sb: SandboxFs,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
+  ) -> None:
+    """Fill in the env file, then run the staged script by its workspace path.
+
+    Args:
+      sb: The live sandbox to run in.
+      timeout: Seconds before the agent run is killed.
+      env: Extra ``KEY=VALUE`` exports for the agent, written into the sourced
+        env file so they apply after the script's own defaults. A name that is
+        not a shell identifier is rejected (see :func:`_env_exports`) rather
+        than corrupting the file and skipping the run.
+    """
+    if env:
+      sb.write(AGENT_ENV_NAME, _env_exports(env).encode())
     _ = sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
 
   @override
@@ -156,6 +206,11 @@ class ClaudeCodeHarness(Harness):
         # Some builds refuse --dangerously-skip-permissions as root unless a
         # sandbox is signalled; the throwaway container is our sandbox.
         "export IS_SANDBOX=1",
+        # Caller-injected env (empty unless ``run(env=...)`` filled it in).
+        # Sourced *here* deliberately: after the defaults above, so a caller can
+        # override them, but before the capture wiring below, so it cannot
+        # clobber the proxy URL this run was wired to.
+        f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
     if self.capture is Capture.PROXY:
       if not self.proxy_base_url:

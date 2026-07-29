@@ -12,6 +12,7 @@ prompt is the dataset's).
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 
 from swe_lab.conversation import ConversationProducer
 from swe_lab.sandbox import Mounts, SandboxFs
@@ -40,8 +41,26 @@ class Harness(ConversationProducer, ABC):
     ...
 
   @abstractmethod
-  def run(self, sb: SandboxFs, *, timeout: float) -> None:
-    """Run the main action (the agent) in the live sandbox."""
+  def run(
+      self,
+      sb: SandboxFs,
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
+  ) -> None:
+    """Run the main action (the agent) in the live sandbox.
+
+    Args:
+      sb: The live sandbox to run in.
+      timeout: Seconds before the run is killed.
+      env: Extra environment for the agent process, injected by the caller (an
+        internal endpoint, a feature flag, …). Layered **over** the harness's
+        own defaults, so a caller can override them; a harness may still pin
+        what it must own (e.g. the URL of a capture proxy it was wired to). Not
+        the place for a secret — pass those to the *sandbox* by reference
+        (``pass_env``) so the value never reaches a command line or a staged
+        file.
+    """
     ...
 
   @abstractmethod

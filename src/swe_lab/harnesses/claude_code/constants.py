@@ -21,6 +21,11 @@ AGENT_HOME = "/agent-home"
 # drives Claude Code in headless (``-p``) mode.
 AGENT_SCRIPT_NAME = "run_claude_code.sh"
 
+# Caller-injected environment, sourced by the invocation script. Staged empty
+# and rewritten by ``run(env=...)``, so the exports land inside the script's env
+# setup (and stay visible in the workspace) without re-staging the script.
+AGENT_ENV_NAME = "agent_env.sh"
+
 # (The solve prompt this harness reads is staged by the composition under the
 # shared ``harnesses.base.PROMPT_NAME`` — it is the composition↔harness
 # contract, not this agent's own file.)
