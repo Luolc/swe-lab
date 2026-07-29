@@ -1,11 +1,12 @@
 """The rollout composition: one agent run → a graded-ready patch + trace.
 
-``run_rollout`` composes a harness + the shared conversation observer + the
-shared diff-extract observer over the sandbox engine. Backend-, dataset- **and
-harness-agnostic**: the caller builds the sandbox, the harness, and (optionally)
-a trace-recording proxy, then passes them in with the dataset-derived prompt and
-a host output directory. Nothing here imports a concrete agent, so a downstream
-user's own ``Harness`` and their own internal proxy compose unchanged.
+``run_rollout`` composes a harness with the shared observers — conversation,
+diff-extract, and harness-outcome — over the sandbox engine. Backend-, dataset-
+**and harness-agnostic**: the caller builds the sandbox, the harness, and
+(optionally) a trace-recording proxy, then passes them in with the
+dataset-derived prompt and a host output directory. Nothing here imports a
+concrete agent, so a downstream user's own ``Harness`` and their own internal
+proxy compose unchanged.
 """
 
 from __future__ import annotations
@@ -13,21 +14,21 @@ from __future__ import annotations
 from collections.abc import Mapping
 import contextlib
 from dataclasses import dataclass
-from typing import override
 
 from etils import epath
 
 from swe_lab.conversation import Conversation, ConversationObserver
-from swe_lab.harnesses.base import Harness, PROMPT_NAME
+from swe_lab.harnesses import (
+    Harness,
+    HarnessOutcomeObserver,
+    PROMPT_NAME,
+)
 from swe_lab.sandbox import (
-    Contribution,
     Inline,
     Mount,
     RunStatus,
     Sandbox,
-    SandboxFs,
     SandboxManager,
-    SandboxObserver,
 )
 from swe_lab.sandbox.observers import DiffExtractObserver
 
@@ -60,26 +61,6 @@ class RolloutOutcome:
   workspace: epath.Path
   artifacts: dict[str, epath.Path]
   metrics: dict[str, float]
-
-
-@dataclass
-class _CompletionObserver(SandboxObserver):
-  """Ask the harness, at teardown, whether the agent finished cleanly.
-
-  Single-run, like every stateful observer. Reading in ``before_destroy`` (while
-  the sandbox is still live) is what lets the signal come through the sandbox
-  rather than a host path, and means a failed run body is still reported — the
-  hook runs on every path that got the sandbox up.
-  """
-
-  harness: Harness
-  complete: bool = False
-
-  @override
-  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
-    """Record the harness's completion signal for the caller to read back."""
-    self.complete = self.harness.completed(sb)
-    return None
 
 
 def run_rollout(
@@ -126,7 +107,7 @@ def run_rollout(
   spec = sandbox.spec
   conversation = ConversationObserver(producer=harness)
   extract = DiffExtractObserver(exclude_globs=exclude_globs)
-  completion = _CompletionObserver(harness=harness)
+  outcome = HarnessOutcomeObserver(harness=harness)
   # The prompt is dataset-derived, staged by the composition; the harness
   # contributes its own script and any read-only asset (e.g. a pinned binary).
   mounts = {PROMPT_NAME: Mount(Inline(prompt.encode()))} | harness.mounts(
@@ -135,7 +116,7 @@ def run_rollout(
   manager = SandboxManager(
       sandbox=sandbox,
       output_dir=epath.Path(output_dir),
-      observers=[conversation, extract, completion],
+      observers=[conversation, extract, outcome],
       mounts=mounts,
   )
   with proxy or contextlib.nullcontext(), manager.session() as sb:
@@ -146,7 +127,7 @@ def run_rollout(
       patch=extract.patch,
       is_empty=extract.is_empty,
       binary_stripped=extract.binary_stripped,
-      complete=completion.complete,
+      complete=outcome.complete,
       conversation=conversation.conversation or Conversation(messages=[]),
       status=manager.result.status,
       workspace=epath.Path(output_dir),

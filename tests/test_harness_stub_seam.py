@@ -21,7 +21,12 @@ from swe_lab.conversation import (
     Role,
     TextBlock,
 )
-from swe_lab.harnesses.base import Harness, PROMPT_NAME
+from swe_lab.harnesses import (
+    COMPLETE_METRIC,
+    Harness,
+    HarnessOutcomeObserver,
+    PROMPT_NAME,
+)
 from swe_lab.rollout import run_rollout
 from swe_lab.sandbox import (
     GitHubJobSandbox,
@@ -83,11 +88,12 @@ class StubHarness(Harness):
 def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   harness = StubHarness()
   observer = ConversationObserver(producer=harness)
+  outcome = HarnessOutcomeObserver(harness=harness)
   workspace = tmp_path / "run"
   manager = SandboxManager(
       sandbox=GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
       output_dir=epath.Path(workspace),
-      observers=[observer],
+      observers=[observer, outcome],
       mounts=harness.mounts(_SPEC.workdir),
   )
   with manager.session() as sb:
@@ -101,7 +107,14 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
       messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
   )
   assert (workspace / "conversation.json").is_file()
+  # the two observers split the names: the conversion is the conversation
+  # observer's, the raw byproduct + completion the outcome observer's
+  assert manager.result.artifacts["conversation"] == (
+      workspace / "conversation.json"
+  )
   assert manager.result.artifacts["trace"] == workspace / _TRACE_NAME
+  assert outcome.complete is True
+  assert manager.result.metrics[COMPLETE_METRIC] == 1.0
 
 
 def test_run_rollout_takes_a_foreign_harness_and_proxy(tmp_path: Path):

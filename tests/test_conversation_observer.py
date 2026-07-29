@@ -17,9 +17,6 @@ from swe_lab.conversation import (
 from swe_lab.sandbox import SandboxFs, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 
-EVENT_STREAM = "event_stream.jsonl"
-STDERR = "agent.stderr"
-
 
 @final
 class _StubProducer(ConversationProducer):
@@ -33,10 +30,6 @@ class _StubProducer(ConversationProducer):
     self.seen = sb
     return self._conversation
 
-  @override
-  def native_outputs(self) -> dict[str, str]:
-    return {"event_stream": EVENT_STREAM, "agent_stderr": STDERR}
-
 
 def _sandbox(workspace: Path) -> FakeSandbox:
   return FakeSandbox(
@@ -45,9 +38,7 @@ def _sandbox(workspace: Path) -> FakeSandbox:
   )
 
 
-def test_writes_conversation_and_registers_every_byproduct(tmp_path: Path):
-  _ = (tmp_path / EVENT_STREAM).write_text('{"type":"x"}\n')
-  _ = (tmp_path / STDERR).write_text("some stderr\n")
+def test_writes_the_converted_conversation_and_registers_it(tmp_path: Path):
   conv = Conversation(
       messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hi")])]
   )
@@ -62,21 +53,7 @@ def test_writes_conversation_and_registers_every_byproduct(tmp_path: Path):
   written = tmp_path / CONVERSATION_NAME
   assert Conversation.model_validate_json(written.read_text()) == conv
   assert contribution is not None
-  # Artifacts are now in-sandbox filenames, not host paths.
-  assert contribution.artifacts["conversation"] == CONVERSATION_NAME
-  assert contribution.artifacts["event_stream"] == EVENT_STREAM
-  assert contribution.artifacts["agent_stderr"] == STDERR
-
-
-def test_absent_byproducts_are_not_registered(tmp_path: Path):
-  _ = (tmp_path / EVENT_STREAM).write_text('{"type":"x"}\n')  # stderr missing
-  observer = ConversationObserver(
-      producer=_StubProducer(Conversation(messages=[]))
-  )
-
-  contribution = observer.before_destroy(_sandbox(tmp_path))
-
-  assert contribution is not None
-  assert "event_stream" in contribution.artifacts
-  assert "agent_stderr" not in contribution.artifacts  # missing file skipped
-  assert (tmp_path / CONVERSATION_NAME).is_file()
+  # Artifacts are in-sandbox filenames, not host paths. Only the conversion is
+  # this observer's: the producer's raw byproducts belong to the harness-outcome
+  # observer, so exactly one observer claims each artifact name.
+  assert contribution.artifacts == {"conversation": CONVERSATION_NAME}

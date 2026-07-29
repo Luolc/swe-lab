@@ -27,8 +27,10 @@ PROMPT_NAME = "prompt.txt"
 class Harness(ConversationProducer, ABC):
   """An off-the-shelf agent CLI plugged into the sandbox engine as a run body.
 
-  A behavior interface (ABC, per ADR-0002). It also inherits ``to_conversation``
-  and ``native_outputs`` from ``ConversationProducer``.
+  A behavior interface (ABC, per ADR-0002). It also inherits
+  ``to_conversation`` from ``ConversationProducer`` — the conversion contract —
+  while the run's own side effects (``native_outputs``, ``completed``) are the
+  harness's, collected by ``HarnessOutcomeObserver``.
   """
 
   @abstractmethod
@@ -60,6 +62,19 @@ class Harness(ConversationProducer, ABC):
         the place for a secret — pass those to the *sandbox* by reference
         (``pass_env``) so the value never reaches a command line or a staged
         file.
+    """
+    ...
+
+  @abstractmethod
+  def native_outputs(self) -> dict[str, str]:
+    """Name every native byproduct this harness writes during a run.
+
+    Declared, not discovered: the harness knows which files it produces, and
+    ``HarnessOutcomeObserver`` registers the ones that actually landed (a run
+    that died early simply produces fewer).
+
+    Returns:
+      Artifact name → workspace-relative filename, for the trace and any log.
     """
     ...
 
