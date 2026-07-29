@@ -65,6 +65,17 @@ class Harness(ConversationProducer, ABC):
     """
     ...
 
+  @property
+  @abstractmethod
+  def name(self) -> str:
+    """Short snake_case identifier for this harness (e.g. ``claude_code``).
+
+    Namespaces the harness's own artifacts, so the generic role names in
+    ``native_outputs`` (``stderr``, ``event_stream``) cannot collide between two
+    harnesses and say *whose* they are once persisted.
+    """
+    ...
+
   @abstractmethod
   def native_outputs(self) -> dict[str, str]:
     """Name every native byproduct this harness writes during a run.
@@ -73,8 +84,12 @@ class Harness(ConversationProducer, ABC):
     ``HarnessOutcomeObserver`` registers the ones that actually landed (a run
     that died early simply produces fewer).
 
+    Keys are the byproduct's **role** for this harness, unqualified — the
+    observer prefixes them with :attr:`name`, so a harness neither has to
+    remember to namespace nor can forget to.
+
     Returns:
-      Artifact name → workspace-relative filename, for the trace and any log.
+      Role → workspace-relative filename, for the trace and any log.
     """
     ...
 

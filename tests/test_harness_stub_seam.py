@@ -46,6 +46,11 @@ _TRACE_NAME = "stub.trace"
 class StubHarness(Harness):
   """A minimal off-the-shelf-agent stand-in: stage a script, emit a trace."""
 
+  @property
+  @override
+  def name(self) -> str:
+    return "stub"
+
   @override
   def mounts(self, workdir: str) -> Mounts:
     del workdir
@@ -112,7 +117,7 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   assert manager.result.artifacts["conversation"] == (
       workspace / "conversation.json"
   )
-  assert manager.result.artifacts["trace"] == workspace / _TRACE_NAME
+  assert manager.result.artifacts["stub.trace"] == workspace / _TRACE_NAME
   assert outcome.complete is True
   assert manager.result.metrics[COMPLETE_METRIC] == 1.0
 
