@@ -140,7 +140,6 @@ class GitHubJobSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Run ``$SANDBOX_WORKSPACE/<name>`` under the shell in the job.
 
@@ -151,8 +150,6 @@ class GitHubJobSandbox(Sandbox):
       name: The script's workspace-relative filename.
       timeout: Seconds before the process is killed.
       env: Extra ``KEY=VALUE`` variables for this run only.
-      stream_to: When set, stdout is written here as it arrives instead of
-        being captured in memory.
 
     Returns:
       The script's exit status and output; exit code 124 on timeout.
@@ -161,7 +158,6 @@ class GitHubJobSandbox(Sandbox):
         [self.shell, str(self.workspace / name)],
         timeout=timeout,
         env=env,
-        stream_to=stream_to,
     )
 
   @override
@@ -171,14 +167,12 @@ class GitHubJobSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Run an inline command (``<shell> -c command``) in the job."""
     return self._run(
         [self.shell, "-c", command],
         timeout=timeout,
         env=env,
-        stream_to=stream_to,
     )
 
   def _run(
@@ -187,22 +181,9 @@ class GitHubJobSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None,
-      stream_to: Path | None,
   ) -> ExecResult:
     run_env = self._exec_env(env)
     try:
-      if stream_to is not None:
-        with stream_to.open("w", encoding="utf-8") as out:
-          done = subprocess.run(
-              list(argv),
-              stdout=out,
-              stderr=subprocess.PIPE,
-              text=True,
-              timeout=timeout,
-              env=run_env,
-              check=False,
-          )
-        return ExecResult(done.returncode, "", done.stderr)
       done = subprocess.run(
           list(argv),
           capture_output=True,

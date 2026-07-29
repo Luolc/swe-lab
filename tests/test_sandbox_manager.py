@@ -319,15 +319,13 @@ def test_nonempty_workspace_refused_unless_reuse(tmp_path: Path):
   reusing.up()  # reuse=True runs in the non-empty workspace without raising
 
 
-def test_run_plumbing_and_streaming(tmp_path: Path):
+def test_run_plumbing(tmp_path: Path):
   sb = _sandbox(tmp_path, run_results=[ExecResult(0, "line1\nline2\n", "")])
   mgr = _manager(sb)
-  log = tmp_path / "out.log"
   with mgr.session() as live:
-    streamed = live.run_script("entryscript.sh", timeout=5.0, stream_to=log)
+    result = live.run_script("entryscript.sh", timeout=5.0)
   assert sb.scripts == ["entryscript.sh"]
-  assert streamed.stdout == ""  # streamed, not captured
-  assert log.read_text() == "line1\nline2\n"
+  assert result.stdout == "line1\nline2\n"  # captured in the result
 
 
 def test_run_before_live_raises(tmp_path: Path):

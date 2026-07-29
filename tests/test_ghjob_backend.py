@@ -90,17 +90,6 @@ def test_run_command_inline_with_env(tmp_path: Path):
   assert "x=1" in result.stdout  # sandbox env visible to an inline command
 
 
-def test_run_script_streams_stdout_to_file(tmp_path: Path):
-  ws = _workspace(tmp_path)
-  log = tmp_path / "out.log"
-  sandbox = GitHubJobSandbox(spec=SPEC, workspace=ws)
-  sandbox.up()
-  _ = (ws / "main.sh").write_text("echo streamed-line\n")
-  result = sandbox.run_script("main.sh", timeout=5.0, stream_to=log)
-  assert result.stdout == ""  # streamed, not captured
-  assert log.read_text() == "streamed-line\n"
-
-
 def test_run_script_nonzero_exit_is_reported(tmp_path: Path):
   ws = _workspace(tmp_path)
   sandbox = GitHubJobSandbox(spec=SPEC, workspace=ws)

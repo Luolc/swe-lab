@@ -261,7 +261,6 @@ class DockerHostSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Run ``$SANDBOX_WORKSPACE/<name>`` under the shell in the live container.
 
@@ -273,8 +272,6 @@ class DockerHostSandbox(Sandbox):
       timeout: Seconds before the exec process is killed (the container stays
         up so later runs remain possible).
       env: Extra ``KEY=VALUE`` variables for this run only.
-      stream_to: When set, stdout is written here as it arrives instead of
-        being captured in memory.
 
     Returns:
       The script's exit status and output; exit code 124 on timeout.
@@ -283,7 +280,6 @@ class DockerHostSandbox(Sandbox):
         [self.shell, f"{self.mount_at}/{name}"],
         timeout=timeout,
         env=env,
-        stream_to=stream_to,
     )
 
   @override
@@ -293,14 +289,12 @@ class DockerHostSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-      stream_to: Path | None = None,
   ) -> ExecResult:
     """Run an inline command (``<shell> -c command``) in the live container."""
     return self._exec(
         [self.shell, "-c", command],
         timeout=timeout,
         env=env,
-        stream_to=stream_to,
     )
 
   def _exec(
@@ -309,7 +303,6 @@ class DockerHostSandbox(Sandbox):
       *,
       timeout: float,
       env: Mapping[str, str] | None,
-      stream_to: Path | None,
   ) -> ExecResult:
     """Run one ``docker exec`` with ``SANDBOX_WORKSPACE`` and extra env set."""
     if not self._container:
@@ -319,17 +312,6 @@ class DockerHostSandbox(Sandbox):
       args += ["-e", f"{key}={value}"]
     args += [self._container, *inner]
     try:
-      if stream_to is not None:
-        with stream_to.open("w", encoding="utf-8") as out:
-          done = subprocess.run(
-              ["docker", *args],
-              stdout=out,
-              stderr=subprocess.PIPE,
-              text=True,
-              timeout=timeout,
-              check=False,
-          )
-        return ExecResult(done.returncode, "", done.stderr)
       done = subprocess.run(
           ["docker", *args],
           capture_output=True,
