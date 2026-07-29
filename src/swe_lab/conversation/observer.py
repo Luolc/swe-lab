@@ -28,10 +28,12 @@ CONVERSATION_NAME = "conversation.json"
 
 
 class ConversationProducer(ABC):
-  """A run output that yields a `Conversation` and names its native byproducts.
+  """A run output that can be read back as a `Conversation`.
 
   A behavior interface (ABC, per ADR-0002); a harness implements it. The
-  observer depends only on this contract, never on a concrete harness.
+  observer depends only on this contract, never on a concrete harness. Purely
+  about *conversion* — collecting the run's raw byproducts is the harness's own
+  concern (``Harness.native_outputs``, via ``HarnessOutcomeObserver``).
   """
 
   @abstractmethod
@@ -48,20 +50,14 @@ class ConversationProducer(ABC):
     """
     ...
 
-  @abstractmethod
-  def native_outputs(self) -> dict[str, str]:
-    """Name every native byproduct this producer writes during a run.
-
-    Returns:
-      Artifact name → workspace-relative filename, for each file (the primary
-      output and any logs) — registered as artifacts when it exists.
-    """
-    ...
-
 
 @dataclass
 class ConversationObserver(SandboxObserver):
-  """Persist a producer's conversation and register all its native byproducts.
+  """Convert a producer's output into the canonical ``Conversation``.
+
+  Scoped to the *conversion*: the producer's raw byproducts (its trace file, its
+  logs) are collected by ``HarnessOutcomeObserver`` instead, so exactly one
+  observer claims each artifact name.
 
   Attributes:
     producer: The run's conversation producer (a harness).
@@ -74,22 +70,17 @@ class ConversationObserver(SandboxObserver):
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
-    """Convert the primary output, persist it, and register every byproduct.
+    """Convert the producer's output, persist it, and register the result.
 
     Args:
       sb: The sandbox being torn down; its files are read/written.
 
     Returns:
-      A contribution referencing ``conversation.json`` plus every native
-      byproduct the producer declared that actually landed.
+      A contribution referencing the written ``conversation.json``.
     """
     self.conversation = self.producer.to_conversation(sb)
     sb.write(
         CONVERSATION_NAME,
         self.conversation.model_dump_json(indent=2).encode("utf-8"),
     )
-    artifacts = {"conversation": CONVERSATION_NAME}
-    for name, filename in self.producer.native_outputs().items():
-      if sb.exists(filename):  # only register what actually landed
-        artifacts[name] = filename
-    return Contribution(artifacts=artifacts)
+    return Contribution(artifacts={"conversation": CONVERSATION_NAME})
