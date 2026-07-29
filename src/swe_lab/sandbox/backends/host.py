@@ -19,7 +19,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import logging
 import os
-import shutil
 import subprocess
 import tempfile
 from typing import override
@@ -185,7 +184,7 @@ class DockerHostSandbox(Sandbox):
     dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     if src.resolve() != dest.resolve():
-      _ = shutil.copyfile(src, dest)
+      _ = epath.Path(src).copy(dest, overwrite=True)
 
   # --- files (SandboxFs) ---------------------------------------------------
 
@@ -231,7 +230,7 @@ class DockerHostSandbox(Sandbox):
     if not target.startswith("/"):
       dest = self.workspace / target
       dest.parent.mkdir(parents=True, exist_ok=True)
-      _ = shutil.copyfile(src, dest)
+      _ = epath.Path(src).copy(dest, overwrite=True)
       os.chmod(dest, mount.mode)
       return
     self._cp_into(src, target, mount)

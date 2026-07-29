@@ -40,7 +40,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 
 from etils import epath
@@ -277,7 +276,7 @@ def fetch_traces(
         revision=revision if isinstance(revision, str) else None,
     )
     dest.parent.mkdir(parents=True, exist_ok=True)
-    _ = shutil.copyfile(cached, dest)
+    _ = epath.Path(cached).copy(dest, overwrite=True)
     if _sha256(dest) == want:
       ok += 1
     else:
@@ -324,7 +323,7 @@ def adopt_remote(
     )
     dest = base / rel
     dest.parent.mkdir(parents=True, exist_ok=True)
-    _ = shutil.copyfile(cached, dest)
+    _ = epath.Path(cached).copy(dest, overwrite=True)
   manifest = _build_manifest(dataset, repo_id, head, base, root)
   return _write_manifest(manifest, dataset, root)
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import shutil
 from typing import Annotated
 
 import typer
@@ -73,7 +72,7 @@ def eval_cmd(
   unit_test_spec = instance.unit_test_spec(patch=patch)
   workspace = cache_root(root) / _WORKSPACES_SUBDIR / instance.instance_id
   # The sandbox refuses a non-empty workspace; a fresh grade starts clean.
-  shutil.rmtree(workspace, ignore_errors=True)
+  workspace.rmtree(missing_ok=True)
 
   # Construct the sandbox here (the caller owns backend + its options); the eval
   # runner just receives it.

@@ -11,7 +11,6 @@ fixed filename (``ANNOTATION_OUTPUT``) in the working directory.
 from __future__ import annotations
 
 from dataclasses import dataclass
-import shutil
 import subprocess
 
 from etils import epath
@@ -71,7 +70,9 @@ def prepare_workspace(
   _write(context / "git_log.txt", _git_log(checkout))
 
   # Drop the standalone validator in so the agent can self-check its output.
-  _ = shutil.copyfile(agent_validator.__file__, workspace.validator_path)
+  _ = epath.Path(agent_validator.__file__).copy(
+      workspace.validator_path, overwrite=True
+  )
 
   # Start each run from a clean slate: drop any output from a previous run.
   workspace.output_path.unlink(missing_ok=True)

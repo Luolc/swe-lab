@@ -96,8 +96,12 @@ with the following repo-wide choices and deviations (full plan + rationale:
   then wrap results), no `.cwd()` / `.home()`, and `.stat()` lacks `st_size`
   (use `os.path.getsize(p)`); pass `str(p)` to APIs typed for only
   `str | pathlib.Path` (e.g. polars I/O). Single/multi-`*` globs (`*.parquet`,
-  `*/*/run.json`) do work. A script that must stay standard-library-only (e.g.
-  the in-container annotation validator) keeps `pathlib`. **Typer CLI
+  `*/*/run.json`) do work. For copying a file or removing a tree, use `epath`'s
+  own `p.copy(dst, overwrite=True)` and `p.rmtree(missing_ok=True)` (they mirror
+  `shutil.copyfile` / `shutil.rmtree(ignore_errors=True)` — note `copy` refuses
+  an existing target and `rmtree` a missing one *by default*), not `shutil`. A
+  script that must stay standard-library-only (e.g. the in-container annotation
+  validator) keeps `pathlib`. **Typer CLI
   entry-point parameters that take a path stay `pathlib.Path`** — Typer rejects a
   `Union` (and `PathLike` *is* `str | os.PathLike`), so a command option/argument
   uses the concrete `Path` and the body coerces to `epath.Path` where needed.

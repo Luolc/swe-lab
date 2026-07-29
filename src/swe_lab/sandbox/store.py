@@ -16,7 +16,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-import shutil
 from typing import override
 
 from etils import epath
@@ -75,7 +74,7 @@ class FilesystemStore(Store):
     """Copy ``src`` to ``root/key``."""
     dest = self._path(key)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    _ = shutil.copyfile(src, dest)
+    _ = epath.Path(src).copy(dest, overwrite=True)
 
   @override
   def get(self, key: str, dest: epath.PathLike) -> None:
@@ -85,7 +84,7 @@ class FilesystemStore(Store):
       raise SandboxError(f"store key not found: {key}")
     dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    _ = shutil.copyfile(src, dest)
+    _ = epath.Path(src).copy(dest, overwrite=True)
 
   @override
   def append_manifest(self, record: RunRecord) -> None:
