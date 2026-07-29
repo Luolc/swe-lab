@@ -38,11 +38,18 @@ __all__ = [
 class SandboxConfig:
   """The common run settings a factory maps onto whichever sandbox it builds.
 
-  A-ghjob ignores ``network`` / ``pull`` (Docker-only — the job is already the
-  live container), so callers pass one option set and each factory takes what
-  applies.
+  Callers pass one option set and each factory takes only what applies to its
+  backend: a *local* backend needs a host ``workspace`` and A-host also honors
+  ``network`` / ``pull``; A-ghjob ignores ``network`` / ``pull`` (the job is
+  already the live container); a *remote* backend would ignore all three (it
+  owns its own workspace and image elsewhere). Keeping ``workspace`` here rather
+  than as a positional factory argument is what lets a remote backend register
+  through the same seam without being handed a host path it cannot use.
 
   Attributes:
+    workspace: The host directory a local backend runs in (bind-mounted for
+      A-host, the job dir for A-ghjob). ``None`` for a backend that owns its
+      workspace elsewhere (e.g. a remote sandbox).
     network: Whether the container gets network access (A-host only).
     pull: Whether to pull the image before the run (A-host only).
     env: Variables set on each exec as ``KEY=VALUE``.
@@ -50,6 +57,7 @@ class SandboxConfig:
     shell: The interpreter each ``run_script`` / ``run_command`` uses.
   """
 
+  workspace: Path | None = None
   network: bool = True
   pull: bool = True
   env: Mapping[str, str] = field(default_factory=dict)
@@ -57,8 +65,8 @@ class SandboxConfig:
   shell: str = "/bin/bash"
 
 
-type SandboxFactory = Callable[[SandboxSpec, Path, SandboxConfig], Sandbox]
-"""Builds a live sandbox from a spec, workspace, and the common config."""
+type SandboxFactory = Callable[[SandboxSpec, SandboxConfig], Sandbox]
+"""Builds a live (not-yet-up) sandbox from a spec and the common config."""
 
 _REGISTRY: dict[str, SandboxFactory] = {}
 
@@ -68,7 +76,7 @@ def register_sandbox(name: str, factory: SandboxFactory) -> None:
 
   Args:
     name: The name ``--backend`` selects it by.
-    factory: Builds the sandbox from ``(spec, workspace, config)``.
+    factory: Builds the sandbox from ``(spec, config)``.
   """
   _REGISTRY[name] = factory
 
@@ -81,8 +89,8 @@ def registered_backends() -> list[str]:
 def build_sandbox(
     name: str,
     spec: SandboxSpec,
-    workspace: Path,
     *,
+    workspace: Path | None = None,
     network: bool = True,
     pull: bool = True,
     env: Mapping[str, str] | None = None,
@@ -94,7 +102,8 @@ def build_sandbox(
   Args:
     name: The registered backend name (e.g. ``host`` / ``ghjob``).
     spec: The run context the sandbox realizes.
-    workspace: The host/local workspace directory.
+    workspace: The host directory a local backend runs in; ``None`` for a
+      backend that owns its workspace elsewhere (a remote sandbox).
     network: Whether the container gets network access (A-host only).
     pull: Whether to pull the image before the run (A-host only).
     env: Variables set on each exec as ``KEY=VALUE``.
@@ -105,7 +114,8 @@ def build_sandbox(
     The constructed sandbox (not yet up).
 
   Raises:
-    SandboxError: If ``name`` is not registered.
+    SandboxError: If ``name`` is not registered, or a local backend is built
+      without a ``workspace``.
   """
   try:
     factory = _REGISTRY[name]
@@ -114,21 +124,29 @@ def build_sandbox(
         f"unknown backend {name!r}; registered: {registered_backends()}"
     ) from None
   config = SandboxConfig(
+      workspace=workspace,
       network=network,
       pull=pull,
       env=dict(env or {}),
       pass_env=tuple(pass_env),
       shell=shell,
   )
-  return factory(spec, workspace, config)
+  return factory(spec, config)
 
 
-def _build_host(
-    spec: SandboxSpec, workspace: Path, config: SandboxConfig
-) -> Sandbox:
+def _local_workspace(config: SandboxConfig, name: str) -> Path:
+  """Return the required host workspace, or fail if a local backend has none."""
+  if config.workspace is None:
+    raise SandboxError(
+        f"backend {name!r} runs locally and needs a workspace directory"
+    )
+  return config.workspace
+
+
+def _build_host(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
   return DockerHostSandbox(
       spec=spec,
-      workspace=workspace,
+      workspace=_local_workspace(config, "host"),
       network=config.network,
       pull=config.pull,
       shell=config.shell,
@@ -137,12 +155,10 @@ def _build_host(
   )
 
 
-def _build_ghjob(
-    spec: SandboxSpec, workspace: Path, config: SandboxConfig
-) -> Sandbox:
+def _build_ghjob(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
   return GitHubJobSandbox(
       spec=spec,
-      workspace=workspace,
+      workspace=_local_workspace(config, "ghjob"),
       shell=config.shell,
       env=dict(config.env),
       pass_env=config.pass_env,

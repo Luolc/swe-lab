@@ -103,10 +103,9 @@ def _wire(
   def fake_build_sandbox(
       backend: object,
       spec: object,
-      workspace: object,
       **kwargs: object,
   ) -> object:
-    del spec, workspace
+    del spec
     calls["backend"] = backend
     calls["pass_env"] = kwargs.get("pass_env")
     return object()  # a sentinel sandbox; the mocked run_rollout ignores it

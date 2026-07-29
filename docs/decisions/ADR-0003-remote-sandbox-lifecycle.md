@@ -321,3 +321,25 @@ source mode (the exec-bit fix); a `Mount` declares `executable` explicitly.
   — all import-only. No capability-negotiation framework (a user can write their
   own backend, so it is unnecessary). Task 14 must preserve import-only
   extensibility on both axes.
+
+## Amendment (2026-07-28): finish dropping `workspace: Path` at the construction seam
+
+Task 14 removed the host `workspace: Path` from the `Sandbox` ABC, the manager,
+and the observer/grader layer (they go through the sandbox's own read/write/run
+ops). One place kept it, though: the **construction seam**. `SandboxFactory` was
+`Callable[[SandboxSpec, Path, SandboxConfig], Sandbox]` and `build_sandbox` took
+a required positional `workspace: Path` — so every backend registered through
+the open registry, including a company's remote one, was still handed a host
+path it cannot honor. That reintroduced, at construction time, exactly the
+assumption this ADR set out to remove (and the rejected host-mirror shim warned
+against).
+
+Fix: `workspace` moves **into `SandboxConfig`** as an optional field (`Path |
+None`), alongside the other backend-specific options each factory takes only
+what it needs (`network` / `pull` are A-host-only; `workspace` is local-only).
+`SandboxFactory` becomes `Callable[[SandboxSpec, SandboxConfig], Sandbox]`;
+`build_sandbox` keeps `workspace` as a keyword and folds it into the config; the
+local `host` / `ghjob` factories read `config.workspace` and raise if it is
+absent, while a remote backend ignores it. No behavior change for the shipped
+backends — the CLIs still pass the same directory — and the generic seam no
+longer bakes in a host filesystem.
