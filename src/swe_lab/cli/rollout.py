@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 from typing import Annotated
 
 from etils import epath
@@ -95,7 +94,7 @@ def rollout_in_docker(
   spec = instance.sandbox_spec()
   prompt = instance.solve_prompt()
   workspace = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
-  shutil.rmtree(workspace, ignore_errors=True)
+  workspace.rmtree(missing_ok=True)
 
   sandbox = build_sandbox(
       backend,
@@ -187,7 +186,7 @@ def _finish(
 
   unit_test_spec = instance.unit_test_spec(patch=outcome.patch)
   eval_ws = cache_root(root) / _EVAL_SUBDIR / instance.instance_id
-  shutil.rmtree(eval_ws, ignore_errors=True)
+  eval_ws.rmtree(missing_ok=True)
   sandbox = build_sandbox(
       backend,
       instance.sandbox_spec(),

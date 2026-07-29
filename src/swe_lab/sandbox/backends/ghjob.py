@@ -17,7 +17,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import logging
 import os
-import shutil
 import subprocess
 from typing import override
 
@@ -90,7 +89,7 @@ class GitHubJobSandbox(Sandbox):
     dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     if src.resolve() != dest.resolve():
-      _ = shutil.copyfile(src, dest)
+      _ = epath.Path(src).copy(dest, overwrite=True)
 
   # --- files (SandboxFs) ---------------------------------------------------
 
@@ -126,7 +125,7 @@ class GitHubJobSandbox(Sandbox):
   def _put_file(self, target: str, src: epath.PathLike, mount: Mount) -> None:
     dest = self._dest(target)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    _ = shutil.copyfile(src, dest)
+    _ = epath.Path(src).copy(dest, overwrite=True)
     os.chmod(dest, mount.mode)
 
   def _dest(self, target: str) -> epath.Path:

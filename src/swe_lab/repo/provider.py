@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-import shutil
 import subprocess
 import threading
 from typing import override, Protocol
@@ -221,7 +220,7 @@ class GitCheckoutProvider(RepoProvider):
         self._ensure_commit(mirror, commit)
         _ = self._git("checkout", "--detach", commit, cwd=checkout)
         return checkout
-      shutil.rmtree(checkout, ignore_errors=True)
+      epath.Path(checkout).rmtree(missing_ok=True)
 
     self._ensure_commit(mirror, commit)
     self.checkouts_dir.mkdir(parents=True, exist_ok=True)

@@ -34,7 +34,6 @@ import contextlib
 from datetime import datetime, UTC
 import json
 import os
-import shutil
 import subprocess
 from typing import Annotated
 
@@ -152,7 +151,7 @@ def _graded_run(
   """
   unit_test_spec = instance.unit_test_spec(patch=patch)
   # The sandbox refuses a non-empty workspace; start each run clean.
-  shutil.rmtree(workspace, ignore_errors=True)
+  epath.Path(workspace).rmtree(missing_ok=True)
   sandbox = build_sandbox(
       "host",
       instance.sandbox_spec(),
