@@ -76,7 +76,7 @@ class StubHarness(Harness):
 
   @override
   def native_outputs(self) -> dict[str, str]:
-    return {"trace": _TRACE_NAME}
+    return {"trace.txt": _TRACE_NAME}
 
   @override
   def to_conversation(self, sb: SandboxFs) -> Conversation:
@@ -117,10 +117,10 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   assert (workspace / "conversation.json").is_file()
   # the two observers split the names: the conversion is the conversation
   # observer's, the raw byproduct + completion the outcome observer's
-  assert manager.result.artifacts["conversation"] == (
+  assert manager.result.artifacts["conversation.json"] == (
       workspace / "conversation.json"
   )
-  assert manager.result.artifacts["stub.trace"] == workspace / _TRACE_NAME
+  assert manager.result.artifacts["stub.trace.txt"] == workspace / _TRACE_NAME
   assert outcome.complete is True
   assert manager.result.metrics[COMPLETE_METRIC] == 1.0
 

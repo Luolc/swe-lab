@@ -152,13 +152,16 @@ class ClaudeCodeHarness(Harness):
 
     The trace file depends on the capture strategy: ``STREAM`` writes the
     agent's ``event_stream``; ``PROXY`` records into the proxy log instead.
+    Roles carry the payload's format (``.jsonl`` — both traces are
+    newline-delimited, one record per line — and ``.txt``), so a consumer reads
+    the artifact name and knows how to parse it.
     """
     trace = (
-        {"proxy_log": PROXY_LOG_NAME}
+        {"proxy_log.jsonl": PROXY_LOG_NAME}
         if self.capture is Capture.PROXY
-        else {"event_stream": EVENT_STREAM_NAME}
+        else {"event_stream.jsonl": EVENT_STREAM_NAME}
     )
-    return trace | {"stderr": AGENT_STDERR_NAME}
+    return trace | {"stderr.txt": AGENT_STDERR_NAME}
 
   @override
   def to_conversation(self, sb: SandboxFs) -> Conversation:

@@ -89,11 +89,11 @@ class DiffExtractObserver(SandboxObserver):
     # clean one was derived here, so it is handed over inline rather than
     # written back into the sandbox only to be fetched again.
     artifacts = (
-        {"patch_raw": RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
+        {"patch_raw.diff": RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
     )
     return Contribution(
         artifacts=artifacts,
         inline_artifacts={
-            "patch": InlineArtifact(PATCH_NAME, self.patch.encode("utf-8"))
+            "patch.diff": InlineArtifact(PATCH_NAME, self.patch.encode("utf-8"))
         },
     )

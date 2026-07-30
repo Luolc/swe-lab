@@ -32,7 +32,7 @@ AGENT_ENV_NAME = "agent_env.sh"
 
 # Native outputs the run writes into the workspace (registered as artifacts).
 EVENT_STREAM_NAME = "claude.event_stream.jsonl"  # stream-json trace (primary)
-AGENT_STDERR_NAME = "claude.stderr"  # the run's stderr log
+AGENT_STDERR_NAME = "claude.stderr.txt"  # the run's stderr log (plain text)
 
 # The proxy-capture trace: the cc-reverse-proxy appends one request/response
 # record per API call here. The proxy is a host process, but the composition

@@ -53,7 +53,7 @@ def test_writes_the_converted_conversation_and_registers_it(tmp_path: Path):
   assert contribution is not None
   # The JSON travels inline: this observer already parsed it, so writing it back
   # into the sandbox for the manager to fetch out would be two wasted transfers.
-  inline = contribution.inline_artifacts["conversation"]
+  inline = contribution.inline_artifacts["conversation.json"]
   assert inline.filename == CONVERSATION_NAME
   assert Conversation.model_validate_json(inline.content.decode()) == conv
   assert not (tmp_path / CONVERSATION_NAME).exists()  # no sandbox round trip

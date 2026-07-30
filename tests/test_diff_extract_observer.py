@@ -37,10 +37,10 @@ def test_extracts_cleans_and_registers(tmp_path: Path):
   assert contribution is not None
   # The raw diff came from the sandbox, so it is referenced by its in-sandbox
   # filename for the manager to fetch out.
-  assert contribution.artifacts == {"patch_raw": RAW_PATCH_NAME}
+  assert contribution.artifacts == {"patch_raw.diff": RAW_PATCH_NAME}
   # The clean patch was derived here, so it travels inline — never written back
   # into the sandbox just to be fetched again.
-  inline = contribution.inline_artifacts["patch"]
+  inline = contribution.inline_artifacts["patch.diff"]
   assert inline.filename == PATCH_NAME
   assert inline.content.decode() == raw
   assert not (tmp_path / PATCH_NAME).exists()  # no round trip through the box
