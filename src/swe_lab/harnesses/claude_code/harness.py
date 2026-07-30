@@ -20,6 +20,7 @@ from swe_lab.conversation import Conversation
 from swe_lab.harnesses.base import Harness, PROMPT_NAME
 from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
 from swe_lab.sandbox import (
+    ExecResult,
     Inline,
     LocalFile,
     Mount,
@@ -131,7 +132,7 @@ class ClaudeCodeHarness(Harness):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-  ) -> None:
+  ) -> ExecResult:
     """Fill in the env file, then run the staged script by its workspace path.
 
     Args:
@@ -141,10 +142,15 @@ class ClaudeCodeHarness(Harness):
         env file so they apply after the script's own defaults. A name that is
         not a shell identifier is rejected (see :func:`_env_exports`) rather
         than corrupting the file and skipping the run.
+
+    Returns:
+      The agent script's outcome. The script ends in ``|| true`` so the agent's
+      own exit code never fails the step — what this still carries is whether
+      *we* killed it on timeout.
     """
     if env:
       sb.write(AGENT_ENV_NAME, _env_exports(env).encode())
-    _ = sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
+    return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
 
   @override
   def native_outputs(self) -> dict[str, str]:

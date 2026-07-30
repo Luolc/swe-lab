@@ -14,6 +14,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 import contextlib
 from dataclasses import dataclass
+import time
 
 from etils import epath
 
@@ -24,6 +25,7 @@ from swe_lab.harnesses import (
     PROMPT_NAME,
 )
 from swe_lab.sandbox import (
+    ExecResult,
     Inline,
     Mount,
     RunStatus,
@@ -62,6 +64,26 @@ class RolloutOutcome:
   workspace: epath.Path
   artifacts: dict[str, epath.Path]
   metrics: dict[str, float]
+
+
+def _status(status: RunStatus, exec_result: ExecResult | None) -> RunStatus:
+  """Promote a timed-out agent run to ``RunStatus.TIMEOUT``.
+
+  The engine cannot see this itself: a timeout does not raise, it comes back as
+  a timed-out ``ExecResult``, so the manager assembles ``SUCCESS``. Only the
+  composition knows better — and a killed agent is a *budget* signal, not the
+  infra failure a bare RUN_ERROR would suggest.
+
+  Args:
+    status: The engine's assembled status.
+    exec_result: The agent execution's outcome, if it ran.
+
+  Returns:
+    ``status`` unchanged, or ``TIMEOUT`` when the agent was killed.
+  """
+  if exec_result is not None and exec_result.timed_out:
+    return RunStatus.TIMEOUT
+  return status
 
 
 def run_rollout(
@@ -126,7 +148,14 @@ def run_rollout(
       mounts=mounts,
   )
   with proxy or contextlib.nullcontext(), manager.session() as sb:
-    harness.run(sb, timeout=timeout, env=agent_env)
+    # Hand the execution's own outcome to the observer *before* teardown, so
+    # before_destroy can report it. Discarding it left a killed agent
+    # indistinguishable from one that simply produced no trace.
+    started = time.monotonic()
+    try:
+      outcome.exec_result = harness.run(sb, timeout=timeout, env=agent_env)
+    finally:
+      outcome.wall_seconds = time.monotonic() - started
 
   return RolloutOutcome(
       instance_id=spec.instance_id,
@@ -135,7 +164,7 @@ def run_rollout(
       binary_stripped=extract.binary_stripped,
       complete=outcome.complete,
       conversation=conversation.conversation or Conversation(messages=[]),
-      status=manager.result.status,
+      status=_status(manager.result.status, outcome.exec_result),
       workspace=epath.Path(output_dir),
       artifacts=manager.result.artifacts,
       metrics=manager.result.metrics,

@@ -69,10 +69,10 @@ class StubHarness(Harness):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-  ) -> None:
+  ) -> ExecResult:
     # A foreign harness decides for itself how injected env reaches its agent;
     # this one hands it straight to the exec.
-    _ = sb.run_script("stub.sh", timeout=timeout, env=env)
+    return sb.run_script("stub.sh", timeout=timeout, env=env)
 
   @override
   def native_outputs(self) -> dict[str, str]:
@@ -201,3 +201,39 @@ def test_run_rollout_takes_extra_observers_and_agent_env(tmp_path: Path):
   assert outcome.metrics["probe"] == 1.0  # its contribution reached the result
   # run_rollout → harness.run(env=...) → the exec; the stub hands it straight on
   assert {"MY_FLAG": "1"} in envs
+
+
+def test_a_timed_out_agent_is_reported_as_timeout(tmp_path: Path):
+  # Nothing raises on a timeout, so the engine assembles SUCCESS; the
+  # composition knows better. A killed agent is a budget signal, and must not
+  # look like a run that simply produced no trace.
+  class _TimingOut(StubHarness):
+
+    @override
+    def run(
+        self,
+        sb: SandboxFs,
+        *,
+        timeout: float,
+        env: Mapping[str, str] | None = None,
+    ) -> ExecResult:
+      _ = super().run(sb, timeout=timeout, env=env)
+      return ExecResult(124, "", "killed after 10s", timed_out=True)
+
+  workspace = tmp_path / "run"
+  outcome = run_rollout(
+      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+      _TimingOut(),
+      prompt="SOLVE THIS",
+      output_dir=workspace,
+      timeout=10.0,
+  )
+  assert outcome.status is RunStatus.TIMEOUT
+  assert outcome.metrics["stub.timed_out"] == 1.0
+  assert outcome.metrics["stub.exit_code"] == 124.0
+  assert outcome.metrics["stub.wall_seconds"] >= 0.0
+  # what the exec itself said is kept — the only clue when the agent's own
+  # redirected logs never got written
+  assert outcome.artifacts["stub.exec_stderr.log"].read_text() == (
+      "killed after 10s"
+  )

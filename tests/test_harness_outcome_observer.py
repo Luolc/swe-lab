@@ -10,6 +10,7 @@ from swe_lab.conversation import Conversation
 from swe_lab.harnesses import COMPLETE_METRIC, Harness, HarnessOutcomeObserver
 from swe_lab.sandbox import (
     Contribution,
+    ExecResult,
     Mounts,
     NAME_SEPARATOR,
     qualified_name,
@@ -47,8 +48,9 @@ class _StubHarness(Harness):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-  ) -> None:
-    del sb, timeout, env
+  ) -> ExecResult:
+    del timeout, env
+    return sb.run_script("noop", timeout=0.0)
 
   @override
   def native_outputs(self) -> dict[str, str]:
