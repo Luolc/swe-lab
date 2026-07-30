@@ -22,6 +22,7 @@ from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs
 
 from .constants import (
     BASH,
+    EVAL_HOME,
     OUTPUT_JSON_NAME,
     PARSER_NAME,
     PATCH_NAME,
@@ -165,8 +166,8 @@ def _build_eval_script(
   """Build the in-container eval script (ports Scale's create_entryscript).
 
   Both flags default (via the caller) to the real grading flow; set them
-  ``False`` for the dataset self-checks. Two **deliberate divergences** from the
-  legacy builder, and no others:
+  ``False`` for the dataset self-checks. Three **deliberate divergences** from
+  the legacy builder, and no others:
 
   1. the workspace path is ``$SANDBOX_WORKSPACE``, not a fixed mount point;
   2. line endings are pinned — ``core.autocrlf=false`` + ``core.eol=lf`` (see
@@ -176,6 +177,8 @@ def _build_eval_script(
      (ADR-0001) matters more than matching an unset default: both values *are*
      git's effective default on Linux, so this only bites an image that
      explicitly turned normalization on.
+  3. ``HOME`` is guaranteed (see the comment below) — a *fallback*, so an
+     image that sets one keeps it and nothing about its caches changes.
 
   Args:
     base_commit: The commit the working tree is reset to before grading.
@@ -203,6 +206,14 @@ def _build_eval_script(
       # a silently wrong grade. `set +e` is lifted again around the test run
       # below, which is *expected* to exit non-zero.
       "set -e",
+      # Guarantee a writable HOME. Some images set none, and a toolchain that
+      # needs one then fails every test for a reason that looks nothing like the
+      # cause (Go's build cache lives in `$HOME/.cache/go-build`). `:-` keeps an
+      # image's own HOME when it has one, so a pre-warmed dependency cache under
+      # it still counts — replacing it would force a re-download, and under
+      # `--no-network` that is a failure rather than a slowdown.
+      f'export HOME="${{HOME:-{EVAL_HOME}}}"',
+      'mkdir -p "$HOME"',
       f"cd {WORKDIR}",
       # Pin line endings for every git command below, symmetric with extraction
       # (ADR-0001): a patch is diffed with ``core.autocrlf=false``, so a

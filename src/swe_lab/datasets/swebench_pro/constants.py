@@ -50,6 +50,14 @@ WORKSPACES_SUBDIR = "eval_workspaces"  # per-instance grading workspace
 
 # --- In-container execution --------------------------------------------------
 
+# Fallback HOME for the eval script, used **only when the image sets none**.
+# Plenty of toolchains refuse to run without one — Go puts its build cache in
+# `$HOME/.cache/go-build`, so on an image with no HOME every Go test fails.
+# Deliberately a *fallback* rather than the harness's unconditional override: an
+# instance image often pre-warms its dependency caches under the real HOME (Go
+# modules, npm, pip), and pointing HOME at an empty dir would force a
+# re-download — under `--no-network` not a slowdown but a failure.
+EVAL_HOME = "/eval-home"
 # Interpreters invoked in the container (both on PATH in the instance images).
 BASH = "bash"
 PYTHON = "python"

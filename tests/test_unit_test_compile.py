@@ -200,3 +200,19 @@ def test_compile_without_patch_omits_patch_mount_and_apply():
   unit = _compile(_instance(), patch=None)
   assert "patch.diff" not in unit.mounts
   assert "git apply" not in unit.eval_script
+
+
+def test_script_guarantees_a_home_without_replacing_one():
+  # Some images set no HOME, and a toolchain that needs one then fails every
+  # test for a reason that looks nothing like the cause (Go's build cache lives
+  # in $HOME/.cache/go-build). But an image that *does* set HOME often pre-warms
+  # its dependency caches under it, so this must fall back, never override:
+  # replacing it would force a re-download, which under --no-network fails.
+  lines = _script(
+      _instance(), apply_patch=True, checkout_golden_tests=True
+  ).splitlines()
+  assert 'export HOME="${HOME:-/eval-home}"' in lines
+  home_at = lines.index('export HOME="${HOME:-/eval-home}"')
+  assert lines[home_at + 1] == 'mkdir -p "$HOME"'  # and it exists
+  # set before anything that might need it
+  assert lines.index(f"cd {WORKDIR}") > home_at
