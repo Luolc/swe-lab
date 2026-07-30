@@ -28,6 +28,8 @@ from typing import override
 
 from swe_lab.sandbox import (
     Contribution,
+    ExecResult,
+    InlineArtifact,
     qualified_name,
     SandboxFs,
     SandboxObserver,
@@ -56,11 +58,16 @@ class HarnessOutcomeObserver(SandboxObserver):
       the hook never fired).
     collected: The native outputs that actually landed — namespaced artifact
       name → workspace-relative filename. Empty until ``before_destroy``.
+    exec_result: The agent execution's own result, set by the composition
+      before teardown; ``None`` if the body never got to run it.
+    wall_seconds: How long the agent ran, set alongside it.
   """
 
   harness: Harness
   complete: bool = False
   collected: dict[str, str] = field(default_factory=dict)
+  exec_result: ExecResult | None = None
+  wall_seconds: float | None = None
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
@@ -71,7 +78,8 @@ class HarnessOutcomeObserver(SandboxObserver):
 
     Returns:
       A contribution referencing every native output present (namespaced by the
-      harness), plus the completion metric.
+      harness), the agent's own stderr when it said anything, and metrics for
+      how the run ended.
     """
     self.complete = self.harness.completed(sb)
     self.collected = {
@@ -81,5 +89,45 @@ class HarnessOutcomeObserver(SandboxObserver):
     }
     return Contribution(
         artifacts=dict(self.collected),
-        metrics={COMPLETE_METRIC: float(self.complete)},
+        inline_artifacts=self._exec_output(),
+        metrics=self._metrics(),
     )
+
+  def _exec_output(self) -> dict[str, InlineArtifact]:
+    """Keep what the agent *invocation* itself printed, if anything.
+
+    Distinct from the agent's own trace and stderr file, which are workspace
+    files it redirects into: this is what the exec returned. Usually empty —
+    the script ends in ``|| true`` and redirects both streams — which is why
+    it is skipped rather than persisted as an empty object, and worth keeping
+    when it is *not*, since then something went wrong before the redirect.
+    """
+    if self.exec_result is None:
+      return {}
+    streams = {
+        "exec_stdout.log": self.exec_result.stdout,
+        "exec_stderr.log": self.exec_result.stderr,
+    }
+    return {
+        qualified_name(self.harness.name, name): InlineArtifact(
+            name, text.encode("utf-8")
+        )
+        for name, text in streams.items()
+        if text
+    }
+
+  def _metrics(self) -> dict[str, float]:
+    """Return the completion flag, plus how the execution itself ended."""
+    metrics = {COMPLETE_METRIC: float(self.complete)}
+    if self.wall_seconds is not None:
+      metrics[qualified_name(self.harness.name, "wall_seconds")] = (
+          self.wall_seconds
+      )
+    if self.exec_result is not None:
+      metrics[qualified_name(self.harness.name, "exit_code")] = float(
+          self.exec_result.exit_code
+      )
+      metrics[qualified_name(self.harness.name, "timed_out")] = float(
+          self.exec_result.timed_out
+      )
+    return metrics

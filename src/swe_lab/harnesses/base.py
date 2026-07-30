@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 
 from swe_lab.conversation import ConversationProducer
-from swe_lab.sandbox import Mounts, SandboxFs
+from swe_lab.sandbox import ExecResult, Mounts, SandboxFs
 
 # Where the rollout composition stages the task prompt, as a workspace-relative
 # name. This is the composition↔harness contract — the composition writes it
@@ -49,8 +49,14 @@ class Harness(ConversationProducer, ABC):
       *,
       timeout: float,
       env: Mapping[str, str] | None = None,
-  ) -> None:
+  ) -> ExecResult:
     """Run the main action (the agent) in the live sandbox.
+
+    Returning the execution's result — rather than discarding it, as this
+    contract used to — is what lets the composition tell a *killed* run from
+    one that merely produced nothing: a timeout does not raise, it comes back
+    here as a timed-out ``ExecResult``. A harness that execs more than once
+    returns the result of the main action.
 
     Args:
       sb: The live sandbox to run in.
@@ -62,6 +68,9 @@ class Harness(ConversationProducer, ABC):
         the place for a secret — pass those to the *sandbox* by reference
         (``pass_env``) so the value never reaches a command line or a staged
         file.
+
+    Returns:
+      The main action's exit status, output, and whether it timed out.
     """
     ...
 

@@ -19,6 +19,7 @@ from swe_lab.sandbox import (
     Contribution,
     ExecResult,
     Inline,
+    InlineArtifact,
     Mount,
     qualified_name,
     RunResult,
@@ -83,7 +84,35 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
         for name, filename in self._declared_outputs().items()
         if sb.exists(filename)
     }
-    return Contribution(artifacts=artifacts, metrics=self._metrics())
+    return Contribution(
+        artifacts=artifacts,
+        inline_artifacts=self._exec_output(),
+        metrics=self._metrics(),
+    )
+
+  def _exec_output(self) -> dict[str, InlineArtifact]:
+    """Keep the entryscript's *own* stdout/stderr — the fail-fast diagnostic.
+
+    Not the test logs (those are files the script redirects into): this is what
+    the script itself said. When ``set -e`` aborts at, say, ``git apply``, the
+    test logs are never created and this is the only record of *why* — the exit
+    code alone says a step failed, not which or how. Already on the host, so it
+    is contributed inline; empty streams are skipped rather than persisted as
+    empty objects.
+    """
+    if self.exec_result is None:
+      return {}
+    streams = {
+        "exec_stdout.log": self.exec_result.stdout,
+        "exec_stderr.log": self.exec_result.stderr,
+    }
+    return {
+        qualified_name(ARTIFACT_NAMESPACE, name): InlineArtifact(
+            name, text.encode("utf-8")
+        )
+        for name, text in streams.items()
+        if text
+    }
 
   def _declared_outputs(self) -> dict[str, str]:
     """Return the entryscript plus whatever the dataset says it produces."""
