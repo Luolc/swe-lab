@@ -105,6 +105,26 @@ def test_script_uses_sandbox_workspace_and_full_flow():
   assert '"$SANDBOX_WORKSPACE"/output.json' in script
 
 
+def test_script_pins_autocrlf_before_any_git_command():
+  # Symmetric with extraction (ADR-0001): the patch is diffed with
+  # core.autocrlf=false, so nothing downstream may renormalize line endings.
+  # Repo-level and *before* reset/checkout/apply, so it also governs the
+  # dataset-authored golden-checkout line we do not write.
+  pin = "git config core.autocrlf false"
+  lines = _script(
+      _instance(), apply_patch=True, checkout_golden_tests=True
+  ).splitlines()
+  at = lines.index(pin)
+  assert lines[at - 1] == f"cd {WORKDIR}"  # inside the repo, so repo-level
+  governed = [
+      i
+      for i, line in enumerate(lines)
+      if line.startswith("git ") and line != pin
+  ]
+  assert governed  # not vacuous: there are git commands to govern
+  assert all(at < i for i in governed)
+
+
 def test_script_flag_combinations():
   no_patch = _script(_instance(), apply_patch=False, checkout_golden_tests=True)
   assert "git apply" not in no_patch  # base-commit self-check

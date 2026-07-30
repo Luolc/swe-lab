@@ -170,6 +170,13 @@ def _build_eval_script(
   selected = shlex.quote(",".join(selected_test_files_to_run))
   lines = [
       f"cd {WORKDIR}",
+      # Pin line endings for every git command below, symmetric with extraction
+      # (ADR-0001): a patch is diffed with ``core.autocrlf=false``, so a
+      # checkout/apply that renormalizes CRLF<->LF would either fail to apply or
+      # silently alter content. Set at **repo** level rather than per-invocation
+      # ``-c`` because some of what follows we do not author — the dataset's own
+      # ``golden_test_checkout_cmd``, and the harness's run script.
+      "git config core.autocrlf false",
       f"git reset --hard {base_commit}",
       f"git checkout {base_commit}",
   ]
