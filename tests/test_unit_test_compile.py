@@ -202,17 +202,25 @@ def test_compile_without_patch_omits_patch_mount_and_apply():
   assert "git apply" not in unit.eval_script
 
 
-def test_script_guarantees_a_home_without_replacing_one():
+def test_script_resolves_home_in_three_tiers():
   # Some images set no HOME, and a toolchain that needs one then fails every
   # test for a reason that looks nothing like the cause (Go's build cache lives
-  # in $HOME/.cache/go-build). But an image that *does* set HOME often pre-warms
-  # its dependency caches under it, so this must fall back, never override:
-  # replacing it would force a re-download, which under --no-network fails.
+  # in $HOME/.cache/go-build). Three tiers, each testing for a *non-empty* value
+  # rather than an exit code — `getent | cut` succeeds with empty output when
+  # the UID has no passwd entry, and an empty HOME is worse than an unset one.
   lines = _script(
       _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
-  assert 'export HOME="${HOME:-/eval-home}"' in lines
-  home_at = lines.index('export HOME="${HOME:-/eval-home}"')
-  assert lines[home_at + 1] == 'mkdir -p "$HOME"'  # and it exists
-  # set before anything that might need it
-  assert lines.index(f"cd {WORKDIR}") > home_at
+  tiers = [i for i, line in enumerate(lines) if line.startswith('[ -n "${HOME')]
+  assert len(tiers) == 2  # the image's own HOME is tier 1: nothing to do
+
+  # tier 2 asks the passwd database for the account's real home ...
+  assert "getent passwd" in lines[tiers[0]]
+  assert "cut -d: -f6" in lines[tiers[0]]
+  # ... tier 3 is the fallback constant
+  assert lines[tiers[1]].endswith("|| HOME=/tmp/eval-home")
+
+  assert lines[tiers[1] + 1] == "export HOME"
+  assert lines[tiers[1] + 2] == 'mkdir -p "$HOME"'  # and it exists
+  # resolved before anything that might need it
+  assert lines.index(f"cd {WORKDIR}") > tiers[1]

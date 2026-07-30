@@ -50,14 +50,20 @@ WORKSPACES_SUBDIR = "eval_workspaces"  # per-instance grading workspace
 
 # --- In-container execution --------------------------------------------------
 
-# Fallback HOME for the eval script, used **only when the image sets none**.
-# Plenty of toolchains refuse to run without one — Go puts its build cache in
-# `$HOME/.cache/go-build`, so on an image with no HOME every Go test fails.
-# Deliberately a *fallback* rather than the harness's unconditional override: an
+# Last-resort HOME for the eval script — used only when the image sets none
+# *and* the passwd database has no entry for the running UID. Plenty of
+# toolchains refuse to run without one (Go's build cache lives in
+# `$HOME/.cache/go-build`), so on such an image every Go test fails.
+# Deliberately the *last* tier, not the harness's unconditional override: an
 # instance image often pre-warms its dependency caches under the real HOME (Go
-# modules, npm, pip), and pointing HOME at an empty dir would force a
-# re-download — under `--no-network` not a slowdown but a failure.
-EVAL_HOME = "/eval-home"
+# modules, npm, pip), and replacing it would force a re-download — under
+# `--no-network` a failure, not a slowdown.
+#
+# Under /tmp on purpose: this tier is reached when the UID has no passwd entry,
+# which in practice means a non-root user (`docker run -u`, OpenShift's random
+# UIDs) — and such a user cannot create a directory at the filesystem root, so
+# a `/eval-home` would fail the very case it exists for. /tmp is world-writable.
+EVAL_HOME = "/tmp/eval-home"
 # Interpreters invoked in the container (both on PATH in the instance images).
 BASH = "bash"
 PYTHON = "python"

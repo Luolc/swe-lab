@@ -206,13 +206,29 @@ def _build_eval_script(
       # a silently wrong grade. `set +e` is lifted again around the test run
       # below, which is *expected* to exit non-zero.
       "set -e",
-      # Guarantee a writable HOME. Some images set none, and a toolchain that
-      # needs one then fails every test for a reason that looks nothing like the
-      # cause (Go's build cache lives in `$HOME/.cache/go-build`). `:-` keeps an
-      # image's own HOME when it has one, so a pre-warmed dependency cache under
-      # it still counts — replacing it would force a re-download, and under
-      # `--no-network` that is a failure rather than a slowdown.
-      f'export HOME="${{HOME:-{EVAL_HOME}}}"',
+      # Guarantee a writable HOME, in three tiers. Some images set none, and a
+      # toolchain that needs one then fails every test for a reason that looks
+      # nothing like the cause (Go's build cache lives in
+      # `$HOME/.cache/go-build`).
+      #
+      # 1. the image's own HOME wins — an instance image often pre-warms its
+      #    dependency caches under it (Go modules, npm, pip), and replacing it
+      #    would force a re-download, which under `--no-network` is a failure
+      #    rather than a slowdown;
+      # 2. else ask the passwd database for the account's real home, so `$HOME`
+      #    agrees with what a `~` lookup resolves to;
+      # 3. else a fallback directory.
+      #
+      # Each tier tests for a *non-empty* value rather than an exit code:
+      # `getent` in a pipeline reports the exit status of `cut`, which succeeds
+      # on empty input, so a UID with no passwd entry (`docker run -u 1000`,
+      # OpenShift's random UIDs) or an image without `getent` at all would
+      # otherwise leave HOME set to the empty string — worse than unset, since
+      # tools then resolve `~/.cache` to the unwritable `/.cache`.
+      '[ -n "${HOME:-}" ] || HOME="$(getent passwd "$(id -u)" 2>/dev/null'
+      ' | cut -d: -f6)"',
+      f'[ -n "${{HOME:-}}" ] || HOME={EVAL_HOME}',
+      "export HOME",
       'mkdir -p "$HOME"',
       f"cd {WORKDIR}",
       # Pin line endings for every git command below, symmetric with extraction
