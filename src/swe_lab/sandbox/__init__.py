@@ -21,7 +21,14 @@ from .mounts import merge_mounts, Mount, Mounts
 from .observer import CompositeObserver, SandboxObserver
 from .persist import index, persist, promote, RunRecord, RUNS_NAMESPACE
 from .resources import Inline, LocalFile, Resource
-from .result import Contribution, InlineArtifact, RunResult, RunStatus
+from .result import (
+    Contribution,
+    InlineArtifact,
+    NAME_SEPARATOR,
+    qualified_name,
+    RunResult,
+    RunStatus,
+)
 from .sandbox import ExecResult, Sandbox, SandboxFs, WORKSPACE_ENV
 from .spec import SandboxSpec
 from .store import (
@@ -36,6 +43,7 @@ __all__ = [
     "CompositeObserver",
     "Contribution",
     "InlineArtifact",
+    "NAME_SEPARATOR",
     "DockerHostSandbox",
     "ExecResult",
     "FilesystemStore",
@@ -66,6 +74,7 @@ __all__ = [
     "promote",
     "register_sandbox",
     "register_store",
+    "qualified_name",
     "registered_backends",
     "registered_stores",
 ]

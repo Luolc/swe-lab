@@ -12,10 +12,35 @@ from swe_lab.cli.persist_wiring import persist_run
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.evaluation.methods.unit_test import run_unit_test
+from swe_lab.evaluation.verdict import Verdict
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import build_sandbox
 
 _WORKSPACES_SUBDIR = "eval_workspaces"
+
+
+def _persistable(verdict: Verdict | None) -> dict[str, object]:
+  """Return the verdict's non-numeric detail worth keeping in a run record.
+
+  Scalars only, and chosen without knowing the dataset: a verdict's ``summary``
+  also carries lists (every passed / missing test name), which would grow the
+  shard with the instance — one SWE-Bench Pro instance requires 681 tests. The
+  scalar entries (``output_state``, ``first_missing``) are what actually explain
+  a failed grade at a glance; the counts travel as metrics.
+
+  Args:
+    verdict: The graded verdict, or ``None`` when grading never ran.
+
+  Returns:
+    ``eval_``-prefixed scalar entries, empty when there is no verdict.
+  """
+  if verdict is None:
+    return {}
+  return {
+      f"eval_{key}": value
+      for key, value in verdict.summary().items()
+      if value is None or isinstance(value, (str, int, float, bool))
+  }
 
 
 def eval_cmd(
@@ -105,7 +130,8 @@ def eval_cmd(
         backend=backend,
         artifacts=result.artifacts,
         metrics=result.metrics,
-        extra={"resolved": bool(verdict and verdict.resolved)},
+        extra={"resolved": bool(verdict and verdict.resolved)}
+        | _persistable(verdict),
     )
     summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
   print(json.dumps(summary, indent=2))

@@ -7,14 +7,15 @@ from typing import final, override
 from etils import epath
 
 from swe_lab.conversation import Conversation
-from swe_lab.harnesses import (
-    COMPLETE_METRIC,
-    Harness,
-    HarnessOutcomeObserver,
+from swe_lab.harnesses import COMPLETE_METRIC, Harness, HarnessOutcomeObserver
+from swe_lab.sandbox import (
+    Contribution,
+    Mounts,
     NAME_SEPARATOR,
     qualified_name,
+    SandboxFs,
+    SandboxSpec,
 )
-from swe_lab.sandbox import Contribution, Mounts, SandboxFs, SandboxSpec
 from swe_lab.sandbox.result import merge_contributions
 from swe_lab.sandbox.testing import FakeSandbox
 

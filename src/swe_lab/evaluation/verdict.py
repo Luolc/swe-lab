@@ -10,7 +10,7 @@ into one.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 from swe_lab.sandbox import Mounts, SandboxFs
@@ -40,6 +40,19 @@ class Verdict(Protocol):
 
     Keeps a caller (a CLI, a report) from having to know a concrete verdict's
     fields — it prints ``score`` + ``resolved`` + whatever this returns.
+
+    Scalar entries here are the ones a persisted run record keeps; list-valued
+    entries are for a human report only, since a shard must not grow with the
+    instance (one SWE-Bench Pro instance has 681 required tests).
+    """
+    ...
+
+  def metrics(self) -> dict[str, float]:
+    """Dataset-specific *numeric* detail, for the run's metrics.
+
+    Separate from :meth:`summary` because metrics are scalars a sweep can
+    aggregate across runs (counts, ratios), where summary carries prose and
+    lists. Names are unqualified — the eval method namespaces them.
     """
     ...
 
@@ -72,8 +85,15 @@ class UnitTestSpec[V: Verdict]:
     mounts: The other files the run needs staged (e.g. the test harness and
       the compiled expectation).
     grader: Judges the workspace after the run.
+    native_outputs: Byproducts the eval script writes, as artifact name →
+      workspace-relative filename. Declared by the dataset because the names
+      are its own (``output.json``, the test logs), and registered *best
+      effort* — a run that died early simply produces fewer. This is what makes
+      a failed grading debuggable after the fact, so it should name the logs,
+      not only the parsed result.
   """
 
   eval_script: str
   mounts: Mounts
   grader: Grader[V]
+  native_outputs: dict[str, str] = field(default_factory=dict)

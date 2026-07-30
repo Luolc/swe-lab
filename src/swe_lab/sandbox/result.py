@@ -23,6 +23,29 @@ class RunStatus(StrEnum):
   SUCCESS = "success"
   SETUP_ERROR = "setup_error"  # before_create / mounts / up / after_create
   RUN_ERROR = "run_error"  # the body or a post-processing hook failed
+  # The body's own watchdog killed it. Distinct from RUN_ERROR because nothing
+  # raised: the composition read a timed-out ExecResult and said so. Without it
+  # a killed run is indistinguishable from one that simply produced nothing.
+  TIMEOUT = "timeout"
+
+
+# Separator between a namespace (the harness or method that owns an artifact)
+# and the artifact's own name. A dot, not a slash: these are logical names in a
+# manifest, not key paths.
+NAME_SEPARATOR = "."
+
+
+def qualified_name(namespace: str, name: str) -> str:
+  """Return an artifact name namespaced by whatever produced it.
+
+  Args:
+    namespace: The owner — a harness's ``name``, or an eval method's.
+    name: The artifact's own name, format suffix included.
+
+  Returns:
+    The namespaced name, e.g. ``claude_code.stderr.txt``.
+  """
+  return f"{namespace}{NAME_SEPARATOR}{name}"
 
 
 @dataclass(frozen=True, slots=True)

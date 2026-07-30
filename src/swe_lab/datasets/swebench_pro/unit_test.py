@@ -54,11 +54,15 @@ class SweBenchProVerdict:
     passed: Names of the tests the parser reported as passed.
     missing: Required test names not in ``passed``.
     output_state: Whether ``output.json`` was found and readable.
+    required: The expectation this was judged against (``fail_to_pass ∪
+      pass_to_pass``). Kept so a run can report *how many* tests it was held to,
+      not just how many it missed — ``0`` on a verdict built without it.
   """
 
   passed: frozenset[str]
   missing: frozenset[str]
   output_state: OutputState
+  required: frozenset[str] = frozenset()
 
   @property
   def score(self) -> float:
@@ -72,11 +76,26 @@ class SweBenchProVerdict:
     return self.score >= 1.0
 
   def summary(self) -> dict[str, object]:
-    """SWE-Bench-Pro report detail: output state + passed / missing."""
+    """SWE-Bench-Pro report detail: output state + passed / missing.
+
+    ``first_missing`` is the scalar a persisted record keeps — the full
+    ``missing`` list is for a human report, and would otherwise bloat a shard
+    (one instance requires 681 tests). One name is usually enough to see *which*
+    test family broke.
+    """
     return {
         "output_state": self.output_state.value,
+        "first_missing": min(self.missing) if self.missing else None,
         "passed": sorted(self.passed),
         "missing": sorted(self.missing),
+    }
+
+  def metrics(self) -> dict[str, float]:
+    """Return counts a sweep can aggregate: passed / missing / required."""
+    return {
+        "passed": float(len(self.passed)),
+        "missing": float(len(self.missing)),
+        "required": float(len(self.required)),
     }
 
 
@@ -107,6 +126,7 @@ class SweBenchProGrader(Grader[SweBenchProVerdict]):
         passed=passed,
         missing=required - passed,
         output_state=output_state,
+        required=required,
     )
 
 
@@ -177,6 +197,12 @@ def _build_eval_script(
   # pytest parametrize id.
   selected = shlex.quote(",".join(selected_test_files_to_run))
   lines = [
+      # Abort on the first failed *setup* step. Without this a failed
+      # `git apply` fell through and the tests ran against the wrong tree,
+      # scoring the run unresolved with no hint that the patch never applied —
+      # a silently wrong grade. `set +e` is lifted again around the test run
+      # below, which is *expected* to exit non-zero.
+      "set -e",
       f"cd {WORKDIR}",
       # Pin line endings for every git command below, symmetric with extraction
       # (ADR-0001): a patch is diffed with ``core.autocrlf=false``, so a
@@ -202,14 +228,21 @@ def _build_eval_script(
     lines.append(f"git apply -v {_WS}/{PATCH_NAME}")
   if checkout_golden_tests and golden_test_checkout_cmd:
     lines.append(golden_test_checkout_cmd)
-  lines.append(
-      f"{BASH} {_WS}/{RUN_SCRIPT_NAME} {selected}"
-      f" > {_WS}/{STDOUT_LOG_NAME} 2> {_WS}/{STDERR_LOG_NAME}"
-  )
-  lines.append(
-      f"{PYTHON} {_WS}/{PARSER_NAME} {_WS}/{STDOUT_LOG_NAME}"
-      f" {_WS}/{STDERR_LOG_NAME} {_WS}/{OUTPUT_JSON_NAME}"
-  )
+  lines += [
+      # A failing test suite is a *result*, not an error: the parser still has
+      # to run and turn it into output.json, so the run is gradeable.
+      "set +e",
+      (
+          f"{BASH} {_WS}/{RUN_SCRIPT_NAME} {selected}"
+          f" > {_WS}/{STDOUT_LOG_NAME} 2> {_WS}/{STDERR_LOG_NAME}"
+      ),
+      # The parser, though, must succeed — no output.json means no verdict.
+      "set -e",
+      (
+          f"{PYTHON} {_WS}/{PARSER_NAME} {_WS}/{STDOUT_LOG_NAME}"
+          f" {_WS}/{STDERR_LOG_NAME} {_WS}/{OUTPUT_JSON_NAME}"
+      ),
+  ]
   return "\n".join(lines) + "\n"
 
 
@@ -270,4 +303,13 @@ def compile_unit_test(
       eval_script=eval_script,
       mounts=mounts,
       grader=SweBenchProGrader(),
+      # What the eval script leaves behind. Registered best-effort by the
+      # method, so a grading that went wrong can be read after the fact: the
+      # parsed result, and — the useful part when it did go wrong — the raw
+      # test logs the parser was fed.
+      native_outputs={
+          OUTPUT_JSON_NAME: OUTPUT_JSON_NAME,
+          STDOUT_LOG_NAME: STDOUT_LOG_NAME,
+          STDERR_LOG_NAME: STDERR_LOG_NAME,
+      },
   )

@@ -26,7 +26,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import override
 
-from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
+from swe_lab.sandbox import (
+    Contribution,
+    qualified_name,
+    SandboxFs,
+    SandboxObserver,
+)
 
 from .base import Harness
 
@@ -36,23 +41,6 @@ from .base import Harness
 # has one agent, so a consumer reading pass@K metrics should not have to know
 # which harness produced the run to find its completion flag.
 COMPLETE_METRIC = "agent_complete"
-# Separator between a harness's name and its byproduct's role in an artifact
-# name. A dot, not a slash: these are logical names in a manifest, not key
-# paths.
-NAME_SEPARATOR = "."
-
-
-def qualified_name(harness_name: str, role: str) -> str:
-  """Return the namespaced artifact name for one harness byproduct.
-
-  Args:
-    harness_name: The harness's :attr:`~swe_lab.harnesses.base.Harness.name`.
-    role: The byproduct's role, as declared in ``native_outputs``.
-
-  Returns:
-    The artifact name, e.g. ``claude_code.stderr``.
-  """
-  return f"{harness_name}{NAME_SEPARATOR}{role}"
 
 
 @dataclass

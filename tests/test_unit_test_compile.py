@@ -119,15 +119,38 @@ def test_script_pins_line_endings_before_any_git_command():
   lines = _script(
       _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
-  assert lines[0] == f"cd {WORKDIR}"  # inside the repo, so repo-local
-  assert lines[1:3] == pins  # and set before anything else runs
+  cd_at = lines.index(f"cd {WORKDIR}")
+  # inside the repo (so repo-local), immediately after the cd
+  assert lines[cd_at + 1 : cd_at + 3] == pins
   governed = [
       i
       for i, line in enumerate(lines)
       if line.startswith("git ") and line not in pins
   ]
   assert governed  # not vacuous: there are git commands to govern
-  assert all(i > 2 for i in governed)
+  assert all(i > cd_at + 2 for i in governed)
+
+
+def test_script_fails_fast_on_setup_but_not_on_the_test_run():
+  # A failed `git apply` must abort: letting it fall through would run the tests
+  # against the wrong tree and score the run unresolved with no hint why.
+  # The test run itself is exempt — a failing suite is a result, and the parser
+  # still has to turn it into output.json.
+  lines = _script(
+      _instance(), apply_patch=True, checkout_golden_tests=True
+  ).splitlines()
+  apply_at = next(
+      i for i, line in enumerate(lines) if line.startswith("git apply")
+  )
+  run_at = next(i for i, line in enumerate(lines) if line.startswith("bash "))
+  parse_at = next(
+      i for i, line in enumerate(lines) if line.startswith("python ")
+  )
+
+  assert lines[0] == "set -e"  # armed before anything runs
+  assert lines[run_at - 1] == "set +e"  # disarmed only around the suite
+  assert lines[parse_at - 1] == "set -e"  # re-armed: no output.json, no verdict
+  assert apply_at < run_at  # the patch is applied while still armed
 
 
 def test_script_flag_combinations():
