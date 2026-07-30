@@ -105,24 +105,29 @@ def test_script_uses_sandbox_workspace_and_full_flow():
   assert '"$SANDBOX_WORKSPACE"/output.json' in script
 
 
-def test_script_pins_autocrlf_before_any_git_command():
+def test_script_pins_line_endings_before_any_git_command():
   # Symmetric with extraction (ADR-0001): the patch is diffed with
   # core.autocrlf=false, so nothing downstream may renormalize line endings.
-  # Repo-level and *before* reset/checkout/apply, so it also governs the
-  # dataset-authored golden-checkout line we do not write.
-  pin = "git config core.autocrlf false"
+  # Two knobs — autocrlf covers files with no `text` attribute, eol fixes the
+  # checkout direction for files that have one. Repo-level and *before*
+  # reset/checkout/apply, so they also govern the dataset-authored
+  # golden-checkout line we do not write.
+  pins = [
+      "git config core.autocrlf false",
+      "git config core.eol lf",
+  ]
   lines = _script(
       _instance(), apply_patch=True, checkout_golden_tests=True
   ).splitlines()
-  at = lines.index(pin)
-  assert lines[at - 1] == f"cd {WORKDIR}"  # inside the repo, so repo-level
+  assert lines[0] == f"cd {WORKDIR}"  # inside the repo, so repo-local
+  assert lines[1:3] == pins  # and set before anything else runs
   governed = [
       i
       for i, line in enumerate(lines)
-      if line.startswith("git ") and line != pin
+      if line.startswith("git ") and line not in pins
   ]
   assert governed  # not vacuous: there are git commands to govern
-  assert all(at < i for i in governed)
+  assert all(i > 2 for i in governed)
 
 
 def test_script_flag_combinations():
