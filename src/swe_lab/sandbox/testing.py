@@ -50,6 +50,8 @@ class FakeSandbox(Sandbox):
       a misbehaving sandbox).
     calls: Every call as ``(method, detail)``, in order.
     scripts: The script names passed to ``run_script``, in order.
+    script_envs: The ``env`` passed to each ``run_script``, in order (``None``
+      when the caller passed none) — lets a test assert env plumbing.
     commands: The command strings passed to ``run_command``, in order.
   """
 
@@ -61,6 +63,7 @@ class FakeSandbox(Sandbox):
   down_error: Exception | None = None
   calls: list[tuple[str, str]] = field(default_factory=list)
   scripts: list[str] = field(default_factory=list)
+  script_envs: list[Mapping[str, str] | None] = field(default_factory=list)
   commands: list[str] = field(default_factory=list)
   _execs: int = field(default=0, init=False, repr=False)
 
@@ -141,10 +144,11 @@ class FakeSandbox(Sandbox):
       timeout: float,
       env: Mapping[str, str] | None = None,
   ) -> ExecResult:
-    """Record the script name and return the next scripted result."""
-    del timeout, env
+    """Record the script name + env and return the next scripted result."""
+    del timeout
     self.calls.append(("run_script", name))
     self.scripts.append(name)
+    self.script_envs.append(env)
     return self._next_result()
 
   @override

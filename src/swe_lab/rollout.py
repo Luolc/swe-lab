@@ -11,7 +11,7 @@ proxy compose unchanged.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 import contextlib
 from dataclasses import dataclass
 
@@ -29,6 +29,7 @@ from swe_lab.sandbox import (
     RunStatus,
     Sandbox,
     SandboxManager,
+    SandboxObserver,
 )
 from swe_lab.sandbox.observers import DiffExtractObserver
 
@@ -73,6 +74,7 @@ def run_rollout(
     proxy: contextlib.AbstractContextManager[object] | None = None,
     agent_env: Mapping[str, str] | None = None,
     exclude_globs: tuple[str, ...] = (),
+    observers: Sequence[SandboxObserver] = (),
 ) -> RolloutOutcome:
   """Run one agent rollout and extract its patch + trace.
 
@@ -100,6 +102,10 @@ def run_rollout(
       For a secret, use the sandbox's ``pass_env`` instead — that passes it by
       reference, so the value never reaches a command line or a staged file.
     exclude_globs: Build-noise denylist for the diff extraction.
+    observers: Extra observers, composed **after** this composition's own
+      (conversation / diff-extract / harness-outcome) so they see the run once
+      it has post-processed — e.g. a persist observer, or a metrics collector
+      that wants the extracted patch.
 
   Returns:
     The rollout outcome (patch, flags, conversation, status).
@@ -116,7 +122,7 @@ def run_rollout(
   manager = SandboxManager(
       sandbox=sandbox,
       output_dir=epath.Path(output_dir),
-      observers=[conversation, extract, outcome],
+      observers=[conversation, extract, outcome, *observers],
       mounts=mounts,
   )
   with proxy or contextlib.nullcontext(), manager.session() as sb:
