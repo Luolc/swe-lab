@@ -149,12 +149,13 @@ def _build_eval_script(
   legacy builder, and no others:
 
   1. the workspace path is ``$SANDBOX_WORKSPACE``, not a fixed mount point;
-  2. ``core.autocrlf`` is pinned ``false`` (see the comment below) — a knob the
-     reference entryscript leaves alone, so a line-ending-sensitive instance can
-     in principle grade differently here than under Scale's harness. Pinned
-     anyway, because matching our own extraction (ADR-0001) matters more than
-     matching an unset default: ``false`` *is* git's POSIX default, so this only
-     bites an image that explicitly turned normalization on.
+  2. line endings are pinned — ``core.autocrlf=false`` + ``core.eol=lf`` (see
+     the comment below) — knobs the reference entryscript leaves alone, so a
+     line-ending-sensitive instance can in principle grade differently here than
+     under Scale's harness. Pinned anyway, because matching our own extraction
+     (ADR-0001) matters more than matching an unset default: both values *are*
+     git's effective default on Linux, so this only bites an image that
+     explicitly turned normalization on.
 
   Args:
     base_commit: The commit the working tree is reset to before grading.
@@ -180,10 +181,20 @@ def _build_eval_script(
       # Pin line endings for every git command below, symmetric with extraction
       # (ADR-0001): a patch is diffed with ``core.autocrlf=false``, so a
       # checkout/apply that renormalizes CRLF<->LF would either fail to apply or
-      # silently alter content. Set at **repo** level rather than per-invocation
-      # ``-c`` because some of what follows we do not author — the dataset's own
+      # silently alter content. Two knobs, because they cover different halves:
+      # ``autocrlf`` off stops conversion for files with no ``text`` attribute,
+      # and ``eol=lf`` fixes the checkout direction for files that *do* have one
+      # (where ``autocrlf=false`` alone leaves it at the platform's ``native``).
+      # Both are already git's effective default on Linux, so this only bites an
+      # image that turned normalization on — that is the point. A per-path
+      # ``eol=`` in the repo's own ``.gitattributes`` still wins; no config
+      # overrides that.
+      #
+      # Set at **repo** level rather than per-invocation ``-c`` because some of
+      # what follows we do not author — the dataset's own
       # ``golden_test_checkout_cmd``, and the harness's run script.
       "git config core.autocrlf false",
+      "git config core.eol lf",
       f"git reset --hard {base_commit}",
       f"git checkout {base_commit}",
   ]
