@@ -7,7 +7,7 @@ holds the typed verdict for the caller to read back.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import override
 
@@ -57,6 +57,7 @@ def run_unit_test[V: Verdict](
     *,
     output_dir: epath.PathLike,
     timeout: float = _DEFAULT_TIMEOUT_S,
+    eval_env: Mapping[str, str] | None = None,
     observers: Sequence[SandboxObserver] = (),
 ) -> tuple[RunResult, V | None]:
   """Run and grade one instance's unit-test evaluation.
@@ -72,8 +73,11 @@ def run_unit_test[V: Verdict](
     unit_test_spec: The compiled eval script, mounts, and grader.
     output_dir: The host directory collected artifacts are fetched into.
     timeout: Seconds before the eval script is killed.
-    observers: Extra observers composed alongside the eval-parse observer
-      (e.g. a persist observer).
+    eval_env: Extra environment for the eval script (mirrors ``run_rollout``'s
+      ``agent_env``). For a secret, use the sandbox's ``pass_env`` instead —
+      that passes it by reference, so the value never reaches a command line.
+    observers: Extra observers, composed **after** this method's own so they
+      see the run once it has post-processed (e.g. a persist observer).
 
   Returns:
     The engine ``RunResult`` and the verdict. A setup failure (bad mounts, or
@@ -90,12 +94,12 @@ def run_unit_test[V: Verdict](
   manager = SandboxManager(
       sandbox=sandbox,
       output_dir=epath.Path(output_dir),
-      observers=[*observers, parse],
+      observers=[parse, *observers],
       mounts=mounts,
   )
   try:
     with manager.session() as sb:
-      _ = sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout)
+      _ = sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout, env=eval_env)
   except SandboxError:
     pass  # the failure is recorded in manager.result; return it, don't raise
   return manager.result, parse.verdict

@@ -7,6 +7,7 @@ passes it — no backend registry, no patching a construction function.
 
 import json
 from pathlib import Path
+from typing import final, override
 
 from etils import epath
 
@@ -26,6 +27,8 @@ from swe_lab.sandbox import (
     Mount,
     RunStatus,
     SandboxError,
+    SandboxFs,
+    SandboxObserver,
     SandboxSpec,
 )
 from swe_lab.sandbox.testing import FakeSandbox
@@ -100,6 +103,41 @@ def test_grader_runs_even_when_body_exec_fails(tmp_path: Path):
   assert result.status is RunStatus.SUCCESS  # body did not raise; it returned 1
   assert verdict is not None
   assert verdict.resolved is True  # graded from the staged output
+
+
+def test_eval_env_reaches_the_entryscript(tmp_path: Path):
+  # Mirrors run_rollout's agent_env: extra env for the thing being run.
+  sandbox = _fake(tmp_path)
+  _, _ = run_unit_test(
+      sandbox,
+      _unit_test_spec(["a"], ["a"]),
+      output_dir=tmp_path / "out",
+      eval_env={"MY_FLAG": "1"},
+  )
+  assert sandbox.script_envs == [{"MY_FLAG": "1"}]
+
+
+def test_extra_observers_run_after_the_methods_own(tmp_path: Path):
+  # Composed after the eval-parse observer, so an injected observer (e.g. a
+  # persist observer) sees the run once the method has post-processed.
+  seen: list[str] = []
+
+  @final
+  class _Probe(SandboxObserver):
+
+    @override
+    def before_destroy(self, sb: SandboxFs) -> None:
+      del sb
+      seen.append("probe")
+
+  _, verdict = run_unit_test(
+      _fake(tmp_path),
+      _unit_test_spec(["a"], ["a"]),
+      output_dir=tmp_path / "out",
+      observers=[_Probe()],
+  )
+  assert seen == ["probe"]  # it ran
+  assert verdict is not None and verdict.resolved is True  # grading unaffected
 
 
 def test_setup_failure_is_captured_not_raised(tmp_path: Path):

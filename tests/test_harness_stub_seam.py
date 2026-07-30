@@ -29,6 +29,8 @@ from swe_lab.harnesses import (
 )
 from swe_lab.rollout import run_rollout
 from swe_lab.sandbox import (
+    Contribution,
+    ExecResult,
     GitHubJobSandbox,
     Inline,
     Mount,
@@ -36,6 +38,7 @@ from swe_lab.sandbox import (
     RunStatus,
     SandboxFs,
     SandboxManager,
+    SandboxObserver,
     SandboxSpec,
 )
 
@@ -153,3 +156,48 @@ def test_run_rollout_takes_a_foreign_harness_and_proxy(tmp_path: Path):
   assert outcome.conversation == Conversation(
       messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
   )
+
+
+def test_run_rollout_takes_extra_observers_and_agent_env(tmp_path: Path):
+  # Symmetry with run_unit_test: an extra observer is composed after the
+  # composition's own, and env is forwarded to the harness.
+  seen: list[str] = []
+
+  class _Probe(SandboxObserver):
+
+    @override
+    def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+      seen.append("probe")
+      # runs after diff-extract, so the extracted patch is already on the host
+      return Contribution(metrics={"probe": 1.0})
+
+  envs: list[Mapping[str, str] | None] = []
+
+  class _Recording(GitHubJobSandbox):
+    """Records the env each exec received, to prove agent_env is forwarded."""
+
+    @override
+    def run_script(
+        self,
+        name: str,
+        *,
+        timeout: float,
+        env: Mapping[str, str] | None = None,
+    ) -> ExecResult:
+      envs.append(env)
+      return super().run_script(name, timeout=timeout, env=env)
+
+  workspace = tmp_path / "run"
+  outcome = run_rollout(
+      _Recording(spec=_SPEC, workspace=epath.Path(workspace)),
+      StubHarness(),
+      prompt="SOLVE THIS",
+      output_dir=workspace,
+      timeout=10.0,
+      agent_env={"MY_FLAG": "1"},
+      observers=[_Probe()],
+  )
+  assert seen == ["probe"]
+  assert outcome.metrics["probe"] == 1.0  # its contribution reached the result
+  # run_rollout → harness.run(env=...) → the exec; the stub hands it straight on
+  assert {"MY_FLAG": "1"} in envs
