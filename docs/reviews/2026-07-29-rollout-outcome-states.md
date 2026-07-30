@@ -161,7 +161,88 @@ Sequenced so each step stands alone:
 one instance will fail for different reasons, and `attempt` exists precisely so
 an *infra* failure can be retried. Retry logic needs to know which of the nine
 it hit — `MAX_TURNS` should not be retried, `EXECUTION_ERROR` should. The one bit
-cannot support that decision.
+cannot support that decision. §6 is that policy.
+
+## 6. Retry policy for a fair eval
+
+This has to be settled **before** `attempt` gets wired up, or the first retry
+implementation bakes in whatever was convenient. One principle decides every
+case:
+
+> **Retry only failures that are not attributable to the agent.**
+
+If the agent caused the failure *given a fixed budget*, retrying hands that agent
+extra attempts a better-behaved agent would not need — the score inflates. If our
+infrastructure caused it, not retrying penalizes the agent for our problem — the
+score deflates, non-deterministically. Both are unfair. The axis is **causal
+attribution, not severity**: a crash is retryable not because it is bad but
+because it is ours.
+
+| Outcome | Retry? | Attribution |
+|---|---|---|
+| `RunStatus.setup_error` (pull / docker / mount) | ✅ yes | never got an attempt |
+| `NO_OUTPUT` (SIGKILL, host OOM) | ✅ yes | infra killed it |
+| `TRUNCATED` | ✅ yes | infra killed it mid-flight |
+| usage / credit limit (an `EXECUTION_ERROR` flavour) | ✅ yes, after waiting | our account, not the agent |
+| `FINISHED_WITH_API_ERROR` | ✅ yes | final turn died on an API error |
+| `EXECUTION_ERROR` (other) | ⚠️ classify | catch-all — see below |
+| `TIMED_OUT` | ❌ **no** | wall-clock *is* the budget |
+| `MAX_TURNS` | ❌ no | it spent its own budget |
+| `MAX_BUDGET` | ❌ no | same |
+| `MAX_OUTPUT_RETRIES` | ❌ no | its own output was invalid |
+
+### The two cases that need care
+
+**Timeout is a result, not a fault.** Wall-clock is a budget exactly like
+`max_turns`: an agent that thrashes or re-runs the suite ten times hits it, and
+that is a finding — score it **unresolved**, do not re-roll. This is only fair if
+the clock measures the *agent*, which ours does: `timeout` reaches
+`sb.run_script` via `harness.run`, so it starts after `up()` + `mount()` and
+excludes the image pull (which has its own 3600 s budget). Host speed still leaks
+in (amd64 emulation, noisy runners), so the budget must be generous enough that
+host variance cannot flip a verdict. **A timeout rate above a few percent means
+the box is being measured, not the agent.**
+
+**`EXECUTION_ERROR` is not one thing.** It is the catch-all: an API 5xx that
+exhausted retries (infra → retry), an auth failure (infra → retry), an internal
+agent bug, an OOM. It cannot be classified without the `errors[]` array — a
+second reason to capture it (F1). The machinery already exists and should be
+reused, not reinvented: `harnesses/claude_code/errors.py::classify_error_text`
+separates `UsageLimitError` / `RetryableError` / generic.
+
+### The invariant that protects fairness
+
+**The retry predicate must be decidable without looking at the grade.**
+
+Never "retry because the patch was empty", never "retry because the tests
+failed". Outcome-conditional retry re-rolls bad luck and directly inflates
+pass@1. Concretely: the predicate is a function of `AgentOutcome` + `RunStatus`
+and **never** reads `verdict`. That is testable, so per the quality bar it gets a
+named test rather than a comment.
+
+### Retry ≠ resample
+
+These are the two ADR-0004 fields, and blurring them corrupts the metric:
+
+- **Retry** an infra failure → **same `rollout_id`, bump `attempt`**. The pass@K
+  denominator is unchanged; a void attempt is being replaced.
+- **Resample** for pass@K → **new `rollout_id`, `attempt = 0`**. This *is* the
+  denominator.
+
+Retrying by incrementing `rollout_id` silently turns pass@4 into
+pass@5-for-unlucky-instances.
+
+### What a fair report must state
+
+- **Cap retries** (2 is plenty) and record the count — an eval where some
+  instances got three attempts is not reproducible unless the shards say so, and
+  `attempt` already persists exactly that.
+- **Report the infra-failure rate.** If the cap is hit and a run is still void,
+  either score it unresolved or exclude it — and if excluded, say so, because it
+  changes the denominator.
+- **Break out `MAX_TURNS` / `TIMED_OUT` separately** from genuine failures. A
+  high `max_turns` share is a tight cap, not a weak agent; publishing it inside
+  "unresolved" without the breakdown misleads.
 
 ## Sources
 
