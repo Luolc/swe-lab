@@ -145,9 +145,16 @@ def _build_eval_script(
   """Build the in-container eval script (ports Scale's create_entryscript).
 
   Both flags default (via the caller) to the real grading flow; set them
-  ``False`` for the dataset self-checks. The only change from the legacy
-  builder is the workspace path: ``$SANDBOX_WORKSPACE`` instead of a fixed
-  mount point.
+  ``False`` for the dataset self-checks. Two **deliberate divergences** from the
+  legacy builder, and no others:
+
+  1. the workspace path is ``$SANDBOX_WORKSPACE``, not a fixed mount point;
+  2. ``core.autocrlf`` is pinned ``false`` (see the comment below) — a knob the
+     reference entryscript leaves alone, so a line-ending-sensitive instance can
+     in principle grade differently here than under Scale's harness. Pinned
+     anyway, because matching our own extraction (ADR-0001) matters more than
+     matching an unset default: ``false`` *is* git's POSIX default, so this only
+     bites an image that explicitly turned normalization on.
 
   Args:
     base_commit: The commit the working tree is reset to before grading.
