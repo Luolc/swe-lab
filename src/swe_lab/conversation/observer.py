@@ -91,7 +91,7 @@ class ConversationObserver(SandboxObserver):
     self.conversation = self.producer.to_conversation(sb)
     return Contribution(
         inline_artifacts={
-            "conversation": InlineArtifact(
+            "conversation.json": InlineArtifact(
                 CONVERSATION_NAME,
                 self.conversation.model_dump_json(indent=2).encode("utf-8"),
             )

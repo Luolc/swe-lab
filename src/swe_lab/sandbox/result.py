@@ -60,6 +60,14 @@ class Contribution:
   Either way ``RunResult.artifacts`` ends up holding host paths, so a consumer
   never has to care which channel an artifact came through.
 
+  **Name an artifact for what it is, suffixed with its format** —
+  ``conversation.json``, ``patch.diff``, ``event_stream.jsonl``, ``stderr.txt``.
+  The name travels into a persisted manifest, where a reader has only the name
+  to go on: the suffix tells them how to parse the payload without opening it,
+  and distinguishes one object (``.json``) from newline-delimited records
+  (``.jsonl``). It is the artifact's *logical* name, so it need not equal the
+  in-sandbox filename.
+
   Attributes:
     artifacts: Canonical artifact name → its in-sandbox filename.
     inline_artifacts: Canonical artifact name → content the observer holds.

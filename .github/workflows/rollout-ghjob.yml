@@ -84,7 +84,7 @@ jobs:
           ls -la /opt/claude-code/claude || true
           /opt/claude-code/claude --version || echo "::warning::claude binary did not run (rc=$?)"
           echo "== agent stderr (the direct error, if any) =="
-          find .cache/rollout_workspaces -name claude.stderr \
+          find .cache/rollout_workspaces -name claude.stderr.txt \
             -exec sh -c 'echo "--- $1 ($(wc -c < "$1") bytes) ---"; cat "$1"' _ {} \; || true
           echo "== event stream (turns produced) =="
           find .cache/rollout_workspaces -name claude.event_stream.jsonl \

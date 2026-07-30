@@ -100,20 +100,28 @@ Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `export CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions < prompt.txt > claude.event_stream.jsonl 2> claude.stderr \|\| true` (the prompt is piped in on **stdin**, not inlined) |
+| `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `. agent_env.sh` (caller-injected env) · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions < prompt.txt > claude.event_stream.jsonl 2> claude.stderr.txt \|\| true` (the prompt is piped in on **stdin**, not inlined) |
 | `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **dataset/composition** (mount) | the agent (via run_claude_code.sh) | the solve prompt — **dataset-derived** (`SweBenchProInstance.solve_prompt`), *not* a harness mount |
 
 ### Produced during the run (in-container, by `run_claude_code.sh`)
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `claude.event_stream.jsonl` | `$SANDBOX_WORKSPACE/claude.event_stream.jsonl` | agent stdout redirect | conversation observer (host) | Claude Code's native `stream-json` output (the primary; kept verbatim as the `event_stream` artifact) |
-| `claude.stderr` | `$SANDBOX_WORKSPACE/claude.stderr` | agent stderr redirect | conversation observer (host) | the run's stderr log — registered as the `stderr` artifact (a native byproduct, kept for debugging failed runs) |
+| `claude.event_stream.jsonl` | `$SANDBOX_WORKSPACE/claude.event_stream.jsonl` | agent stdout redirect | conversation observer (host) | Claude Code's native `stream-json` output (the primary; kept verbatim as the `claude_code.event_stream.jsonl` artifact) |
+| `claude.stderr.txt` | `$SANDBOX_WORKSPACE/claude.stderr.txt` | agent stderr redirect | harness-outcome observer (host) | the run's stderr log — registered as the `claude_code.stderr.txt` artifact (a native byproduct, kept for debugging failed runs) |
 
 The conversation observer (`before_destroy`, host-side) converts the native
-`claude.event_stream.jsonl` into the canonical typed `Conversation` (task 06a) and
-writes `conversation.json` alongside it; both are registered artifacts.
-(`event_stream` is Claude-Code-specific; the canonical `conversation` is shared.)
+`claude.event_stream.jsonl` into the canonical typed `Conversation` (task 06a).
+It already holds those bytes, so it contributes them **inline** — the manager
+writes `conversation.json` straight to the host output dir, with no round trip
+back through the sandbox. The raw trace itself is registered by the
+*harness-outcome* observer, which also collects `claude.stderr.txt` and the
+agent's completion signal.
+
+Artifact names carry their format, and a harness's own byproducts are namespaced
+by harness: `claude_code.event_stream.jsonl` / `claude_code.stderr.txt` are
+Claude-Code-specific, while the canonical `conversation.json` is shared across
+harnesses and stays unprefixed.
 
 ### Produced after the run (diff-extract observer, `before_destroy`)
 
@@ -121,7 +129,7 @@ writes `conversation.json` alongside it; both are registered artifacts.
 |---|---|---|---|---|
 | `extract.sh` | `$SANDBOX_WORKSPACE/extract.sh` | diff-extract observer | itself (run in-container) | the ADR-0001 extraction script: `git -C $WORKDIR add -N` + `git diff` vs `base_commit` (no `--binary`) → `patch.raw.diff` |
 | `patch.raw.diff` | `$SANDBOX_WORKSPACE/patch.raw.diff` | `extract.sh` (in-container) | the observer (host) | raw `git diff` vs `base_commit` |
-| `patch.diff` | `$SANDBOX_WORKSPACE/patch.diff` | the observer (host) | the grader, if `--grade` | cleaned patch (binary hunks stripped) |
+| `patch.diff` | *(host output dir only)* | the observer (host) | the grader, if `--grade` | cleaned patch (binary hunks stripped) — contributed **inline**, so it is never written back into the sandbox |
 
 For `--grade`, the CLI feeds `patch.diff` into a **separate eval run** (its own
 `.cache/eval_workspaces/<id>/` above) — grading reuses the eval composition.
@@ -152,7 +160,7 @@ expected*, and *what resulted*, re-gradable without the dataset record.
   (`run_script.sh`, `parser.py`, `output.json`, `required_tests.json`,
   `entryscript.sh`, `stdout.log`, `stderr.log`, **and the solve `prompt.txt`**)
   in the dataset adapter; the claude_code names (`run_claude_code.sh`,
-  `claude.event_stream.jsonl`, `claude.stderr`, `$HOME`, the `/opt/claude-code/claude`
+  `claude.event_stream.jsonl`, `claude.stderr.txt`, `$HOME`, the `/opt/claude-code/claude`
   binary asset path) in the harness; `conversation.json` in the shared
   conversation observer; `extract.sh` / `patch.raw.diff` / `patch.diff` in the
   shared diff-extract observer. `PROMPT_NAME` (`prompt.txt`) is the one

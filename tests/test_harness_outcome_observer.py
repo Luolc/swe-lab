@@ -51,7 +51,7 @@ class _StubHarness(Harness):
 
   @override
   def native_outputs(self) -> dict[str, str]:
-    return {"event_stream": EVENT_STREAM, "agent_stderr": STDERR}
+    return {"event_stream.jsonl": EVENT_STREAM, "stderr.txt": STDERR}
 
   @override
   def to_conversation(self, sb: SandboxFs) -> Conversation:
@@ -85,8 +85,8 @@ def test_registers_every_byproduct_that_landed(tmp_path: Path):
   # namespaced by the harness: the roles themselves are generic, so unqualified
   # they would collide between harnesses and lose their provenance
   assert contribution.artifacts == {
-      "stub.event_stream": EVENT_STREAM,
-      "stub.agent_stderr": STDERR,
+      "stub.event_stream.jsonl": EVENT_STREAM,
+      "stub.stderr.txt": STDERR,
   }
   assert observer.collected == contribution.artifacts
 
@@ -99,7 +99,7 @@ def test_absent_byproducts_are_skipped_best_effort(tmp_path: Path):
 
   assert contribution is not None
   # a run that died early yields fewer artifacts, never a broken reference
-  assert contribution.artifacts == {"stub.event_stream": EVENT_STREAM}
+  assert contribution.artifacts == {"stub.event_stream.jsonl": EVENT_STREAM}
 
 
 def test_completion_is_kept_and_exported_as_a_metric(tmp_path: Path):
@@ -145,13 +145,13 @@ def test_two_harnesses_sharing_a_role_do_not_collide(tmp_path: Path):
           Contribution(artifacts=second.collected),
       ]
   )  # would raise if the names collided
-  assert "stub.agent_stderr" in merged.artifacts
-  assert "other_agent.agent_stderr" in merged.artifacts
+  assert "stub.stderr.txt" in merged.artifacts
+  assert "other_agent.stderr.txt" in merged.artifacts
 
 
 def test_qualified_name_uses_a_dot_not_a_path_separator():
   # These are logical names in a manifest, not store key paths.
-  assert qualified_name("claude_code", "stderr") == "claude_code.stderr"
+  assert qualified_name("claude_code", "stderr.txt") == "claude_code.stderr.txt"
   assert "/" not in NAME_SEPARATOR
 
 
