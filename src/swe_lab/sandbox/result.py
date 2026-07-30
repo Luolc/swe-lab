@@ -65,8 +65,9 @@ class Contribution:
   The name travels into a persisted manifest, where a reader has only the name
   to go on: the suffix tells them how to parse the payload without opening it,
   and distinguishes one object (``.json``) from newline-delimited records
-  (``.jsonl``). It is the artifact's *logical* name, so it need not equal the
-  in-sandbox filename.
+  (``.jsonl``). A shared, cross-harness artifact is simply named for its file
+  (``patch.raw.diff``); one a harness owns is namespaced, so its name and its
+  filename differ (``claude_code.stderr.txt`` ← ``claude.stderr.txt``).
 
   Attributes:
     artifacts: Canonical artifact name → its in-sandbox filename.

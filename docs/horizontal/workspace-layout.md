@@ -145,7 +145,7 @@ never a candidate):
 - eval: (verdict — persistence shape TBD in task 12).
 - rollout: `conversation` + `event_stream` + `stderr` (conversation
   observer — every native byproduct), `patch` +
-  `patch_raw` (diff-extract observer).
+  `patch.raw.diff` (diff-extract observer).
 
 The staged inputs (`entryscript.sh` / `run_claude_code.sh` / `run_script.sh` /
 `parser.py` / `required_tests.json` / `prompt.txt`) remain in the workspace and

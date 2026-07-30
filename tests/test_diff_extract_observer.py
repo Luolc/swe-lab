@@ -37,7 +37,7 @@ def test_extracts_cleans_and_registers(tmp_path: Path):
   assert contribution is not None
   # The raw diff came from the sandbox, so it is referenced by its in-sandbox
   # filename for the manager to fetch out.
-  assert contribution.artifacts == {"patch_raw.diff": RAW_PATCH_NAME}
+  assert contribution.artifacts == {RAW_PATCH_NAME: RAW_PATCH_NAME}
   # The clean patch was derived here, so it travels inline — never written back
   # into the sandbox just to be fetched again.
   inline = contribution.inline_artifacts["patch.diff"]
@@ -65,4 +65,4 @@ def test_absent_raw_patch_is_empty(tmp_path: Path):
   assert obs.patch == ""
   assert obs.is_empty is True
   assert contribution is not None
-  assert "patch_raw" not in contribution.artifacts  # nothing produced
+  assert RAW_PATCH_NAME not in contribution.artifacts  # nothing produced
