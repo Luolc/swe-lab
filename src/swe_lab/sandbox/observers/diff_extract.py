@@ -88,12 +88,16 @@ class DiffExtractObserver(SandboxObserver):
     # The raw diff was produced *in* the sandbox, so it is fetched out; the
     # clean one was derived here, so it is handed over inline rather than
     # written back into the sandbox only to be fetched again.
+    #
+    # Both are named for their file: these are shared, cross-harness artifacts,
+    # so nothing namespaces them and the artifact name simply *is* the filename
+    # (which already carries the format).
     artifacts = (
-        {"patch_raw.diff": RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
+        {RAW_PATCH_NAME: RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
     )
     return Contribution(
         artifacts=artifacts,
         inline_artifacts={
-            "patch.diff": InlineArtifact(PATCH_NAME, self.patch.encode("utf-8"))
+            PATCH_NAME: InlineArtifact(PATCH_NAME, self.patch.encode("utf-8"))
         },
     )
