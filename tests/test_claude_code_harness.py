@@ -149,7 +149,7 @@ def test_binary_is_a_read_only_executable_mount_at_fixed_path(
 def test_native_outputs():
   assert ClaudeCodeHarness().native_outputs() == {
       "event_stream.jsonl": "claude.event_stream.jsonl",
-      "stderr.txt": "claude.stderr.txt",
+      "stderr.log": "claude.stderr.log",
   }
 
 
@@ -179,7 +179,7 @@ def test_proxy_capture_without_base_url_raises():
 def test_proxy_native_outputs_registers_proxy_log():
   assert _proxy_harness().native_outputs() == {
       "proxy_log.jsonl": PROXY_LOG_NAME,
-      "stderr.txt": "claude.stderr.txt",
+      "stderr.log": "claude.stderr.log",
   }
 
 
