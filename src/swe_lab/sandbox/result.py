@@ -43,7 +43,7 @@ def qualified_name(namespace: str, name: str) -> str:
     name: The artifact's own name, format suffix included.
 
   Returns:
-    The namespaced name, e.g. ``claude_code.stderr.txt``.
+    The namespaced name, e.g. ``claude_code.stderr.log``.
   """
   return f"{namespace}{NAME_SEPARATOR}{name}"
 
@@ -84,13 +84,13 @@ class Contribution:
   never has to care which channel an artifact came through.
 
   **Name an artifact for what it is, suffixed with its format** —
-  ``conversation.json``, ``patch.diff``, ``event_stream.jsonl``, ``stderr.txt``.
+  ``conversation.json``, ``patch.diff``, ``event_stream.jsonl``, ``stderr.log``.
   The name travels into a persisted manifest, where a reader has only the name
   to go on: the suffix tells them how to parse the payload without opening it,
   and distinguishes one object (``.json``) from newline-delimited records
   (``.jsonl``). A shared, cross-harness artifact is simply named for its file
   (``patch.raw.diff``); one a harness owns is namespaced, so its name and its
-  filename differ (``claude_code.stderr.txt`` ← ``claude.stderr.txt``).
+  filename differ (``claude_code.stderr.log`` ← ``claude.stderr.log``).
 
   Attributes:
     artifacts: Canonical artifact name → its in-sandbox filename.

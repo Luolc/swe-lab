@@ -20,7 +20,7 @@ from swe_lab.sandbox.result import merge_contributions
 from swe_lab.sandbox.testing import FakeSandbox
 
 EVENT_STREAM = "event_stream.jsonl"
-STDERR = "agent.stderr"
+STDERR = "agent.stderr.log"
 
 
 class _StubHarness(Harness):
@@ -52,7 +52,7 @@ class _StubHarness(Harness):
 
   @override
   def native_outputs(self) -> dict[str, str]:
-    return {"event_stream.jsonl": EVENT_STREAM, "stderr.txt": STDERR}
+    return {"event_stream.jsonl": EVENT_STREAM, "stderr.log": STDERR}
 
   @override
   def to_conversation(self, sb: SandboxFs) -> Conversation:
@@ -87,7 +87,7 @@ def test_registers_every_byproduct_that_landed(tmp_path: Path):
   # they would collide between harnesses and lose their provenance
   assert contribution.artifacts == {
       "stub.event_stream.jsonl": EVENT_STREAM,
-      "stub.stderr.txt": STDERR,
+      "stub.stderr.log": STDERR,
   }
   assert observer.collected == contribution.artifacts
 
@@ -146,13 +146,13 @@ def test_two_harnesses_sharing_a_role_do_not_collide(tmp_path: Path):
           Contribution(artifacts=second.collected),
       ]
   )  # would raise if the names collided
-  assert "stub.stderr.txt" in merged.artifacts
-  assert "other_agent.stderr.txt" in merged.artifacts
+  assert "stub.stderr.log" in merged.artifacts
+  assert "other_agent.stderr.log" in merged.artifacts
 
 
 def test_qualified_name_uses_a_dot_not_a_path_separator():
   # These are logical names in a manifest, not store key paths.
-  assert qualified_name("claude_code", "stderr.txt") == "claude_code.stderr.txt"
+  assert qualified_name("claude_code", "stderr.log") == "claude_code.stderr.log"
   assert "/" not in NAME_SEPARATOR
 
 
