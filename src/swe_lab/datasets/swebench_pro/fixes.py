@@ -37,6 +37,29 @@ golden test checkout and **before** the test run, still under ``set -e``.
 Anything earlier is undone by ``git reset --hard`` or overwritten by the golden
 checkout, and a fix that fails must abort the run loudly rather than let a
 half-patched tree be graded.
+
+EXTENDING IT
+------------
+The registry is open (import-only extension, like ``register_sandbox``): a
+consuming project hits its own broken instances, and those are its business, not
+ours. Register from anywhere that gets imported before a run::
+
+    from swe_lab.datasets.swebench_pro.fixes import register_fix, with_setup
+
+    def _fix_instance_acme_widget_1234(spec):
+      return with_setup(
+          spec,
+          setup='sed -i "s/localhost/127.0.0.1/" test/config.json',
+          mounts={},
+      )
+
+    register_fix("instance_acme__widget-1234", _fix_instance_acme_widget_1234)
+
+Last registration wins, so a downstream user can also deliberately replace one
+of the fixes here. The bar in "WHAT A FIX MAY DO" is not enforced by code — it
+cannot be — so it is on each author to hold to it; a fix that quietly makes a
+task easier is indistinguishable at runtime from one that repairs the
+environment, and only the docstring tells the difference.
 """
 
 from __future__ import annotations
@@ -52,6 +75,10 @@ from ._wysiwyg_tarball import TARBALL_B64
 from .unit_test import SweBenchProVerdict
 
 type SweBenchProUnitTestSpec = UnitTestSpec[SweBenchProVerdict]
+
+# What a fix is: a compiled spec in, a fixed spec out. Pure — it must not mutate
+# the spec it is given, so compiling twice yields the same thing twice.
+type InstanceFix = Callable[[SweBenchProUnitTestSpec], SweBenchProUnitTestSpec]
 
 # The eval script's own "setup is done, the test run starts here" marker (see
 # ``_build_eval_script``): ``set -e`` is lifted there because a failing test
@@ -77,7 +104,7 @@ def apply_instance_fix(
   return spec if fix is None else fix(spec)
 
 
-def _with_setup(
+def with_setup(
     spec: SweBenchProUnitTestSpec,
     *,
     setup: str,
@@ -85,10 +112,19 @@ def _with_setup(
 ) -> SweBenchProUnitTestSpec:
   """Return ``spec`` with extra setup staged and spliced into its script.
 
+  The building block every fix is written in terms of — public so a downstream
+  fix gets the placement right for free rather than doing its own string
+  surgery on ``eval_script`` and landing the bash in a window where ``git reset
+  --hard`` or the golden checkout wipes it.
+
   Args:
     spec: The spec to extend.
-    setup: Bash to run after the golden checkout, before the test run.
-    mounts: Extra files the bash needs staged in the workspace.
+    setup: Bash to run after the golden checkout, before the test run. It runs
+      from the repo root under ``set -e``, so a failing line aborts the run
+      instead of grading a half-patched tree — make each step assert what it
+      did, since a fix that silently no-ops reads as a clean run.
+    mounts: Extra files the bash needs staged in the workspace, keyed by
+      workspace-relative name (reachable as ``$SANDBOX_WORKSPACE/<name>``).
 
   Returns:
     A new spec; the original is untouched.
@@ -217,7 +253,7 @@ def _fix_instance_element_web_aec454dd(
     The spec with the tarball staged and the replacement spliced in.
   """
   tarball = wysiwyg_tarball()
-  return _with_setup(
+  return with_setup(
       spec,
       mounts={_WYSIWYG_TARBALL_NAME: Mount(Inline(tarball))},
       setup=_render(
@@ -238,16 +274,33 @@ def wysiwyg_tarball() -> bytes:
 
 
 # instance_id -> the fix applied to its spec after compilation.
-_FIXES: dict[
-    str, Callable[[SweBenchProUnitTestSpec], SweBenchProUnitTestSpec]
-] = {
+_FIXES: dict[str, InstanceFix] = {
     _WYSIWYG_INSTANCE: _fix_instance_element_web_aec454dd,
 }
 
 
+def register_fix(instance_id: str, fix: InstanceFix) -> None:
+  """Register a fix for one instance (import-only extension).
+
+  For a consuming project that hits its own broken instance: register at import
+  time and every graded path picks it up, with no change to this module. Write
+  the fix in terms of :func:`with_setup` so its bash lands in the one window
+  that survives the reset and the golden checkout.
+
+  Last registration wins, so this can also replace a fix defined here —
+  deliberate, for a downstream user who needs different treatment of the same
+  instance.
+
+  Args:
+    instance_id: The instance the fix applies to.
+    fix: Takes the compiled spec and returns the fixed one, mutating nothing.
+  """
+  _FIXES[instance_id] = fix
+
+
 def fixed_instances() -> Sequence[str]:
-  """Return the instance ids that carry a fix (for reporting / audit)."""
-  return tuple(_FIXES)
+  """Return every instance id carrying a fix, sorted (reporting / audit)."""
+  return sorted(_FIXES)
 
 
 def applied_fix_name(instance_id: str) -> str | None:
@@ -261,7 +314,11 @@ def applied_fix_name(instance_id: str) -> str | None:
     instance_id: The instance to look up.
 
   Returns:
-    The fix function's name, or ``None`` when the instance has no fix.
+    The fix's name, or ``None`` when the instance has no fix.
   """
   fix = _FIXES.get(instance_id)
-  return None if fix is None else fix.__name__
+  if fix is None:
+    return None
+  # A downstream fix may be a callable object or a partial rather than a plain
+  # function; fall back to its type so the record still names *something*.
+  return getattr(fix, "__name__", type(fix).__name__)

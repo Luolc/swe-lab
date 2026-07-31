@@ -7,6 +7,7 @@ survives, and an instance without a fix is untouched.
 """
 
 import base64
+from collections.abc import Iterator
 import hashlib
 import json
 
@@ -17,11 +18,16 @@ from swe_lab.datasets.swebench_pro.constants import (
     RUN_SCRIPT_NAME,
 )
 from swe_lab.datasets.swebench_pro.fixes import (
+    _FIXES,
     _RUN_MARKER,
     _WYSIWYG_INSTANCE,
     _WYSIWYG_TARBALL_NAME,
+    applied_fix_name,
     apply_instance_fix,
     fixed_instances,
+    register_fix,
+    SweBenchProUnitTestSpec,
+    with_setup,
     wysiwyg_tarball,
 )
 from swe_lab.datasets.swebench_pro.known_flaky import flaky_instances
@@ -155,8 +161,6 @@ def _plain():
 
 
 def test_splice_refuses_a_script_it_cannot_place_the_fix_in():
-  from swe_lab.datasets.swebench_pro.fixes import _with_setup
-
   spec = _plain()
   broken = type(spec)(
       eval_script="echo hi\n",  # no run marker
@@ -165,7 +169,7 @@ def test_splice_refuses_a_script_it_cannot_place_the_fix_in():
       native_outputs=spec.native_outputs,
   )
   with pytest.raises(ValueError, match="exactly one"):
-    _ = _with_setup(broken, setup="echo patched", mounts={})
+    _ = with_setup(broken, setup="echo patched", mounts={})
 
 
 # ─── run provenance ──────────────────────────────────────────────────────────
@@ -215,3 +219,64 @@ def test_a_known_flaky_instance_carries_its_measured_rate():
   assert "env_fix" not in provenance  # nothing to fix; that is the point
   # It must survive the trip into a persisted record, which is JSON.
   _ = json.dumps(provenance)
+
+
+# ─── the downstream extension seam ───────────────────────────────────────────
+
+
+@pytest.fixture
+def clean_registry() -> Iterator[None]:
+  """Restore the registry, so a registration in one test cannot leak."""
+  before = dict(_FIXES)
+  yield
+  _FIXES.clear()
+  _FIXES.update(before)
+
+
+def test_a_downstream_fix_registers_without_touching_this_module(
+    clean_registry: None,
+):
+  del clean_registry
+
+  def _fix_instance_acme_widget(
+      spec: SweBenchProUnitTestSpec,
+  ) -> SweBenchProUnitTestSpec:
+    return with_setup(spec, setup='echo "downstream"', mounts={})
+
+  register_fix("instance_acme__widget-1234", _fix_instance_acme_widget)
+  spec = _spec("instance_acme__widget-1234")
+  lines = spec.eval_script.splitlines()
+  assert 'echo "downstream"' in lines
+  # ...and it lands in the same window the built-in fixes get, for free
+  assert (
+      lines.index(_GOLDEN_CHECKOUT)
+      < lines.index('echo "downstream"')
+      < lines.index(_RUN_MARKER)
+  )
+  assert "instance_acme__widget-1234" in fixed_instances()
+
+
+def test_a_downstream_fix_can_replace_a_built_in_one(clean_registry: None):
+  del clean_registry
+  register_fix(_WYSIWYG_INSTANCE, lambda spec: spec)
+  # Deliberate: a consuming project may need different treatment of the same
+  # instance. The run record still names what ran, whatever it is.
+  assert _spec(_WYSIWYG_INSTANCE).mounts.get(_WYSIWYG_TARBALL_NAME) is None
+  assert applied_fix_name(_WYSIWYG_INSTANCE) == "<lambda>"
+
+
+def test_a_fix_that_is_not_a_plain_function_is_still_named(
+    clean_registry: None,
+):
+  del clean_registry
+
+  class _Callable:
+
+    def __call__(
+        self, spec: SweBenchProUnitTestSpec
+    ) -> SweBenchProUnitTestSpec:
+      return spec
+
+  register_fix("instance_acme__widget-9", _Callable())
+  # No __name__ on an instance — the record must still say *something*.
+  assert applied_fix_name("instance_acme__widget-9") == "_Callable"
