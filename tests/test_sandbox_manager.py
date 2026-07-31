@@ -17,7 +17,6 @@ from swe_lab.sandbox import (
     ExecResult,
     GitHubJobSandbox,
     Inline,
-    InlineArtifact,
     LocalFile,
     Mount,
     RunStatus,
@@ -272,10 +271,11 @@ def test_contributions_aggregate_across_observers(tmp_path: Path):
   )
   with mgr.session():
     pass
-  # The collect step fetches the registered artifact out to the output dir.
+  # The collect step fetches the registered artifact out to the output dir,
+  # under its artifact NAME (the in-sandbox filename is only the fetch source).
   assert ("fetch", "p.diff") in sb.calls
-  assert mgr.result.artifacts == {"patch": out / "p.diff"}
-  assert (out / "p.diff").read_bytes() == b"diff"
+  assert mgr.result.artifacts == {"patch": out / "patch"}
+  assert (out / "patch").read_bytes() == b"diff"
   assert mgr.result.metrics == {"secs": 2.0}
 
 
@@ -289,11 +289,7 @@ def test_inline_artifacts_land_without_touching_the_sandbox(tmp_path: Path):
           RecordingObserver(
               "a",
               contribution=Contribution(
-                  inline_artifacts={
-                      "conversation": InlineArtifact(
-                          "conversation.json", b'{"messages":[]}'
-                      )
-                  }
+                  inline_artifacts={"conversation.json": b'{"messages":[]}'}
               ),
           )
       ],
@@ -302,10 +298,100 @@ def test_inline_artifacts_land_without_touching_the_sandbox(tmp_path: Path):
     pass
   # Written straight from the observer's own bytes: no write into the sandbox
   # and no fetch back out (two transfers a remote sandbox would pay twice for).
-  assert mgr.result.artifacts == {"conversation": out / "conversation.json"}
+  assert mgr.result.artifacts == {
+      "conversation.json": out / "conversation.json"
+  }
   assert (out / "conversation.json").read_bytes() == b'{"messages":[]}'
   assert not any(call[0] == "fetch" for call in sb.calls)
   assert not (sb.workspace / "conversation.json").exists()
+
+
+def test_an_absolute_in_sandbox_filename_still_lands_in_the_output_dir(
+    tmp_path: Path,
+):
+  # `output_dir / "/var/log/agent.log"` is `/var/log/agent.log` — naming the
+  # host file after the in-sandbox filename would write straight out of the
+  # output dir. The artifact name is what it lands under, so it cannot.
+  sb = _sandbox(tmp_path)
+  sb.workspace.mkdir(parents=True)
+  outside = tmp_path / "elsewhere" / "agent.log"
+  outside.parent.mkdir()
+  _ = outside.write_bytes(b"log")
+  out = tmp_path / "out"
+  mgr = _manager(
+      sb,
+      output_dir=out,
+      observers=[
+          RecordingObserver(
+              "a",
+              contribution=Contribution(
+                  artifacts={"agent.log": str(outside)},
+                  inline_artifacts={"notes.txt": b"hi"},
+              ),
+          )
+      ],
+  )
+  with mgr.session():
+    pass
+  assert mgr.result.artifacts == {
+      "agent.log": out / "agent.log",
+      "notes.txt": out / "notes.txt",
+  }
+  assert (out / "agent.log").read_bytes() == b"log"
+
+
+def test_two_observers_sharing_a_filename_do_not_overwrite_each_other(
+    tmp_path: Path,
+):
+  # A harness and an eval both produce `stderr.log` in the sandbox; only their
+  # namespaced NAMES differ, so only names can keep them apart on the host.
+  sb = _sandbox(tmp_path)
+  sb.workspace.mkdir(parents=True)
+  _ = (sb.workspace / "stderr.log").write_bytes(b"from the sandbox")
+  out = tmp_path / "out"
+  mgr = _manager(
+      sb,
+      output_dir=out,
+      observers=[
+          RecordingObserver(
+              "a",
+              contribution=Contribution(
+                  artifacts={"agent.stderr.log": "stderr.log"}
+              ),
+          ),
+          RecordingObserver(
+              "b",
+              contribution=Contribution(
+                  inline_artifacts={"eval.stderr.log": b"from the eval"}
+              ),
+          ),
+      ],
+  )
+  with mgr.session():
+    pass
+  assert (out / "agent.stderr.log").read_bytes() == b"from the sandbox"
+  assert (out / "eval.stderr.log").read_bytes() == b"from the eval"
+
+
+def test_an_artifact_name_that_is_a_path_is_refused(tmp_path: Path):
+  # The name is used as a host filename, so a path — relative or absolute — is
+  # rejected outright rather than nesting (or escaping) the output dir.
+  sb = _sandbox(tmp_path)
+  mgr = _manager(
+      sb,
+      observers=[
+          RecordingObserver(
+              "a",
+              contribution=Contribution(
+                  artifacts={"../../etc/passwd": "p.diff"}
+              ),
+          )
+      ],
+  )
+  with mgr.session():
+    pass
+  assert mgr.result.status is RunStatus.RUN_ERROR
+  assert isinstance(mgr.result.error, SandboxError)
 
 
 def test_an_artifact_name_cannot_be_claimed_by_both_channels(tmp_path: Path):
@@ -319,10 +405,7 @@ def test_an_artifact_name_cannot_be_claimed_by_both_channels(tmp_path: Path):
               "a", contribution=Contribution(artifacts={"patch": "p.diff"})
           ),
           RecordingObserver(
-              "b",
-              contribution=Contribution(
-                  inline_artifacts={"patch": InlineArtifact("p.diff", b"x")}
-              ),
+              "b", contribution=Contribution(inline_artifacts={"patch": b"x"})
           ),
       ],
   )

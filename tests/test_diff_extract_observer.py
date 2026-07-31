@@ -40,9 +40,7 @@ def test_extracts_cleans_and_registers(tmp_path: Path):
   assert contribution.artifacts == {RAW_PATCH_NAME: RAW_PATCH_NAME}
   # The clean patch was derived here, so it travels inline — never written back
   # into the sandbox just to be fetched again.
-  inline = contribution.inline_artifacts["patch.diff"]
-  assert inline.filename == PATCH_NAME
-  assert inline.content.decode() == raw
+  assert contribution.inline_artifacts[PATCH_NAME].decode() == raw
   assert not (tmp_path / PATCH_NAME).exists()  # no round trip through the box
   # the extraction script is staged (persisted for audit) and run
   extract = (tmp_path / EXTRACT_SCRIPT_NAME).read_text()

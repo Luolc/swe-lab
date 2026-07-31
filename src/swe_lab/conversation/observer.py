@@ -19,17 +19,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import override
 
-from swe_lab.sandbox import (
-    Contribution,
-    InlineArtifact,
-    SandboxFs,
-    SandboxObserver,
-)
+from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
 
 from .model import Conversation
 
 CONVERSATION_NAME = "conversation.json"
-"""Workspace filename for the canonical conversation record."""
+"""Artifact name for the canonical conversation record."""
 
 
 class ConversationProducer(ABC):
@@ -91,9 +86,8 @@ class ConversationObserver(SandboxObserver):
     self.conversation = self.producer.to_conversation(sb)
     return Contribution(
         inline_artifacts={
-            CONVERSATION_NAME: InlineArtifact(
-                CONVERSATION_NAME,
-                self.conversation.model_dump_json(indent=2).encode("utf-8"),
-            )
+            CONVERSATION_NAME: self.conversation.model_dump_json(
+                indent=2
+            ).encode("utf-8")
         }
     )

@@ -23,7 +23,6 @@ from .persist import index, persist, promote, RunRecord, RUNS_NAMESPACE
 from .resources import Inline, LocalFile, Resource
 from .result import (
     Contribution,
-    InlineArtifact,
     NAME_SEPARATOR,
     qualified_name,
     RunResult,
@@ -42,7 +41,6 @@ from .store import (
 __all__ = [
     "CompositeObserver",
     "Contribution",
-    "InlineArtifact",
     "NAME_SEPARATOR",
     "DockerHostSandbox",
     "ExecResult",

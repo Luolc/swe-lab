@@ -123,6 +123,15 @@ by harness: `claude_code.event_stream.jsonl` / `claude_code.stderr.log` are
 Claude-Code-specific, while the canonical `conversation.json` is shared across
 harnesses and stays unprefixed.
 
+**The artifact name is also the host filename**: the collect step lands each
+artifact at `<output dir>/<artifact name>`, so the in-container
+`claude.stderr.log` lands as `claude_code.stderr.log`, and the same name keys
+the manifest and the store. The in-container filename is only where the fetch
+reads *from* — it is an in-sandbox path (possibly absolute) and two observers
+may share one (`stderr.log` from a harness and from an eval), so it cannot name
+the output. The name has neither problem: it is unique by construction (the
+merge refuses a duplicate) and vetted as a plain filename.
+
 ### Produced after the run (diff-extract observer, `before_destroy`)
 
 | File | In-container path | Written by | Read by | Content |
