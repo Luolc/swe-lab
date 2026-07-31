@@ -1,0 +1,165 @@
+"""Per-instance environment fixes: provenance, placement, and blast radius.
+
+The fixes exist to stop `pass_to_pass` bystanders from failing runs for reasons
+unrelated to the task (see ``fixes.py``). What has to hold: the vendored bytes
+are the ones upstream published, the bash lands in the one window where it
+survives, and an instance without a fix is untouched.
+"""
+
+import base64
+import hashlib
+
+import pytest
+
+from swe_lab.datasets.swebench_pro.constants import (
+    PARSER_NAME,
+    RUN_SCRIPT_NAME,
+)
+from swe_lab.datasets.swebench_pro.fixes import (
+    _RUN_MARKER,
+    _WYSIWYG_INSTANCE,
+    _WYSIWYG_TARBALL_NAME,
+    apply_instance_fix,
+    fixed_instances,
+    wysiwyg_tarball,
+)
+from swe_lab.datasets.swebench_pro.unit_test import compile_unit_test
+from swe_lab.sandbox import Inline
+
+# npm's published ``dist.integrity`` for @matrix-org/matrix-wysiwyg@1.4.1.
+_NPM_INTEGRITY = (
+    "sha512-B8sxY3pE2XyRyQ1g7cx0YjGaDZ1A0Uh5XxS/lNdxQ/0ctRJj6IBy7Kti"
+    "UjxDRdA15ioZnf6aoJBRkBSr02qhaw=="
+)
+_GOLDEN_CHECKOUT = "git checkout deadbeef -- test/a-test.ts"
+
+
+def _spec(instance_id: str):
+  spec = compile_unit_test(
+      patch="diff --git a/x b/x\n",
+      base_commit="abc123",
+      selected_test_files_to_run=("test/a-test.ts",),
+      golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
+      fail_to_pass=("a",),
+      pass_to_pass=("b",),
+      run_script=b"#!/bin/bash\n",
+      parser=b"print()\n",
+  )
+  return apply_instance_fix(instance_id, spec)
+
+
+def test_vendored_tarball_is_the_published_artifact():
+  # Provenance, not a checksum ritual: if the blob is ever regenerated from
+  # somewhere other than npm, or edited, this is what catches it.
+  raw = wysiwyg_tarball()
+  digest = base64.b64encode(hashlib.sha512(raw).digest()).decode()
+  assert f"sha512-{digest}" == _NPM_INTEGRITY
+  assert len(raw) == 780683
+  assert raw[:2] == b"\x1f\x8b"  # gzip magic: a real .tgz, not text
+
+
+def test_an_instance_without_a_fix_is_returned_untouched():
+  plain = compile_unit_test(
+      patch=None,
+      base_commit="abc123",
+      selected_test_files_to_run=("test/a-test.ts",),
+      golden_test_checkout_cmd="",
+      fail_to_pass=(),
+      pass_to_pass=(),
+      run_script=b"",
+      parser=b"",
+  )
+  assert apply_instance_fix("instance_someone__else-1234", plain) is plain
+
+
+def test_the_fixed_instance_stages_the_tarball():
+  spec = _spec(_WYSIWYG_INSTANCE)
+  resource = spec.mounts[_WYSIWYG_TARBALL_NAME].resource
+  assert isinstance(resource, Inline)
+  assert resource.content == wysiwyg_tarball()
+  # the spec's own mounts survive alongside it
+  assert RUN_SCRIPT_NAME in spec.mounts
+  assert PARSER_NAME in spec.mounts
+
+
+def test_fix_bash_lands_after_the_golden_checkout_and_before_the_run():
+  # The whole seam depends on this window: earlier and `git reset --hard` or
+  # the golden checkout wipes it; later and the tests have already run.
+  lines = _spec(_WYSIWYG_INSTANCE).eval_script.splitlines()
+  checkout = lines.index(_GOLDEN_CHECKOUT)
+  marker = lines.index(_RUN_MARKER)
+  patch_line = next(
+      i for i, line in enumerate(lines) if _WYSIWYG_TARBALL_NAME in line
+  )
+  assert checkout < patch_line < marker
+  # ...and still under `set -e`, so a failed fix aborts rather than grading a
+  # half-patched tree.
+  assert lines.index("set -e") < patch_line
+
+
+def test_fix_bash_verifies_what_it_staged_and_what_it_produced():
+  script = _spec(_WYSIWYG_INSTANCE).eval_script
+  # The integrity check must be over the bytes actually mounted, not a
+  # hand-copied constant that can drift from them.
+  assert hashlib.sha512(wysiwyg_tarball()).hexdigest() in script
+  assert "integrity mismatch" in script
+  # A patch that silently no-ops is worse than none: the run then reads clean.
+  assert "replacement did not take" in script
+  assert "@" not in script.replace("@matrix-org", "")  # no stray placeholders
+
+
+def test_the_fix_touches_no_test_expectations():
+  # The defining property of a *harness* fix: it changes the environment, never
+  # what counts as passing.
+  fixed = _spec(_WYSIWYG_INSTANCE)
+  plain = compile_unit_test(
+      patch="diff --git a/x b/x\n",
+      base_commit="abc123",
+      selected_test_files_to_run=("test/a-test.ts",),
+      golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
+      fail_to_pass=("a",),
+      pass_to_pass=("b",),
+      run_script=b"#!/bin/bash\n",
+      parser=b"print()\n",
+  )
+  assert fixed.grader == plain.grader
+  assert fixed.native_outputs == plain.native_outputs
+  # every line of the original script survives, in order
+  original = plain.eval_script.splitlines()
+  assert [
+      line for line in fixed.eval_script.splitlines() if line in original
+  ] == original
+
+
+def test_every_registered_fix_applies_to_a_real_instance_id():
+  # Guards against a typo'd key, which would be a silent no-op forever.
+  for instance_id in fixed_instances():
+    assert instance_id.startswith("instance_")
+    assert apply_instance_fix(instance_id, _plain()) is not _plain()
+
+
+def _plain():
+  return compile_unit_test(
+      patch=None,
+      base_commit="abc123",
+      selected_test_files_to_run=("test/a-test.ts",),
+      golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
+      fail_to_pass=(),
+      pass_to_pass=(),
+      run_script=b"",
+      parser=b"",
+  )
+
+
+def test_splice_refuses_a_script_it_cannot_place_the_fix_in():
+  from swe_lab.datasets.swebench_pro.fixes import _with_setup
+
+  spec = _plain()
+  broken = type(spec)(
+      eval_script="echo hi\n",  # no run marker
+      mounts=spec.mounts,
+      grader=spec.grader,
+      native_outputs=spec.native_outputs,
+  )
+  with pytest.raises(ValueError, match="exactly one"):
+    _ = _with_setup(broken, setup="echo patched", mounts={})
