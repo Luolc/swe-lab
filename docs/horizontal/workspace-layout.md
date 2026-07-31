@@ -72,6 +72,12 @@ Host root: `.cache/eval_workspaces/<instance_id>/` · in-container:
 | `parser.py` | `$SANDBOX_WORKSPACE/parser.py` | compile (mount) | entryscript | SWE-Bench-Pro output → `output.json` parser |
 | `required_tests.json` | `$SANDBOX_WORKSPACE/required_tests.json` | compile (mount) | the grader (host) | `sorted(fail_to_pass ∪ pass_to_pass)` — the expectation |
 | `patch.diff` | `$SANDBOX_WORKSPACE/patch.diff` | compile (mount) | entryscript (`git apply`) | the candidate patch — **only** when grading a patch (`--gold` stages the gold patch) |
+| *(per-instance fix assets)* | `$SANDBOX_WORKSPACE/<name>` | `fixes.py` (mount) | entryscript | **only** for the few instances whose *environment* is broken upstream — e.g. `matrix-wysiwyg-1.4.1.tgz` for `element-web-aec454dd…`. See [`fixes.py`](../../src/swe_lab/datasets/swebench_pro/fixes.py) |
+
+An instance's fix also splices bash into `entryscript.sh` at one seam — **after**
+the golden test checkout, **before** the run script, still under `set -e`.
+Earlier is undone by `git reset --hard` or overwritten by the checkout; a fix
+that fails aborts the run rather than grading a half-patched tree.
 
 ### Produced during the run (in-container, by `entryscript.sh`)
 

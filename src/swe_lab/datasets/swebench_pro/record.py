@@ -37,6 +37,7 @@ from swe_lab.sandbox import SandboxSpec
 
 from .auxiliary import fetch_auxiliary
 from .constants import IMAGE_REPO, WORKDIR
+from .fixes import apply_instance_fix
 from .patches import patch_fail_to_pass
 from .unit_test import compile_unit_test, SweBenchProVerdict
 
@@ -241,8 +242,13 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
 
     Passes the instance's fields to the grading compiler directly, so the
     unit-test module need never import this record (the dependency is one-way).
+
+    The compiled spec then goes through ``apply_instance_fix``, which is a no-op
+    for all but the few instances whose *environment* is broken upstream (see
+    ``fixes.py``). Applying it here rather than in each caller is what keeps
+    grading and the golden self-check from disagreeing about which fixes ran.
     """
-    return compile_unit_test(
+    spec = compile_unit_test(
         patch=patch,
         checkout_golden_tests=checkout_golden_tests,
         base_commit=self.base_commit,
@@ -253,3 +259,4 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
         run_script=self.run_script,
         parser=self.parser,
     )
+    return apply_instance_fix(self.instance_id, spec)
