@@ -51,11 +51,32 @@ jobs:
       - name: Install deps
         run: uv sync
 
+      # Fetched with uv's Python, not curl: the job runs inside an arbitrary
+      # instance image, and plenty of them ship no curl (the Proton one does
+      # not). uv is installed above and brings its own interpreter, so this is
+      # the one download tool guaranteed to exist here.
       - name: Download dataset parquet (public HF)
         run: |
-          mkdir -p datasets/swebench_pro/data
-          curl -fL -o datasets/swebench_pro/data/test-00000-of-00001.parquet \
-            "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro/resolve/main/data/test-00000-of-00001.parquet?download=true"
+          uv run python - <<'PY'
+          import pathlib, time, urllib.request
+
+          url = (
+              "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro/resolve"
+              "/main/data/test-00000-of-00001.parquet?download=true"
+          )
+          dest = pathlib.Path("datasets/swebench_pro/data/test-00000-of-00001.parquet")
+          dest.parent.mkdir(parents=True, exist_ok=True)
+          for attempt in range(5):
+              try:
+                  urllib.request.urlretrieve(url, dest)
+                  break
+              except Exception as exc:  # anonymous HF requests get throttled
+                  print(f"attempt {attempt + 1} failed: {exc}")
+                  time.sleep(15)
+          else:
+              raise SystemExit("could not download the dataset parquet")
+          print(f"downloaded {dest.stat().st_size} bytes")
+          PY
 
       - name: Preflight — token present
         run: |
