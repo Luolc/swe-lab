@@ -120,7 +120,11 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   assert manager.result.artifacts["conversation.json"] == (
       workspace / "conversation.json"
   )
-  assert manager.result.artifacts["stub.trace.txt"] == workspace / _TRACE_NAME
+  # …and the byproduct lands under its artifact name, not the filename it had
+  # in the sandbox (`stub.trace`), which is only where it was fetched from.
+  landed = manager.result.artifacts["stub.trace.txt"]
+  assert landed == workspace / "stub.trace.txt"
+  assert landed.read_text() == "hello\n"
   assert outcome.complete is True
   assert manager.result.metrics[COMPLETE_METRIC] == 1.0
 

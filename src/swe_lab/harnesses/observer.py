@@ -29,7 +29,6 @@ from typing import override
 from swe_lab.sandbox import (
     Contribution,
     ExecResult,
-    InlineArtifact,
     qualified_name,
     SandboxFs,
     SandboxObserver,
@@ -93,7 +92,7 @@ class HarnessOutcomeObserver(SandboxObserver):
         metrics=self._metrics(),
     )
 
-  def _exec_output(self) -> dict[str, InlineArtifact]:
+  def _exec_output(self) -> dict[str, bytes]:
     """Keep what the agent *invocation* itself printed, if anything.
 
     Distinct from the agent's own trace and stderr file, which are workspace
@@ -109,9 +108,7 @@ class HarnessOutcomeObserver(SandboxObserver):
         "exec_stderr.log": self.exec_result.stderr,
     }
     return {
-        qualified_name(self.harness.name, name): InlineArtifact(
-            name, text.encode("utf-8")
-        )
+        qualified_name(self.harness.name, name): text.encode("utf-8")
         for name, text in streams.items()
         if text
     }

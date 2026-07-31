@@ -19,7 +19,6 @@ from swe_lab.sandbox import (
     Contribution,
     ExecResult,
     Inline,
-    InlineArtifact,
     Mount,
     qualified_name,
     RunResult,
@@ -90,7 +89,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
         metrics=self._metrics(),
     )
 
-  def _exec_output(self) -> dict[str, InlineArtifact]:
+  def _exec_output(self) -> dict[str, bytes]:
     """Keep the entryscript's *own* stdout/stderr — the fail-fast diagnostic.
 
     Not the test logs (those are files the script redirects into): this is what
@@ -107,9 +106,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
         "exec_stderr.log": self.exec_result.stderr,
     }
     return {
-        qualified_name(ARTIFACT_NAMESPACE, name): InlineArtifact(
-            name, text.encode("utf-8")
-        )
+        qualified_name(ARTIFACT_NAMESPACE, name): text.encode("utf-8")
         for name, text in streams.items()
         if text
     }

@@ -202,6 +202,14 @@ class SandboxManager:
     inline ones are written straight from the content the observer already had,
     which is why a derived output costs no sandbox round trip.
 
+    Each lands under its **canonical name**, never the filename it had in the
+    sandbox. That filename is an in-sandbox path: it may be absolute (and
+    ``output_dir / "/tmp/x"`` is ``/tmp/x`` — straight out of the output dir),
+    and two observers may legitimately reference the same one — a harness's
+    ``stderr.log`` and an eval's — where one would silently overwrite the other.
+    The name has neither problem: it is unique by construction (the merge
+    refuses a duplicate) and vetted as a plain filename.
+
     Args:
       sb: The still-live sandbox to fetch from.
       merged: The merged contribution naming both artifact channels.
@@ -212,12 +220,12 @@ class SandboxManager:
     self.output_dir.mkdir(parents=True, exist_ok=True)
     collected: dict[str, epath.Path] = {}
     for name, filename in merged.artifacts.items():
-      dest = self.output_dir / filename
+      dest = self.output_dir / name
       sb.fetch(filename, dest)
       collected[name] = dest
-    for name, produced in merged.inline_artifacts.items():
-      dest = self.output_dir / produced.filename
-      _ = dest.write_bytes(produced.content)
+    for name, content in merged.inline_artifacts.items():
+      dest = self.output_dir / name
+      _ = dest.write_bytes(content)
       collected[name] = dest
     return collected
 

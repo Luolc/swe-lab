@@ -18,7 +18,7 @@ from swe_lab.patch import (
     strip_binary_hunks,
 )
 from swe_lab.sandbox.observer import SandboxObserver
-from swe_lab.sandbox.result import Contribution, InlineArtifact
+from swe_lab.sandbox.result import Contribution
 from swe_lab.sandbox.sandbox import SandboxFs
 
 RAW_PATCH_NAME = "patch.raw.diff"  # raw git-diff bytes (audit)
@@ -97,7 +97,5 @@ class DiffExtractObserver(SandboxObserver):
     )
     return Contribution(
         artifacts=artifacts,
-        inline_artifacts={
-            PATCH_NAME: InlineArtifact(PATCH_NAME, self.patch.encode("utf-8"))
-        },
+        inline_artifacts={PATCH_NAME: self.patch.encode("utf-8")},
     )

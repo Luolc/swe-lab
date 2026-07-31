@@ -96,7 +96,8 @@ def persist_run(
     instance_id: The dataset instance.
     status: The engine ``RunStatus`` value the run ended with.
     backend: The sandbox backend name used.
-    artifacts: Collected artifacts (name → host path); uploaded by filename.
+    artifacts: Collected artifacts (name → host path); uploaded under the
+      artifact name, which is what the manifest and the store key both speak.
     rollout_id: Which sample of this instance (``0`` unless sampling K).
     attempt: Retry index of this rollout (``0`` on a first try).
     model: The agent model alias (empty for a grading-only run).
@@ -117,5 +118,4 @@ def persist_run(
       metrics=metrics,
       extra=extra,
   )
-  files = {epath.Path(path).name: path for path in artifacts.values()}
-  return persist(local_store(root), record, files)
+  return persist(local_store(root), record, artifacts)

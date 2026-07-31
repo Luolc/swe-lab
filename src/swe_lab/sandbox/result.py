@@ -9,6 +9,7 @@ observer, holds the reference, and reads the typed result straight back.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -49,25 +50,6 @@ def qualified_name(namespace: str, name: str) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class InlineArtifact:
-  """An artifact the observer already holds, handed over instead of fetched.
-
-  For output an observer *derived* host-side (a parsed conversation, a cleaned
-  patch): it already has the bytes, so writing them back into the sandbox only
-  to fetch them out again is two pointless transfers — and on a remote sandbox,
-  two network round trips. The manager writes these straight to its output dir.
-
-  Attributes:
-    filename: The name to write it under in the output dir (the same name it
-      would have had in the workspace).
-    content: The bytes to write.
-  """
-
-  filename: str
-  content: bytes
-
-
-@dataclass(frozen=True, slots=True)
 class Contribution:
   """What one observer hook hands back for the manager to aggregate.
 
@@ -77,8 +59,11 @@ class Contribution:
   - ``artifacts`` — still *in the sandbox*, referenced by its in-sandbox
     filename (a host path is not meaningful for a remote sandbox); the
     manager's collect step fetches each out while the sandbox is live.
-  - ``inline_artifacts`` — already *in hand*, because this observer produced it;
-    the manager writes it out directly, with no sandbox round trip.
+  - ``inline_artifacts`` — already *in hand*, because this observer produced it
+    (a parsed conversation, a cleaned patch); the manager writes the bytes out
+    directly, with no sandbox round trip — writing them back into the sandbox
+    only to fetch them out again is two pointless transfers, and two network
+    round trips against a remote sandbox.
 
   Either way ``RunResult.artifacts`` ends up holding host paths, so a consumer
   never has to care which channel an artifact came through.
@@ -92,6 +77,9 @@ class Contribution:
   (``patch.raw.diff``); one a harness owns is namespaced, so its name and its
   filename differ (``claude_code.stderr.log`` ← ``claude.stderr.log``).
 
+  The name is also what the artifact lands under on the host, so it must be a
+  plain filename — enforced by :func:`merge_contributions`.
+
   Attributes:
     artifacts: Canonical artifact name → its in-sandbox filename.
     inline_artifacts: Canonical artifact name → content the observer holds.
@@ -99,7 +87,7 @@ class Contribution:
   """
 
   artifacts: dict[str, str] = field(default_factory=dict)
-  inline_artifacts: dict[str, InlineArtifact] = field(default_factory=dict)
+  inline_artifacts: dict[str, bytes] = field(default_factory=dict)
   metrics: dict[str, float] = field(default_factory=dict)
 
 
@@ -122,6 +110,26 @@ class RunResult:
   error: BaseException | None = None
 
 
+def _check_claim(name: str, *taken: Mapping[str, object]) -> None:
+  """Vet one artifact name: a plain filename, not already claimed.
+
+  Args:
+    name: The canonical artifact name being contributed.
+    *taken: The name → value maps already filled, one per channel.
+
+  Raises:
+    SandboxError: If the name is not usable as a filename, or is a duplicate.
+  """
+  # The manager lands each artifact under its *name* (see ``_collect``), so a
+  # name that is a path — or worse, an absolute one — would write outside the
+  # output dir. Names are dot-separated logical names by construction
+  # (``qualified_name``); this makes that an enforced property, not a habit.
+  if not name or name in {".", ".."} or "/" in name or "\\" in name:
+    raise SandboxError(f"artifact name {name!r} is not a plain filename")
+  if any(name in claimed for claimed in taken):
+    raise SandboxError(f"two observers contributed artifact {name!r}")
+
+
 def merge_contributions(contributions: list[Contribution]) -> Contribution:
   """Union observers' contributions, refusing key collisions.
 
@@ -136,21 +144,20 @@ def merge_contributions(contributions: list[Contribution]) -> Contribution:
     One merged contribution.
 
   Raises:
-    SandboxError: If two contributions claim the same artifact or metric
-      name (no silent last-writer-wins).
+    SandboxError: If an artifact name is not a plain filename, or if two
+      contributions claim the same artifact or metric name (no silent
+      last-writer-wins).
   """
   artifacts: dict[str, str] = {}
-  inline: dict[str, InlineArtifact] = {}
+  inline: dict[str, bytes] = {}
   metrics: dict[str, float] = {}
   for contribution in contributions:
     for name, filename in contribution.artifacts.items():
-      if name in artifacts or name in inline:
-        raise SandboxError(f"two observers contributed artifact {name!r}")
+      _check_claim(name, artifacts, inline)
       artifacts[name] = filename
-    for name, produced in contribution.inline_artifacts.items():
-      if name in artifacts or name in inline:
-        raise SandboxError(f"two observers contributed artifact {name!r}")
-      inline[name] = produced
+    for name, content in contribution.inline_artifacts.items():
+      _check_claim(name, artifacts, inline)
+      inline[name] = content
     for name, value in contribution.metrics.items():
       if name in metrics:
         raise SandboxError(f"two observers contributed metric {name!r}")
