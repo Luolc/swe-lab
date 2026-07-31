@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import json
 from typing import ClassVar, override
 
@@ -37,7 +37,8 @@ from swe_lab.sandbox import SandboxSpec
 
 from .auxiliary import fetch_auxiliary
 from .constants import IMAGE_REPO, WORKDIR
-from .fixes import apply_instance_fix
+from .fixes import applied_fix_name, apply_instance_fix
+from .known_flaky import known_flaky
 from .patches import patch_fail_to_pass
 from .unit_test import compile_unit_test, SweBenchProVerdict
 
@@ -260,3 +261,24 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
         parser=self.parser,
     )
     return apply_instance_fix(self.instance_id, spec)
+
+  @override
+  def run_provenance(self) -> dict[str, object]:
+    """Declare the harness fix applied here, and any measured flakiness.
+
+    Both change how a result should be read: a fix means the graded tree is not
+    quite the image's own, and a known-flaky entry means an unresolved verdict
+    may say nothing about the patch. Empty for the overwhelming majority of
+    instances.
+
+    Returns:
+      JSON-serializable facts (see ``fixes.py`` and ``known_flaky.py``).
+    """
+    provenance: dict[str, object] = {}
+    fix = applied_fix_name(self.instance_id)
+    if fix is not None:
+      provenance["env_fix"] = fix
+    flaky = known_flaky(self.instance_id)
+    if flaky is not None:
+      provenance["known_flaky"] = asdict(flaky)
+    return provenance

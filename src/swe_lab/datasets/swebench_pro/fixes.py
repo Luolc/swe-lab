@@ -248,3 +248,20 @@ _FIXES: dict[
 def fixed_instances() -> Sequence[str]:
   """Return the instance ids that carry a fix (for reporting / audit)."""
   return tuple(_FIXES)
+
+
+def applied_fix_name(instance_id: str) -> str | None:
+  """Return the name of the fix this instance gets, for the run record.
+
+  A fix changes what ran, so a persisted grade has to say which one applied —
+  otherwise two runs of the same instance are indistinguishable in the manifest
+  while having graded different trees.
+
+  Args:
+    instance_id: The instance to look up.
+
+  Returns:
+    The fix function's name, or ``None`` when the instance has no fix.
+  """
+  fix = _FIXES.get(instance_id)
+  return None if fix is None else fix.__name__

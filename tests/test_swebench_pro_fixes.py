@@ -8,6 +8,7 @@ survives, and an instance without a fix is untouched.
 
 import base64
 import hashlib
+import json
 
 import pytest
 
@@ -23,6 +24,8 @@ from swe_lab.datasets.swebench_pro.fixes import (
     fixed_instances,
     wysiwyg_tarball,
 )
+from swe_lab.datasets.swebench_pro.known_flaky import flaky_instances
+from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import compile_unit_test
 from swe_lab.sandbox import Inline
 
@@ -163,3 +166,52 @@ def test_splice_refuses_a_script_it_cannot_place_the_fix_in():
   )
   with pytest.raises(ValueError, match="exactly one"):
     _ = _with_setup(broken, setup="echo patched", mounts={})
+
+
+# ─── run provenance ──────────────────────────────────────────────────────────
+
+
+def _instance(instance_id: str) -> SweBenchProInstance:
+  return SweBenchProInstance(
+      repo="acme/widget",
+      instance_id=instance_id,
+      base_commit="abc123",
+      patch="",
+      test_patch="",
+      problem_statement="",
+      requirements="",
+      interface="",
+      repo_language="js",
+      fail_to_pass=(),
+      pass_to_pass=(),
+      issue_specificity=(),
+      issue_categories=(),
+      before_repo_set_cmd="",
+      selected_test_files_to_run=(),
+      dockerhub_tag="tag",
+  )
+
+
+def test_an_ordinary_instance_declares_no_provenance():
+  # The default has to stay empty, or every run record grows a noise field.
+  assert _instance("instance_someone__else-1234").run_provenance() == {}
+
+
+def test_a_fixed_instance_names_the_fix_it_got():
+  # Two runs of one instance are indistinguishable in the manifest otherwise,
+  # while having graded different trees.
+  provenance = _instance(_WYSIWYG_INSTANCE).run_provenance()
+  assert provenance["env_fix"] == "_fix_instance_element_web_aec454dd"
+  assert "known_flaky" not in provenance  # the fix removes it; it is not flaky
+
+
+def test_a_known_flaky_instance_carries_its_measured_rate():
+  provenance = _instance(flaky_instances()[0]).run_provenance()
+  flaky = provenance["known_flaky"]
+  assert isinstance(flaky, dict)
+  assert flaky["failure_rate"] == 0.25
+  assert flaky["sample_size"] == 32
+  assert flaky["graded"] is True
+  assert "env_fix" not in provenance  # nothing to fix; that is the point
+  # It must survive the trip into a persisted record, which is JSON.
+  _ = json.dumps(provenance)
