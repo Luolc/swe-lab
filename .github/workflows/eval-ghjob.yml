@@ -1,0 +1,84 @@
+name: eval-ghjob
+
+# Manual trigger — grade one instance on the **A-ghjob** backend, where the job
+# itself is the container (`container: image:`), so the repo is already at its
+# `$WORKDIR` and the eval script execs in the job's own shell. No `docker run`,
+# no bind mount. Contrast `rollout-ghjob.yml`, which solves *and* grades with an
+# agent; this one only grades, so it needs no model and no agent token.
+#
+# Two things it is for:
+#
+# 1. checking a grading question on **native amd64** rather than local
+#    Apple-Silicon emulation, where anything timing-sensitive is meaningless;
+# 2. exercising the second backend behind the one `Sandbox` interface without
+#    paying for an agent run.
+#
+# The test log is uploaded as an artifact: for a timing question, `--verbose`
+# jest output carries the per-test durations that the pass/fail verdict does not.
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: Instance id to grade
+        required: true
+      image_ref:
+        description: The instance's container image (the job runs inside it)
+        required: true
+      gold:
+        description: Grade the instance's own gold patch
+        type: boolean
+        required: false
+        default: true
+      timeout:
+        description: Seconds before the eval run is killed
+        required: false
+        default: "3000"
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # The job IS the container: it runs inside the instance image.
+    container:
+      image: ${{ inputs.image_ref }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv (brings its own Python)
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install deps
+        run: uv sync
+
+      - name: Download dataset parquet (public HF)
+        run: |
+          mkdir -p datasets/swebench_pro/data
+          curl -fL --retry 5 --retry-all-errors \
+            -o datasets/swebench_pro/data/test-00000-of-00001.parquet \
+            "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro/resolve/main/data/test-00000-of-00001.parquet?download=true"
+
+      - name: Grade on the ghjob backend
+        run: |
+          uv run python -m swe_lab eval \
+            "${{ inputs.instance_id }}" \
+            --backend ghjob \
+            ${{ inputs.gold && '--gold' || '' }} \
+            --timeout "${{ inputs.timeout }}"
+
+      # The verdict says pass/fail; the log says how long each test took, which
+      # is the whole question when an instance is suspected of racing a timeout.
+      - name: Test durations (jest --verbose lines)
+        if: always()
+        run: |
+          find .cache/eval_workspaces -name 'stdout.log' -exec sh -c '
+            echo "--- $1 ---"
+            grep -E "^\s+(✓|✗|√|×)|Tests:|Time:" "$1" || true
+          ' _ {} \; || true
+
+      - name: Upload eval workspace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghjob-eval-workspace
+          path: .cache/eval_workspaces/**
+          if-no-files-found: warn
