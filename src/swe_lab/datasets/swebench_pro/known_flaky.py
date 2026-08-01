@@ -303,35 +303,6 @@ _PROTON_EXTRA_EVENTS = KnownFlaky(
 )
 
 
-_TELEPORT_FN_CACHE = KnownFlaky(
-    failure_rate=0.016,
-    sample_size=64,
-    measured_on="2026-08-01, parallel batch runner — 1/64 failures",
-    flaky_tests=("TestFnCacheSanity/long ttl, short delay",),
-    graded=True,
-    reason=(
-        "A self-calibrating wall-clock assertion with no margin, which"
-        " upstream later deflaked. The test derives its expectation from its"
-        " own elapsed time — `approxReads := elapsed / (ttl+delay)` — and"
-        " compares it to the actual refresh count with `require.InDelta(...,"
-        " 1)`, while 100 goroutines run 40 ms TTLs inside 410 ms. When the"
-        " goroutines are descheduled, elapsed stretches while the refresh"
-        " count does not, so approxReads reaches 6.50 against an actual 5 and"
-        " the 1.50 gap busts the tolerance. Upstream fixed exactly this in"
-        " 5f6cc766, 'Deflake TestFnCacheSanity (#10250)', four months after"
-        " this instance's commit, by widening the tolerance from 1 to 2 —"
-        " their own sample error (difference 1.461) is the same shape as ours"
-        " (1.499). The instance is frozen at the commit that introduced the"
-        " test, so it predates the fix. Both fail_to_pass tests are in this"
-        " file and pass_to_pass is empty, so it is half the graded task and no"
-        " environment fix reaches it."
-    ),
-    evidence=(
-        _SWEEP,
-        "https://github.com/gravitational/teleport/commit/5f6cc7667ab376a674d2c96cb3563abbb7148331",
-    ),
-)
-
 _NODEBB_SOCKET_IO = KnownFlaky(
     failure_rate=0.016,
     sample_size=64,
@@ -366,10 +337,6 @@ _VULS = (
 _PROTON = (
     "instance_protonmail__webclients-8142704f447df6e108d5"
     "3cab25451c8a94976b92"
-)
-_TELEPORT = (
-    "instance_gravitational__teleport-78b0d8c72637df1129f"
-    "b6ff84fc49ef4b5ab1288"
 )
 _NODEBB_SIO = (
     "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
@@ -451,7 +418,6 @@ _KNOWN_FLAKY: dict[str, KnownFlaky] = {
     **dict.fromkeys(_WYSIWYG_EMOJI, _WYSIWYG_EMOJI_FLAKE),
     _VULS: _VULS_SCAN_DEST,
     _PROTON: _PROTON_EXTRA_EVENTS,
-    _TELEPORT: _TELEPORT_FN_CACHE,
     _NODEBB_SIO: _NODEBB_SOCKET_IO,
     _HTML_EXPORT: _ELEMENT_HTML_EXPORT,
 }
