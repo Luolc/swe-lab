@@ -53,14 +53,22 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
     native_outputs: The eval script's byproducts (artifact name → filename), as
       declared by the dataset's spec; registered only if they landed.
     verdict: The graded verdict; ``None`` until ``before_destroy`` has run.
+    attempts: How many attempts the composition made (ADR-0005), set before
+      teardown. Annotated onto the verdict, which derives ``flaky`` from it.
+    retained: Extra artifacts kept from *failed* attempts (artifact name →
+      workspace filename). The failing attempt is the one worth reading and the
+      one a naive retry would overwrite.
     exec_result: The entryscript's own result, set by the composition before
       teardown; ``None`` if the body never got to run it.
-    wall_seconds: How long the entryscript took, set alongside it.
+    wall_seconds: How long the entryscript took — the *total* across
+      attempts, since what a sweep wants from this is what the run cost.
   """
 
   grader: Grader[V]
   native_outputs: Mapping[str, str] = field(default_factory=dict)
   verdict: V | None = None
+  attempts: int = 1
+  retained: dict[str, str] = field(default_factory=dict)
   exec_result: ExecResult | None = None
   wall_seconds: float | None = None
 
@@ -75,7 +83,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
       The eval's artifacts (best effort: only files that landed) and its
       metrics (the verdict's, plus how the execution ended).
     """
-    self.verdict = self.grader.grade(sb)
+    self.verdict = self.grader.grade(sb).with_attempts(self.attempts)
     artifacts = {
         qualified_name(ARTIFACT_NAMESPACE, name): filename
         # Same best-effort filter as the diff-extract observer: a run that died
@@ -112,8 +120,12 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
     }
 
   def _declared_outputs(self) -> dict[str, str]:
-    """Return the entryscript plus whatever the dataset says it produces."""
-    return {ENTRYSCRIPT_NAME: ENTRYSCRIPT_NAME, **self.native_outputs}
+    """Return the entryscript, the dataset's outputs, and retained attempts."""
+    return {
+        ENTRYSCRIPT_NAME: ENTRYSCRIPT_NAME,
+        **self.native_outputs,
+        **self.retained,
+    }
 
   def _metrics(self) -> dict[str, float]:
     """Verdict scalars + how the execution ended, all namespaced."""
@@ -139,6 +151,7 @@ def run_unit_test[V: Verdict](
     *,
     output_dir: epath.PathLike,
     timeout: float = _DEFAULT_TIMEOUT_S,
+    retries: int = 1,
     eval_env: Mapping[str, str] | None = None,
     observers: Sequence[SandboxObserver] = (),
 ) -> tuple[RunResult, V | None]:
@@ -154,7 +167,15 @@ def run_unit_test[V: Verdict](
     sandbox: The live sandbox to run the eval in.
     unit_test_spec: The compiled eval script, mounts, and grader.
     output_dir: The host directory collected artifacts are fetched into.
-    timeout: Seconds before the eval script is killed.
+    timeout: Seconds before *each* attempt is killed, so the worst-case wall
+      clock is ``(retries + 1) * timeout``. Per-attempt rather than shared,
+      because a shared deadline would make the last attempt's budget depend on
+      how slow the earlier ones were.
+    retries: Extra attempts allowed after a failed one (ADR-0005). ``0``
+      disables retrying. The candidate patch is identical on every attempt, so
+      this removes harness nondeterminism, not model error — but it costs a
+      full re-run for every genuinely failing instance, which is why it is a
+      knob and why the default is 1 rather than 2.
     eval_env: Extra environment for the eval script (mirrors ``run_rollout``'s
       ``agent_env``). For a secret, use the sandbox's ``pass_env`` instead —
       that passes it by reference, so the value never reaches a command line.
@@ -162,12 +183,19 @@ def run_unit_test[V: Verdict](
       see the run once it has post-processed (e.g. a persist observer).
 
   Returns:
-    The engine ``RunResult`` and the verdict. A setup failure (bad mounts, or
-    the sandbox failing to come up) is captured in ``RunResult.status`` /
+    The engine ``RunResult`` and the verdict, which carries ``attempts`` and
+    derives ``flaky`` from it (resolved only after a retry). A setup failure
+    (bad mounts, or the sandbox failing to come up) is captured in
+    ``RunResult.status`` /
     ``RunResult.error`` rather than raised, and leaves the verdict ``None``
     (grading never ran) — so a caller has one code path and gates on
     ``RunResult.status``.
+
+  Raises:
+    ValueError: If ``retries`` is negative.
   """
+  if retries < 0:
+    raise ValueError(f"retries must be >= 0, got {retries}")
   parse: EvalParseObserver[V] = EvalParseObserver(
       unit_test_spec.grader, native_outputs=unit_test_spec.native_outputs
   )
@@ -183,19 +211,89 @@ def run_unit_test[V: Verdict](
   )
   try:
     with manager.session() as sb:
-      # Hand the execution's own outcome to the observer *before* teardown, so
-      # before_destroy can report it. Dropping it (as this used to) made a
-      # timed-out eval indistinguishable from one that merely produced nothing.
-      started = time.monotonic()
-      try:
-        parse.exec_result = sb.run_script(
-            ENTRYSCRIPT_NAME, timeout=timeout, env=eval_env
-        )
-      finally:
-        parse.wall_seconds = time.monotonic() - started
+      _attempt_until_resolved(
+          sb,
+          parse,
+          unit_test_spec,
+          retries=retries,
+          timeout=timeout,
+          eval_env=eval_env,
+      )
   except SandboxError:
     pass  # the failure is recorded in manager.result; return it, don't raise
   return _with_timeout_status(manager.result, parse.exec_result), parse.verdict
+
+
+def _attempt_until_resolved[V: Verdict](
+    sb: SandboxFs,
+    parse: EvalParseObserver[V],
+    unit_test_spec: UnitTestSpec[V],
+    *,
+    retries: int,
+    timeout: float,
+    eval_env: Mapping[str, str] | None,
+) -> None:
+  """Run the entryscript, re-running it while it fails and budget remains.
+
+  Re-running is a *clean* repeat, not a resumption: the entryscript begins with
+  ``git reset --hard`` + ``git checkout`` of the base commit and re-applies the
+  patch and golden tests, so an attempt inherits nothing from its predecessor
+  but the container's warm caches (ADR-0005).
+
+  The patch never changes between attempts, so this averages out the harness's
+  nondeterminism rather than giving the candidate another chance.
+
+  Args:
+    sb: The live sandbox to run in.
+    parse: The observer the attempt state is handed to before teardown.
+    unit_test_spec: Supplies the grader that decides whether to retry.
+    retries: Extra attempts allowed after the first.
+    timeout: Seconds before *each* attempt is killed.
+    eval_env: Extra environment for the entryscript.
+  """
+  elapsed = 0.0
+  for attempt in range(1, retries + 2):
+    parse.attempts = attempt
+    started = time.monotonic()
+    try:
+      parse.exec_result = sb.run_script(
+          ENTRYSCRIPT_NAME, timeout=timeout, env=eval_env
+      )
+    finally:
+      # Total across attempts, not the last one: what a sweep needs from this
+      # is what the run *cost*.
+      elapsed += time.monotonic() - started
+      parse.wall_seconds = elapsed
+    if attempt > retries:
+      return  # budget spent; the observer grades whatever this left behind
+    if unit_test_spec.grader.grade(sb).resolved:
+      return
+    _retain_attempt(sb, parse, attempt, unit_test_spec.native_outputs)
+
+
+def _retain_attempt[V: Verdict](
+    sb: SandboxFs,
+    parse: EvalParseObserver[V],
+    attempt: int,
+    native_outputs: Mapping[str, str],
+) -> None:
+  """Copy a failed attempt's outputs aside so the retry cannot overwrite them.
+
+  Copied *through the sandbox* rather than with a shell command, so it works on
+  every backend and in a Docker-free test.
+
+  Args:
+    sb: The live sandbox holding the attempt's outputs.
+    parse: The observer whose ``retained`` map registers them for collection.
+    attempt: Which attempt these outputs came from, 1-based.
+    native_outputs: The dataset's byproducts (artifact name → filename).
+  """
+  for filename in sorted(set(native_outputs.values())):
+    if not sb.exists(filename):
+      continue  # best effort: an attempt that died early leaves fewer files
+    kept = f"attempt{attempt}.{filename}"
+    sb.write(kept, sb.read(filename))
+    parse.retained[kept] = kept
 
 
 def _with_timeout_status(

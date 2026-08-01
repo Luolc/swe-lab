@@ -154,6 +154,7 @@ def _graded_run(
     workspace: epath.PathLike,
     timeout: float,
     no_network: bool,
+    retries: int,
 ) -> _Run:
   """Compile and run one graded run (base or golden) in a fresh workspace.
 
@@ -163,6 +164,9 @@ def _graded_run(
     workspace: Host workspace for this run (wiped clean first).
     timeout: Wall-clock limit for the run, in seconds.
     no_network: Run the container offline.
+    retries: Extra grading attempts after a failure (ADR-0005). Pass ``0`` for
+      the base self-check: there a failure is the *expected* result, so
+      retrying would pay twice to re-confirm the intended outcome.
 
   Returns:
     The engine ``RunResult`` and the verdict (``None`` if grading never ran).
@@ -178,7 +182,11 @@ def _graded_run(
       pull=True,
   )
   return run_unit_test(
-      sandbox, unit_test_spec, output_dir=workspace, timeout=timeout
+      sandbox,
+      unit_test_spec,
+      output_dir=workspace,
+      timeout=timeout,
+      retries=retries,
   )
 
 
@@ -208,6 +216,7 @@ def verify_instance(
     timeout: float,
     no_network: bool,
     prune_images: bool,
+    retries: int = 1,
 ) -> dict[str, object]:
   """Run base + golden for one instance, classify, and persist a T1 shard.
 
@@ -219,6 +228,9 @@ def verify_instance(
     timeout: Wall-clock limit for each graded run, in seconds.
     no_network: Run the containers offline.
     prune_images: Remove the instance's image after both runs.
+    retries: Extra attempts for the *golden* run only (ADR-0005) — a golden
+      failure is either a corpus defect or a flake, and retrying separates
+      them. The base run never retries: there, failing is the point.
 
   Returns:
     The result record (``instance_id`` + ``verdict`` + run detail).
@@ -239,12 +251,18 @@ def verify_instance(
         workspace=epath.Path(ws_root) / iid / "base",
         timeout=timeout,
         no_network=no_network,
+        # The base run is *supposed* to fail; retrying it would only pay twice
+        # for the same answer (ADR-0005).
+        retries=0,
     )
     golden = _graded_run(
         instance,
         patch=instance.patch,
         workspace=epath.Path(ws_root) / iid / "golden",
         timeout=timeout,
+        # The golden patch is supposed to pass, so a failure here is either a
+        # real corpus defect or a flake — exactly the case retry is for.
+        retries=retries,
         no_network=no_network,
     )
     result["verdict"] = classify(instance, base, golden)

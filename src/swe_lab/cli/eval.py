@@ -54,8 +54,16 @@ def eval_cmd(
         typer.Option(help="Path to a candidate .diff to grade."),
     ] = None,
     timeout: Annotated[
-        float, typer.Option(help="Seconds before the eval run is killed.")
+        float, typer.Option(help="Seconds before each eval attempt is killed.")
     ] = 1800.0,
+    retries: Annotated[
+        int,
+        typer.Option(
+            help="Extra grading attempts after a failure (ADR-0005). The patch "
+            "is identical on every attempt, so this averages out harness "
+            "flakiness, not model error; 0 disables it."
+        ),
+    ] = 1,
     network: Annotated[
         bool, typer.Option(help="Give the container network access.")
     ] = True,
@@ -109,7 +117,11 @@ def eval_cmd(
       pull=pull,
   )
   result, verdict = run_unit_test(
-      sandbox, unit_test_spec, output_dir=workspace, timeout=timeout
+      sandbox,
+      unit_test_spec,
+      output_dir=workspace,
+      timeout=timeout,
+      retries=retries,
   )
 
   # What makes this verdict mean less than it appears — a harness fix that
