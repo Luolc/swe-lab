@@ -302,40 +302,6 @@ _PROTON_EXTRA_EVENTS = KnownFlaky(
     evidence=(_SWEEP,),
 )
 
-_ANSIBLE_COLLECTION = KnownFlaky(
-    failure_rate=0.078,
-    sample_size=64,
-    measured_on=(
-        "2026-08-01, parallel batch runner — 5/64 failures, across four"
-        " different test names, because the victim is whichever fixture loses"
-        " the race"
-    ),
-    flaky_tests=(
-        "test/units/galaxy/test_collection.py::test_build_ignore_files_and_folders",
-        "test/units/galaxy/test_collection.py::test_build_ignore_older_release_in_root",
-        "test/units/galaxy/test_collection.py::test_invalid_yaml_galaxy_file",
-        "test/units/galaxy/test_collection.py::test_warning_extra_keys",
-    ),
-    graded=False,
-    reason=(
-        "A pytest-xdist temporary-directory collision — and the corpus's"
-        " closest match to the bystander pattern this registry was built for:"
-        " fail_to_pass is a single test (test_extract_tar_file_outside_dir)"
-        " that never fails, while all 56 pass_to_pass ride on the same run."
-        " Three details pin it: the failure is an ERROR at *setup* rather than"
-        " an assertion, it is reported by worker `[gw10]`, and the basetemp is"
-        " `/tmp/pytest-of-root/pytest-15` with no per-worker `popen-gwN`"
-        " component — so workers share one numbered base and"
-        " tmp_path_factory.mktemp appends a predictable `…Input0` suffix. Two"
-        " workers land on the same directory and race the recursive skeleton"
-        " copy; the loser gets FileNotFoundError mid-copy. One bystander"
-        " fixture race scores the instance 0 (required 57, passed 56, missing"
-        " 1). Fixable at the environment level — give each xdist worker its"
-        " own basetemp — which makes this the strongest candidate in the"
-        " registry for promotion to fixes.py."
-    ),
-    evidence=(_SWEEP,),
-)
 
 _ELEMENT_JOIN_RULE = KnownFlaky(
     failure_rate=0.031,
@@ -427,11 +393,6 @@ _PROTON = (
     "instance_protonmail__webclients-8142704f447df6e108d5"
     "3cab25451c8a94976b92"
 )
-_ANSIBLE = (
-    "instance_ansible__ansible-a20a52701402a12f91396549df"
-    "04ac55809f68e9-v1055803c3a812189a1133297f7f546857928"
-    "3f86"
-)
 _JOINRULE = (
     "instance_element-hq__element-web-9a31cd0fa849da810b4"
     "fac6c6c015145e850b282-vnan"
@@ -520,7 +481,6 @@ _KNOWN_FLAKY: dict[str, KnownFlaky] = {
     **dict.fromkeys(_WYSIWYG_EMOJI, _WYSIWYG_EMOJI_FLAKE),
     _VULS: _VULS_SCAN_DEST,
     _PROTON: _PROTON_EXTRA_EVENTS,
-    _ANSIBLE: _ANSIBLE_COLLECTION,
     _JOINRULE: _ELEMENT_JOIN_RULE,
     _TELEPORT: _TELEPORT_FN_CACHE,
     _NODEBB_SIO: _NODEBB_SOCKET_IO,
