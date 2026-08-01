@@ -62,5 +62,5 @@ def test_the_registry_covers_the_sweep_without_duplicating_measurements():
   # emoji instances), so a rate is written down once per mechanism, not once
   # per instance — otherwise 20 copies drift apart the first time one is edited.
   entries = {id(known_flaky(i)) for i in flaky_instances()}
-  assert len(flaky_instances()) == 29
-  assert len(entries) == 9  # distinct measurements behind those 29 instances
+  assert len(flaky_instances()) == 28
+  assert len(entries) == 8  # distinct measurements behind those 29 instances
