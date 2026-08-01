@@ -100,6 +100,13 @@ def rollout_in_docker(
     grade: Annotated[
         bool, typer.Option(help="Grade the produced patch afterwards.")
     ] = False,
+    eval_retries: Annotated[
+        int,
+        typer.Option(
+            help="Extra grading attempts after a failure, for --grade "
+            "(ADR-0005). Does not re-run the agent."
+        ),
+    ] = 1,
     timeout: Annotated[
         float, typer.Option(help="Seconds before the agent run is killed.")
     ] = _DEFAULT_TIMEOUT_S,
@@ -209,7 +216,15 @@ def rollout_in_docker(
     )
     summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
   resolved = _finish(
-      summary, instance, outcome, grade, root, pull, timeout, backend
+      summary,
+      instance,
+      outcome,
+      grade,
+      root,
+      pull,
+      timeout,
+      backend,
+      eval_retries,
   )
   print(json.dumps(summary, indent=2))
   raise typer.Exit(0 if (not grade or resolved) else 1)
@@ -224,6 +239,7 @@ def _finish(
     pull: bool,
     timeout: float,
     backend: str,
+    eval_retries: int,
 ) -> bool:
   """Record the run's ``outcome`` string (and grade), returning ``resolved``.
 
@@ -240,6 +256,8 @@ def _finish(
     pull: Whether to pull the image for the grade run.
     timeout: Seconds before the grade run is killed.
     backend: Which sandbox backend to grade on.
+    eval_retries: Extra grading attempts after a failure (ADR-0005). Only the
+      grading is retried — the agent is never re-run.
 
   Returns:
     Whether the patch resolved the instance (always ``False`` when not graded).
@@ -263,7 +281,11 @@ def _finish(
       pull=pull,
   )
   _, verdict = run_unit_test(
-      sandbox, unit_test_spec, output_dir=eval_ws, timeout=timeout
+      sandbox,
+      unit_test_spec,
+      output_dir=eval_ws,
+      timeout=timeout,
+      retries=eval_retries,
   )
   resolved = bool(verdict and verdict.resolved)
   summary["outcome"] = "resolved" if resolved else "unresolved_tests_failed"

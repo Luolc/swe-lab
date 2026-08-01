@@ -5,14 +5,16 @@
 passes it — no backend registry, no patching a construction function.
 """
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 import json
 from pathlib import Path
 from typing import final, override
 
 from etils import epath
+import pytest
 
 from swe_lab.datasets.swebench_pro.unit_test import (
+    OutputState,
     REQUIRED_TESTS_NAME,
     SweBenchProGrader,
     SweBenchProVerdict,
@@ -21,7 +23,7 @@ from swe_lab.evaluation.methods.unit_test import (
     ENTRYSCRIPT_NAME,
     run_unit_test,
 )
-from swe_lab.evaluation.verdict import UnitTestSpec
+from swe_lab.evaluation.verdict import Grader, UnitTestSpec
 from swe_lab.sandbox import (
     ExecResult,
     Inline,
@@ -213,3 +215,138 @@ def test_setup_failure_is_captured_not_raised(tmp_path: Path):
   assert result.status is RunStatus.SETUP_ERROR
   assert isinstance(result.error, SandboxError)
   assert verdict is None  # grading never ran
+
+
+# ─── retry on a failed grade (ADR-0005) ──────────────────────────────────────
+
+
+def _flaky_spec(*, passes_on_attempt: int) -> UnitTestSpec[SweBenchProVerdict]:
+  """Build a spec that only grades as passing from the Nth attempt on.
+
+  The fake sandbox never runs the entryscript, so the flake is simulated in the
+  grader rather than in the workspace — see ``_RewritingGrader``.
+  """
+  return UnitTestSpec(
+      eval_script="echo eval\n",
+      mounts={
+          REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+          "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
+      },
+      grader=_RewritingGrader(passes_on_attempt),
+  )
+
+
+@dataclass
+class _RewritingGrader(Grader[SweBenchProVerdict]):
+  """Grades a fail until ``passes_on_attempt``, then a pass — like a flake.
+
+  Counts its own calls, which is exactly how many times the composition has
+  graded: once per attempt.
+  """
+
+  passes_on_attempt: int
+  calls: int = 0
+
+  @override
+  def grade(self, sb: SandboxFs) -> SweBenchProVerdict:
+    self.calls += 1
+    passed = (
+        frozenset({"a"})
+        if self.calls >= self.passes_on_attempt
+        else frozenset()
+    )
+    return SweBenchProVerdict(
+        passed=passed,
+        missing=frozenset({"a"}) - passed,
+        output_state=OutputState.OK,
+        required=frozenset({"a"}),
+    )
+
+
+def test_no_retry_runs_the_entryscript_exactly_once(tmp_path: Path):
+  # The default path must not silently double every eval.
+  sandbox = _fake(tmp_path)
+  _, verdict = run_unit_test(
+      sandbox,
+      _flaky_spec(passes_on_attempt=99),
+      output_dir=tmp_path / "out",
+      retries=0,
+  )
+  assert sandbox.scripts == [ENTRYSCRIPT_NAME]
+  assert verdict is not None
+  assert verdict.attempts == 1
+  assert verdict.resolved is False
+  assert verdict.flaky is False
+
+
+def test_a_first_attempt_pass_is_never_retried(tmp_path: Path):
+  sandbox = _fake(tmp_path)
+  _, verdict = run_unit_test(
+      sandbox,
+      _flaky_spec(passes_on_attempt=1),
+      output_dir=tmp_path / "out",
+      retries=2,
+  )
+  assert sandbox.scripts == [ENTRYSCRIPT_NAME]  # budget unspent
+  assert verdict is not None
+  assert (verdict.attempts, verdict.resolved, verdict.flaky) == (1, True, False)
+
+
+def test_a_pass_after_a_retry_is_resolved_and_marked_flaky(tmp_path: Path):
+  # The headline behaviour: same patch, second attempt, credited but flagged.
+  sandbox = _fake(tmp_path)
+  _, verdict = run_unit_test(
+      sandbox,
+      _flaky_spec(passes_on_attempt=2),
+      output_dir=tmp_path / "out",
+      retries=1,
+  )
+  assert sandbox.scripts == [ENTRYSCRIPT_NAME] * 2
+  assert verdict is not None
+  assert (verdict.attempts, verdict.resolved, verdict.flaky) == (2, True, True)
+
+
+def test_failing_every_attempt_is_failed_not_flaky(tmp_path: Path):
+  # `flaky` is derived, so exhausting the budget can never be mislabelled.
+  sandbox = _fake(tmp_path)
+  _, verdict = run_unit_test(
+      sandbox,
+      _flaky_spec(passes_on_attempt=99),
+      output_dir=tmp_path / "out",
+      retries=2,
+  )
+  assert sandbox.scripts == [ENTRYSCRIPT_NAME] * 3
+  assert verdict is not None
+  assert (verdict.attempts, verdict.resolved, verdict.flaky) == (
+      3,
+      False,
+      False,
+  )
+
+
+def test_a_failed_attempt_keeps_its_own_output(tmp_path: Path):
+  # A naive retry overwrites output.json — i.e. exactly the evidence of the
+  # flake we are trying to collect.
+  out = tmp_path / "out"
+  spec = UnitTestSpec(
+      eval_script="echo eval\n",
+      mounts={
+          REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+          "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
+      },
+      grader=_RewritingGrader(2),
+      native_outputs={"output.json": "output.json"},
+  )
+  _, verdict = run_unit_test(_fake(tmp_path), spec, output_dir=out, retries=1)
+  assert verdict is not None and verdict.flaky is True
+  assert (out / "eval.attempt1.output.json").is_file()
+
+
+def test_negative_retries_is_refused(tmp_path: Path):
+  with pytest.raises(ValueError, match="retries"):
+    _ = run_unit_test(
+        _fake(tmp_path),
+        _unit_test_spec(["a"], ["a"]),
+        output_dir=tmp_path / "out",
+        retries=-1,
+    )

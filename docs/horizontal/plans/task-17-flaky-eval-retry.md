@@ -4,9 +4,8 @@
 > tracked only in [`plans/README.md`](README.md)**; where this doc and the code
 > disagree, the **code wins**.
 >
-> Implements [ADR-0005](../../decisions/ADR-0005-flaky-eval-retry.md). **The ADR
-> is `Proposed`, not accepted — this plan is for review alongside it, and
-> nothing here should land before both are approved.**
+> Implements [ADR-0005](../../decisions/ADR-0005-flaky-eval-retry.md), accepted
+> 2026-08-01 with `retries` defaulting to 1.
 
 ---
 
@@ -108,9 +107,11 @@ attempts, since what a sweep wants from it is what the run cost.
 
 1. **Cost.** Every genuinely failing instance now costs `retries+1` evals. On a
    gold sweep that is ~3% of instances; on an agent sweep where most patches
-   fail it can nearly double eval wall-clock. **Open question for review: is
-   `retries=1` the right library default, or should the default be `0` with the
-   sweeps opting in?**
+   fail it can nearly double eval wall-clock. **Settled at review: default 1.**
+   The agreed evolution is to narrow retry to `known_flaky`-registered instances
+   once the registry is believed to cover most flakes — recorded as a future
+   direction in the ADR, needing its own ADR when the coverage argument can be
+   made.
 2. **A racy *patch* gets credited.** An agent solution that passes only
    sometimes will eventually be accepted. `flaky=True` is what keeps this
    visible; without it it would be indistinguishable from a harness flake.
@@ -133,10 +134,14 @@ attempts, since what a sweep wants from it is what the run cost.
 | 5 | Tests (see §5) | `tests/test_unit_test_method.py`, `tests/test_cli_eval.py` | S |
 | 6 | Docs: `plans/README.md` row, conventions note | `docs/` | XS |
 
-**Steps 1–3 are already written** (I implemented ahead of approval — the code is
-on `main`'s working tree, unreviewed and unmerged). Steps 4–6 are not started.
-If the ADR is rejected or amended, steps 1–3 get reverted or reworked; nothing
-about having written them should count as a reason to accept the design.
+Steps 1–3 were written ahead of approval (out of process; parked on a branch
+with no PR until the ADR was accepted). Steps 4–6 followed after approval.
+
+One thing step 4 surfaced that the design missed: **`verify.py`'s base
+self-check must run with `retries=0`.** There a failure is the *expected*
+result, so retry-on-failure would double the cost of golden verification to
+re-confirm the intended outcome. Only the golden run retries. This is now
+recorded in ADR-0005's Consequences.
 
 ---
 
