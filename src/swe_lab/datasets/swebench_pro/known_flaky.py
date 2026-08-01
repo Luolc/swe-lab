@@ -21,6 +21,11 @@ An entry is a **measurement**, not a guess. It needs a sample size and the
 conditions it was measured under, because a rate from one machine shape does not
 transfer to another — these races are load-sensitive by nature.
 
+And a clean re-run clears less than it looks: at a 1-in-64 rate, 64 rollouts
+come back green 37% of the time. Read an absence of failures as *"no failures
+at n=64, so the rate is under roughly 5%"*, never as a fix — one entry here was
+briefly recorded as fixed on exactly that mistake.
+
 WHAT TO DO WITH ONE
 -------------------
 Nothing automatic. The registry annotates; it never changes a verdict, skips a
@@ -204,20 +209,34 @@ _WYSIWYG_EMOJI_FLAKE = KnownFlaky(
     sample_size=128,
     measured_on=(
         "2026-08-01, parallel batch runner — 64-rollout sweep of the full 731;"
-        " 4/64 and 1/64 on the two instances, pooled here"
+        " 4/64 and 1/64 on the two instances, pooled. Both runs already had"
+        " jest pinned to one worker, so load reduction does not close this one"
+        " — consistent with a fixed wall-clock budget rather than a"
+        " contention-proportional race."
     ),
     flaky_tests=(
         "test/components/views/rooms/wysiwyg_composer/"
-        "SendWysiwygComposer-test.tsx | Emoji when isRichTextEnabled is false"
-        " | Should add an emoji in an empty composer",
+        "SendWysiwygComposer-test.tsx | SendWysiwygComposer | Should render"
+        " WysiwygComposer when isRichTextEnabled is at true",
     ),
     graded=False,
     reason=(
-        "A pass_to_pass bystander, so a fix is permitted in principle. It is"
-        " NOT the wasm finalizer bug: both instances resolve matrix-wysiwyg"
-        " 2.x, which already carries the #635 fix, so the 1.4.1 swap in"
-        " fixes.py does not apply here. Mechanism undiagnosed — the sweep"
-        " captured the test name and the rates, not a stack."
+        "A one-second deadline, not a crash. `findByTestId` uses"
+        " testing-library's default asyncUtilTimeout of 1000 ms, which neither"
+        " jest.config.ts nor setupTests.js overrides at these commits, and"
+        " WysiwygComposer boots its wasm module asynchronously on mount — so"
+        " the assertion is really 'does the composer initialise within one"
+        " second'. Failures land at 1103/1339/1490 ms against a passing run of"
+        " 2279 ms (the budget covers the wait, not the render around it), the"
+        " DOM dump is an empty container rather than a broken tree, and no"
+        " error or rejection is logged. NOT the 1.4.0 wasm double-free that"
+        " fixes.py repairs: these resolve matrix-wysiwyg 2.x, which already"
+        " carries matrix-rich-text-editor#635 — verified in the shipped"
+        " bundles, which have no `ptr = 0` ownership transfer. A"
+        " pass_to_pass bystander, so raising asyncUtilTimeout for this file"
+        " would be a legitimate environment fix; deferred pending a decision"
+        " on whether timeout budgets count as environment (see the webclients"
+        " entry, same question)."
     ),
     evidence=(_SWEEP,),
 )
@@ -227,16 +246,27 @@ _WYSIWYG_EMOJI_FLAKE = KnownFlaky(
 _VULS_SCAN_DEST = KnownFlaky(
     failure_rate=0.156,
     sample_size=64,
-    measured_on="2026-08-01, parallel batch runner — 10/64 failures",
-    flaky_tests=("Test_detectScanDest",),
+    measured_on=(
+        "2026-08-01, parallel batch runner — 10/64 failures. Load-independent:"
+        " the failing subtest runs in 0.00s, so no timing, contention or I/O"
+        " is involved."
+    ),
+    flaky_tests=("Test_detectScanDest/multi-addr",),
     graded=True,
     reason=(
-        "Go, and the joint-worst non-tutanota flake. The failing test is in"
-        " fail_to_pass, so no environment fix can remove it. No error line was"
-        " captured, so the failure is an assertion mismatch rather than a"
-        " crash. Undiagnosed; the name suggests host/port destination"
-        " detection, which would make it order- or timing-sensitive under"
-        " parallel load."
+        "Go map iteration order, and the gold patch is what introduces it."
+        " The reference diff adds `scanIPPortsMap := map[string][]string{}`"
+        " and builds the result by ranging it, while the test compares with"
+        " reflect.DeepEqual — order-sensitively. Go randomises map iteration"
+        " deliberately to surface exactly this. `multi-addr` is the only"
+        " subtest whose map holds two keys, which is why it is the only one"
+        " that flakes: the assertion fails with the same two elements"
+        " reversed. pass_to_pass is empty and the flaky test is one of 25"
+        " fail_to_pass, so the racy test IS the task. Same shape as the NodeBB"
+        " orphans entry — solution-dependent in the wrong direction: an agent"
+        " that sorts the result passes deterministically, one that reproduces"
+        " the reference flakes ~16% of the time. No environment fix reaches"
+        " it."
     ),
     evidence=(_SWEEP,),
 )
@@ -244,18 +274,30 @@ _VULS_SCAN_DEST = KnownFlaky(
 _PROTON_EXTRA_EVENTS = KnownFlaky(
     failure_rate=0.109,
     sample_size=64,
-    measured_on="2026-08-01, parallel batch runner — 7/64 failures",
+    measured_on=(
+        "2026-08-01, parallel batch runner — 7/64 failures. CPU-bound and"
+        " therefore genuinely load-sensitive; a passing run does the same work"
+        " inside a 196 s suite with no timeout."
+    ),
     flaky_tests=(
-        "src/app/components/message/extras/ExtraEvents.test.tsx | does not"
-        " display a summary when responding to an invitation",
+        "src/app/components/message/extras/ExtraEvents.test.tsx | ICS widget |"
+        " attendee mode — the whole file: a beforeAll hook timeout fails all 12"
+        " graded tests in it at once",
     ),
     graded=True,
     reason=(
-        "Fails with `TypeError: restoreConsole is not a function` — a console"
-        " mock's restore handle undefined at teardown, i.e. cross-test state"
-        " leakage in the harness rather than a product bug. The test is in"
-        " fail_to_pass, so it is the graded task. Also seen at 3/4 in an"
-        " earlier smaller sweep, so it predates recent configuration changes."
+        "A `beforeAll` hook exceeding its budget, not a product bug. The hook"
+        " runs setupCryptoProxyForTesting() then generateAddressKeys() —"
+        " OpenPGP key generation, pure compute — against the 20 s budget the"
+        " test file sets for itself at line 50 (`jest.setTimeout(20000)`,"
+        " i.e. upstream already raised it from the 5 s default once and it is"
+        " still not enough under load). When the hook dies the suite dies with"
+        " it: `Tests: 12 failed, 12 total`, which is exactly this file's"
+        " graded footprint. The `restoreConsole is not a function` line"
+        " reported earlier is a cascading teardown symptom, not the cause."
+        " pass_to_pass is empty and all 13 fail_to_pass are graded here, so"
+        " raising the hook budget is the only fix that does not touch the"
+        " task — see the module note on whether timeouts are environment."
     ),
     evidence=(_SWEEP,),
 )
@@ -263,20 +305,34 @@ _PROTON_EXTRA_EVENTS = KnownFlaky(
 _ANSIBLE_COLLECTION = KnownFlaky(
     failure_rate=0.078,
     sample_size=64,
-    measured_on="2026-08-01, parallel batch runner — 5/64 failures",
+    measured_on=(
+        "2026-08-01, parallel batch runner — 5/64 failures, across four"
+        " different test names, because the victim is whichever fixture loses"
+        " the race"
+    ),
     flaky_tests=(
-        "test/units/galaxy/test_collection.py::test_warning_extra_keys",
         "test/units/galaxy/test_collection.py::test_build_ignore_files_and_folders",
         "test/units/galaxy/test_collection.py::test_build_ignore_older_release_in_root",
         "test/units/galaxy/test_collection.py::test_invalid_yaml_galaxy_file",
+        "test/units/galaxy/test_collection.py::test_warning_extra_keys",
     ),
     graded=False,
     reason=(
-        "The only entry here whose failures scatter across tests rather than"
-        " pinning one — five different tests in the same module, all"
-        " pass_to_pass. That pattern points at shared temporary-directory or"
-        " collection-build state between tests, where whichever test loses the"
-        " race is the one that reports. Undiagnosed."
+        "A pytest-xdist temporary-directory collision — and the corpus's"
+        " closest match to the bystander pattern this registry was built for:"
+        " fail_to_pass is a single test (test_extract_tar_file_outside_dir)"
+        " that never fails, while all 56 pass_to_pass ride on the same run."
+        " Three details pin it: the failure is an ERROR at *setup* rather than"
+        " an assertion, it is reported by worker `[gw10]`, and the basetemp is"
+        " `/tmp/pytest-of-root/pytest-15` with no per-worker `popen-gwN`"
+        " component — so workers share one numbered base and"
+        " tmp_path_factory.mktemp appends a predictable `…Input0` suffix. Two"
+        " workers land on the same directory and race the recursive skeleton"
+        " copy; the loser gets FileNotFoundError mid-copy. One bystander"
+        " fixture race scores the instance 0 (required 57, passed 56, missing"
+        " 1). Fixable at the environment level — give each xdist worker its"
+        " own basetemp — which makes this the strongest candidate in the"
+        " registry for promotion to fixes.py."
     ),
     evidence=(_SWEEP,),
 )
@@ -287,14 +343,22 @@ _ELEMENT_JOIN_RULE = KnownFlaky(
     measured_on="2026-08-01, parallel batch runner — 2/64 failures",
     flaky_tests=(
         "test/components/views/settings/JoinRuleSettings-test.tsx |"
-        " <JoinRuleSettings /> | should not show knock room join rule",
+        " <JoinRuleSettings /> | knock rooms | when room does not support join"
+        " rule knock | upgrades room when changing join rule to knock",
     ),
     graded=True,
     reason=(
-        "Unrelated to the wysiwyg wasm story despite the shared repo. A"
-        " negative assertion ('should not show') that passes early is the"
-        " classic missing-await/waitFor shape, but this is undiagnosed — no"
-        " stack was captured. In fail_to_pass, so it is the graded task."
+        "A transient label missed, which is the *opposite* failure direction"
+        " from the SendWysiwygComposer entry: there something fails to appear"
+        " within a deadline, here something disappears before it is observed."
+        " The test walks a progress modal through a sequence of labels and"
+        " asserts `findByText('Updating space...')` — the last label before"
+        " the modal closes, so it exists for a few microtasks. findByText"
+        " observes on MutationObserver/interval ticks, and under contention"
+        " the process is descheduled across that whole window. All 9"
+        " fail_to_pass live in this file, so it is the graded task and no"
+        " environment fix reaches it; the only real fix is upstream's, to"
+        " assert on a stable state rather than a transient one."
     ),
     evidence=(_SWEEP,),
 )
@@ -303,29 +367,54 @@ _TELEPORT_FN_CACHE = KnownFlaky(
     failure_rate=0.016,
     sample_size=64,
     measured_on="2026-08-01, parallel batch runner — 1/64 failures",
-    flaky_tests=("TestFnCacheSanity",),
+    flaky_tests=("TestFnCacheSanity/long ttl, short delay",),
     graded=True,
     reason=(
-        "Go. A TTL/expiry cache test with real timing; 1-in-64 is the shape of"
-        " a narrow timing window losing under contention. In fail_to_pass."
-        " Undiagnosed — one failure is barely a measurement."
+        "A self-calibrating wall-clock assertion with no margin, which"
+        " upstream later deflaked. The test derives its expectation from its"
+        " own elapsed time — `approxReads := elapsed / (ttl+delay)` — and"
+        " compares it to the actual refresh count with `require.InDelta(...,"
+        " 1)`, while 100 goroutines run 40 ms TTLs inside 410 ms. When the"
+        " goroutines are descheduled, elapsed stretches while the refresh"
+        " count does not, so approxReads reaches 6.50 against an actual 5 and"
+        " the 1.50 gap busts the tolerance. Upstream fixed exactly this in"
+        " 5f6cc766, 'Deflake TestFnCacheSanity (#10250)', four months after"
+        " this instance's commit, by widening the tolerance from 1 to 2 —"
+        " their own sample error (difference 1.461) is the same shape as ours"
+        " (1.499). The instance is frozen at the commit that introduced the"
+        " test, so it predates the fix. Both fail_to_pass tests are in this"
+        " file and pass_to_pass is empty, so it is half the graded task and no"
+        " environment fix reaches it."
     ),
-    evidence=(_SWEEP,),
+    evidence=(
+        _SWEEP,
+        "https://github.com/gravitational/teleport/commit/5f6cc7667ab376a674d2c96cb3563abbb7148331",
+    ),
 )
 
 _NODEBB_SOCKET_IO = KnownFlaky(
     failure_rate=0.016,
     sample_size=64,
-    measured_on="2026-08-01, parallel batch runner — 1/64 failures",
+    measured_on=(
+        "2026-08-01, parallel batch runner — 1/64 failures *with* egress. With"
+        " no network it fails 64/64, so this rate describes one network's"
+        " reachability on one day, not a property of the instance."
+    ),
     flaky_tests=(
         "test/socket.io.js | socket.io install/upgrade plugin should toggle"
         " plugin install",
     ),
     graded=True,
     reason=(
-        "Plugin install touches shared global state and a real socket, so it"
-        " is order-sensitive. In fail_to_pass. Undiagnosed — one failure is"
-        " barely a measurement."
+        "Not a race and not a budget: a live outbound call to NodeBB's plugin"
+        " registry, timing out after 15.4 s"
+        " (`ConnectTimeoutError`/`UND_ERR_CONNECT_TIMEOUT` via"
+        " toggleInstall -> Plugins.get -> undici fetch). The grade therefore"
+        " depends on a third party being reachable and responsive at that"
+        " moment, which makes this the only entry here that cannot be"
+        " reproduced in a hermetic environment — and the only one where the"
+        " right answer is arguably to stub the registry rather than to record"
+        " a rate. One lost test out of 681 fail_to_pass scores the instance 0."
     ),
     evidence=(_SWEEP,),
 )
@@ -353,6 +442,44 @@ _TELEPORT = (
 )
 _NODEBB_SIO = (
     "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+)
+
+_HTML_EXPORT = (
+    "instance_element-hq__element-web-56c7fc1948923b4b3f3"
+    "507799e725ac16bcf8018-vnan"
+)
+
+_ELEMENT_HTML_EXPORT = KnownFlaky(
+    failure_rate=0.109,
+    sample_size=64,
+    measured_on=(
+        "2026-08-01, parallel batch runner — 7/64 failures. Beware the earlier"
+        " reading of this one: raising the sandbox's CPU took the test from"
+        " 10757 ms (image default) to 5085 ms (2x, still failing by 85 ms) to"
+        " 2083 ms (4x), and a single green re-run at 4x looked like a fix. At"
+        " 64 rollouts with more CPU again it is 57/64, because 2083 ms is a"
+        " mean and not a bound — the tail still crosses 5000 ms about one run"
+        " in nine. More CPU lowers the rate; it does not close the gap."
+    ),
+    flaky_tests=(
+        "test/unit-tests/utils/exportUtils/HTMLExport-test.ts | HTMLExport |"
+        " should export",
+    ),
+    graded=False,
+    reason=(
+        "The third fixed-budget case in this registry, and the plainest: the"
+        " test builds 50 room events and exports them to HTML against jest's"
+        " default 5000 ms per-test budget, which neither jest.config.ts nor"
+        " setupTests.ts overrides at this commit — nor on element-web's"
+        " develop today, so there is no upstream fix to port. A pass_to_pass"
+        " bystander: this instance's 3 fail_to_pass tests are"
+        " ResetIdentityPanel / EncryptionUserSettingsTab and have nothing to"
+        " do with exporting, while HTMLExport-test.ts contributes 17"
+        " pass_to_pass. So raising testTimeout for this file is a legitimate"
+        " environment fix, pending the same decision as the other budget"
+        " entries."
+    ),
+    evidence=(_SWEEP,),
 )
 
 # instance_id -> what is known about its instability.
@@ -397,6 +524,7 @@ _KNOWN_FLAKY: dict[str, KnownFlaky] = {
     _JOINRULE: _ELEMENT_JOIN_RULE,
     _TELEPORT: _TELEPORT_FN_CACHE,
     _NODEBB_SIO: _NODEBB_SOCKET_IO,
+    _HTML_EXPORT: _ELEMENT_HTML_EXPORT,
 }
 
 
