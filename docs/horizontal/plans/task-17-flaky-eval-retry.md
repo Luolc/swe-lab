@@ -177,3 +177,25 @@ the hand-off.
 - The tests in §5 exist and fail if the loop is removed.
 - One local `--gold` eval passes with `--retries 1`.
 - `plans/README.md` carries the row; the ADR is linked from it.
+
+---
+
+## Result (2026-08-01)
+
+Shipped in #131. Two deltas from the design, both recorded above and in
+ADR-0005:
+
+- **`verify.py`'s base self-check runs with `retries=0`.** The design missed
+  it: there a failure is the *expected* result, so retry-on-failure would pay
+  twice to re-confirm the intended outcome and double golden verification's
+  cost. Only the golden run retries.
+- `rollout`'s flag is `--eval-retries`, not `--retries`, named for what it
+  retries — the agent is never re-run.
+
+**Not yet validated at scale.** Unit tests cover the loop's behaviour on a
+`FakeSandbox` (six cases, including the headline pass-after-retry ⇒
+`flaky=True`, and its inverse), and one live `eval --gold --retries 1` confirms
+the happy path is unchanged — `resolved: true, attempts: 1, flaky: false` with
+no retained attempt files. But **a real flake cannot be reproduced locally**, so
+whether retry actually removes the 22 known flakes is unmeasured here. That is
+the downstream batch's verification; this note gets updated when it comes back.
