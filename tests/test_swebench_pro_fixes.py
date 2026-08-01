@@ -19,15 +19,17 @@ from swe_lab.datasets.swebench_pro.constants import (
 )
 from swe_lab.datasets.swebench_pro.fixes import (
     _FIXES,
-    _RUN_MARKER,
-    _WYSIWYG_INSTANCE,
-    _WYSIWYG_TARBALL_NAME,
     applied_fix_name,
     apply_instance_fix,
     fixed_instances,
     register_fix,
     SweBenchProUnitTestSpec,
     with_setup,
+)
+from swe_lab.datasets.swebench_pro.fixes._seam import _RUN_MARKER
+from swe_lab.datasets.swebench_pro.fixes.element_web_wysiwyg import (
+    _WYSIWYG_INSTANCE,
+    _WYSIWYG_TARBALL_NAME,
     wysiwyg_tarball,
 )
 from swe_lab.datasets.swebench_pro.known_flaky import flaky_instances
