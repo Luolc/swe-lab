@@ -30,8 +30,9 @@ shapes, all of them "the test, not the patch":
   (``element_web_wysiwyg``);
 - **the harness is wrong** — parallelism the tests cannot survive
   (``ansible_xdist``);
-- **the test is wrong** — it asserts something unobservable, and upstream said
-  so themselves (``element_web_joinrule``).
+- **the test is wrong** — it asserts something unobservable, or with a
+  precision its own approximation cannot support, and upstream said so
+  themselves (``element_web_joinrule``, ``teleport_fncache``).
 
 The third is the weakest claim, because it edits a graded test. It is allowed
 only when upstream fixed the same flake *in the test*, the assertion removed is
@@ -98,6 +99,7 @@ from ._seam import InstanceFix, SweBenchProUnitTestSpec, with_setup
 from .ansible_xdist import ANSIBLE_XDIST
 from .element_web_joinrule import ELEMENT_WEB_JOINRULE
 from .element_web_wysiwyg import ELEMENT_WEB_WYSIWYG
+from .teleport_fncache import TELEPORT_FNCACHE
 
 __all__ = [
     "InstanceFix",
@@ -111,7 +113,12 @@ __all__ = [
 
 # Every fix subpackage, in no particular order — each one names the instances it
 # covers, so adding a fix is adding a subpackage and a line here.
-_REGISTERED = (ELEMENT_WEB_WYSIWYG, ANSIBLE_XDIST, ELEMENT_WEB_JOINRULE)
+_REGISTERED = (
+    ELEMENT_WEB_WYSIWYG,
+    ANSIBLE_XDIST,
+    ELEMENT_WEB_JOINRULE,
+    TELEPORT_FNCACHE,
+)
 
 # instance_id -> the fix applied to its spec after compilation.
 _FIXES: dict[str, InstanceFix] = {
