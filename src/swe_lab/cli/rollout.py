@@ -178,6 +178,9 @@ def rollout_in_docker(
       proxy=proxy,
   )
 
+  # Carried even on a solve-only run: `--grade` reuses this summary, and a
+  # reader of an unresolved result needs to know the instance flakes.
+  provenance = instance.run_provenance()
   summary: dict[str, object] = {
       "instance_id": outcome.instance_id,
       "status": outcome.status.value,
@@ -186,7 +189,7 @@ def rollout_in_docker(
       "binary_stripped": outcome.binary_stripped,
       "patch_file": str(outcome.workspace / "patch.diff"),
       "workspace": str(outcome.workspace),
-  }
+  } | provenance
   if persist:
     record = persist_run(
         root,
@@ -201,7 +204,8 @@ def rollout_in_docker(
             "agent_complete": outcome.complete,
             "is_empty_patch": outcome.is_empty,
             "binary_stripped": outcome.binary_stripped,
-        },
+        }
+        | provenance,
     )
     summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
   resolved = _finish(

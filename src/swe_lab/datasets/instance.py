@@ -64,3 +64,20 @@ class TaskInstance[V: Verdict](ABC):
       The compiled unit-test spec.
     """
     ...
+
+  def run_provenance(self) -> dict[str, object]:
+    """Return facts a reader needs to interpret this instance's result.
+
+    Anything that makes a verdict mean something other than "the patch worked"
+    — an environment fix the harness applied, a measured flake rate the
+    instance is known to have. It travels into the run record and the CLI
+    summary, because a reader has only those to go on and cannot recover from
+    a bare ``resolved: false`` that the instance fails a quarter of the time
+    regardless.
+
+    Datasets with nothing to declare inherit the empty default.
+
+    Returns:
+      JSON-serializable facts, empty when there are none.
+    """
+    return {}

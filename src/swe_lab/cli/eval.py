@@ -112,6 +112,10 @@ def eval_cmd(
       sandbox, unit_test_spec, output_dir=workspace, timeout=timeout
   )
 
+  # What makes this verdict mean less than it appears — a harness fix that
+  # altered the graded tree, a measured flake rate. Surfaced in the summary as
+  # well as persisted: whoever reads this JSON is the one who needs the caveat.
+  provenance = instance.run_provenance()
   summary: dict[str, object] = {
       "instance_id": instance.instance_id,
       "status": result.status.value,
@@ -121,6 +125,7 @@ def eval_cmd(
     summary |= {"score": verdict.score} | verdict.summary()
   if result.error is not None:
     summary["error"] = repr(result.error)
+  summary |= provenance
   if persist:
     record = persist_run(
         root,
@@ -131,7 +136,8 @@ def eval_cmd(
         artifacts=result.artifacts,
         metrics=result.metrics,
         extra={"resolved": bool(verdict and verdict.resolved)}
-        | _persistable(verdict),
+        | _persistable(verdict)
+        | provenance,
     )
     summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
   print(json.dumps(summary, indent=2))
