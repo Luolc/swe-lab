@@ -213,8 +213,8 @@ def test_a_known_flaky_instance_carries_its_measured_rate():
   provenance = _instance(flaky_instances()[0]).run_provenance()
   flaky = provenance["known_flaky"]
   assert isinstance(flaky, dict)
-  assert flaky["failure_rate"] == 0.25
-  assert flaky["sample_size"] == 32
+  assert flaky["failure_rate"] == 0.156
+  assert flaky["sample_size"] == 64
   assert flaky["graded"] is True
   assert "env_fix" not in provenance  # nothing to fix; that is the point
   # It must survive the trip into a persisted record, which is JSON.
