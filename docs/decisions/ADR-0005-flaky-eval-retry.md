@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -112,8 +112,27 @@ patch is measuring the harness.
   quantity as a single-shot rate, even though it estimates the same thing with
   less variance.
 
+- **Retry is only correct where a pass is the expected outcome.** The dataset's
+  own base self-check (`verify.py`, no patch applied) *expects* the required
+  tests to fail, so retrying it would double the cost of golden verification to
+  re-confirm the intended result. Callers grading an expected-failure run pass
+  `retries=0`; the default suits the ordinary "this patch should work" case.
+
 **Neutral**
 
 - `known_flaky` keeps annotating and never gates a retry. The two are
-  deliberately independent: one is the metric, the other is the knowledge base,
-  and coupling them would make the metric depend on how complete our notes are.
+  deliberately independent *today*: one is the metric, the other is the
+  knowledge base, and coupling them would make the metric depend on how complete
+  our notes are.
+
+## Future direction (recorded, not decided here)
+
+Once the registry is believed to cover most of the corpus's flakes, retry can be
+narrowed to **registered instances only** — turning a blanket noise filter into a
+targeted one, which removes both the cost on genuine failures and the credit
+given to a racy patch.
+
+That inverts the independence recorded under Neutral above, and it is only sound
+once the coverage argument can actually be made (today the registry is
+incomplete by construction — it holds what we have looked at). It therefore
+needs its own ADR when the time comes, not an amendment to this one.
