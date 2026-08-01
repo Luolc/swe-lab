@@ -11,7 +11,7 @@ record — the dependency runs one way, ``record`` → ``unit_test``.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 import json
 import shlex
@@ -58,12 +58,16 @@ class SweBenchProVerdict:
     required: The expectation this was judged against (``fail_to_pass ∪
       pass_to_pass``). Kept so a run can report *how many* tests it was held to,
       not just how many it missed — ``0`` on a verdict built without it.
+    attempts: How many evaluation attempts produced this verdict (ADR-0005).
+      ``1`` unless the eval was re-run after a failure; the grader always builds
+      it at ``1`` and the method annotates it afterwards.
   """
 
   passed: frozenset[str]
   missing: frozenset[str]
   output_state: OutputState
   required: frozenset[str] = frozenset()
+  attempts: int = 1
 
   @property
   def score(self) -> float:
@@ -76,6 +80,26 @@ class SweBenchProVerdict:
     """Whether the run is a full pass (``score >= 1.0``)."""
     return self.score >= 1.0
 
+  @property
+  def flaky(self) -> bool:
+    """Whether it resolved only after a retry (ADR-0005).
+
+    Derived rather than stored, so it cannot disagree with ``attempts``: a run
+    that failed every attempt is not flaky, it is failed.
+    """
+    return self.attempts > 1 and self.resolved
+
+  def with_attempts(self, attempts: int) -> SweBenchProVerdict:
+    """Return this verdict with the attempt count recorded.
+
+    Args:
+      attempts: How many attempts the eval took, ``1`` or more.
+
+    Returns:
+      An identical verdict but for ``attempts``.
+    """
+    return replace(self, attempts=attempts)
+
   def summary(self) -> dict[str, object]:
     """SWE-Bench-Pro report detail: output state + passed / missing.
 
@@ -86,6 +110,8 @@ class SweBenchProVerdict:
     """
     return {
         "output_state": self.output_state.value,
+        "attempts": self.attempts,
+        "flaky": self.flaky,
         "first_missing": min(self.missing) if self.missing else None,
         "passed": sorted(self.passed),
         "missing": sorted(self.missing),
@@ -97,6 +123,8 @@ class SweBenchProVerdict:
         "passed": float(len(self.passed)),
         "missing": float(len(self.missing)),
         "required": float(len(self.required)),
+        "attempts": float(self.attempts),
+        "flaky": float(self.flaky),
     }
 
 

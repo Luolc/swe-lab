@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Protocol, Self
 
 from swe_lab.sandbox import Mounts, SandboxFs
 
@@ -33,6 +33,40 @@ class Verdict(Protocol):
   @property
   def resolved(self) -> bool:
     """Whether the run is a full pass (``score >= 1.0``)."""
+    ...
+
+  @property
+  def attempts(self) -> int:
+    """How many evaluation attempts produced this verdict (``1`` = first try).
+
+    More than one means the eval was re-run against the **same patch** after a
+    failure (ADR-0005) — the candidate never changes between attempts, so this
+    averages out harness nondeterminism, not model quality.
+    """
+    ...
+
+  @property
+  def flaky(self) -> bool:
+    """Whether it resolved only after a retry.
+
+    Derived, never stored: a run that failed every attempt is not flaky, it is
+    failed. This is the signal that feeds the known-flaky registry.
+    """
+    ...
+
+  def with_attempts(self, attempts: int) -> Self:
+    """Return a copy recording how many attempts the run took.
+
+    Implemented by the dataset's verdict (a one-line ``dataclasses.replace``)
+    because only it knows its own shape; the generic eval method counts the
+    attempts but cannot construct a concrete verdict.
+
+    Args:
+      attempts: The number of attempts, ``1`` or more.
+
+    Returns:
+      A verdict identical but for the attempt count.
+    """
     ...
 
   def summary(self) -> dict[str, object]:
