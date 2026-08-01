@@ -192,10 +192,21 @@ ADR-0005:
 - `rollout`'s flag is `--eval-retries`, not `--retries`, named for what it
   retries — the agent is never re-run.
 
-**Not yet validated at scale.** Unit tests cover the loop's behaviour on a
-`FakeSandbox` (six cases, including the headline pass-after-retry ⇒
-`flaky=True`, and its inverse), and one live `eval --gold --retries 1` confirms
-the happy path is unchanged — `resolved: true, attempts: 1, flaky: false` with
-no retained attempt files. But **a real flake cannot be reproduced locally**, so
-whether retry actually removes the 22 known flakes is unmeasured here. That is
-the downstream batch's verification; this note gets updated when it comes back.
+**Validated downstream (2026-08-01).** All 26 previously-flaky instances were
+re-run at `retries=2` (three attempts). **Retry works**: nearly all of them
+recover within a single retry.
+
+Three needed all three attempts — the two NodeBB instances and element-web
+`9a31cd0f` — and two were not helped at all. Both exceptions are cases where the
+failure is not a coin flip, so re-rolling it does not help:
+
+| instance | why retry does not fix it | what did |
+|---|---|---|
+| NodeBB `22368b99` | the **gold patch itself** races the test that grades it | nothing — recorded in `known_flaky.py`, per the principle in `fixes/` |
+| ansible `a20a5270` | parallelism-driven: the rate scales with the host's CPU count | pinned to one xdist worker (#133) |
+| element-web `56c7fc19` | a wall-clock budget one environment blows systematically | fixed in that environment downstream — not a corpus defect, so not fixed here |
+| element-web `9a31cd0f` | a transient label that can vanish unobserved | ported upstream's deflake (#134) |
+
+So the shape holds: retry absorbs genuine harness nondeterminism, and what it
+leaves behind is exactly the classes that need a root fix instead. Outliers may
+still appear; the ones that cannot recover are the ones worth looking at.
