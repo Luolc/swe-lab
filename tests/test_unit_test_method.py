@@ -350,3 +350,42 @@ def test_negative_retries_is_refused(tmp_path: Path):
         output_dir=tmp_path / "out",
         retries=-1,
     )
+
+
+def test_a_spec_can_override_the_callers_retry_budget(tmp_path: Path):
+  # The consumer may know an instance needs more attempts than the caller's
+  # default; the spec is where that knowledge lands (ADR-0005).
+  sandbox = _fake(tmp_path)
+  spec = replace(_flaky_spec(passes_on_attempt=3), retries=2)
+  _, verdict = run_unit_test(
+      sandbox, spec, output_dir=tmp_path / "out", retries=0
+  )
+  assert sandbox.scripts == [ENTRYSCRIPT_NAME] * 3  # spec won, not the caller
+  assert verdict is not None
+  assert (verdict.attempts, verdict.resolved, verdict.flaky) == (3, True, True)
+
+
+def test_a_spec_without_an_override_defers_to_the_caller(tmp_path: Path):
+  sandbox = _fake(tmp_path)
+  _, verdict = run_unit_test(
+      sandbox,
+      _flaky_spec(passes_on_attempt=2),
+      output_dir=tmp_path / "out",
+      retries=1,
+  )
+  assert sandbox.scripts == [ENTRYSCRIPT_NAME] * 2
+  assert verdict is not None and verdict.attempts == 2
+
+
+def test_a_spec_can_disable_retrying_the_caller_asked_for(tmp_path: Path):
+  # The override works downwards too — 0 is a value, not "unset".
+  sandbox = _fake(tmp_path)
+  spec = replace(_flaky_spec(passes_on_attempt=99), retries=0)
+  _, _ = run_unit_test(sandbox, spec, output_dir=tmp_path / "out", retries=5)
+  assert sandbox.scripts == [ENTRYSCRIPT_NAME]
+
+
+def test_a_negative_spec_override_is_refused(tmp_path: Path):
+  spec = replace(_flaky_spec(passes_on_attempt=1), retries=-1)
+  with pytest.raises(ValueError, match="spec retries"):
+    _ = run_unit_test(_fake(tmp_path), spec, output_dir=tmp_path / "out")

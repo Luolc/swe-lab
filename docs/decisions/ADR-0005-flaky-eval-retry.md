@@ -44,6 +44,11 @@ that.**
 
 - `run_unit_test` gains `retries: int = 1` — the number of *extra* attempts
   after the first, so the default is up to two runs.
+- `UnitTestSpec` gains `retries: int | None = None`, which **overrides** the
+  caller's budget when set. swe-lab sets it nowhere, so every shipped instance
+  ships `None` and the default applies uniformly; it exists so a consumer who
+  has measured an instance can raise (or lower) its budget without forking the
+  CLI. Deliberately *not* wired to `known_flaky.py` — see Consequences.
 - An attempt is a fresh execution of the same entryscript. That is a clean
   repeat by construction: the script begins with `git reset --hard <base>` and
   `git checkout <base>`, then re-applies the patch and re-checks out the golden
@@ -123,7 +128,11 @@ patch is measuring the harness.
 - `known_flaky` keeps annotating and never gates a retry. The two are
   deliberately independent *today*: one is the metric, the other is the
   knowledge base, and coupling them would make the metric depend on how complete
-  our notes are.
+  our notes are. The per-spec `retries` override does not change this: it is a
+  seam a consumer may use, left unset in-tree, so an unregistered flake still
+  gets exactly the same budget as a registered one. Raising a budget for a named
+  instance is a scoring decision, and it stays where scoring decisions are
+  visible rather than behind a registry lookup.
 
 ## Future direction (recorded, not decided here)
 

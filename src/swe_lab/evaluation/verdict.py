@@ -119,6 +119,26 @@ class UnitTestSpec[V: Verdict]:
     mounts: The other files the run needs staged (e.g. the test harness and
       the compiled expectation).
     grader: Judges the workspace after the run.
+    retries: Overrides the caller's retry budget for this instance (ADR-0005),
+      or ``None`` to accept whatever the caller passes. **swe-lab sets this
+      nowhere** — every instance ships ``None``, so the CLI default applies
+      uniformly and the shipped numbers stay comparable. It exists because a
+      consumer may know something we do not: an instance measured to fail 16% of
+      the time needs more attempts than one measured at 2%, and only whoever
+      took that measurement can say so.
+
+      Set it by compiling the spec and replacing the field::
+
+          compiled = instance.unit_test_spec(patch=patch)
+          spec = dataclasses.replace(compiled, retries=3)
+
+      or, to reach the CLI path where the spec is compiled internally, by
+      overriding ``unit_test_spec`` on a subclass of the dataset's record — the
+      same extension point ``run_script`` / ``parser`` already document.
+
+      Raising it for one instance is a **scoring decision** about that instance,
+      so it should be as visible as any other; this field is deliberately not
+      wired to ``known_flaky.py``, which annotates and never acts.
     native_outputs: Byproducts the eval script writes, as artifact name →
       workspace-relative filename. Declared by the dataset because the names
       are its own (``output.json``, the test logs), and registered *best
@@ -130,4 +150,5 @@ class UnitTestSpec[V: Verdict]:
   eval_script: str
   mounts: Mounts
   grader: Grader[V]
+  retries: int | None = None
   native_outputs: dict[str, str] = field(default_factory=dict)

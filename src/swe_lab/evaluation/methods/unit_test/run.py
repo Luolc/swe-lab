@@ -175,7 +175,9 @@ def run_unit_test[V: Verdict](
       disables retrying. The candidate patch is identical on every attempt, so
       this removes harness nondeterminism, not model error — but it costs a
       full re-run for every genuinely failing instance, which is why it is a
-      knob and why the default is 1 rather than 2.
+      knob and why the default is 1 rather than 2. **A spec carrying its own
+      ``retries`` overrides this**, because the dataset knows an instance's
+      measured rate and the caller does not.
     eval_env: Extra environment for the eval script (mirrors ``run_rollout``'s
       ``agent_env``). For a secret, use the sandbox's ``pass_env`` instead —
       that passes it by reference, so the value never reaches a command line.
@@ -196,6 +198,14 @@ def run_unit_test[V: Verdict](
   """
   if retries < 0:
     raise ValueError(f"retries must be >= 0, got {retries}")
+  # A spec may know better than its caller: the dataset has the measured rate,
+  # the caller only has a default (ADR-0005).
+  if unit_test_spec.retries is not None:
+    if unit_test_spec.retries < 0:
+      raise ValueError(
+          f"spec retries must be >= 0, got {unit_test_spec.retries}"
+      )
+    retries = unit_test_spec.retries
   parse: EvalParseObserver[V] = EvalParseObserver(
       unit_test_spec.grader, native_outputs=unit_test_spec.native_outputs
   )
