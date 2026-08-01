@@ -8,6 +8,8 @@ survives, and an instance without a fix is untouched.
 
 import base64
 from collections.abc import Iterator
+import dataclasses
+from dataclasses import replace
 import hashlib
 import json
 
@@ -282,3 +284,26 @@ def test_a_fix_that_is_not_a_plain_function_is_still_named(
   register_fix("instance_acme__widget-9", _Callable())
   # No __name__ on an instance — the record must still say *something*.
   assert applied_fix_name("instance_acme__widget-9") == "_Callable"
+
+
+def test_with_setup_preserves_every_field_it_does_not_change():
+  # Regression: `with_setup` used to rebuild the spec field by field, so a field
+  # added later (`retries`) was silently dropped. This asserts the general rule
+  # rather than that one field, so the next addition cannot repeat it.
+  spec = replace(_plain(), retries=3, native_outputs={"log": "stdout.log"})
+  fixed = with_setup(spec, setup="echo patched", mounts={})
+  changed = {"eval_script", "mounts"}
+  for field in dataclasses.fields(spec):
+    if field.name in changed:
+      continue
+    assert getattr(fixed, field.name) == getattr(spec, field.name), field.name
+  assert fixed.retries == 3  # named explicitly: this is the one that broke
+
+
+def test_a_fixed_instance_keeps_its_retry_override():
+  # End to end: the override has to survive the fix, or a consumer setting it on
+  # an instance that happens to have a fix would be silently ignored.
+  compiled = replace(_plain(), retries=2)
+  fixed = apply_instance_fix(_WYSIWYG_INSTANCE, compiled)
+  assert fixed.retries == 2
+  assert _WYSIWYG_TARBALL_NAME in fixed.mounts  # the fix did run

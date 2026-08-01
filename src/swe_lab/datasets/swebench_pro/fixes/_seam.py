@@ -7,7 +7,7 @@ without importing the package that imports it back.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import Mount
@@ -70,11 +70,14 @@ def with_setup(
   if clash:
     raise ValueError(f"fix mounts collide with the spec's: {sorted(clash)}")
 
-  return UnitTestSpec(
+  # `replace`, not a fresh UnitTestSpec: rebuilding field by field silently
+  # drops anything added to the spec later, which is exactly how an earlier
+  # version of this lost `retries`. A fix changes the script and the mounts;
+  # everything else is the dataset's and must survive untouched.
+  return replace(
+      spec,
       eval_script="\n".join(spliced) + "\n",
       mounts={**spec.mounts, **mounts},
-      grader=spec.grader,
-      native_outputs=dict(spec.native_outputs),
   )
 
 
