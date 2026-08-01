@@ -21,6 +21,11 @@ An entry is a **measurement**, not a guess. It needs a sample size and the
 conditions it was measured under, because a rate from one machine shape does not
 transfer to another — these races are load-sensitive by nature.
 
+And a clean re-run clears less than it looks: at a 1-in-64 rate, 64 rollouts
+come back green 37% of the time. Read an absence of failures as *"no failures
+at n=64, so the rate is under roughly 5%"*, never as a fix — one entry here was
+briefly recorded as fixed on exactly that mistake.
+
 WHAT TO DO WITH ONE
 -------------------
 Nothing automatic. The registry annotates; it never changes a verdict, skips a
@@ -439,6 +444,44 @@ _NODEBB_SIO = (
     "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
 )
 
+_HTML_EXPORT = (
+    "instance_element-hq__element-web-56c7fc1948923b4b3f3"
+    "507799e725ac16bcf8018-vnan"
+)
+
+_ELEMENT_HTML_EXPORT = KnownFlaky(
+    failure_rate=0.109,
+    sample_size=64,
+    measured_on=(
+        "2026-08-01, parallel batch runner — 7/64 failures. Beware the earlier"
+        " reading of this one: raising the sandbox's CPU took the test from"
+        " 10757 ms (image default) to 5085 ms (2x, still failing by 85 ms) to"
+        " 2083 ms (4x), and a single green re-run at 4x looked like a fix. At"
+        " 64 rollouts with more CPU again it is 57/64, because 2083 ms is a"
+        " mean and not a bound — the tail still crosses 5000 ms about one run"
+        " in nine. More CPU lowers the rate; it does not close the gap."
+    ),
+    flaky_tests=(
+        "test/unit-tests/utils/exportUtils/HTMLExport-test.ts | HTMLExport |"
+        " should export",
+    ),
+    graded=False,
+    reason=(
+        "The third fixed-budget case in this registry, and the plainest: the"
+        " test builds 50 room events and exports them to HTML against jest's"
+        " default 5000 ms per-test budget, which neither jest.config.ts nor"
+        " setupTests.ts overrides at this commit — nor on element-web's"
+        " develop today, so there is no upstream fix to port. A pass_to_pass"
+        " bystander: this instance's 3 fail_to_pass tests are"
+        " ResetIdentityPanel / EncryptionUserSettingsTab and have nothing to"
+        " do with exporting, while HTMLExport-test.ts contributes 17"
+        " pass_to_pass. So raising testTimeout for this file is a legitimate"
+        " environment fix, pending the same decision as the other budget"
+        " entries."
+    ),
+    evidence=(_SWEEP,),
+)
+
 # instance_id -> what is known about its instability.
 _KNOWN_FLAKY: dict[str, KnownFlaky] = {
     _NODEBB_ORPHANS: KnownFlaky(
@@ -481,6 +524,7 @@ _KNOWN_FLAKY: dict[str, KnownFlaky] = {
     _JOINRULE: _ELEMENT_JOIN_RULE,
     _TELEPORT: _TELEPORT_FN_CACHE,
     _NODEBB_SIO: _NODEBB_SOCKET_IO,
+    _HTML_EXPORT: _ELEMENT_HTML_EXPORT,
 }
 
 
