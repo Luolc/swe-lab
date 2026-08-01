@@ -303,32 +303,6 @@ _PROTON_EXTRA_EVENTS = KnownFlaky(
 )
 
 
-_ELEMENT_JOIN_RULE = KnownFlaky(
-    failure_rate=0.031,
-    sample_size=64,
-    measured_on="2026-08-01, parallel batch runner — 2/64 failures",
-    flaky_tests=(
-        "test/components/views/settings/JoinRuleSettings-test.tsx |"
-        " <JoinRuleSettings /> | knock rooms | when room does not support join"
-        " rule knock | upgrades room when changing join rule to knock",
-    ),
-    graded=True,
-    reason=(
-        "A transient label missed, which is the *opposite* failure direction"
-        " from the SendWysiwygComposer entry: there something fails to appear"
-        " within a deadline, here something disappears before it is observed."
-        " The test walks a progress modal through a sequence of labels and"
-        " asserts `findByText('Updating space...')` — the last label before"
-        " the modal closes, so it exists for a few microtasks. findByText"
-        " observes on MutationObserver/interval ticks, and under contention"
-        " the process is descheduled across that whole window. All 9"
-        " fail_to_pass live in this file, so it is the graded task and no"
-        " environment fix reaches it; the only real fix is upstream's, to"
-        " assert on a stable state rather than a transient one."
-    ),
-    evidence=(_SWEEP,),
-)
-
 _TELEPORT_FN_CACHE = KnownFlaky(
     failure_rate=0.016,
     sample_size=64,
@@ -392,10 +366,6 @@ _VULS = (
 _PROTON = (
     "instance_protonmail__webclients-8142704f447df6e108d5"
     "3cab25451c8a94976b92"
-)
-_JOINRULE = (
-    "instance_element-hq__element-web-9a31cd0fa849da810b4"
-    "fac6c6c015145e850b282-vnan"
 )
 _TELEPORT = (
     "instance_gravitational__teleport-78b0d8c72637df1129f"
@@ -481,7 +451,6 @@ _KNOWN_FLAKY: dict[str, KnownFlaky] = {
     **dict.fromkeys(_WYSIWYG_EMOJI, _WYSIWYG_EMOJI_FLAKE),
     _VULS: _VULS_SCAN_DEST,
     _PROTON: _PROTON_EXTRA_EVENTS,
-    _JOINRULE: _ELEMENT_JOIN_RULE,
     _TELEPORT: _TELEPORT_FN_CACHE,
     _NODEBB_SIO: _NODEBB_SOCKET_IO,
     _HTML_EXPORT: _ELEMENT_HTML_EXPORT,
