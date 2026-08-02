@@ -17,7 +17,7 @@ import json
 import shlex
 from typing import override
 
-from swe_lab.evaluation.verdict import Grader, UnitTestSpec
+from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs
 
 from .constants import (
@@ -48,8 +48,11 @@ class OutputState(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class SweBenchProVerdict:
+class SweBenchProVerdict(Verdict):
   """The graded outcome of one SWE-Bench Pro run.
+
+  ``resolved`` and ``flaky`` are inherited from :class:`Verdict` (ADR-0006), so
+  the derivations are not restated here.
 
   Attributes:
     passed: Names of the tests the parser reported as passed.
@@ -70,25 +73,13 @@ class SweBenchProVerdict:
   attempts: int = 1
 
   @property
+  @override
   def score(self) -> float:
     """1.0 iff the output parsed and every required test passed, else 0.0."""
     ok = self.output_state is OutputState.OK and not self.missing
     return 1.0 if ok else 0.0
 
-  @property
-  def resolved(self) -> bool:
-    """Whether the run is a full pass (``score >= 1.0``)."""
-    return self.score >= 1.0
-
-  @property
-  def flaky(self) -> bool:
-    """Whether it resolved only after a retry (ADR-0005).
-
-    Derived rather than stored, so it cannot disagree with ``attempts``: a run
-    that failed every attempt is not flaky, it is failed.
-    """
-    return self.attempts > 1 and self.resolved
-
+  @override
   def with_attempts(self, attempts: int) -> SweBenchProVerdict:
     """Return this verdict with the attempt count recorded.
 
@@ -100,6 +91,7 @@ class SweBenchProVerdict:
     """
     return replace(self, attempts=attempts)
 
+  @override
   def summary(self) -> dict[str, object]:
     """SWE-Bench-Pro report detail: output state + passed / missing.
 
@@ -117,6 +109,7 @@ class SweBenchProVerdict:
         "missing": sorted(self.missing),
     }
 
+  @override
   def metrics(self) -> dict[str, float]:
     """Return counts a sweep can aggregate: passed / missing / required."""
     return {
