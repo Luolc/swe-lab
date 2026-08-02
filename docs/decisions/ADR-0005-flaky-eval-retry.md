@@ -49,11 +49,16 @@ that.**
   ships `None` and the default applies uniformly; it exists so a consumer who
   has measured an instance can raise (or lower) its budget without forking the
   CLI. Deliberately *not* wired to `known_flaky.py` — see Consequences.
-- An attempt is a fresh execution of the same entryscript. That is a clean
-  repeat by construction: the script begins with `git reset --hard <base>` and
-  `git checkout <base>`, then re-applies the patch and re-checks out the golden
-  tests, so nothing carries over from a previous attempt except the container's
-  warm caches.
+- An attempt is a fresh execution of the same entryscript, made a clean repeat
+  *deliberately*: `git reset --hard <base>` + **`git clean -fd`** + `git
+  checkout <base>`, then re-apply the patch and re-checkout the golden tests, so
+  nothing carries over but the container's warm caches. The `clean` is not
+  decoration — `reset --hard` leaves untracked files, so without it a patch that
+  *adds* files makes the next attempt's `git apply` fail with "already exists"
+  and abort the script under `set -e` before any test runs. The previous
+  attempt's `output.json` and logs are deleted up front for the same reason:
+  an attempt that aborts early must grade as `ABSENT`, never inherit the last
+  attempt's verdict.
 - After each attempt the method grades the workspace. If the verdict resolves,
   it stops; otherwise it retries until the budget is spent.
 - The verdict carries `attempts`, and `flaky` is **derived**, never stored:
