@@ -57,6 +57,11 @@ class KnownFlaky:
       help. ``False`` means a fix is possible and ``reason`` says what it would
       be and why it was deferred — see the module docstring.
     reason: The mechanism, and for a deferred entry, the shape of the fix.
+    window: For a flake that is a *clock* rather than a coin, the interval in
+      which it fails deterministically. When this is set, ``failure_rate`` is
+      the fraction of the **day** the window covers, not the fraction of runs —
+      any single batch is 0% or 100% depending only on when it started, and
+      averaging those is the wrong shape.
     evidence: Upstream issues, PRs, or commits backing the diagnosis.
   """
 
@@ -66,6 +71,7 @@ class KnownFlaky:
   flaky_tests: tuple[str, ...]
   graded: bool
   reason: str
+  window: str | None = None
   evidence: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -128,9 +134,6 @@ _TUTANOTA_ALL_OR_NOTHING = (
     "instance_tutao__tutanota-de49d486feef842101506adf040"
     "a0f00ded59519-v10a26bfb45a064b93f4fc044a0254925037b8"
     "8f1",
-    "instance_tutao__tutanota-f373ac3808deefce8183dad8d16"
-    "729839cc330c1-v2939aa9f4356f0dc9f523ee5ce19d09e08ab9"
-    "79b",
     "instance_tutao__tutanota-f3ffe17af6e8ab007e8d4613550"
     "57ad237846d9d-vbc0d9ba8f0071fbe982809910959a6ff8884d"
     "bbf",
@@ -380,6 +383,65 @@ _ELEMENT_HTML_EXPORT = KnownFlaky(
     evidence=(_SWEEP,),
 )
 
+# tutanota f373ac38: a clock, not a coin — kept out of the pooled entry above
+# because a rate averaged over the day is the wrong shape for something that is
+# 0% for 21 hours and 100% for the other three.
+_TUTANOTA_CLOCK_INSTANCE = (
+    "instance_tutao__tutanota-f373ac3808deefce8183dad8d16"
+    "729839cc330c1-v2939aa9f4356f0dc9f523ee5ce19d09e08ab9"
+    "79b"
+)
+
+_TUTANOTA_CLOCK_FLAKE = KnownFlaky(
+    failure_rate=0.103,
+    sample_size=128,
+    measured_on=(
+        "2026-08-01, two 64-rollout batches of identical code and inputs hours"
+        " apart: 49/64 starting 20:23 UTC (only the end assertion wrong) and"
+        " 0/64 starting 21:59 UTC (both wrong); an earlier batch at 09:26 UTC"
+        " was 64/64. The rate is the fraction of the *day* the window covers,"
+        " not of runs — a batch is 0% or 100% depending only on when it began."
+    ),
+    window=(
+        "21:31-23:59 UTC for the start assertion and 21:01-23:59 for the end"
+        " one, under the container's Europe/Berlin clock (CEST); 22:01-00:59"
+        " under CET"
+    ),
+    flaky_tests=(
+        "test/tests/calendar/eventeditor/CalendarEventWhenModelTest.ts |"
+        " CalendarEventWhenModel > all day | setting all-day to false will"
+        " cause result to not be considered all-day and the times to be set to"
+        " the default",
+    ),
+    graded=False,
+    reason=(
+        "The test compares two values dated from *different clocks*."
+        " `getEventWithDefaultTimes()` derives the expected times from"
+        " `getNextHalfHour()`, which is process-local (`new Date()` plus"
+        " `getMinutes`/`setHours`), so it carries the local date; the model's"
+        " event is built from `DateTime.fromJSDate(now, {zone: 'utc'})"
+        ".set({hour: 0})` and interpreted in Europe/Berlin, so it carries the"
+        " UTC-derived date. Clearing `isAllDay` applies the default"
+        " time-of-day to the *event's* date, so the assertion holds only while"
+        " those two dates agree and is off by exactly 24 hours when they do"
+        " not. The test's own note admits time dependence ('might fail if run"
+        " on exactly a full half hour') and understates it by two orders of"
+        " magnitude. Retry cannot help: a retry chain runs within minutes, so"
+        " it stays inside the same window — one batch spent four attempts on"
+        " all 64 units and recovered none. The only environment lever is the"
+        " process timezone, and it shrinks the window rather than closing it:"
+        " simulated minute by minute over a day, Europe/Berlin fails 149"
+        " min/day, UTC 29, America/New_York 211, Asia/Tokyo 569. Even the best"
+        " leaves a deterministic half hour, and changing the zone would act on"
+        " the whole suite of an instance graded by positional counter, where"
+        " one new failure is fatal. The fix belongs upstream: derive both sides"
+        " from one clock."
+    ),
+    evidence=(
+        "https://github.com/Luolc/swe-lab/issues/123#issuecomment-5153623723",
+    ),
+)
+
 # instance_id -> what is known about its instability.
 _KNOWN_FLAKY: dict[str, KnownFlaky] = {
     _NODEBB_ORPHANS: KnownFlaky(
@@ -415,6 +477,7 @@ _KNOWN_FLAKY: dict[str, KnownFlaky] = {
         ),
     ),
     **dict.fromkeys(_TUTANOTA_ALL_OR_NOTHING, _TUTANOTA_SUITE_FLAKE),
+    _TUTANOTA_CLOCK_INSTANCE: _TUTANOTA_CLOCK_FLAKE,
     **dict.fromkeys(_WYSIWYG_EMOJI, _WYSIWYG_EMOJI_FLAKE),
     _VULS: _VULS_SCAN_DEST,
     _PROTON: _PROTON_EXTRA_EVENTS,
