@@ -113,6 +113,12 @@ def _fix_instance_tutanota_f373ac38(
   parser reads ``passing: N`` and emits ``test_1..test_N`` placeholders), so a
   test that stops running is indistinguishable from a test that fails.
 
+  **One instance, checked rather than assumed.** The corpus has 20 tutanota
+  instances and they all run the whole suite, so the obvious worry is that they
+  all carry this. They do not: the other 19 sit at base commits between 2022-01
+  and 2023-03, and ``CalendarEventWhenModelTest.ts`` appears in none of their
+  trees. This one, at 2023-08-14, is the only one late enough to have the file.
+
   This satisfies the package's principle. The gold patch is correct — it works
   the mail and entity-cache path (``MailFacade``, ``DefaultEntityRestCache``,
   ``EntityRestClient``, ``MailIndexer``, ``InboxRuleHandler``) and touches
