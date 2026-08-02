@@ -3,7 +3,7 @@
 Both are pure functions over an instance's *fields* (not the record), so these
 tests pass the fields directly — the run-script / parser bytes inline, with no
 harness fetch or cache. The instance's own runnable surface (the ``run_script``
-/ ``parser`` properties, ``sandbox_spec``, ``solve_prompt``) is exercised in
+/ ``parser`` properties, ``sandbox_spec``, ``prompt``) is exercised in
 test_swebench_pro.py.
 """
 

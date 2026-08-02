@@ -104,7 +104,7 @@ def test_sandbox_spec_is_built_from_the_instance_fields() -> None:
   assert spec.base_commit == "0" * 40
 
 
-def test_solve_prompt_combines_the_three_columns() -> None:
+def test_prompt_combines_the_three_columns() -> None:
   # mirrors Scale's create_problem_statement verbatim
   prompt = SweBenchProInstance.from_raw(
       _raw(
@@ -112,7 +112,7 @@ def test_solve_prompt_combines_the_three_columns() -> None:
           requirements="Must not raise on None.",
           interface="def render(widget) -> str",
       )
-  ).solve_prompt()
+  ).prompt()
   assert prompt == (
       "The widget crashes on empty input.\n\n"
       "Requirements:\nMust not raise on None.\n\n"
@@ -120,11 +120,11 @@ def test_solve_prompt_combines_the_three_columns() -> None:
   )
 
 
-def test_solve_prompt_keeps_headers_when_columns_empty() -> None:
+def test_prompt_keeps_headers_when_columns_empty() -> None:
   # headers are unconditional, like the original (no per-section omission)
   prompt = SweBenchProInstance.from_raw(
       _raw(problem_statement="Just the statement.")
-  ).solve_prompt()
+  ).prompt()
   assert "Just the statement." in prompt
   assert "Requirements:" in prompt
   assert "New interfaces introduced:" in prompt

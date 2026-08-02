@@ -39,7 +39,10 @@ def test_requires_exactly_one_patch_source():
 
 
 def _wire(
-    monkeypatch: pytest.MonkeyPatch, *, verdict: SweBenchProVerdict | None
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    verdict: SweBenchProVerdict | None,
+    gold: str | None = "GOLD DIFF",
 ) -> dict[str, object]:
   """Mock the dataset + engine so the CLI runs without Docker; record calls."""
   calls: dict[str, object] = {}
@@ -57,12 +60,12 @@ def _wire(
       return spec
 
     @override
-    def solve_prompt(self) -> str:
+    def prompt(self) -> str:
       return "PROMPT"
 
     @override
-    def gold_patch(self) -> str:
-      return "GOLD DIFF"
+    def gold_patch(self) -> str | None:
+      return gold
 
     @override
     def unit_test_spec(
@@ -121,6 +124,19 @@ def test_gold_resolved_exits_zero(monkeypatch: pytest.MonkeyPatch):
   assert payload["score"] == 1.0
   assert payload["output_state"] == "ok"
   assert calls["patch"] == "GOLD DIFF"  # --gold used the instance's patch
+
+
+def test_gold_on_a_dataset_without_one_is_refused_not_graded(
+    monkeypatch: pytest.MonkeyPatch,
+):
+  # `gold_patch()` returning None is *not* the `patch=None` that means "grade
+  # the base commit": falling through would grade the wrong tree and report it
+  # as the gold patch failing.
+  calls = _wire(monkeypatch, verdict=None, gold=None)
+  result = runner.invoke(app, ["eval", "acme__widget-1", "--gold"])
+  assert result.exit_code != 0
+  assert "no gold patch" in result.output
+  assert "ran" not in calls  # refused before anything was graded
 
 
 def test_persist_writes_a_manifest_shard(

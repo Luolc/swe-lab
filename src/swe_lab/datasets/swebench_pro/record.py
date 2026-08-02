@@ -94,7 +94,7 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
   """A single SWE-Bench Pro task instance with normalized, typed fields.
 
   Both a ``DatasetRecord`` (the loader parses it) and a ``TaskInstance`` (the
-  CLIs run it). The runnable surface — ``sandbox_spec`` / ``solve_prompt`` /
+  CLIs run it). The runnable surface — ``sandbox_spec`` / ``prompt`` /
   ``gold_patch`` / ``unit_test_spec`` plus the ``run_script`` / ``parser`` /
   ``golden_test_checkout_cmd`` properties — is where "how this instance is run"
   lives, so a CLI drives it without importing anything SWE-Bench-Pro-specific,
@@ -214,8 +214,8 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     )
 
   @override
-  def solve_prompt(self) -> str:
-    """Return the SWE-Bench-Pro solve prompt handed to the headless agent.
+  def prompt(self) -> str:
+    """Return the SWE-Bench-Pro task prompt handed to the agent.
 
     Mirrors Scale's ``create_problem_statement``: the three text columns are
     concatenated under fixed headers, unconditionally, so the agent sees the

@@ -56,7 +56,7 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
   The all-in-one `EvalSpec` is retired — a method takes `SandboxSpec` + its own
   spec.
 - `datasets/swebench_pro/` — all SWE-Bench-Pro run-knowledge: `record.py`
-  (the record + its runnable surface — `sandbox_spec` / `solve_prompt` /
+  (the record + its runnable surface — `sandbox_spec` / `prompt` /
   `unit_test_spec` / the harness properties), `auxiliary.py` (fetches the
   per-instance run_script + parser from scaleapi at a pinned commit), and
   `unit_test.py` (`compile_unit_test`:

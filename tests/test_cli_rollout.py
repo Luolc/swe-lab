@@ -35,7 +35,7 @@ class _Instance(
     return _SPEC
 
   @override
-  def solve_prompt(self) -> str:
+  def prompt(self) -> str:
     return f"PROMPT: {self.problem_statement}"
 
   @override
