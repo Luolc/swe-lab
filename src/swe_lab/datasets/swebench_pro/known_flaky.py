@@ -88,6 +88,38 @@ _NODEBB_ORPHANS = (
     "-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed"
 )
 
+_NODEBB_UNAWAITED_DELETES = KnownFlaky(
+    failure_rate=0.156,
+    sample_size=64,
+    measured_on=(
+        "2026-08-01, parallel batch runner — 10/64 failures in the 64-rollout"
+        " sweep of the full 731. An earlier sweep on the same runner under a"
+        " heavier load profile measured 8/32 (25%): same failing test,"
+        " different packing density. The spread between the two is the point of"
+        " recording conditions at all."
+    ),
+    flaky_tests=(
+        "test/uploads.js | Upload Controllers library methods .cleanOrphans()"
+        " should delete orphans older than the configured number of days",
+    ),
+    graded=True,
+    reason=(
+        "The gold patch deletes orphaned uploads without awaiting"
+        " (`orphans.forEach((relPath) => { file.delete(...) })`, under its own"
+        " comment `Note: no await. Deletion not guaranteed by method end.`),"
+        " and the test re-reads the directory immediately and asserts zero"
+        " orphans. Two unawaited unlinks race one readdir. Upstream shipped the"
+        " bug in this very commit and fixed it 11 months later by awaiting the"
+        " deletes; the test was never changed. So an agent that awaits — the"
+        " better solution — passes deterministically, while one matching the"
+        " reference flakes."
+    ),
+    evidence=(
+        "https://github.com/NodeBB/NodeBB/commit/22368b996ee0e5f11a5189b400b33af3cc8d925a",
+        "https://github.com/NodeBB/NodeBB/commit/306651902896904ae1600febb02137e2ca127a06",
+    ),
+)
+
 
 # tutanota: the whole suite decides the grade, so any flake anywhere lands
 # here. All 20 are listed. 17 were verified by executing their own parser on a
@@ -266,6 +298,11 @@ _WYSIWYG_EMOJI_FLAKE = KnownFlaky(
 
 # --- single-test flakes found by the 64-rollout sweep -------------------------
 
+_VULS = (
+    "instance_future-architect__vuls-83bcca6e669ba2e4102f"
+    "26c4a2b52f78c7861f1a"
+)
+
 _VULS_SCAN_DEST = KnownFlaky(
     failure_rate=0.156,
     sample_size=64,
@@ -292,6 +329,11 @@ _VULS_SCAN_DEST = KnownFlaky(
         " it."
     ),
     evidence=(_SWEEP,),
+)
+
+_PROTON = (
+    "instance_protonmail__webclients-8142704f447df6e108d5"
+    "3cab25451c8a94976b92"
 )
 
 _PROTON_EXTRA_EVENTS = KnownFlaky(
@@ -325,6 +367,9 @@ _PROTON_EXTRA_EVENTS = KnownFlaky(
     evidence=(_SWEEP,),
 )
 
+_NODEBB_SIO = (
+    "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+)
 
 _NODEBB_SOCKET_IO = KnownFlaky(
     failure_rate=0.016,
@@ -351,18 +396,6 @@ _NODEBB_SOCKET_IO = KnownFlaky(
         " a rate. One lost test out of 681 fail_to_pass scores the instance 0."
     ),
     evidence=(_SWEEP,),
-)
-
-_VULS = (
-    "instance_future-architect__vuls-83bcca6e669ba2e4102f"
-    "26c4a2b52f78c7861f1a"
-)
-_PROTON = (
-    "instance_protonmail__webclients-8142704f447df6e108d5"
-    "3cab25451c8a94976b92"
-)
-_NODEBB_SIO = (
-    "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
 )
 
 _HTML_EXPORT = (
@@ -405,38 +438,7 @@ _ELEMENT_HTML_EXPORT = KnownFlaky(
 
 # instance_id -> what is known about its instability.
 _KNOWN_FLAKY: dict[str, KnownFlaky] = {
-    _NODEBB_ORPHANS: KnownFlaky(
-        failure_rate=0.156,
-        sample_size=64,
-        measured_on=(
-            "2026-08-01, parallel batch runner — 10/64 failures in the"
-            " 64-rollout sweep of the full 731. An earlier sweep on the same"
-            " runner under a heavier load profile measured 8/32 (25%): same"
-            " failing test, different packing density. The spread between the"
-            " two is the point of recording conditions at all."
-        ),
-        flaky_tests=(
-            "test/uploads.js | Upload Controllers library methods"
-            " .cleanOrphans() should delete orphans older than the configured"
-            " number of days",
-        ),
-        graded=True,
-        reason=(
-            "The gold patch deletes orphaned uploads without awaiting"
-            " (`orphans.forEach((relPath) => { file.delete(...) })`, under its"
-            " own comment `Note: no await. Deletion not guaranteed by method"
-            " end.`), and the test re-reads the directory immediately and"
-            " asserts zero orphans. Two unawaited unlinks race one readdir."
-            " Upstream shipped the bug in this very commit and fixed it 11"
-            " months later by awaiting the deletes; the test was never"
-            " changed. So an agent that awaits — the better solution — passes"
-            " deterministically, while one matching the reference flakes."
-        ),
-        evidence=(
-            "https://github.com/NodeBB/NodeBB/commit/22368b996ee0e5f11a5189b400b33af3cc8d925a",
-            "https://github.com/NodeBB/NodeBB/commit/306651902896904ae1600febb02137e2ca127a06",
-        ),
-    ),
+    _NODEBB_ORPHANS: _NODEBB_UNAWAITED_DELETES,
     **dict.fromkeys(_TUTANOTA_ALL_OR_NOTHING, _TUTANOTA_SUITE_FLAKE),
     **dict.fromkeys(_WYSIWYG_EMOJI, _WYSIWYG_EMOJI_FLAKE),
     _VULS: _VULS_SCAN_DEST,
