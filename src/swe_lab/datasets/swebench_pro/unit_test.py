@@ -194,22 +194,13 @@ def _build_eval_script(
   """Build the in-container eval script (ports Scale's create_entryscript).
 
   Both flags default (via the caller) to the real grading flow; set them
-  ``False`` for the dataset self-checks. Three **deliberate divergences** from
-  the legacy builder, and no others:
+  ``False`` for the dataset self-checks.
 
-  1. the workspace path is ``$SANDBOX_WORKSPACE``, not a fixed mount point;
-  1b. the previous attempt's ``output.json`` / logs are deleted up front, so a
-     retry that aborts early grades as ``ABSENT`` rather than silently
-     re-reading the last attempt's verdict (ADR-0005);
-  2. line endings are pinned — ``core.autocrlf=false`` + ``core.eol=lf`` (see
-     the comment below) — knobs the reference entryscript leaves alone, so a
-     line-ending-sensitive instance can in principle grade differently here than
-     under Scale's harness. Pinned anyway, because matching our own extraction
-     (ADR-0001) matters more than matching an unset default: both values *are*
-     git's effective default on Linux, so this only bites an image that
-     explicitly turned normalization on.
-  3. ``HOME`` is guaranteed (see the comment below) — a *fallback*, so an
-     image that sets one keeps it and nothing about its caches changes.
+  Four **deliberate divergences** from the legacy builder, and no others: the
+  workspace path is ``$SANDBOX_WORKSPACE`` rather than a fixed mount point; the
+  previous attempt's outputs are deleted up front (ADR-0005); line endings are
+  pinned; and ``HOME`` is guaranteed. Each is argued where it is emitted below,
+  so the reasoning sits next to the line it justifies.
 
   Args:
     base_commit: The commit the working tree is reset to before grading.
@@ -222,61 +213,49 @@ def _build_eval_script(
   Returns:
     The entryscript text, newline-terminated.
   """
-  # Unlike Scale's reference, we do not scrape ``ENV`` lines from the
-  # per-instance Dockerfiles: Docker's ``ENV`` bakes them into the image, so
-  # every container process already inherits them.
-  #
-  # shlex.quote wraps the joined test list in single quotes so bash cannot
-  # expand a ``$`` in a test name or glob-expand ``[...]`` from a
+  # Scale's reference scrapes `ENV` lines out of each instance's Dockerfile;
+  # unnecessary here, because Docker bakes `ENV` into the image and every
+  # container process already inherits it.
+
+  # Quoted, or bash expands a `$` in a test name and globs `[...]` out of a
   # pytest parametrize id.
   selected = shlex.quote(",".join(selected_test_files_to_run))
   lines = [
-      # Abort on the first failed *setup* step. Without this a failed
-      # `git apply` fell through and the tests ran against the wrong tree,
-      # scoring the run unresolved with no hint that the patch never applied —
-      # a silently wrong grade. `set +e` is lifted again around the test run
-      # below, which is *expected* to exit non-zero.
+      # A failed *setup* step has to stop the run. Without this, a `git apply`
+      # that failed fell through and the tests graded the wrong tree — an
+      # unresolved verdict with nothing saying the patch never applied.
       "set -e",
-      # Guarantee a writable HOME, in three tiers. Some images set none, and a
-      # toolchain that needs one then fails every test for a reason that looks
-      # nothing like the cause (Go's build cache lives in
-      # `$HOME/.cache/go-build`).
+      # An image that sets no HOME makes a toolchain that needs one fail every
+      # test for a reason that looks nothing like the cause (Go's build cache
+      # lives in `$HOME/.cache/go-build`). A *fallback*, so the image's own
+      # value still wins: an instance image often pre-warms its caches under
+      # it, and relocating would force a re-download that `--no-network` turns
+      # from a slowdown into a failure.
       #
-      # 1. the image's own HOME wins — an instance image often pre-warms its
-      #    dependency caches under it (Go modules, npm, pip), and replacing it
-      #    would force a re-download, which under `--no-network` is a failure
-      #    rather than a slowdown;
-      # 2. else ask the passwd database for the account's real home, so `$HOME`
-      #    agrees with what a `~` lookup resolves to;
-      # 3. else a fallback directory.
-      #
-      # Each tier tests for a *non-empty* value rather than an exit code:
-      # `getent` in a pipeline reports the exit status of `cut`, which succeeds
-      # on empty input, so a UID with no passwd entry (`docker run -u 1000`,
-      # OpenShift's random UIDs) or an image without `getent` at all would
-      # otherwise leave HOME set to the empty string — worse than unset, since
-      # tools then resolve `~/.cache` to the unwritable `/.cache`.
+      # Each tier tests for a non-empty *value* rather than an exit code:
+      # `getent` in a pipeline reports `cut`'s status, which succeeds on empty
+      # input, so a UID with no passwd entry (`docker run -u 1000`, OpenShift's
+      # random UIDs) would leave HOME empty — worse than unset, since `~/.cache`
+      # then resolves to the unwritable `/.cache`.
       '[ -n "${HOME:-}" ] || HOME="$(getent passwd "$(id -u)" 2>/dev/null'
       ' | cut -d: -f6)"',
       f'[ -n "${{HOME:-}}" ] || HOME={EVAL_HOME}',
       "export HOME",
       'mkdir -p "$HOME"',
       f"cd {WORKDIR}",
-      # Pin line endings for every git command below, symmetric with extraction
-      # (ADR-0001): a patch is diffed with ``core.autocrlf=false``, so a
-      # checkout/apply that renormalizes CRLF<->LF would either fail to apply or
-      # silently alter content. Two knobs, because they cover different halves:
-      # ``autocrlf`` off stops conversion for files with no ``text`` attribute,
-      # and ``eol=lf`` fixes the checkout direction for files that *do* have one
-      # (where ``autocrlf=false`` alone leaves it at the platform's ``native``).
-      # Both are already git's effective default on Linux, so this only bites an
-      # image that turned normalization on — that is the point. A per-path
-      # ``eol=`` in the repo's own ``.gitattributes`` still wins; no config
-      # overrides that.
+      # Symmetric with extraction (ADR-0001), which diffs under
+      # `core.autocrlf=false`: a checkout or apply that renormalized CRLF<->LF
+      # would either fail to apply or silently alter content. Two knobs because
+      # they cover different halves — `autocrlf` off stops conversion for files
+      # with no `text` attribute, `eol=lf` fixes the checkout direction for
+      # files that have one. Both are already git's default on Linux, so this
+      # only bites an image that turned normalization on, which is the point.
+      # Not airtight: a per-path `eol=` in the repo's own `.gitattributes` wins
+      # over any config.
       #
-      # Set at **repo** level rather than per-invocation ``-c`` because some of
-      # what follows we do not author — the dataset's own
-      # ``golden_test_checkout_cmd``, and the harness's run script.
+      # Repo level rather than a per-invocation `-c`, because some of what
+      # follows we do not author: the dataset's `golden_test_checkout_cmd` and
+      # the harness's run script.
       "git config core.autocrlf false",
       "git config core.eol lf",
       (
@@ -366,10 +345,9 @@ def compile_unit_test(
       eval_script=eval_script,
       mounts=mounts,
       grader=SweBenchProGrader(),
-      # What the eval script leaves behind. Registered best-effort by the
-      # method, so a grading that went wrong can be read after the fact: the
-      # parsed result, and — the useful part when it did go wrong — the raw
-      # test logs the parser was fed.
+      # Kept so a grading that went wrong can be read afterwards: the parsed
+      # result, and — the useful part when it did go wrong — the raw test logs
+      # the parser was fed. Registered best-effort by the method.
       native_outputs={
           OUTPUT_JSON_NAME: OUTPUT_JSON_NAME,
           STDOUT_LOG_NAME: STDOUT_LOG_NAME,
