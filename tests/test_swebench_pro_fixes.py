@@ -12,6 +12,7 @@ import dataclasses
 from dataclasses import replace
 import hashlib
 import json
+import re
 
 import pytest
 
@@ -33,6 +34,11 @@ from swe_lab.datasets.swebench_pro.fixes.element_web_wysiwyg import (
     _WYSIWYG_INSTANCE,
     _WYSIWYG_TARBALL_NAME,
     wysiwyg_tarball,
+)
+from swe_lab.datasets.swebench_pro.fixes.tutanota_clock import (
+    _SHIM_NAME,
+    _TUTANOTA_CLOCK_INSTANCE,
+    clock_shim,
 )
 from swe_lab.datasets.swebench_pro.known_flaky import flaky_instances
 from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
@@ -213,6 +219,15 @@ def test_a_fixed_instance_names_the_fix_it_got():
   assert "known_flaky" not in provenance  # the fix removes it; it is not flaky
 
 
+def test_an_instance_can_be_both_fixed_and_still_flaky():
+  # The two claims are independent, and tutanota f373ac38 is the case that
+  # proves it: its fix closes the clock window it used to fail in, and it stays
+  # in the flaky registry for the suite-wide race that closes nothing.
+  provenance = _instance(_TUTANOTA_CLOCK_INSTANCE).run_provenance()
+  assert provenance["env_fix"] == "_fix_instance_tutanota_f373ac38"
+  assert isinstance(provenance["known_flaky"], dict)
+
+
 def test_a_known_flaky_instance_carries_its_measured_rate():
   provenance = _instance(flaky_instances()[0]).run_provenance()
   flaky = provenance["known_flaky"]
@@ -298,6 +313,28 @@ def test_with_setup_preserves_every_field_it_does_not_change():
       continue
     assert getattr(fixed, field.name) == getattr(spec, field.name), field.name
   assert fixed.retries == 3  # named explicitly: this is the one that broke
+
+
+def test_the_clock_shim_ships_as_a_resource_the_fix_can_read():
+  # The preload is a data file inside the package rather than a Python string,
+  # so a wheel that fails to carry it breaks nowhere until a run is already
+  # inside a container. Reading it here is the packaging check.
+  raw = clock_shim()
+  assert b"globalThis.Date = new Proxy(RealDate" in raw
+  mount = _spec(_TUTANOTA_CLOCK_INSTANCE).mounts[_SHIM_NAME]
+  assert mount.resource == Inline(raw)
+
+
+def test_the_clock_probe_expects_the_hour_the_shim_actually_pins():
+  # The two halves name the pinned hour independently: the shim as a constant,
+  # the setup's probe as a literal in a string comparison. If they drift, the
+  # fix aborts *every* run of the instance in setup — so they are checked
+  # against each other rather than trusted to stay in step.
+  (hour,) = re.findall(
+      r"^const TARGET_UTC_HOUR = (\d+)$", clock_shim().decode(), re.MULTILINE
+  )
+  script = _spec(_TUTANOTA_CLOCK_INSTANCE).eval_script
+  assert f'if [ "$probe" != "{hour} 0 true" ]; then' in script
 
 
 def test_a_fixed_instance_keeps_its_retry_override():
