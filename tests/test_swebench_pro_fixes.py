@@ -13,6 +13,7 @@ from dataclasses import replace
 import hashlib
 import json
 import re
+import subprocess
 
 import pytest
 
@@ -151,10 +152,40 @@ def test_the_fix_touches_no_test_expectations():
 
 
 def test_every_registered_fix_applies_to_a_real_instance_id():
-  # Guards against a typo'd key, which would be a silent no-op forever.
+  # Guards against a typo'd key, which would be a silent no-op forever. It also
+  # *runs* every fix, so a fix whose vendored resource was renamed or dropped
+  # fails here rather than inside a container.
   for instance_id in fixed_instances():
     assert instance_id.startswith("instance_")
     assert apply_instance_fix(instance_id, _plain()) is not _plain()
+
+
+def test_every_fix_produces_a_script_bash_can_parse():
+  # A quoting or heredoc slip in a fix's setup surfaces nowhere until a run
+  # aborts mid-script, minutes in and with nothing graded. `bash -n` parses
+  # without executing, so catching it here costs nothing.
+  for instance_id in fixed_instances():
+    parsed = subprocess.run(
+        ["bash", "-n"],
+        input=_spec(instance_id).eval_script,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert parsed.returncode == 0, f"{instance_id}: {parsed.stderr}"
+
+
+def test_every_workspace_file_a_script_names_is_staged_or_produced():
+  # The other half of the same failure: a fix that renames its mount on one side
+  # only reads a path nothing put there, and `set -e` aborts with no grade. Each
+  # `$SANDBOX_WORKSPACE/<name>` has to be either a mount or a declared output.
+  for instance_id in fixed_instances():
+    spec = _spec(instance_id)
+    named = set(
+        re.findall(r'\$SANDBOX_WORKSPACE"?/([\w.-]+)', spec.eval_script)
+    )
+    available = set(spec.mounts) | set(spec.native_outputs.values())
+    assert named <= available, f"{instance_id}: {sorted(named - available)}"
 
 
 def _plain():
