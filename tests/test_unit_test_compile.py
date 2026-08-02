@@ -224,3 +224,36 @@ def test_script_resolves_home_in_three_tiers():
   assert lines[tiers[1] + 2] == 'mkdir -p "$HOME"'  # and it exists
   # resolved before anything that might need it
   assert lines.index(f"cd {WORKDIR}") > tiers[1]
+
+
+def test_untracked_files_are_cleaned_before_the_patch_is_reapplied():
+  # `reset --hard` restores tracked files but leaves untracked ones, so a patch
+  # that ADDS files makes a retry's `git apply` die with "already exists" and
+  # take the whole script down under `set -e` — before the tests ever run.
+  # Reproduced in a container before this was written; the dataset's own
+  # before_repo_set_cmd cleans here for the same reason.
+  lines = _script(
+      _instance(), apply_patch=True, checkout_golden_tests=True
+  ).splitlines()
+  reset = next(i for i, line in enumerate(lines) if "reset --hard" in line)
+  clean = lines.index("git clean -fd")
+  apply_ = next(
+      i for i, line in enumerate(lines) if line.startswith("git apply")
+  )
+  assert reset < clean < apply_
+
+
+def test_a_previous_attempts_outputs_are_removed_before_anything_else():
+  # An attempt that aborts before the parser runs must not be graded from the
+  # last attempt's output.json — that reports a stale verdict as its own, which
+  # is how a broken retry looked like a working one.
+  lines = _script(
+      _instance(), apply_patch=True, checkout_golden_tests=True
+  ).splitlines()
+  removal = next(i for i, line in enumerate(lines) if line.startswith("rm -f "))
+  for name in ("output.json", "stdout.log", "stderr.log"):
+    assert name in lines[removal]
+  # before the reset, so nothing between them can leave the old files behind
+  reset = next(i for i, line in enumerate(lines) if "reset --hard" in line)
+  assert removal < reset
+  assert lines[0] == "set -e"  # and a failed removal still aborts

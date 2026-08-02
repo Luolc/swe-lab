@@ -198,6 +198,9 @@ def _build_eval_script(
   the legacy builder, and no others:
 
   1. the workspace path is ``$SANDBOX_WORKSPACE``, not a fixed mount point;
+  1b. the previous attempt's ``output.json`` / logs are deleted up front, so a
+     retry that aborts early grades as ``ABSENT`` rather than silently
+     re-reading the last attempt's verdict (ADR-0005);
   2. line endings are pinned — ``core.autocrlf=false`` + ``core.eol=lf`` (see
      the comment below) — knobs the reference entryscript leaves alone, so a
      line-ending-sensitive instance can in principle grade differently here than
@@ -276,7 +279,21 @@ def _build_eval_script(
       # ``golden_test_checkout_cmd``, and the harness's run script.
       "git config core.autocrlf false",
       "git config core.eol lf",
+      # Stale outputs from a previous attempt are removed *first*, so an
+      # attempt that aborts before the parser runs cannot be graded from the
+      # last one's output.json. Without this a failed retry re-reads the
+      # previous verdict and reports it as its own (ADR-0005).
+      (
+          f"rm -f {_WS}/{OUTPUT_JSON_NAME} {_WS}/{STDOUT_LOG_NAME}"
+          f" {_WS}/{STDERR_LOG_NAME}"
+      ),
       f"git reset --hard {base_commit}",
+      # `reset --hard` restores tracked files but leaves untracked ones, so a
+      # patch that ADDS files makes the next attempt's `git apply` die with
+      # "already exists" — taking the whole script down under `set -e` before
+      # the tests ever run. The dataset's own before_repo_set_cmd cleans here
+      # for the same reason; omitting it was our divergence, not theirs.
+      "git clean -fd",
       f"git checkout {base_commit}",
   ]
   if apply_patch:
