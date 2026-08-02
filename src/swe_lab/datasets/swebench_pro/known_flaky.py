@@ -2,9 +2,10 @@
 
 WHY THIS EXISTS
 ---------------
-``fixes.py`` handles flakes in the *environment*: a broken dependency, a wrong
-package version — things outside the task that can be repaired without touching
-what counts as passing. This module is for the rest, and there are two kinds:
+The ``fixes`` package handles the flakes it can repair *without moving the
+pass/fail boundary*: a dependency version with a known bug, parallelism the
+tests cannot survive, a wall clock the suite turns out not to be indifferent to.
+This module is for the rest, and there are two kinds:
 
 - **No fix exists.** The racy test is in ``fail_to_pass``, so it *is* the task.
   Patching it edits the benchmark; patching the source under test does the
@@ -12,6 +13,11 @@ what counts as passing. This module is for the rest, and there are two kinds:
 - **A fix exists but costs more than the flake.** Recorded now, deferred
   deliberately, with the shape of the fix written into ``reason`` so the
   decision can be revisited rather than rediscovered.
+
+The two registries are not exclusive, and one instance is the proof: tutanota
+``f373ac38`` carries a fix *and* an entry here. Its clock window is closed in
+``fixes/tutanota_clock``; the suite-wide race that its count-based grading turns
+into an all-or-nothing verdict is not, and that is what the entry records.
 
 Either way the honest response is the same: record the measured failure rate and
 stamp it onto the run, so a result carries its own caveat instead of a reader
@@ -29,9 +35,14 @@ briefly recorded as fixed on exactly that mistake.
 WHAT TO DO WITH ONE
 -------------------
 Nothing automatic. The registry annotates; it never changes a verdict, skips a
-test, or retries a run. A consumer deciding to re-run a flaky instance N times
-and take the modal result is making a scoring decision, and that belongs where
-scoring decisions are visible — not hidden behind a lookup here.
+test, or decides whether a run is retried.
+
+Evaluation *does* retry a failed attempt (ADR-0005), but blanket and
+self-discovering — deliberately not gated on what happens to be recorded here,
+because coupling them would make the metric depend on how complete these notes
+are. Raising or lowering the budget for a *named* instance is a scoring
+decision, and it belongs where scoring decisions are visible (the caller's
+``retries``, or the spec's own override) rather than behind a lookup here.
 """
 
 from __future__ import annotations
@@ -41,7 +52,10 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class KnownFlaky:
-  """One instance's measured instability, and why it is not being fixed.
+  """One instance's measured instability, and why it is not fixed.
+
+  "Not fixed" is about *this* mechanism, not the instance: an instance can carry
+  an environment fix for one flake and an entry here for another.
 
   Attributes:
     failure_rate: Fraction of runs that fail for this reason (``0.25`` = a
@@ -201,10 +215,11 @@ _SWEEP = "https://github.com/Luolc/swe-lab/issues/123#issuecomment-5150139319"
 
 # --- element-web: SendWysiwygComposer emoji, on matrix-wysiwyg 2.x ------------
 
-# NOT the 1.4.0 wasm double-free that ``fixes.py`` repairs. These two resolve
-# ^2.0.0 / ^2.2.2, both published after matrix-rich-text-editor#635, and their
-# shipped bundles confirm it: the generated `set_link_suggestion` glue has no
-# `ptr = 0` ownership transfer. Same component family, different mechanism.
+# NOT the 1.4.0 wasm double-free that ``fixes/element_web_wysiwyg`` repairs.
+# These two resolve ^2.0.0 / ^2.2.2, both published after
+# matrix-rich-text-editor#635, and their shipped bundles confirm it: the
+# generated `set_link_suggestion` glue has no `ptr = 0` ownership transfer.
+# Same component family, different mechanism.
 _WYSIWYG_EMOJI = (
     "instance_element-hq__element-web-53b42e321777a598aaf"
     "2bb3eab22d710569f83a8-vnan",
@@ -238,9 +253,9 @@ _WYSIWYG_EMOJI_FLAKE = KnownFlaky(
         " 2279 ms (the budget covers the wait, not the render around it), the"
         " DOM dump is an empty container rather than a broken tree, and no"
         " error or rejection is logged. NOT the 1.4.0 wasm double-free that"
-        " fixes.py repairs: these resolve matrix-wysiwyg 2.x, which already"
-        " carries matrix-rich-text-editor#635 — verified in the shipped"
-        " bundles, which have no `ptr = 0` ownership transfer. A"
+        " `fixes/element_web_wysiwyg` repairs: these resolve matrix-wysiwyg"
+        " 2.x, which already carries matrix-rich-text-editor#635 — verified in"
+        " the shipped bundles, which have no `ptr = 0` ownership transfer. A"
         " pass_to_pass bystander, so raising asyncUtilTimeout for this file"
         " would be a legitimate environment fix; deferred pending a decision"
         " on whether timeout budgets count as environment (see the webclients"
