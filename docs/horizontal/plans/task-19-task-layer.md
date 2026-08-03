@@ -119,10 +119,19 @@ the dataset (ADR-0007 §4 — no `Evaluator`, nothing special-cased).
 class Task(ABC):
   """One unit of work in one sandbox (ADR-0007 §1).
 
-  Owns exactly what the manager does not: assembling the four mount sources,
-  the three observer sources, and the declared outputs. Lifecycle is
-  mount → run → outputs (§2); subclasses supply the parts, `execute` runs the
-  five steps once. Single-run, like the observers it composes.
+  Owns exactly what the manager does not: assembling the mounts, the
+  observers, and the derived output schema. Lifecycle is mount → run →
+  outputs (§2); subclasses supply the parts, `execute` runs the five steps
+  once.
+
+  A task is a **declaration** — instance, config, nothing stateful — and each
+  `execute` call is one run: everything dirty is either built fresh inside it
+  (the observers, the manager) or handed in fresh (the sandbox). That is why
+  `sandbox` is an *argument*, not a field: Task 20's retry calls `execute`
+  again on the same task with a fresh sandbox per attempt, and the caller
+  owns every construction knob (backend, workspace, network) per the repo's
+  inject-collaborators rule. Re-executable sequentially; not concurrently
+  (a task may keep a per-run observer reference on itself for `action`).
   """
 
   **Three hooks, one channel each — and each hook is total.** `mounts()` is
