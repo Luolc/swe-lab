@@ -93,7 +93,7 @@ class SweBenchProVerdict(Verdict):
 
   @override
   def summary(self) -> dict[str, object]:
-    """SWE-Bench-Pro report detail: output state + passed / missing.
+    """Return the report detail: output state, retry outcome, passed / missing.
 
     ``first_missing`` is the scalar a persisted record keeps — the full
     ``missing`` list is for a human report, and would otherwise bloat a shard
@@ -111,7 +111,7 @@ class SweBenchProVerdict(Verdict):
 
   @override
   def metrics(self) -> dict[str, float]:
-    """Return counts a sweep can aggregate: passed / missing / required."""
+    """Return counts a sweep can aggregate, plus the retry outcome."""
     return {
         "passed": float(len(self.passed)),
         "missing": float(len(self.missing)),
@@ -153,11 +153,17 @@ class SweBenchProGrader(Grader[SweBenchProVerdict]):
 
 
 def _parse_output(sb: SandboxFs) -> tuple[frozenset[str], OutputState]:
-  """Read the passed-test set + a state distinguishing absent from corrupt.
+  """Read the passed-test set, and whether the parser's output was usable.
 
-  Distinguishing "absent" from "unparseable" from "parsed" is what keeps a
-  crashed parser (a harness fault) from masquerading as "no tests passed" (a
-  real result).
+  Args:
+    sb: The sandbox to read the parser's ``output.json`` through.
+
+  Returns:
+    The test names reported as passed, and the state of the output they came
+    from — an empty set with ``ABSENT`` or ``UNPARSEABLE`` when there was
+    nothing usable to read. Keeping those two apart from a genuine empty pass
+    set is what stops a crashed parser (a harness fault) from being graded as
+    "no tests passed" (a real result).
   """
   if not sb.exists(OUTPUT_JSON_NAME):
     return frozenset(), OutputState.ABSENT
