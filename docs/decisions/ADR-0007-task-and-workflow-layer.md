@@ -157,10 +157,16 @@ versus `inline_artifacts` (already parsed, in hand).
 | `EvalParseObserver` | `output.json` | a `Verdict` |
 | sandbox metrics (new) | cgroup / inspect | scalar metrics |
 
-So a **declared output is a name plus a producer**, and `grader` is one
-producer. It stays where it is — supplied by the dataset, which is the only
-thing that knows its own output format — and simply stops being a special-cased
-field.
+So **outputs are declared by the observers that produce them**: each observer
+carries a small output schema (store name, required, description — data only,
+no parse concept), and a task's output schema is the merge of its composed
+observers', with a duplicate store name failing at assembly the way a
+duplicate mount target already does. *(Amended 2026-08-03: an earlier revision
+routed this through a separate "producer" declaration; it was two fields of
+description strapped to an indirection, and the description belongs on the
+thing described.)* The `grader` stays where it is — supplied by the dataset,
+which is the only thing that knows its own output format, and handed straight
+to its parse observer rather than special-cased in a spec field.
 
 This is why there is **no `Evaluator` class**. `Harness` is a class because it
 has an action of its own (launch an agent CLI); evaluation's action is "run the
