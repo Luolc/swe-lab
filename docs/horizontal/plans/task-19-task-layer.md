@@ -19,7 +19,9 @@ by making `run_rollout` and `run_unit_test` thin wrappers over it with
 
 ### In scope
 
-- `workflow/` package: `Task`, `OutputProducer`, `TaskResult`.
+- `workflow/` package: `Task`, `TaskResult`; `ArtifactSchema` +
+  `SandboxObserver.output_schema()` land in `sandbox/` (the observers are the
+  ones declaring).
 - `CodingAgentTask` and `UnitTestEvalTask` — the two shipped subclasses.
 - Both compositions rewritten as wrappers; both CLIs untouched.
 - In-run eval retry (ADR-0005) preserved exactly where it is.
@@ -40,58 +42,80 @@ collides with too many neighbouring concepts (the old `pipelines/`, dataset
 task instances), while "workflow" names the umbrella unambiguously. `Task` and
 (in Task 21) `Workflow` both live here.
 
-### 2.1 `OutputProducer` — the declaration *is* the producer
+### 2.1 Observers declare their outputs: `ArtifactSchema`
 
-There is no `TaskOutput` dataclass. "Output" names **data**, and a declaration
-that carries behavior (a factory) under a data-shaped name reads as the wrong
-kind of thing. Data-shaped outputs exist in exactly one place — `TaskResult`,
-after the run, where they *are* data. On the declaration side, one class:
+There is no producer concept. A producer was an observer factory carrying a
+`name` and a `required` flag — two fields of *description* strapped to a level
+of indirection. The description moves onto the thing being described: **every
+observer declares its own output schema**, and a task's output schema is the
+merge of its composed observers'.
+
+An output is what ends up in the **store** — so a schema entry is pure data,
+deliberately JSON-schema-in-spirit but minimal:
 
 ```python
-class OutputProducer(ABC):
-  """One output a task promises, fused with what produces it.
+# sandbox/observer.py — beside SandboxObserver
+@dataclass(frozen=True, slots=True)
+class ArtifactSchema:
+  """What one artifact *is*: its store name, whether it must exist, and why.
 
-  ADR-0007 §4: every observer here already produces an output, so a declared
-  output *is* its producer — it knows the artifact name it yields, whether
-  the task requires it, and how to build the observer that realizes it. The
-  eval grader arrives inside one of these, supplied by the dataset, not
-  special-cased.
+  Direction-neutral on purpose — observers declare *outputs* with it and a
+  task declares *inputs* with it (§2.2); the method names carry direction,
+  the record is just data.
 
-  A factory rather than an observer because observers are single-run: the
-  task builds a fresh one per attempt, and Task 20's retry loop re-invokes
-  it.
+  Pure data — no parse concept: an output is the artifact as persisted, and
+  how an observer computed it is the observer's business.
 
   Attributes:
-    name: Artifact name of the output, format-suffixed (``patch.diff``).
+    name: The artifact name as it appears in the store (format-suffixed:
+      ``patch.diff``, ``conversation.json``).
     required: Whether a completed run without this output is a failed run.
-      Advisory in this task (recorded in metrics); becomes the
-      retry/validation gate in Task 20.
+      Advisory in this task; becomes the validation/retry gate in Task 20.
+    description: One line saying what this output is, for a reader of the
+      merged schema.
   """
 
   name: str
   required: bool = True
+  description: str = ""
 
-  @abstractmethod
-  def observer(self) -> SandboxObserver:
-    """Return a fresh single-run observer producing this output."""
+
+class SandboxObserver:
+  ...
+  def output_schema(self) -> Sequence[ArtifactSchema]:
+    """Declare the outputs this observer produces. Default: none."""
+    return ()
 ```
 
-Shipped producers (wrapping the existing observers unchanged):
+Existing observers self-describe (no wrappers, no new classes):
+
+- `DiffExtractObserver` → `("patch.diff", required, "the extracted clean
+  patch")`
+- `ConversationObserver` → `("conversation.json", required, "the canonical
+  typed trace")`
+- `EvalParseObserver` → its parsed result + logs (`eval.output.json`
+  required; the logs best-effort)
+- `HarnessOutcomeObserver` → the harness's declared native outputs
+  (best-effort, from `harness.native_outputs()`)
+- `HostMetricsObserver` → `()` (metrics only)
+
+A task's schema is derived, and merging is where conflicts surface:
 
 ```python
-@dataclass(frozen=True)
-class PatchProducer(OutputProducer):      # wraps DiffExtractObserver
-  name: str = "patch.diff"
-  exclude_globs: tuple[str, ...] = ()
-  def observer(self) -> DiffExtractObserver: ...
+def merge_output_schemas(
+    *schemas: Sequence[ArtifactSchema],
+) -> tuple[ArtifactSchema, ...]:
+  """Merge observers' schemas; a duplicate store name is an error.
 
-@dataclass(frozen=True)
-class VerdictProducer[V: Verdict](OutputProducer):  # wraps EvalParseObserver
-  name: str = "verdict"
-  grader: Grader[V]                       # ← the dataset's, per ADR-0007 §4
-  native_outputs: Mapping[str, str]
-  def observer(self) -> EvalParseObserver[V]: ...
+  The same rule `merge_mounts` already applies to mount targets, for the same
+  reason: two observers writing one store name is a composition bug, and it
+  should fail at assembly, not at persist.
+  """
 ```
+
+The grader needs no vehicle anymore: `UnitTestEvalTask` constructs
+`EvalParseObserver(grader, ...)` directly, with the grader still supplied by
+the dataset (ADR-0007 §4 — no `Evaluator`, nothing special-cased).
 
 ### 2.2 `Task` — one sandbox; assembles mounts, observers, outputs
 
@@ -99,61 +123,66 @@ class VerdictProducer[V: Verdict](OutputProducer):  # wraps EvalParseObserver
 class Task(ABC):
   """One unit of work in one sandbox (ADR-0007 §1).
 
-  Owns exactly what the manager does not: assembling the four mount sources,
-  the three observer sources, and the declared outputs. Lifecycle is
-  mount → run → outputs (§2); subclasses supply the parts, `execute` runs the
-  five steps once. Single-run, like the observers it composes.
+  Owns exactly what the manager does not: assembling the mounts, the
+  observers, and the derived output schema. Lifecycle is mount → run →
+  outputs (§2); subclasses supply the parts, `execute` runs the five steps
+  once.
+
+  A task is a **declaration** — instance, config, nothing stateful — and each
+  `execute` call is one run: everything dirty is either built fresh inside it
+  (the observers, the manager) or handed in fresh (the sandbox). That is why
+  `sandbox` is an *argument*, not a field: Task 20's retry calls `execute`
+  again on the same task with a fresh sandbox per attempt, and the caller
+  owns every construction knob (backend, workspace, network) per the repo's
+  inject-collaborators rule. Re-executable sequentially; not concurrently
+  (a task may keep a per-run observer reference on itself for `action`).
   """
 
-  A task author answers **three questions** — has it a runner, what does it
-  produce, what does it run — and never constructs an observer. Observers are
-  `execute`'s internal assembly, fed by the backend, the runner and the
-  producers; the word does not appear on the authoring surface.
+  **Three hooks, one channel each — and each hook is total.** `mounts()` is
+  *all* of this task's mounts; `observers()` is *all* of its observers. There
+  is no "the task's own" versus "gathered for you": a subclass overrides the
+  hook and merges in whatever it uses — the instance's material, a harness's
+  files, anything. `execute` takes the hooks' word for it, adds only what a
+  task cannot know (the backend's observers, the caller's extras), and runs.
 
   | you have | you write |
   |---|---|
-  | an agent that does the work | `runner()` returns it — its observers come with it |
-  | a deliverable | a producer in `output_producers()` |
-  | files of your own to stage | `mounts()` |
+  | files to stage | override `mounts()` — merge the instance's / a harness's / yours; what it returns **is** the staging set |
+  | a deliverable | the observer that extracts it, in `observers()` — its schema declares the store name |
+  | an input from an upstream task | declare it in `input_schema()` — the workflow mounts it by store name and validates it |
+  | an agent / harness | fold it in: mounts into `mounts()`, observers into `observers()`, its `run` in `action()` |
   | the main action | `action()` |
-  | (a caller with persistence etc.) | passes `extra_observers` to `execute` |
+  | (a caller with persistence etc.) | passes `extra_observers` / `extra_mounts` to `execute` |
 
-  # ---- what a subclass declares -------------------------------------------
+  instance: TaskInstance                    # the binding (ADR-0007 §2)
 
-  def runner(self) -> Harness | None:
-    """The runner doing this task's work, or ``None`` (e.g. eval: the action
-    is just the entryscript, per ADR-0007 §4). A task with a runner returns
-    it and its observers are composed automatically via the runner's own
-    factory (Task 18's `Harness.observers()`)."""
-    return None
-
-  @abstractmethod
   def mounts(self) -> Mounts:
-    """The task's own files (e.g. eval entryscript). NOT the instance's or
-    the runner's — those are gathered by `execute`."""
+    """ALL files this task stages. Default: the bound instance's material.
+    A subclass overrides and merges in whatever else it uses::
+
+        return merge_mounts(super().mounts(), self.harness.mounts(...), ...)
+    """
+    return dict(self.instance.mounts())
+
+  def observers(self) -> Sequence[SandboxObserver]:
+    """ALL of this task's observers — one per thing it extracts, plus a
+    harness's own if it uses one. Default: none. Fresh instances per call
+    (observers are single-run; Task 20's retry re-invokes this); a task that
+    keeps a reference for `action` (eval's retry loop drives its parse
+    observer) stores it on itself — the task is single-run too."""
+    return ()
+
+  def input_schema(self) -> Sequence[ArtifactSchema]:
+    """The upstream artifacts this task consumes, by store name. Default:
+    none. The workflow resolves each name against earlier tasks' outputs,
+    mounts it (`Mount(LocalFile(...), read_only=True)` via `extra_mounts`),
+    and a required name with no artifact is the *distinct* edge failure of
+    ADR-0007 §5 — the task never reaches into the store itself."""
+    return ()
 
   @abstractmethod
-  def output_producers(self) -> Sequence[OutputProducer]:
-    """The outputs this task promises, each fused with its producer (§2.1)."""
-
-  @abstractmethod
-  def action(
-      self,
-      sb: SandboxFs,
-      outputs: Mapping[str, SandboxObserver],
-      *,
-      timeout: float,
-  ) -> ExecResult:
-    """The run's main action: exec the runner, or run the entryscript.
-
-    ``outputs`` are the built per-output observers (name → observer) — an
-    advanced knob most tasks ignore; eval's in-run retry loop (ADR-0005)
-    needs it to drive its parse observer between attempts."""
-
-  # ---- what the base class provides ---------------------------------------
-
-  def instance_mounts(self) -> Mounts:
-    """The bound instance's material; default `self.instance.mounts()`."""
+  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
+    """The run's main action: exec the harness, or run the entryscript."""
 
   @final
   def execute(
@@ -162,9 +191,14 @@ class Task(ABC):
       *,
       output_dir: epath.PathLike,
       timeout: float,
+      extra_mounts: Mounts | None = None,
       extra_observers: Sequence[SandboxObserver] = (),
   ) -> TaskResult:
-    """Run the five steps once. See pseudocode below."""
+    """Run the five steps once. See pseudocode below.
+
+    ``extra_mounts`` is the caller channel mirroring ``extra_observers`` —
+    the workflow feeds resolved inputs through it; duplicate targets are
+    refused like everywhere else."""
 ```
 
 `execute` pseudocode — this *is* the five-step shape, written once:
@@ -172,36 +206,26 @@ class Task(ABC):
 ```python
 def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
   # 1. observers, three sources, backend first (ADR-0007 §3)
-  produced = [(p, p.observer()) for p in self.output_producers()]
-  runner = self.runner()
-  observers = [
-      *sandbox.observers(),                 # backend: runtime metrics
-      *(runner.observers() if runner else ()),  # runner: trace, completion
-      *(obs for _, obs in produced),        # task: declared outputs
-      *extra_observers,                     # caller: e.g. persist
-  ]
-  # 2. mounts — instance's + runner's + the task's own; the observers'
-  #    arrive via the manager, which already merges each observer.mounts().
-  #    merge_mounts refuses duplicate targets across sources.
-  mounts = merge_mounts(
-      self.instance_mounts(),
-      runner.mounts(sandbox.spec.workdir) if runner else {},
-      self.mounts(),
-  )
+  # The hooks are total: the task said everything it knows. Add only what it
+  # cannot know — the backend's observers and the caller's extras.
+  observers = [*sandbox.observers(), *self.observers(), *extra_observers]
+  # The task's output schema is derived — and a duplicate store name across
+  # observers fails HERE, at assembly, like a duplicate mount target.
+  schema = merge_output_schemas(*(o.output_schema() for o in observers))
   manager = SandboxManager(
       sandbox=sandbox, output_dir=epath.Path(output_dir),
-      observers=observers, mounts=mounts,
+      # The observers' own mounts still arrive via the manager, which merges
+      # each observer.mounts() and refuses duplicate targets.
+      observers=observers,
+      mounts=merge_mounts(self.mounts(), extra_mounts or {}),
   )
-  # 3. the action, inside the session; the built output observers are handed
-  #    to it, because eval's in-run retry loop mutates its parse observer
-  #    (attempts / exec_result) between attempts
-  outputs_by_name = {p.name: obs for (p, obs) in produced}
+  # 3. the action, inside the session
   exec_result = None
   try:
     with manager.session() as sb:
       started = time.monotonic()
       try:
-        exec_result = self.action(sb, outputs=outputs_by_name, timeout=timeout)
+        exec_result = self.action(sb, timeout=timeout)
       finally:
         # The handoff both compositions do by hand today, generalized: every
         # composed observer carrying the exec_result / wall_seconds fields
@@ -214,7 +238,7 @@ def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
   return TaskResult(
       run=manager.result,
       exec_result=exec_result,
-      outputs=outputs_by_name,
+      output_schema=schema,
       observers=tuple(observers),
   )
 ```
@@ -229,19 +253,18 @@ class TaskResult:
   Attributes:
     run: The engine result (status, artifacts as host paths, metrics).
     exec_result: The main action's own outcome; None if it never ran.
-    outputs: Declared-output name → the observer that produced it, still
-      holding its parsed value (e.g. `EvalParseObserver.verdict`,
-      `DiffExtractObserver.patch`). Typed accessors live on the subclasses'
-      results — this base mapping is for generic consumers (Task 20's
-      validation; the workflow's edge mounting).
-    observers: Every composed observer, in composition order — for a caller
-      that needs runner-observer state the outputs map does not carry (the
-      rollout wrapper reads `complete` and the conversation here).
+    output_schema: The task's merged schema — what this run was *supposed*
+      to produce. Task 20's validation gate reads it against `run.artifacts`
+      (a required name with no artifact fails the attempt); the workflow's
+      edge mounting resolves upstream names through it.
+    observers: Every composed observer, in composition order — the typed
+      results live on them (`EvalParseObserver.verdict`,
+      `DiffExtractObserver.patch`), and the wrappers read them back by type.
   """
 
   run: RunResult
   exec_result: ExecResult | None
-  outputs: Mapping[str, SandboxObserver]
+  output_schema: tuple[ArtifactSchema, ...]
   observers: tuple[SandboxObserver, ...]
 ```
 
@@ -259,13 +282,21 @@ class CodingAgentTask(Task):
   agent_env: Mapping[str, str] | None = None
   proxy: AbstractContextManager[object] | None = None
 
-  def runner(self):        return self.harness
-  def mounts(self):        return {}        # the harness's own mounts arrive
-                                            # via runner() in execute()
-  def output_producers(self): return (PatchProducer(exclude_globs=self.exclude_globs),)
-  def action(self, sb, outputs, *, timeout):   # outputs unused here
-    return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
-                            timeout=timeout, env=self.agent_env)
+  def mounts(self):        # instance's material + the harness's own files
+    return merge_mounts(
+        super().mounts(),
+        self.harness.mounts(self.instance.sandbox_spec().workdir),
+    )
+  def observers(self):     # the harness's own + the deliverable's extractor
+    return (*self.harness.observers(),
+            DiffExtractObserver(exclude_globs=self.exclude_globs))
+  def action(self, sb, *, timeout):
+    # The proxy records the agent's API traffic, so its lifetime is the
+    # agent's — open around the run, closed before before_destroy reads the
+    # log (a flush guarantee the old whole-session placement never had).
+    with self.proxy or contextlib.nullcontext():
+      return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
+                              timeout=timeout, env=self.agent_env)
 
 
 @dataclass
@@ -273,19 +304,41 @@ class UnitTestEvalTask[V: Verdict](Task):
   """Grade a patch against the bound instance's unit tests."""
 
   instance: TaskInstance[V]
-  patch: str | None                         # None = grade the base commit
+  # THE run-varying input: the gold patch or a candidate (str), UPSTREAM
+  # (= a workflow mounts it by name, see input_schema), or None (= grade the
+  # base commit). UPSTREAM is a construction-time *mode marker*, not a
+  # resolution placeholder — it carries no store path; it just means: compile
+  # the script with `git apply`, declare the input, stage no patch mount.
+  patch: str | Upstream | None
   retries: int = 1                          # ADR-0005 in-run retry, unchanged
   eval_env: Mapping[str, str] | None = None
 
+  def input_schema(self):
+    if self.patch is UPSTREAM:
+      return (ArtifactSchema("patch.diff", required=True,
+                             description="the candidate patch to grade"),)
+    return ()
+
   # compiled once in __post_init__: self._spec = instance.unit_test_spec(...)
-  def mounts(self):        return {ENTRYSCRIPT_NAME: Mount(Inline(self._spec.eval_script.encode()), executable=True)}
-  def instance_mounts(self): return dict(self._spec.mounts)   # until 19, the spec *is* the instance's mounts
-  def output_producers(self): return (VerdictProducer(grader=self._spec.grader, native_outputs=self._spec.native_outputs),)
-  # runner(): inherited None — eval has no runner (no Evaluator, ADR-0007 §4)
-  def action(self, sb, outputs, *, timeout):
+  def mounts(self):
+    # Interim: the spec still carries the instance trio (§2.6 moves it onto
+    # instance.mounts(), after which super().mounts() takes over that half).
+    return merge_mounts(
+        dict(self._spec.mounts),
+        {ENTRYSCRIPT_NAME: Mount(Inline(self._spec.eval_script.encode()),
+                                 executable=True)},
+    )
+  def observers(self):
+    # the grader arrives here directly — dataset-supplied, no vehicle
+    # (ADR-0007 §4); the reference is kept because action's retry loop
+    # drives this observer (the task is single-run, like the observer)
+    self._parse = EvalParseObserver(
+        self._spec.grader, native_outputs=self._spec.native_outputs
+    )
+    return (self._parse,)
+  def action(self, sb, *, timeout):
     # the existing _attempt_until_resolved loop, verbatim, driving
-    # outputs["verdict"] (its parse observer): in-run retry is ADR-0005's and
-    # stays inside the action
+    # self._parse: in-run retry is ADR-0005's and stays inside the action
     ...
 ```
 
@@ -295,10 +348,10 @@ class UnitTestEvalTask[V: Verdict](Task):
 def run_rollout(sandbox, harness, *, prompt, output_dir, timeout,
                 proxy=None, agent_env=None, exclude_globs=(), observers=()):
   task = CodingAgentTask(instance=_SpecOnlyInstance(sandbox.spec), harness=harness,
-                         prompt=prompt, exclude_globs=exclude_globs, agent_env=agent_env)
-  with proxy or contextlib.nullcontext():
-    result = task.execute(sandbox, output_dir=output_dir, timeout=timeout,
-                          extra_observers=observers)
+                         prompt=prompt, proxy=proxy, exclude_globs=exclude_globs,
+                         agent_env=agent_env)
+  result = task.execute(sandbox, output_dir=output_dir, timeout=timeout,
+                        extra_observers=observers)
   return RolloutOutcome(...)   # assembled from result, exactly today's fields
 
 def run_unit_test(sandbox, unit_test_spec, *, output_dir, timeout,
@@ -342,12 +395,37 @@ Migration inside this task, in order:
    `Inline` construction out of `compile_unit_test`);
 2. `compile_unit_test` stops emitting the trio; `UnitTestSpec.mounts` shrinks
    to `{patch.diff}` — the one entry that varies per run;
-3. `UnitTestEvalTask.instance_mounts()` drops its interim
-   `dict(self._spec.mounts)` shim and uses the default
-   (`self.instance.mounts()`); its `mounts()` contributes entryscript + patch;
+3. `UnitTestEvalTask.mounts()` drops the interim `dict(self._spec.mounts)`
+   half in favour of `super().mounts()` (the instance's material via
+   `instance.mounts()`), keeping its own entryscript + patch;
 4. the `run_unit_test` wrapper keeps working unchanged — its `_SpecEvalTask`
    shim treats whatever the spec still carries as instance material, so a
    downstream caller holding a pre-split spec is unaffected until Task 21.
+
+The patch row is also the **workflow seam**. A workflow is a *declared
+list* of constructed tasks — so an input that does not exist yet cannot be a
+constructor value. It is not: **inputs arrive as mounts, matched by store
+name** — the model the ADR started from ("the dependent task mounts the
+upstream output out of the store, and validates it"):
+
+```python
+wf = Workflow(store=..., sweep="s1", rollout_id=0, tasks=[
+    ("rollout", CodingAgentTask(instance=inst, harness=harness)),
+    ("eval",    UnitTestEvalTask(instance=inst, patch=UPSTREAM)),
+])
+wf.execute()
+# per task, in order: terminal marker? (resume: skip / blocked) →
+# resolve input_schema() names against earlier tasks' outputs →
+# Mount(LocalFile(store_path), read_only=True) as extra_mounts →
+# required name missing = the distinct edge failure (ADR-0007 §5) →
+# task.execute(sandbox, extra_mounts=...)
+```
+
+The symmetry is the design: **observers declare outputs; tasks declare
+inputs; the store name is the contract**; the workflow only matches names,
+mounts, and validates. Tasks are constructed up front (they are declaration
+data, §2.2) and never reach into the store. Formalized in Task 21's plan;
+recorded here because this seam is where the question arises.
 
 The fixes seam is the regression risk: `fixes/_seam.py::with_setup` merges a
 fix's mounts into `spec.mounts` and splices bash against the spec's script.
@@ -373,10 +451,11 @@ Hard acceptance criteria, in order:
 
 ## 4. Steps
 
-1. `workflow/` package: `OutputProducer` / `TaskResult` + producer
+1. `ArtifactSchema` + `SandboxObserver.output_schema()` + `merge_output_schemas`
+   in `sandbox/`, existing observers self-describing; then `TaskResult` + task
    wrappers; unit tests with `FakeSandbox`.
-2. `Task.execute` + composition-order test (backend observers before runner's
-   before outputs'; duplicate mount target across sources refused).
+2. `Task.execute` + composition-order test (backend observers before the
+   task's; duplicate mount target across sources refused).
 3. `UnitTestEvalTask` + `run_unit_test` wrapper; suite + live gold eval.
 4. `CodingAgentTask` + `run_rollout` wrapper; suite + live rollout.
 5. Checkpoint review (§3), then one PR.
@@ -386,8 +465,14 @@ Hard acceptance criteria, in order:
 - **The in-run retry loop resists extraction** — it mutates the parse observer
   between attempts. Mitigation: it stays inside `UnitTestEvalTask.action`
   verbatim; only Task 20 may reshape it.
-- **Proxy lifetime**: today the proxy wraps the whole session. The wrapper
-  keeps that placement (proxy around `execute`), not `Task`'s concern.
+- **Proxy lifetime narrows, deliberately**: today the proxy wraps the whole
+  session; in the task it wraps `action` only — the agent is the only thing
+  that calls through it, and closing before `before_destroy` means the log is
+  flushed before conversion reads it. No observable difference (the
+  equivalence gate checks), and no wrapper layer. One consequence stated
+  plainly: a context-manager proxy is single-use, so a *re-executed*
+  `CodingAgentTask` needs a fresh one — irrelevant today (only eval retries),
+  revisited if Task 20 ever retries agent tasks.
 - **Hidden coupling to mount timing** (`prompt.txt` was composition-staged;
   after Task 18 the harness writes it in `run`) — the live-rollout equivalence
   run is what catches any residue.
