@@ -285,7 +285,15 @@ class UnitTestEvalTask[V: Verdict](Task):
   """Grade a patch against the bound instance's unit tests."""
 
   instance: TaskInstance[V]
-  patch: str | None                         # None = grade the base commit
+  # THE run-varying input, and the workflow seam: everything else this task
+  # stages is instance-bound, but the patch is per-run — the gold patch, a
+  # candidate, or None (= grade the base commit). A task never reaches into
+  # the store; in a workflow, Task 21 resolves the upstream task's persisted
+  # patch.diff (manifest lookup → exists/non-empty validation, a *distinct*
+  # failure status per ADR-0007 §5) and feeds it here through the
+  # constructor. Whether it feeds text or a LocalFile resource is Task 21's
+  # one-line decision; both mechanisms already exist.
+  patch: str | None
   retries: int = 1                          # ADR-0005 in-run retry, unchanged
   eval_env: Mapping[str, str] | None = None
 
@@ -371,6 +379,13 @@ Migration inside this task, in order:
 4. the `run_unit_test` wrapper keeps working unchanged — its `_SpecEvalTask`
    shim treats whatever the spec still carries as instance material, so a
    downstream caller holding a pre-split spec is unaffected until Task 21.
+
+The patch row is also the **workflow seam**: after this split, "feed eval a
+different patch" means constructing `UnitTestEvalTask` with a different
+`patch` input — nothing about the instance recompiles. Task 21's edge
+resolution (store lookup → validation → constructor input) plugs into exactly
+that field, and tasks stay store-ignorant: the workflow is the only layer
+that resolves prior outputs.
 
 The fixes seam is the regression risk: `fixes/_seam.py::with_setup` merges a
 fix's mounts into `spec.mounts` and splices bash against the spec's script.
