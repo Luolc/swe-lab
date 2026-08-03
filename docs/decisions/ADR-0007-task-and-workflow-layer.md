@@ -93,16 +93,34 @@ it. Deliberately **not** a second kind of task: `session` already means
 `manager.session()`, one sandbox, and a `SessionTask` alongside a `SandboxTask`
 would make the word mean two things.
 
-### 2. A task's lifecycle is: initialize → mount → run → outputs
+### 2. A task's lifecycle is: mount → run → outputs
 
-- **initialize** — from the bound `TaskInstance`: the run context (image,
-  workdir, base commit) and the dataset-derived starting material (the prompt).
-- **mount** — the instance's material, the previous tasks' outputs, and the
-  runner's own files.
-- **run** — one action in the sandbox.
-- **outputs** — declared, produced, persisted.
+There is no separate "initialize" phase. The bound `TaskInstance` supplies two
+things, and only one of them is a phase:
 
-Registering a task should require thinking about nothing else.
+- the **run context** — `sandbox_spec()` (image, workdir, base commit), which is
+  what the sandbox is built from;
+- **mounts** — the dataset's own material, contributed exactly like every other
+  contributor's.
+
+So `TaskInstance` gains a `mounts()` interface and becomes the third mount
+source, deciding for itself whether it stages anything at all. This is less a
+new mechanism than finishing an existing pattern: `SandboxObserver.mounts()` and
+`Harness.mounts(workdir)` already exist, and `merge_mounts` already refuses
+duplicate targets.
+
+| mount source | contributes | today |
+|---|---|---|
+| **the instance** | the dataset's material | `UnitTestSpec.mounts` — the run script, the parser, the compiled expectation |
+| **the runner** | its own files and assets | `Harness.mounts(workdir)` — launcher script, pinned binary |
+| **upstream tasks** | their persisted outputs | hand-wired by the CLI today |
+| **observers** | whatever they need staged | `SandboxObserver.mounts()` |
+
+Recognizing this is also what lets `UnitTestSpec` shrink: its `mounts` field
+*is* the instance's mounts, already.
+
+Registering a task should require thinking about nothing beyond mounts, a
+script, and outputs.
 
 ### 3. Observers come from three places, and the distinction is load-bearing
 
@@ -211,6 +229,14 @@ import-only extension the fix and sandbox registries already use.
 **Open, to be settled while implementing**
 
 - The name of the general spec (`TaskSpec` / `RunSpec` / `StepSpec`).
+- **Who names the prompt file.** `PROMPT_NAME = "prompt.txt"` lives in
+  `harnesses/base.py` and is documented there as the composition↔harness
+  contract: the dataset owns the prompt's *content*, the runner owns *where it
+  lands*. If `TaskInstance.mounts()` staged it, every dataset would have to know
+  every runner's filename convention. The likely split is that `mounts()`
+  carries material whose layout is the instance's own business, while the prompt
+  keeps flowing through `prompt()` and the task places it where the runner asks
+  — but that is a seam to settle with a second runner in hand, not before.
 - Whether `TaskInstance.unit_test_spec` survives as-is or becomes a general
   "compile a task for this instance".
 - How a workflow is declared (Python object graph vs a serialized form) and
