@@ -21,7 +21,8 @@ a later process.
 ### In scope
 
 - ADR-0004 key amendment: the `task` component, in the key and on
-  `RunRecord` (backward-compatible with existing shards).
+  `RunRecord` — **final shape directly, no compatibility layer**: everything
+  in today's stores is debug-stage output, discarded rather than migrated.
 - The terminal marker: format, location, atomic write, read-back.
 - `run_task(...)` — the per-task orchestrator: resume check → attempt loop
   (execute → validate → persist → retry) → terminal marker. This is the
@@ -71,7 +72,7 @@ runs/                                  ← store root namespace (unchanged)
   terminal" is one question per task, and attempts underneath it are the
   history of getting there.
 
-### 2.2 `RunRecord` gains `task` (compatible)
+### 2.2 `RunRecord` gains `task` (required)
 
 ```python
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -79,21 +80,21 @@ class RunRecord:
   sweep_id: str
   instance_id: str
   rollout_id: int = 0
-  task: str = ""          # NEW; "" = a pre-amendment record (or wrapper path)
+  task: str               # NEW, required — every record names its task
   attempt: int = 0
   ...                     # everything else unchanged
 ```
 
-- `task: str = ""` keeps `from_json` reading **existing shards** unchanged;
-  `run_prefix` emits the segment only when non-empty, so old keys round-trip
-  and new writes always carry it. `sort_key` gains `task` (between
+- **Final shape directly, no default and no compatibility path**: we are
+  prototyping and every existing store is debug output — old shards are
+  discarded, not migrated, so `from_json` may simply fail on them and
+  `run_prefix` always emits the segment. `sort_key` gains `task` (between
   `rollout_id` and `attempt`).
 - `Store.read_manifest(sweep, instance, rollout)` gains
-  `task: str | None = None` — `None` keeps today's behavior (all shards of
-  the rollout); a value narrows to one task's attempts, which is what the
-  resume/retry check reads. `FilesystemStore` / `FakeStore` updated; a
-  downstream `Store` subclass must add the parameter (breaking for
-  implementers, not for callers — flagged in the PR).
+  `task: str | None = None` — `None` reads all shards of the rollout (the
+  aggregation shape); a value narrows to one task's attempts, which is what
+  the resume/retry check reads. `FilesystemStore` / `FakeStore` updated; a
+  downstream `Store` subclass must add the parameter (flagged in the PR).
 
 ### 2.3 The terminal marker
 
@@ -258,7 +259,7 @@ class Task:
 | **resume** (this task) | the terminal marker | `read_marker(store, address)` — §4 step 0 |
 | **retry accounting** | one task's attempt shards | `store.read_manifest(sweep, instance, rollout, task=...)` |
 | **a downstream task** (Task 21) | the *producing* task's final record → `artifacts[name]` → full store key → `store.get(key, staging_dir)` → `Mount(LocalFile(staged), read_only=True)` | the workflow edge; never `LocalFile` into the store's internals, so an S3 store works unchanged |
-| **aggregation** (`index`, pass@K) | all shards of a sweep | `read_manifests` — unchanged; old task-less shards sort first within a rollout |
+| **aggregation** (`index`, pass@K) | all shards of a sweep | `read_manifests` — unchanged in shape; shards now sort by `(instance, rollout, task, attempt)` |
 
 The downstream row is deliberately spelled out here even though the workflow
 lands in Task 21: **artifact resolution goes through the record, not through
@@ -289,8 +290,8 @@ a retry mechanism.
 ## 8. Steps
 
 1. `RunRecord.task` + `run_prefix` + `sort_key`; `read_manifest(task=...)`;
-   `Store.put_bytes`; `FilesystemStore`/`FakeStore` updated; compat test
-   (old shard JSON still parses; old keys still resolve).
+   `Store.put_bytes`; `FilesystemStore`/`FakeStore` updated. No migration:
+   existing debug stores are discarded (prototyping — final shape directly).
 2. Marker write/read (`write_marker` atomic, `read_marker`), tests incl. the
    torn-write case (temp file present, no marker → not terminal).
 3. `_accepted` + `Task.wants_retry` + named invariant tests.
