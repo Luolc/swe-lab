@@ -33,6 +33,15 @@ not twice.
   its runner has no live `docker` CLI to poll).
 - Wiring instance `mounts()` into the *existing* compositions beyond the eval
   path's spec compilation (Task 19 rewires everything through `Task`).
+- **The other two observer sources of ADR-0007 §3.** The runner's observers
+  (`ConversationObserver`, `HarnessOutcomeObserver`) and the eval parse
+  observer **already exist** — they are just wired ad hoc inside the two
+  compositions. Only the sandbox's source is missing today, which is why this
+  task adds only it. Formalizing the existing ones onto their seams is Task
+  19's job — `Task.observers()` claims the runner's pair, and the grader
+  arrives as an output producer (`VerdictOutput`) — so they move **once**, not
+  first into a `Harness.observers()` factory here and then immediately into
+  the task's assembly.
 
 ---
 
