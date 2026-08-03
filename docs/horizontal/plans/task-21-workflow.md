@@ -57,7 +57,9 @@ class WorkflowEntry:
       (Task 20's contract: every call returns a sandbox over a fresh, empty
       workspace; the factory owns that allocation). Per entry, so backend /
       network / pull knobs stay the caller's and two entries can differ.
-    inputs: Explicit edge bindings, input name → producing entry's key. Only
+    inputs: Explicit edge bindings, each `"<producer key>/<input name>"`
+      (`"rollout/patch.diff"`) — the producer's key followed by the input's
+      store name, mirroring how the artifact reads in the store itself. Only
       needed where name matching alone is ambiguous (§3); an entry may also
       bind an input that matching would have resolved, for documentation.
     retries: Task-level retry budget for this entry (Task 20's `run_task`).
@@ -65,7 +67,7 @@ class WorkflowEntry:
   key: str
   task: Task
   sandbox_factory: Callable[[], Sandbox]
-  inputs: Mapping[str, str] = field(default_factory=dict)
+  inputs: Sequence[str] = ()
   retries: int = 0
 
 
@@ -125,16 +127,26 @@ def _resolve_edges(entries) -> dict[str, dict[str, str]]:
   for entry in entries:                  # declared order == topological order
     bound: dict[str, str] = {}
     declared_inputs = {s.name: s for s in entry.task.input_schema()}
-    # (a) a binding for an input the task never declared is dead — an error,
-    #     not ignored: it means the author believes something false
-    for name in entry.inputs:
+    # (a) parse "producer/name" bindings; a binding for an input the task
+    #     never declared is dead — an error, not ignored: it means the
+    #     author believes something false. Split on the FIRST "/": entry
+    #     keys are [a-z0-9_-]+ (never contain one), names may contain dots.
+    explicit: dict[str, str] = {}        # input name → producer key
+    for binding in entry.inputs:
+      producer, sep, name = binding.partition("/")
+      if not sep or not producer or not name:
+        raise WorkflowError(f"{entry.key}: malformed binding {binding!r}; "
+                            'expected "<producer key>/<input name>"')
       if name not in declared_inputs:
         raise WorkflowError(f"{entry.key} binds {name!r}, which its task "
                             "does not declare as an input")
+      if name in explicit:
+        raise WorkflowError(f"{entry.key} binds {name!r} twice")
+      explicit[name] = producer
     for name in declared_inputs:
-      if name in entry.inputs:
+      if name in explicit:
         # (b) EXPLICIT BINDING WINS — and is verified, not trusted:
-        producer = entry.inputs[name]
+        producer = explicit[name]
         if producer not in produced.get(name, []):
           # unknown key, a LATER entry, or an entry not declaring the name
           raise WorkflowError(f"{entry.key} binds {name!r} to {producer!r}, "
@@ -229,7 +241,7 @@ blocked forever). The workflow then fails per §4's gate.
 |---|---|
 | producer declares | `DiffExtractObserver.output_schema()` → `patch.diff` (required) — part of `CodingAgentTask.observers()` |
 | consumer declares | `UnitTestEvalTask(apply_patch=True).input_schema()` → `patch.diff` (required) |
-| phase A | sole earlier producer of `patch.diff` is entry `"rollout"` → edge `eval.patch.diff ← rollout` (an explicit `inputs={"patch.diff": "rollout"}` would also be accepted, and required if a second patch-producing entry ever precedes eval) |
+| phase A | sole earlier producer of `patch.diff` is entry `"rollout"` → edge `eval.patch.diff ← rollout` (an explicit `inputs=("rollout/patch.diff",)` would also be accepted, and required if a second patch-producing entry ever precedes eval) |
 | producer runs | attempt `a0` persists `s1/<inst>/r0/rollout/a0/patch.diff`; its `RunRecord.artifacts["patch.diff"]` holds exactly that key |
 | phase B | record lookup → `store.get(key, out/edges/eval/patch.diff)` → non-empty ✓ → `extra_mounts={"patch.diff": Mount(LocalFile(...), read_only=True)}` |
 | consumer runs | the file sits at `$SANDBOX_WORKSPACE/patch.diff`; the compiled entryscript's `git apply` reads it; `execute`'s required-input check would have refused to build the sandbox had the mount been missing |
