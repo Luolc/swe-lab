@@ -274,7 +274,44 @@ Two consequences worth stating plainly:
   big enough to be worth its own container, small enough that losing one to
   preemption does not hurt.
 
-### 8. Provided subclasses, open registry
+### 8. The prompt is an argument to the runner, not a filename convention
+
+`PROMPT_NAME = "prompt.txt"` in `harnesses/base.py` is a forced convention: the
+composition stages the prompt under a fixed name and every harness has to agree
+to read it there. It is retired.
+
+**`prompt` becomes an argument to `Harness.run`, as a plain string.** Where it
+lands — a file, an argv, stdin — is the harness's business, decided at run time.
+Most harnesses will write it to a file, but taking a *filename* here would just
+move the convention rather than remove it.
+
+This needs no new mechanism: `SandboxFs.write` already exists, so a harness can
+place the prompt itself during `run` rather than declaring it in `mounts`.
+
+It also resolves the seam left open earlier — whether `TaskInstance.mounts()`
+should stage the prompt. It should not: the dataset owns the prompt's *content*
+and hands over a string; the runner owns everything about where it goes.
+
+If a prompt ever needs to arrive as a file the caller already has, that is a
+second argument (`prompt` / `prompt_file`, mutually exclusive) added then — not
+a generality paid for now.
+
+### 9. A workflow is a list before it is a DAG
+
+The first version takes a **list of tasks in order**, and the caller owns the
+topological sort. A DAG with declared dependencies comes later, once there is a
+workflow that actually needs one.
+
+Declaration is a **Python object graph** — the tasks are objects the caller
+assembles. There is no separate serialized workflow format: the tasks can go in
+a registry, which is what makes a serialized form cheap to add later if it is
+wanted at all.
+
+This also settles the "spec" question: there is **no separate `TaskSpec` type**.
+A task *is* the thing the caller assembles — mounts, a script, outputs — so
+introducing a spec object beside it would be a second name for one concept.
+
+### 10. Provided subclasses, open registry
 
 A small set ships (a coding-agent task, a unit-test evaluation task); a
 consumer defines its own by supplying mounts, a script, and outputs, the same
@@ -292,6 +329,9 @@ import-only extension the fix and sandbox registries already use.
 | **One budget covering both retry and resume.** | They answer different questions — "is the work bad?" versus "did this process die?" — and merging them means a preempted task consumes retry budget it never spent on a real failure. |
 | **Leaving a failed task pending, so resume retries it.** | It would re-run a full budget on every resume and can burn a sweep on one broken instance. Retry already exists to absorb an environmental failure; once it is spent, the outcome is an answer, not an absence. |
 | **Resume from inside a task (step-level markers).** | A task is one sandbox; when it dies the sandbox is gone, so there is no state to resume into. Cutting tasks smaller is the honest way to get finer resume. |
+| **A separate `TaskSpec` object beside `Task`.** | The task already *is* mounts + script + outputs. A spec next to it would be a second name for one concept, and the concept count is what we are trying to bring down. |
+| **A DAG in the first version.** | The scheduler is the easy half and the least urgent; a list gets the task layer into use, and nothing about it forecloses a DAG. |
+| **Keeping `PROMPT_NAME` and staging the prompt from the instance.** | It makes every dataset know every runner's filename convention. Passing a string moves the decision to the only party that should hold it. |
 | **Leave it: keep writing compositions by hand.** | Three exist and they already disagree; the fourth is an annotation pipeline that reinvented fan-out. |
 
 ## Consequences
@@ -309,27 +349,41 @@ import-only extension the fix and sandbox registries already use.
 
 - One sandbox per task costs a container per step; a rollout + eval pair pays
   two setups where the old CLI path paid two anyway.
+- **`Harness.run` gains a `prompt` argument, which is breaking** for any
+  downstream harness. `PROMPT_NAME` goes with it. The fix is mechanical, and it
+  removes a convention every harness was forced to obey.
+- A list-shaped workflow puts the topological sort on the caller. That is the
+  point for now — it buys the task layer without the scheduler — but it means an
+  ordering mistake is the caller's to notice until the DAG lands.
 - A DAG makes failure attribution harder: "which task failed and why" needs to
   survive into the record, or a workflow becomes a black box.
 
 **Open, to be settled while implementing**
 
-- The name of the general spec (`TaskSpec` / `RunSpec` / `StepSpec`).
-- **Who names the prompt file.** `PROMPT_NAME = "prompt.txt"` lives in
-  `harnesses/base.py` and is documented there as the composition↔harness
-  contract: the dataset owns the prompt's *content*, the runner owns *where it
-  lands*. If `TaskInstance.mounts()` staged it, every dataset would have to know
-  every runner's filename convention. The likely split is that `mounts()`
-  carries material whose layout is the instance's own business, while the prompt
-  keeps flowing through `prompt()` and the task places it where the runner asks
-  — but that is a seam to settle with a second runner in hand, not before.
-- Whether `TaskInstance.unit_test_spec` survives as-is or becomes a general
-  "compile a task for this instance".
-- How a workflow is declared (Python object graph vs a serialized form) and
-  where its run record lives relative to ADR-0004's layout.
-- Whether `pipelines/related_files` is migrated onto tasks or left alone; it is
-  the acid test for whether the abstraction is sufficient, and if it cannot be
-  expressed, this ADR is wrong.
+- **Whether `TaskInstance.unit_test_spec` survives.** Kept as-is to start with —
+  it is where evaluation is compiled today, and migrating it before the task
+  layer exists would be guessing. Whether the field stays becomes clear as tasks
+  absorb its parts (§2 already claims its `mounts`, §6 its `retries`), so this
+  is a question the migration answers rather than one to answer up front.
+- **What a workflow does with a terminally failed task.** Its dependents cannot
+  run, so they are blocked rather than attempted; whether the workflow then
+  fails that instance outright or carries on with independent branches is a
+  policy decision this ADR does not settle.
+- **Where a workflow's own run record lives** relative to ADR-0004's layout —
+  the per-task records are keyed (§6), but whether a workflow needs a record of
+  its own, or is simply reconstructed from its tasks', is unsettled.
+- **Task identity is by key alone, deliberately.** Editing a task's script
+  without changing its key would let resume reuse a stale completion. The fix is
+  a fingerprint of (script, mounts, config) stored with the marker, and it is
+  **deferred on purpose** — for now the discipline is manual: change the key
+  when the task changes. Revisit when the manual discipline first fails, or when
+  the cost of hashing large mounts is worth measuring.
+
+`pipelines/related_files` is **not** migrated as part of this. It stays as it
+is until the task layer is built. It remains the abstraction's real test — it is
+a fan-out + join that mostly bypasses the engine, and if tasks cannot express it
+this ADR is wrong — but that test is run *after* the environment is in place,
+not as a condition for starting.
 - **What a workflow does with a terminally failed task.** Its dependents cannot
   run, so they are blocked rather than attempted; whether the workflow then
   fails that instance outright or carries on with independent branches is a
