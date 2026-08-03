@@ -36,6 +36,10 @@ from swe_lab.datasets.swebench_pro.fixes.element_web_wysiwyg import (
     _WYSIWYG_TARBALL_NAME,
     wysiwyg_tarball,
 )
+from swe_lab.datasets.swebench_pro.fixes.tutanota_build_server import (
+    _ATTEMPTS,
+    _BUILD_SERVER_INSTANCE,
+)
 from swe_lab.datasets.swebench_pro.fixes.tutanota_clock import (
     _SHIM_NAME,
     _TUTANOTA_CLOCK_INSTANCE,
@@ -248,6 +252,27 @@ def test_a_fixed_instance_names_the_fix_it_got():
   provenance = _instance(_WYSIWYG_INSTANCE).run_provenance()
   assert provenance["env_fix"] == "_fix_instance_element_web_aec454dd"
   assert "known_flaky" not in provenance  # the fix removes it; it is not flaky
+
+
+def test_the_build_server_fix_is_a_no_op_when_already_applied():
+  # `dist/` is gitignored, so the patched client survives `git reset --hard` +
+  # `git clean -fd` between retry attempts. A fix that insisted on finding the
+  # defect would abort every attempt after the first — breaking the very retry
+  # it exists to support. So the already-patched check has to come *first*.
+  script = _spec(_BUILD_SERVER_INSTANCE).eval_script
+  already_patched = script.index(f"connectionAttempts < {_ATTEMPTS} ")
+  defect_present = script.index("connectionAttempts < 2 ")
+  rewrite = script.index("sed -i 's/connectionAttempts < 2 ")
+  assert already_patched < defect_present < rewrite
+
+
+def test_the_build_server_rewrite_is_judged_by_a_javascript_parser():
+  # The lesson from a previous fix whose `grep` guard happily matched
+  # syntactically invalid JavaScript: assert the shape of the result, and let
+  # the language's own parser be the judge of it.
+  script = _spec(_BUILD_SERVER_INSTANCE).eval_script
+  assert 'node --check "$c"' in script
+  assert script.index("sed -i 's/reject();") < script.index("node --check")
 
 
 def test_an_instance_can_be_both_fixed_and_still_flaky():
