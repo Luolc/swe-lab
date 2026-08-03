@@ -22,9 +22,11 @@ not twice.
 
 1. `Sandbox.observers()` — backends contribute their own observers; the host
    backend ships a runtime-metrics observer (the `de49d486` diagnosis gap).
-2. `Harness.run(prompt=...)` — the prompt becomes an argument; `PROMPT_NAME`
+2. `Harness.observers()` — the runner's observer factory (ADR-0007 §3), with
+   the generic pair as its default; `run_rollout` switches to it.
+3. `Harness.run(prompt=...)` — the prompt becomes an argument; `PROMPT_NAME`
    is retired.
-3. `TaskInstance.mounts()` — the instance becomes an ordinary mount source.
+4. `TaskInstance.mounts()` — the instance becomes an ordinary mount source.
 
 ### Out of scope
 
@@ -33,15 +35,12 @@ not twice.
   its runner has no live `docker` CLI to poll).
 - Wiring instance `mounts()` into the *existing* compositions beyond the eval
   path's spec compilation (Task 19 rewires everything through `Task`).
-- **The other two observer sources of ADR-0007 §3.** The runner's observers
-  (`ConversationObserver`, `HarnessOutcomeObserver`) and the eval parse
-  observer **already exist** — they are just wired ad hoc inside the two
-  compositions. Only the sandbox's source is missing today, which is why this
-  task adds only it. Formalizing the existing ones onto their seams is Task
-  19's job — `Task.observers()` claims the runner's pair, and the grader
-  arrives as an output producer (`VerdictOutput`) — so they move **once**, not
-  first into a `Harness.observers()` factory here and then immediately into
-  the task's assembly.
+- **Eval's observer factory.** Of ADR-0007 §3's three sources, this task lands
+  the sandbox's (new) and the runner's (`Harness.observers()`, formalizing the
+  existing pair). The third arrives in Task 19 as an *output producer*
+  (`VerdictOutput` carrying the dataset's grader): per ADR-0007 §4 there is no
+  `Evaluator` class for a factory to live on, so the eval observer's seam is
+  the task's output declaration, which does not exist until the `Task` does.
 
 ---
 
@@ -150,7 +149,45 @@ sb.write(_PROMPT_FILENAME, prompt.encode())   # _PROMPT_FILENAME = "prompt.txt"
 - The `prompt.txt` row in `docs/horizontal/workspace-layout.md` moves from
   "dataset/composition (mount)" to the harness's own files.
 
-### 2.4 `TaskInstance.mounts()` (additive, default empty)
+### 2.4 `Harness.observers()` (additive — the default is the generic pair)
+
+```python
+class Harness(ConversationProducer, ABC):
+
+  def observers(self) -> Sequence[SandboxObserver]:
+    """Return the observers that watch this harness's run (ADR-0007 §3).
+
+    The runner owns how *it* is observed. The default is the generic pair
+    every conversation-producing agent needs — fresh instances per call,
+    since stateful observers are single-run:
+
+        return (
+            ConversationObserver(producer=self),
+            HarnessOutcomeObserver(harness=self),
+        )
+
+    A harness override *extends or replaces* this — e.g. an agent with a
+    second trace channel adds its collector — without a new composition.
+    NOT the place for task outputs: the patch extractor belongs to the task
+    (ADR-0007 §3), or the same harness could never run an annotation task.
+    """
+```
+
+- Import note: the default constructs `HarnessOutcomeObserver` from
+  `harnesses/observer.py`, which imports `base` — the default body uses a
+  local import to break the cycle (or `observer.py` retypes its field as
+  `ConversationProducer`); settled at implementation, tests pin behavior only.
+- `run_rollout` switches from constructing the pair inline to
+  `harness.observers()`, and locates the two for `RolloutOutcome` assembly by
+  `isinstance` — acceptable in the wrapper, gone in Task 19 (where
+  `TaskResult` carries the composed observers).
+- The **exec-result handoff** stays the composition's job: both
+  `HarnessOutcomeObserver` and `EvalParseObserver` already carry the same
+  `exec_result` / `wall_seconds` fields the composition fills before
+  teardown. Task 18 keeps today's explicit wiring; Task 19 generalizes it
+  (every composed observer with those fields gets them set by `execute`).
+
+### 2.5 `TaskInstance.mounts()` (additive, default empty)
 
 ```python
 class TaskInstance[V: Verdict](ABC):
@@ -184,11 +221,14 @@ class TaskInstance[V: Verdict](ABC):
    Live-marked test (`docker` required): run a trivial container, assert
    `sandbox.setup_seconds > 0` and `sandbox.oom_killed == 0.0`; a second test
    runs a memory hog under `--memory` and asserts `sandbox.oom_killed == 1.0`.
-3. `Harness.run(prompt=...)` + `PROMPT_NAME` deletion + `claude_code` update +
+3. `Harness.observers()` default + `run_rollout` switched onto it; test that a
+   harness overriding the factory sees its observer composed, and that the
+   default pair still lands (byte-equivalent `RolloutOutcome` on the fake).
+4. `Harness.run(prompt=...)` + `PROMPT_NAME` deletion + `claude_code` update +
    `run_rollout` forwarding; update both CLI fakes and workspace-layout doc.
-4. `TaskInstance.mounts()` default + docs.
-5. Full bar, one PR, **one breaking-changes section listing 2.3 (and noting
-   2.1/2.4 are additive)**.
+5. `TaskInstance.mounts()` default + docs.
+6. Full bar, one PR, **one breaking-changes section listing 2.3 (and noting
+   2.1/2.4/2.5 are additive)**.
 
 ## 4. Definition of done
 

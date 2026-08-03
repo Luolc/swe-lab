@@ -118,8 +118,18 @@ class Task(ABC):
     come from `outputs()`; sandbox observers from the backend. Default ()."""
 
   @abstractmethod
-  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
-    """The run's main action: exec the harness, or run the entryscript."""
+  def action(
+      self,
+      sb: SandboxFs,
+      outputs: Mapping[str, SandboxObserver],
+      *,
+      timeout: float,
+  ) -> ExecResult:
+    """The run's main action: exec the harness, or run the entryscript.
+
+    ``outputs`` are the built output observers (name → observer), because
+    eval's in-run retry loop (ADR-0005) drives its parse observer between
+    attempts. A task without that need ignores the argument."""
 
   # ---- what the base class provides ---------------------------------------
 
@@ -157,18 +167,30 @@ def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
       sandbox=sandbox, output_dir=epath.Path(output_dir),
       observers=observers, mounts=mounts,
   )
-  # 3. the action, inside the session
+  # 3. the action, inside the session; the built output observers are handed
+  #    to it, because eval's in-run retry loop mutates its parse observer
+  #    (attempts / exec_result) between attempts
+  outputs_by_name = {out.name: obs for (out, obs) in produced}
   exec_result = None
   try:
     with manager.session() as sb:
-      exec_result = self.action(sb, timeout=timeout)
+      started = time.monotonic()
+      try:
+        exec_result = self.action(sb, outputs=outputs_by_name, timeout=timeout)
+      finally:
+        # The handoff both compositions do by hand today, generalized: every
+        # composed observer carrying the exec_result / wall_seconds fields
+        # (HarnessOutcomeObserver, EvalParseObserver) gets them before
+        # teardown, so before_destroy can report how the action ended.
+        _hand_exec_outcome(observers, exec_result, time.monotonic() - started)
   except SandboxError:
     pass                                    # recorded in manager.result
   # 4.–5. observers already contributed at teardown; assemble the result
   return TaskResult(
       run=manager.result,
       exec_result=exec_result,
-      outputs={out.name: obs for (out, obs) in produced},
+      outputs=outputs_by_name,
+      observers=tuple(observers),
   )
 ```
 
@@ -187,11 +209,15 @@ class TaskResult:
       `DiffExtractObserver.patch`). Typed accessors live on the subclasses'
       results — this base mapping is for generic consumers (Task 20's
       validation; the workflow's edge mounting).
+    observers: Every composed observer, in composition order — for a caller
+      that needs runner-observer state the outputs map does not carry (the
+      rollout wrapper reads `complete` and the conversation here).
   """
 
   run: RunResult
   exec_result: ExecResult | None
   outputs: Mapping[str, SandboxObserver]
+  observers: tuple[SandboxObserver, ...]
 ```
 
 ### 2.4 The two shipped subclasses
@@ -210,10 +236,8 @@ class CodingAgentTask(Task):
 
   def mounts(self):        return {}        # harness mounts stay the runner's
   def outputs(self):       return (TaskOutput("patch.diff", PatchOutput(self.exclude_globs)),)
-  def observers(self):     # runner-owned, per ADR-0007 §3
-    return (ConversationObserver(producer=self.harness),
-            HarnessOutcomeObserver(harness=self.harness))
-  def action(self, sb, *, timeout):
+  def observers(self):     return self.harness.observers()   # Task 18's factory
+  def action(self, sb, outputs, *, timeout):   # outputs unused here
     return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
                             timeout=timeout, env=self.agent_env)
 
@@ -232,9 +256,10 @@ class UnitTestEvalTask[V: Verdict](Task):
   def instance_mounts(self): return dict(self._spec.mounts)   # until 19, the spec *is* the instance's mounts
   def outputs(self):       return (TaskOutput("verdict", VerdictOutput(self._spec.grader, self._spec.native_outputs)),)
   def observers(self):     return ()        # eval has no runner (no Evaluator — ADR-0007 §4)
-  def action(self, sb, *, timeout):
-    # the existing _attempt_until_resolved loop, verbatim: in-run retry is
-    # ADR-0005's and stays inside the action
+  def action(self, sb, outputs, *, timeout):
+    # the existing _attempt_until_resolved loop, verbatim, driving
+    # outputs["verdict"] (its parse observer): in-run retry is ADR-0005's and
+    # stays inside the action
     ...
 ```
 
@@ -261,6 +286,48 @@ def run_unit_test(sandbox, unit_test_spec, *, output_dir, timeout,
 (`_SpecOnlyInstance` / `_SpecEvalTask`: private shims for the wrapper paths
 where the caller hands a spec, not an instance — the CLIs construct from
 instances and won't need them once Task 21 rewires them.)
+
+### 2.6 The instance-mounts migration (SWE-Bench Pro's parser / run_script)
+
+Where they are mounted **today**, end to end:
+
+1. `SweBenchProInstance.unit_test_spec(patch=...)` (`record.py`) reads
+   `self.run_script` / `self.parser` (properties fetching + caching the
+   upstream harness files) and hands them to `compile_unit_test`;
+2. `compile_unit_test` (`datasets/swebench_pro/unit_test.py`) builds
+   `UnitTestSpec.mounts = {run_script.sh, parser.py, required_tests.json
+   [, patch.diff]}` as `Mount(Inline(...))`;
+3. `run_unit_test` copies `spec.mounts` into the `SandboxManager`, adds the
+   entryscript, and the manager stages everything at session start.
+
+So the spec's mount dict currently conflates **three owners**, and the
+migration is reading each entry its real one:
+
+| mount | real owner | destination |
+|---|---|---|
+| `run_script.sh`, `parser.py` | the **instance** (fetched per instance, patch-independent) | `SweBenchProInstance.mounts()` |
+| `required_tests.json` | the **instance** (`fail_to_pass ∪ pass_to_pass`, patch-independent) | `SweBenchProInstance.mounts()` |
+| `patch.diff` | the **task** (the run's input — a candidate, the gold patch, or absent) | `UnitTestEvalTask.mounts()`; a workflow edge in Task 21 |
+| `entryscript.sh` | the **task** (built from base commit + golden checkout + flags) | `UnitTestEvalTask.mounts()` |
+
+Migration inside this task, in order:
+
+1. `SweBenchProInstance.mounts()` returns the instance trio (moving the
+   `Inline` construction out of `compile_unit_test`);
+2. `compile_unit_test` stops emitting the trio; `UnitTestSpec.mounts` shrinks
+   to `{patch.diff}` — the one entry that varies per run;
+3. `UnitTestEvalTask.instance_mounts()` drops its interim
+   `dict(self._spec.mounts)` shim and uses the default
+   (`self.instance.mounts()`); its `mounts()` contributes entryscript + patch;
+4. the `run_unit_test` wrapper keeps working unchanged — its `_SpecEvalTask`
+   shim treats whatever the spec still carries as instance material, so a
+   downstream caller holding a pre-split spec is unaffected until Task 21.
+
+The fixes seam is the regression risk: `fixes/_seam.py::with_setup` merges a
+fix's mounts into `spec.mounts` and splices bash against the spec's script.
+The seam keeps working on the spec (whose script it owns); only the trio's
+*location* moves, and `test_every_workspace_file_a_script_names_is_staged_or_produced`
+already fails if a script names a file that no source stages.
 
 ---
 
