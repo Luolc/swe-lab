@@ -17,7 +17,7 @@ from swe_lab.patch import (
     is_effectively_empty,
     strip_binary_hunks,
 )
-from swe_lab.sandbox.observer import SandboxObserver
+from swe_lab.sandbox.observer import ArtifactSchema, SandboxObserver
 from swe_lab.sandbox.result import Contribution
 from swe_lab.sandbox.sandbox import SandboxFs
 
@@ -62,6 +62,18 @@ class DiffExtractObserver(SandboxObserver):
   patch: str = ""
   is_empty: bool = True
   binary_stripped: bool = False
+
+  @override
+  def output_schema(self) -> tuple[ArtifactSchema, ...]:
+    """Declare the clean patch (the deliverable) and the raw diff (audit)."""
+    return (
+        ArtifactSchema(PATCH_NAME, description="the extracted clean patch"),
+        ArtifactSchema(
+            RAW_PATCH_NAME,
+            required=False,
+            description="the raw in-sandbox git diff, kept for audit",
+        ),
+    )
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:

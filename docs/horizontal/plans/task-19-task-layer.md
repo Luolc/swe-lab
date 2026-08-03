@@ -476,3 +476,48 @@ Hard acceptance criteria, in order:
 - **Hidden coupling to mount timing** (`prompt.txt` was composition-staged;
   after Task 18 the harness writes it in `run`) — the live-rollout equivalence
   run is what catches any residue.
+
+---
+
+## Result (2026-08-03)
+
+Landed as designed — `workflow/` (`Task`, `TaskResult`), the `ArtifactSchema`
+seam in `sandbox/`, both concrete tasks, both wrappers frozen — with the
+following deltas from the text above (the code wins):
+
+- **`Task` carries no verdict generic** (review): a task's outputs are
+  whatever its observers declare; a verdict is one subclass's output.
+  `Task.instance` is `TaskInstance[Any]`; only `UnitTestEvalTask[V]` is
+  generic (its spec compilation is genuinely verdict-typed).
+- **The §2.6 instance-mounts migration is deferred to Task 21**, for two
+  reasons found at implementation time. (a) *The spec-path wrapper breaks:*
+  `run_unit_test` callers (both CLIs, `verify.py`) hand a compiled spec with
+  no instance, so shrinking `compile_unit_test`'s mounts strands them — and
+  re-merging the trio in `unit_test_spec()` would make the task's
+  `super().mounts()` double-stage it. (b) *A leak:* `SweBenchProInstance
+  .mounts()` carrying the eval trio would stage `required_tests.json` (the
+  held-out expectation) into **solving** runs via `CodingAgentTask`'s
+  `super().mounts()`. The migration needs a Task-21 design answer (eval
+  material is *task* material, not instance-universal material) before it can
+  move. Until then the compiled spec stays the self-contained carrier and
+  `UnitTestEvalTask` consumes it whole (§2.4's interim shape).
+- **UPSTREAM** is realized without touching the instance contract: the task
+  compiles with an empty placeholder patch (so the script applies
+  `patch.diff`) and drops the placeholder mount; the workflow's
+  `extra_mounts` supplies the real file under the declared name.
+- **`EvalParseObserver`** namespaces via its own `name` field (review —
+  mirrors `Harness.name`), and declares the entryscript required with the
+  dataset's outputs best-effort: a generic observer cannot know which
+  dataset file is the required one, so §2.1's "`eval.output.json` required"
+  is not implementable as written.
+- **Concrete tasks live with their compositions** (`rollout.py`,
+  `evaluation/methods/unit_test/run.py`), not in `workflow/` — the retry
+  loop and `EvalParseObserver` stay where they are, avoiding a
+  `run.py` ↔ `workflow/` import cycle; `workflow/` holds the generic layer.
+- **Timeout promotion moved into `execute`** (both compositions had a
+  private copy), so a task used directly — Task 21's workflow — reports
+  `TIMEOUT` without a wrapper.
+- **`run_rollout` still raises on setup failure** (its historical contract;
+  no test pins it, but a downstream sweep runner may) — re-raised with the
+  same type and message, the recorded original chained as the cause. The
+  task layer itself records instead of raising.

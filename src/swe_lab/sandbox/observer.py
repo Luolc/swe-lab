@@ -14,11 +14,65 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import override, TYPE_CHECKING
 
+from .errors import SandboxError
 from .mounts import merge_mounts, Mounts
 from .result import Contribution, merge_contributions
 
 if TYPE_CHECKING:
   from .sandbox import SandboxFs
+
+
+@dataclass(frozen=True, slots=True)
+class ArtifactSchema:
+  """What one artifact *is*: its store name, whether it must exist, and why.
+
+  Direction-neutral on purpose: an observer declares the *outputs* it produces
+  (:meth:`SandboxObserver.output_schema`) and a task declares the *inputs* it
+  consumes with the same record — the method names carry the direction, this is
+  just data. Pure data also means no parse concept: an output is the artifact
+  as persisted, and how an observer computed it is the observer's business.
+
+  Attributes:
+    name: The artifact name as it appears in the store (format-suffixed:
+      ``patch.diff``, ``conversation.json``).
+    required: Whether a completed run without this artifact is a failed run.
+      Advisory today; becomes the validation/retry gate of ADR-0007 §5.
+    description: One line saying what this artifact is, for a reader of a
+      merged schema.
+  """
+
+  name: str
+  required: bool = True
+  description: str = ""
+
+
+def merge_output_schemas(
+    *schemas: Sequence[ArtifactSchema],
+) -> tuple[ArtifactSchema, ...]:
+  """Merge per-observer output schemas; a duplicate store name is an error.
+
+  The same rule :func:`~swe_lab.sandbox.mounts.merge_mounts` applies to mount
+  targets, for the same reason: two observers producing one store name is a
+  composition bug, and it should fail at assembly, not at persist.
+
+  Args:
+    *schemas: Output schemas, one per observer, in composition order.
+
+  Returns:
+    The union, in declaration order.
+
+  Raises:
+    SandboxError: If two schemas claim the same store name.
+  """
+  merged: dict[str, ArtifactSchema] = {}
+  for schema in schemas:
+    for artifact in schema:
+      if artifact.name in merged:
+        raise SandboxError(
+            f"duplicate output name {artifact.name!r}: two observers declare it"
+        )
+      merged[artifact.name] = artifact
+  return tuple(merged.values())
 
 
 class SandboxObserver:
@@ -35,6 +89,17 @@ class SandboxObserver:
   def mounts(self) -> Mounts:
     """Return the files this observer needs staged into the workspace."""
     return {}
+
+  def output_schema(self) -> Sequence[ArtifactSchema]:
+    """Declare the outputs this observer produces. Default: none.
+
+    An entry names an artifact this observer's contributions register, as it
+    will appear in the store. A task's own output schema is derived by merging
+    its composed observers' declarations (``merge_output_schemas``), which is
+    where two observers claiming one name fails — so declare what you produce,
+    and only what you produce.
+    """
+    return ()
 
   def before_create(self, sb: SandboxFs) -> None:
     """Run before the sandbox exists (``sb`` is not yet live)."""
@@ -77,6 +142,13 @@ class CompositeObserver(SandboxObserver):
   def mounts(self) -> Mounts:
     """Merge the children's mounts (duplicate targets refused)."""
     return merge_mounts(*(child.mounts() for child in self.observers))
+
+  @override
+  def output_schema(self) -> Sequence[ArtifactSchema]:
+    """Merge the children's output schemas (duplicate names refused)."""
+    return merge_output_schemas(
+        *(child.output_schema() for child in self.observers)
+    )
 
   @override
   def before_create(self, sb: SandboxFs) -> None:
