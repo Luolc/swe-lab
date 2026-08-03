@@ -35,7 +35,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
-from swe_lab.workflow import Task, Upstream
+from swe_lab.workflow import Task
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
 # The default observer name: namespaces this method's artifacts and metrics,
@@ -191,12 +191,20 @@ class UnitTestEvalTask[V: Verdict](Task):
   no vehicle in between (ADR-0007 §4). Single-run per ``execute``, like every
   task.
 
+  The patch, when this task applies one, is an **input** (``input_schema``)
+  — it always arrives as a mounted ``patch.diff``, whether a workflow edge
+  resolves it from an upstream task's output or a standalone caller hands
+  the bytes through ``execute``'s ``extra_mounts``. One channel, so the
+  schema is a fixed property of the task's configuration, never of where
+  this particular run's data happens to come from.
+
   Attributes:
     instance: The dataset instance whose tests judge the patch.
-    patch: THE run-varying input — the gold patch or a candidate (``str``),
-      ``UPSTREAM`` (a workflow mounts it by store name), or ``None`` (grade
-      the base commit untouched — a self-check that the required tests fail
-      without a fix).
+    apply_patch: Compile the eval script to apply ``patch.diff`` and declare
+      it as this task's required input. ``False`` grades the tree the
+      compiled spec produces untouched — the base-commit self-check, and the
+      wrapper's spec path, where the precompiled spec already settled the
+      question.
     retries: Extra attempts after a failed grade (ADR-0005, in-run). ``0``
       disables retrying. **A spec carrying its own ``retries`` overrides
       this**, because the dataset knows an instance's measured rate and the
@@ -207,7 +215,7 @@ class UnitTestEvalTask[V: Verdict](Task):
   """
 
   instance: TaskInstance[V]
-  patch: str | Upstream | None
+  apply_patch: bool = True
   retries: int = 1
   eval_env: Mapping[str, str] | None = None
   _spec: UnitTestSpec[V] = field(init=False, repr=False)
@@ -217,6 +225,11 @@ class UnitTestEvalTask[V: Verdict](Task):
   def __post_init__(self) -> None:
     """Compile the spec once and resolve the retry budget (ADR-0005).
 
+    In apply mode the spec is compiled with an empty placeholder patch — the
+    script must ``git apply patch.diff``, but the actual bytes are this
+    task's declared input and arrive by mount; the placeholder never
+    survives (``mounts`` drops it).
+
     Validation happens here — at construction, before anything runs — so a
     bad budget raises to the caller instead of surfacing as a failed run.
 
@@ -225,11 +238,9 @@ class UnitTestEvalTask[V: Verdict](Task):
     """
     if self.retries < 0:
       raise ValueError(f"retries must be >= 0, got {self.retries}")
-    # UPSTREAM compiles with an empty placeholder patch: the script must
-    # apply `patch.diff`, but the actual bytes arrive from the workflow (the
-    # placeholder mount is dropped in `mounts`).
-    placeholder = "" if isinstance(self.patch, Upstream) else self.patch
-    self._spec = self.instance.unit_test_spec(patch=placeholder)
+    self._spec = self.instance.unit_test_spec(
+        patch="" if self.apply_patch else None
+    )
     # A spec may know better than its caller: the dataset has the measured
     # rate, the caller only has a default (ADR-0005).
     if self._spec.retries is not None:
@@ -246,16 +257,16 @@ class UnitTestEvalTask[V: Verdict](Task):
     The compiled spec is self-contained — its ``mounts`` carry everything the
     eval script reads, including any instance fix's files — so the
     instance-material default is deliberately not merged on top of it. In
-    UPSTREAM mode the placeholder patch mount is dropped: the script still
-    applies ``patch.diff``, but the file arrives via ``execute``'s
-    ``extra_mounts``, resolved by the name ``input_schema`` declares.
+    apply mode the compilation placeholder for ``patch.diff`` is dropped:
+    the patch is this task's *input*, staged by whoever supplies it (a
+    workflow edge, or the caller's ``extra_mounts``), never by the task.
 
     Returns:
-      The staging set: the spec's mounts (minus the placeholder patch in
-      UPSTREAM mode) plus the executable entryscript.
+      The staging set: the spec's mounts (minus the patch placeholder in
+      apply mode) plus the executable entryscript.
     """
     mounts = dict(self._spec.mounts)
-    if isinstance(self.patch, Upstream):
+    if self.apply_patch:
       del mounts[PATCH_NAME]
     return merge_mounts(
         mounts,
@@ -284,13 +295,12 @@ class UnitTestEvalTask[V: Verdict](Task):
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:
-    """Declare the patch as an upstream input, in UPSTREAM mode only.
+    """Declare the patch input — fixed by configuration, not by data origin.
 
     Returns:
-      The ``patch.diff`` input for UPSTREAM, else nothing — a ``str`` patch
-      is a constructor value and ``None`` grades the base commit.
+      The ``patch.diff`` input in apply mode, else nothing.
     """
-    if isinstance(self.patch, Upstream):
+    if self.apply_patch:
       return (
           ArtifactSchema(
               PATCH_NAME, description="the candidate patch to grade"
@@ -453,7 +463,7 @@ def run_unit_test[V: Verdict](
     raise ValueError(f"retries must be >= 0, got {retries}")
   task: UnitTestEvalTask[V] = UnitTestEvalTask(
       instance=_SpecInstance(unit_test_spec, sandbox.spec),
-      patch=None,  # the spec already encodes whether a patch is applied
+      apply_patch=False,  # the spec already encodes whether a patch applies
       retries=retries,
       eval_env=eval_env,
   )

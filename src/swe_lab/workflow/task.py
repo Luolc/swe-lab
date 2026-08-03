@@ -36,22 +36,6 @@ from swe_lab.sandbox import (
 )
 
 
-@final
-class Upstream:
-  """The construction-time mode marker for a workflow-supplied input.
-
-  ``UPSTREAM`` (its only shipped instance) is what a task field takes when the
-  value is not a constructor literal but an upstream task's output: the task
-  declares the store name in ``input_schema()`` and stages no mount of its
-  own — the workflow resolves the name against an earlier task's outputs and
-  feeds the file through ``execute``'s ``extra_mounts``. Not a resolution
-  placeholder: it carries no store path; matching is the workflow's job.
-  """
-
-
-UPSTREAM = Upstream()
-
-
 @dataclass(frozen=True)
 class TaskResult:
   """What one execution of a task yields.
@@ -142,12 +126,16 @@ class Task(ABC):
     return ()
 
   def input_schema(self) -> Sequence[ArtifactSchema]:
-    """Declare the upstream artifacts this task consumes, by store name.
+    """Declare the artifacts this task consumes, by store name.
 
-    Default: none. A workflow resolves each name against earlier tasks'
-    outputs, mounts it read-only via ``execute``'s ``extra_mounts``, and a
-    required name with no artifact is the *distinct* edge failure of ADR-0007
-    §5 — the task never reaches into the store itself.
+    Default: none. **Inputs always arrive by mount, through ``execute``'s
+    ``extra_mounts``** — a workflow resolves each name against earlier
+    tasks' outputs, and a standalone caller stages the bytes it already has
+    under the same names. One channel, so what this returns is a fixed
+    property of the task's configuration, never of where one run's data
+    happens to come from; the task itself never reaches into the store. A
+    required name with no artifact behind it is the *distinct* edge failure
+    of ADR-0007 §5.
 
     Returns:
       The inputs, empty for a task that consumes nothing.
@@ -185,9 +173,9 @@ class Task(ABC):
     ADR-0007 §3) and the caller's extras (composed last, so they see the run
     post-processed). A run failure is *recorded* in ``TaskResult.run`` rather
     than raised — the caller gates on ``run.status`` — while an assembly
-    error (a ``SandboxError`` from two contributors claiming one mount
-    target or one output name) propagates from the merge, before anything
-    runs.
+    error (a ``SandboxError``: two contributors claiming one mount target or
+    one output name, or a required input nobody staged) raises before
+    anything runs.
 
     Args:
       sandbox: The built, not-yet-up sandbox to run in.
@@ -201,7 +189,26 @@ class Task(ABC):
 
     Returns:
       The task result: engine run, action outcome, derived schema, observers.
+
+    Raises:
+      SandboxError: If assembly fails — a required input nobody staged, or
+        (from the merges) two contributors claiming one mount target or one
+        output name.
     """
+    # Inputs arrive only through extra_mounts, so a required input that
+    # nobody staged is detectable HERE — an assembly error like a duplicate
+    # mount target, not a mid-script mystery inside the sandbox.
+    staged = extra_mounts or {}
+    missing = [
+        schema.name
+        for schema in self.input_schema()
+        if schema.required and schema.name not in staged
+    ]
+    if missing:
+      raise SandboxError(
+          f"required input(s) not mounted: {missing}; supply them via"
+          " extra_mounts (a workflow edge, or the caller's own bytes)"
+      )
     observers = [*sandbox.observers(), *self.observers(), *extra_observers]
     # The task's output schema is derived — and a duplicate store name across
     # observers fails HERE, at assembly, like a duplicate mount target.
