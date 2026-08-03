@@ -39,7 +39,7 @@ not twice.
 - **Eval's observer factory.** Of ADR-0007 §3's three sources, this task lands
   the sandbox's (new) and the runner's (`Harness.observers()`, formalizing the
   existing pair). The third arrives in Task 19 as an *output producer*
-  (`VerdictOutput` carrying the dataset's grader): per ADR-0007 §4 there is no
+  (`VerdictProducer` carrying the dataset's grader): per ADR-0007 §4 there is no
   `Evaluator` class for a factory to live on, so the eval observer's seam is
   the task's output declaration, which does not exist until the `Task` does.
 
