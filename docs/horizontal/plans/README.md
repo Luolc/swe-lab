@@ -36,6 +36,11 @@ read status from them. A task that shipped with notable deltas gets a dated
 | 15 | **Extensibility seam proof + author guide** (no shipped remote backend — [ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
 | 16 | **Multi-rollout run-record layout** (`rollout_id` + `attempt`; split manifest read — [ADR-0004](../../decisions/ADR-0004-multi-rollout-run-record-layout.md)) | ✅ Done (key `<sweep>/<instance>/r<rollout>/a<attempt>`; `runs/` → store root; `run_ts` recorded only; `read_manifests` + targeted `read_manifest`). K-rollouts **sampling** in eval/rollout is the W2 follow-on |
 | 17 | [**Flaky-eval retry + `flaky` verdict flag**](task-17-flaky-eval-retry.md) ([ADR-0005](../../decisions/ADR-0005-flaky-eval-retry.md)) | ✅ Done (ADR-0005; `retries` default 1; validated downstream — nearly all flakes recover in one retry, see the plan's Result note) |
+| 18 | [Sandbox observability + interface reshape](task-18-observability-and-interface-reshape.md) ([ADR-0007](../../decisions/ADR-0007-task-and-workflow-layer.md) §2/§3/§8) | ⬜ |
+| 19 | [**`Task` layer + both compositions rewritten on it**](task-19-task-layer.md) (ADR-0007 §§1–5) | ⬜ |
+| — | **CP5 — Task falsification gate** (human gate: wrappers thin, live byte-equivalence) | ⬜ |
+| 20 | Persistence: task-keyed records + validation/retry + resume (ADR-0007 §§6–7; amends ADR-0004) | ⬜ |
+| 21 | Workflow (list-first) + CLI rewire (ADR-0007 §§9–10) | ⬜ |
 
 **P0 — remote sandbox (ADR-0003).** swe-lab ships host + ghjob only; a remote /
 internal sandbox is a consuming company's **own** `Sandbox` subclass (import-only).
