@@ -35,7 +35,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
-from swe_lab.workflow import Task, TaskResult
+from swe_lab.workflow import AttemptResult, Task
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
 # The default observer name: namespaces this method's artifacts and metrics,
@@ -309,7 +309,7 @@ class UnitTestEvalTask[V: Verdict](Task):
     return ()
 
   @override
-  def outputs_valid(self, result: TaskResult) -> bool:
+  def outputs_valid(self, result: AttemptResult) -> bool:
     """Require a typed verdict on top of the baseline validity.
 
     Composes the baseline (status + required outputs) with the one thing
@@ -326,7 +326,7 @@ class UnitTestEvalTask[V: Verdict](Task):
     return super().outputs_valid(result) and self._parse.verdict is not None
 
   @override
-  def should_retry(self, result: TaskResult) -> bool:
+  def should_retry(self, result: AttemptResult) -> bool:
     """Retry on failure — and on an unresolved verdict, to absorb a flake.
 
     The flake half is ADR-0005's semantics lifted to the task level: the

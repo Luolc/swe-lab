@@ -37,7 +37,7 @@ from swe_lab.sandbox import (
 
 
 @dataclass(frozen=True)
-class TaskResult:
+class AttemptResult:
   """What one execution of a task yields.
 
   Attributes:
@@ -156,7 +156,7 @@ class Task(ABC):
     """
     ...
 
-  def outputs_valid(self, result: TaskResult) -> bool:
+  def outputs_valid(self, result: AttemptResult) -> bool:
     """Judge whether an execution produced good outputs — the failure call.
 
     The terminal marker of a task-level run keys off this (ADR-0007 §§6–7):
@@ -185,7 +185,7 @@ class Task(ABC):
         if schema.required
     )
 
-  def should_retry(self, result: TaskResult) -> bool:
+  def should_retry(self, result: AttemptResult) -> bool:
     """Decide whether this attempt needs another one (task-level retry).
 
     Default: exactly when the attempt failed (``outputs_valid`` is false) —
@@ -217,13 +217,13 @@ class Task(ABC):
       timeout: float,
       extra_mounts: Mounts | None = None,
       extra_observers: Sequence[SandboxObserver] = (),
-  ) -> TaskResult:
+  ) -> AttemptResult:
     """Run the five steps once against a fresh sandbox.
 
     The hooks are total, so this adds only what the task cannot know: the
     backend's own observers (composed first — they measure the whole run,
     ADR-0007 §3) and the caller's extras (composed last, so they see the run
-    post-processed). A run failure is *recorded* in ``TaskResult.run`` rather
+    post-processed). A run failure is *recorded* in ``AttemptResult.run`` rather
     than raised — the caller gates on ``run.status`` — while an assembly
     error (a ``SandboxError``: two contributors claiming one mount target or
     one output name, or a required input nobody staged) raises before
@@ -281,7 +281,7 @@ class Task(ABC):
           _hand_exec_outcome(observers, exec_result, time.monotonic() - started)
     except SandboxError:
       pass  # recorded in manager.result — the caller gates on run.status
-    return TaskResult(
+    return AttemptResult(
         run=_promote_timeout(manager.result, exec_result),
         exec_result=exec_result,
         output_schema=schema,

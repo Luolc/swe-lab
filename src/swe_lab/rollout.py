@@ -290,7 +290,7 @@ def run_rollout(
     # The historical contract (see the docstring): re-raised with the same
     # type and message, the recorded original chained as the cause.
     raise SandboxError(str(error)) from error
-  # The typed results live on the composed observers (TaskResult.observers,
+  # The typed results live on the composed observers (AttemptResult.observers,
   # composition order); the harness's own come first, so a first-match read
   # finds them even if a caller's extra observer shares a type.
   conversation = next(

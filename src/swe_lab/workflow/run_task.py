@@ -28,7 +28,7 @@ from swe_lab.sandbox import (
     Store,
 )
 
-from .task import Task, TaskResult
+from .task import AttemptResult, Task
 
 # The terminal marker's object name under the task prefix (ADR-0007 §7).
 MARKER_NAME = "complete.json"
@@ -152,7 +152,7 @@ class TaskRunOutcome:
   resumed: bool
   attempts: int
   record: AttemptRecord | None
-  result: TaskResult | None
+  result: AttemptResult | None
 
 
 def run_task(
@@ -231,7 +231,7 @@ def run_task(
         result=None,
     )
 
-  result: TaskResult | None = None
+  result: AttemptResult | None = None
   valid = False
   record: AttemptRecord | None = None
   attempt = 0

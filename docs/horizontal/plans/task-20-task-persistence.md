@@ -27,7 +27,7 @@ a later process.
 - `run_task(...)` — the per-task orchestrator: resume check → attempt loop
   (execute → validate → persist → retry) → terminal marker. This is the
   single unit Task 21's workflow calls once per entry.
-- Output validation against `TaskResult.output_schema` (`required` stops
+- Output validation against `AttemptResult.output_schema` (`required` stops
   being advisory).
 - Task-level retry with a fresh sandbox per attempt (via a sandbox
   *factory*), absorbing both validation failures and infra failures.
@@ -135,13 +135,13 @@ layer's baseline as its default:
 ```python
 class Task:
   ...
-  def outputs_valid(self, result: TaskResult) -> bool:
+  def outputs_valid(self, result: AttemptResult) -> bool:
     """Did this attempt actually produce good outputs? The failure judgment.
 
     Default: the run ended SUCCESS and every `required` declared output
     exists — the baseline every task gets for free (`ArtifactSchema.required`
     stops being advisory here; named invariant test). Override to judge
-    *content*, over the whole `TaskResult` (artifacts as host paths,
+    *content*, over the whole `AttemptResult` (artifacts as host paths,
     metrics, the composed observers' typed results):
 
         # rollout: an existing-but-corrupt trace is a failure
@@ -173,7 +173,7 @@ noise, so spend budget to find out — ADR-0005's semantics lifted a level).
 It composes over validity by default:
 
 ```python
-  def should_retry(self, result: TaskResult) -> bool:
+  def should_retry(self, result: AttemptResult) -> bool:
     """Does this attempt need another one? Default: exactly when it failed.
 
     Override to *add* retry-desire on top — never to weaken the failure

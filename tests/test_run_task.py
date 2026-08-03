@@ -32,12 +32,12 @@ from swe_lab.sandbox import (
 )
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.workflow import (
+    AttemptResult,
     read_marker,
     run_task,
     Task,
     TaskAddress,
     TaskOutcome,
-    TaskResult,
 )
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
@@ -115,7 +115,7 @@ class _FlakyProducer(Task):
     return sb.run_script("main.sh", timeout=timeout)
 
   @override
-  def should_retry(self, result: TaskResult) -> bool:
+  def should_retry(self, result: AttemptResult) -> bool:
     return (
         super().should_retry(result)
         or self.executions < self.retry_even_when_valid_until

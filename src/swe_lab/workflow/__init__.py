@@ -15,13 +15,13 @@ from .run_task import (
     TaskRunOutcome,
     TerminalMarker,
 )
-from .task import Task, TaskResult
+from .task import AttemptResult, Task
 
 __all__ = [
+    "AttemptResult",
     "Task",
     "TaskAddress",
     "TaskOutcome",
-    "TaskResult",
     "TaskRunOutcome",
     "TerminalMarker",
     "read_marker",
