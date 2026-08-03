@@ -251,7 +251,13 @@ def run_task(
     )
     valid = task.outputs_valid(result)
     # Persist the attempt, valid or not: the failing attempt is evidence,
-    # and a record exists for every container that was paid for.
+    # and a record exists for every container that was paid for. The engine
+    # error travels too — a shard whose status says SETUP_ERROR with nothing
+    # to read is exactly the debugging dead end downstream has hit.
+    error = result.run.error
+    extra: dict[str, object] = {"outputs_valid": valid}
+    if error is not None:
+      extra["error"] = repr(error)
     record = persist(
         store,
         AttemptRecord(
@@ -266,7 +272,7 @@ def run_task(
             backend=backend,
             model=model,
             metrics=dict(result.run.metrics),
-            extra={"outputs_valid": valid, **(extra_record or {})},
+            extra=extra | dict(extra_record or {}),
         ),
         result.run.artifacts,
     )

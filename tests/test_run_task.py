@@ -219,7 +219,11 @@ def test_infra_failure_spends_the_same_budget(tmp_path: Path):
   assert outcome.attempts == 2
   shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
   assert shards[0].status == "setup_error"
+  # the engine error is IN the shard — a failed attempt must be debuggable
+  # from the store alone, not just labeled
+  assert "infra down" in str(shards[0].extra["error"])
   assert shards[1].status == "success"
+  assert "error" not in shards[1].extra
 
 
 def test_budget_exhaustion_is_terminal_failure_not_absence(tmp_path: Path):
