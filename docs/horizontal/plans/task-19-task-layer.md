@@ -152,7 +152,7 @@ class Task(ABC):
 
 ```python
 def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
-  # 1. observers, three sources, sandbox first (ADR-0007 §3)
+  # 1. observers, three sources, backend first (ADR-0007 §3)
   produced = [(out, out.producer.observer()) for out in self.outputs()]
   observers = [
       *sandbox.observers(),                 # backend: runtime metrics
@@ -349,8 +349,8 @@ Hard acceptance criteria, in order:
 
 1. `tasks/` package: `TaskOutput` / `OutputProducer` / `TaskResult` + producer
    wrappers; unit tests with `FakeSandbox`.
-2. `Task.execute` + composition-order test (backend obs before runner obs
-   before output obs; duplicate mount target across sources refused).
+2. `Task.execute` + composition-order test (backend observers before runner's
+   before outputs'; duplicate mount target across sources refused).
 3. `UnitTestEvalTask` + `run_unit_test` wrapper; suite + live gold eval.
 4. `CodingAgentTask` + `run_rollout` wrapper; suite + live rollout.
 5. Checkpoint review (§3), then one PR.
