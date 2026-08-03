@@ -125,32 +125,27 @@ class Task(ABC):
   five steps once. Single-run, like the observers it composes.
   """
 
-  A task author answers **three questions** — has it a runner, what does it
-  produce, what does it run. There is exactly **one channel** for "what it
-  produces": the task lists its observers, and each observer self-declares
-  its outputs (§2.1) — no second bookkeeping to keep consistent with it.
+  **Three hooks, one channel each** — mounts, observers, action — and no
+  second concept beside any of them. A harness is not a fourth concept: a
+  task that uses one folds its mounts and observers into its own hooks and
+  calls it in `action` (see `CodingAgentTask` — the fold is three explicit
+  lines, not machinery).
 
   | you have | you write |
   |---|---|
-  | an agent that does the work | `runner()` returns it — its observers come with it |
+  | files to stage | `mounts()` — yours, and your harness's if you use one |
   | a deliverable | the observer that extracts it, in `observers()` — its schema declares the store name |
-  | files of your own to stage | `mounts()` |
+  | an agent / harness | its mounts in `mounts()`, its observers in `observers()`, its `run` in `action()` |
   | the main action | `action()` |
   | (a caller with persistence etc.) | passes `extra_observers` to `execute` |
 
   # ---- what a subclass declares -------------------------------------------
 
-  def runner(self) -> Harness | None:
-    """The runner doing this task's work, or ``None`` (e.g. eval: the action
-    is just the entryscript, per ADR-0007 §4). A task with a runner returns
-    it and its observers are composed automatically via the runner's own
-    factory (Task 18's `Harness.observers()`)."""
-    return None
-
   @abstractmethod
   def mounts(self) -> Mounts:
-    """The task's own files (e.g. eval entryscript). NOT the instance's or
-    the runner's — those are gathered by `execute`."""
+    """The task's files to stage (e.g. eval entryscript; a harness's own
+    mounts, folded in by the task that uses one). NOT the instance's — those
+    are gathered by `execute`."""
 
   @abstractmethod
   def observers(self) -> Sequence[SandboxObserver]:
@@ -163,7 +158,7 @@ class Task(ABC):
 
   @abstractmethod
   def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
-    """The run's main action: exec the runner, or run the entryscript."""
+    """The run's main action: exec the harness, or run the entryscript."""
 
   # ---- what the base class provides ---------------------------------------
 
@@ -187,24 +182,18 @@ class Task(ABC):
 ```python
 def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
   # 1. observers, three sources, backend first (ADR-0007 §3)
-  runner = self.runner()
   observers = [
       *sandbox.observers(),                 # backend: runtime metrics
-      *(runner.observers() if runner else ()),  # runner: trace, completion
-      *self.observers(),                    # task: what it extracts
+      *self.observers(),                    # task: incl. its harness's, folded
       *extra_observers,                     # caller: e.g. persist
   ]
   # The task's output schema is derived — and a duplicate store name across
   # observers fails HERE, at assembly, like a duplicate mount target.
   schema = merge_output_schemas(*(o.output_schema() for o in observers))
-  # 2. mounts — instance's + runner's + the task's own; the observers'
-  #    arrive via the manager, which already merges each observer.mounts().
-  #    merge_mounts refuses duplicate targets across sources.
-  mounts = merge_mounts(
-      self.instance_mounts(),
-      runner.mounts(sandbox.spec.workdir) if runner else {},
-      self.mounts(),
-  )
+  # 2. mounts — instance's + the task's own (a harness's arrive folded into
+  #    the task's); the observers' arrive via the manager, which already
+  #    merges each observer.mounts(). Duplicate targets are refused.
+  mounts = merge_mounts(self.instance_mounts(), self.mounts())
   manager = SandboxManager(
       sandbox=sandbox, output_dir=epath.Path(output_dir),
       observers=observers, mounts=mounts,
@@ -272,11 +261,11 @@ class CodingAgentTask(Task):
   agent_env: Mapping[str, str] | None = None
   proxy: AbstractContextManager[object] | None = None
 
-  def runner(self):        return self.harness
-  def mounts(self):        return {}        # the harness's own mounts arrive
-                                            # via runner() in execute()
-  def observers(self):     # the deliverable: its observer declares patch.diff
-    return (DiffExtractObserver(exclude_globs=self.exclude_globs),)
+  def mounts(self):        # the harness's own files, folded in explicitly
+    return self.harness.mounts(self.instance.sandbox_spec().workdir)
+  def observers(self):     # the harness's own + the deliverable's extractor
+    return (*self.harness.observers(),
+            DiffExtractObserver(exclude_globs=self.exclude_globs))
   def action(self, sb, *, timeout):
     return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
                             timeout=timeout, env=self.agent_env)
@@ -302,7 +291,6 @@ class UnitTestEvalTask[V: Verdict](Task):
         self._spec.grader, native_outputs=self._spec.native_outputs
     )
     return (self._parse,)
-  # runner(): inherited None — eval has no runner (no Evaluator, ADR-0007 §4)
   def action(self, sb, *, timeout):
     # the existing _attempt_until_resolved loop, verbatim, driving
     # self._parse: in-run retry is ADR-0005's and stays inside the action
@@ -396,8 +384,8 @@ Hard acceptance criteria, in order:
 1. `OutputSchema` + `SandboxObserver.output_schema()` + `merge_output_schemas`
    in `sandbox/`, existing observers self-describing; then `TaskResult` + task
    wrappers; unit tests with `FakeSandbox`.
-2. `Task.execute` + composition-order test (backend observers before runner's
-   before outputs'; duplicate mount target across sources refused).
+2. `Task.execute` + composition-order test (backend observers before the
+   task's; duplicate mount target across sources refused).
 3. `UnitTestEvalTask` + `run_unit_test` wrapper; suite + live gold eval.
 4. `CodingAgentTask` + `run_rollout` wrapper; suite + live rollout.
 5. Checkpoint review (§3), then one PR.
