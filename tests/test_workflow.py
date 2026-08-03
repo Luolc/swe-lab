@@ -24,6 +24,8 @@ from swe_lab.sandbox import (
     Contribution,
     ExecResult,
     FilesystemStore,
+    Inline,
+    Mount,
     Sandbox,
     SandboxFs,
     SandboxObserver,
@@ -178,7 +180,7 @@ def test_construction_resolves_the_edge_by_name(tmp_path: Path):
 
 
 def test_an_unproduced_input_is_refused_at_construction(tmp_path: Path):
-  with pytest.raises(WorkflowError, match="no earlier entry produces"):
+  with pytest.raises(WorkflowError, match="nothing produces"):
     _ = Workflow(
         store=_store(tmp_path),
         sweep_id="sw",
@@ -511,3 +513,133 @@ def test_resume_false_runs_everything_fresh(tmp_path: Path):
   assert rerun.succeeded is True
   assert all(e.run is not None and not e.run.resumed for e in rerun.entries)
   assert rerun_consumer.seen == [b"THING"]  # it really ran again
+
+
+# ─── workflow-level inputs: the caller as a producer ─────────────────────────
+
+
+def test_a_single_entry_workflow_takes_its_input_from_the_caller(
+    tmp_path: Path,
+):
+  # The eval-CLI shape: one entry, its declared input provided at the
+  # workflow boundary — same channel, no special-casing.
+  consumer = _Consumer(instance=_Instance())
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          WorkflowEntry(
+              "consumer",
+              consumer,
+              sandbox_factory=_factory(tmp_path / "c"),
+          )
+      ],
+      inputs={"thing.txt": Mount(Inline(b"FROM CALLER"))},
+  )
+  assert wf._edges == {"consumer": {"thing.txt": "inputs"}}
+  outcome = wf.execute(output_dir=tmp_path / "out", timeout=10.0, run_ts="ts-0")
+  assert outcome.succeeded is True
+  assert consumer.seen == [b"FROM CALLER"]
+  assert outcome.record_key is not None
+  record = json.loads(wf.store.get_bytes(outcome.record_key))
+  assert record["edges"] == {"consumer": {"thing.txt": "inputs"}}
+
+
+def test_an_empty_caller_input_is_the_same_edge_failure(tmp_path: Path):
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          WorkflowEntry(
+              "consumer",
+              _Consumer(instance=_Instance()),
+              sandbox_factory=_factory(tmp_path / "c"),
+          )
+      ],
+      inputs={"thing.txt": Mount(Inline(b""))},
+  )
+  outcome = wf.execute(output_dir=tmp_path / "out", timeout=10.0, run_ts="ts-0")
+  assert outcome.succeeded is False
+  assert outcome.entries[0].status is EntryStatus.EDGE_FAILED
+  assert outcome.entries[0].missing_inputs == ("thing.txt",)
+
+
+def test_an_unconsumed_caller_input_is_refused(tmp_path: Path):
+  with pytest.raises(WorkflowError, match="consumed by no entry"):
+    _ = Workflow(
+        store=_store(tmp_path),
+        sweep_id="sw",
+        rollout_id=0,
+        entries=[
+            WorkflowEntry(
+                "producer",
+                _Producer(instance=_Instance()),
+                sandbox_factory=_factory(tmp_path),
+            )
+        ],
+        inputs={"thing.txt": Mount(Inline(b"NOBODY WANTS ME"))},
+    )
+
+
+def test_caller_input_vs_entry_output_is_ambiguity_like_any_other(
+    tmp_path: Path,
+):
+  entries = [
+      WorkflowEntry(
+          "producer",
+          _Producer(instance=_Instance()),
+          sandbox_factory=_factory(tmp_path / "p"),
+      ),
+      WorkflowEntry(
+          "consumer",
+          _Consumer(instance=_Instance()),
+          sandbox_factory=_factory(tmp_path / "c"),
+      ),
+  ]
+  provided = {"thing.txt": Mount(Inline(b"CALLER"))}
+  with pytest.raises(WorkflowError, match="bind it explicitly"):
+    _ = Workflow(
+        store=_store(tmp_path),
+        sweep_id="sw",
+        rollout_id=0,
+        entries=entries,
+        inputs=provided,
+    )
+  # binding to the reserved source resolves it, like any producer key
+  consumer = _Consumer(instance=_Instance())
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          entries[0],
+          WorkflowEntry(
+              "consumer",
+              consumer,
+              sandbox_factory=_factory(tmp_path / "c"),
+              inputs=("inputs/thing.txt",),
+          ),
+      ],
+      inputs=provided,
+  )
+  outcome = wf.execute(output_dir=tmp_path / "out", timeout=10.0, run_ts="ts-0")
+  assert outcome.succeeded is True
+  assert consumer.seen == [b"CALLER"]
+
+
+def test_the_inputs_entry_key_is_reserved(tmp_path: Path):
+  with pytest.raises(WorkflowError, match="reserved"):
+    _ = Workflow(
+        store=_store(tmp_path),
+        sweep_id="sw",
+        rollout_id=0,
+        entries=[
+            WorkflowEntry(
+                "inputs",
+                _Producer(instance=_Instance()),
+                sandbox_factory=_factory(tmp_path),
+            )
+        ],
+    )

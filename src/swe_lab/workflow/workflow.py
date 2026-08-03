@@ -19,6 +19,7 @@ import json
 from etils import epath
 
 from swe_lab.sandbox import (
+    Inline,
     LocalFile,
     merge_output_schemas,
     Mount,
@@ -34,6 +35,12 @@ from .task import Task
 # The derived workflow record's object name under the rollout prefix
 # (ADR-0007 §10): written last, and its absence means "did not complete".
 WORKFLOW_RECORD_NAME = "workflow.json"
+
+# The reserved producer key naming the workflow's own ``inputs`` in edge
+# resolution and bindings ("inputs/patch.diff"): caller-provided artifacts are
+# a producer like any entry — same matching, same ambiguity rules — just one
+# that exists before anything runs. No entry may claim this key.
+INPUTS_KEY = "inputs"
 
 
 class WorkflowError(Exception):
@@ -125,12 +132,19 @@ class Workflow:
     rollout_id: Which sample of the instance.
     entries: The steps, in order — the caller owns the topological sort
       (ADR-0007 §9: a list before it is a DAG).
+    inputs: Caller-provided artifacts, input name → mount — how a value the
+      caller already holds (a gold patch, a candidate file) enters the same
+      channel a workflow edge uses. In edge resolution they are a producer
+      named ``"inputs"`` that exists before anything runs, so a single-entry
+      workflow with a declared input is as runnable as a chain; an input no
+      entry consumes is refused (the author believes something false).
   """
 
   store: Store
   sweep_id: str
   rollout_id: int
   entries: Sequence[WorkflowEntry]
+  inputs: Mapping[str, Mount] = field(default_factory=dict)
   _edges: dict[str, dict[str, str]] = field(
       init=False, repr=False, compare=False
   )
@@ -148,6 +162,11 @@ class Workflow:
     keys = [entry.key for entry in self.entries]
     if len(set(keys)) != len(keys):
       raise WorkflowError(f"duplicate entry keys: {sorted(keys)}")
+    if INPUTS_KEY in keys:
+      raise WorkflowError(
+          f"entry key {INPUTS_KEY!r} is reserved for the workflow's own"
+          " inputs"
+      )
     instance_ids = {e.task.instance.instance_id for e in self.entries}
     if len(instance_ids) != 1:
       raise WorkflowError(
@@ -161,7 +180,17 @@ class Workflow:
         _ = self._address(entry)
       except ValueError as error:
         raise WorkflowError(f"entry {entry.key!r}: {error}") from error
-    object.__setattr__(self, "_edges", _resolve_edges(self.entries))
+    edges = _resolve_edges(self.entries, provided=set(self.inputs))
+    consumed = {
+        name
+        for bound in edges.values()
+        for name, producer in bound.items()
+        if producer == INPUTS_KEY
+    }
+    dead = sorted(set(self.inputs) - consumed)
+    if dead:
+      raise WorkflowError(f"workflow input(s) {dead} are consumed by no entry")
+    object.__setattr__(self, "_edges", edges)
 
   @property
   def instance_id(self) -> str:
@@ -290,6 +319,16 @@ class Workflow:
     missing: list[str] = []
     for schema in entry.task.input_schema():
       producer_key = self._edges[entry.key][schema.name]
+      if producer_key == INPUTS_KEY:
+        mount = self.inputs[schema.name]
+        if _known_empty(mount):
+          # The same rule an edge applies to a fetched artifact: empty bytes
+          # never reach a container.
+          if schema.required:
+            missing.append(schema.name)
+          continue
+        staged[schema.name] = mount
+        continue
       record = runs[producer_key].record
       full_key = (
           record.artifact_keys.get(schema.name) if record is not None else None
@@ -363,28 +402,33 @@ class Workflow:
 
 def _resolve_edges(
     entries: Sequence[WorkflowEntry],
+    *,
+    provided: set[str],
 ) -> dict[str, dict[str, str]]:
-  """Resolve every input to its producing entry, statically (phase A).
+  """Resolve every input to its producing source, statically (phase A).
 
   Everything here is declaration data — ``input_schema()`` is fixed by task
   configuration and output schemas derive from the observers at construction
   time — so the whole edge map is computed, and checked, before any sandbox
-  exists.
+  exists. The workflow's own ``inputs`` participate as the producer
+  ``"inputs"``, existing before every entry.
 
   Args:
     entries: The workflow's entries, in declared (topological) order.
+    provided: The caller-provided input names (the ``"inputs"`` producer).
 
   Returns:
     ``entry key → {input name → producer key}``.
 
   Raises:
     WorkflowError: A malformed, dead, duplicate, or unverifiable binding; an
-      input no earlier entry produces; or one that several produce, unbound —
+      input no source produces; or one that several produce, unbound —
       never nearest-wins: ambiguity is an error, like every duplicate in this
       codebase.
   """
   edges: dict[str, dict[str, str]] = {}
-  produced: dict[str, list[str]] = {}  # name → earlier producers, in order
+  # name → earlier producers, in order; caller inputs exist before anything.
+  produced: dict[str, list[str]] = {name: [INPUTS_KEY] for name in provided}
   for entry in entries:
     declared_inputs = {s.name for s in entry.task.input_schema()}
     explicit = _parse_bindings(entry, declared_inputs)
@@ -404,7 +448,9 @@ def _resolve_edges(
           bound[name] = candidates[0]
         elif not candidates:
           raise WorkflowError(
-              f"no earlier entry produces {name!r}, required by {entry.key}"
+              f"nothing produces {name!r}, required by {entry.key}: no"
+              " earlier entry declares it and the workflow's inputs do"
+              " not provide it"
           )
         else:
           raise WorkflowError(
@@ -417,6 +463,26 @@ def _resolve_edges(
     ):
       produced.setdefault(schema.name, []).append(entry.key)
   return edges
+
+
+def _known_empty(mount: Mount) -> bool:
+  """Whether a caller-provided mount is verifiably empty (edge-invalid).
+
+  Best-effort over the built-in resource kinds; a consumer-added kind is
+  accepted as-is — only its sandbox can reach the bytes.
+
+  Args:
+    mount: The caller-provided input mount.
+
+  Returns:
+    ``True`` when the content is known to be empty or unreadable.
+  """
+  resource = mount.resource
+  if isinstance(resource, Inline):
+    return not resource.content
+  if isinstance(resource, LocalFile):
+    return not resource.path.is_file() or not resource.path.read_bytes()
+  return False
 
 
 def _parse_bindings(
