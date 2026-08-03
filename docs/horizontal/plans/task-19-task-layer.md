@@ -288,11 +288,8 @@ class UnitTestEvalTask[V: Verdict](Task):
   # THE run-varying input, and the workflow seam: everything else this task
   # stages is instance-bound, but the patch is per-run — the gold patch, a
   # candidate, or None (= grade the base commit). A task never reaches into
-  # the store; in a workflow, Task 21 resolves the upstream task's persisted
-  # patch.diff (manifest lookup → exists/non-empty validation, a *distinct*
-  # failure status per ADR-0007 §5) and feeds it here through the
-  # constructor. Whether it feeds text or a LocalFile resource is Task 21's
-  # one-line decision; both mechanisms already exist.
+  # the store; a workflow driver constructs this task only after the
+  # upstream patch exists (see §2.6), so this is always a plain value.
   patch: str | None
   retries: int = 1                          # ADR-0005 in-run retry, unchanged
   eval_env: Mapping[str, str] | None = None
@@ -380,12 +377,33 @@ Migration inside this task, in order:
    shim treats whatever the spec still carries as instance material, so a
    downstream caller holding a pre-split spec is unaffected until Task 21.
 
-The patch row is also the **workflow seam**: after this split, "feed eval a
-different patch" means constructing `UnitTestEvalTask` with a different
-`patch` input — nothing about the instance recompiles. Task 21's edge
-resolution (store lookup → validation → constructor input) plugs into exactly
-that field, and tasks stay store-ignorant: the workflow is the only layer
-that resolves prior outputs.
+The patch row is also the **workflow seam**, and the timing question it
+raises — a workflow declared up front cannot construct a task whose input
+does not exist yet — is answered by *when tasks are constructed*, not by
+placeholder references or by feeding fields in later (both rejected: one is
+a new concept plus resolution machinery, the other is mutable state). Task
+21's v1 workflow is a **driver**: tasks are constructed when their inputs
+exist, and the "list" is the program order — which is literally ADR-0007
+§9's "the caller owns the topological sort":
+
+```python
+wf = Workflow(store=..., sweep="s1", rollout_id=0)
+ro = wf.run("rollout", CodingAgentTask(instance=inst, harness=harness))
+#    ^ terminal-success marker → skipped, returns the store-backed result
+patch = wf.text(ro, "patch.diff")
+#    ^ THE edge: missing/empty → the distinct failure status (ADR-0007 §5);
+#      fresh run reads the TaskResult, resume reads the store — same accessor
+ev = wf.run("eval", UnitTestEvalTask(instance=inst, patch=patch))
+#    ^ constructed after the patch exists, on every path
+```
+
+Constructing a to-be-skipped task wastes nothing — a task is declaration
+data (§2.2), which is what makes this driver shape work. Tasks stay
+store-ignorant: `wf.run` / `wf.text` are the only store-aware layer. The
+cost, stated plainly: a v1 workflow is code, not data — no statically
+serializable graph until the DAG version decides it needs one. Formalized in
+Task 21's plan; recorded here because this seam is where the question
+arises.
 
 The fixes seam is the regression risk: `fixes/_seam.py::with_setup` merges a
 fix's mounts into `spec.mounts` and splices bash against the spec's script.
