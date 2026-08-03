@@ -44,6 +44,7 @@ def promote_cmd(
   record = new_record(
       sweep=sweep,
       instance_id=instance_id,
+      task="promoted",
       status=status,
       backend=backend,
       extra={"promoted": True},

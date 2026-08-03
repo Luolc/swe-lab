@@ -16,6 +16,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
+import os
+import pathlib
+import tempfile
 from typing import override
 
 from etils import epath
@@ -37,8 +40,34 @@ class Store(ABC):
     ...
 
   @abstractmethod
+  def put_bytes(self, key: str, data: bytes) -> None:
+    """Write constructed content to ``key``, **atomically** (overwriting).
+
+    For content the caller built in memory rather than a file it holds — the
+    terminal marker (ADR-0007 §7) is the motivating case, and atomicity is
+    its requirement: a reader must see the old object or the new one, never a
+    torn write that parses as complete.
+    """
+    ...
+
+  @abstractmethod
   def get(self, key: str, dest: epath.PathLike) -> None:
     """Download ``key`` to the host path ``dest`` (parents created)."""
+    ...
+
+  @abstractmethod
+  def get_bytes(self, key: str) -> bytes:
+    """Read ``key``'s content directly (the marker-read counterpart).
+
+    Args:
+      key: The object to read.
+
+    Returns:
+      The object's content.
+
+    Raises:
+      SandboxError: If the key does not exist.
+    """
     ...
 
   @abstractmethod
@@ -64,9 +93,13 @@ class Store(ABC):
 
   @abstractmethod
   def read_manifest(
-      self, sweep_id: str, instance_id: str, rollout_id: int
+      self,
+      sweep_id: str,
+      instance_id: str,
+      rollout_id: int,
+      task: str | None = None,
   ) -> list[RunRecord]:
-    """Read the attempts of **one** rollout (usually one shard).
+    """Read the attempts of **one** rollout, optionally one task's.
 
     The targeted read a resume/retry check wants: a narrow prefix lookup rather
     than scanning the whole sweep.
@@ -75,9 +108,12 @@ class Store(ABC):
       sweep_id: The sweep the rollout belongs to.
       instance_id: The dataset instance.
       rollout_id: Which sample of that instance.
+      task: Narrow to this task's attempts (the resume/edge shape); ``None``
+        reads every task of the rollout (the aggregation shape).
 
     Returns:
-      That rollout's shards, ordered by ``attempt``; empty if it never ran.
+      The matching shards, ordered by ``(task, attempt)``; empty if nothing
+      ran.
     """
     ...
 
@@ -107,6 +143,15 @@ class FilesystemStore(Store):
     _ = epath.Path(src).copy(dest, overwrite=True)
 
   @override
+  def put_bytes(self, key: str, data: bytes) -> None:
+    """Write ``data`` to ``root/key`` via write-then-rename (atomic)."""
+    dest = pathlib.Path(str(self._path(key)))
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=dest.parent, delete=False) as staged:
+      _ = staged.write(data)
+    os.replace(staged.name, dest)
+
+  @override
   def get(self, key: str, dest: epath.PathLike) -> None:
     """Copy ``root/key`` to ``dest``."""
     src = self._path(key)
@@ -117,6 +162,24 @@ class FilesystemStore(Store):
     _ = epath.Path(src).copy(dest, overwrite=True)
 
   @override
+  def get_bytes(self, key: str) -> bytes:
+    """Read ``root/key``'s content.
+
+    Args:
+      key: The object to read.
+
+    Returns:
+      The object's content.
+
+    Raises:
+      SandboxError: If the key does not exist.
+    """
+    src = self._path(key)
+    if not src.is_file():
+      raise SandboxError(f"store key not found: {key}")
+    return src.read_bytes()
+
+  @override
   def append_manifest(self, record: RunRecord) -> None:
     """Write the run's shard JSON under its key."""
     shard = self._path(f"{run_prefix(record)}/{MANIFEST_NAME}")
@@ -125,16 +188,21 @@ class FilesystemStore(Store):
 
   @override
   def read_manifests(self, sweep_id: str) -> list[RunRecord]:
-    """Read every shard under the sweep (``<instance>/r<n>/a<n>``)."""
-    return self._read(f"{sweep_id}/*/r*/a*/{MANIFEST_NAME}")
+    """Read every shard under the sweep (``<instance>/r<n>/<task>/a<n>``)."""
+    return self._read(f"{sweep_id}/*/r*/*/a*/{MANIFEST_NAME}")
 
   @override
   def read_manifest(
-      self, sweep_id: str, instance_id: str, rollout_id: int
+      self,
+      sweep_id: str,
+      instance_id: str,
+      rollout_id: int,
+      task: str | None = None,
   ) -> list[RunRecord]:
-    """Read just one rollout's attempts, without scanning the sweep."""
+    """Read one rollout's attempts (optionally one task's), no sweep scan."""
+    segment = task if task is not None else "*"
     return self._read(
-        f"{sweep_id}/{instance_id}/r{rollout_id}/a*/{MANIFEST_NAME}"
+        f"{sweep_id}/{instance_id}/r{rollout_id}/{segment}/a*/{MANIFEST_NAME}"
     )
 
   def _read(self, pattern: str) -> list[RunRecord]:

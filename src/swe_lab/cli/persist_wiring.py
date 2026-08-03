@@ -46,6 +46,7 @@ def new_record(
     *,
     sweep: str,
     instance_id: str,
+    task: str,
     status: str,
     backend: str,
     rollout_id: int = 0,
@@ -58,10 +59,12 @@ def new_record(
 
   ``rollout_id`` / ``attempt`` default to the single-rollout, first-try case;
   a pass@K sweep passes the sample index, and a retry bumps the attempt.
+  ``task`` is required — every record names its task (ADR-0007 §6).
   """
   return RunRecord(
       sweep_id=sweep,
       instance_id=instance_id,
+      task=task,
       rollout_id=rollout_id,
       attempt=attempt,
       run_ts=_run_ts(),
@@ -79,6 +82,7 @@ def persist_run(
     *,
     sweep: str,
     instance_id: str,
+    task: str,
     status: str,
     backend: str,
     artifacts: Mapping[str, epath.PathLike],
@@ -94,6 +98,7 @@ def persist_run(
     root: The repo root (locates the cache-backed store).
     sweep: The sweep id this run belongs to (``adhoc`` for a one-off).
     instance_id: The dataset instance.
+    task: The task segment of the run's key (``rollout``, ``eval``).
     status: The engine ``RunStatus`` value the run ended with.
     backend: The sandbox backend name used.
     artifacts: Collected artifacts (name → host path); uploaded under the
@@ -110,6 +115,7 @@ def persist_run(
   record = new_record(
       sweep=sweep,
       instance_id=instance_id,
+      task=task,
       status=status,
       backend=backend,
       rollout_id=rollout_id,

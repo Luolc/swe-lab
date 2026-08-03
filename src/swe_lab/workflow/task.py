@@ -156,6 +156,58 @@ class Task(ABC):
     """
     ...
 
+  def outputs_valid(self, result: TaskResult) -> bool:
+    """Judge whether an execution produced good outputs — the failure call.
+
+    The terminal marker of a task-level run keys off this (ADR-0007 §§6–7):
+    the final attempt's validity decides ``succeeded`` versus ``failed``.
+    Default: the run ended ``SUCCESS`` and every ``required`` declared output
+    exists. Existence alone cannot judge *content* — a ``conversation.json``
+    that is present but does not parse is a failed attempt this baseline
+    waves through — so a subclass overrides to inspect the artifacts and the
+    observers' typed results, composing with ``super().outputs_valid(...)``.
+
+    Deliberately about outputs, not answers: an eval whose verdict is
+    *unresolved* has still done its job — "no" is an answer, not a failure.
+
+    Args:
+      result: The execution to judge.
+
+    Returns:
+      Whether the attempt counts as having produced its outputs.
+    """
+    if result.run.status is not RunStatus.SUCCESS:
+      return False  # TIMEOUT / RUN_ERROR / SETUP_ERROR
+    produced = result.run.artifacts
+    return all(
+        schema.name in produced
+        for schema in result.output_schema
+        if schema.required
+    )
+
+  def should_retry(self, result: TaskResult) -> bool:
+    """Decide whether this attempt needs another one (task-level retry).
+
+    Default: exactly when the attempt failed (``outputs_valid`` is false) —
+    an invalid attempt is a retryable failure, and infrastructure failures
+    land there too. A subclass overrides to *add* retry-desire on top, never
+    to weaken the failure half — eval's flake absorption retries an
+    unresolved-but-valid verdict::
+
+        def should_retry(self, result):
+          return super().should_retry(result) or not resolved
+
+    Retry-desire is not failure: the terminal marker reads
+    :meth:`outputs_valid`, never this.
+
+    Args:
+      result: The execution to judge.
+
+    Returns:
+      Whether the runner should spend budget on another attempt.
+    """
+    return not self.outputs_valid(result)
+
   @final
   def execute(
       self,

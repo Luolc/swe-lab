@@ -282,6 +282,7 @@ def verify_instance(
       RunRecord(
           sweep_id=sweep,
           instance_id=iid,
+          task="verify",
           rollout_id=_ROLLOUT_ID,
           run_ts=datetime.now(UTC).isoformat(),
           status=str(result["verdict"]),

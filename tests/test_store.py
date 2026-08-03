@@ -22,12 +22,14 @@ def _record(
     instance: str = "inst",
     ts: str = "ts",
     *,
+    task: str = "rollout",
     rollout_id: int = 0,
     attempt: int = 0,
 ) -> RunRecord:
   return RunRecord(
       sweep_id=sweep,
       instance_id=instance,
+      task=task,
       rollout_id=rollout_id,
       attempt=attempt,
       run_ts=ts,
@@ -116,3 +118,41 @@ def test_build_store_unknown_name_raises():
 
 def test_filesystem_is_registered():
   assert "filesystem" in registered_stores()
+
+
+def test_read_manifest_narrows_to_one_task(tmp_path: Path):
+  # The resume/edge read: one task's attempts, not the whole rollout's.
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  store.append_manifest(_record(task="rollout"))
+  store.append_manifest(_record(task="eval", attempt=0))
+  store.append_manifest(_record(task="eval", attempt=1))
+  attempts = store.read_manifest("sw", "inst", 0, task="eval")
+  assert [(r.task, r.attempt) for r in attempts] == [("eval", 0), ("eval", 1)]
+  # None keeps the aggregation shape: every task of the rollout
+  every = store.read_manifest("sw", "inst", 0)
+  assert [(r.task, r.attempt) for r in every] == [
+      ("eval", 0),
+      ("eval", 1),
+      ("rollout", 0),
+  ]
+
+
+def test_two_tasks_same_artifact_name_get_distinct_keys(tmp_path: Path):
+  # The write-side answer to "two tasks produce patch.diff": the task segment
+  # separates them by construction.
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  src = tmp_path / "patch.diff"
+  _ = src.write_text("A")
+  store.put("sw/inst/r0/task1/a0/patch.diff", src)
+  _ = src.write_text("B")
+  store.put("sw/inst/r0/task2/a0/patch.diff", src)
+  assert store.get_bytes("sw/inst/r0/task1/a0/patch.diff") == b"A"
+  assert store.get_bytes("sw/inst/r0/task2/a0/patch.diff") == b"B"
+
+
+def test_put_bytes_get_bytes_roundtrip(tmp_path: Path):
+  store = FilesystemStore(epath.Path(tmp_path / "store"))
+  store.put_bytes("sw/inst/r0/eval/complete.json", b'{"outcome": "x"}')
+  assert store.get_bytes("sw/inst/r0/eval/complete.json") == b'{"outcome": "x"}'
+  with pytest.raises(SandboxError, match="not found"):
+    _ = store.get_bytes("sw/inst/r0/eval/nope")

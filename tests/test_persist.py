@@ -23,12 +23,14 @@ def _record(
     ts: str,
     *,
     status: str = "SUCCESS",
+    task: str = "rollout",
     rollout_id: int = 0,
     attempt: int = 0,
 ) -> RunRecord:
   return RunRecord(
       sweep_id=_SWEEP,
       instance_id=instance,
+      task=task,
       rollout_id=rollout_id,
       attempt=attempt,
       run_ts=ts,
@@ -59,7 +61,7 @@ def test_persist_uploads_under_run_key_and_appends_shard(tmp_path: Path):
       {"patch.diff": patch, "conversation.json": conv},
   )
 
-  prefix = f"{_SWEEP}/flipt__flipt-1/r0/a0"
+  prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
   assert out.artifacts == {
       "patch.diff": f"{prefix}/patch.diff",
       "conversation.json": f"{prefix}/conversation.json",
@@ -92,7 +94,7 @@ def test_promote_uploads_whole_workspace_preserving_nesting(tmp_path: Path):
 
   out = promote(store, _record("flipt__flipt-1", "1706-0"), ws)
 
-  prefix = f"{_SWEEP}/flipt__flipt-1/r0/a0"
+  prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
   assert out.artifacts == {
       "patch.diff": f"{prefix}/patch.diff",
       "diagnostics/git_status.txt": f"{prefix}/diagnostics/git_status.txt",

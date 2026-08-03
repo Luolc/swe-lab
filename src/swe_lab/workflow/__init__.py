@@ -7,6 +7,23 @@ their domains: ``swe_lab.rollout.CodingAgentTask`` and
 ``swe_lab.evaluation.methods.unit_test.UnitTestEvalTask``.
 """
 
+from .run_task import (
+    read_marker,
+    run_task,
+    TaskAddress,
+    TaskOutcome,
+    TaskRunOutcome,
+    TerminalMarker,
+)
 from .task import Task, TaskResult
 
-__all__ = ["Task", "TaskResult"]
+__all__ = [
+    "Task",
+    "TaskAddress",
+    "TaskOutcome",
+    "TaskResult",
+    "TaskRunOutcome",
+    "TerminalMarker",
+    "read_marker",
+    "run_task",
+]

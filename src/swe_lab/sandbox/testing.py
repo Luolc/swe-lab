@@ -256,12 +256,23 @@ class FakeStore(Store):
     self.puts.append(key)
 
   @override
+  def put_bytes(self, key: str, data: bytes) -> None:
+    self.objects[key] = data
+    self.puts.append(key)
+
+  @override
   def get(self, key: str, dest: epath.PathLike) -> None:
     if key not in self.objects:
       raise SandboxError(f"store key not found: {key}")
     dest = epath.Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _ = dest.write_bytes(self.objects[key])
+
+  @override
+  def get_bytes(self, key: str) -> bytes:
+    if key not in self.objects:
+      raise SandboxError(f"store key not found: {key}")
+    return self.objects[key]
 
   @override
   def append_manifest(self, record: RunRecord) -> None:
@@ -276,10 +287,16 @@ class FakeStore(Store):
 
   @override
   def read_manifest(
-      self, sweep_id: str, instance_id: str, rollout_id: int
+      self,
+      sweep_id: str,
+      instance_id: str,
+      rollout_id: int,
+      task: str | None = None,
   ) -> list[RunRecord]:
     return [
         m
         for m in self.read_manifests(sweep_id)
-        if m.instance_id == instance_id and m.rollout_id == rollout_id
+        if m.instance_id == instance_id
+        and m.rollout_id == rollout_id
+        and (task is None or m.task == task)
     ]
