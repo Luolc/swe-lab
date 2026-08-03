@@ -272,8 +272,12 @@ class CodingAgentTask(Task):
     return (*self.harness.observers(),
             DiffExtractObserver(exclude_globs=self.exclude_globs))
   def action(self, sb, *, timeout):
-    return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
-                            timeout=timeout, env=self.agent_env)
+    # The proxy records the agent's API traffic, so its lifetime is the
+    # agent's — open around the run, closed before before_destroy reads the
+    # log (a flush guarantee the old whole-session placement never had).
+    with self.proxy or contextlib.nullcontext():
+      return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
+                              timeout=timeout, env=self.agent_env)
 
 
 @dataclass
@@ -314,10 +318,10 @@ class UnitTestEvalTask[V: Verdict](Task):
 def run_rollout(sandbox, harness, *, prompt, output_dir, timeout,
                 proxy=None, agent_env=None, exclude_globs=(), observers=()):
   task = CodingAgentTask(instance=_SpecOnlyInstance(sandbox.spec), harness=harness,
-                         prompt=prompt, exclude_globs=exclude_globs, agent_env=agent_env)
-  with proxy or contextlib.nullcontext():
-    result = task.execute(sandbox, output_dir=output_dir, timeout=timeout,
-                          extra_observers=observers)
+                         prompt=prompt, proxy=proxy, exclude_globs=exclude_globs,
+                         agent_env=agent_env)
+  result = task.execute(sandbox, output_dir=output_dir, timeout=timeout,
+                        extra_observers=observers)
   return RolloutOutcome(...)   # assembled from result, exactly today's fields
 
 def run_unit_test(sandbox, unit_test_spec, *, output_dir, timeout,
@@ -406,8 +410,14 @@ Hard acceptance criteria, in order:
 - **The in-run retry loop resists extraction** — it mutates the parse observer
   between attempts. Mitigation: it stays inside `UnitTestEvalTask.action`
   verbatim; only Task 20 may reshape it.
-- **Proxy lifetime**: today the proxy wraps the whole session. The wrapper
-  keeps that placement (proxy around `execute`), not `Task`'s concern.
+- **Proxy lifetime narrows, deliberately**: today the proxy wraps the whole
+  session; in the task it wraps `action` only — the agent is the only thing
+  that calls through it, and closing before `before_destroy` means the log is
+  flushed before conversion reads it. No observable difference (the
+  equivalence gate checks), and no wrapper layer. One consequence stated
+  plainly: a context-manager proxy is single-use, so a *re-executed*
+  `CodingAgentTask` needs a fresh one — irrelevant today (only eval retries),
+  revisited if Task 20 ever retries agent tasks.
 - **Hidden coupling to mount timing** (`prompt.txt` was composition-staged;
   after Task 18 the harness writes it in `run`) — the live-rollout equivalence
   run is what catches any residue.
