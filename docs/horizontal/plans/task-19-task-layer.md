@@ -125,45 +125,42 @@ class Task(ABC):
   five steps once. Single-run, like the observers it composes.
   """
 
-  **Three hooks, one channel each** — mounts, observers, action — and no
-  second concept beside any of them. A harness is not a fourth concept: a
-  task that uses one folds its mounts and observers into its own hooks and
-  calls it in `action` (see `CodingAgentTask` — the fold is three explicit
-  lines, not machinery).
+  **Three hooks, one channel each — and each hook is total.** `mounts()` is
+  *all* of this task's mounts; `observers()` is *all* of its observers. There
+  is no "the task's own" versus "gathered for you": a subclass overrides the
+  hook and merges in whatever it uses — the instance's material, a harness's
+  files, anything. `execute` takes the hooks' word for it, adds only what a
+  task cannot know (the backend's observers, the caller's extras), and runs.
 
   | you have | you write |
   |---|---|
-  | files to stage | `mounts()` — yours, and your harness's if you use one |
+  | files to stage | override `mounts()` — merge the instance's / a harness's / yours; what it returns **is** the staging set |
   | a deliverable | the observer that extracts it, in `observers()` — its schema declares the store name |
-  | an agent / harness | its mounts in `mounts()`, its observers in `observers()`, its `run` in `action()` |
+  | an agent / harness | fold it in: mounts into `mounts()`, observers into `observers()`, its `run` in `action()` |
   | the main action | `action()` |
   | (a caller with persistence etc.) | passes `extra_observers` to `execute` |
 
-  # ---- what a subclass declares -------------------------------------------
+  instance: TaskInstance                    # the binding (ADR-0007 §2)
 
-  @abstractmethod
   def mounts(self) -> Mounts:
-    """The task's files to stage (e.g. eval entryscript; a harness's own
-    mounts, folded in by the task that uses one). NOT the instance's — those
-    are gathered by `execute`."""
+    """ALL files this task stages. Default: the bound instance's material.
+    A subclass overrides and merges in whatever else it uses::
 
-  @abstractmethod
+        return merge_mounts(super().mounts(), self.harness.mounts(...), ...)
+    """
+    return dict(self.instance.mounts())
+
   def observers(self) -> Sequence[SandboxObserver]:
-    """The task's own observers — one per thing it extracts (e.g.
-    `DiffExtractObserver`). Fresh instances per call, like
-    `Harness.observers()`: observers are single-run, and Task 20's retry
-    re-invokes this. A task that keeps a reference for `action` (eval's
-    retry loop drives its parse observer) stores it on itself — the task is
-    single-run too."""
+    """ALL of this task's observers — one per thing it extracts, plus a
+    harness's own if it uses one. Default: none. Fresh instances per call
+    (observers are single-run; Task 20's retry re-invokes this); a task that
+    keeps a reference for `action` (eval's retry loop drives its parse
+    observer) stores it on itself — the task is single-run too."""
+    return ()
 
   @abstractmethod
   def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
     """The run's main action: exec the harness, or run the entryscript."""
-
-  # ---- what the base class provides ---------------------------------------
-
-  def instance_mounts(self) -> Mounts:
-    """The bound instance's material; default `self.instance.mounts()`."""
 
   @final
   def execute(
@@ -182,21 +179,17 @@ class Task(ABC):
 ```python
 def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
   # 1. observers, three sources, backend first (ADR-0007 §3)
-  observers = [
-      *sandbox.observers(),                 # backend: runtime metrics
-      *self.observers(),                    # task: incl. its harness's, folded
-      *extra_observers,                     # caller: e.g. persist
-  ]
+  # The hooks are total: the task said everything it knows. Add only what it
+  # cannot know — the backend's observers and the caller's extras.
+  observers = [*sandbox.observers(), *self.observers(), *extra_observers]
   # The task's output schema is derived — and a duplicate store name across
   # observers fails HERE, at assembly, like a duplicate mount target.
   schema = merge_output_schemas(*(o.output_schema() for o in observers))
-  # 2. mounts — instance's + the task's own (a harness's arrive folded into
-  #    the task's); the observers' arrive via the manager, which already
-  #    merges each observer.mounts(). Duplicate targets are refused.
-  mounts = merge_mounts(self.instance_mounts(), self.mounts())
   manager = SandboxManager(
       sandbox=sandbox, output_dir=epath.Path(output_dir),
-      observers=observers, mounts=mounts,
+      # The observers' own mounts still arrive via the manager, which merges
+      # each observer.mounts() and refuses duplicate targets.
+      observers=observers, mounts=self.mounts(),
   )
   # 3. the action, inside the session
   exec_result = None
@@ -261,8 +254,11 @@ class CodingAgentTask(Task):
   agent_env: Mapping[str, str] | None = None
   proxy: AbstractContextManager[object] | None = None
 
-  def mounts(self):        # the harness's own files, folded in explicitly
-    return self.harness.mounts(self.instance.sandbox_spec().workdir)
+  def mounts(self):        # instance's material + the harness's own files
+    return merge_mounts(
+        super().mounts(),
+        self.harness.mounts(self.instance.sandbox_spec().workdir),
+    )
   def observers(self):     # the harness's own + the deliverable's extractor
     return (*self.harness.observers(),
             DiffExtractObserver(exclude_globs=self.exclude_globs))
@@ -281,8 +277,14 @@ class UnitTestEvalTask[V: Verdict](Task):
   eval_env: Mapping[str, str] | None = None
 
   # compiled once in __post_init__: self._spec = instance.unit_test_spec(...)
-  def mounts(self):        return {ENTRYSCRIPT_NAME: Mount(Inline(self._spec.eval_script.encode()), executable=True)}
-  def instance_mounts(self): return dict(self._spec.mounts)   # until 19, the spec *is* the instance's mounts
+  def mounts(self):
+    # Interim: the spec still carries the instance trio (§2.6 moves it onto
+    # instance.mounts(), after which super().mounts() takes over that half).
+    return merge_mounts(
+        dict(self._spec.mounts),
+        {ENTRYSCRIPT_NAME: Mount(Inline(self._spec.eval_script.encode()),
+                                 executable=True)},
+    )
   def observers(self):
     # the grader arrives here directly — dataset-supplied, no vehicle
     # (ADR-0007 §4); the reference is kept because action's retry loop
@@ -350,9 +352,9 @@ Migration inside this task, in order:
    `Inline` construction out of `compile_unit_test`);
 2. `compile_unit_test` stops emitting the trio; `UnitTestSpec.mounts` shrinks
    to `{patch.diff}` — the one entry that varies per run;
-3. `UnitTestEvalTask.instance_mounts()` drops its interim
-   `dict(self._spec.mounts)` shim and uses the default
-   (`self.instance.mounts()`); its `mounts()` contributes entryscript + patch;
+3. `UnitTestEvalTask.mounts()` drops the interim `dict(self._spec.mounts)`
+   half in favour of `super().mounts()` (the instance's material via
+   `instance.mounts()`), keeping its own entryscript + patch;
 4. the `run_unit_test` wrapper keeps working unchanged — its `_SpecEvalTask`
    shim treats whatever the spec still carries as instance material, so a
    downstream caller holding a pre-split spec is unaffected until Task 21.
