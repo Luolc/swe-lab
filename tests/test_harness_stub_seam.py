@@ -306,3 +306,32 @@ def test_a_harness_without_the_generic_pair_still_runs(tmp_path: Path):
   assert outcome.status is RunStatus.SUCCESS
   assert outcome.complete is False
   assert outcome.conversation == Conversation(messages=[])
+
+
+def test_a_harness_composes_its_own_extra_observer(tmp_path: Path):
+  # The factory is the point: an agent with a second signal channel adds its
+  # collector itself, and no composition changes.
+  class _Extra(StubHarness):
+
+    @override
+    def observers(self) -> tuple[SandboxObserver, ...]:
+      class _Signal(SandboxObserver):
+
+        @override
+        def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+          del sb
+          return Contribution(metrics={"stub.extra_signal": 7.0})
+
+      return (*super().observers(), _Signal())
+
+  workspace = tmp_path / "run"
+  outcome = run_rollout(
+      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
+      _Extra(),
+      prompt="SOLVE THIS",
+      output_dir=workspace,
+      timeout=10.0,
+  )
+  assert outcome.status is RunStatus.SUCCESS
+  assert outcome.metrics["stub.extra_signal"] == 7.0
+  assert outcome.complete is True  # the generic pair still composed alongside

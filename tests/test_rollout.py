@@ -7,6 +7,7 @@ composition (manager → observers → harness) runs docker-free while no agent
 process ever spawns.
 """
 
+import dataclasses
 from pathlib import Path
 from typing import override
 
@@ -16,17 +17,26 @@ import pytest
 from swe_lab.conversation import Conversation
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.rollout import run_rollout
-from swe_lab.sandbox import RunStatus, SandboxSpec
+from swe_lab.sandbox import Mount, RunStatus, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 
 
+@dataclasses.dataclass
 class _LocalFakeSandbox(FakeSandbox):
   """A ``FakeSandbox`` that keeps absolute mounts inside the workspace.
 
   The harness stages its pinned binary at a fixed absolute path (``/opt/...``);
   writing there on the host needs root, so redirect every mount under the real
   workspace dir. Exec stays scripted, so the agent never actually runs.
+  Mount targets are recorded so a test can tell a *mount* from a ``write``.
   """
+
+  mount_targets: list[str] = dataclasses.field(default_factory=list)
+
+  @override
+  def _mount_one(self, target: str, mount: Mount) -> None:
+    self.mount_targets.append(target)
+    super()._mount_one(target, mount)
 
   @override
   def _dest(self, target: str) -> epath.Path:
@@ -63,8 +73,9 @@ def test_run_rollout_wires_and_assembles(
   assert outcome.complete is False
   assert outcome.conversation == Conversation(messages=[])
   # the harness landed the prompt itself in run() (ADR-0007 §8 — same
-  # filename as before, but now its own choice); its run script was staged
+  # filename as before, but now its own choice, and NOT a composition mount)
   assert (workspace / "prompt.txt").read_text() == "SOLVE THIS"
+  assert "prompt.txt" not in sandbox.mount_targets
   assert (workspace / "run_claude_code.sh").is_file()
   # the canonical conversation + the (empty) patch were written
   assert (workspace / "conversation.json").is_file()

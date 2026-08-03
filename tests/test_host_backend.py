@@ -464,3 +464,57 @@ def test_live_run_records_runtime_metrics(tmp_path: Path):
   # but if present it must be a sane positive number
   if "sandbox.peak_memory_bytes" in metrics:
     assert metrics["sandbox.peak_memory_bytes"] > 0.0
+
+
+@pytest.mark.docker
+def test_live_oom_kill_of_an_exec_is_counted(tmp_path: Path):
+  # The de49d486 blind spot, reproduced on purpose: an exec'd process is
+  # OOM-killed mid-run while the container itself survives. `docker inspect`
+  # alone misses this (`State.OOMKilled` stays false); the cgroup's
+  # `oom_kill` counter is why the metric reads `memory.events` first.
+  #
+  # The memory cap goes on via `docker update` *after* start, so no
+  # construction knob is added just for this test.
+  spec = SandboxSpec("debian-oom", _IMAGE, "/", "none")
+  sandbox = DockerHostSandbox(
+      spec=spec, workspace=epath.Path(tmp_path / "ws"), pull=False
+  )
+  (observer,) = sandbox.observers()
+  assert isinstance(observer, HostMetricsObserver)
+  observer.before_create(sandbox)
+  sandbox.up()
+  observer.after_create(sandbox)
+  try:
+    capped = subprocess.run(
+        [
+            "docker",
+            "update",
+            "--memory",
+            "32m",
+            "--memory-swap",
+            "32m",
+            sandbox._container,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if capped.returncode != 0:
+      pytest.skip(f"docker update cannot cap memory here: {capped.stderr}")
+    events = sandbox.run_command(
+        "cat /sys/fs/cgroup/memory.events", timeout=10.0
+    )
+    if not events.ok:
+      pytest.skip("cgroup v2 memory.events not readable in this container")
+    # `tail /dev/zero` buffers unboundedly: the canonical in-cgroup OOM.
+    sandbox.write("hog.sh", b"tail /dev/zero\n")
+    hog = sandbox.run_script("hog.sh", timeout=60.0)
+    assert not hog.ok  # SIGKILLed by the cgroup OOM killer
+    contribution = observer.before_destroy(sandbox)
+  finally:
+    sandbox.down()
+  assert contribution is not None
+  assert contribution.metrics["sandbox.oom_kills"] >= 1.0
+  # ...and the container itself was never the casualty: the setup metric is
+  # still there, from a sandbox that stayed up throughout
+  assert contribution.metrics["sandbox.setup_seconds"] >= 0.0
