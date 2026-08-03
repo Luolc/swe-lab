@@ -199,7 +199,7 @@ For entry `E`, for each `(name → producer_key)` in `edges[E.key]`:
 ```
 b1. THE PRODUCER'S FINAL RECORD — never a guessed key:
       ran this process  → the producer's run_task outcome already holds its
-                          final RunRecord
+                          final AttemptRecord
       resumed           → shards = store.read_manifest(sweep, instance,
                           rollout, task=producer_key); take the highest
                           attempt — the marker guarantees it is the final one
@@ -242,7 +242,7 @@ blocked forever). The workflow then fails per §4's gate.
 | producer declares | `DiffExtractObserver.output_schema()` → `patch.diff` (required) — part of `CodingAgentTask.observers()` |
 | consumer declares | `UnitTestEvalTask(apply_patch=True).input_schema()` → `patch.diff` (required) |
 | phase A | sole earlier producer of `patch.diff` is entry `"rollout"` → edge `eval.patch.diff ← rollout` (an explicit `inputs=("rollout/patch.diff",)` would also be accepted, and required if a second patch-producing entry ever precedes eval) |
-| producer runs | attempt `a0` persists `s1/<inst>/r0/rollout/a0/patch.diff`; its `RunRecord.artifacts["patch.diff"]` holds exactly that key |
+| producer runs | attempt `a0` persists `s1/<inst>/r0/rollout/a0/patch.diff`; its `AttemptRecord.artifacts["patch.diff"]` holds exactly that key |
 | phase B | record lookup → `store.get(key, out/edges/eval/patch.diff)` → non-empty ✓ → `extra_mounts={"patch.diff": Mount(LocalFile(...), read_only=True)}` |
 | consumer runs | the file sits at `$SANDBOX_WORKSPACE/patch.diff`; the compiled entryscript's `git apply` reads it; `execute`'s required-input check would have refused to build the sandbox had the mount been missing |
 
@@ -265,7 +265,7 @@ Per entry, in declared order — thin around Task 20's `run_task`:
    the workflow fails.
 
 4. AFTER ALL ENTRIES SUCCEED: derive the workflow record — a roll-up of the
-   entries' final RunRecords (keys, statuses, attempt counts, edge map) —
+   entries' final AttemptRecords (keys, statuses, attempt counts, edge map) —
    and write it LAST, atomically:
      <sweep>/<instance>/r<rollout>/workflow.json
    Its absence means the workflow did not complete (ADR-0007 §10); v1

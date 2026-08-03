@@ -21,7 +21,7 @@ from typing import override
 from etils import epath
 
 from .errors import SandboxError
-from .persist import MANIFEST_NAME, run_prefix, RunRecord
+from .persist import AttemptRecord, MANIFEST_NAME, run_prefix
 
 
 class Store(ABC):
@@ -68,12 +68,12 @@ class Store(ABC):
     ...
 
   @abstractmethod
-  def append_manifest(self, record: RunRecord) -> None:
+  def append_manifest(self, record: AttemptRecord) -> None:
     """Write one run's manifest shard (``<run-key>/run.json``)."""
     ...
 
   @abstractmethod
-  def read_manifests(self, sweep_id: str) -> list[RunRecord]:
+  def read_manifests(self, sweep_id: str) -> list[AttemptRecord]:
     """Read every run shard under a sweep, ordered by identity.
 
     The bulk read, for aggregation (``index``) and pass@K metrics. On a cloud
@@ -95,7 +95,7 @@ class Store(ABC):
       instance_id: str,
       rollout_id: int,
       task: str | None = None,
-  ) -> list[RunRecord]:
+  ) -> list[AttemptRecord]:
     """Read the attempts of **one** rollout, optionally one task's.
 
     The targeted read a resume/retry check wants: a narrow prefix lookup rather
@@ -184,14 +184,14 @@ class FilesystemStore(Store):
     return src.read_bytes()
 
   @override
-  def append_manifest(self, record: RunRecord) -> None:
+  def append_manifest(self, record: AttemptRecord) -> None:
     """Write the run's shard JSON under its key."""
     shard = self._path(f"{run_prefix(record)}/{MANIFEST_NAME}")
     shard.parent.mkdir(parents=True, exist_ok=True)
     _ = shard.write_text(record.to_json())
 
   @override
-  def read_manifests(self, sweep_id: str) -> list[RunRecord]:
+  def read_manifests(self, sweep_id: str) -> list[AttemptRecord]:
     """Read every shard under the sweep (``<instance>/r<n>/<task>/a<n>``)."""
     return self._read(f"{sweep_id}/*/r*/*/a*/{MANIFEST_NAME}")
 
@@ -202,14 +202,14 @@ class FilesystemStore(Store):
       instance_id: str,
       rollout_id: int,
       task: str | None = None,
-  ) -> list[RunRecord]:
+  ) -> list[AttemptRecord]:
     """Read one rollout's attempts (optionally one task's), no sweep scan."""
     segment = task if task is not None else "*"
     return self._read(
         f"{sweep_id}/{instance_id}/r{rollout_id}/{segment}/a*/{MANIFEST_NAME}"
     )
 
-  def _read(self, pattern: str) -> list[RunRecord]:
+  def _read(self, pattern: str) -> list[AttemptRecord]:
     """Load the shards matching a glob, sorted numerically by identity.
 
     Sorting the parsed records (not the path strings) is what keeps rollout
@@ -219,7 +219,7 @@ class FilesystemStore(Store):
     if not self.root.is_dir():
       return []
     records = [
-        RunRecord.from_json(shard.read_text())
+        AttemptRecord.from_json(shard.read_text())
         for shard in self.root.glob(pattern)
     ]
     return sorted(records, key=lambda record: record.sort_key)

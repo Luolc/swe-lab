@@ -16,8 +16,8 @@ A mismatch means the instance is suspect: its tests don't detect the bug
 (``BASE_UNEXPECTED_PASS``) or its golden patch doesn't fix it under our harness
 (``GOLDEN_FAIL``). Runs are stride-sharded (``--shard i/N``) so a GitHub Actions
 matrix can burst the whole dataset in parallel; each shard appends one **T1
-store shard** per instance (``RunRecord``, keyed under ``--sweep``) — resumable
-(a done instance is skipped) and object-store-backed, not committed to git.
+store shard** per instance (an ``AttemptRecord`` keyed under ``--sweep``) —
+resumable (a done instance is skipped), object-store-backed, not in git.
 ``--aggregate`` reads the sweep's shards into a summary + report. The store is a
 local ``FilesystemStore`` today; task 13 points it at R2 with no change here.
 
@@ -44,9 +44,9 @@ from swe_lab.datasets.loader import load_dataset
 from swe_lab.evaluation.methods.unit_test import run_unit_test
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import (
+    AttemptRecord,
     build_sandbox,
     build_store,
-    RunRecord,
     RunResult,
     RUNS_NAMESPACE,
     RunStatus,
@@ -64,8 +64,8 @@ ERROR = "ERROR"  # inconclusive: harness/infra failure, not a dataset finding
 _VERDICTS = (OK, BASE_UNEXPECTED_PASS, GOLDEN_FAIL, ERROR)
 
 # Verify persists each instance's result to the T1 object-store seam (one
-# RunRecord shard per instance), not a committed outputs/ dir. Verification is
-# inherently single-rollout (base + golden together decide one verdict), so
+# AttemptRecord shard per instance), not a committed outputs/ dir. Verification
+# is inherently single-rollout (base + golden together decide one verdict), so
 # every shard is rollout 0 / attempt 0; that key is deterministic, so a
 # re-verify overwrites its own shard (ADR-0004 — no fake timestamp needed).
 _DEFAULT_SWEEP = "golden-verify"
@@ -279,7 +279,7 @@ def verify_instance(
   # detail (and any error) lives in `extra`. The key is deterministic, so a
   # re-verify overwrites in place and a sweep holds one shard per instance.
   store.append_manifest(
-      RunRecord(
+      AttemptRecord(
           sweep_id=sweep,
           instance_id=iid,
           task="verify",

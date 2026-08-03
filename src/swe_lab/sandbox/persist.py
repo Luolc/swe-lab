@@ -7,8 +7,9 @@ registered artifacts on the host. So the composition, after the run, hands the
 finished outcome here — no engine hook, no ``PersistObserver``.
 
 ``persist`` uploads a run's artifacts under its key and appends one per-run
-:class:`RunRecord` shard; ``promote`` does the same for a whole debug workspace
-(the misclassification safety valve); ``index`` aggregates a sweep's shards.
+:class:`AttemptRecord` shard; ``promote`` does the same for a whole debug
+workspace (the misclassification safety valve); ``index`` aggregates a sweep's
+shards.
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ MANIFEST_NAME = "run.json"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class RunRecord:
+class AttemptRecord:
   """One T1 manifest shard — the ledger entry for a single persisted run.
 
   Failures are recorded too (persistence gates on tier, not success). A run is
@@ -60,7 +61,7 @@ class RunRecord:
     tier: The persistence tier — always ``formal`` here (debug never persists).
     backend: The sandbox backend name the run used.
     model: The agent model alias (empty for a grading-only run).
-    artifacts: Object name → its full store key (filled by :func:`persist`).
+    artifact_keys: Object name → its full store key (filled by :func:`persist`).
     metrics: Scalar metrics from the run.
     extra: Any other run facts (e.g. ``is_empty_patch``, an error repr).
   """
@@ -75,7 +76,7 @@ class RunRecord:
   tier: str
   backend: str
   model: str = ""
-  artifacts: dict[str, str] = field(default_factory=dict)
+  artifact_keys: dict[str, str] = field(default_factory=dict)
   metrics: dict[str, float] = field(default_factory=dict)
   extra: dict[str, object] = field(default_factory=dict)
 
@@ -84,7 +85,7 @@ class RunRecord:
     return json.dumps(asdict(self), indent=2, sort_keys=True)
 
   @classmethod
-  def from_json(cls, text: str) -> RunRecord:
+  def from_json(cls, text: str) -> AttemptRecord:
     """Read a shard back from its JSON."""
     return cls(**json.loads(text))
 
@@ -94,7 +95,7 @@ class RunRecord:
     return (self.instance_id, self.rollout_id, self.task, self.attempt)
 
 
-def run_prefix(record: RunRecord) -> str:
+def run_prefix(record: AttemptRecord) -> str:
   """Return the run key ``<sweep>/<instance>/r<rollout>/<task>/a<attempt>``.
 
   ADR-0004's key, with the task segment ADR-0007 §6 added: the task sits
@@ -112,33 +113,33 @@ def run_prefix(record: RunRecord) -> str:
 
 
 def persist(
-    store: Store, record: RunRecord, files: Mapping[str, epath.PathLike]
-) -> RunRecord:
+    store: Store, record: AttemptRecord, files: Mapping[str, epath.PathLike]
+) -> AttemptRecord:
   """Upload a run's files under its key and append its manifest shard.
 
   Args:
     store: The T1 store to write to.
-    record: The run's metadata (its ``artifacts`` field is filled in here).
+    record: The run's metadata (its ``artifact_keys`` field is filled in here).
     files: Object name (the key suffix under the run prefix) → host path.
 
   Returns:
-    The completed record (``artifacts`` = object name → full store key), as
+    The completed record (``artifact_keys`` = object name → full store key), as
     written to the manifest.
   """
   prefix = run_prefix(record)
-  artifacts: dict[str, str] = {}
+  artifact_keys: dict[str, str] = {}
   for name, path in files.items():
     key = f"{prefix}/{name}"
     store.put(key, path)
-    artifacts[name] = key
-  completed = replace(record, artifacts=artifacts)
+    artifact_keys[name] = key
+  completed = replace(record, artifact_keys=artifact_keys)
   store.append_manifest(completed)
   return completed
 
 
 def promote(
-    store: Store, record: RunRecord, workspace: epath.PathLike
-) -> RunRecord:
+    store: Store, record: AttemptRecord, workspace: epath.PathLike
+) -> AttemptRecord:
   """Push a whole debug workspace into T1 (the misclassification safety valve).
 
   Uploads every file under ``workspace`` (keyed by its workspace-relative path,
@@ -164,6 +165,6 @@ def promote(
   return persist(store, record, files)
 
 
-def index(store: Store, sweep_id: str) -> list[RunRecord]:
+def index(store: Store, sweep_id: str) -> list[AttemptRecord]:
   """Aggregate a sweep's per-run shards into one list (ordered by identity)."""
   return store.read_manifests(sweep_id)

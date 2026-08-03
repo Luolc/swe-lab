@@ -8,10 +8,10 @@ from etils import epath
 import pytest
 
 from swe_lab.sandbox import (
+    AttemptRecord,
     build_store,
     FilesystemStore,
     registered_stores,
-    RunRecord,
     SandboxError,
     Store,
 )
@@ -25,8 +25,8 @@ def _record(
     task: str = "rollout",
     rollout_id: int = 0,
     attempt: int = 0,
-) -> RunRecord:
-  return RunRecord(
+) -> AttemptRecord:
+  return AttemptRecord(
       sweep_id=sweep,
       instance_id=instance,
       task=task,

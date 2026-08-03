@@ -7,11 +7,11 @@ from pathlib import Path
 from etils import epath
 
 from swe_lab.sandbox import (
+    AttemptRecord,
     FilesystemStore,
     index,
     persist,
     promote,
-    RunRecord,
 )
 from swe_lab.sandbox.testing import FakeStore
 
@@ -26,8 +26,8 @@ def _record(
     task: str = "rollout",
     rollout_id: int = 0,
     attempt: int = 0,
-) -> RunRecord:
-  return RunRecord(
+) -> AttemptRecord:
+  return AttemptRecord(
       sweep_id=_SWEEP,
       instance_id=instance,
       task=task,
@@ -45,7 +45,7 @@ def _record(
 
 def test_run_record_json_roundtrip():
   rec = _record("flipt__flipt-1", "1706-0")
-  assert RunRecord.from_json(rec.to_json()) == rec
+  assert AttemptRecord.from_json(rec.to_json()) == rec
 
 
 def test_persist_uploads_under_run_key_and_appends_shard(tmp_path: Path):
@@ -62,7 +62,7 @@ def test_persist_uploads_under_run_key_and_appends_shard(tmp_path: Path):
   )
 
   prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
-  assert out.artifacts == {
+  assert out.artifact_keys == {
       "patch.diff": f"{prefix}/patch.diff",
       "conversation.json": f"{prefix}/conversation.json",
   }
@@ -95,7 +95,7 @@ def test_promote_uploads_whole_workspace_preserving_nesting(tmp_path: Path):
   out = promote(store, _record("flipt__flipt-1", "1706-0"), ws)
 
   prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
-  assert out.artifacts == {
+  assert out.artifact_keys == {
       "patch.diff": f"{prefix}/patch.diff",
       "diagnostics/git_status.txt": f"{prefix}/diagnostics/git_status.txt",
   }
@@ -113,4 +113,4 @@ def test_index_aggregates_a_sweeps_shards(tmp_path: Path):
 
   records = index(store, _SWEEP)
   assert {r.instance_id for r in records} == {"inst-a", "inst-b", "inst-c"}
-  assert all(r.artifacts["a.txt"].startswith(f"{_SWEEP}/") for r in records)
+  assert all(r.artifact_keys["a.txt"].startswith(f"{_SWEEP}/") for r in records)

@@ -19,9 +19,9 @@ import re
 from etils import epath
 
 from swe_lab.sandbox import (
+    AttemptRecord,
     Mounts,
     persist,
-    RunRecord,
     Sandbox,
     SandboxError,
     SandboxObserver,
@@ -142,7 +142,7 @@ class TaskRunOutcome:
     attempts: Attempts spent by whichever process finished the task.
     record: The final attempt's shard — held directly when this process ran
       it, read back from the store when resumed. A workflow edge resolves
-      upstream artifacts through it (``record.artifacts``), never by
+      upstream artifacts through it (``record.artifact_keys``), never by
       assembling keys by hand.
     result: The final attempt's in-memory result; ``None`` when resumed (a
       resumed task ran in another process — only the store survives it).
@@ -151,7 +151,7 @@ class TaskRunOutcome:
   outcome: TaskOutcome
   resumed: bool
   attempts: int
-  record: RunRecord | None
+  record: AttemptRecord | None
   result: TaskResult | None
 
 
@@ -233,7 +233,7 @@ def run_task(
 
   result: TaskResult | None = None
   valid = False
-  record: RunRecord | None = None
+  record: AttemptRecord | None = None
   attempt = 0
   for attempt in range(retries + 1):
     sandbox = sandbox_factory()
@@ -249,7 +249,7 @@ def run_task(
     # and a record exists for every container that was paid for.
     record = persist(
         store,
-        RunRecord(
+        AttemptRecord(
             sweep_id=address.sweep_id,
             instance_id=instance_id,
             task=address.task,

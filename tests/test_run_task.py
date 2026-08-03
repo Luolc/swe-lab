@@ -176,7 +176,7 @@ def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
   assert (outcome.resumed, outcome.attempts) == (False, 1)
   # the attempt's artifact landed under the task-keyed prefix
   assert outcome.record is not None
-  assert outcome.record.artifacts["out.txt"] == (
+  assert outcome.record.artifact_keys["out.txt"] == (
       "sw/acme__widget-1/r0/probe/a0/out.txt"
   )
   assert store.get_bytes("sw/acme__widget-1/r0/probe/a0/out.txt") == b"OUT"
@@ -288,7 +288,7 @@ def test_resume_skips_a_succeeded_task_entirely(tmp_path: Path):
   assert resumed.resumed is True
   assert resumed.outcome is TaskOutcome.SUCCEEDED
   assert resumed.record is not None
-  assert resumed.record.artifacts["out.txt"] == (
+  assert resumed.record.artifact_keys["out.txt"] == (
       "sw/acme__widget-1/r0/probe/a0/out.txt"
   )
   assert resumed.result is None  # only the store survives a process

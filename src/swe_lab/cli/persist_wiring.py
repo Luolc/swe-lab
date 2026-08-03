@@ -15,9 +15,9 @@ from etils import epath
 
 from swe_lab.paths import cache_root
 from swe_lab.sandbox import (
+    AttemptRecord,
     build_store,
     persist,
-    RunRecord,
     RUNS_NAMESPACE,
     Store,
 )
@@ -54,14 +54,14 @@ def new_record(
     model: str = "",
     metrics: Mapping[str, float] | None = None,
     extra: Mapping[str, object] | None = None,
-) -> RunRecord:
+) -> AttemptRecord:
   """Build a ``formal``-tier record with a freshly injected launch timestamp.
 
   ``rollout_id`` / ``attempt`` default to the single-rollout, first-try case;
   a pass@K sweep passes the sample index, and a retry bumps the attempt.
   ``task`` is required — every record names its task (ADR-0007 §6).
   """
-  return RunRecord(
+  return AttemptRecord(
       sweep_id=sweep,
       instance_id=instance_id,
       task=task,
@@ -91,7 +91,7 @@ def persist_run(
     model: str = "",
     metrics: Mapping[str, float] | None = None,
     extra: Mapping[str, object] | None = None,
-) -> RunRecord:
+) -> AttemptRecord:
   """Persist a finished run's artifacts + a manifest shard to the local store.
 
   Args:

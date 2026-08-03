@@ -162,6 +162,9 @@ def eval_cmd(
         | _persistable(verdict)
         | provenance,
     )
-    summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
+    summary["persisted"] = {
+        "run_ts": record.run_ts,
+        "keys": record.artifact_keys,
+    }
   print(json.dumps(summary, indent=2))
   raise typer.Exit(0 if summary["resolved"] else 1)

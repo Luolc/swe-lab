@@ -55,7 +55,7 @@ def promote_cmd(
           {
               "promoted": instance_id,
               "run_ts": written.run_ts,
-              "keys": written.artifacts,
+              "keys": written.artifact_keys,
           },
           indent=2,
       )

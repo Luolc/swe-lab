@@ -22,7 +22,7 @@ from etils import epath
 from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
-from .persist import RunRecord
+from .persist import AttemptRecord
 from .result import Contribution
 from .sandbox import ExecResult, Sandbox, SandboxFs
 from .spec import SandboxSpec
@@ -247,7 +247,7 @@ class FakeStore(Store):
   """
 
   objects: dict[str, bytes] = field(default_factory=dict)
-  manifests: list[RunRecord] = field(default_factory=list)
+  manifests: list[AttemptRecord] = field(default_factory=list)
   puts: list[str] = field(default_factory=list)
 
   @override
@@ -275,11 +275,11 @@ class FakeStore(Store):
     return self.objects[key]
 
   @override
-  def append_manifest(self, record: RunRecord) -> None:
+  def append_manifest(self, record: AttemptRecord) -> None:
     self.manifests.append(record)
 
   @override
-  def read_manifests(self, sweep_id: str) -> list[RunRecord]:
+  def read_manifests(self, sweep_id: str) -> list[AttemptRecord]:
     return sorted(
         (m for m in self.manifests if m.sweep_id == sweep_id),
         key=lambda record: record.sort_key,
@@ -292,7 +292,7 @@ class FakeStore(Store):
       instance_id: str,
       rollout_id: int,
       task: str | None = None,
-  ) -> list[RunRecord]:
+  ) -> list[AttemptRecord]:
     return [
         m
         for m in self.read_manifests(sweep_id)

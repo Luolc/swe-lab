@@ -25,7 +25,7 @@ from .observer import (
     merge_output_schemas,
     SandboxObserver,
 )
-from .persist import index, persist, promote, RunRecord, RUNS_NAMESPACE
+from .persist import AttemptRecord, index, persist, promote, RUNS_NAMESPACE
 from .resources import Inline, LocalFile, Resource
 from .result import (
     Contribution,
@@ -60,7 +60,7 @@ __all__ = [
     "Mounts",
     "Resource",
     "RUNS_NAMESPACE",
-    "RunRecord",
+    "AttemptRecord",
     "RunResult",
     "RunStatus",
     "Sandbox",

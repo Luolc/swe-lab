@@ -21,7 +21,7 @@ a later process.
 ### In scope
 
 - ADR-0004 key amendment: the `task` component, in the key and on
-  `RunRecord` — **final shape directly, no compatibility layer**: everything
+  `AttemptRecord` — **final shape directly, no compatibility layer**: everything
   in today's stores is debug-stage output, discarded rather than migrated.
 - The terminal marker: format, location, atomic write, read-back.
 - `run_task(...)` — the per-task orchestrator: resume check → attempt loop
@@ -72,11 +72,11 @@ runs/                                  ← store root namespace (unchanged)
   terminal" is one question per task, and attempts underneath it are the
   history of getting there.
 
-### 2.2 `RunRecord` gains `task` (required)
+### 2.2 `AttemptRecord` gains `task` (required)
 
 ```python
 @dataclass(frozen=True, slots=True, kw_only=True)
-class RunRecord:
+class AttemptRecord:
   sweep_id: str
   instance_id: str
   rollout_id: int = 0
@@ -250,7 +250,7 @@ Step by step — **this is the persistence walk-through**, exact and in order:
         prefix = <sweep>/<instance>/r<rollout>/<task>/a<attempt>
         for name, host_path in result.run.artifacts:
             store.put(f"{prefix}/{name}", host_path)
-        record = RunRecord(..., task=address.task, attempt=attempt,
+        record = AttemptRecord(..., task=address.task, attempt=attempt,
                            status=result.run.status.value,
                            artifacts={name: full_key, ...},
                            metrics=result.run.metrics,
@@ -320,7 +320,7 @@ a retry mechanism.
 
 ## 8. Steps
 
-1. `RunRecord.task` + `run_prefix` + `sort_key`; `read_manifest(task=...)`;
+1. `AttemptRecord.task` + `run_prefix` + `sort_key`; `read_manifest(task=...)`;
    `Store.put_bytes`; `FilesystemStore`/`FakeStore` updated. No migration:
    existing debug stores are discarded (prototyping — final shape directly).
 2. Marker write/read (`write_marker` atomic, `read_marker`), tests incl. the

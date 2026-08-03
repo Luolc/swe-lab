@@ -217,7 +217,10 @@ def rollout_in_docker(
         }
         | provenance,
     )
-    summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
+    summary["persisted"] = {
+        "run_ts": record.run_ts,
+        "keys": record.artifact_keys,
+    }
   resolved = _finish(
       summary,
       instance,
