@@ -25,7 +25,6 @@ from swe_lab.datasets.swebench_pro.unit_test import (
 from swe_lab.evaluation.methods.unit_test import (
     ENTRYSCRIPT_NAME,
     UnitTestEvalTask,
-    UPSTREAM,
 )
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import (
@@ -44,7 +43,7 @@ from swe_lab.sandbox import (
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandbox, RecordingObserver
-from swe_lab.workflow import Task
+from swe_lab.workflow import Task, UPSTREAM
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 

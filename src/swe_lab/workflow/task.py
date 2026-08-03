@@ -36,6 +36,22 @@ from swe_lab.sandbox import (
 )
 
 
+@final
+class Upstream:
+  """The construction-time mode marker for a workflow-supplied input.
+
+  ``UPSTREAM`` (its only shipped instance) is what a task field takes when the
+  value is not a constructor literal but an upstream task's output: the task
+  declares the store name in ``input_schema()`` and stages no mount of its
+  own — the workflow resolves the name against an earlier task's outputs and
+  feeds the file through ``execute``'s ``extra_mounts``. Not a resolution
+  placeholder: it carries no store path; matching is the workflow's job.
+  """
+
+
+UPSTREAM = Upstream()
+
+
 @dataclass(frozen=True)
 class TaskResult:
   """What one execution of a task yields.

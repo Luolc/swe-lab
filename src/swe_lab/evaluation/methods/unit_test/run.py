@@ -35,7 +35,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
-from swe_lab.workflow import Task
+from swe_lab.workflow import Task, Upstream
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
 # The default observer name: namespaces this method's artifacts and metrics,
@@ -179,21 +179,6 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
         qualified_name(self.name, name): value
         for name, value in metrics.items()
     }
-
-
-@final
-class Upstream:
-  """The construction-time mode marker for a workflow-supplied patch.
-
-  ``UPSTREAM`` (its only shipped instance) is not a resolution placeholder —
-  it carries no store path. Passing it as ``UnitTestEvalTask.patch`` just
-  means: compile the eval script with ``git apply``, declare ``patch.diff``
-  as an input (``input_schema``), and stage no patch mount — the workflow
-  resolves the name against an earlier task's output and mounts it.
-  """
-
-
-UPSTREAM = Upstream()
 
 
 @dataclass

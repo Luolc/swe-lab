@@ -5,15 +5,11 @@ from .run import (
     EvalParseObserver,
     run_unit_test,
     UnitTestEvalTask,
-    UPSTREAM,
-    Upstream,
 )
 
 __all__ = [
     "ENTRYSCRIPT_NAME",
     "EvalParseObserver",
-    "UPSTREAM",
     "UnitTestEvalTask",
-    "Upstream",
     "run_unit_test",
 ]
