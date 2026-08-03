@@ -105,21 +105,36 @@ class Task(ABC):
   five steps once. Single-run, like the observers it composes.
   """
 
+  A task author answers **three questions** — has it a runner, what does it
+  produce, what does it run — and never constructs an observer. Observers are
+  `execute`'s internal assembly, fed by the backend, the runner and the
+  producers; the word does not appear on the authoring surface.
+
+  | you have | you write |
+  |---|---|
+  | an agent that does the work | `runner()` returns it — its observers come with it |
+  | a deliverable | a producer in `output_producers()` |
+  | files of your own to stage | `mounts()` |
+  | the main action | `action()` |
+  | (a caller with persistence etc.) | passes `extra_observers` to `execute` |
+
   # ---- what a subclass declares -------------------------------------------
+
+  def runner(self) -> Harness | None:
+    """The runner doing this task's work, or ``None`` (e.g. eval: the action
+    is just the entryscript, per ADR-0007 §4). A task with a runner returns
+    it and its observers are composed automatically via the runner's own
+    factory (Task 18's `Harness.observers()`)."""
+    return None
 
   @abstractmethod
   def mounts(self) -> Mounts:
-    """The task's own files (e.g. eval entryscript). NOT the instance's, the
-    runner's, or the observers' — those are gathered by `execute`."""
+    """The task's own files (e.g. eval entryscript). NOT the instance's or
+    the runner's — those are gathered by `execute`."""
 
   @abstractmethod
   def output_producers(self) -> Sequence[OutputProducer]:
     """The outputs this task promises, each fused with its producer (§2.1)."""
-
-  @abstractmethod
-  def observers(self) -> Sequence[SandboxObserver]:
-    """The *runner's* observers (trace, completion). Task-output observers
-    come from `outputs()`; sandbox observers from the backend. Default ()."""
 
   @abstractmethod
   def action(
@@ -129,11 +144,11 @@ class Task(ABC):
       *,
       timeout: float,
   ) -> ExecResult:
-    """The run's main action: exec the harness, or run the entryscript.
+    """The run's main action: exec the runner, or run the entryscript.
 
-    ``outputs`` are the built output observers (name → observer), because
-    eval's in-run retry loop (ADR-0005) drives its parse observer between
-    attempts. A task without that need ignores the argument."""
+    ``outputs`` are the built per-output observers (name → observer) — an
+    advanced knob most tasks ignore; eval's in-run retry loop (ADR-0005)
+    needs it to drive its parse observer between attempts."""
 
   # ---- what the base class provides ---------------------------------------
 
@@ -158,9 +173,10 @@ class Task(ABC):
 def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
   # 1. observers, three sources, backend first (ADR-0007 §3)
   produced = [(p, p.observer()) for p in self.output_producers()]
+  runner = self.runner()
   observers = [
       *sandbox.observers(),                 # backend: runtime metrics
-      *self.observers(),                    # runner: trace, completion
+      *(runner.observers() if runner else ()),  # runner: trace, completion
       *(obs for _, obs in produced),        # task: declared outputs
       *extra_observers,                     # caller: e.g. persist
   ]
@@ -238,9 +254,9 @@ class CodingAgentTask(Task):
   agent_env: Mapping[str, str] | None = None
   proxy: AbstractContextManager[object] | None = None
 
+  def runner(self):        return self.harness
   def mounts(self):        return {}        # harness mounts stay the runner's
   def output_producers(self): return (PatchProducer(exclude_globs=self.exclude_globs),)
-  def observers(self):     return self.harness.observers()   # Task 18's factory
   def action(self, sb, outputs, *, timeout):   # outputs unused here
     return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
                             timeout=timeout, env=self.agent_env)
@@ -259,7 +275,7 @@ class UnitTestEvalTask[V: Verdict](Task):
   def mounts(self):        return {ENTRYSCRIPT_NAME: Mount(Inline(self._spec.eval_script.encode()), executable=True)}
   def instance_mounts(self): return dict(self._spec.mounts)   # until 19, the spec *is* the instance's mounts
   def output_producers(self): return (VerdictProducer(grader=self._spec.grader, native_outputs=self._spec.native_outputs),)
-  def observers(self):     return ()        # eval has no runner (no Evaluator — ADR-0007 §4)
+  # runner(): inherited None — eval has no runner (no Evaluator, ADR-0007 §4)
   def action(self, sb, outputs, *, timeout):
     # the existing _attempt_until_resolved loop, verbatim, driving
     # outputs["verdict"] (its parse observer): in-run retry is ADR-0005's and
