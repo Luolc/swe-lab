@@ -164,6 +164,7 @@ def run_task(
     output_dir: epath.PathLike,
     timeout: float,
     retries: int = 0,
+    resume: bool = True,
     run_ts: str,
     backend: str = "",
     model: str = "",
@@ -197,6 +198,10 @@ def run_task(
     timeout: Seconds before each attempt's main action is killed.
     retries: Extra attempts after the first (``0`` = single attempt). The
       budget absorbs validation failures and infrastructure failures alike.
+    resume: Honor an existing terminal marker (the workflow default).
+      ``False`` skips the check and runs fresh, overwriting attempts and
+      marker — the one-off CLI shape, where re-running a command means
+      re-running it.
     run_ts: Launch timestamp, injected by the caller — recorded, never read.
     backend: The sandbox backend name, recorded on the shards.
     model: The agent model alias, recorded on the shards.
@@ -218,7 +223,7 @@ def run_task(
     raise ValueError(f"retries must be >= 0, got {retries}")
   instance_id = task.instance.instance_id
 
-  marker = read_marker(store, address, instance_id)
+  marker = read_marker(store, address, instance_id) if resume else None
   if marker is not None:
     shards = store.read_manifest(
         address.sweep_id, instance_id, address.rollout_id, task=address.task

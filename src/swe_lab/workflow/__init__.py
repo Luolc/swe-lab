@@ -16,14 +16,28 @@ from .run_task import (
     TerminalMarker,
 )
 from .task import AttemptResult, Task
+from .workflow import (
+    EntryOutcome,
+    EntryStatus,
+    Workflow,
+    WorkflowEntry,
+    WorkflowError,
+    WorkflowOutcome,
+)
 
 __all__ = [
     "AttemptResult",
+    "EntryOutcome",
+    "EntryStatus",
     "Task",
     "TaskAddress",
     "TaskOutcome",
     "TaskRunOutcome",
     "TerminalMarker",
+    "Workflow",
+    "WorkflowEntry",
+    "WorkflowError",
+    "WorkflowOutcome",
     "read_marker",
     "run_task",
 ]
