@@ -97,54 +97,151 @@ wf = Workflow(
 outcome = wf.execute(output_dir=..., timeout=..., run_ts=...)
 ```
 
-## 3. Edge resolution — and the same-name question, settled
+## 3. Input resolution, exactly — declaration to bytes in the workspace
 
-All resolution is **static**, at `Workflow` construction, before anything
-runs. For every entry `E` and every `ArtifactSchema` in
-`E.task.input_schema()`:
+One naming contract underlies all of it, worth stating before the
+algorithm:
 
-1. **Explicit binding wins.** If `E.inputs[name]` names an earlier entry,
-   that entry's `output_schema` must declare `name` — else construction
-   fails (`"eval binds patch.diff to rollout, which does not declare it"`).
-   A binding to a later or unknown key also fails.
-2. **Otherwise match by name** over *earlier* entries' merged
-   `output_schema()`s (derivable at declaration time — Task 19 made schemas
-   construction-time data):
-   - exactly one producer → that is the edge;
-   - **zero** producers → construction fails: the workflow cannot ever
-     satisfy the input;
-   - **two or more** producers → construction fails with the candidates
-     listed, and the fix is an explicit binding. **Never nearest-wins, never
-     first-wins** — the repo's merge rules (mounts, output schemas) already
-     refuse to guess on duplicates, and an edge silently bound to the wrong
-     producer is the worst kind of wrong answer.
+> **An input name is three things at once**: the name in the producer's
+> `output_schema` (what `merge_output_schemas` de-duplicates), the artifact
+> name in the store (`record.artifacts` key, last segment of the full store
+> key), and the **workspace-relative mount target** the consuming task's
+> script reads (`git apply "$SANDBOX_WORKSPACE"/patch.diff`). No renaming
+> at any hop — the identity *is* the contract, which is why matching by
+> name is sufficient and why a resolved input lands exactly where the
+> script expects it.
 
-Why the binding lives on the **entry, not the task**: a task is declaration
-data reusable in any workflow — it knows *what* it consumes (`patch.diff`),
-not *who* produces it; producer keys are workflow-topology knowledge, so the
-workflow declaration is where they are written. (Store-side disambiguation
-needs nothing at all: Task 20's key layout separates same-named artifacts by
-the task segment.)
+Resolution has two phases: **A (static)** turns names into producer keys at
+`Workflow` construction; **B (runtime)** turns producer keys into staged
+bytes right before the consuming entry runs.
 
-The static check also validates: entry keys unique and well-formed; every
-task's observers compose (schema merge raises here, not mid-run).
+### Phase A — static: name → producing entry (at construction, nothing runs)
+
+```python
+def _resolve_edges(entries) -> dict[str, dict[str, str]]:
+  """entry.key → {input name → producer entry.key}; raises on any ambiguity."""
+  edges: dict[str, dict[str, str]] = {}
+  produced: dict[str, list[str]] = {}   # name → keys of entries declaring it
+  for entry in entries:                  # declared order == topological order
+    bound: dict[str, str] = {}
+    declared_inputs = {s.name: s for s in entry.task.input_schema()}
+    # (a) a binding for an input the task never declared is dead — an error,
+    #     not ignored: it means the author believes something false
+    for name in entry.inputs:
+      if name not in declared_inputs:
+        raise WorkflowError(f"{entry.key} binds {name!r}, which its task "
+                            "does not declare as an input")
+    for name in declared_inputs:
+      if name in entry.inputs:
+        # (b) EXPLICIT BINDING WINS — and is verified, not trusted:
+        producer = entry.inputs[name]
+        if producer not in produced.get(name, []):
+          # unknown key, a LATER entry, or an entry not declaring the name
+          raise WorkflowError(f"{entry.key} binds {name!r} to {producer!r}, "
+                              "which is not an earlier producer of it")
+        bound[name] = producer
+      else:
+        # (c) MATCH BY NAME over earlier entries' declared outputs
+        candidates = produced.get(name, [])
+        if len(candidates) == 1:
+          bound[name] = candidates[0]
+        elif not candidates:
+          raise WorkflowError(f"no earlier entry produces {name!r}, "
+                              f"required by {entry.key}")
+        else:  # >= 2 — NEVER nearest-wins, never first-wins
+          raise WorkflowError(f"{name!r} is produced by {candidates}; "
+                              f"bind it explicitly on {entry.key}")
+    edges[entry.key] = bound
+    # this entry's declared outputs become available to LATER entries
+    for schema in merge_output_schemas(
+        *(o.output_schema() for o in entry.task.observers())):
+      produced.setdefault(schema.name, []).append(entry.key)
+  return edges
+```
+
+Properties, spelled out:
+
+- **Everything here is declaration data** (Task 19): `input_schema()` is a
+  fixed function of task configuration, and a task's output schema derives
+  from its observers at construction time — so the whole edge map is
+  computable, and *checked*, before any sandbox exists. A workflow that
+  would ever dangle is refused at declaration.
+- **Only earlier entries are candidates** — the list is the topological
+  order (ADR-0007 §9), so a forward or self edge cannot even be expressed.
+- **Ambiguity is an error, not a policy**: two earlier producers of one
+  name fail construction with both keys named; the fix is one line of
+  explicit `inputs=`. Same DNA as `merge_mounts` / `merge_output_schemas`
+  — the repo refuses to guess on duplicates everywhere.
+- Why the binding lives on the **entry, not the task**: a task is reusable
+  declaration data — it knows *what* it consumes, not *who* produces it;
+  producer keys are topology knowledge, so the workflow declaration is
+  where they are written. (Store-side, same-named artifacts never collide
+  at all: Task 20's key layout separates them by the task segment.)
+- The static pass also validates: entry keys unique and `[a-z0-9_-]+`; each
+  task's observer schemas merge cleanly (raises here, not mid-run).
+
+### Phase B — runtime: producer key → staged bytes (per entry, just before it runs)
+
+For entry `E`, for each `(name → producer_key)` in `edges[E.key]`:
+
+```
+b1. THE PRODUCER'S FINAL RECORD — never a guessed key:
+      ran this process  → the producer's run_task outcome already holds its
+                          final RunRecord
+      resumed           → shards = store.read_manifest(sweep, instance,
+                          rollout, task=producer_key); take the highest
+                          attempt — the marker guarantees it is the final one
+    The record is the authority because only IT knows which attempt was
+    final; assembling `<sweep>/<instance>/r<rollout>/<producer>/a?/<name>`
+    by hand would have to re-derive that.
+
+b2. LOOK UP THE ARTIFACT: full_key = record.artifacts.get(name)
+      absent → the producer succeeded but never registered this name (a
+      best-effort output that did not land) → required: EDGE FAILURE;
+      optional: skip (not mounted; noted in the workflow record).
+
+b3. FETCH: store.get(full_key, staging) where
+      staging = <output_dir>/edges/<E.key>/<name>
+    Always through Store.get onto a host-side staging path — never a
+    LocalFile aimed into the store's internals — so an object store (R2/S3)
+    works unchanged.
+
+b4. VALIDATE THE BYTES (ADR-0007 §5): staged file exists and is non-empty.
+      required + missing/empty → EDGE FAILURE (the empty patch is caught
+      here — no container is spent on it); optional → skip as in b2.
+
+b5. MOUNT: extra_mounts[name] = Mount(LocalFile(staging), read_only=True)
+      target = the input name itself (the naming contract above), so the
+      bytes land at the exact workspace path the task's script reads.
+```
+
+**Edge failure semantics**: the entry's outcome is `EDGE_FAILED` — distinct
+from a task failure (ADR-0007 §5: a broken edge and a failed evaluation
+call for opposite responses). No sandbox is built, no retry budget is
+spent, no attempt is persisted, and **no terminal marker is written**
+(nothing ran; a re-entry re-checks the edge, so a store repaired by hand —
+or a corrected workflow — can proceed where a terminal marker would have
+blocked forever). The workflow then fails per §4's gate.
+
+**The end-to-end walk for the shipped pair**, every hop explicit:
+
+| hop | rollout → eval, `patch.diff` |
+|---|---|
+| producer declares | `DiffExtractObserver.output_schema()` → `patch.diff` (required) — part of `CodingAgentTask.observers()` |
+| consumer declares | `UnitTestEvalTask(apply_patch=True).input_schema()` → `patch.diff` (required) |
+| phase A | sole earlier producer of `patch.diff` is entry `"rollout"` → edge `eval.patch.diff ← rollout` (an explicit `inputs={"patch.diff": "rollout"}` would also be accepted, and required if a second patch-producing entry ever precedes eval) |
+| producer runs | attempt `a0` persists `s1/<inst>/r0/rollout/a0/patch.diff`; its `RunRecord.artifacts["patch.diff"]` holds exactly that key |
+| phase B | record lookup → `store.get(key, out/edges/eval/patch.diff)` → non-empty ✓ → `extra_mounts={"patch.diff": Mount(LocalFile(...), read_only=True)}` |
+| consumer runs | the file sits at `$SANDBOX_WORKSPACE/patch.diff`; the compiled entryscript's `git apply` reads it; `execute`'s required-input check would have refused to build the sandbox had the mount been missing |
 
 ## 4. Execution
 
 Per entry, in declared order — thin around Task 20's `run_task`:
 
 ```
-1. RESOLVE INPUTS (only for entries with an input_schema)
-   producer_record = the producing entry's final RunRecord — from this
-     process's own run_task outcome, or (resume) read back via
-     read_manifest(..., task=producer.key)
-   key = producer_record.artifacts[name]     # full store key, never guessed
-   store.get(key, staging/<entry.key>/<name>)
-   EDGE VALIDATION (ADR-0007 §5): the staged file must exist and be
-     non-empty. A required input that is missing or empty fails the ENTRY
-     with the distinct edge status — no sandbox is built, no retry budget
-     spent (an empty patch is caught here, not paid for in a container).
-   extra_mounts[name] = Mount(LocalFile(staged), read_only=True)
+1. RESOLVE INPUTS: phase B above (phase A already ran at construction) →
+   extra_mounts; a required-input edge failure fails the entry here, before
+   any sandbox exists.
 
 2. RUN: outcome = run_task(entry.task, store=store, address=(sweep,
       rollout, entry.key), sandbox_factory=entry.sandbox_factory,
