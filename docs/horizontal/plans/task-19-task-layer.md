@@ -19,7 +19,7 @@ by making `run_rollout` and `run_unit_test` thin wrappers over it with
 
 ### In scope
 
-- `tasks/` package: `Task`, `TaskOutput`, `OutputProducer`, `TaskResult`.
+- `workflow/` package: `Task`, `TaskOutput`, `OutputProducer`, `TaskResult`.
 - `CodingAgentTask` and `UnitTestEvalTask` — the two shipped subclasses.
 - Both compositions rewritten as wrappers; both CLIs untouched.
 - In-run eval retry (ADR-0005) preserved exactly where it is.
@@ -35,7 +35,10 @@ by making `run_rollout` and `run_unit_test` thin wrappers over it with
 
 ## 2. Interface definitions
 
-New package `src/swe_lab/tasks/`.
+New package **`src/swe_lab/workflow/`** — deliberately not `tasks/`: "task"
+collides with too many neighbouring concepts (the old `pipelines/`, dataset
+task instances), while "workflow" names the umbrella unambiguously. `Task` and
+(in Task 21) `Workflow` both live here.
 
 ### 2.1 `TaskOutput` — a declared output: a name plus a producer
 
@@ -337,7 +340,7 @@ Hard acceptance criteria, in order:
 
 1. **Signatures unchanged**: `run_rollout` / `run_unit_test` callers (CLIs,
    verify.py, tests) compile with zero edits.
-2. **Full suite green with zero test edits** outside the new `tasks/` tests.
+2. **Full suite green with zero test edits** outside the new `workflow/` tests.
 3. **Live equivalence, byte-level**: one gold eval (the flipt parity instance)
    and one live rollout, run on `main` and on the branch — `output.json`,
    verdict summary, patch, and artifact name sets identical.
@@ -347,7 +350,7 @@ Hard acceptance criteria, in order:
 
 ## 4. Steps
 
-1. `tasks/` package: `TaskOutput` / `OutputProducer` / `TaskResult` + producer
+1. `workflow/` package: `TaskOutput` / `OutputProducer` / `TaskResult` + producer
    wrappers; unit tests with `FakeSandbox`.
 2. `Task.execute` + composition-order test (backend observers before runner's
    before outputs'; duplicate mount target across sources refused).
