@@ -184,14 +184,77 @@ broken edge and a failed evaluation call for opposite responses, and
 `RunStatus` / `RunResult.error` already carry that distinction. An empty patch
 (`is_empty`) is caught here too, rather than spending a container on it.
 
-### 6. Retry becomes task-level policy with a predicate over outputs
+### 6. Three nested levels of "run it again", and they are not the same thing
+
+Two already exist and a third is being added, so they are named here rather than
+left to collide:
+
+| level | scope | keyed by | answers |
+|---|---|---|---|
+| **in-run retry** (ADR-0005) | same sandbox, same session | `Verdict.attempts` | the harness is nondeterministic |
+| **task retry** (new) | new sandbox, same workflow run | `RunRecord.attempt` | the task's output failed validation |
+| **resume** (new) | a *different process*, after preemption | the completion marker | this task already succeeded; do not run it |
+
+Task retry reuses `RunRecord.attempt`, which ADR-0004 already defines as "a
+re-run after an infrastructure failure" — the same shape, so each attempt gets
+its own record instead of a new axis.
 
 `UnitTestSpec.retries` moves onto the task. Retry needs a notion of "done",
-which generalizes to a predicate over the task's declared outputs; for
-evaluation it reads the verdict's `resolved`. ADR-0005's cost argument is
-unchanged — it just stops living inside dataset data.
+which generalizes to a **callback over the task's declared outputs**; for
+evaluation it reads the verdict's `resolved`. The budget is a task
+hyperparameter. A task retries until its output validates, and only then does
+the workflow move on.
 
-### 7. Provided subclasses, open registry
+### 7. Resume is separate logic from retry, and the marker is written last
+
+Large workflows get **preempted**. Every execution is therefore treated as
+*possibly a resume*: before running a task, look it up in the store, and skip it
+if it is marked complete.
+
+Retry and resume are deliberately different mechanisms rather than one budget:
+**resume decides whether to enter a task; retry decides whether to leave it.**
+A task killed mid-run leaves no marker, so resume simply runs it again from
+scratch — it is not a half-finished attempt to be continued.
+
+```mermaid
+flowchart TB
+  N["next task in<br/>topological order"] --> C{"complete marker<br/>in store?"}
+  C -->|yes| M["mount its recorded outputs<br/><i>skip execution entirely</i>"]
+  C -->|no| R["run the task"]
+  R --> V{"output callback<br/>validates?"}
+  V -->|no, budget left| R
+  V -->|no, budget spent| F["fail the task"]
+  V -->|yes| P["persist outputs"]
+  P --> K["write complete marker<br/><b>last</b>"]
+  K --> M
+  M --> N
+```
+
+Three properties this ordering buys, each of them a failure we would otherwise
+ship:
+
+- **The marker is written after the outputs are durable.** Reversed, a crash in
+  between would leave a task marked complete with nothing to show for it, and
+  resume would skip it forever. Torn state without a marker is safe — it just
+  re-runs.
+- **The marker write must be atomic** (write-then-rename), or a preemption
+  during the write leaves a partial marker that reads as complete.
+- **Resumed outputs go through the same input validation as fresh ones.** A
+  resumed artifact that is missing or corrupt is caught by the seam from
+  section 5, not trusted because a marker existed.
+
+Two consequences worth stating plainly:
+
+- **A task must be safe to run from scratch at any time.** The eval entryscript
+  already is — ADR-0005 made an attempt a clean repeat (`git reset --hard` +
+  `git clean -fd`). Any new task owes the same.
+- **The task boundary is the resume granularity.** One task is one sandbox, so
+  preemption mid-task loses that whole sandbox; steps inside a task are not
+  separately resumable. That gives "how big should a task be" a real answer:
+  big enough to be worth its own container, small enough that losing one to
+  preemption does not hurt.
+
+### 8. Provided subclasses, open registry
 
 A small set ships (a coding-agent task, a unit-test evaluation task); a
 consumer defines its own by supplying mounts, a script, and outputs, the same
@@ -206,6 +269,8 @@ import-only extension the fix and sandbox registries already use.
 | **`SessionTask` alongside `SandboxTask`.** | `session` already means one sandbox lifecycle. Steps inside one task express the same thing without overloading the word. |
 | **Let the workflow own one sandbox across tasks.** | Deferred, not rejected. It trades isolation for warm caches, and the isolation is what makes a graded eval trustworthy. Revisit when a real case needs it. |
 | **Adopt an off-the-shelf workflow engine.** | The DAG here is small and the hard parts (sandbox lifecycle, artifact transfer, observation) are already ours. A dependency would own the easy half. |
+| **One budget covering both retry and resume.** | They answer different questions — "is the work bad?" versus "did this process die?" — and merging them means a preempted task consumes retry budget it never spent on a real failure. |
+| **Resume from inside a task (step-level markers).** | A task is one sandbox; when it dies the sandbox is gone, so there is no state to resume into. Cutting tasks smaller is the honest way to get finer resume. |
 | **Leave it: keep writing compositions by hand.** | Three exist and they already disagree; the fourth is an annotation pipeline that reinvented fan-out. |
 
 ## Consequences
@@ -244,6 +309,21 @@ import-only extension the fix and sandbox registries already use.
 - Whether `pipelines/related_files` is migrated onto tasks or left alone; it is
   the acid test for whether the abstraction is sufficient, and if it cannot be
   expressed, this ADR is wrong.
+- **The run-record key needs a task component.** ADR-0004 keys a run by
+  `(sweep_id, instance_id, rollout_id, attempt)`, which has no room for "which
+  task" — two tasks of one instance in one rollout would collide. This ADR will
+  need to amend ADR-0004 rather than work around it.
+- **What makes two runs of "the same task" the same.** Resume is only safe if
+  the marker's identity covers the inputs: keyed on names alone, editing a
+  task's script would silently reuse a stale completion — the classic resume
+  footgun. The likely answer is a fingerprint of (script, mounts, config) stored
+  with the marker, and refusing to resume across a mismatch, but the cost of
+  computing it over large mounts needs measuring first.
+- **Whether a permanently failing task should be retried on every resume.** With
+  only "complete" gating the skip, a task that exhausts its budget re-runs in
+  full on each resume and can burn a sweep. The alternative is recording
+  terminal failure and honouring it, which trades that cost for the risk of
+  pinning a failure that was environmental.
 
 This ADR is expected to be **amended or partly superseded** as it is
 implemented; the settled architecture is reconciled into
