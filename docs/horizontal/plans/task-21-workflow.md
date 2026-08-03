@@ -88,8 +88,7 @@ wf = Workflow(
     store=store, sweep_id="s1", rollout_id=0,
     entries=[
         WorkflowEntry("rollout", CodingAgentTask(instance=inst, harness=h)),
-        WorkflowEntry("eval", UnitTestEvalTask(instance=inst, patch=UPSTREAM),
-                      retries=1),
+        WorkflowEntry("eval", UnitTestEvalTask(instance=inst), retries=1),
     ],
     sandbox_factory=...,
 )
