@@ -518,3 +518,40 @@ def test_live_oom_kill_of_an_exec_is_counted(tmp_path: Path):
   # ...and the container itself was never the casualty: the setup metric is
   # still there, from a sandbox that stayed up throughout
   assert contribution.metrics["sandbox.setup_seconds"] >= 0.0
+
+
+@pytest.mark.docker
+def test_live_absolute_mount_creates_missing_parent_dirs(tmp_path: Path):
+  # The regression the first live rollout after the transfer seam hit: an
+  # asset mounted at an absolute path (the pinned agent binary at
+  # /opt/claude-code/claude) lands in a container whose image has no such
+  # directory, and `docker cp` refuses a destination with no parent.
+  spec = SandboxSpec("debian-absmount", _IMAGE, "/", "none")
+  workspace = tmp_path / "ws"
+  workspace.mkdir()
+  binary = tmp_path / "tool"
+  _ = binary.write_text("#!/bin/sh\necho ran\n")
+  sandbox = DockerHostSandbox(spec=spec, workspace=epath.Path(workspace))
+  sandbox.up()
+  try:
+    sandbox.mount(
+        {
+            # two missing directory levels, from a file on the host
+            "/opt/probe-dir/bin/tool": Mount(
+                LocalFile(epath.Path(binary)), executable=True, read_only=True
+            ),
+            # and from inline bytes (the other transfer path)
+            "/opt/probe-dir/etc/config": Mount(Inline(b"data\n")),
+        }
+    )
+    ran = sandbox.run_command("/opt/probe-dir/bin/tool", timeout=30.0)
+    assert ran.ok and ran.stdout.strip() == "ran"
+    config = sandbox.run_command("cat /opt/probe-dir/etc/config", timeout=30.0)
+    assert config.ok and config.stdout == "data\n"
+    # read-only made it through the cp path too
+    mode = sandbox.run_command(
+        "stat -c %a /opt/probe-dir/bin/tool", timeout=30.0
+    )
+    assert mode.stdout.strip() == "555"
+  finally:
+    sandbox.down()
