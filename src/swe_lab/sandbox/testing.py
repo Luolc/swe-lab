@@ -22,7 +22,7 @@ from etils import epath
 from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
-from .persist import RunRecord
+from .persist import AttemptRecord
 from .result import Contribution
 from .sandbox import ExecResult, Sandbox, SandboxFs
 from .spec import SandboxSpec
@@ -247,12 +247,17 @@ class FakeStore(Store):
   """
 
   objects: dict[str, bytes] = field(default_factory=dict)
-  manifests: list[RunRecord] = field(default_factory=list)
+  manifests: list[AttemptRecord] = field(default_factory=list)
   puts: list[str] = field(default_factory=list)
 
   @override
   def put(self, key: str, src: epath.PathLike) -> None:
     self.objects[key] = epath.Path(src).read_bytes()
+    self.puts.append(key)
+
+  @override
+  def put_bytes(self, key: str, data: bytes) -> None:
+    self.objects[key] = data
     self.puts.append(key)
 
   @override
@@ -264,11 +269,17 @@ class FakeStore(Store):
     _ = dest.write_bytes(self.objects[key])
 
   @override
-  def append_manifest(self, record: RunRecord) -> None:
+  def get_bytes(self, key: str) -> bytes:
+    if key not in self.objects:
+      raise SandboxError(f"store key not found: {key}")
+    return self.objects[key]
+
+  @override
+  def append_manifest(self, record: AttemptRecord) -> None:
     self.manifests.append(record)
 
   @override
-  def read_manifests(self, sweep_id: str) -> list[RunRecord]:
+  def read_manifests(self, sweep_id: str) -> list[AttemptRecord]:
     return sorted(
         (m for m in self.manifests if m.sweep_id == sweep_id),
         key=lambda record: record.sort_key,
@@ -276,10 +287,16 @@ class FakeStore(Store):
 
   @override
   def read_manifest(
-      self, sweep_id: str, instance_id: str, rollout_id: int
-  ) -> list[RunRecord]:
+      self,
+      sweep_id: str,
+      instance_id: str,
+      rollout_id: int,
+      task: str | None = None,
+  ) -> list[AttemptRecord]:
     return [
         m
         for m in self.read_manifests(sweep_id)
-        if m.instance_id == instance_id and m.rollout_id == rollout_id
+        if m.instance_id == instance_id
+        and m.rollout_id == rollout_id
+        and (task is None or m.task == task)
     ]

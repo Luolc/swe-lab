@@ -35,7 +35,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
-from swe_lab.workflow import Task
+from swe_lab.workflow import AttemptResult, Task
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
 # The default observer name: namespaces this method's artifacts and metrics,
@@ -307,6 +307,44 @@ class UnitTestEvalTask[V: Verdict](Task):
           ),
       )
     return ()
+
+  @override
+  def outputs_valid(self, result: AttemptResult) -> bool:
+    """Require a typed verdict on top of the baseline validity.
+
+    Composes the baseline (status + required outputs) with the one thing
+    existence cannot see: grading ran and produced a typed verdict. A
+    dataset-specific subclass can compose further (e.g. reject a verdict
+    whose parser output was unreadable).
+
+    Args:
+      result: The execution to judge.
+
+    Returns:
+      Whether the attempt produced a graded verdict.
+    """
+    return super().outputs_valid(result) and self._parse.verdict is not None
+
+  @override
+  def should_retry(self, result: AttemptResult) -> bool:
+    """Retry on failure — and on an unresolved verdict, to absorb a flake.
+
+    The flake half is ADR-0005's semantics lifted to the task level: the
+    patch is fixed, an unresolved verdict *might* be harness noise, and a
+    retry answers that. Not failure — the terminal marker still reads
+    ``outputs_valid``, so a genuinely failing patch that exhausts the budget
+    is a *succeeded* task whose answer is "unresolved".
+
+    Args:
+      result: The execution to judge.
+
+    Returns:
+      Whether to spend budget on another attempt.
+    """
+    verdict = self._parse.verdict
+    return super().should_retry(result) or (
+        verdict is not None and not verdict.resolved
+    )
 
   @override
   def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:

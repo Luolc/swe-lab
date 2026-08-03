@@ -21,13 +21,13 @@ a later process.
 ### In scope
 
 - ADR-0004 key amendment: the `task` component, in the key and on
-  `RunRecord` — **final shape directly, no compatibility layer**: everything
+  `AttemptRecord` — **final shape directly, no compatibility layer**: everything
   in today's stores is debug-stage output, discarded rather than migrated.
 - The terminal marker: format, location, atomic write, read-back.
 - `run_task(...)` — the per-task orchestrator: resume check → attempt loop
   (execute → validate → persist → retry) → terminal marker. This is the
   single unit Task 21's workflow calls once per entry.
-- Output validation against `TaskResult.output_schema` (`required` stops
+- Output validation against `AttemptResult.output_schema` (`required` stops
   being advisory).
 - Task-level retry with a fresh sandbox per attempt (via a sandbox
   *factory*), absorbing both validation failures and infra failures.
@@ -72,11 +72,11 @@ runs/                                  ← store root namespace (unchanged)
   terminal" is one question per task, and attempts underneath it are the
   history of getting there.
 
-### 2.2 `RunRecord` gains `task` (required)
+### 2.2 `AttemptRecord` gains `task` (required)
 
 ```python
 @dataclass(frozen=True, slots=True, kw_only=True)
-class RunRecord:
+class AttemptRecord:
   sweep_id: str
   instance_id: str
   rollout_id: int = 0
@@ -135,13 +135,13 @@ layer's baseline as its default:
 ```python
 class Task:
   ...
-  def outputs_valid(self, result: TaskResult) -> bool:
+  def outputs_valid(self, result: AttemptResult) -> bool:
     """Did this attempt actually produce good outputs? The failure judgment.
 
     Default: the run ended SUCCESS and every `required` declared output
     exists — the baseline every task gets for free (`ArtifactSchema.required`
     stops being advisory here; named invariant test). Override to judge
-    *content*, over the whole `TaskResult` (artifacts as host paths,
+    *content*, over the whole `AttemptResult` (artifacts as host paths,
     metrics, the composed observers' typed results):
 
         # rollout: an existing-but-corrupt trace is a failure
@@ -173,7 +173,7 @@ noise, so spend budget to find out — ADR-0005's semantics lifted a level).
 It composes over validity by default:
 
 ```python
-  def should_retry(self, result: TaskResult) -> bool:
+  def should_retry(self, result: AttemptResult) -> bool:
     """Does this attempt need another one? Default: exactly when it failed.
 
     Override to *add* retry-desire on top — never to weaken the failure
@@ -250,7 +250,7 @@ Step by step — **this is the persistence walk-through**, exact and in order:
         prefix = <sweep>/<instance>/r<rollout>/<task>/a<attempt>
         for name, host_path in result.run.artifacts:
             store.put(f"{prefix}/{name}", host_path)
-        record = RunRecord(..., task=address.task, attempt=attempt,
+        record = AttemptRecord(..., task=address.task, attempt=attempt,
                            status=result.run.status.value,
                            artifacts={name: full_key, ...},
                            metrics=result.run.metrics,
@@ -320,7 +320,7 @@ a retry mechanism.
 
 ## 8. Steps
 
-1. `RunRecord.task` + `run_prefix` + `sort_key`; `read_manifest(task=...)`;
+1. `AttemptRecord.task` + `run_prefix` + `sort_key`; `read_manifest(task=...)`;
    `Store.put_bytes`; `FilesystemStore`/`FakeStore` updated. No migration:
    existing debug stores are discarded (prototyping — final shape directly).
 2. Marker write/read (`write_marker` atomic, `read_marker`), tests incl. the

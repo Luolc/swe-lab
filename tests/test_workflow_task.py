@@ -537,3 +537,99 @@ def test_coding_agent_task_defaults_the_prompt_to_the_instance(
   # total hooks: the instance's material AND the harness's files both staged
   assert (sandbox.workspace / "instance.txt").read_text() == "I"
   assert (sandbox.workspace / "probe.sh").is_file()
+
+
+# ─── the validity / retry hooks on the eval task ─────────────────────────────
+
+
+def _graded_eval_task(
+    tmp_path: Path, *, passing: bool
+) -> tuple[UnitTestEvalTask[SweBenchProVerdict], FakeSandbox]:
+  """Build an eval task + sandbox whose staged output grades pass/fail."""
+  instance = _EvalInstance() if passing else _FailingEvalInstance()
+  task = UnitTestEvalTask(instance=instance)
+  return task, _fake(tmp_path)
+
+
+@final
+@dataclass(frozen=True)
+class _FailingEvalInstance(TaskInstance[SweBenchProVerdict]):
+  """Like ``_EvalInstance`` but the staged results miss a required test."""
+
+  instance_id: str = "acme__widget-1"
+
+  @override
+  def sandbox_spec(self) -> SandboxSpec:
+    return SPEC
+
+  @override
+  def prompt(self) -> str:
+    return "SOLVE THIS"
+
+  @override
+  def gold_patch(self) -> str | None:
+    return None
+
+  @override
+  def unit_test_spec(
+      self,
+      *,
+      patch: str | None,
+      checkout_golden_tests: bool = True,
+  ) -> UnitTestSpec[SweBenchProVerdict]:
+    del checkout_golden_tests
+    mounts: Mounts = {
+        REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+        "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
+    }
+    if patch is not None:
+      mounts[PATCH_NAME] = Mount(Inline(patch.encode()))
+    return UnitTestSpec(
+        eval_script="echo eval\n", mounts=mounts, grader=SweBenchProGrader()
+    )
+
+
+def test_a_resolved_eval_is_valid_and_wants_no_retry(tmp_path: Path):
+  task, sandbox = _graded_eval_task(tmp_path, passing=True)
+  result = task.execute(
+      sandbox,
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      extra_mounts={PATCH_NAME: Mount(Inline(b"P"))},
+  )
+  assert task.outputs_valid(result) is True
+  assert task.should_retry(result) is False
+
+
+def test_an_unresolved_eval_is_valid_but_asks_for_a_retry(tmp_path: Path):
+  # The two hooks answer different questions: an unresolved verdict is a
+  # legitimate OUTPUT (validity holds — "no" is an answer) while the task
+  # still wants budget spent on absorbing a possible flake.
+  task, sandbox = _graded_eval_task(tmp_path, passing=False)
+  result = task.execute(
+      sandbox,
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      extra_mounts={PATCH_NAME: Mount(Inline(b"P"))},
+  )
+  assert task.outputs_valid(result) is True
+  assert task.should_retry(result) is True
+
+
+def test_an_eval_that_never_graded_is_invalid(tmp_path: Path):
+  # Setup failure: before_destroy never ran, so no verdict exists — that is
+  # a failure (and a retryable one), not an answer.
+  task = UnitTestEvalTask(instance=_EvalInstance())
+  sandbox = FakeSandbox(
+      spec=SPEC,
+      workspace=epath.Path(tmp_path / "ws"),
+      up_error=SandboxError("no docker"),
+  )
+  result = task.execute(
+      sandbox,
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      extra_mounts={PATCH_NAME: Mount(Inline(b"P"))},
+  )
+  assert task.outputs_valid(result) is False
+  assert task.should_retry(result) is True

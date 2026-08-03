@@ -34,6 +34,8 @@ from swe_lab.rollout import RolloutOutcome, run_rollout
 from swe_lab.sandbox import build_sandbox
 
 _ROLLOUT_SUBDIR = "rollout_workspaces"
+# The task segment of this command's persisted records (ADR-0007 §6).
+_TASK_KEY = "rollout"
 _EVAL_SUBDIR = "eval_workspaces"
 _DEFAULT_TIMEOUT_S = 1800.0
 # Proxy ports are drawn from a wide band by a stable hash of the instance id, so
@@ -202,6 +204,7 @@ def rollout_in_docker(
         root,
         sweep=sweep,
         instance_id=outcome.instance_id,
+        task=_TASK_KEY,
         status=outcome.status.value,
         backend=backend,
         artifacts=outcome.artifacts,
@@ -214,7 +217,10 @@ def rollout_in_docker(
         }
         | provenance,
     )
-    summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
+    summary["persisted"] = {
+        "run_ts": record.run_ts,
+        "keys": record.artifact_keys,
+    }
   resolved = _finish(
       summary,
       instance,

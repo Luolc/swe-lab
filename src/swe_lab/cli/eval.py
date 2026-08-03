@@ -17,6 +17,8 @@ from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import build_sandbox
 
 _WORKSPACES_SUBDIR = "eval_workspaces"
+# The task segment of this command's persisted records (ADR-0007 §6).
+_TASK_KEY = "eval"
 
 
 def _persistable(verdict: Verdict | None) -> dict[str, object]:
@@ -151,6 +153,7 @@ def eval_cmd(
         root,
         sweep=sweep,
         instance_id=instance.instance_id,
+        task=_TASK_KEY,
         status=result.status.value,
         backend=backend,
         artifacts=result.artifacts,
@@ -159,6 +162,9 @@ def eval_cmd(
         | _persistable(verdict)
         | provenance,
     )
-    summary["persisted"] = {"run_ts": record.run_ts, "keys": record.artifacts}
+    summary["persisted"] = {
+        "run_ts": record.run_ts,
+        "keys": record.artifact_keys,
+    }
   print(json.dumps(summary, indent=2))
   raise typer.Exit(0 if summary["resolved"] else 1)

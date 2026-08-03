@@ -44,6 +44,7 @@ def promote_cmd(
   record = new_record(
       sweep=sweep,
       instance_id=instance_id,
+      task="promoted",
       status=status,
       backend=backend,
       extra={"promoted": True},
@@ -54,7 +55,7 @@ def promote_cmd(
           {
               "promoted": instance_id,
               "run_ts": written.run_ts,
-              "keys": written.artifacts,
+              "keys": written.artifact_keys,
           },
           indent=2,
       )

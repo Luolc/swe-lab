@@ -7,8 +7,9 @@ registered artifacts on the host. So the composition, after the run, hands the
 finished outcome here — no engine hook, no ``PersistObserver``.
 
 ``persist`` uploads a run's artifacts under its key and appends one per-run
-:class:`RunRecord` shard; ``promote`` does the same for a whole debug workspace
-(the misclassification safety valve); ``index`` aggregates a sweep's shards.
+:class:`AttemptRecord` shard; ``promote`` does the same for a whole debug
+workspace (the misclassification safety valve); ``index`` aggregates a sweep's
+shards.
 """
 
 from __future__ import annotations
@@ -33,35 +34,41 @@ MANIFEST_NAME = "run.json"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class RunRecord:
+class AttemptRecord:
   """One T1 manifest shard — the ledger entry for a single persisted run.
 
   Failures are recorded too (persistence gates on tier, not success). A run is
-  identified by ``(sweep_id, instance_id, rollout_id, attempt)`` — which is
-  exactly its store key (ADR-0004) — so K rollouts of one instance are
-  addressable and a retry of one rollout is distinguishable. ``run_ts`` is
-  *injected* at launch, never read inside the engine (so a run is reproducible
-  and the record is testable), and is recorded rather than keying anything.
+  identified by ``(sweep_id, instance_id, rollout_id, task, attempt)`` — which
+  is exactly its store key (ADR-0004, key amended by ADR-0007 §6) — so K
+  rollouts of one instance are addressable, two tasks of one rollout cannot
+  collide even when they produce same-named artifacts, and a retry of one
+  task is distinguishable. ``run_ts`` is *injected* at launch, never read
+  inside the engine (so a run is reproducible and the record is testable),
+  and is recorded rather than keying anything.
 
   Attributes:
     sweep_id: The sweep this run belongs to (``adhoc`` for a one-off).
     instance_id: The dataset instance.
+    task: Which task of this rollout the run belongs to — the workflow-entry
+      key (``rollout``, ``eval``). Required: every record names its task,
+      and the task owns its attempts.
     rollout_id: Which sample of this instance, ``0..K-1`` for pass@K. ``0`` for
       a single-rollout job.
-    attempt: Retry index of *this* rollout, for a re-run after an
-      infrastructure failure. ``0`` unless something re-ran it.
+    attempt: Retry index of *this task* (validation or infrastructure
+      failure, ADR-0007 §6). ``0`` unless something re-ran it.
     run_ts: Launch timestamp, injected by the caller (recorded, not a key).
     status: The engine ``RunStatus`` value the run ended with.
     tier: The persistence tier — always ``formal`` here (debug never persists).
     backend: The sandbox backend name the run used.
     model: The agent model alias (empty for a grading-only run).
-    artifacts: Object name → its full store key (filled by :func:`persist`).
+    artifact_keys: Object name → its full store key (filled by :func:`persist`).
     metrics: Scalar metrics from the run.
     extra: Any other run facts (e.g. ``is_empty_patch``, an error repr).
   """
 
   sweep_id: str
   instance_id: str
+  task: str
   rollout_id: int = 0
   attempt: int = 0
   run_ts: str
@@ -69,7 +76,7 @@ class RunRecord:
   tier: str
   backend: str
   model: str = ""
-  artifacts: dict[str, str] = field(default_factory=dict)
+  artifact_keys: dict[str, str] = field(default_factory=dict)
   metrics: dict[str, float] = field(default_factory=dict)
   extra: dict[str, object] = field(default_factory=dict)
 
@@ -78,59 +85,61 @@ class RunRecord:
     return json.dumps(asdict(self), indent=2, sort_keys=True)
 
   @classmethod
-  def from_json(cls, text: str) -> RunRecord:
+  def from_json(cls, text: str) -> AttemptRecord:
     """Read a shard back from its JSON."""
     return cls(**json.loads(text))
 
   @property
-  def sort_key(self) -> tuple[str, int, int]:
+  def sort_key(self) -> tuple[str, int, str, int]:
     """Identity within a sweep, ordered numerically (not by key string)."""
-    return (self.instance_id, self.rollout_id, self.attempt)
+    return (self.instance_id, self.rollout_id, self.task, self.attempt)
 
 
-def run_prefix(record: RunRecord) -> str:
-  """Return the run key ``<sweep>/<instance>/r<rollout>/a<attempt>`` (ADR-0004).
+def run_prefix(record: AttemptRecord) -> str:
+  """Return the run key ``<sweep>/<instance>/r<rollout>/<task>/a<attempt>``.
 
-  The ``r`` / ``a`` prefixes keep the layout self-describing when browsing the
-  store — ``r3/a0`` reads as "rollout 3, attempt 0" where a bare ``3/0`` would
-  not. The ``runs/`` namespace lives in the store's configured root, and
-  ``run_ts`` is recorded on the shard rather than keying it, so re-running a
-  given attempt deterministically overwrites it.
+  ADR-0004's key, with the task segment ADR-0007 §6 added: the task sits
+  between rollout and attempt because the task owns its attempts — ``eval/a1``
+  is the eval task's second try, unrelated to ``rollout/a0``. The ``r`` / ``a``
+  prefixes keep the layout self-describing when browsing the store, the
+  ``runs/`` namespace lives in the store's configured root, and ``run_ts`` is
+  recorded on the shard rather than keying it, so re-running a given attempt
+  deterministically overwrites it.
   """
   return (
       f"{record.sweep_id}/{record.instance_id}"
-      f"/r{record.rollout_id}/a{record.attempt}"
+      f"/r{record.rollout_id}/{record.task}/a{record.attempt}"
   )
 
 
 def persist(
-    store: Store, record: RunRecord, files: Mapping[str, epath.PathLike]
-) -> RunRecord:
+    store: Store, record: AttemptRecord, files: Mapping[str, epath.PathLike]
+) -> AttemptRecord:
   """Upload a run's files under its key and append its manifest shard.
 
   Args:
     store: The T1 store to write to.
-    record: The run's metadata (its ``artifacts`` field is filled in here).
+    record: The run's metadata (its ``artifact_keys`` field is filled in here).
     files: Object name (the key suffix under the run prefix) → host path.
 
   Returns:
-    The completed record (``artifacts`` = object name → full store key), as
+    The completed record (``artifact_keys`` = object name → full store key), as
     written to the manifest.
   """
   prefix = run_prefix(record)
-  artifacts: dict[str, str] = {}
+  artifact_keys: dict[str, str] = {}
   for name, path in files.items():
     key = f"{prefix}/{name}"
     store.put(key, path)
-    artifacts[name] = key
-  completed = replace(record, artifacts=artifacts)
+    artifact_keys[name] = key
+  completed = replace(record, artifact_keys=artifact_keys)
   store.append_manifest(completed)
   return completed
 
 
 def promote(
-    store: Store, record: RunRecord, workspace: epath.PathLike
-) -> RunRecord:
+    store: Store, record: AttemptRecord, workspace: epath.PathLike
+) -> AttemptRecord:
   """Push a whole debug workspace into T1 (the misclassification safety valve).
 
   Uploads every file under ``workspace`` (keyed by its workspace-relative path,
@@ -156,6 +165,6 @@ def promote(
   return persist(store, record, files)
 
 
-def index(store: Store, sweep_id: str) -> list[RunRecord]:
+def index(store: Store, sweep_id: str) -> list[AttemptRecord]:
   """Aggregate a sweep's per-run shards into one list (ordered by identity)."""
   return store.read_manifests(sweep_id)
