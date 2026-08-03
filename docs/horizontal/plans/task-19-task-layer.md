@@ -19,7 +19,7 @@ by making `run_rollout` and `run_unit_test` thin wrappers over it with
 
 ### In scope
 
-- `workflow/` package: `Task`, `TaskResult`; `OutputSchema` +
+- `workflow/` package: `Task`, `TaskResult`; `ArtifactSchema` +
   `SandboxObserver.output_schema()` land in `sandbox/` (the observers are the
   ones declaring).
 - `CodingAgentTask` and `UnitTestEvalTask` — the two shipped subclasses.
@@ -42,7 +42,7 @@ collides with too many neighbouring concepts (the old `pipelines/`, dataset
 task instances), while "workflow" names the umbrella unambiguously. `Task` and
 (in Task 21) `Workflow` both live here.
 
-### 2.1 Observers declare their outputs: `OutputSchema`
+### 2.1 Observers declare their outputs: `ArtifactSchema`
 
 There is no producer concept. A producer was an observer factory carrying a
 `name` and a `required` flag — two fields of *description* strapped to a level
@@ -56,8 +56,12 @@ deliberately JSON-schema-in-spirit but minimal:
 ```python
 # sandbox/observer.py — beside SandboxObserver
 @dataclass(frozen=True, slots=True)
-class OutputSchema:
-  """What one output *is*: its store name, whether it must exist, and why.
+class ArtifactSchema:
+  """What one artifact *is*: its store name, whether it must exist, and why.
+
+  Direction-neutral on purpose — observers declare *outputs* with it and a
+  task declares *inputs* with it (§2.2); the method names carry direction,
+  the record is just data.
 
   Pure data — no parse concept: an output is the artifact as persisted, and
   how an observer computed it is the observer's business.
@@ -78,7 +82,7 @@ class OutputSchema:
 
 class SandboxObserver:
   ...
-  def output_schema(self) -> Sequence[OutputSchema]:
+  def output_schema(self) -> Sequence[ArtifactSchema]:
     """Declare the outputs this observer produces. Default: none."""
     return ()
 ```
@@ -99,8 +103,8 @@ A task's schema is derived, and merging is where conflicts surface:
 
 ```python
 def merge_output_schemas(
-    *schemas: Sequence[OutputSchema],
-) -> tuple[OutputSchema, ...]:
+    *schemas: Sequence[ArtifactSchema],
+) -> tuple[ArtifactSchema, ...]:
   """Merge observers' schemas; a duplicate store name is an error.
 
   The same rule `merge_mounts` already applies to mount targets, for the same
@@ -145,9 +149,10 @@ class Task(ABC):
   |---|---|
   | files to stage | override `mounts()` — merge the instance's / a harness's / yours; what it returns **is** the staging set |
   | a deliverable | the observer that extracts it, in `observers()` — its schema declares the store name |
+  | an input from an upstream task | declare it in `input_schema()` — the workflow mounts it by store name and validates it |
   | an agent / harness | fold it in: mounts into `mounts()`, observers into `observers()`, its `run` in `action()` |
   | the main action | `action()` |
-  | (a caller with persistence etc.) | passes `extra_observers` to `execute` |
+  | (a caller with persistence etc.) | passes `extra_observers` / `extra_mounts` to `execute` |
 
   instance: TaskInstance                    # the binding (ADR-0007 §2)
 
@@ -167,6 +172,14 @@ class Task(ABC):
     observer) stores it on itself — the task is single-run too."""
     return ()
 
+  def input_schema(self) -> Sequence[ArtifactSchema]:
+    """The upstream artifacts this task consumes, by store name. Default:
+    none. The workflow resolves each name against earlier tasks' outputs,
+    mounts it (`Mount(LocalFile(...), read_only=True)` via `extra_mounts`),
+    and a required name with no artifact is the *distinct* edge failure of
+    ADR-0007 §5 — the task never reaches into the store itself."""
+    return ()
+
   @abstractmethod
   def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
     """The run's main action: exec the harness, or run the entryscript."""
@@ -178,9 +191,14 @@ class Task(ABC):
       *,
       output_dir: epath.PathLike,
       timeout: float,
+      extra_mounts: Mounts | None = None,
       extra_observers: Sequence[SandboxObserver] = (),
   ) -> TaskResult:
-    """Run the five steps once. See pseudocode below."""
+    """Run the five steps once. See pseudocode below.
+
+    ``extra_mounts`` is the caller channel mirroring ``extra_observers`` —
+    the workflow feeds resolved inputs through it; duplicate targets are
+    refused like everywhere else."""
 ```
 
 `execute` pseudocode — this *is* the five-step shape, written once:
@@ -198,7 +216,8 @@ def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
       sandbox=sandbox, output_dir=epath.Path(output_dir),
       # The observers' own mounts still arrive via the manager, which merges
       # each observer.mounts() and refuses duplicate targets.
-      observers=observers, mounts=self.mounts(),
+      observers=observers,
+      mounts=merge_mounts(self.mounts(), extra_mounts or {}),
   )
   # 3. the action, inside the session
   exec_result = None
@@ -245,7 +264,7 @@ class TaskResult:
 
   run: RunResult
   exec_result: ExecResult | None
-  output_schema: tuple[OutputSchema, ...]
+  output_schema: tuple[ArtifactSchema, ...]
   observers: tuple[SandboxObserver, ...]
 ```
 
@@ -285,14 +304,20 @@ class UnitTestEvalTask[V: Verdict](Task):
   """Grade a patch against the bound instance's unit tests."""
 
   instance: TaskInstance[V]
-  # THE run-varying input, and the workflow seam: everything else this task
-  # stages is instance-bound, but the patch is per-run — the gold patch, a
-  # candidate, or None (= grade the base commit). A task never reaches into
-  # the store; a workflow driver constructs this task only after the
-  # upstream patch exists (see §2.6), so this is always a plain value.
-  patch: str | None
+  # THE run-varying input: the gold patch or a candidate (str), UPSTREAM
+  # (= a workflow mounts it by name, see input_schema), or None (= grade the
+  # base commit). UPSTREAM is a construction-time *mode marker*, not a
+  # resolution placeholder — it carries no store path; it just means: compile
+  # the script with `git apply`, declare the input, stage no patch mount.
+  patch: str | Upstream | None
   retries: int = 1                          # ADR-0005 in-run retry, unchanged
   eval_env: Mapping[str, str] | None = None
+
+  def input_schema(self):
+    if self.patch is UPSTREAM:
+      return (ArtifactSchema("patch.diff", required=True,
+                             description="the candidate patch to grade"),)
+    return ()
 
   # compiled once in __post_init__: self._spec = instance.unit_test_spec(...)
   def mounts(self):
@@ -377,33 +402,30 @@ Migration inside this task, in order:
    shim treats whatever the spec still carries as instance material, so a
    downstream caller holding a pre-split spec is unaffected until Task 21.
 
-The patch row is also the **workflow seam**, and the timing question it
-raises — a workflow declared up front cannot construct a task whose input
-does not exist yet — is answered by *when tasks are constructed*, not by
-placeholder references or by feeding fields in later (both rejected: one is
-a new concept plus resolution machinery, the other is mutable state). Task
-21's v1 workflow is a **driver**: tasks are constructed when their inputs
-exist, and the "list" is the program order — which is literally ADR-0007
-§9's "the caller owns the topological sort":
+The patch row is also the **workflow seam**. A workflow is a *declared
+list* of constructed tasks — so an input that does not exist yet cannot be a
+constructor value. It is not: **inputs arrive as mounts, matched by store
+name** — the model the ADR started from ("the dependent task mounts the
+upstream output out of the store, and validates it"):
 
 ```python
-wf = Workflow(store=..., sweep="s1", rollout_id=0)
-ro = wf.run("rollout", CodingAgentTask(instance=inst, harness=harness))
-#    ^ terminal-success marker → skipped, returns the store-backed result
-patch = wf.text(ro, "patch.diff")
-#    ^ THE edge: missing/empty → the distinct failure status (ADR-0007 §5);
-#      fresh run reads the TaskResult, resume reads the store — same accessor
-ev = wf.run("eval", UnitTestEvalTask(instance=inst, patch=patch))
-#    ^ constructed after the patch exists, on every path
+wf = Workflow(store=..., sweep="s1", rollout_id=0, tasks=[
+    ("rollout", CodingAgentTask(instance=inst, harness=harness)),
+    ("eval",    UnitTestEvalTask(instance=inst, patch=UPSTREAM)),
+])
+wf.execute()
+# per task, in order: terminal marker? (resume: skip / blocked) →
+# resolve input_schema() names against earlier tasks' outputs →
+# Mount(LocalFile(store_path), read_only=True) as extra_mounts →
+# required name missing = the distinct edge failure (ADR-0007 §5) →
+# task.execute(sandbox, extra_mounts=...)
 ```
 
-Constructing a to-be-skipped task wastes nothing — a task is declaration
-data (§2.2), which is what makes this driver shape work. Tasks stay
-store-ignorant: `wf.run` / `wf.text` are the only store-aware layer. The
-cost, stated plainly: a v1 workflow is code, not data — no statically
-serializable graph until the DAG version decides it needs one. Formalized in
-Task 21's plan; recorded here because this seam is where the question
-arises.
+The symmetry is the design: **observers declare outputs; tasks declare
+inputs; the store name is the contract**; the workflow only matches names,
+mounts, and validates. Tasks are constructed up front (they are declaration
+data, §2.2) and never reach into the store. Formalized in Task 21's plan;
+recorded here because this seam is where the question arises.
 
 The fixes seam is the regression risk: `fixes/_seam.py::with_setup` merges a
 fix's mounts into `spec.mounts` and splices bash against the spec's script.
@@ -429,7 +451,7 @@ Hard acceptance criteria, in order:
 
 ## 4. Steps
 
-1. `OutputSchema` + `SandboxObserver.output_schema()` + `merge_output_schemas`
+1. `ArtifactSchema` + `SandboxObserver.output_schema()` + `merge_output_schemas`
    in `sandbox/`, existing observers self-describing; then `TaskResult` + task
    wrappers; unit tests with `FakeSandbox`.
 2. `Task.execute` + composition-order test (backend observers before the
