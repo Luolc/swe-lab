@@ -68,6 +68,9 @@ class WorkflowEntry:
       every call must return a sandbox over a fresh, empty workspace (the
       factory owns that allocation). Per entry, so backend / network / pull
       knobs stay the caller's and two entries can differ.
+    timeout: Seconds before each of this entry's attempts is killed —
+      the budget is the entry's own (an agent run and an eval have no reason
+      to share one), so there is no workflow-wide value to fall back to.
     inputs: Explicit edge bindings, each ``"<producer key>/<input name>"``
       (``"rollout/patch.diff"``). Only needed where name matching alone is
       ambiguous (two earlier producers of one name); a binding that matching
@@ -78,6 +81,7 @@ class WorkflowEntry:
   key: str
   task: Task
   sandbox_factory: Callable[[], Sandbox]
+  timeout: float
   inputs: Sequence[str] = ()
   retries: int = 0
 
@@ -206,7 +210,6 @@ class Workflow:
       self,
       *,
       output_dir: epath.PathLike,
-      timeout: float,
       run_ts: str,
       resume: bool = True,
       backend: str = "",
@@ -226,7 +229,6 @@ class Workflow:
     Args:
       output_dir: Host directory for the run (per-entry subdirectories; edge
         staging under ``edges/``).
-      timeout: Seconds before each attempt's main action is killed.
       run_ts: Launch timestamp, injected — recorded, never read.
       resume: Honor terminal markers (skip finished entries). ``False`` runs
         everything fresh, overwriting — the one-off CLI shape, where
@@ -266,7 +268,7 @@ class Workflow:
           address=self._address(entry),
           sandbox_factory=entry.sandbox_factory,
           output_dir=output_dir / entry.key,
-          timeout=timeout,
+          timeout=entry.timeout,
           retries=entry.retries,
           resume=resume,
           run_ts=run_ts,
