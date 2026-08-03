@@ -22,8 +22,9 @@ not twice.
 
 1. `Sandbox.observers()` — backends contribute their own observers; the host
    backend ships a runtime-metrics observer (the `de49d486` diagnosis gap).
-2. `Harness.observers()` — the runner's observer factory (ADR-0007 §3), with
-   the generic pair as its default; `run_rollout` switches to it.
+2. `Harness.observers()` — the runner's observer factory (ADR-0007 §3),
+   abstract; claude_code returns the generic pair; `run_rollout` switches to
+   it.
 3. `Harness.run(prompt=...)` — the prompt becomes an argument; `PROMPT_NAME`
    is retired.
 4. `TaskInstance.mounts()` — the instance becomes an ordinary mount source.
@@ -149,34 +150,46 @@ sb.write(_PROMPT_FILENAME, prompt.encode())   # _PROMPT_FILENAME = "prompt.txt"
 - The `prompt.txt` row in `docs/horizontal/workspace-layout.md` moves from
   "dataset/composition (mount)" to the harness's own files.
 
-### 2.4 `Harness.observers()` (additive — the default is the generic pair)
+### 2.4 `Harness.observers()` (abstract — breaking, batched with 2.3)
 
 ```python
 class Harness(ConversationProducer, ABC):
 
+  @abstractmethod
   def observers(self) -> Sequence[SandboxObserver]:
     """Return the observers that watch this harness's run (ADR-0007 §3).
 
-    The runner owns how *it* is observed. The default is the generic pair
-    every conversation-producing agent needs — fresh instances per call,
-    since stateful observers are single-run:
+    The runner owns how *it* is observed, and which observers that takes is
+    the concrete harness's decision — abstract like every other method here,
+    with no default: a base-class default would bake one agent's shape into
+    the contract. Fresh instances per call; stateful observers are
+    single-run.
 
-        return (
-            ConversationObserver(producer=self),
-            HarnessOutcomeObserver(harness=self),
-        )
-
-    A harness override *extends or replaces* this — e.g. an agent with a
-    second trace channel adds its collector — without a new composition.
     NOT the place for task outputs: the patch extractor belongs to the task
     (ADR-0007 §3), or the same harness could never run an annotation task.
     """
 ```
 
-- Import note: the default constructs `HarnessOutcomeObserver` from
-  `harnesses/observer.py`, which imports `base` — the default body uses a
-  local import to break the cycle (or `observer.py` retypes its field as
-  `ConversationProducer`); settled at implementation, tests pin behavior only.
+The generic observer *classes* stay where they are — `ConversationObserver`
+(`conversation/observer.py`) and `HarnessOutcomeObserver`
+(`harnesses/observer.py`) are written against the `Harness` interface and
+carry nothing agent-specific; the agent-specific knowledge is behind the
+`completed()` / `native_outputs()` / `to_conversation()` methods they
+delegate to. What is claude_code's is the *choice* to use them:
+
+```python
+class ClaudeCodeHarness(Harness):
+
+  @override
+  def observers(self) -> Sequence[SandboxObserver]:
+    return (
+        ConversationObserver(producer=self),
+        HarnessOutcomeObserver(harness=self),
+    )
+```
+
+- No import cycle: `base.py` no longer references any observer; the concrete
+  harness imports what it uses.
 - `run_rollout` switches from constructing the pair inline to
   `harness.observers()`, and locates the two for `RolloutOutcome` assembly by
   `isinstance` — acceptable in the wrapper, gone in Task 19 (where
@@ -221,14 +234,14 @@ class TaskInstance[V: Verdict](ABC):
    Live-marked test (`docker` required): run a trivial container, assert
    `sandbox.setup_seconds > 0` and `sandbox.oom_killed == 0.0`; a second test
    runs a memory hog under `--memory` and asserts `sandbox.oom_killed == 1.0`.
-3. `Harness.observers()` default + `run_rollout` switched onto it; test that a
-   harness overriding the factory sees its observer composed, and that the
-   default pair still lands (byte-equivalent `RolloutOutcome` on the fake).
+3. `Harness.observers()` abstract + claude_code's override + `run_rollout`
+   switched onto it; test that a harness's own observer is composed, and that
+   claude_code's pair yields a byte-equivalent `RolloutOutcome` on the fake.
 4. `Harness.run(prompt=...)` + `PROMPT_NAME` deletion + `claude_code` update +
    `run_rollout` forwarding; update both CLI fakes and workspace-layout doc.
 5. `TaskInstance.mounts()` default + docs.
-6. Full bar, one PR, **one breaking-changes section listing 2.3 (and noting
-   2.1/2.4/2.5 are additive)**.
+6. Full bar, one PR, **one breaking-changes section listing 2.3 and 2.4 (and
+   noting 2.1/2.5 are additive)**.
 
 ## 4. Definition of done
 
