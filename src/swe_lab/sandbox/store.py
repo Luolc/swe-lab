@@ -16,9 +16,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-import os
-import pathlib
-import tempfile
 from typing import override
 
 from etils import epath
@@ -144,12 +141,19 @@ class FilesystemStore(Store):
 
   @override
   def put_bytes(self, key: str, data: bytes) -> None:
-    """Write ``data`` to ``root/key`` via write-then-rename (atomic)."""
-    dest = pathlib.Path(str(self._path(key)))
+    """Write ``data`` to ``root/key`` via write-then-rename (atomic).
+
+    The fixed ``.tmp`` sibling (the pattern ``verify.py`` already uses) is
+    safe because one surviving orchestrator writes a given key — concurrent
+    writers of one task's marker are outside the resume model — and a
+    ``.tmp`` orphaned by a crash is harmless: reads use exact keys, and the
+    next write overwrites it.
+    """
+    dest = self._path(key)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=dest.parent, delete=False) as staged:
-      _ = staged.write(data)
-    os.replace(staged.name, dest)
+    staged = dest.with_name(dest.name + ".tmp")
+    _ = staged.write_bytes(data)
+    _ = staged.replace(dest)
 
   @override
   def get(self, key: str, dest: epath.PathLike) -> None:
