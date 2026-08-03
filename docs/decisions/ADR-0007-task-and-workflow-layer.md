@@ -311,7 +311,32 @@ This also settles the "spec" question: there is **no separate `TaskSpec` type**.
 A task *is* the thing the caller assembles — mounts, a script, outputs — so
 introducing a spec object beside it would be a second name for one concept.
 
-### 10. Provided subclasses, open registry
+### 10. A workflow is all-or-nothing, and its record is derived
+
+**Every task must succeed.** A terminally failed task blocks its dependents,
+they are not attempted, and the workflow fails. There is nothing else to do with
+a blocked dependent, and inventing a partial-success policy before anything
+needs one buys complexity for a case we cannot yet describe.
+
+The case that *would* justify one is a main task succeeding while an auxiliary
+task fails — collecting the main output anyway. That is a real shape and it is
+**deferred, not rejected**: it wants a task-level "optional" flag, and it should
+arrive with the first workflow that actually has an auxiliary task.
+
+**A workflow gets a run record, derived from its tasks'.** Nothing new is
+measured; it is a roll-up of the per-task records that §6 already keys. Same
+discipline as a task's marker, one level up: written **last**, after every task
+record is durable, and **its absence means the workflow did not complete** — so
+resume needs no separate workflow state.
+
+That absence rule is safe precisely because task markers are terminal. A
+workflow whose task failed has no record, so resume re-enters it — and
+immediately hits that task's terminal marker, does not re-run it, blocks, and
+fails again **having done no work**. Recording the failure at the workflow level
+too would save a cheap re-entry, but it is a nicety, not a correctness
+requirement; v1 can record success only.
+
+### 11. Provided subclasses, open registry
 
 A small set ships (a coding-agent task, a unit-test evaluation task); a
 consumer defines its own by supplying mounts, a script, and outputs, the same
@@ -331,6 +356,7 @@ import-only extension the fix and sandbox registries already use.
 | **Resume from inside a task (step-level markers).** | A task is one sandbox; when it dies the sandbox is gone, so there is no state to resume into. Cutting tasks smaller is the honest way to get finer resume. |
 | **A separate `TaskSpec` object beside `Task`.** | The task already *is* mounts + script + outputs. A spec next to it would be a second name for one concept, and the concept count is what we are trying to bring down. |
 | **A DAG in the first version.** | The scheduler is the easy half and the least urgent; a list gets the task layer into use, and nothing about it forecloses a DAG. |
+| **Partial success — let auxiliary tasks fail while the main one counts.** | A real shape, deferred not rejected. It needs a task-level "optional" flag, and it should arrive with the first workflow that actually has an auxiliary task rather than as speculative generality. |
 | **Keeping `PROMPT_NAME` and staging the prompt from the instance.** | It makes every dataset know every runner's filename convention. Passing a string moves the decision to the only party that should hold it. |
 | **Leave it: keep writing compositions by hand.** | Three exist and they already disagree; the fourth is an annotation pipeline that reinvented fan-out. |
 
@@ -365,13 +391,6 @@ import-only extension the fix and sandbox registries already use.
   layer exists would be guessing. Whether the field stays becomes clear as tasks
   absorb its parts (§2 already claims its `mounts`, §6 its `retries`), so this
   is a question the migration answers rather than one to answer up front.
-- **What a workflow does with a terminally failed task.** Its dependents cannot
-  run, so they are blocked rather than attempted; whether the workflow then
-  fails that instance outright or carries on with independent branches is a
-  policy decision this ADR does not settle.
-- **Where a workflow's own run record lives** relative to ADR-0004's layout —
-  the per-task records are keyed (§6), but whether a workflow needs a record of
-  its own, or is simply reconstructed from its tasks', is unsettled.
 - **Task identity is by key alone, deliberately.** Editing a task's script
   without changing its key would let resume reuse a stale completion. The fix is
   a fingerprint of (script, mounts, config) stored with the marker, and it is
