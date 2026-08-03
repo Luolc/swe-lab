@@ -122,60 +122,75 @@ class RunRecord:
 
 ---
 
-## 3. Validation, and the one retry callback
+## 3. Two hooks: validity (is this a failure?) and retry (run it again?)
 
-The layer owns one rule and the task owns one hook.
+They are genuinely different questions, and both belong to the task.
 
-**The layer's rule** — `outputs_valid(result)`, a public module function —
-decides the terminal marker, uniformly:
-
-```python
-def outputs_valid(result: TaskResult) -> bool:
-  """The attempt produced what the task declared it would."""
-  if result.run.status is not RunStatus.SUCCESS:
-    return False                       # TIMEOUT / RUN_ERROR / SETUP_ERROR
-  produced = result.run.artifacts      # canonical name → host path
-  return all(
-      schema.name in produced
-      for schema in result.output_schema
-      if schema.required
-  )
-```
-
-This is where `ArtifactSchema.required` (advisory since Task 19) becomes
-enforced, and the invariant gets its named test
-(`test_a_missing_required_output_fails_the_attempt`).
-
-**The task's hook** — the single retry callback, overridable, handed the
-whole `TaskResult` (artifacts as host paths, metrics, the composed observers
-with their typed results):
+**Hook 1 — `outputs_valid(result)`: the failure judgment, and the marker's
+basis.** Existence alone cannot judge an output: a `conversation.json` that
+is present but does not parse is a failed rollout attempt that a
+file-existence check waves through. So validity is a *task method* with the
+layer's baseline as its default:
 
 ```python
 class Task:
   ...
-  def should_retry(self, result: TaskResult) -> bool:
-    """Given everything this attempt produced, does it need another one?
+  def outputs_valid(self, result: TaskResult) -> bool:
+    """Did this attempt actually produce good outputs? The failure judgment.
 
-    Default: retry exactly when the outputs are invalid (a required output
-    missing, or the run not SUCCESS — infra failures land here too). A
-    subclass composes its own judgment on top of the artifacts and typed
-    results::
+    Default: the run ended SUCCESS and every `required` declared output
+    exists — the baseline every task gets for free (`ArtifactSchema.required`
+    stops being advisory here; named invariant test). Override to judge
+    *content*, over the whole `TaskResult` (artifacts as host paths,
+    metrics, the composed observers' typed results):
 
-        # eval: absorb flakes — an unresolved verdict might be harness noise
-        def should_retry(self, result):
-          return super().should_retry(result) or not self._parse.verdict.resolved
-
-        # a rollout task could inspect specific outputs just as finely,
-        # e.g. retry an empty patch or an agent that never completed
+        # rollout: an existing-but-corrupt trace is a failure
+        #   → conversation parsed, agent completed
+        # eval: a verdict the parser could not read is a failure
+        #   → verdict.output_state is OK
+        # (an *unresolved* verdict with output_state OK stays VALID — the
+        #  task's job was to grade, and it did; "no" is an answer)
     """
-    return not outputs_valid(result)
+    if result.run.status is not RunStatus.SUCCESS:
+      return False                     # TIMEOUT / RUN_ERROR / SETUP_ERROR
+    produced = result.run.artifacts
+    return all(
+        s.name in produced for s in result.output_schema if s.required
+    )
 ```
 
-**Retry-desire is not failure.** The terminal marker keys off
-`outputs_valid` of the *final* attempt, never off `should_retry`: an eval
-that exhausts its budget still unresolved has produced a legitimate verdict
-— the task **succeeded** and the answer is "not resolved". Tying the marker
-to the callback would fail the workflow for every genuinely failing patch.
+The **terminal marker keys off `outputs_valid` of the final attempt** —
+so a rollout whose trace is corrupt on every attempt is marked **failed**
+once the budget is spent, exactly as it should be, and an eval that grades a
+genuinely failing patch is marked **succeeded** with "unresolved" as its
+answer.
+
+**Hook 2 — `should_retry(result)`: one layer above.** An invalid attempt is
+a *retryable failure* and retries automatically — no hook needed for that.
+What the hook expresses is the **extra** retry-desire beyond failure: eval's
+flake absorption (the verdict is valid, but unresolved *might* be harness
+noise, so spend budget to find out — ADR-0005's semantics lifted a level).
+It composes over validity by default:
+
+```python
+  def should_retry(self, result: TaskResult) -> bool:
+    """Does this attempt need another one? Default: exactly when it failed.
+
+    Override to *add* retry-desire on top — never to weaken the failure
+    half::
+
+        # eval
+        def should_retry(self, result):
+          return super().should_retry(result) or not resolved
+    """
+    return not self.outputs_valid(result)
+```
+
+| attempt state | `outputs_valid` | `should_retry` (eval) | budget left → | budget spent → marker |
+|---|---|---|---|---|
+| trace/verdict corrupt or missing | ✗ | ✓ (via default) | retry | **failed** |
+| valid, verdict unresolved | ✓ | ✓ (override) | retry | **succeeded** (answer: unresolved) |
+| valid, resolved | ✓ | ✗ | stop | **succeeded** |
 
 ## 4. `run_task` — the per-task orchestrator, and the full write path
 
@@ -227,7 +242,7 @@ Step by step — **this is the persistence walk-through**, exact and in order:
                     output_dir=<output_dir>/a<attempt>,   # host files kept
                     timeout=timeout,
                     extra_mounts=..., extra_observers=...)
-   c. valid = outputs_valid(result)          # §3 — the layer's rule
+   c. valid = task.outputs_valid(result)     # §3 hook 1 — the task's judgment
    d. PERSIST THE ATTEMPT — success or not (failures are evidence):
         prefix = <sweep>/<instance>/r<rollout>/<task>/a<attempt>
         for name, host_path in result.run.artifacts:
@@ -238,12 +253,12 @@ Step by step — **this is the persistence walk-through**, exact and in order:
                            metrics=result.run.metrics,
                            extra={"outputs_valid": valid, ...})
         store.append_manifest(record)        # the shard: <prefix>/run.json
-   e. if not task.should_retry(result): break   # §3 — the task's one hook
+   e. if not task.should_retry(result): break   # §3 hook 2
       if attempt == retries: break              # budget spent
       # else: next attempt — a fresh sandbox; nothing carries over
 
 2. TERMINAL MARKER (write side, last, atomic)
-   outcome = "succeeded" if outputs_valid(last_result) else "failed"
+   outcome = "succeeded" if task.outputs_valid(last_result) else "failed"
    store.put_bytes(<task-prefix>/complete.json, marker_json)   # atomic
    return TaskRunOutcome(resumed=False, outcome=..., result=last_result,
                          record=last_record, attempts=attempt+1)
@@ -307,7 +322,8 @@ a retry mechanism.
    existing debug stores are discarded (prototyping — final shape directly).
 2. Marker write/read (`write_marker` atomic, `read_marker`), tests incl. the
    torn-write case (temp file present, no marker → not terminal).
-3. `outputs_valid` + `Task.should_retry` + named invariant tests.
+3. `Task.outputs_valid` + `Task.should_retry` + named invariant tests
+   (incl. content-judged validity: an existing-but-corrupt output fails).
 4. `run_task` with `FakeSandbox` factories: resume-skip, resume-blocked,
    retry-on-validation-failure, retry-on-infra-failure, budget exhaustion →
    `failed` marker, a `should_retry` override absorbing flakes, per-attempt persistence
