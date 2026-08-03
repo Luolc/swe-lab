@@ -128,12 +128,14 @@ Each source owns what only it can know:
 
 | source | contributes | examples |
 |---|---|---|
-| **the sandbox** | backend runtime metrics | OOM kill, peak memory, setup time, CPU |
+| **the backend** | its sandbox's runtime metrics | OOM kill, peak memory, setup time, CPU |
 | **the runner** | how *it* is observed | agent trace → `Conversation`, completion signal |
 | **the task** | its **declared outputs** | the patch, the verdict, an annotation JSON |
 
-Each exposes an observer factory; the task composes them, sandbox first (its
-observers measure the whole run). Metrics are namespaced through the existing
+Each exposes an observer factory; the task composes them, backend first (its
+observers measure the whole run). ("Backend", not "sandbox": every observer
+*type* is a `SandboxObserver` — named for what it watches — so the sources are
+named for who contributes them.) Metrics are namespaced through the existing
 `qualified_name`, so `sandbox.peak_memory_bytes` cannot collide with `eval.*`.
 
 Splitting runner from task matters concretely: `DiffExtractObserver` is **not**
