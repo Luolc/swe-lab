@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 import json
 import logging
 import os
+import posixpath
 import subprocess
 import tempfile
 import time
@@ -252,6 +253,19 @@ class DockerHostSandbox(Sandbox):
 
   def _cp_into(self, src: epath.PathLike, target: str, mount: Mount) -> None:
     """Copy a host file to an absolute container path and fix its mode."""
+    # `docker cp` refuses a destination whose parent directory does not exist
+    # in the container, and an instance image has no reason to carry e.g.
+    # /opt/claude-code — the mounted asset's directory is ours to create.
+    parent = posixpath.dirname(target.rstrip("/")) or "/"
+    made = self._docker(
+        ["exec", self._container, "mkdir", "-p", parent],
+        timeout=_DOCKER_TIMEOUT_S,
+    )
+    if made.returncode != 0:
+      raise SandboxError(
+          f"mkdir -p of {parent!r} for mount {target!r} failed:\n"
+          f"{made.stderr[-2000:]}"
+      )
     copied = self._docker(
         ["cp", str(src), f"{self._container}:{target}"],
         timeout=_DOCKER_TIMEOUT_S,
