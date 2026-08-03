@@ -25,6 +25,7 @@ from swe_lab.evaluation.methods.unit_test import (
 )
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec
 from swe_lab.sandbox import (
+    Contribution,
     ExecResult,
     Inline,
     Mount,
@@ -389,3 +390,30 @@ def test_a_negative_spec_override_is_refused(tmp_path: Path):
   spec = replace(_flaky_spec(passes_on_attempt=1), retries=-1)
   with pytest.raises(ValueError, match="spec retries"):
     _ = run_unit_test(_fake(tmp_path), spec, output_dir=tmp_path / "out")
+
+
+def test_backend_observers_feed_the_eval_result(tmp_path: Path):
+  # ADR-0007 §3: the backend's own observers are composed first, so a
+  # backend's runtime metrics land in the same RunResult (and, mechanically,
+  # in a persisted record's metrics) with no composition change.
+  class _MeteredFake(FakeSandbox):
+
+    @override
+    def observers(self) -> tuple[SandboxObserver, ...]:
+      class _Meter(SandboxObserver):
+
+        @override
+        def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+          del sb
+          return Contribution(metrics={"sandbox.fake_metric": 42.0})
+
+      return (_Meter(),)
+
+  sandbox = _MeteredFake(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
+  result, verdict = run_unit_test(
+      sandbox,
+      _unit_test_spec(["a"], ["a"]),
+      output_dir=tmp_path / "out",
+  )
+  assert verdict is not None and verdict.resolved is True
+  assert result.metrics["sandbox.fake_metric"] == 42.0

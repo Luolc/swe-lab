@@ -9,6 +9,7 @@ import pytest
 
 from swe_lab.sandbox import (
     DockerHostSandbox,
+    HostMetricsObserver,
     Inline,
     LocalFile,
     Mount,
@@ -374,3 +375,146 @@ def test_no_orphan_containers_left(tmp_path: Path):
       check=False,
   )
   assert leftover.stdout.strip() == ""
+
+
+# ─── the backend's runtime-metrics observer (ADR-0007 §3, backend source) ────
+
+
+def _metrics_setup(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, fake: _FakeDocker
+) -> HostMetricsObserver:
+  """Up a sandbox with the manager's hook order; return its observer."""
+  _install(monkeypatch, fake)
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
+  (observer,) = sandbox.observers()
+  assert isinstance(observer, HostMetricsObserver)
+  # Mirror the manager: before_create → up → after_create, so the setup
+  # window contains the pull the way it does in a real run.
+  observer.before_create(sandbox)
+  sandbox.up()
+  observer.after_create(sandbox)
+  return observer
+
+
+def test_metrics_read_cgroup_peak_and_oom_via_the_live_container(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  fake = _FakeDocker(
+      results=[
+          _ok(),  # pull
+          _ok("container-xyz\n"),  # create
+          _ok(),  # start
+          _ok("123456789\n"),  # exec cat memory.peak
+          _ok("low 0\noom 2\noom_kill 2\n"),  # exec cat memory.events
+          _ok("false\n"),  # inspect OOMKilled
+      ]
+  )
+  observer = _metrics_setup(monkeypatch, tmp_path, fake)
+  contribution = observer.before_destroy(observer.sandbox)
+  assert contribution is not None
+  metrics = contribution.metrics
+  assert metrics["sandbox.peak_memory_bytes"] == 123456789.0
+  # the cgroup counter wins over the (false) inspect flag: an exec'd process
+  # OOM-killed mid-run counts even though the container survived it
+  assert metrics["sandbox.oom_kills"] == 2.0
+  assert metrics["sandbox.setup_seconds"] >= 0.0
+  assert metrics["sandbox.pull_seconds"] >= 0.0
+
+
+def test_metrics_degrade_to_fewer_never_raise(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  # Every read fails; the observer must contribute nothing rather than fail
+  # a graded run. The failing CompletedProcess replays for every later call.
+  fake = _FakeDocker(
+      results=[
+          _ok(),
+          _ok("container-xyz\n"),
+          _ok(),
+          subprocess.CompletedProcess([], 1, "", "boom"),
+      ]
+  )
+  observer = _metrics_setup(monkeypatch, tmp_path, fake)
+  contribution = observer.before_destroy(observer.sandbox)
+  # every docker read failed: only the timings survive, and nothing raised
+  assert contribution is not None
+  assert set(contribution.metrics) <= {
+      "sandbox.setup_seconds",
+      "sandbox.pull_seconds",
+  }
+
+
+@pytest.mark.docker
+def test_live_run_records_runtime_metrics(tmp_path: Path):
+  spec = SandboxSpec("debian-metrics", _IMAGE, "/", "none")
+  ws = tmp_path / "ws"
+  sandbox = DockerHostSandbox(spec=spec, workspace=epath.Path(ws), pull=False)
+  mgr = SandboxManager(
+      sandbox=sandbox,
+      output_dir=epath.Path(ws),
+      observers=list(sandbox.observers()),
+      mounts={"noop.sh": Mount(Inline(b"true\n"))},
+  )
+  with mgr.session() as sb:
+    _ = sb.run_script("noop.sh", timeout=30.0)
+  metrics = mgr.result.metrics
+  assert metrics["sandbox.setup_seconds"] > 0.0
+  assert metrics.get("sandbox.oom_kills", 0.0) == 0.0
+  # peak memory is tiered (cgroup v2 → v1); assert it only when measurable,
+  # but if present it must be a sane positive number
+  if "sandbox.peak_memory_bytes" in metrics:
+    assert metrics["sandbox.peak_memory_bytes"] > 0.0
+
+
+@pytest.mark.docker
+def test_live_oom_kill_of_an_exec_is_counted(tmp_path: Path):
+  # The de49d486 blind spot, reproduced on purpose: an exec'd process is
+  # OOM-killed mid-run while the container itself survives. `docker inspect`
+  # alone misses this (`State.OOMKilled` stays false); the cgroup's
+  # `oom_kill` counter is why the metric reads `memory.events` first.
+  #
+  # The memory cap goes on via `docker update` *after* start, so no
+  # construction knob is added just for this test.
+  spec = SandboxSpec("debian-oom", _IMAGE, "/", "none")
+  sandbox = DockerHostSandbox(
+      spec=spec, workspace=epath.Path(tmp_path / "ws"), pull=False
+  )
+  (observer,) = sandbox.observers()
+  assert isinstance(observer, HostMetricsObserver)
+  observer.before_create(sandbox)
+  sandbox.up()
+  observer.after_create(sandbox)
+  try:
+    capped = subprocess.run(
+        [
+            "docker",
+            "update",
+            "--memory",
+            "32m",
+            "--memory-swap",
+            "32m",
+            sandbox._container,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if capped.returncode != 0:
+      pytest.skip(f"docker update cannot cap memory here: {capped.stderr}")
+    events = sandbox.run_command(
+        "cat /sys/fs/cgroup/memory.events", timeout=10.0
+    )
+    if not events.ok:
+      pytest.skip("cgroup v2 memory.events not readable in this container")
+    # `tail /dev/zero` buffers unboundedly: the canonical in-cgroup OOM.
+    sandbox.write("hog.sh", b"tail /dev/zero\n")
+    hog = sandbox.run_script("hog.sh", timeout=60.0)
+    assert not hog.ok  # SIGKILLed by the cgroup OOM killer
+    contribution = observer.before_destroy(sandbox)
+  finally:
+    sandbox.down()
+  assert contribution is not None
+  assert contribution.metrics["sandbox.oom_kills"] >= 1.0
+  # ...and the container itself was never the casualty: the setup metric is
+  # still there, from a sandbox that stayed up throughout
+  assert contribution.metrics["sandbox.setup_seconds"] >= 0.0

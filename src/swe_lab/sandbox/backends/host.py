@@ -17,17 +17,21 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+import json
 import logging
 import os
 import subprocess
 import tempfile
+import time
 from typing import override
 
 from etils import epath
 
 from ..errors import SandboxError
 from ..mounts import Mount
-from ..sandbox import ExecResult, Sandbox, WORKSPACE_ENV
+from ..observer import SandboxObserver
+from ..result import Contribution, qualified_name
+from ..sandbox import ExecResult, Sandbox, SandboxFs, WORKSPACE_ENV
 from ..spec import SandboxSpec
 
 _logger = logging.getLogger(__name__)
@@ -91,6 +95,10 @@ class DockerHostSandbox(Sandbox):
   pass_env: Sequence[str] = ()
   reuse: bool = False
   _container: str = field(default="", init=False, repr=False)
+  # How long the image pull took, recorded by ``up`` for the metrics observer:
+  # only the backend knows where the pull ends and the container setup begins.
+  # ``None`` when no pull ran.
+  _pull_seconds: float | None = field(default=None, init=False, repr=False)
 
   # --- lifecycle -----------------------------------------------------------
 
@@ -112,7 +120,9 @@ class DockerHostSandbox(Sandbox):
           "in it anyway"
       )
     if self.pull:
+      pull_started = time.monotonic()
       self._pull(self.spec.image_ref)
+      self._pull_seconds = time.monotonic() - pull_started
     create_args = ["create", "--platform", self.platform]
     if not self.network:
       create_args += ["--network", "none"]
@@ -168,6 +178,11 @@ class DockerHostSandbox(Sandbox):
           "docker teardown failed (swallowed): %s", removed.stderr.strip()
       )
     self._container = ""
+
+  @override
+  def observers(self) -> Sequence[SandboxObserver]:
+    """Contribute the runtime-metrics observer (ADR-0007 §3, backend source)."""
+    return (HostMetricsObserver(sandbox=self),)
 
   @override
   def fetch(self, name: str, dest: epath.PathLike) -> None:
@@ -369,3 +384,155 @@ class DockerHostSandbox(Sandbox):
       raise SandboxError(
           f"docker {args[0]} timed out after {timeout}s"
       ) from exc
+
+
+# The metric namespace for backend-contributed runtime metrics; distinct from
+# the eval method's ``eval.*`` and any harness's by construction.
+_METRIC_NAMESPACE = "sandbox"
+# cgroup v2 / v1 locations of the container's cumulative memory peak and OOM
+# counters, read from *inside* the container so the right cgroup is implied.
+_CGROUP_PEAK_FILES = (
+    "/sys/fs/cgroup/memory.peak",
+    "/sys/fs/cgroup/memory/memory.max_usage_in_bytes",
+)
+_CGROUP_EVENTS_FILE = "/sys/fs/cgroup/memory.events"
+
+
+@dataclass
+class HostMetricsObserver(SandboxObserver):
+  """Collect container runtime metrics while the sandbox is still live.
+
+  Single-run, like every stateful observer. Reads through the backend handle,
+  not through ``SandboxFs`` — these numbers live in Docker and the container's
+  cgroup, not in the workspace, which is exactly why only the backend can
+  contribute this observer (ADR-0007 §3).
+
+  Metrics (all namespaced ``sandbox.``; an unreadable metric is **omitted**,
+  never emitted as ``0.0`` — absent means unmeasured):
+
+  - ``sandbox.setup_seconds`` — wall clock from just before ``up`` to just
+    after the mounts landed, minus any image pull;
+  - ``sandbox.pull_seconds`` — the image pull alone, when one ran;
+  - ``sandbox.peak_memory_bytes`` — the cgroup's cumulative peak
+    (v2 ``memory.peak``, v1 ``max_usage_in_bytes``);
+  - ``sandbox.oom_kills`` — the cgroup's ``oom_kill`` counter, so an exec'd
+    process OOM-killed mid-run counts even though the container survived it;
+    ``docker inspect``'s ``State.OOMKilled`` is folded in as a floor.
+
+  No hook here may fail the run: every read is caught and logged, and
+  ``before_destroy`` degrades to fewer metrics rather than raising.
+
+  Attributes:
+    sandbox: The backend whose container is measured.
+  """
+
+  sandbox: DockerHostSandbox
+  _started: float | None = field(default=None, init=False, repr=False)
+  _setup_seconds: float | None = field(default=None, init=False, repr=False)
+
+  @override
+  def before_create(self, sb: SandboxFs) -> None:
+    """Stamp the start of setup (fires before ``up``)."""
+    del sb
+    self._started = time.monotonic()
+
+  @override
+  def after_create(self, sb: SandboxFs) -> None:
+    """Stamp the end of setup (fires after ``up`` + mount staging)."""
+    del sb
+    if self._started is not None:
+      self._setup_seconds = time.monotonic() - self._started
+
+  @override
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+    """Read the runtime metrics while the container still exists."""
+    del sb
+    metrics: dict[str, float] = {}
+    try:
+      metrics = self._metrics()
+    except Exception:  # noqa: BLE001 — metrics must never fail a graded run
+      _logger.exception("runtime metrics collection failed; omitting")
+    return Contribution(metrics=metrics) if metrics else None
+
+  def _metrics(self) -> dict[str, float]:
+    """Assemble whatever is measurable; skip (and log) what is not."""
+    metrics: dict[str, float] = {}
+
+    def put(name: str, value: float | None) -> None:
+      if value is not None:
+        metrics[qualified_name(_METRIC_NAMESPACE, name)] = value
+
+    pull = self.sandbox._pull_seconds  # noqa: SLF001 — same-module contract
+    if self._setup_seconds is not None:
+      # The setup window contains the pull, so this cannot go negative in the
+      # real hook order; the clamp is for a caller that fired the hooks around
+      # something narrower.
+      put("setup_seconds", max(0.0, self._setup_seconds - (pull or 0.0)))
+    put("pull_seconds", pull)
+    put("peak_memory_bytes", self._peak_memory_bytes())
+    put("oom_kills", self._oom_kills())
+    return metrics
+
+  def _peak_memory_bytes(self) -> float | None:
+    """Read the cgroup's cumulative peak, v2 then v1; None when unreadable."""
+    for path in _CGROUP_PEAK_FILES:
+      raw = self._exec_read(path)
+      if raw is not None:
+        try:
+          return float(int(raw.strip()))
+        except ValueError:
+          _logger.warning("unparseable cgroup peak %r from %s", raw, path)
+    return None
+
+  def _oom_kills(self) -> float | None:
+    """Count OOM kills: the cgroup counter, floored by docker inspect."""
+    count: float | None = None
+    raw = self._exec_read(_CGROUP_EVENTS_FILE)
+    if raw is not None:
+      for line in raw.splitlines():
+        if line.startswith("oom_kill "):
+          try:
+            count = float(int(line.split()[1]))
+          except (IndexError, ValueError):
+            _logger.warning("unparseable memory.events line %r", line)
+    inspected = self._inspect_oom_killed()
+    if inspected is None:
+      return count
+    return max(count or 0.0, 1.0) if inspected else (count or 0.0)
+
+  def _inspect_oom_killed(self) -> bool | None:
+    """Read ``State.OOMKilled`` from docker inspect; None when unreadable."""
+    handle = self.sandbox._container  # noqa: SLF001 — same-module contract
+    if not handle:
+      return None
+    try:
+      result = self.sandbox._docker(  # noqa: SLF001 — same-module contract
+          ["inspect", "-f", "{{json .State.OOMKilled}}", handle],
+          timeout=_DOCKER_TIMEOUT_S,
+      )
+    except SandboxError as exc:
+      _logger.warning("docker inspect for metrics failed: %s", exc)
+      return None
+    if result.returncode != 0:
+      _logger.warning("docker inspect for metrics failed: %s", result.stderr)
+      return None
+    try:
+      value = json.loads(result.stdout.strip())
+    except json.JSONDecodeError:
+      _logger.warning("unparseable inspect output %r", result.stdout)
+      return None
+    return bool(value)
+
+  def _exec_read(self, path: str) -> str | None:
+    """``cat`` one in-container file via docker exec; None when unreadable."""
+    handle = self.sandbox._container  # noqa: SLF001 — same-module contract
+    if not handle:
+      return None
+    try:
+      result = self.sandbox._docker(  # noqa: SLF001 — same-module contract
+          ["exec", handle, "cat", path], timeout=_DOCKER_TIMEOUT_S
+      )
+    except SandboxError as exc:
+      _logger.warning("docker exec cat %s failed: %s", path, exc)
+      return None
+    return result.stdout if result.returncode == 0 else None

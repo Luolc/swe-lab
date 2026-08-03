@@ -12,16 +12,10 @@ prompt is the dataset's).
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from swe_lab.conversation import ConversationProducer
-from swe_lab.sandbox import ExecResult, Mounts, SandboxFs
-
-# Where the rollout composition stages the task prompt, as a workspace-relative
-# name. This is the composition↔harness contract — the composition writes it
-# (the text is the dataset's), every harness reads it — so it belongs here
-# rather than to any one agent's constants.
-PROMPT_NAME = "prompt.txt"
+from swe_lab.sandbox import ExecResult, Mounts, SandboxFs, SandboxObserver
 
 
 class Harness(ConversationProducer, ABC):
@@ -43,14 +37,32 @@ class Harness(ConversationProducer, ABC):
     ...
 
   @abstractmethod
+  def observers(self) -> Sequence[SandboxObserver]:
+    """Return the observers that watch this harness's run (ADR-0007 §3).
+
+    The runner owns how *it* is observed, and which observers that takes is
+    the concrete harness's decision — no default, because a base-class default
+    would bake one agent's shape into the contract. Most agents want the
+    generic pair (``ConversationObserver`` + ``HarnessOutcomeObserver``),
+    which stay reusable building blocks; returning them is the subclass's
+    choice. Fresh instances per call: stateful observers are single-run.
+
+    NOT the place for task outputs — the patch extractor belongs to the task
+    (ADR-0007 §3), or the same harness could never run a task that produces
+    something other than a diff.
+    """
+    ...
+
+  @abstractmethod
   def run(
       self,
       sb: SandboxFs,
       *,
+      prompt: str,
       timeout: float,
       env: Mapping[str, str] | None = None,
   ) -> ExecResult:
-    """Run the main action (the agent) in the live sandbox.
+    """Run the main action (the agent) against ``prompt`` in the live sandbox.
 
     Returning the execution's result — rather than discarding it, as this
     contract used to — is what lets the composition tell a *killed* run from
@@ -60,6 +72,10 @@ class Harness(ConversationProducer, ABC):
 
     Args:
       sb: The live sandbox to run in.
+      prompt: The task prompt, as text. The dataset owns its *content*; where
+        it lands — a file the harness writes here (``sb.write``), argv, stdin
+        — is the harness's own business (ADR-0007 §8), which is why this is a
+        string and not a filename convention.
       timeout: Seconds before the run is killed.
       env: Extra environment for the agent process, injected by the caller (an
         internal endpoint, a feature flag, …). Layered **over** the harness's

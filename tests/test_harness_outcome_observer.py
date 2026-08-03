@@ -15,6 +15,7 @@ from swe_lab.sandbox import (
     NAME_SEPARATOR,
     qualified_name,
     SandboxFs,
+    SandboxObserver,
     SandboxSpec,
 )
 from swe_lab.sandbox.result import merge_contributions
@@ -42,14 +43,19 @@ class _StubHarness(Harness):
     return {}
 
   @override
+  def observers(self) -> tuple[SandboxObserver, ...]:
+    return ()  # this test drives HarnessOutcomeObserver directly
+
+  @override
   def run(
       self,
       sb: SandboxFs,
       *,
+      prompt: str,
       timeout: float,
       env: Mapping[str, str] | None = None,
   ) -> ExecResult:
-    del timeout, env
+    del prompt, timeout, env
     return sb.run_script("noop", timeout=0.0)
 
   @override

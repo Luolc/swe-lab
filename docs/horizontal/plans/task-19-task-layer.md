@@ -19,7 +19,7 @@ by making `run_rollout` and `run_unit_test` thin wrappers over it with
 
 ### In scope
 
-- `tasks/` package: `Task`, `TaskOutput`, `OutputProducer`, `TaskResult`.
+- `workflow/` package: `Task`, `OutputProducer`, `TaskResult`.
 - `CodingAgentTask` and `UnitTestEvalTask` — the two shipped subclasses.
 - Both compositions rewritten as wrappers; both CLIs untouched.
 - In-run eval retry (ADR-0005) preserved exactly where it is.
@@ -35,39 +35,41 @@ by making `run_rollout` and `run_unit_test` thin wrappers over it with
 
 ## 2. Interface definitions
 
-New package `src/swe_lab/tasks/`.
+New package **`src/swe_lab/workflow/`** — deliberately not `tasks/`: "task"
+collides with too many neighbouring concepts (the old `pipelines/`, dataset
+task instances), while "workflow" names the umbrella unambiguously. `Task` and
+(in Task 21) `Workflow` both live here.
 
-### 2.1 `TaskOutput` — a declared output: a name plus a producer
+### 2.1 `OutputProducer` — the declaration *is* the producer
+
+There is no `TaskOutput` dataclass. "Output" names **data**, and a declaration
+that carries behavior (a factory) under a data-shaped name reads as the wrong
+kind of thing. Data-shaped outputs exist in exactly one place — `TaskResult`,
+after the run, where they *are* data. On the declaration side, one class:
 
 ```python
-@dataclass(frozen=True, slots=True)
-class TaskOutput:
-  """One output a task promises: its artifact name, and who produces it.
+class OutputProducer(ABC):
+  """One output a task promises, fused with what produces it.
 
-  ADR-0007 §4: every observer here already produces an output; `Contribution`
-  already splits raw (`artifacts`) from parsed (`inline_artifacts`). So an
-  output *is* a name plus a producer, and the eval grader is one producer —
-  supplied by the dataset, not special-cased.
+  ADR-0007 §4: every observer here already produces an output, so a declared
+  output *is* its producer — it knows the artifact name it yields, whether
+  the task requires it, and how to build the observer that realizes it. The
+  eval grader arrives inside one of these, supplied by the dataset, not
+  special-cased.
+
+  A factory rather than an observer because observers are single-run: the
+  task builds a fresh one per attempt, and Task 20's retry loop re-invokes
+  it.
 
   Attributes:
-    name: Artifact name, format-suffixed (``patch.diff``, ``output.json``).
-    producer: Builds the observer that extracts/parses this output.
-    required: Whether a completed run without it is a failed run. Advisory in
-      this task (recorded in metrics); becomes the retry/validation gate in
-      Task 20.
+    name: Artifact name of the output, format-suffixed (``patch.diff``).
+    required: Whether a completed run without this output is a failed run.
+      Advisory in this task (recorded in metrics); becomes the
+      retry/validation gate in Task 20.
   """
 
   name: str
-  producer: OutputProducer
   required: bool = True
-
-
-class OutputProducer(ABC):
-  """Factory for the observer that realizes one declared output.
-
-  A factory rather than an observer because observers are single-run: the
-  task builds a fresh one per attempt, and Task 20's retry loop re-invokes it.
-  """
 
   @abstractmethod
   def observer(self) -> SandboxObserver:
@@ -78,12 +80,14 @@ Shipped producers (wrapping the existing observers unchanged):
 
 ```python
 @dataclass(frozen=True)
-class PatchOutput(OutputProducer):        # wraps DiffExtractObserver
+class PatchProducer(OutputProducer):      # wraps DiffExtractObserver
+  name: str = "patch.diff"
   exclude_globs: tuple[str, ...] = ()
   def observer(self) -> DiffExtractObserver: ...
 
 @dataclass(frozen=True)
-class VerdictOutput[V: Verdict](OutputProducer):   # wraps EvalParseObserver
+class VerdictProducer[V: Verdict](OutputProducer):  # wraps EvalParseObserver
+  name: str = "verdict"
   grader: Grader[V]                       # ← the dataset's, per ADR-0007 §4
   native_outputs: Mapping[str, str]
   def observer(self) -> EvalParseObserver[V]: ...
@@ -101,21 +105,36 @@ class Task(ABC):
   five steps once. Single-run, like the observers it composes.
   """
 
+  A task author answers **three questions** — has it a runner, what does it
+  produce, what does it run — and never constructs an observer. Observers are
+  `execute`'s internal assembly, fed by the backend, the runner and the
+  producers; the word does not appear on the authoring surface.
+
+  | you have | you write |
+  |---|---|
+  | an agent that does the work | `runner()` returns it — its observers come with it |
+  | a deliverable | a producer in `output_producers()` |
+  | files of your own to stage | `mounts()` |
+  | the main action | `action()` |
+  | (a caller with persistence etc.) | passes `extra_observers` to `execute` |
+
   # ---- what a subclass declares -------------------------------------------
+
+  def runner(self) -> Harness | None:
+    """The runner doing this task's work, or ``None`` (e.g. eval: the action
+    is just the entryscript, per ADR-0007 §4). A task with a runner returns
+    it and its observers are composed automatically via the runner's own
+    factory (Task 18's `Harness.observers()`)."""
+    return None
 
   @abstractmethod
   def mounts(self) -> Mounts:
-    """The task's own files (e.g. eval entryscript). NOT the instance's, the
-    runner's, or the observers' — those are gathered by `execute`."""
+    """The task's own files (e.g. eval entryscript). NOT the instance's or
+    the runner's — those are gathered by `execute`."""
 
   @abstractmethod
-  def outputs(self) -> Sequence[TaskOutput]:
-    """The outputs this task promises (ADR-0007 §4)."""
-
-  @abstractmethod
-  def observers(self) -> Sequence[SandboxObserver]:
-    """The *runner's* observers (trace, completion). Task-output observers
-    come from `outputs()`; sandbox observers from the backend. Default ()."""
+  def output_producers(self) -> Sequence[OutputProducer]:
+    """The outputs this task promises, each fused with its producer (§2.1)."""
 
   @abstractmethod
   def action(
@@ -125,11 +144,11 @@ class Task(ABC):
       *,
       timeout: float,
   ) -> ExecResult:
-    """The run's main action: exec the harness, or run the entryscript.
+    """The run's main action: exec the runner, or run the entryscript.
 
-    ``outputs`` are the built output observers (name → observer), because
-    eval's in-run retry loop (ADR-0005) drives its parse observer between
-    attempts. A task without that need ignores the argument."""
+    ``outputs`` are the built per-output observers (name → observer) — an
+    advanced knob most tasks ignore; eval's in-run retry loop (ADR-0005)
+    needs it to drive its parse observer between attempts."""
 
   # ---- what the base class provides ---------------------------------------
 
@@ -153,16 +172,22 @@ class Task(ABC):
 ```python
 def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
   # 1. observers, three sources, backend first (ADR-0007 §3)
-  produced = [(out, out.producer.observer()) for out in self.outputs()]
+  produced = [(p, p.observer()) for p in self.output_producers()]
+  runner = self.runner()
   observers = [
       *sandbox.observers(),                 # backend: runtime metrics
-      *self.observers(),                    # runner: trace, completion
+      *(runner.observers() if runner else ()),  # runner: trace, completion
       *(obs for _, obs in produced),        # task: declared outputs
       *extra_observers,                     # caller: e.g. persist
   ]
-  # 2. mounts, three sources here + observers' own via the manager;
-  #    merge_mounts refuses duplicate targets across sources
-  mounts = merge_mounts(self.instance_mounts(), self.mounts())
+  # 2. mounts — instance's + runner's + the task's own; the observers'
+  #    arrive via the manager, which already merges each observer.mounts().
+  #    merge_mounts refuses duplicate targets across sources.
+  mounts = merge_mounts(
+      self.instance_mounts(),
+      runner.mounts(sandbox.spec.workdir) if runner else {},
+      self.mounts(),
+  )
   manager = SandboxManager(
       sandbox=sandbox, output_dir=epath.Path(output_dir),
       observers=observers, mounts=mounts,
@@ -170,7 +195,7 @@ def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
   # 3. the action, inside the session; the built output observers are handed
   #    to it, because eval's in-run retry loop mutates its parse observer
   #    (attempts / exec_result) between attempts
-  outputs_by_name = {out.name: obs for (out, obs) in produced}
+  outputs_by_name = {p.name: obs for (p, obs) in produced}
   exec_result = None
   try:
     with manager.session() as sb:
@@ -234,9 +259,10 @@ class CodingAgentTask(Task):
   agent_env: Mapping[str, str] | None = None
   proxy: AbstractContextManager[object] | None = None
 
-  def mounts(self):        return {}        # harness mounts stay the runner's
-  def outputs(self):       return (TaskOutput("patch.diff", PatchOutput(self.exclude_globs)),)
-  def observers(self):     return self.harness.observers()   # Task 18's factory
+  def runner(self):        return self.harness
+  def mounts(self):        return {}        # the harness's own mounts arrive
+                                            # via runner() in execute()
+  def output_producers(self): return (PatchProducer(exclude_globs=self.exclude_globs),)
   def action(self, sb, outputs, *, timeout):   # outputs unused here
     return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
                             timeout=timeout, env=self.agent_env)
@@ -254,8 +280,8 @@ class UnitTestEvalTask[V: Verdict](Task):
   # compiled once in __post_init__: self._spec = instance.unit_test_spec(...)
   def mounts(self):        return {ENTRYSCRIPT_NAME: Mount(Inline(self._spec.eval_script.encode()), executable=True)}
   def instance_mounts(self): return dict(self._spec.mounts)   # until 19, the spec *is* the instance's mounts
-  def outputs(self):       return (TaskOutput("verdict", VerdictOutput(self._spec.grader, self._spec.native_outputs)),)
-  def observers(self):     return ()        # eval has no runner (no Evaluator — ADR-0007 §4)
+  def output_producers(self): return (VerdictProducer(grader=self._spec.grader, native_outputs=self._spec.native_outputs),)
+  # runner(): inherited None — eval has no runner (no Evaluator, ADR-0007 §4)
   def action(self, sb, outputs, *, timeout):
     # the existing _attempt_until_resolved loop, verbatim, driving
     # outputs["verdict"] (its parse observer): in-run retry is ADR-0005's and
@@ -337,7 +363,7 @@ Hard acceptance criteria, in order:
 
 1. **Signatures unchanged**: `run_rollout` / `run_unit_test` callers (CLIs,
    verify.py, tests) compile with zero edits.
-2. **Full suite green with zero test edits** outside the new `tasks/` tests.
+2. **Full suite green with zero test edits** outside the new `workflow/` tests.
 3. **Live equivalence, byte-level**: one gold eval (the flipt parity instance)
    and one live rollout, run on `main` and on the branch — `output.json`,
    verdict summary, patch, and artifact name sets identical.
@@ -347,7 +373,7 @@ Hard acceptance criteria, in order:
 
 ## 4. Steps
 
-1. `tasks/` package: `TaskOutput` / `OutputProducer` / `TaskResult` + producer
+1. `workflow/` package: `OutputProducer` / `TaskResult` + producer
    wrappers; unit tests with `FakeSandbox`.
 2. `Task.execute` + composition-order test (backend observers before runner's
    before outputs'; duplicate mount target across sources refused).

@@ -26,9 +26,11 @@ AGENT_SCRIPT_NAME = "run_claude_code.sh"
 # setup (and stay visible in the workspace) without re-staging the script.
 AGENT_ENV_NAME = "agent_env.sh"
 
-# (The solve prompt this harness reads is staged by the composition under the
-# shared ``harnesses.base.PROMPT_NAME`` — it is the composition↔harness
-# contract, not this agent's own file.)
+# Where this harness lands the prompt it receives as a string (ADR-0007 §8):
+# ``run(prompt=...)`` writes it here itself, then the invocation script feeds
+# it to the agent on stdin. This agent's own choice of filename — no
+# composition-level convention exists anymore.
+PROMPT_FILENAME = "prompt.txt"
 
 # Native outputs the run writes into the workspace (registered as artifacts).
 EVENT_STREAM_NAME = "claude.event_stream.jsonl"  # stream-json trace (primary)

@@ -39,7 +39,7 @@ not twice.
 - **Eval's observer factory.** Of ADR-0007 §3's three sources, this task lands
   the sandbox's (new) and the runner's (`Harness.observers()`, formalizing the
   existing pair). The third arrives in Task 19 as an *output producer*
-  (`VerdictOutput` carrying the dataset's grader): per ADR-0007 §4 there is no
+  (`VerdictProducer` carrying the dataset's grader): per ADR-0007 §4 there is no
   `Evaluator` class for a factory to live on, so the eval observer's seam is
   the task's output declaration, which does not exist until the `Task` does.
 
@@ -261,3 +261,27 @@ class TaskInstance[V: Verdict](ABC):
   injects a failing `docker` CLI).
 - The `Harness.run` break is the whole reason this is one batch; landing it
   after Task 19 would force downstream through two upgrades.
+
+---
+
+## Result (2026-08-03)
+
+Landed as designed, with four deltas:
+
+- **`sandbox.exit_code` was dropped.** The host container is a live
+  `sleep infinity` at read time, so its exit code is constitutively `0` —
+  a metric that cannot vary measures nothing.
+- **`sandbox.oom_killed` became `sandbox.oom_kills`, a counter.** The cgroup's
+  `memory.events` `oom_kill` count catches an exec'd process killed mid-run
+  while the container survives — `docker inspect` alone reads false there,
+  and that case (the `de49d486` blind spot) is the one worth measuring.
+  Inspect's boolean folds in as a floor. Verified live by capping a running
+  container with `docker update` and OOM-killing a `tail /dev/zero` exec.
+- **`sandbox.pull_seconds` was added** — `up` times the pull anyway to keep it
+  out of `setup_seconds`, and the pull is worth watching on a cold runner.
+- The plan's OOM live test assumed a `--memory` construction knob; none was
+  added — `docker update` caps the live container instead, so the backend's
+  surface stays unchanged.
+
+The DoD's live rollout (claude_code writing its own prompt, end to end) is the
+remaining manual checkpoint; everything below it is covered by the suite.

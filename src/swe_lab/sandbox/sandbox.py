@@ -12,8 +12,9 @@ lifecycle). Every generated script references staged files only through the
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from etils import epath
 
@@ -21,6 +22,9 @@ from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .resources import Inline, LocalFile
 from .spec import SandboxSpec
+
+if TYPE_CHECKING:
+  from .observer import SandboxObserver
 
 # The env var every sandbox sets on each exec: the workspace path as seen from
 # inside the sandbox. Generated scripts reference staged files only through it,
@@ -148,6 +152,23 @@ class Sandbox(SandboxFs, ABC):
       dest: The host path to write it to (parents created).
     """
     ...
+
+  def observers(self) -> Sequence[SandboxObserver]:
+    """Return this backend's own observers for the coming run.
+
+    The backend is the only party that can measure its own runtime — OOM
+    kills, peak memory, setup time — so it contributes observers exactly like
+    the runner and the task do (ADR-0007 §3, the backend source). A
+    composition prepends these **first**: they measure the whole run.
+
+    Called once per run, before ``up``; return fresh instances each call,
+    since stateful observers are single-run.
+
+    Returns:
+      This backend's observers; none by default, so a backend without runtime
+      metrics needs nothing.
+    """
+    return ()
 
   def mount(self, mounts: Mounts) -> None:
     """Stage the declared mounts into the live sandbox (after ``up``).

@@ -216,7 +216,8 @@ def run_unit_test[V: Verdict](
   manager = SandboxManager(
       sandbox=sandbox,
       output_dir=epath.Path(output_dir),
-      observers=[parse, *observers],
+      # Backend observers first: they measure the whole run (ADR-0007 §3).
+      observers=[*sandbox.observers(), parse, *observers],
       mounts=mounts,
   )
   try:

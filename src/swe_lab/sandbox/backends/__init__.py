@@ -22,10 +22,11 @@ from ..errors import SandboxError
 from ..sandbox import Sandbox
 from ..spec import SandboxSpec
 from .ghjob import GitHubJobSandbox
-from .host import DockerHostSandbox
+from .host import DockerHostSandbox, HostMetricsObserver
 
 __all__ = [
     "DockerHostSandbox",
+    "HostMetricsObserver",
     "GitHubJobSandbox",
     "SandboxConfig",
     "SandboxFactory",
