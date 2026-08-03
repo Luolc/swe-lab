@@ -19,7 +19,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
-from swe_lab.sandbox import SandboxSpec
+from swe_lab.sandbox import Mounts, SandboxSpec
 
 
 class TaskInstance[V: Verdict](ABC):
@@ -42,6 +42,21 @@ class TaskInstance[V: Verdict](ABC):
   def sandbox_spec(self) -> SandboxSpec:
     """Return the run context (image / workdir / base commit) to run in."""
     ...
+
+  def mounts(self) -> Mounts:
+    """Return the dataset's own material to stage for a run of this instance.
+
+    The instance is one of the mount sources (ADR-0007 §2) and decides for
+    itself whether it stages anything. Default: nothing — right for a
+    solving-only dataset, or one whose material is baked into the image.
+
+    Names are workspace-relative, like every other contributor's;
+    ``merge_mounts`` refuses duplicate targets across sources.
+
+    Returns:
+      Workspace-relative name → mount; empty by default.
+    """
+    return {}
 
   @abstractmethod
   def prompt(self) -> str:

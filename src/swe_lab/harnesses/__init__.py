@@ -4,12 +4,11 @@ One subpackage per harness (``claude_code`` now; ``codex`` / ``grok_build``
 next), all implementing the :class:`~swe_lab.harnesses.base.Harness` contract.
 """
 
-from .base import Harness, PROMPT_NAME
+from .base import Harness
 from .observer import COMPLETE_METRIC, HarnessOutcomeObserver
 
 __all__ = [
     "COMPLETE_METRIC",
-    "PROMPT_NAME",
     "Harness",
     "HarnessOutcomeObserver",
 ]

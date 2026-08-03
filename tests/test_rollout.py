@@ -62,8 +62,8 @@ def test_run_rollout_wires_and_assembles(
   assert outcome.patch == ""
   assert outcome.complete is False
   assert outcome.conversation == Conversation(messages=[])
-  # the dataset-derived prompt was staged as prompt.txt (not a harness mount);
-  # the harness's own run script was staged too
+  # the harness landed the prompt itself in run() (ADR-0007 §8 — same
+  # filename as before, but now its own choice); its run script was staged
   assert (workspace / "prompt.txt").read_text() == "SOLVE THIS"
   assert (workspace / "run_claude_code.sh").is_file()
   # the canonical conversation + the (empty) patch were written

@@ -19,15 +19,9 @@ import time
 from etils import epath
 
 from swe_lab.conversation import Conversation, ConversationObserver
-from swe_lab.harnesses import (
-    Harness,
-    HarnessOutcomeObserver,
-    PROMPT_NAME,
-)
+from swe_lab.harnesses import Harness, HarnessOutcomeObserver
 from swe_lab.sandbox import (
     ExecResult,
-    Inline,
-    Mount,
     RunStatus,
     Sandbox,
     SandboxManager,
@@ -112,7 +106,8 @@ def run_rollout(
       run context (image / workdir / base_commit / instance_id).
     harness: The agent to run. It supplies its own mounts, the main action, the
       trace → ``Conversation`` conversion, and the completion signal.
-    prompt: The dataset-derived solve prompt (staged under ``PROMPT_NAME``).
+    prompt: The dataset-derived task prompt, handed to ``harness.run`` as
+      text; the harness lands it wherever it wants it (ADR-0007 §8).
     output_dir: The manager's host-side output directory (created fresh). For a
       host backend it is also the sandbox's bind-mounted workspace, so a
       host-side proxy log lands where the in-sandbox harness reads it.
@@ -133,38 +128,54 @@ def run_rollout(
     The rollout outcome (patch, flags, conversation, status).
   """
   spec = sandbox.spec
-  conversation = ConversationObserver(producer=harness)
-  extract = DiffExtractObserver(exclude_globs=exclude_globs)
-  outcome = HarnessOutcomeObserver(harness=harness)
-  # The prompt is dataset-derived, staged by the composition; the harness
-  # contributes its own script and any read-only asset (e.g. a pinned binary).
-  mounts = {PROMPT_NAME: Mount(Inline(prompt.encode()))} | harness.mounts(
-      spec.workdir
+  # The runner's observers come from its own factory (ADR-0007 §3); the
+  # generic pair is looked back up for outcome assembly. Wrapper-level
+  # `isinstance` on purpose — Task 19's `TaskResult` replaces this.
+  runner_observers = tuple(harness.observers())
+  conversation = next(
+      (o for o in runner_observers if isinstance(o, ConversationObserver)),
+      None,
   )
+  outcome = next(
+      (o for o in runner_observers if isinstance(o, HarnessOutcomeObserver)),
+      None,
+  )
+  extract = DiffExtractObserver(exclude_globs=exclude_globs)
   manager = SandboxManager(
       sandbox=sandbox,
       output_dir=epath.Path(output_dir),
-      observers=[conversation, extract, outcome, *observers],
-      mounts=mounts,
+      # Backend observers first: they measure the whole run (ADR-0007 §3).
+      observers=[*sandbox.observers(), *runner_observers, extract, *observers],
+      # The prompt is no longer a composition mount — it goes to `run` as
+      # text, and the harness lands it itself (ADR-0007 §8).
+      mounts=harness.mounts(spec.workdir),
   )
+  exec_result: ExecResult | None = None
   with proxy or contextlib.nullcontext(), manager.session() as sb:
     # Hand the execution's own outcome to the observer *before* teardown, so
     # before_destroy can report it. Discarding it left a killed agent
     # indistinguishable from one that simply produced no trace.
     started = time.monotonic()
     try:
-      outcome.exec_result = harness.run(sb, timeout=timeout, env=agent_env)
+      exec_result = harness.run(
+          sb, prompt=prompt, timeout=timeout, env=agent_env
+      )
     finally:
-      outcome.wall_seconds = time.monotonic() - started
+      if outcome is not None:
+        outcome.exec_result = exec_result
+        outcome.wall_seconds = time.monotonic() - started
 
   return RolloutOutcome(
       instance_id=spec.instance_id,
       patch=extract.patch,
       is_empty=extract.is_empty,
       binary_stripped=extract.binary_stripped,
-      complete=outcome.complete,
-      conversation=conversation.conversation or Conversation(messages=[]),
-      status=_status(manager.result.status, outcome.exec_result),
+      complete=outcome.complete if outcome is not None else False,
+      conversation=(
+          conversation.conversation if conversation is not None else None
+      )
+      or Conversation(messages=[]),
+      status=_status(manager.result.status, exec_result),
       workspace=epath.Path(output_dir),
       artifacts=manager.result.artifacts,
       metrics=manager.result.metrics,

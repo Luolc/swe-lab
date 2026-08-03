@@ -2,13 +2,14 @@
 
 Stages its invocation script and the pinned binary (a read-only executable
 mount at a fixed path), runs the agent, and converts the event-stream output
-into a canonical ``Conversation``. It is dataset-agnostic — the prompt is staged
-by the composition (dataset-derived); the invocation script only reads it.
+into a canonical ``Conversation``. It is dataset-agnostic — ``run(prompt=...)``
+receives the dataset-derived prompt as text and lands it in a file of this
+harness's own choosing; the invocation script reads it from there.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import re
 import shlex
@@ -16,9 +17,10 @@ from typing import override
 
 from etils import epath
 
-from swe_lab.conversation import Conversation
-from swe_lab.harnesses.base import Harness, PROMPT_NAME
+from swe_lab.conversation import Conversation, ConversationObserver
+from swe_lab.harnesses.base import Harness
 from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
+from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
     ExecResult,
     Inline,
@@ -27,6 +29,7 @@ from swe_lab.sandbox import (
     Mounts,
     SandboxError,
     SandboxFs,
+    SandboxObserver,
 )
 
 from .capture import Capture
@@ -38,6 +41,7 @@ from .constants import (
     BINARY_AT,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
+    PROMPT_FILENAME,
     PROXY_LOG_NAME,
 )
 from .convert import (
@@ -109,6 +113,20 @@ class ClaudeCodeHarness(Harness):
     return "claude_code"
 
   @override
+  def observers(self) -> Sequence[SandboxObserver]:
+    """Return the generic pair: the converted trace, and the run's outcome.
+
+    This harness's own choice (ADR-0007 §3), not an inherited default — both
+    observers are generic building blocks that delegate back to
+    ``to_conversation`` / ``completed`` / ``native_outputs``, which is where
+    everything Claude-Code-specific lives.
+    """
+    return (
+        ConversationObserver(producer=self),
+        HarnessOutcomeObserver(harness=self),
+    )
+
+  @override
   def mounts(self, workdir: str) -> Mounts:
     """Stage the invocation script, its env file, and the pinned binary.
 
@@ -130,13 +148,17 @@ class ClaudeCodeHarness(Harness):
       self,
       sb: SandboxFs,
       *,
+      prompt: str,
       timeout: float,
       env: Mapping[str, str] | None = None,
   ) -> ExecResult:
-    """Fill in the env file, then run the staged script by its workspace path.
+    """Land the prompt, fill in the env file, then run the staged script.
 
     Args:
       sb: The live sandbox to run in.
+      prompt: The task prompt. Written to this harness's own prompt file
+        (ADR-0007 §8 — the caller hands text; where it lands is ours), which
+        the invocation script feeds to the agent on stdin.
       timeout: Seconds before the agent run is killed.
       env: Extra ``KEY=VALUE`` exports for the agent, written into the sourced
         env file so they apply after the script's own defaults. A name that is
@@ -148,6 +170,7 @@ class ClaudeCodeHarness(Harness):
       own exit code never fails the step — what this still carries is whether
       *we* killed it on timeout.
     """
+    sb.write(PROMPT_FILENAME, prompt.encode())
     if env:
       sb.write(AGENT_ENV_NAME, _env_exports(env).encode())
     return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
@@ -212,7 +235,7 @@ class ClaudeCodeHarness(Harness):
     """
     home = shlex.quote(AGENT_HOME)
     binary = shlex.quote(BINARY_AT)
-    prompt = f'"$SANDBOX_WORKSPACE"/{PROMPT_NAME}'
+    prompt = f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
     lines = [
         "set -u",

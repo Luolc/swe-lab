@@ -216,7 +216,7 @@ def test_proxy_to_conversation_reads_proxy_log(tmp_path: Path):
 
 def test_run_executes_agent_script(tmp_path: Path):
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
-  ClaudeCodeHarness().run(sb, timeout=30.0)
+  ClaudeCodeHarness().run(sb, prompt="PROMPT", timeout=30.0)
   assert sb.scripts == [AGENT_SCRIPT_NAME]
   # no injected env → the staged env file is left untouched (still empty)
   assert not sb.exists(AGENT_ENV_NAME)
@@ -246,6 +246,7 @@ def test_run_writes_injected_env_as_quoted_exports(tmp_path: Path):
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
   ClaudeCodeHarness().run(
       sb,
+      prompt="PROMPT",
       timeout=30.0,
       env={"MY_FLAG": "1", "ENDPOINT": "http://host:8080/x y"},
   )
@@ -261,7 +262,9 @@ def test_run_rejects_an_invalid_env_name(tmp_path: Path):
   # a name that is not a shell identifier would corrupt the sourced file, which
   # `set -u` would surface as a silent no-run — fail loudly instead
   with pytest.raises(SandboxError, match="invalid environment variable name"):
-    ClaudeCodeHarness().run(sb, timeout=30.0, env={"BAD NAME": "x"})
+    ClaudeCodeHarness().run(
+        sb, prompt="PROMPT", timeout=30.0, env={"BAD NAME": "x"}
+    )
   assert sb.scripts == []  # nothing ran
 
 
