@@ -7,6 +7,6 @@ their domains: ``swe_lab.rollout.CodingAgentTask`` and
 ``swe_lab.evaluation.methods.unit_test.UnitTestEvalTask``.
 """
 
-from .task import Task, TaskResult, UPSTREAM, Upstream
+from .task import Task, TaskResult
 
-__all__ = ["Task", "TaskResult", "UPSTREAM", "Upstream"]
+__all__ = ["Task", "TaskResult"]

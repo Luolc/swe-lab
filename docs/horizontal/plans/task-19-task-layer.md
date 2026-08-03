@@ -521,3 +521,14 @@ following deltas from the text above (the code wins):
   no test pins it, but a downstream sweep runner may) — re-raised with the
   same type and message, the recorded original chained as the cause. The
   task layer itself records instead of raising.
+
+### Amendment (2026-08-03, review)
+
+`Upstream` / `UPSTREAM` are retired. Encoding the data's *origin* in a
+constructor field made `input_schema()` flip per construction — unwritable as
+a stable property of the task. The unification: **inputs always arrive by
+mount** through `execute`'s `extra_mounts`; a standalone caller feeds a
+literal through the same channel a workflow edge uses
+(`{"patch.diff": Mount(Inline(bytes))}`), and `UnitTestEvalTask` takes
+`apply_patch: bool` — configuration, which the schema is a fixed function of.
+`execute` now refuses a required input nobody staged, at assembly.

@@ -43,7 +43,7 @@ from swe_lab.sandbox import (
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandbox, RecordingObserver
-from swe_lab.workflow import Task, UPSTREAM
+from swe_lab.workflow import Task
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
@@ -391,33 +391,42 @@ class _EvalInstance(TaskInstance[SweBenchProVerdict]):
     )
 
 
-def test_a_string_patch_is_a_constructor_value_not_an_input(tmp_path: Path):
-  task = UnitTestEvalTask(instance=_EvalInstance(), patch="CANDIDATE")
-  assert task.input_schema() == ()
+def test_the_patch_input_is_fixed_by_configuration():
+  # One channel: in apply mode the task declares patch.diff as its input and
+  # stages no placeholder of its own — regardless of who will supply it.
+  task = UnitTestEvalTask(instance=_EvalInstance())
+  assert [schema.name for schema in task.input_schema()] == [PATCH_NAME]
+  assert PATCH_NAME not in task.mounts()
+  # …but the eval script was still compiled to apply the patch, so whatever
+  # gets mounted under the declared name is what gets applied.
+  assert ENTRYSCRIPT_NAME in task.mounts()
+
+
+def test_a_callers_literal_patch_arrives_through_the_same_channel(
+    tmp_path: Path,
+):
+  # A standalone caller (the gold self-check, a CLI) feeds the bytes it
+  # already has through extra_mounts — the exact channel a workflow edge
+  # uses, so the task cannot tell the difference.
   sandbox = _fake(tmp_path)
-  result = task.execute(sandbox, output_dir=tmp_path / "out", timeout=10.0)
+  task = UnitTestEvalTask(instance=_EvalInstance())
+  result = task.execute(
+      sandbox,
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      extra_mounts={PATCH_NAME: Mount(Inline(b"CANDIDATE"))},
+  )
   assert result.run.status is RunStatus.SUCCESS
   assert (sandbox.workspace / PATCH_NAME).read_text() == "CANDIDATE"
   assert sandbox.scripts == [ENTRYSCRIPT_NAME]
 
 
-def test_upstream_declares_the_patch_input_and_stages_no_placeholder():
-  task = UnitTestEvalTask(instance=_EvalInstance(), patch=UPSTREAM)
-  assert [schema.name for schema in task.input_schema()] == [PATCH_NAME]
-  assert PATCH_NAME not in task.mounts()
-  # …but the eval script was still compiled to apply the patch, so the
-  # workflow-mounted file is what gets applied.
-  assert ENTRYSCRIPT_NAME in task.mounts()
-
-
-def test_upstream_grades_the_patch_mounted_by_the_workflow_edge(
-    tmp_path: Path,
-):
+def test_a_workflow_edge_mounts_the_upstream_patch(tmp_path: Path):
   upstream = tmp_path / "store" / PATCH_NAME
   upstream.parent.mkdir(parents=True)
   upstream.write_text("FROM UPSTREAM")
   sandbox = _fake(tmp_path)
-  task = UnitTestEvalTask(instance=_EvalInstance(), patch=UPSTREAM)
+  task = UnitTestEvalTask(instance=_EvalInstance())
   result = task.execute(
       sandbox,
       output_dir=tmp_path / "out",
@@ -434,14 +443,24 @@ def test_upstream_grades_the_patch_mounted_by_the_workflow_edge(
   assert verdict is not None and verdict.resolved is True
 
 
-def test_grading_the_base_commit_stages_no_patch():
-  task = UnitTestEvalTask(instance=_EvalInstance(), patch=None)
+def test_a_missing_required_input_fails_at_assembly(tmp_path: Path):
+  # Nobody staged patch.diff: the failure is an assembly error naming the
+  # input, not a git-apply mystery inside the sandbox.
+  sandbox = _fake(tmp_path)
+  task = UnitTestEvalTask(instance=_EvalInstance())
+  with pytest.raises(SandboxError, match=PATCH_NAME):
+    task.execute(sandbox, output_dir=tmp_path / "out", timeout=10.0)
+  assert sandbox.calls == []  # never went up
+
+
+def test_grading_the_base_commit_declares_no_input():
+  task = UnitTestEvalTask(instance=_EvalInstance(), apply_patch=False)
   assert task.input_schema() == ()
   assert PATCH_NAME not in task.mounts()
 
 
 def test_the_task_output_schema_names_the_eval_outputs(tmp_path: Path):
-  task = UnitTestEvalTask(instance=_EvalInstance(), patch="CANDIDATE")
+  task = UnitTestEvalTask(instance=_EvalInstance(), apply_patch=False)
   result = task.execute(
       _fake(tmp_path), output_dir=tmp_path / "out", timeout=10.0
   )
