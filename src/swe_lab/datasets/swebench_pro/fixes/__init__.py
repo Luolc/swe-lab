@@ -29,8 +29,9 @@ shapes, all of them "the test, not the patch":
 - **the environment is wrong** — a dependency version with a known bug
   (``element_web_wysiwyg``);
 - **the harness is wrong** — parallelism the tests cannot survive
-  (``ansible_xdist``), or a wall clock the suite turns out not to be
-  indifferent to (``tutanota_clock``);
+  (``ansible_xdist``), a wall clock the suite turns out not to be indifferent to
+  (``tutanota_clock``), or a build client that discards its own errors
+  (``tutanota_build_server``);
 - **the test is wrong** — it asserts something unobservable, or with a
   precision its own approximation cannot support, and upstream said so
   themselves (``element_web_joinrule``, ``teleport_fncache``).
@@ -101,6 +102,7 @@ from .ansible_xdist import ANSIBLE_XDIST
 from .element_web_joinrule import ELEMENT_WEB_JOINRULE
 from .element_web_wysiwyg import ELEMENT_WEB_WYSIWYG
 from .teleport_fncache import TELEPORT_FNCACHE
+from .tutanota_build_server import TUTANOTA_BUILD_SERVER
 from .tutanota_clock import TUTANOTA_CLOCK
 
 __all__ = [
@@ -121,6 +123,7 @@ _REGISTERED = (
     ELEMENT_WEB_JOINRULE,
     TELEPORT_FNCACHE,
     TUTANOTA_CLOCK,
+    TUTANOTA_BUILD_SERVER,
 )
 
 # instance_id -> the fix applied to its spec after compilation.
