@@ -39,8 +39,8 @@ read status from them. A task that shipped with notable deltas gets a dated
 | 18 | [Sandbox observability + interface reshape](task-18-observability-and-interface-reshape.md) ([ADR-0007](../../decisions/ADR-0007-task-and-workflow-layer.md) §2/§3/§8) | ✅ Done (PR #152; `sandbox.*` runtime metrics incl. live OOM coverage; `Harness.observers()` + `run(prompt=...)` breaking pair; live-rollout CP pending) |
 | 19 | [**`Task` layer + both compositions rewritten on it**](task-19-task-layer.md) (ADR-0007 §§1–5) | ✅ Done (`workflow/` + `ArtifactSchema` seam; `CodingAgentTask` / `UnitTestEvalTask`; wrappers frozen, zero test edits; §2.6 instance-mounts migration deferred to Task 21 — see the plan's Result note) |
 | — | **CP5 — Task falsification gate** (human gate: wrappers thin, live byte-equivalence) | ⬜ |
-| 20 | Persistence: task-keyed records + validation/retry + resume (ADR-0007 §§6–7; amends ADR-0004) | ⬜ |
-| 21 | Workflow (list-first) + CLI rewire (ADR-0007 §§9–10) | ⬜ |
+| 20 | Persistence: task-keyed records + validation/retry + resume (ADR-0007 §§6–7; amends ADR-0004). **Direction:** task-level retry is meant to *replace* the in-run eval retry — once it lands, the loop inside `UnitTestEvalTask.action` goes away and a new ADR supersedes ADR-0005 (weigh the trade: a task attempt is a fresh sandbox, the in-run attempt reuses the warm container) | ⬜ |
+| 21 | Workflow (list-first) + CLI rewire (ADR-0007 §§9–10). **Direction:** `run_rollout` / `run_unit_test` are compat shims to be **deprecated** — both flows become "run a workflow" with the concrete tasks inside; the CLIs construct workflows, and the wrappers stay only for downstream callers until they migrate | ⬜ |
 
 **P0 — remote sandbox (ADR-0003).** swe-lab ships host + ghjob only; a remote /
 internal sandbox is a consuming company's **own** `Sandbox` subclass (import-only).

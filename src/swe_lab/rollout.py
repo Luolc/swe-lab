@@ -238,6 +238,9 @@ def run_rollout(
   A thin wrapper (frozen signature) over ``CodingAgentTask``: the sandbox's
   spec is adapted into the task's instance seam and the result reshaped into
   ``RolloutOutcome`` — construction and reshaping, no logic of its own.
+  Kept for backward compatibility; running the task inside a workflow
+  (ADR-0007) is the intended entry point once workflows land, and this
+  wrapper is then slated for deprecation.
 
   Args:
     sandbox: The built (not-yet-up) sandbox to run in; its ``spec`` carries

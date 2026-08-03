@@ -302,7 +302,9 @@ class UnitTestEvalTask[V: Verdict](Task):
   def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
     """Run the entryscript, re-running while it fails and budget remains.
 
-    In-run retry is ADR-0005's and stays inside the action. ``timeout`` is
+    In-run retry is ADR-0005's and stays inside the action — a workaround
+    slated to be replaced by task-level retry (ADR-0007 §6), at which point
+    a new ADR supersedes ADR-0005 and this loop goes away. ``timeout`` is
     per attempt, so the worst-case wall clock is ``(retries + 1) * timeout``
     — per-attempt rather than shared, because a shared deadline would make
     the last attempt's budget depend on how slow the earlier ones were.
@@ -410,6 +412,9 @@ def run_unit_test[V: Verdict](
   A thin wrapper (frozen signature) over ``UnitTestEvalTask``: the compiled
   spec is adapted into the task's instance seam and the result reshaped into
   the historical pair — construction and reshaping, no logic of its own.
+  Kept for backward compatibility; running the task inside a workflow
+  (ADR-0007) is the intended entry point once workflows land, and this
+  wrapper is then slated for deprecation.
 
   The sandbox is **injected, already constructed** — this function neither
   chooses a backend nor threads its construction options (workspace / pull /
