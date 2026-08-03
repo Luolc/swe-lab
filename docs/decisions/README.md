@@ -27,3 +27,4 @@ alternatives rejected. Format follows the `documentation-and-adrs` skill:
 | [0004](ADR-0004-multi-rollout-run-record-layout.md) | Multi-rollout run-record layout — `rollout_id` + `attempt` key runs for pass@K; drop `run_ts`/`runs/` from the key; split `read_manifests` (bulk) vs targeted `read_manifest` | Accepted | 2026-07-29 |
 | [0005](ADR-0005-flaky-eval-retry.md) | Retry a failed eval and mark the verdict flaky — the patch is identical across attempts, so it averages harness noise, not model error | Accepted | 2026-08-01 |
 | [0006](ADR-0006-verdict-is-an-abc.md) | `Verdict` is an ABC, not a Protocol — it owns the `resolved` / `flaky` derivations (supersedes ADR-0002 for `Verdict` only) | Accepted | 2026-08-02 |
+| [0007](ADR-0007-task-and-workflow-layer.md) | A task layer above the sandbox manager, and workflows over it — one task = one sandbox; observers from sandbox / runner / task; the grader stays a declared output | **Proposed** | 2026-08-02 |
