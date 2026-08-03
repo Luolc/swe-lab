@@ -180,9 +180,14 @@ def execute(self, sandbox, *, output_dir, timeout, extra_observers=()):
       *(obs for _, obs in produced),        # task: declared outputs
       *extra_observers,                     # caller: e.g. persist
   ]
-  # 2. mounts, three sources here + observers' own via the manager;
-  #    merge_mounts refuses duplicate targets across sources
-  mounts = merge_mounts(self.instance_mounts(), self.mounts())
+  # 2. mounts — instance's + runner's + the task's own; the observers'
+  #    arrive via the manager, which already merges each observer.mounts().
+  #    merge_mounts refuses duplicate targets across sources.
+  mounts = merge_mounts(
+      self.instance_mounts(),
+      runner.mounts(sandbox.spec.workdir) if runner else {},
+      self.mounts(),
+  )
   manager = SandboxManager(
       sandbox=sandbox, output_dir=epath.Path(output_dir),
       observers=observers, mounts=mounts,
@@ -255,7 +260,8 @@ class CodingAgentTask(Task):
   proxy: AbstractContextManager[object] | None = None
 
   def runner(self):        return self.harness
-  def mounts(self):        return {}        # harness mounts stay the runner's
+  def mounts(self):        return {}        # the harness's own mounts arrive
+                                            # via runner() in execute()
   def output_producers(self): return (PatchProducer(exclude_globs=self.exclude_globs),)
   def action(self, sb, outputs, *, timeout):   # outputs unused here
     return self.harness.run(sb, prompt=self.prompt or self.instance.prompt(),
