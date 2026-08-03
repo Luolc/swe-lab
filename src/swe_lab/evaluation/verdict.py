@@ -11,21 +11,44 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Protocol, Self
+from typing import Self
 
 from swe_lab.sandbox import Mounts, SandboxFs
 
 
-class Verdict(Protocol):
+class Verdict(ABC):
   """The minimal cross-dataset surface: a scalar score, plus a resolved flag.
 
   ``score`` is 1.0 for a full pass and 0.0 for none; a future rubric- or
   model-judged eval method may report an intermediate score, so aggregation
-  depends only on this scalar (it averages it). ``resolved`` is the derived
-  ``score >= 1.0`` convenience for binary pass/fail callers.
+  depends only on this scalar (it averages it).
+
+  An ABC rather than a Protocol (ADR-0006, superseding ADR-0002 for this one
+  interface): ``resolved`` and ``flaky`` are not fields but *derivations with a
+  rule*, and a Protocol can only state a rule it cannot enforce. They are
+  concrete here so every verdict inherits the same one.
   """
 
+  # Not decoration: ``ABC`` declares this, but a subclass that does not
+  # re-declare it gives every instance a ``__dict__`` again, which silently
+  # defeats ``slots=True`` on the concrete verdict — 40 bytes to 56 on this
+  # repo's own shape, and typo'd attributes stop raising. One verdict exists per
+  # instance per rollout.
+  __slots__: tuple[str, ...] = ()
+
+  # How many evaluation attempts produced this verdict (``1`` = first try). More
+  # than one means the eval was re-run against the **same patch** after a
+  # failure (ADR-0005) — the candidate never changes between attempts, so this
+  # averages out harness nondeterminism, not model quality.
+  #
+  # Declared, not abstract: this is the one member that really is *data*, and a
+  # subclass satisfies it with an ordinary dataclass field. An abstract property
+  # here would force every verdict to wrap a private field in a getter to say
+  # the same thing.
+  attempts: int
+
   @property
+  @abstractmethod
   def score(self) -> float:
     """The scalar outcome in ``[0, 1]``."""
     ...
@@ -33,27 +56,20 @@ class Verdict(Protocol):
   @property
   def resolved(self) -> bool:
     """Whether the run is a full pass (``score >= 1.0``)."""
-    ...
-
-  @property
-  def attempts(self) -> int:
-    """How many evaluation attempts produced this verdict (``1`` = first try).
-
-    More than one means the eval was re-run against the **same patch** after a
-    failure (ADR-0005) — the candidate never changes between attempts, so this
-    averages out harness nondeterminism, not model quality.
-    """
-    ...
+    return self.score >= 1.0
 
   @property
   def flaky(self) -> bool:
     """Whether it resolved only after a retry.
 
-    Derived, never stored: a run that failed every attempt is not flaky, it is
-    failed. This is the signal that feeds the known-flaky registry.
+    Derived, never stored, and deliberately *not* ``attempts > 1``: a run that
+    failed every attempt is not flaky, it is failed. This is the signal that
+    feeds the known-flaky registry, so the difference is the difference between
+    recording a harness flake and recording an exhausted retry chain as one.
     """
-    ...
+    return self.attempts > 1 and self.resolved
 
+  @abstractmethod
   def with_attempts(self, attempts: int) -> Self:
     """Return a copy recording how many attempts the run took.
 
@@ -69,6 +85,7 @@ class Verdict(Protocol):
     """
     ...
 
+  @abstractmethod
   def summary(self) -> dict[str, object]:
     """Dataset-specific detail for a report, beyond ``score`` / ``resolved``.
 
@@ -81,6 +98,7 @@ class Verdict(Protocol):
     """
     ...
 
+  @abstractmethod
   def metrics(self) -> dict[str, float]:
     """Dataset-specific *numeric* detail, for the run's metrics.
 

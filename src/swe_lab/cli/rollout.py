@@ -157,7 +157,7 @@ def rollout_in_docker(
 
   root = find_repo_root()
   spec = instance.sandbox_spec()
-  prompt = instance.solve_prompt()
+  prompt = instance.prompt()
   workspace = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
   workspace.rmtree(missing_ok=True)
 

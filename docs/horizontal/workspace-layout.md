@@ -107,7 +107,7 @@ Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
 | `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `. agent_env.sh` (caller-injected env) · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions < prompt.txt > claude.event_stream.jsonl 2> claude.stderr.log \|\| true` (the prompt is piped in on **stdin**, not inlined) |
-| `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **dataset/composition** (mount) | the agent (via run_claude_code.sh) | the solve prompt — **dataset-derived** (`SweBenchProInstance.solve_prompt`), *not* a harness mount |
+| `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **dataset/composition** (mount) | the agent (via run_claude_code.sh) | the task prompt — **dataset-derived** (`SweBenchProInstance.prompt`), *not* a harness mount |
 
 ### Produced during the run (in-container, by `run_claude_code.sh`)
 

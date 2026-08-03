@@ -97,6 +97,14 @@ def eval_cmd(
 
   if gold:
     patch = instance.gold_patch()
+    # Not the same as `patch=None`, which means "grade the base commit" and is a
+    # legitimate request. A dataset with no reference solution cannot answer
+    # `--gold` at all, and falling through would grade the wrong thing and
+    # report it as the gold patch failing.
+    if patch is None:
+      raise typer.BadParameter(
+          f"dataset {dataset!r} carries no gold patch for {instance_id}"
+      )
   else:
     assert patch_file is not None  # guaranteed by the exactly-one check above
     patch = patch_file.read_text()

@@ -22,6 +22,8 @@ alternatives rejected. Format follows the `documentation-and-adrs` skill:
 | ADR | Decision | Status | Date |
 | --- | --- | --- | --- |
 | [0001](ADR-0001-patch-extraction-and-grading.md) | Patch extraction and grading — text-only diff vs `base_commit`, strict `git apply` matching Scale | Accepted | 2026-07-17 |
-| [0002](ADR-0002-interface-style-abc-vs-protocol.md) | Interface style — ABC/base class over Protocol (Protocol only for structural data shapes) | Accepted | 2026-07-22 |
+| [0002](ADR-0002-interface-style-abc-vs-protocol.md) | Interface style — ABC/base class over Protocol (Protocol only for structural data shapes) | Accepted (superseded for `Verdict` by [0006](ADR-0006-verdict-is-an-abc.md)) | 2026-07-22 |
 | [0003](ADR-0003-remote-sandbox-lifecycle.md) | Remote-sandbox support — up-first lifecycle + one lifecycle-bearing `Sandbox` (merges Backend/Sandbox; `Resource` → data; unified placements; amends the spec's host-FS core model) | Accepted | 2026-07-26 |
 | [0004](ADR-0004-multi-rollout-run-record-layout.md) | Multi-rollout run-record layout — `rollout_id` + `attempt` key runs for pass@K; drop `run_ts`/`runs/` from the key; split `read_manifests` (bulk) vs targeted `read_manifest` | Accepted | 2026-07-29 |
+| [0005](ADR-0005-flaky-eval-retry.md) | Retry a failed eval and mark the verdict flaky — the patch is identical across attempts, so it averages harness noise, not model error | Accepted | 2026-08-01 |
+| [0006](ADR-0006-verdict-is-an-abc.md) | `Verdict` is an ABC, not a Protocol — it owns the `resolved` / `flaky` derivations (supersedes ADR-0002 for `Verdict` only) | Accepted | 2026-08-02 |

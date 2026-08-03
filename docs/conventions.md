@@ -132,8 +132,11 @@ with the following repo-wide choices and deviations (full plan + rationale:
   behavior interface whose implementers live in-repo is an `abc.ABC` with
   `@abstractmethod` (implementers write `class Impl(Base)` + `@override`) — for
   navigation and instantiation-time enforcement (`Grader`, `Sandbox`,
-  `RepoProvider`). Use `typing.Protocol` **only** for a structural shape on data
-  that records satisfy without inheriting (`Verdict`, `RepoInstance`,
+  `RepoProvider`, and `Verdict` per
+  [ADR-0006](decisions/ADR-0006-verdict-is-an-abc.md), which owns the `resolved`
+  / `flaky` derivations rather than restating them per dataset). Use
+  `typing.Protocol` **only** for a structural shape on data that records satisfy
+  without inheriting, with no shared derivation to own (`RepoInstance`,
   `DatasetRecord`). Where partial override is normal, use a concrete base class
   with default methods (`SandboxObserver`).
 - **Inject collaborators; don't construct them inside.** An entry function takes

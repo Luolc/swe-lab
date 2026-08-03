@@ -2,9 +2,10 @@
 
 WHY THIS EXISTS
 ---------------
-``fixes.py`` handles flakes in the *environment*: a broken dependency, a wrong
-package version — things outside the task that can be repaired without touching
-what counts as passing. This module is for the rest, and there are two kinds:
+The ``fixes`` package handles the flakes it can repair *without moving the
+pass/fail boundary*: a dependency version with a known bug, parallelism the
+tests cannot survive, a wall clock the suite turns out not to be indifferent to.
+This module is for the rest, and there are two kinds:
 
 - **No fix exists.** The racy test is in ``fail_to_pass``, so it *is* the task.
   Patching it edits the benchmark; patching the source under test does the
@@ -12,6 +13,11 @@ what counts as passing. This module is for the rest, and there are two kinds:
 - **A fix exists but costs more than the flake.** Recorded now, deferred
   deliberately, with the shape of the fix written into ``reason`` so the
   decision can be revisited rather than rediscovered.
+
+The two registries are not exclusive, and one instance is the proof: tutanota
+``f373ac38`` carries a fix *and* an entry here. Its clock window is closed in
+``fixes/tutanota_clock``; the suite-wide race that its count-based grading turns
+into an all-or-nothing verdict is not, and that is what the entry records.
 
 Either way the honest response is the same: record the measured failure rate and
 stamp it onto the run, so a result carries its own caveat instead of a reader
@@ -29,9 +35,14 @@ briefly recorded as fixed on exactly that mistake.
 WHAT TO DO WITH ONE
 -------------------
 Nothing automatic. The registry annotates; it never changes a verdict, skips a
-test, or retries a run. A consumer deciding to re-run a flaky instance N times
-and take the modal result is making a scoring decision, and that belongs where
-scoring decisions are visible — not hidden behind a lookup here.
+test, or decides whether a run is retried.
+
+Evaluation *does* retry a failed attempt (ADR-0005), but blanket and
+self-discovering — deliberately not gated on what happens to be recorded here,
+because coupling them would make the metric depend on how complete these notes
+are. Raising or lowering the budget for a *named* instance is a scoring
+decision, and it belongs where scoring decisions are visible (the caller's
+``retries``, or the spec's own override) rather than behind a lookup here.
 """
 
 from __future__ import annotations
@@ -41,7 +52,10 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class KnownFlaky:
-  """One instance's measured instability, and why it is not being fixed.
+  """One instance's measured instability, and why it is not fixed.
+
+  "Not fixed" is about *this* mechanism, not the instance: an instance can carry
+  an environment fix for one flake and an entry here for another.
 
   Attributes:
     failure_rate: Fraction of runs that fail for this reason (``0.25`` = a
@@ -72,6 +86,38 @@ class KnownFlaky:
 _NODEBB_ORPHANS = (
     "instance_NodeBB__NodeBB-22368b996ee0e5f11a5189b400b33af3cc8d925a"
     "-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed"
+)
+
+_NODEBB_UNAWAITED_DELETES = KnownFlaky(
+    failure_rate=0.156,
+    sample_size=64,
+    measured_on=(
+        "2026-08-01, parallel batch runner — 10/64 failures in the 64-rollout"
+        " sweep of the full 731. An earlier sweep on the same runner under a"
+        " heavier load profile measured 8/32 (25%): same failing test,"
+        " different packing density. The spread between the two is the point of"
+        " recording conditions at all."
+    ),
+    flaky_tests=(
+        "test/uploads.js | Upload Controllers library methods .cleanOrphans()"
+        " should delete orphans older than the configured number of days",
+    ),
+    graded=True,
+    reason=(
+        "The gold patch deletes orphaned uploads without awaiting"
+        " (`orphans.forEach((relPath) => { file.delete(...) })`, under its own"
+        " comment `Note: no await. Deletion not guaranteed by method end.`),"
+        " and the test re-reads the directory immediately and asserts zero"
+        " orphans. Two unawaited unlinks race one readdir. Upstream shipped the"
+        " bug in this very commit and fixed it 11 months later by awaiting the"
+        " deletes; the test was never changed. So an agent that awaits — the"
+        " better solution — passes deterministically, while one matching the"
+        " reference flakes."
+    ),
+    evidence=(
+        "https://github.com/NodeBB/NodeBB/commit/22368b996ee0e5f11a5189b400b33af3cc8d925a",
+        "https://github.com/NodeBB/NodeBB/commit/306651902896904ae1600febb02137e2ca127a06",
+    ),
 )
 
 
@@ -201,10 +247,11 @@ _SWEEP = "https://github.com/Luolc/swe-lab/issues/123#issuecomment-5150139319"
 
 # --- element-web: SendWysiwygComposer emoji, on matrix-wysiwyg 2.x ------------
 
-# NOT the 1.4.0 wasm double-free that ``fixes.py`` repairs. These two resolve
-# ^2.0.0 / ^2.2.2, both published after matrix-rich-text-editor#635, and their
-# shipped bundles confirm it: the generated `set_link_suggestion` glue has no
-# `ptr = 0` ownership transfer. Same component family, different mechanism.
+# NOT the 1.4.0 wasm double-free that ``fixes/element_web_wysiwyg`` repairs.
+# These two resolve ^2.0.0 / ^2.2.2, both published after
+# matrix-rich-text-editor#635, and their shipped bundles confirm it: the
+# generated `set_link_suggestion` glue has no `ptr = 0` ownership transfer.
+# Same component family, different mechanism.
 _WYSIWYG_EMOJI = (
     "instance_element-hq__element-web-53b42e321777a598aaf"
     "2bb3eab22d710569f83a8-vnan",
@@ -238,9 +285,9 @@ _WYSIWYG_EMOJI_FLAKE = KnownFlaky(
         " 2279 ms (the budget covers the wait, not the render around it), the"
         " DOM dump is an empty container rather than a broken tree, and no"
         " error or rejection is logged. NOT the 1.4.0 wasm double-free that"
-        " fixes.py repairs: these resolve matrix-wysiwyg 2.x, which already"
-        " carries matrix-rich-text-editor#635 — verified in the shipped"
-        " bundles, which have no `ptr = 0` ownership transfer. A"
+        " `fixes/element_web_wysiwyg` repairs: these resolve matrix-wysiwyg"
+        " 2.x, which already carries matrix-rich-text-editor#635 — verified in"
+        " the shipped bundles, which have no `ptr = 0` ownership transfer. A"
         " pass_to_pass bystander, so raising asyncUtilTimeout for this file"
         " would be a legitimate environment fix; deferred pending a decision"
         " on whether timeout budgets count as environment (see the webclients"
@@ -250,6 +297,11 @@ _WYSIWYG_EMOJI_FLAKE = KnownFlaky(
 )
 
 # --- single-test flakes found by the 64-rollout sweep -------------------------
+
+_VULS = (
+    "instance_future-architect__vuls-83bcca6e669ba2e4102f"
+    "26c4a2b52f78c7861f1a"
+)
 
 _VULS_SCAN_DEST = KnownFlaky(
     failure_rate=0.156,
@@ -277,6 +329,11 @@ _VULS_SCAN_DEST = KnownFlaky(
         " it."
     ),
     evidence=(_SWEEP,),
+)
+
+_PROTON = (
+    "instance_protonmail__webclients-8142704f447df6e108d5"
+    "3cab25451c8a94976b92"
 )
 
 _PROTON_EXTRA_EVENTS = KnownFlaky(
@@ -310,6 +367,9 @@ _PROTON_EXTRA_EVENTS = KnownFlaky(
     evidence=(_SWEEP,),
 )
 
+_NODEBB_SIO = (
+    "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+)
 
 _NODEBB_SOCKET_IO = KnownFlaky(
     failure_rate=0.016,
@@ -336,18 +396,6 @@ _NODEBB_SOCKET_IO = KnownFlaky(
         " a rate. One lost test out of 681 fail_to_pass scores the instance 0."
     ),
     evidence=(_SWEEP,),
-)
-
-_VULS = (
-    "instance_future-architect__vuls-83bcca6e669ba2e4102f"
-    "26c4a2b52f78c7861f1a"
-)
-_PROTON = (
-    "instance_protonmail__webclients-8142704f447df6e108d5"
-    "3cab25451c8a94976b92"
-)
-_NODEBB_SIO = (
-    "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
 )
 
 _HTML_EXPORT = (
@@ -390,38 +438,7 @@ _ELEMENT_HTML_EXPORT = KnownFlaky(
 
 # instance_id -> what is known about its instability.
 _KNOWN_FLAKY: dict[str, KnownFlaky] = {
-    _NODEBB_ORPHANS: KnownFlaky(
-        failure_rate=0.156,
-        sample_size=64,
-        measured_on=(
-            "2026-08-01, parallel batch runner — 10/64 failures in the"
-            " 64-rollout sweep of the full 731. An earlier sweep on the same"
-            " runner under a heavier load profile measured 8/32 (25%): same"
-            " failing test, different packing density. The spread between the"
-            " two is the point of recording conditions at all."
-        ),
-        flaky_tests=(
-            "test/uploads.js | Upload Controllers library methods"
-            " .cleanOrphans() should delete orphans older than the configured"
-            " number of days",
-        ),
-        graded=True,
-        reason=(
-            "The gold patch deletes orphaned uploads without awaiting"
-            " (`orphans.forEach((relPath) => { file.delete(...) })`, under its"
-            " own comment `Note: no await. Deletion not guaranteed by method"
-            " end.`), and the test re-reads the directory immediately and"
-            " asserts zero orphans. Two unawaited unlinks race one readdir."
-            " Upstream shipped the bug in this very commit and fixed it 11"
-            " months later by awaiting the deletes; the test was never"
-            " changed. So an agent that awaits — the better solution — passes"
-            " deterministically, while one matching the reference flakes."
-        ),
-        evidence=(
-            "https://github.com/NodeBB/NodeBB/commit/22368b996ee0e5f11a5189b400b33af3cc8d925a",
-            "https://github.com/NodeBB/NodeBB/commit/306651902896904ae1600febb02137e2ca127a06",
-        ),
-    ),
+    _NODEBB_ORPHANS: _NODEBB_UNAWAITED_DELETES,
     **dict.fromkeys(_TUTANOTA_ALL_OR_NOTHING, _TUTANOTA_SUITE_FLAKE),
     **dict.fromkeys(_WYSIWYG_EMOJI, _WYSIWYG_EMOJI_FLAKE),
     _VULS: _VULS_SCAN_DEST,

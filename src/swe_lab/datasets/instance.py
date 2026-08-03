@@ -1,11 +1,17 @@
 """The dataset-agnostic runnable-instance interface.
 
-A CLI must never import a concrete dataset. Instead, a dataset's record exposes
-*how to run this instance* through :class:`TaskInstance`: the sandbox context,
-the solve prompt, the gold patch, and its compiled unit-test eval. The CLIs
-resolve an instance by name (``load_dataset(name).require(id)``) and call these
-methods polymorphically — swapping in a new SWE-like dataset is a new record
-type that implements this ABC, with no CLI change.
+Nothing downstream of a dataset should import a concrete one. Instead, a
+dataset's record exposes *what this instance is and where it runs* through
+:class:`TaskInstance`: the sandbox context, the prompt stating the task, the
+reference solution if the dataset has one, and its compiled unit-test eval.
+Callers resolve an instance by name (``load_dataset(name).require(id)``) and use
+these methods polymorphically — supporting a new dataset is a new record type
+implementing this ABC, with no change to anything built on top.
+
+What a caller *does* with an instance is its own business: drive an agent
+against the task, grade a candidate solution, generate or annotate data from the
+same run context. This interface only says what every dataset must be able to
+answer for any of that to be possible.
 """
 
 from __future__ import annotations
@@ -17,12 +23,17 @@ from swe_lab.sandbox import SandboxSpec
 
 
 class TaskInstance[V: Verdict](ABC):
-  """A runnable dataset instance: how to solve and grade it (ADR-0002 ABC).
+  """A dataset instance that can be run in a sandbox (ADR-0002 ABC).
 
   A behavior interface implemented by a dataset's record type (which is also a
   ``DatasetRecord`` for the loader). Generic over the dataset's verdict type so
-  ``unit_test_spec`` returns a correctly-typed spec; a CLI uses only the base
-  ``Verdict`` surface (``score`` / ``resolved`` / ``summary``).
+  ``unit_test_spec`` returns a correctly-typed spec; a consumer that only reads
+  a result uses the base ``Verdict`` surface (``score`` / ``resolved`` /
+  ``summary``).
+
+  Only ``unit_test_spec`` is specific to grading. The rest describes the
+  instance itself and is equally what a generation, annotation, or agent-driving
+  workflow needs.
   """
 
   instance_id: str  # provided by the concrete record
@@ -33,13 +44,22 @@ class TaskInstance[V: Verdict](ABC):
     ...
 
   @abstractmethod
-  def solve_prompt(self) -> str:
-    """Return the dataset-derived prompt for the solving agent."""
+  def prompt(self) -> str:
+    """Return the dataset-derived prompt stating this instance's task."""
     ...
 
   @abstractmethod
-  def gold_patch(self) -> str:
-    """Return the instance's own reference (gold) patch."""
+  def gold_patch(self) -> str | None:
+    """Return the instance's own reference (gold) patch.
+
+    Returns:
+      The reference diff, or ``None`` when the dataset carries no reference
+      solution — an unsolved corpus, or one collected for annotation rather
+      than for grading. A caller that requires one has to say so: ``None`` is
+      *not* interchangeable with the ``patch=None`` that
+      :meth:`unit_test_spec` accepts, which means "grade the base commit" and
+      is a perfectly gradeable request.
+    """
     ...
 
   @abstractmethod
