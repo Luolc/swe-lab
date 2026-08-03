@@ -210,7 +210,10 @@ def run_task(
     *,
     store: Store,
     address: TaskAddress,
-    sandbox_factory: Callable[[], Sandbox],   # fresh sandbox per attempt
+    sandbox_factory: Callable[[], Sandbox],   # fresh sandbox per attempt;
+                                              # every call must yield one over
+                                              # a fresh, empty workspace (the
+                                              # factory owns that allocation)
     output_dir: epath.PathLike,               # host side; per-attempt subdirs
     timeout: float,
     retries: int = 0,                         # extra attempts after the first

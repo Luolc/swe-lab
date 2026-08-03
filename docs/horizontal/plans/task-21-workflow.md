@@ -46,13 +46,17 @@ a derived workflow record.
 ```python
 @dataclass(frozen=True)
 class WorkflowEntry:
-  """One step: a key naming it in the store, the task, and explicit bindings.
+  """One step: a key naming it in the store, the task, and how it runs.
 
   Attributes:
     key: The task segment of the ADR-0004 key (`[a-z0-9_-]+`, unique in the
       workflow). Also the retry-budget owner: change the task, change the key
       (ADR-0007's manual identity discipline).
     task: The constructed task (declaration data — Task 19).
+    sandbox_factory: Builds this entry's sandbox — called once per attempt
+      (Task 20's contract: every call returns a sandbox over a fresh, empty
+      workspace; the factory owns that allocation). Per entry, so backend /
+      network / pull knobs stay the caller's and two entries can differ.
     inputs: Explicit edge bindings, input name → producing entry's key. Only
       needed where name matching alone is ambiguous (§3); an entry may also
       bind an input that matching would have resolved, for documentation.
@@ -60,6 +64,7 @@ class WorkflowEntry:
   """
   key: str
   task: Task
+  sandbox_factory: Callable[[], Sandbox]
   inputs: Mapping[str, str] = field(default_factory=dict)
   retries: int = 0
 
@@ -70,10 +75,6 @@ class Workflow:
   sweep_id: str
   rollout_id: int
   entries: Sequence[WorkflowEntry]
-  # sandbox construction is the caller's, per entry — injected as a factory
-  # factory(entry) -> Callable[[], Sandbox], so backend/network/pull knobs
-  # never enter this class
-  sandbox_factory: Callable[[WorkflowEntry], Callable[[], Sandbox]]
 ```
 
 The caller owns the topological order (it is a list); the instance comes from
@@ -87,10 +88,11 @@ Usage, the shape the ADR promised:
 wf = Workflow(
     store=store, sweep_id="s1", rollout_id=0,
     entries=[
-        WorkflowEntry("rollout", CodingAgentTask(instance=inst, harness=h)),
-        WorkflowEntry("eval", UnitTestEvalTask(instance=inst), retries=1),
+        WorkflowEntry("rollout", CodingAgentTask(instance=inst, harness=h),
+                      sandbox_factory=rollout_sandbox),
+        WorkflowEntry("eval", UnitTestEvalTask(instance=inst),
+                      sandbox_factory=eval_sandbox, retries=1),
     ],
-    sandbox_factory=...,
 )
 outcome = wf.execute(output_dir=..., timeout=..., run_ts=...)
 ```
@@ -145,7 +147,7 @@ Per entry, in declared order — thin around Task 20's `run_task`:
    extra_mounts[name] = Mount(LocalFile(staged), read_only=True)
 
 2. RUN: outcome = run_task(entry.task, store=store, address=(sweep,
-      rollout, entry.key), sandbox_factory=factory(entry),
+      rollout, entry.key), sandbox_factory=entry.sandbox_factory,
       retries=entry.retries, extra_mounts=extra_mounts, ...)
    — run_task handles resume/attempts/validation/marker (Task 20).
 
