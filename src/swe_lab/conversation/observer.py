@@ -19,7 +19,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import override
 
-from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
+from swe_lab.sandbox import (
+    ArtifactSchema,
+    Contribution,
+    SandboxFs,
+    SandboxObserver,
+)
 
 from .model import Conversation
 
@@ -67,6 +72,15 @@ class ConversationObserver(SandboxObserver):
 
   producer: ConversationProducer
   conversation: Conversation | None = None
+
+  @override
+  def output_schema(self) -> tuple[ArtifactSchema, ...]:
+    """Declare the converted conversation record."""
+    return (
+        ArtifactSchema(
+            CONVERSATION_NAME, description="the canonical typed trace"
+        ),
+    )
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:

@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from typing import override
 
 from swe_lab.sandbox import (
+    ArtifactSchema,
     Contribution,
     ExecResult,
     qualified_name,
@@ -67,6 +68,23 @@ class HarnessOutcomeObserver(SandboxObserver):
   collected: dict[str, str] = field(default_factory=dict)
   exec_result: ExecResult | None = None
   wall_seconds: float | None = None
+
+  @override
+  def output_schema(self) -> tuple[ArtifactSchema, ...]:
+    """Declare the harness's native byproducts, every one best-effort.
+
+    Best-effort mirrors how they are registered: a run that died early simply
+    produces fewer files, so none of them can be a hard requirement of a
+    completed run.
+    """
+    return tuple(
+        ArtifactSchema(
+            qualified_name(self.harness.name, role),
+            required=False,
+            description=f"the {self.harness.name} run's native {role}",
+        )
+        for role in self.harness.native_outputs()
+    )
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
