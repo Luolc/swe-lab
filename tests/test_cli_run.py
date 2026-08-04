@@ -10,6 +10,7 @@ register theirs (``--rollout.harness=stub``).
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 import json
 from pathlib import Path
 import re
@@ -43,6 +44,7 @@ from swe_lab.sandbox.observers.diff_extract import RAW_PATCH_NAME
 
 # Importing the doubles registers the `fake` backend these runs build on.
 from swe_lab.sandbox.testing import FakeSandboxConfig
+from swe_lab.workflow.registry import workflow_definition
 
 runner = CliRunner()
 # Colour is escape sequences *between* characters, so it is stripped before a
@@ -183,17 +185,23 @@ def _wire(
     del name
     return _Dataset()
 
-  def fake_invocation_config(backend: str, **kwargs: object):
-    del backend, kwargs
-    return FakeSandboxConfig()
+  # Entries declare where they run, so placing the run on the fake backend
+  # means stamping its config onto the definition the command looks up.
+  real_definition = workflow_definition
+
+  def on_fake(name: str):
+    return tuple(
+        replace(entry, sandbox=FakeSandboxConfig())
+        for entry in real_definition(name)
+    )
 
   monkeypatch.setattr(run_mod, "load_dataset", fake_load_dataset)
   monkeypatch.setattr(run_mod, "find_repo_root", lambda: tmp_path)
-  monkeypatch.setattr(run_mod, "invocation_config", fake_invocation_config)
+  monkeypatch.setattr(run_mod, "workflow_definition", on_fake)
 
 
 def _run(*args: str):
-  return runner.invoke(app, ["run", *args, "--backend", "fake"])
+  return runner.invoke(app, ["run", *args])
 
 
 def _message(output: str) -> str:

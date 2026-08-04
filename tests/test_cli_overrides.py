@@ -26,7 +26,10 @@ from swe_lab.evaluation.unit_test import UnitTestTask
 from swe_lab.harnesses.claude_code import Capture, ClaudeCodeHarness
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import (
+    backend_of,
+    DockerHostSandboxConfig,
     ExecResult,
+    GhjobSandboxConfig,
     SandboxFs,
 )
 from swe_lab.workflow import Task, WorkflowEntry
@@ -307,3 +310,33 @@ def test_entries_keep_their_declared_order():
   )
   assert [entry.key for entry in rebuilt] == ["rollout", "unit_test"]
   assert isinstance(rebuilt[1].task, UnitTestTask)
+
+
+def test_sandbox_swaps_whole_by_backend_name_then_takes_field_edits():
+  # `sandbox` behaves exactly like `harness`: a bare name swaps the whole
+  # object for that backend's config, and a longer path edits a field of
+  # whatever is then there. Replacement lands first (shortest path wins), so
+  # the two compose in either order on the command line.
+  entries = apply_overrides(
+      definitions.ROLLOUT_AND_UNIT_TEST,
+      parse_overrides(
+          [
+              "--rollout.sandbox.pass_env=TOKEN",
+              "--rollout.sandbox=ghjob",
+          ]
+      ),
+  )
+  rollout, unit_test = entries
+  assert isinstance(rollout.sandbox, GhjobSandboxConfig)
+  assert rollout.sandbox.pass_env == ("TOKEN",)
+  # …and the other entry is untouched: a workflow can straddle two backends.
+  assert isinstance(unit_test.sandbox, DockerHostSandboxConfig)
+  assert backend_of(rollout.sandbox) == "ghjob"
+  assert backend_of(unit_test.sandbox) == "host"
+
+
+def test_an_unknown_backend_name_is_refused():
+  with pytest.raises(OverrideError, match="unknown backend"):
+    _ = apply_overrides(
+        definitions.ROLLOUT, parse_overrides(["--rollout.sandbox=nope"])
+    )

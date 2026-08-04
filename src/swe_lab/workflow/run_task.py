@@ -22,6 +22,7 @@ from etils import epath
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
     AttemptRecord,
+    backend_of,
     Mounts,
     persist,
     sandbox_factory,
@@ -244,7 +245,6 @@ def run_task(
     *,
     store: Store,
     address: TaskAddress,
-    backend: str,
     sandbox: SandboxConfig,
     output_dir: epath.PathLike,
     timeout: float,
@@ -276,11 +276,9 @@ def run_task(
       instance segment and reaches every hook through ``execute``.
     store: Where attempts, records, and the marker are persisted.
     address: The task's store address (sweep / rollout / task key).
-    backend: The registered sandbox backend to build each attempt on; also
-      recorded on the shards.
-    sandbox: The backend's config for this task — run semantics plus that
-      backend's mechanics. The workspace is **not** the caller's to set: one
-      is allocated per attempt, so no two attempts can ever share state.
+    sandbox: How this task runs; its class names the backend, which is also
+      recorded on the shards. The workspace is **not** the caller's to set:
+      one is allocated per attempt, so no two attempts share state.
     output_dir: Host directory for the run — the attempts' collected
       artifacts (``a0``, ``a1``, …) and their sandbox workspaces
       (``ws/a0``, …).
@@ -329,7 +327,7 @@ def run_task(
   record: AttemptRecord | None = None
   attempt = 0
   for attempt in range(retries + 1):
-    built = sandbox_factory(backend)(
+    built = sandbox_factory(backend_of(sandbox))(
         instance.sandbox_spec(),
         _over_a_fresh_workspace(
             sandbox, epath.Path(output_dir) / "ws" / f"a{attempt}"
@@ -363,7 +361,7 @@ def run_task(
             run_ts=run_ts,
             status=result.run.status.value,
             tier="formal",
-            backend=backend,
+            backend=backend_of(sandbox),
             metrics=dict(result.run.metrics),
             extra=extra | dict(extra_record or {}),
         ),

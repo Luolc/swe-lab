@@ -428,7 +428,6 @@ def _run_eval(
       _Instance(spec=_flaky_spec(passes_on_attempt=passes_on_attempt)),
       store=store,
       address=TaskAddress(sweep_id="sw", rollout_id=0, task="unit_test"),
-      backend="fake",
       sandbox=config,
       output_dir=tmp_path / "out",
       timeout=60.0,

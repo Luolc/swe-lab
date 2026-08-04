@@ -9,7 +9,7 @@ Docker is absent (see ``conftest.py``).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 from pathlib import Path
 from typing import Any, final, override
@@ -29,6 +29,7 @@ from swe_lab.sandbox import (
     Inline,
     Mount,
     Mounts,
+    SandboxConfig,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
@@ -40,6 +41,20 @@ from swe_lab.workflow import (
     Workflow,
     WorkflowEntry,
 )
+
+
+def _on(wf: Workflow, sandbox: SandboxConfig) -> Workflow:
+  """Run every entry of ``wf`` on ``sandbox`` — entries declare where they run.
+
+  Args:
+    wf: The workflow to place.
+    sandbox: The config (and therefore the backend) every entry gets.
+
+  Returns:
+    A copy whose entries all declare ``sandbox``.
+  """
+  return replace(wf, entries=[replace(e, sandbox=sandbox) for e in wf.entries])
+
 
 _IMAGE = "debian:stable-slim"
 SPEC = SandboxSpec("workflow-smoke", _IMAGE, "/", "none")
@@ -163,10 +178,8 @@ def test_live_two_container_chain_through_the_store(tmp_path: Path):
           ),
       ],
   )
-  outcome = wf.execute(
+  outcome = _on(wf, DockerHostSandboxConfig()).execute(
       _Instance(),
-      backend="host",
-      sandbox=DockerHostSandboxConfig(),
       output_dir=tmp_path / "out",
       run_ts="ts-live",
   )
@@ -221,10 +234,8 @@ def test_live_failed_producer_persists_its_evidence_and_blocks(
           ),
       ],
   )
-  outcome = wf.execute(
+  outcome = _on(wf, DockerHostSandboxConfig()).execute(
       _Instance(),
-      backend="host",
-      sandbox=DockerHostSandboxConfig(),
       output_dir=tmp_path / "out",
       run_ts="ts-live",
   )

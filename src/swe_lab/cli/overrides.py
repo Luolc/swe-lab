@@ -29,6 +29,7 @@ from typing import Any, get_args, get_origin
 from etils import epath
 
 from swe_lab.harnesses import build_harness, Harness
+from swe_lab.sandbox import build_sandbox_config, SandboxConfig
 from swe_lab.workflow import WorkflowEntry
 
 # Entry fields an override may not *set*, and why — each message is the whole
@@ -47,10 +48,12 @@ _FIXED_FIELDS: Mapping[str, str] = {
 }
 
 # Field types resolved from a registry when the value is a bare name rather
-# than a path into the object. One entry today; a second abstraction that
-# ships a registry (a grader, a store) is one line.
+# than a path into the object: `--rollout.harness=codex`,
+# `--rollout.sandbox=ghjob`. Both swap the whole object for that name's
+# default; `--rollout.sandbox.network=false` then walks into it.
 _REGISTRIES: Mapping[type, typing.Callable[[str], object]] = {
-    Harness: build_harness
+    Harness: build_harness,
+    SandboxConfig: build_sandbox_config,
 }
 
 

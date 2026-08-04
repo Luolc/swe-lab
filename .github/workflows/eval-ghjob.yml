@@ -82,7 +82,7 @@ jobs:
           uv run python -m swe_lab run \
             ${{ inputs.gold && 'gold_unit_test' || 'unit_test' }} \
             "${{ inputs.instance_id }}" \
-            --backend ghjob \
+            --unit_test.sandbox=ghjob \
             --unit_test.timeout="${{ inputs.timeout }}"
 
       # The verdict says pass/fail; the log says how long each test took, which

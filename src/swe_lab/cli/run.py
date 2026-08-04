@@ -15,7 +15,6 @@ from swe_lab.cli.overrides import (
     parse_overrides,
 )
 from swe_lab.cli.persist_wiring import run_store, run_ts
-from swe_lab.cli.sandbox_wiring import invocation_config
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.paths import cache_root, find_repo_root
@@ -70,13 +69,6 @@ def run_cmd(
     dataset: Annotated[
         str, typer.Option(help="Dataset the instance belongs to.")
     ] = "swebench_pro",
-    backend: Annotated[
-        str,
-        typer.Option(help="Sandbox backend name (host Docker, or the GH job)."),
-    ] = "host",
-    pull: Annotated[
-        bool, typer.Option(help="Pull the image before running.")
-    ] = True,
     sweep: Annotated[
         str, typer.Option(help="Sweep id the run's records are keyed under.")
     ] = "adhoc",
@@ -103,7 +95,9 @@ def run_cmd(
 
   Any field of the workflow can be adjusted for this invocation by naming its
   path: ``--<entry>.<field-path>=<value>``, as in
-  ``--rollout.harness.model=opus`` or ``--unit_test.retries=2``.
+  ``--rollout.harness.model=opus`` or ``--unit_test.retries=2``. That includes
+  where it runs: ``--rollout.sandbox=ghjob`` swaps the backend whole,
+  ``--rollout.sandbox.network=false`` edits a field of it.
   """
   if list_:
     for name in registered_workflows():
@@ -140,8 +134,6 @@ def run_cmd(
   try:
     outcome = built.execute(
         instance,
-        backend=backend,
-        sandbox=invocation_config(backend, pull=pull),
         inputs=supplied,
         output_dir=output_dir,
         run_ts=run_ts(),

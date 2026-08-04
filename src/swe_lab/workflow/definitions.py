@@ -21,7 +21,7 @@ from swe_lab.harnesses.claude_code.constants import (
     OAUTH_TOKEN_ENV,
 )
 from swe_lab.rollout import CodingAgentTask
-from swe_lab.sandbox import SandboxConfig
+from swe_lab.sandbox import DockerHostSandboxConfig
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
@@ -44,7 +44,9 @@ ROLLOUT: WorkflowDef = (
         timeout=_AGENT_TIMEOUT_S,
         # The agent needs the network, and its credential travels by name so
         # the value never reaches a command line.
-        sandbox=SandboxConfig(network=True, pass_env=(OAUTH_TOKEN_ENV,)),
+        sandbox=DockerHostSandboxConfig(
+            network=True, pass_env=(OAUTH_TOKEN_ENV,)
+        ),
     ),
 )
 
@@ -64,7 +66,7 @@ UNIT_TEST: WorkflowDef = (
         timeout=_UNIT_TEST_TIMEOUT_S,
         # Grading is offline on purpose: a test suite that reaches the network
         # is measuring something other than the patch.
-        sandbox=SandboxConfig(network=False),
+        sandbox=DockerHostSandboxConfig(network=False),
         retries=_UNIT_TEST_RETRIES,
     ),
 )
@@ -81,7 +83,7 @@ GOLD_UNIT_TEST: WorkflowDef = (
         # purpose, and the collision is the reason there are two names.
         UnitTestTask(inputs_builder=gold_patch),
         timeout=_UNIT_TEST_TIMEOUT_S,
-        sandbox=SandboxConfig(network=False),
+        sandbox=DockerHostSandboxConfig(network=False),
         retries=_UNIT_TEST_RETRIES,
     ),
 )
