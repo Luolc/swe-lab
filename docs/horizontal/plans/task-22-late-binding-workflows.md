@@ -142,6 +142,20 @@ with manager.session() as sb:
   attempt's failure, message intact) rather than at assembly — the builder
   is opaque until it runs, and it cannot run without the sandbox it probes.
   Edge-supplied inputs keep their assembly-time strictness.
+  Two ways to move that earlier were weighed. **Mock-sandbox dry-run:
+  rejected** — a builder's keys may depend on what it reads (different
+  branch under fake data, or a crash), so the inference can be wrong in
+  both directions, and a check that can false-positive cannot gate; it
+  would be a second, weaker truth. **Declared coverage: the sanctioned
+  future path** — if bind-time coverage checking ever earns its keep, pair
+  the builder with a `fills` declaration (the observer/output_schema
+  precedent: opaque behavior + a self-declaration, verified where it
+  lands): bind time checks `fills ⊆ declared` and `fills ∩ edges = ∅`;
+  in-session, the builder's actual keys must equal its declaration, loudly.
+  A declaration can lie, but the landing check catches the lie — that is a
+  contract; a dry-run catches nothing — that is a guess. Not built now: a
+  misconfiguration today costs one container startup on the first attempt,
+  with an exact message.
 
 The shipped tasks each ship their standalone default:
 
