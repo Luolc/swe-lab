@@ -202,16 +202,52 @@ class UnitTestEvalTask[V: Verdict](Task):
   def observers(self, instance):
     # per-run compilation, stashed for mounts()/action() of this run —
     # observers() is execute's first hook call, so it is the compile site
-    self._spec = instance.unit_test_spec(
-        patch="" if self.apply_patch else None
-    )
+    self._spec = instance.unit_test_spec(apply_patch=self.apply_patch)
     self._parse = EvalParseObserver(
         self._spec.grader, native_outputs=self._spec.native_outputs
     )
     return (self._parse,)
-  # mounts(instance): spec mounts (minus placeholder) + entryscript, as today
+  # mounts(instance): spec mounts + entryscript — no placeholder to drop
   # action(sb, instance): ONE entryscript run — no loop (§7)
 ```
+
+### 3.2 The instance contract sheds the patch bytes (kills the placeholder)
+
+Today's `unit_test_spec(patch: str | None)` conflates two things: *whether*
+the script applies a patch (a boolean baked into the script) and *which
+bytes* (a mount). The task-19 seam papered over that with a compile-time
+placeholder — `patch=""`, then delete the empty mount — which is **correct
+for SWE-Bench Pro only by implementation accident**: the script depends
+only on `patch is not None` and reads the bytes from the `patch.diff`
+workspace mount. Nothing in the contract forbids another dataset from
+embedding the bytes *into* the script, which would make the placeholder
+silently apply an empty patch and ignore the mounted real one.
+
+Since every input now arrives by mount, the bytes parameter has no reason
+to exist. The contract becomes explicit (this **changes
+`TaskInstance.unit_test_spec` and `compile_unit_test`** — the ask-first
+surface; this plan is the ask):
+
+```python
+def unit_test_spec(
+    self, *, apply_patch: bool, checkout_golden_tests: bool = True
+) -> UnitTestSpec[V]:
+  """… When ``apply_patch``, the compiled script applies the workspace file
+  ``patch.diff`` (the store-name contract); the bytes are NOT the spec's to
+  carry — they arrive as the eval task's declared input. ``False`` grades
+  the base commit untouched."""
+```
+
+- `compile_unit_test` loses its `patch` parameter and the patch mount;
+  the spec never carries patch bytes, so there is no placeholder to drop.
+- The named invariant test:
+  `test_the_eval_script_reads_the_patch_from_the_workspace_mount` — the
+  compiled apply-mode script references `patch.diff` by the contract name
+  and embeds no bytes.
+- `verify.py` migrates off the dying wrapper onto the task: golden run =
+  `UnitTestEvalTask(inputs_builder=gold_patch)`, base run =
+  `UnitTestEvalTask(apply_patch=False)` — the two self-check modes are the
+  two standalone shapes, no special path.
 
 `UnitTestSpec.retries` is deleted with the loop (§7); a dataset that knows an
 instance's measured flake rate expresses it as workflow-entry configuration
@@ -383,20 +419,23 @@ the flake-absorption trigger survives as `UnitTestEvalTask.should_retry`
 
 1. Task contract late-binding (hooks take `instance`; both tasks; `execute`
    signature) + test updates.
-2. §7 retirement + ADR-0008 (its own commit; `Verdict` cleanup).
-3. The `SandboxConfig` split (base semantics + per-backend subclasses;
+2. The `unit_test_spec(apply_patch=…)` contract change (§3.2): compile
+   sheds the bytes parameter and the patch mount; invariant test; verify.py
+   onto the task's two standalone shapes.
+3. §7 retirement + ADR-0008 (its own commit; `Verdict` cleanup).
+4. The `SandboxConfig` split (base semantics + per-backend subclasses;
    silent-ignore becomes loud rejection) — its own commit, backends and
    their tests updated.
-4. `WorkflowEntry.sandbox` + prototype merge + runner synthesis (+
+5. `WorkflowEntry.sandbox` + prototype merge + runner synthesis (+
    config-subclass and type-mismatch tests); `run_task` signature;
    workspace allocation moves in.
-5. Registry + built-in definitions + bind-time validation split (+ tests:
+6. Registry + built-in definitions + bind-time validation split (+ tests:
    declaration-time vs bind-time failures).
-6. CLI: `swe-lab run` + alias rebuild; wrappers deleted; CLI tests rebuilt
+7. CLI: `swe-lab run` + alias rebuild; wrappers deleted; CLI tests rebuilt
    over a registered fake backend (no monkeypatched wrappers).
-7. Live smoke: `swe-lab run solve_and_grade` on the flipt parity instance
+8. Live smoke: `swe-lab run solve_and_grade` on the flipt parity instance
    (agent + grade through the registry path); persisted keys inspected.
-8. Docs: plans/README statuses; conventions command examples; ADR-0007
+9. Docs: plans/README statuses; conventions command examples; ADR-0007
    §6 amendment note (budget location).
 
 ## 9. Risks & open questions
