@@ -225,15 +225,16 @@ class UnitTestTask[V: Verdict](Task):
       reads it, so the declaration and the script cannot drift apart. The
       default is the store name the rollout side produces, which is what makes
       the rollout → unit-test edge match by name.
-    script_env: Extra environment for the compiled script. For a secret, use
-      the
-      sandbox's ``pass_env`` instead — that passes it by reference, so the
-      value never reaches a command line.
+    env: Extra environment for this task's own action — the compiled script.
+      Distinct from the sandbox's ``env``, which every exec of the run gets;
+      this is the grading script's alone. For a secret, use the sandbox's
+      ``pass_env`` instead — that passes it by reference, so the value never
+      reaches a command line.
   """
 
   apply_patch: bool = True
   patch_name: str = PATCH_NAME
-  script_env: Mapping[str, str] | None = None
+  env: Mapping[str, str] | None = None
 
   def _compile(self, instance: TaskInstance[Any]) -> UnitTestSpec[V]:
     """Compile the bound instance's unit-test spec.
@@ -365,7 +366,7 @@ class UnitTestTask[V: Verdict](Task):
       The entryscript's execution result.
     """
     del instance
-    return sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout, env=self.script_env)
+    return sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout, env=self.env)
 
 
 def verdict_of(result: AttemptResult) -> Verdict | None:

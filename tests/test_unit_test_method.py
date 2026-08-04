@@ -246,12 +246,10 @@ def test_a_timed_out_run_is_reported_as_timeout(tmp_path: Path):
   assert result.run.metrics["unit_test.timed_out"] == 1.0
 
 
-def test_script_env_reaches_the_entryscript(tmp_path: Path):
+def test_env_reaches_the_entryscript(tmp_path: Path):
   # Mirrors the coding task's agent_env: extra env for the thing being run.
   sandbox = _fake(tmp_path)
-  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      script_env={"MY_FLAG": "1"}
-  )
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(env={"MY_FLAG": "1"})
   _ = task.execute(
       sandbox,
       _Instance(spec=_unit_test_spec(["a"], ["a"])),
