@@ -251,7 +251,6 @@ def run_task(
     retries: int = 0,
     resume: bool = True,
     run_ts: str,
-    model: str = "",
     extra_mounts: Mounts | None = None,
     extra_observers: Sequence[SandboxObserver] = (),
     extra_record: Mapping[str, object] | None = None,
@@ -293,7 +292,6 @@ def run_task(
       marker — the one-off CLI shape, where re-running a command means
       re-running it.
     run_ts: Launch timestamp, injected by the caller — recorded, never read.
-    model: The agent model alias, recorded on the shards.
     extra_mounts: Resolved inputs for the task (a workflow edge, or a
       standalone caller's own bytes), passed through to ``execute``.
     extra_observers: Extra observers, passed through to ``execute``.
@@ -366,7 +364,6 @@ def run_task(
             status=result.run.status.value,
             tier="formal",
             backend=backend,
-            model=model,
             metrics=dict(result.run.metrics),
             extra=extra | dict(extra_record or {}),
         ),

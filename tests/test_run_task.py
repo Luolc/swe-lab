@@ -175,6 +175,11 @@ def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
   )
   assert store.get_bytes("sw/acme__widget-1/r0/probe/a0/out.txt") == b"OUT"
   assert len(config.built) == 1
+  # This layer stamps no model on the record. A model is a per-*task* fact —
+  # one entry runs an agent, the next grades and has none — so a value carried
+  # at this level could only be right for some of the tasks it labels. Guards
+  # against a workflow-wide `model` coming back.
+  assert outcome.record.model == ""
   marker = read_marker(store, ADDRESS, "acme__widget-1")
   assert marker is not None and marker.outcome is TaskOutcome.SUCCEEDED
   assert marker.attempts == 1
