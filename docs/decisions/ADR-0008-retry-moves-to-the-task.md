@@ -54,8 +54,8 @@ the trigger survives as a hook.**
   share nothing, and the store already keeps each attempt's outputs apart.
 - **`Verdict.attempts` and `Verdict.flaky` are deleted.** One verdict grades
   one tree. How many attempts it took is the runner's fact, and the evidence is
-  the persisted attempt sequence: `a0` with `eval.resolved = 0`, `a1` with
-  `eval.resolved = 1` *is* the flake record, and it also carries what each
+  the persisted attempt sequence: `a0` with `unit_test.resolved = 0`, `a1`
+  with `unit_test.resolved = 1` *is* the flake record, and it carries what each
   attempt produced. A caller that wants the scalar derives it where attempts
   are counted — the CLI prints `attempts` and `flaky` from the task run's own
   report.
@@ -83,7 +83,7 @@ shipped with — and ADR-0005's reasoning for each line stands.
   in-container state that survives `git clean` (a stray daemon, a warm cache, a
   port) is now absorbed rather than repeated.
 - **Every attempt is evidence, in one place.** Each attempt writes its own
-  record shard and its own artifacts under `…/eval/a<N>/`, so the failing
+  record shard and its own artifacts under `…/unit_test/a<N>/`, so the failing
   attempt is readable from the store with no special retention path.
 - **One mechanism, one budget, one place to configure it.** Retry now works the
   same way for an agent run, a grading run, and any future task.

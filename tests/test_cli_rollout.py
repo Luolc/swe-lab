@@ -330,7 +330,7 @@ def test_grade_chains_the_agents_patch_into_the_eval(
   # both entries persisted under their own task keys
   runs = tmp_path / ".cache" / "store" / "runs" / "adhoc" / "acme__widget-1"
   assert (runs / "r0" / "rollout" / "a0" / PATCH_NAME).is_file()
-  assert (runs / "r0" / "eval" / "complete.json").is_file()
+  assert (runs / "r0" / "unit_test" / "complete.json").is_file()
   assert (runs / "r0" / "workflow.json").is_file()
   # and the eval's container really got the agent's patch through the edge
   staged = (
@@ -338,7 +338,7 @@ def test_grade_chains_the_agents_patch_into_the_eval(
       / ".cache"
       / "rollout_workspaces"
       / "acme__widget-1"
-      / "eval"
+      / "unit_test"
       / "ws"
       / "a0"
       / PATCH_NAME

@@ -14,7 +14,7 @@ imports their own.
 
 from __future__ import annotations
 
-from swe_lab.evaluation.methods.unit_test import UnitTestEvalTask
+from swe_lab.evaluation.unit_test import UnitTestTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
@@ -29,13 +29,13 @@ from .workflow import WorkflowEntry
 # The entry keys, which are also the task segment of every record a run of
 # these workflows persists (ADR-0007 §6). Stable: resume trusts them.
 ROLLOUT_KEY = "rollout"
-EVAL_KEY = "eval"
+UNIT_TEST_KEY = "unit_test"
 
 _AGENT_TIMEOUT_S = 1800.0
-_EVAL_TIMEOUT_S = 1800.0
+_UNIT_TEST_TIMEOUT_S = 1800.0
 # One extra grading attempt absorbs a harness flake without hiding a real
 # failure: the patch is identical on every attempt (ADR-0008).
-_EVAL_RETRIES = 1
+_UNIT_TEST_RETRIES = 1
 
 ROLLOUT: WorkflowDef = (
     WorkflowEntry(
@@ -50,7 +50,7 @@ ROLLOUT: WorkflowDef = (
 
 UNIT_TEST: WorkflowDef = (
     WorkflowEntry(
-        EVAL_KEY,
+        UNIT_TEST_KEY,
         # The task supplies **no** input of its own (`inputs_builder=None`),
         # which is what lets this one entry serve both modes: run alone, its
         # patch is the caller's (`execute(inputs=…)`); spliced into the chain
@@ -60,12 +60,12 @@ UNIT_TEST: WorkflowDef = (
         # flag on this one: it needs `inputs_builder=gold_patch`, and a task
         # that builds its own patch cannot also be handed one — the collision
         # is refused on purpose. It lands with the command that invokes it.
-        UnitTestEvalTask(),
-        timeout=_EVAL_TIMEOUT_S,
+        UnitTestTask(),
+        timeout=_UNIT_TEST_TIMEOUT_S,
         # Grading is offline on purpose: a test suite that reaches the network
         # is measuring something other than the patch.
         sandbox=SandboxConfig(network=False),
-        retries=_EVAL_RETRIES,
+        retries=_UNIT_TEST_RETRIES,
     ),
 )
 

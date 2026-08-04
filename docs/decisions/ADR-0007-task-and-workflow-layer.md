@@ -463,3 +463,15 @@ Two consequences worth recording here, since §5 states the rules they change:
   inputs *inside* the session (the prompt, a gold patch). An input nothing
   produces is therefore not automatically a dangling edge — it is the
   standalone shape, and requiredness is verified in-session, before the action.
+
+## Amendment (2026-08-03): the grading task's key segment is `unit_test`
+
+§6 keyed the grading task `eval` (the key example, and the CLI command's own
+name). The store segment is now `unit_test` — the same word as the evaluation
+method it runs (`swe_lab.evaluation.unit_test`), the registered workflow, and
+the artifact/metric namespace (`unit_test.score`, `unit_test.output.json`).
+`eval` was a third name for the thing those two already agreed on, and a task
+segment is read by humans reading store keys.
+
+Records written before this say `eval`; nothing migrates them (prototyping —
+old debug shards are discarded, as task 20 already recorded).

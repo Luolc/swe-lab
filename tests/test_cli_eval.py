@@ -189,7 +189,7 @@ def test_persist_writes_a_manifest_shard(
   shards = list((tmp_path / ".cache" / "store" / "runs").rglob("run.json"))
   assert len(shards) == 1  # the grading run's shard
   record = json.loads(shards[0].read_text())
-  assert record["sweep_id"] == "sw1" and record["task"] == "eval"
+  assert record["sweep_id"] == "sw1" and record["task"] == "unit_test"
   assert "persisted" in json.loads(result.output)
 
 

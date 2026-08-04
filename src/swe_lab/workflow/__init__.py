@@ -7,7 +7,7 @@ names. Everything here is instance-agnostic: the instance binds at
 registered by name (``swe_lab.workflow.definitions``, imported on demand — it
 names the concrete tasks, which live with their domains:
 ``swe_lab.rollout.CodingAgentTask`` and
-``swe_lab.evaluation.methods.unit_test.UnitTestEvalTask``).
+``swe_lab.evaluation.unit_test.UnitTestTask``).
 """
 
 from .registry import (

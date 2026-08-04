@@ -149,7 +149,7 @@ def test_the_shipped_chain_grades_what_the_agent_produced(tmp_path: Path):
       rollout_id=0,
   )
   rollout, evaluation = workflow.entries
-  assert (rollout.key, evaluation.key) == ("rollout", "eval")
+  assert (rollout.key, evaluation.key) == ("rollout", "unit_test")
   assert rollout.sandbox.network is True
   assert rollout.sandbox.pass_env == ("CLAUDE_CODE_OAUTH_TOKEN",)
   assert evaluation.sandbox.network is False

@@ -6,7 +6,7 @@ assemble the result — and writes it exactly once (``execute``). Subclasses
 supply the parts through three total hooks (``mounts`` / ``observers`` /
 ``action``) plus the ``input_schema`` declaration a workflow resolves; the
 concrete tasks live with their domains (``swe_lab.rollout.CodingAgentTask``,
-``swe_lab.evaluation.methods.unit_test.UnitTestEvalTask``).
+``swe_lab.evaluation.unit_test.UnitTestTask``).
 
 The instance is **late-bound**: a task is configuration only, and the one
 instance arrives at ``execute``, from where every hook receives it. That is

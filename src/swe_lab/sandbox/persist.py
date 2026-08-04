@@ -50,7 +50,7 @@ class AttemptRecord:
     sweep_id: The sweep this run belongs to (``adhoc`` for a one-off).
     instance_id: The dataset instance.
     task: Which task of this rollout the run belongs to — the workflow-entry
-      key (``rollout``, ``eval``). Required: every record names its task,
+      key (``rollout``, ``unit_test``). Required: every record names its task,
       and the task owns its attempts.
     rollout_id: Which sample of this instance, ``0..K-1`` for pass@K. ``0`` for
       a single-rollout job.
@@ -99,8 +99,9 @@ def run_prefix(record: AttemptRecord) -> str:
   """Return the run key ``<sweep>/<instance>/r<rollout>/<task>/a<attempt>``.
 
   ADR-0004's key, with the task segment ADR-0007 §6 added: the task sits
-  between rollout and attempt because the task owns its attempts — ``eval/a1``
-  is the eval task's second try, unrelated to ``rollout/a0``. The ``r`` / ``a``
+  between rollout and attempt because the task owns its attempts —
+  ``unit_test/a1`` is the grading task's second try, unrelated to
+  ``rollout/a0``. The ``r`` / ``a``
   prefixes keep the layout self-describing when browsing the store, the
   ``runs/`` namespace lives in the store's configured root, and ``run_ts`` is
   recorded on the shard rather than keying it, so re-running a given attempt
