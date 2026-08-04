@@ -426,3 +426,40 @@ This ADR is expected to be **amended or partly superseded** as it is
 implemented; the settled architecture is reconciled into
 [`docs/horizontal/spec.md`](../horizontal/spec.md), which stays the
 project-level view.
+
+## Amendment (2026-08-03): two levels of "run it again", not three
+
+§6's table listed **in-run retry** (ADR-0005) alongside task retry and resume.
+It no longer exists: [ADR-0008](ADR-0008-retry-moves-to-the-task.md) retires
+it, and its trigger survives as the eval task's `should_retry` hook. The table
+now reads:
+
+| level | scope | keyed by | answers |
+|---|---|---|---|
+| **task retry** | new sandbox, same workflow run | `AttemptRecord.attempt` | the task's output failed validation, or its own hook wants another try |
+| **resume** | a *different process*, after preemption | the terminal marker | this task already reached a terminal state; do not run it |
+
+§6's "`UnitTestSpec.retries` moves onto the task" landed one step further out:
+the budget is **`WorkflowEntry.retries`** (or `run_task`'s argument), because a
+task is a declaration and how many times to run it is invocation
+configuration. `Verdict.attempts` / `flaky` are deleted with the loop.
+
+## Amendment (2026-08-03): the instance binds at `execute`, not at construction
+
+§2 described a task as bound to its instance. It is not: a task is
+configuration only, the instance arrives at `execute(sandbox, instance, …)`,
+and every hook receives it. That is what lets a workflow be a **statically
+written definition**, registered by name and invoked against any instance —
+the shape this ADR's §§5, 9–10 were reaching for.
+
+Two consequences worth recording here, since §5 states the rules they change:
+
+- **Edge resolution moves from construction to bind time.** An entry's output
+  schema can be instance-derived, so the map is resolved at `execute`, before
+  any container. Declaration keeps what it can decide alone: keys, binding
+  syntax, and bindings against the static `input_schema()`.
+- **Inputs have a third supplier.** Beside a workflow edge and the caller's own
+  bytes, a task may carry an `inputs_builder` that generates its declared
+  inputs *inside* the session (the prompt, a gold patch). An input nothing
+  produces is therefore not automatically a dangling edge — it is the
+  standalone shape, and requiredness is verified in-session, before the action.

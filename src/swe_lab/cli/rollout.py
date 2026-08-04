@@ -5,17 +5,17 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-from typing import Annotated
+from typing import Annotated, Any
 import zlib
 
 from etils import epath
 import typer
 
-from swe_lab.cli.persist_wiring import persist_run
+from swe_lab.cli.persist_wiring import run_store, run_ts
+from swe_lab.cli.sandbox_wiring import invocation_config
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.evaluation.methods.unit_test import run_unit_test
-from swe_lab.evaluation.verdict import Verdict
+from swe_lab.evaluation.methods.unit_test import UnitTestEvalTask, verdict_of
 from swe_lab.harnesses.claude_code import Capture, ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     API_KEY_ENV,
@@ -30,13 +30,21 @@ from swe_lab.harnesses.claude_code.proxy import (
     ReverseProxy,
 )
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.rollout import RolloutOutcome, run_rollout
-from swe_lab.sandbox import build_sandbox
+from swe_lab.rollout import CodingAgentTask, outcome_of, patch_of
+from swe_lab.sandbox import SandboxConfig
+from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.workflow import (
+    EntryStatus,
+    Workflow,
+    WorkflowEntry,
+    WorkflowOutcome,
+)
 
 _ROLLOUT_SUBDIR = "rollout_workspaces"
-# The task segment of this command's persisted records (ADR-0007 §6).
-_TASK_KEY = "rollout"
-_EVAL_SUBDIR = "eval_workspaces"
+# The entry keys of this command's workflow — also the task segment of every
+# record it persists (ADR-0007 §6).
+_ROLLOUT_KEY = "rollout"
+_EVAL_KEY = "eval"
 _DEFAULT_TIMEOUT_S = 1800.0
 # Proxy ports are drawn from a wide band by a stable hash of the instance id, so
 # concurrent rollouts on one host never collide (mirrors W1's per-run distinct
@@ -50,24 +58,28 @@ def _build_agent(
     model: str,
     capture: Capture,
     bare: bool,
-    output_dir: epath.PathLike,
+    proxy_log_dir: epath.PathLike,
 ) -> tuple[ClaudeCodeHarness, contextlib.AbstractContextManager[object]]:
   """Build this CLI's harness + its trace recorder for the capture mode.
 
-  Construction lives here, not in ``run_rollout``: the caller picks the agent
-  (this CLI ships Claude Code) and hands the composition the built pair.
+  Construction lives here, not in the task: the caller picks the agent (this
+  CLI ships Claude Code) and hands the composition the built pair.
 
   For ``STREAM`` the agent's own event stream is the trace, so there is no
-  recorder. For ``PROXY`` a host-side ``cc-reverse-proxy`` records into
-  ``output_dir`` and the agent is pointed at it (the container reaches the host
-  through the ``host.docker.internal`` gateway the host backend always maps).
+  recorder. For ``PROXY`` a host-side ``cc-reverse-proxy`` records into the
+  run's workspace — where the in-container conversion reads it — and the agent
+  is pointed at it (the container reaches the host through the
+  ``host.docker.internal`` gateway the host backend always maps).
 
   Args:
     instance_id: Keys the proxy port, so concurrent rollouts never collide.
     model: The ``--model`` alias the agent runs as.
     capture: The trace-capture strategy.
     bare: Run the agent with ``--bare`` (API-key auth).
-    output_dir: Where a proxy recording is written.
+    proxy_log_dir: The workspace a proxy recording is written into. The runner
+      allocates one workspace per attempt, so this is the first attempt's; a
+      recorder is single-use anyway, which is why a retried PROXY rollout is
+      not something this command offers.
 
   Returns:
     The harness and a context manager held open around the run.
@@ -83,7 +95,7 @@ def _build_agent(
   )
   proxy = ReverseProxy(
       port,
-      epath.Path(output_dir) / PROXY_LOG_NAME,
+      epath.Path(proxy_log_dir) / PROXY_LOG_NAME,
       build_proxy(find_repo_root()),
   )
   return harness, proxy
@@ -105,8 +117,8 @@ def rollout_in_docker(
     eval_retries: Annotated[
         int,
         typer.Option(
-            help="Extra grading attempts after a failure, for --grade "
-            "(ADR-0005). Does not re-run the agent."
+            help="Extra grading attempts after a failure, for --grade. "
+            "Does not re-run the agent."
         ),
     ] = 1,
     timeout: Annotated[
@@ -158,146 +170,138 @@ def rollout_in_docker(
     raise typer.BadParameter(f"dataset {dataset!r} is not runnable for rollout")
 
   root = find_repo_root()
-  spec = instance.sandbox_spec()
-  prompt = instance.prompt()
-  workspace = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
-  workspace.rmtree(missing_ok=True)
-
-  sandbox = build_sandbox(
-      backend,
-      spec,
-      workspace=workspace,
-      network=True,
-      pull=pull,
-      pass_env=(auth_env,),
-  )
+  output_dir = cache_root(root) / _ROLLOUT_SUBDIR / instance.instance_id
+  # A re-run of a one-off command re-runs it: the previous run's attempts and
+  # their workspaces go, and `resume=False` below ignores its terminal markers.
+  output_dir.rmtree(missing_ok=True)
   harness, proxy = _build_agent(
       instance.instance_id,
       model=model,
       capture=capture,
       bare=bare,
-      output_dir=workspace,
-  )
-  outcome = run_rollout(
-      sandbox,
-      harness,
-      prompt=prompt,
-      output_dir=workspace,
-      timeout=timeout,
-      proxy=proxy,
+      proxy_log_dir=output_dir / _ROLLOUT_KEY / "ws" / "a0",
   )
 
-  # Carried even on a solve-only run: `--grade` reuses this summary, and a
-  # reader of an unresolved result needs to know the instance flakes.
-  provenance = instance.run_provenance()
-  summary: dict[str, object] = {
-      "instance_id": outcome.instance_id,
-      "status": outcome.status.value,
-      "agent_complete": outcome.complete,
-      "is_empty_patch": outcome.is_empty,
-      "binary_stripped": outcome.binary_stripped,
-      "patch_file": str(outcome.workspace / "patch.diff"),
-      "workspace": str(outcome.workspace),
-  } | provenance
-  if persist:
-    record = persist_run(
-        root,
-        sweep=sweep,
-        instance_id=outcome.instance_id,
-        task=_TASK_KEY,
-        status=outcome.status.value,
-        backend=backend,
-        artifacts=outcome.artifacts,
-        model=model,
-        metrics=outcome.metrics,
-        extra={
-            "agent_complete": outcome.complete,
-            "is_empty_patch": outcome.is_empty,
-            "binary_stripped": outcome.binary_stripped,
-        }
-        | provenance,
+  entries = [
+      WorkflowEntry(
+          _ROLLOUT_KEY,
+          CodingAgentTask(harness=harness, proxy=proxy),
+          timeout=timeout,
+          # The agent needs the network and the auth secret; the secret travels
+          # by name, so its value never reaches a command line.
+          sandbox=SandboxConfig(network=True, pass_env=(auth_env,)),
+      )
+  ]
+  if grade:
+    entries.append(
+        WorkflowEntry(
+            _EVAL_KEY,
+            UnitTestEvalTask(),  # its patch.diff input is the rollout's output
+            timeout=timeout,
+            sandbox=SandboxConfig(network=False),
+            retries=eval_retries,
+        )
     )
-    summary["persisted"] = {
-        "run_ts": record.run_ts,
-        "keys": record.artifact_keys,
-    }
-  resolved = _finish(
-      summary,
+  workflow = Workflow(
+      store=run_store(root, persist_to_t1=persist, scratch=output_dir),
+      sweep_id=sweep,
+      rollout_id=0,
+      entries=entries,
+  )
+  outcome = workflow.execute(
       instance,
+      backend=backend,
+      sandbox=invocation_config(backend, network=True, pull=pull),
+      output_dir=output_dir,
+      run_ts=run_ts(),
+      resume=False,
+      model=model,
+      extra_record=instance.run_provenance(),
+  )
+
+  summary = _summarize(
       outcome,
-      grade,
-      root,
-      pull,
-      timeout,
-      backend,
-      eval_retries,
+      instance=instance,
+      output_dir=output_dir,
+      grade=grade,
+      persist=persist,
   )
   print(json.dumps(summary, indent=2))
-  raise typer.Exit(0 if (not grade or resolved) else 1)
+  raise typer.Exit(0 if (not grade or summary["outcome"] == "resolved") else 1)
 
 
-def _finish(
-    summary: dict[str, object],
-    instance: TaskInstance[Verdict],
-    outcome: RolloutOutcome,
+def _summarize(
+    outcome: WorkflowOutcome,
+    *,
+    instance: TaskInstance[Any],
+    output_dir: epath.Path,
     grade: bool,
-    root: epath.PathLike,
-    pull: bool,
-    timeout: float,
-    backend: str,
-    eval_retries: int,
-) -> bool:
-  """Record the run's ``outcome`` string (and grade), returning ``resolved``.
+    persist: bool,
+) -> dict[str, object]:
+  """Build the command's JSON summary from the workflow's outcome.
 
-  An explicit outcome makes an unresolved run's *reason* readable, never
-  guessed: ``empty_patch`` (no edits — grading skipped) is distinct from
+  An explicit ``outcome`` string makes an unresolved run's *reason* readable,
+  never guessed: ``empty_patch`` (no edits — grading skipped) is distinct from
   ``unresolved_tests_failed`` (a real patch that graded false).
 
   Args:
-    summary: The summary dict to record ``outcome``/``grade`` into.
-    instance: The instance (for compiling the grade run).
-    outcome: The rollout outcome (its patch is graded).
-    grade: Whether to grade at all.
-    root: The repo root (for cache/workspace paths).
-    pull: Whether to pull the image for the grade run.
-    timeout: Seconds before the grade run is killed.
-    backend: Which sandbox backend to grade on.
-    eval_retries: Extra grading attempts after a failure (ADR-0005). Only the
-      grading is retried — the agent is never re-run.
+    outcome: What the workflow reported, entry by entry.
+    instance: The instance solved (its provenance qualifies the result).
+    output_dir: The run's directory (artifacts and workspaces live under it).
+    grade: Whether grading was asked for.
+    persist: Whether the run was opted into the T1 store.
 
   Returns:
-    Whether the patch resolved the instance (always ``False`` when not graded).
+    The summary dict, ready to print.
   """
+  entries = {entry.key: entry for entry in outcome.entries}
+  rollout = entries[_ROLLOUT_KEY]
+  result = rollout.run.result if rollout.run is not None else None
+  extract = patch_of(result) if result is not None else None
+  agent = outcome_of(result) if result is not None else None
+  is_empty = extract.is_empty if extract is not None else True
+  # Carried even on a solve-only run: `--grade` reuses this summary, and a
+  # reader of an unresolved result needs to know the instance flakes.
+  summary: dict[str, object] = {
+      "instance_id": instance.instance_id,
+      "status": result.run.status.value if result is not None else "unknown",
+      "agent_complete": agent.complete if agent is not None else False,
+      "is_empty_patch": is_empty,
+      "binary_stripped": (
+          extract.binary_stripped if extract is not None else False
+      ),
+      "patch_file": str(
+          result.run.artifacts.get(PATCH_NAME, output_dir / PATCH_NAME)
+          if result is not None
+          else output_dir / PATCH_NAME
+      ),
+      "workspace": str(output_dir),
+  } | instance.run_provenance()
+  if persist and rollout.run is not None and rollout.run.record is not None:
+    summary["persisted"] = {
+        "run_ts": rollout.run.record.run_ts,
+        "keys": rollout.run.record.artifact_keys,
+    }
+
   if not grade:
     summary["outcome"] = "solved_not_graded"
-    return False
-  if outcome.is_empty:
+    return summary
+  evaluation = entries[_EVAL_KEY]
+  if evaluation.status is EntryStatus.EDGE_FAILED or is_empty:
+    # An empty patch never reaches a container: the edge refuses to stage
+    # empty bytes, which is the same answer, one container cheaper.
     summary["outcome"] = "empty_patch"
     summary["grade"] = {"resolved": False, "reason": "empty_patch"}
-    return False
-
-  unit_test_spec = instance.unit_test_spec(patch=outcome.patch)
-  eval_ws = cache_root(root) / _EVAL_SUBDIR / instance.instance_id
-  eval_ws.rmtree(missing_ok=True)
-  sandbox = build_sandbox(
-      backend,
-      instance.sandbox_spec(),
-      workspace=eval_ws,
-      network=False,
-      pull=pull,
-  )
-  _, verdict = run_unit_test(
-      sandbox,
-      unit_test_spec,
-      output_dir=eval_ws,
-      timeout=timeout,
-      retries=eval_retries,
-  )
+    return summary
+  eval_result = evaluation.run.result if evaluation.run is not None else None
+  verdict = verdict_of(eval_result) if eval_result is not None else None
   resolved = bool(verdict and verdict.resolved)
   summary["outcome"] = "resolved" if resolved else "unresolved_tests_failed"
   if verdict is not None:
     summary["grade"] = {
         "resolved": verdict.resolved,
         "score": verdict.score,
+        # Attempts are the runner's fact now (ADR-0008), not the verdict's.
+        "attempts": evaluation.run.attempts if evaluation.run else 0,
     } | verdict.summary()
-  return resolved
+  return summary

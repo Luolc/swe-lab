@@ -8,6 +8,12 @@ real local ``workspace`` directory so observers and graders exercise genuine
 filesystem behavior, while ``run_script`` / ``run_command`` return **scripted**
 ``ExecResult``s (no process is spawned) and every call is recorded.
 ``FakeStore`` is an in-memory ``Store`` for exercising the persist flow.
+
+Importing this module also registers the ``fake`` **backend**, so anything
+that builds its sandboxes by name (the workflow runner, the CLIs) can be
+driven Docker-free with no seam of its own: ``FakeSandboxConfig`` carries the
+script every built sandbox replays and collects the sandboxes themselves, so
+a test can still assert on what the runner constructed.
 """
 
 from __future__ import annotations
@@ -19,6 +25,7 @@ from typing import override
 
 from etils import epath
 
+from .backends import register_sandbox, SandboxConfig
 from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
@@ -42,6 +49,9 @@ class FakeSandbox(Sandbox):
   Attributes:
     spec: The run context.
     workspace: A real local directory backing the file ops.
+    config: The config this sandbox was built from, when it came through the
+      registry — a test's window on what a runner synthesized (``None`` when
+      constructed directly).
     run_results: Results returned by successive ``run_script`` / ``run_command``
       calls (repeating the last when exhausted); defaults to a single success.
     up_error: Raised by ``up`` when set.
@@ -57,6 +67,7 @@ class FakeSandbox(Sandbox):
 
   spec: SandboxSpec
   workspace: epath.Path
+  config: SandboxConfig | None = None
   run_results: list[ExecResult] = field(default_factory=list)
   up_error: Exception | None = None
   run_error: Exception | None = None
@@ -234,6 +245,65 @@ class RecordingObserver(SandboxObserver):
     """Record the hook and return the scripted error contribution."""
     self._hit("on_error")
     return self.error_contribution
+
+
+@dataclass(frozen=True)
+class FakeSandboxConfig(SandboxConfig):
+  """The ``fake`` backend's mechanics: a workspace, a script, a collector.
+
+  Attributes:
+    workspace: The local directory the built sandbox's file ops hit; the
+      workflow runner allocates one per attempt.
+    run_results: Scripted exec results every built sandbox replays.
+    up_errors: How many of the first sandboxes fail to come up — an infra
+      flake, expressed as configuration.
+    built: Every sandbox built from this config, in order. Shared by
+      ``dataclasses.replace``, so a per-attempt copy still collects here.
+  """
+
+  workspace: epath.Path | None = None
+  run_results: tuple[ExecResult, ...] = ()
+  up_errors: int = 0
+  built: list[FakeSandbox] = field(default_factory=list)
+
+
+def build_fake_sandbox(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
+  """Build a ``FakeSandbox`` from the fake backend's config.
+
+  Args:
+    spec: The run context to hand the sandbox.
+    config: Must be a :class:`FakeSandboxConfig`.
+
+  Returns:
+    The sandbox, also appended to the config's ``built`` collector.
+
+  Raises:
+    SandboxError: If the config is not this backend's, or carries no
+      workspace.
+  """
+  if not isinstance(config, FakeSandboxConfig):
+    raise SandboxError(
+        "backend 'fake' consumes FakeSandboxConfig, got"
+        f" {type(config).__name__}"
+    )
+  if config.workspace is None:
+    raise SandboxError("backend 'fake' needs a workspace directory")
+  sandbox = FakeSandbox(
+      spec=spec,
+      workspace=config.workspace,
+      config=config,
+      run_results=list(config.run_results),
+      up_error=(
+          SandboxError("infra down")
+          if len(config.built) < config.up_errors
+          else None
+      ),
+  )
+  config.built.append(sandbox)
+  return sandbox
+
+
+register_sandbox("fake", build_fake_sandbox, config_type=FakeSandboxConfig)
 
 
 @dataclass

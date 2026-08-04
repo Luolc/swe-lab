@@ -36,7 +36,7 @@ from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import SandboxSpec
 
 from .auxiliary import fetch_auxiliary
-from .constants import IMAGE_REPO, WORKDIR
+from .constants import IMAGE_REPO, PATCH_NAME, WORKDIR
 from .fixes import applied_fix_name, apply_instance_fix
 from .known_flaky import known_flaky
 from .patches import patch_fail_to_pass
@@ -236,7 +236,8 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     """Compile this instance's unit-test evaluation spec.
@@ -250,7 +251,8 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     grading and the golden self-check from disagreeing about which fixes ran.
     """
     spec = compile_unit_test(
-        patch=patch,
+        apply_patch=apply_patch,
+        patch_name=patch_name,
         checkout_golden_tests=checkout_golden_tests,
         base_commit=self.base_commit,
         selected_test_files_to_run=self.selected_test_files_to_run,

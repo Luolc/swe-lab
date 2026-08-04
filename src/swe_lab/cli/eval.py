@@ -8,41 +8,19 @@ from typing import Annotated
 
 import typer
 
-from swe_lab.cli.persist_wiring import persist_run
+from swe_lab.cli.persist_wiring import run_store, run_ts
+from swe_lab.cli.sandbox_wiring import invocation_config
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.evaluation.methods.unit_test import run_unit_test
-from swe_lab.evaluation.verdict import Verdict
+from swe_lab.evaluation.methods.unit_test import UnitTestEvalTask, verdict_of
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import build_sandbox
+from swe_lab.sandbox import Inline, Mount
+from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.workflow import run_task, TaskAddress
 
 _WORKSPACES_SUBDIR = "eval_workspaces"
 # The task segment of this command's persisted records (ADR-0007 §6).
 _TASK_KEY = "eval"
-
-
-def _persistable(verdict: Verdict | None) -> dict[str, object]:
-  """Return the verdict's non-numeric detail worth keeping in a run record.
-
-  Scalars only, and chosen without knowing the dataset: a verdict's ``summary``
-  also carries lists (every passed / missing test name), which would grow the
-  shard with the instance — one SWE-Bench Pro instance requires 681 tests. The
-  scalar entries (``output_state``, ``first_missing``) are what actually explain
-  a failed grade at a glance; the counts travel as metrics.
-
-  Args:
-    verdict: The graded verdict, or ``None`` when grading never ran.
-
-  Returns:
-    ``eval_``-prefixed scalar entries, empty when there is no verdict.
-  """
-  if verdict is None:
-    return {}
-  return {
-      f"eval_{key}": value
-      for key, value in verdict.summary().items()
-      if value is None or isinstance(value, (str, int, float, bool))
-  }
 
 
 def eval_cmd(
@@ -61,7 +39,7 @@ def eval_cmd(
     retries: Annotated[
         int,
         typer.Option(
-            help="Extra grading attempts after a failure (ADR-0005). The patch "
+            help="Extra grading attempts after a failure. The patch "
             "is identical on every attempt, so this averages out harness "
             "flakiness, not model error; 0 disables it."
         ),
@@ -99,10 +77,10 @@ def eval_cmd(
 
   if gold:
     patch = instance.gold_patch()
-    # Not the same as `patch=None`, which means "grade the base commit" and is a
-    # legitimate request. A dataset with no reference solution cannot answer
-    # `--gold` at all, and falling through would grade the wrong thing and
-    # report it as the gold patch failing.
+    # Not the same as grading the base commit, which is a legitimate request a
+    # dataset with no reference solution can still answer. `--gold` it cannot,
+    # and falling through would grade the wrong thing and report it as the
+    # gold patch failing.
     if patch is None:
       raise typer.BadParameter(
           f"dataset {dataset!r} carries no gold patch for {instance_id}"
@@ -112,59 +90,53 @@ def eval_cmd(
     patch = patch_file.read_text()
 
   root = find_repo_root()
-  unit_test_spec = instance.unit_test_spec(patch=patch)
-  workspace = cache_root(root) / _WORKSPACES_SUBDIR / instance.instance_id
-  # The sandbox refuses a non-empty workspace; a fresh grade starts clean.
-  workspace.rmtree(missing_ok=True)
+  output_dir = cache_root(root) / _WORKSPACES_SUBDIR / instance.instance_id
+  # A re-run of a one-off command re-runs it: the previous run's attempts and
+  # their workspaces go, and `resume=False` below ignores its terminal marker.
+  output_dir.rmtree(missing_ok=True)
 
-  # Construct the sandbox here (the caller owns backend + its options); the eval
-  # runner just receives it.
-  sandbox = build_sandbox(
-      backend,
-      instance.sandbox_spec(),
-      workspace=workspace,
-      network=network,
-      pull=pull,
-  )
-  result, verdict = run_unit_test(
-      sandbox,
-      unit_test_spec,
-      output_dir=workspace,
+  # The patch is the task's declared input: whether it came from --gold or a
+  # file, it enters the one channel a workflow edge would use.
+  run = run_task(
+      UnitTestEvalTask(),
+      instance,
+      store=run_store(root, persist_to_t1=persist, scratch=output_dir),
+      address=TaskAddress(sweep_id=sweep, rollout_id=0, task=_TASK_KEY),
+      backend=backend,
+      sandbox=invocation_config(backend, network=network, pull=pull),
+      output_dir=output_dir,
       timeout=timeout,
       retries=retries,
+      resume=False,
+      run_ts=run_ts(),
+      extra_mounts={PATCH_NAME: Mount(Inline(patch.encode("utf-8")))},
+      extra_record=instance.run_provenance(),
   )
+  assert run.result is not None  # resume=False always executes
 
+  verdict = verdict_of(run.result)
+  resolved = bool(verdict and verdict.resolved)
   # What makes this verdict mean less than it appears — a harness fix that
   # altered the graded tree, a measured flake rate. Surfaced in the summary as
   # well as persisted: whoever reads this JSON is the one who needs the caveat.
-  provenance = instance.run_provenance()
   summary: dict[str, object] = {
       "instance_id": instance.instance_id,
-      "status": result.status.value,
-      "resolved": bool(verdict and verdict.resolved),
+      "status": run.result.run.status.value,
+      "resolved": resolved,
+      # Attempts are the runner's fact now (ADR-0008), not the verdict's: one
+      # verdict grades one tree, and "it took two tries" belongs to the run.
+      "attempts": run.attempts,
+      "flaky": run.attempts > 1 and resolved,
   }
   if verdict is not None:
     summary |= {"score": verdict.score} | verdict.summary()
-  if result.error is not None:
-    summary["error"] = repr(result.error)
-  summary |= provenance
-  if persist:
-    record = persist_run(
-        root,
-        sweep=sweep,
-        instance_id=instance.instance_id,
-        task=_TASK_KEY,
-        status=result.status.value,
-        backend=backend,
-        artifacts=result.artifacts,
-        metrics=result.metrics,
-        extra={"resolved": bool(verdict and verdict.resolved)}
-        | _persistable(verdict)
-        | provenance,
-    )
+  if run.result.run.error is not None:
+    summary["error"] = repr(run.result.run.error)
+  summary |= instance.run_provenance()
+  if persist and run.record is not None:
     summary["persisted"] = {
-        "run_ts": record.run_ts,
-        "keys": record.artifact_keys,
+        "run_ts": run.record.run_ts,
+        "keys": run.record.artifact_keys,
     }
   print(json.dumps(summary, indent=2))
-  raise typer.Exit(0 if summary["resolved"] else 1)
+  raise typer.Exit(0 if resolved else 1)

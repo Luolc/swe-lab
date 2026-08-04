@@ -3,13 +3,15 @@
 from .run import (
     ENTRYSCRIPT_NAME,
     EvalParseObserver,
-    run_unit_test,
+    gold_patch,
     UnitTestEvalTask,
+    verdict_of,
 )
 
 __all__ = [
     "ENTRYSCRIPT_NAME",
     "EvalParseObserver",
     "UnitTestEvalTask",
-    "run_unit_test",
+    "gold_patch",
+    "verdict_of",
 ]

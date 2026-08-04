@@ -134,13 +134,13 @@ with the following repo-wide choices and deviations (full plan + rationale:
   navigation and instantiation-time enforcement (`Grader`, `Sandbox`,
   `RepoProvider`, and `Verdict` per
   [ADR-0006](decisions/ADR-0006-verdict-is-an-abc.md), which owns the `resolved`
-  / `flaky` derivations rather than restating them per dataset). Use
+  derivation rather than restating it per dataset). Use
   `typing.Protocol` **only** for a structural shape on data that records satisfy
   without inheriting, with no shared derivation to own (`RepoInstance`,
   `DatasetRecord`). Where partial override is normal, use a concrete base class
   with default methods (`SandboxObserver`).
 - **Inject collaborators; don't construct them inside.** An entry function takes
-  the *built* dependency (e.g. `run_unit_test(sandbox: Sandbox, …)`), never a
+  the *built* dependency (e.g. `Task.execute(sandbox: Sandbox, …)`), never a
   name + its construction knobs (`backend: str`, `workspace`, `pull`, `network`,
   …) that it then feeds to a builder. Coupling construction into the callee
   forces every new construction option down the whole call chain and forces a
@@ -148,6 +148,11 @@ with the following repo-wide choices and deviations (full plan + rationale:
   construction (`build_sandbox(...)`), so the builder can change freely without
   touching the entry point. (`output_dir` is the manager's own host concern — a
   legitimate parameter, distinct from the sandbox's internal `workspace`.)
+  **One deliberate exception:** `run_task` / `Workflow.execute` take a backend
+  *name* plus a `SandboxConfig`, because they build one sandbox **per attempt**
+  over a fresh workspace they allocate — "a fresh sandbox each time" is a
+  property of that loop, not a contract a passed-in factory could be trusted to
+  honor. A caller that wants to hand over a built sandbox calls `execute`.
 - **Dataclass wherever the class is field-shaped** — records are
   `frozen=True` dataclasses; even stateful classes (e.g. a manager holding
   config fields + a private state slot via

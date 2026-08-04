@@ -1,11 +1,11 @@
 """The `Verdict` base: what subclasses inherit, and what they cannot skip.
 
-`Verdict` is an ABC rather than a Protocol (ADR-0006) for one reason — two of
-its members are derivations with a rule, not fields. These pin the rule, the
+`Verdict` is an ABC rather than a Protocol (ADR-0006) for one reason —
+``resolved`` is a derivation with a rule, not a field. These pin the rule, the
 enforcement, and the one thing that would silently undo the change.
 """
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import override
 
 import pytest
@@ -22,16 +22,11 @@ class _Minimal(Verdict):
   """The least a dataset has to write: everything else is inherited."""
 
   points: float
-  attempts: int = 1
 
   @property
   @override
   def score(self) -> float:
     return self.points
-
-  @override
-  def with_attempts(self, attempts: int) -> "_Minimal":
-    return replace(self, attempts=attempts)
 
   @override
   def summary(self) -> dict[str, object]:
@@ -42,12 +37,11 @@ class _Minimal(Verdict):
     return {}
 
 
-def _verdict(*, resolved: bool, attempts: int = 1) -> SweBenchProVerdict:
+def _verdict(*, resolved: bool) -> SweBenchProVerdict:
   return SweBenchProVerdict(
       passed=frozenset({"a"}),
       missing=frozenset() if resolved else frozenset({"b"}),
       output_state=OutputState.OK,
-      attempts=attempts,
   )
 
 
@@ -60,21 +54,19 @@ def test_a_verdict_keeps_its_slots():
   assert not hasattr(_Minimal(points=1.0), "__dict__")
 
 
-def test_the_derivations_are_inherited_not_restated():
-  # The point of the ABC: a dataset writes `score` and gets the other two right.
+def test_the_derivation_is_inherited_not_restated():
+  # The point of the ABC: a dataset writes `score` and gets `resolved` right.
   assert "resolved" not in SweBenchProVerdict.__dict__
-  assert "flaky" not in SweBenchProVerdict.__dict__
   assert _Minimal(points=1.0).resolved is True
   assert _Minimal(points=0.5).resolved is False
 
 
-def test_flaky_needs_a_retry_that_actually_resolved():
-  # Deliberately not `attempts > 1`. A run that failed every attempt is failed,
-  # not flaky, and this feeds the known-flaky registry — getting it wrong would
-  # record every exhausted retry chain as a harness flake.
-  assert _verdict(resolved=True, attempts=1).flaky is False
-  assert _verdict(resolved=True, attempts=3).flaky is True
-  assert _verdict(resolved=False, attempts=3).flaky is False
+def test_a_verdict_carries_no_attempt_history():
+  # ADR-0008: one verdict grades one tree. How many attempts it took, and
+  # whether an earlier one flaked, are the runner's facts — recorded per
+  # attempt in the store, never folded into the answer.
+  assert not hasattr(_verdict(resolved=True), "attempts")
+  assert not hasattr(_verdict(resolved=True), "flaky")
 
 
 def test_an_incomplete_verdict_cannot_be_constructed():
@@ -83,7 +75,7 @@ def test_an_incomplete_verdict_cannot_be_constructed():
 
   @dataclass(frozen=True, slots=True)
   class _Partial(Verdict):  # pyright: ignore[reportImplicitAbstractClass]
-    attempts: int = 1
+    points: float = 0.0
 
   with pytest.raises(TypeError, match="abstract"):
     _ = _Partial()  # pyright: ignore[reportAbstractUsage]

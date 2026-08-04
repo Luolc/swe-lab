@@ -10,19 +10,22 @@ once per entry; a caller with a single task calls it directly.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, fields, replace
 from enum import StrEnum
 import json
 import re
+from typing import Any
 
 from etils import epath
 
+from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
     AttemptRecord,
     Mounts,
     persist,
-    Sandbox,
+    sandbox_factory,
+    SandboxConfig,
     SandboxError,
     SandboxObserver,
     Store,
@@ -155,18 +158,42 @@ class TaskRunOutcome:
   result: AttemptResult | None
 
 
+def _over_a_fresh_workspace(
+    config: SandboxConfig, workspace: epath.Path
+) -> SandboxConfig:
+  """Return the attempt's config: the declared one, over its own workspace.
+
+  Allocation is the runner's, not the caller's — that is what makes "a fresh
+  sandbox per attempt" a property of this loop rather than a contract a
+  factory has to be trusted to honor. A backend whose config has no workspace
+  places its own files and is handed the config unchanged.
+
+  Args:
+    config: The task's declared sandbox config.
+    workspace: The directory this attempt runs in.
+
+  Returns:
+    The config to build this attempt's sandbox from.
+  """
+  if not any(f.name == "workspace" for f in fields(type(config))):
+    return config
+  overrides: dict[str, Any] = {"workspace": workspace}
+  return replace(config, **overrides)
+
+
 def run_task(
     task: Task,
+    instance: TaskInstance[Any],
     *,
     store: Store,
     address: TaskAddress,
-    sandbox_factory: Callable[[], Sandbox],
+    backend: str,
+    sandbox: SandboxConfig,
     output_dir: epath.PathLike,
     timeout: float,
     retries: int = 0,
     resume: bool = True,
     run_ts: str,
-    backend: str = "",
     model: str = "",
     extra_mounts: Mounts | None = None,
     extra_observers: Sequence[SandboxObserver] = (),
@@ -176,13 +203,12 @@ def run_task(
 
   The write path, in order (the persistence walk-through of the task-20
   design): read the marker — a terminal task is never re-entered; then for
-  each attempt, build a **fresh sandbox** from the factory (every call must
-  yield one over a fresh, empty workspace — the factory owns that
-  allocation), execute, judge validity with the task's own
-  ``outputs_valid``, persist the attempt's artifacts and record shard
-  whether or not it was valid, and ask the task's ``should_retry`` about
-  another attempt; finally write the marker — last, atomically — keyed off
-  the final attempt's validity.
+  each attempt, build a **fresh sandbox** — the declared config over a fresh,
+  empty workspace this function allocates (``<output_dir>/ws/a<N>``) —
+  execute, judge validity with the task's own ``outputs_valid``, persist the
+  attempt's artifacts and record shard whether or not it was valid, and ask
+  the task's ``should_retry`` about another attempt; finally write the marker
+  — last, atomically — keyed off the final attempt's validity.
 
   Preemption costs nothing by construction: a killed process writes neither
   shard nor marker for its in-flight attempt, so a resume simply runs the
@@ -190,11 +216,18 @@ def run_task(
 
   Args:
     task: The task to run (a declaration — re-executed as-is per attempt).
+    instance: The instance to run it against; supplies the store key's
+      instance segment and reaches every hook through ``execute``.
     store: Where attempts, records, and the marker are persisted.
     address: The task's store address (sweep / rollout / task key).
-    sandbox_factory: Builds each attempt's sandbox, fresh workspace included.
-    output_dir: Host directory for the attempts' collected artifacts
-      (per-attempt subdirectories ``a0``, ``a1``, …).
+    backend: The registered sandbox backend to build each attempt on; also
+      recorded on the shards.
+    sandbox: The backend's config for this task — run semantics plus that
+      backend's mechanics. The workspace is **not** the caller's to set: one
+      is allocated per attempt, so no two attempts can ever share state.
+    output_dir: Host directory for the run — the attempts' collected
+      artifacts (``a0``, ``a1``, …) and their sandbox workspaces
+      (``ws/a0``, …).
     timeout: Seconds before each attempt's main action is killed.
     retries: Extra attempts after the first (``0`` = single attempt). The
       budget absorbs validation failures and infrastructure failures alike.
@@ -203,7 +236,6 @@ def run_task(
       marker — the one-off CLI shape, where re-running a command means
       re-running it.
     run_ts: Launch timestamp, injected by the caller — recorded, never read.
-    backend: The sandbox backend name, recorded on the shards.
     model: The agent model alias, recorded on the shards.
     extra_mounts: Resolved inputs for the task (a workflow edge, or a
       standalone caller's own bytes), passed through to ``execute``.
@@ -221,7 +253,7 @@ def run_task(
   """
   if retries < 0:
     raise ValueError(f"retries must be >= 0, got {retries}")
-  instance_id = task.instance.instance_id
+  instance_id = instance.instance_id
 
   marker = read_marker(store, address, instance_id) if resume else None
   if marker is not None:
@@ -241,9 +273,15 @@ def run_task(
   record: AttemptRecord | None = None
   attempt = 0
   for attempt in range(retries + 1):
-    sandbox = sandbox_factory()
+    built = sandbox_factory(backend)(
+        instance.sandbox_spec(),
+        _over_a_fresh_workspace(
+            sandbox, epath.Path(output_dir) / "ws" / f"a{attempt}"
+        ),
+    )
     result = task.execute(
-        sandbox,
+        built,
+        instance,
         output_dir=epath.Path(output_dir) / f"a{attempt}",
         timeout=timeout,
         extra_mounts=extra_mounts,

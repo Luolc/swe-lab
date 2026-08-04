@@ -1,21 +1,21 @@
 """Run one instance's unit-test evaluation as a task over the engine.
 
 ``UnitTestEvalTask`` is the composition (ADR-0007): it stages the compiled
-eval script as ``entryscript.sh``, runs it by its workspace path — re-running
-on a failed grade while the ADR-0005 budget lasts — and drives a stateful
-``EvalParseObserver`` that grades the workspace in ``before_destroy`` and
-holds the typed verdict. ``run_unit_test`` remains the frozen-signature
-wrapper for callers that hand a compiled spec rather than an instance.
+eval script as ``entryscript.sh``, runs it once by its workspace path, and
+composes an ``EvalParseObserver`` that grades the workspace in
+``before_destroy`` and holds the typed verdict. Retrying a flaky grade is the
+runner's job now, one fresh sandbox per attempt (ADR-0008).
+
+The task is **stateless**: it compiles the spec from the instance it is handed,
+and reads its verdict back off the execution's own observers — so the same
+declaration runs against any instance, any number of times.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-import time
-from typing import final, override
-
-from etils import epath
+from typing import Any, override
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
@@ -28,11 +28,9 @@ from swe_lab.sandbox import (
     Mount,
     Mounts,
     qualified_name,
-    RunResult,
-    Sandbox,
+    SandboxError,
     SandboxFs,
     SandboxObserver,
-    SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.workflow import AttemptResult, Task
@@ -41,7 +39,6 @@ ENTRYSCRIPT_NAME = "entryscript.sh"
 # The default observer name: namespaces this method's artifacts and metrics,
 # so `stdout.log` says whose it is and a second eval method cannot collide.
 ARTIFACT_NAMESPACE = "eval"
-_DEFAULT_TIMEOUT_S = 1800.0
 
 
 @dataclass
@@ -63,23 +60,15 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
       (artifacts and metrics) — the same role ``Harness.name`` plays for the
       outcome observer, so a second eval method cannot collide with this one.
     verdict: The graded verdict; ``None`` until ``before_destroy`` has run.
-    attempts: How many attempts the composition made (ADR-0005), set before
-      teardown. Annotated onto the verdict, which derives ``flaky`` from it.
-    retained: Extra artifacts kept from *failed* attempts (artifact name →
-      workspace filename). The failing attempt is the one worth reading and the
-      one a naive retry would overwrite.
     exec_result: The entryscript's own result, set by the composition before
       teardown; ``None`` if the body never got to run it.
-    wall_seconds: How long the entryscript took — the *total* across
-      attempts, since what a sweep wants from this is what the run cost.
+    wall_seconds: How long the entryscript took.
   """
 
   grader: Grader[V]
   native_outputs: Mapping[str, str] = field(default_factory=dict)
   name: str = ARTIFACT_NAMESPACE
   verdict: V | None = None
-  attempts: int = 1
-  retained: dict[str, str] = field(default_factory=dict)
   exec_result: ExecResult | None = None
   wall_seconds: float | None = None
 
@@ -89,9 +78,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
 
     The entryscript always lands (it was staged, so a run whose sandbox came
     up has it); the dataset's outputs are best-effort, mirroring how they are
-    registered — a run that died mid-script produces fewer. ``retained`` is
-    not declared: which attempts fail is only known at run time, and a schema
-    describes what a run is *supposed* to produce.
+    registered — a run that died mid-script produces fewer.
     """
     return (
         ArtifactSchema(
@@ -119,7 +106,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
       The eval's artifacts (best effort: only files that landed) and its
       metrics (the verdict's, plus how the execution ended).
     """
-    self.verdict = self.grader.grade(sb).with_attempts(self.attempts)
+    self.verdict = self.grader.grade(sb)
     artifacts = {
         qualified_name(self.name, name): filename
         # Same best-effort filter as the diff-extract observer: a run that died
@@ -156,12 +143,8 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
     }
 
   def _declared_outputs(self) -> dict[str, str]:
-    """Return the entryscript, the dataset's outputs, and retained attempts."""
-    return {
-        ENTRYSCRIPT_NAME: ENTRYSCRIPT_NAME,
-        **self.native_outputs,
-        **self.retained,
-    }
+    """Return the entryscript plus the dataset's own outputs."""
+    return {ENTRYSCRIPT_NAME: ENTRYSCRIPT_NAME, **self.native_outputs}
 
   def _metrics(self) -> dict[str, float]:
     """Verdict scalars + how the execution ended, all namespaced."""
@@ -181,129 +164,144 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
     }
 
 
+def gold_patch(
+    sb: SandboxFs, instance: TaskInstance[Any]
+) -> Mapping[str, bytes]:
+  """Build the eval task's patch input from the instance's own gold patch.
+
+  The standalone self-check shape: grading the reference solution needs no
+  upstream task and no caller-held bytes, so the task supplies its own input
+  (``UnitTestEvalTask(inputs_builder=gold_patch)``).
+
+  Fills the **default** patch name; a task configured with a custom
+  ``patch_name`` pairs with its own builder — the mismatch trips the
+  only-declared-inputs check loudly, rather than applying nothing.
+
+  Args:
+    sb: Unused — the gold patch is the instance's, not the workspace's.
+    instance: The instance whose reference solution is graded.
+
+  Returns:
+    The patch input, by store name.
+
+  Raises:
+    SandboxError: If the dataset carries no reference solution — asking to
+      grade a gold patch that does not exist is a caller error, not an
+      unresolved verdict.
+  """
+  del sb
+  patch = instance.gold_patch()
+  if patch is None:
+    raise SandboxError(
+        f"instance {instance.instance_id!r} carries no gold patch to grade"
+    )
+  return {PATCH_NAME: patch.encode("utf-8")}
+
+
 @dataclass
 class UnitTestEvalTask[V: Verdict](Task):
-  """Grade a patch against the bound instance's unit tests (ADR-0007).
+  """Grade a patch against an instance's unit tests (ADR-0007).
 
-  The eval composition as a task: the spec is compiled from the instance once
-  at construction, its script staged as ``entryscript.sh``, and the run
-  graded by an ``EvalParseObserver`` carrying the dataset's grader directly —
-  no vehicle in between (ADR-0007 §4). Single-run per ``execute``, like every
-  task.
+  The eval composition as a task: the spec is compiled from the instance the
+  execution binds, its script staged as ``entryscript.sh``, and the run graded
+  by an ``EvalParseObserver`` carrying the dataset's grader directly — no
+  vehicle in between (ADR-0007 §4).
 
-  The patch, when this task applies one, is an **input** (``input_schema``)
-  — it always arrives as a mounted ``patch.diff``, whether a workflow edge
-  resolves it from an upstream task's output or a standalone caller hands
-  the bytes through ``execute``'s ``extra_mounts``. One channel, so the
-  schema is a fixed property of the task's configuration, never of where
-  this particular run's data happens to come from.
+  The patch, when this task applies one, is an **input** (``input_schema``):
+  it arrives as a mounted ``patch.diff``, from a workflow edge, from a
+  standalone caller's ``extra_mounts``, or from this task's own
+  ``inputs_builder`` (``gold_patch`` for the reference self-check). One
+  channel, so the schema is a fixed property of the task's configuration,
+  never of where this particular run's data happens to come from.
 
   Attributes:
-    instance: The dataset instance whose tests judge the patch.
-    apply_patch: Compile the eval script to apply ``patch.diff`` and declare
-      it as this task's required input. ``False`` grades the tree the
-      compiled spec produces untouched — the base-commit self-check, and the
-      wrapper's spec path, where the precompiled spec already settled the
-      question.
-    retries: Extra attempts after a failed grade (ADR-0005, in-run). ``0``
-      disables retrying. **A spec carrying its own ``retries`` overrides
-      this**, because the dataset knows an instance's measured rate and the
-      caller does not.
+    apply_patch: Compile the eval script to apply the patch, and declare it as
+      this task's required input. ``False`` grades the instance's tree
+      untouched — the base-commit self-check.
+    patch_name: Which workspace file the patch arrives as. Static
+      configuration: ``input_schema`` declares it and the compiled script
+      reads it, so the declaration and the script cannot drift apart. The
+      default is the store name the rollout side produces, which is what makes
+      the rollout → eval edge match by name.
     eval_env: Extra environment for the eval script. For a secret, use the
       sandbox's ``pass_env`` instead — that passes it by reference, so the
       value never reaches a command line.
   """
 
-  instance: TaskInstance[V]
   apply_patch: bool = True
-  retries: int = 1
+  patch_name: str = PATCH_NAME
   eval_env: Mapping[str, str] | None = None
-  _spec: UnitTestSpec[V] = field(init=False, repr=False)
-  _retries: int = field(init=False, repr=False)
-  _parse: EvalParseObserver[V] = field(init=False, repr=False)
 
-  def __post_init__(self) -> None:
-    """Compile the spec once and resolve the retry budget (ADR-0005).
+  def _compile(self, instance: TaskInstance[Any]) -> UnitTestSpec[V]:
+    """Compile the bound instance's eval spec.
 
-    In apply mode the spec is compiled with an empty placeholder patch — the
-    script must ``git apply patch.diff``, but the actual bytes are this
-    task's declared input and arrive by mount; the placeholder never
-    survives (``mounts`` drops it).
+    No self-stash: each hook compiles from the instance it is handed.
+    Compilation is pure and repeatable by contract (the fixes seam already
+    promises that compiling twice yields the same thing twice) and cheap (the
+    auxiliary files are disk-cached), so paying it twice per execution buys a
+    genuinely stateless task — no lazy assignment, no hook-order coupling.
 
-    Validation happens here — at construction, before anything runs — so a
-    bad budget raises to the caller instead of surfacing as a failed run.
+    Args:
+      instance: The instance whose tests judge the patch.
 
-    Raises:
-      ValueError: If a retry budget (the caller's or the spec's) is negative.
+    Returns:
+      The compiled spec.
     """
-    if self.retries < 0:
-      raise ValueError(f"retries must be >= 0, got {self.retries}")
-    self._spec = self.instance.unit_test_spec(
-        patch="" if self.apply_patch else None
+    spec: UnitTestSpec[V] = instance.unit_test_spec(
+        apply_patch=self.apply_patch, patch_name=self.patch_name
     )
-    # A spec may know better than its caller: the dataset has the measured
-    # rate, the caller only has a default (ADR-0005).
-    if self._spec.retries is not None:
-      if self._spec.retries < 0:
-        raise ValueError(f"spec retries must be >= 0, got {self._spec.retries}")
-      self._retries = self._spec.retries
-    else:
-      self._retries = self.retries
+    return spec
 
   @override
-  def mounts(self) -> Mounts:
+  def mounts(self, instance: TaskInstance[Any]) -> Mounts:
     """Stage the compiled spec's files plus the entryscript.
 
     The compiled spec is self-contained — its ``mounts`` carry everything the
     eval script reads, including any instance fix's files — so the
-    instance-material default is deliberately not merged on top of it. In
-    apply mode the compilation placeholder for ``patch.diff`` is dropped:
-    the patch is this task's *input*, staged by whoever supplies it (a
-    workflow edge, or the caller's ``extra_mounts``), never by the task.
+    instance-material default is deliberately not merged on top of it. The
+    patch is not among them: it is this task's *input*, staged by whoever
+    supplies it.
+
+    Args:
+      instance: The instance whose tests judge the patch.
 
     Returns:
-      The staging set: the spec's mounts (minus the patch placeholder in
-      apply mode) plus the executable entryscript.
+      The staging set: the spec's mounts plus the executable entryscript.
     """
-    mounts = dict(self._spec.mounts)
-    if self.apply_patch:
-      del mounts[PATCH_NAME]
+    spec = self._compile(instance)
     return merge_mounts(
-        mounts,
+        dict(spec.mounts),
         {
             ENTRYSCRIPT_NAME: Mount(
-                Inline(self._spec.eval_script.encode()), executable=True
+                Inline(spec.eval_script.encode()), executable=True
             )
         },
     )
 
   @override
-  def observers(self) -> Sequence[SandboxObserver]:
+  def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:
     """Return the parse observer, carrying the dataset's grader directly.
 
-    The reference is kept on the task because ``action``'s retry loop drives
-    this observer between attempts — the task is single-run per ``execute``,
-    like the observer itself.
+    Args:
+      instance: The instance whose grader judges the run.
 
     Returns:
       The one-element observer set.
     """
-    self._parse = EvalParseObserver(
-        self._spec.grader, native_outputs=self._spec.native_outputs
-    )
-    return (self._parse,)
+    spec = self._compile(instance)  # same spec, by the purity contract
+    return (EvalParseObserver(spec.grader, native_outputs=spec.native_outputs),)
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:
     """Declare the patch input — fixed by configuration, not by data origin.
 
     Returns:
-      The ``patch.diff`` input in apply mode, else nothing.
+      The patch input in apply mode, else nothing.
     """
     if self.apply_patch:
       return (
           ArtifactSchema(
-              PATCH_NAME, description="the candidate patch to grade"
+              self.patch_name, description="the candidate patch to grade"
           ),
       )
     return ()
@@ -323,17 +321,18 @@ class UnitTestEvalTask[V: Verdict](Task):
     Returns:
       Whether the attempt produced a graded verdict.
     """
-    return super().outputs_valid(result) and self._parse.verdict is not None
+    return super().outputs_valid(result) and verdict_of(result) is not None
 
   @override
   def should_retry(self, result: AttemptResult) -> bool:
     """Retry on failure — and on an unresolved verdict, to absorb a flake.
 
-    The flake half is ADR-0005's semantics lifted to the task level: the
-    patch is fixed, an unresolved verdict *might* be harness noise, and a
-    retry answers that. Not failure — the terminal marker still reads
-    ``outputs_valid``, so a genuinely failing patch that exhausts the budget
-    is a *succeeded* task whose answer is "unresolved".
+    The flake half is what ADR-0005's in-run loop used to do, at the level
+    that now owns retrying (ADR-0008): the patch is fixed, an unresolved
+    verdict *might* be harness noise, and another attempt — in a fresh
+    sandbox, separately persisted — answers that. Not failure: the terminal
+    marker still reads ``outputs_valid``, so a genuinely failing patch that
+    exhausts the budget is a *succeeded* task whose answer is "unresolved".
 
     Args:
       result: The execution to judge.
@@ -341,253 +340,44 @@ class UnitTestEvalTask[V: Verdict](Task):
     Returns:
       Whether to spend budget on another attempt.
     """
-    verdict = self._parse.verdict
+    verdict = verdict_of(result)
     return super().should_retry(result) or (
         verdict is not None and not verdict.resolved
     )
 
   @override
-  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
-    """Run the entryscript, re-running while it fails and budget remains.
-
-    In-run retry is ADR-0005's and stays inside the action — a workaround
-    slated to be replaced by task-level retry (ADR-0007 §6), at which point
-    a new ADR supersedes ADR-0005 and this loop goes away. ``timeout`` is
-    per attempt, so the worst-case wall clock is ``(retries + 1) * timeout``
-    — per-attempt rather than shared, because a shared deadline would make
-    the last attempt's budget depend on how slow the earlier ones were.
+  def action(
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+  ) -> ExecResult:
+    """Run the entryscript once.
 
     Args:
       sb: The live sandbox to run in.
-      timeout: Seconds before *each* attempt is killed.
+      instance: Unused — everything the script needs is already staged.
+      timeout: Seconds before the run is killed.
 
     Returns:
-      The last attempt's execution result.
+      The entryscript's execution result.
     """
-    return _attempt_until_resolved(
-        sb,
-        self._parse,
-        self._spec,
-        retries=self._retries,
-        timeout=timeout,
-        eval_env=self.eval_env,
-    )
+    del instance
+    return sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout, env=self.eval_env)
 
 
-@final
-class _SpecInstance[V: Verdict](TaskInstance[V]):
-  """The wrapper path's instance: the caller compiled the spec themselves.
+def verdict_of(result: AttemptResult) -> Verdict | None:
+  """Read the graded verdict back off an execution's own observers.
 
-  ``run_unit_test`` receives a spec, not a dataset record, so this adapter
-  serves the precompiled spec back to the task and answers nothing else —
-  the wrapper path has nothing else to answer.
-  """
-
-  def __init__(
-      self, unit_test_spec: UnitTestSpec[V], spec: SandboxSpec
-  ) -> None:
-    """Wrap the caller's compiled spec and the sandbox's run context.
-
-    Args:
-      unit_test_spec: The compiled spec, served back verbatim.
-      spec: The run context (supplies the instance id).
-    """
-    self._unit_test_spec = unit_test_spec
-    self._spec = spec
-    self.instance_id = spec.instance_id
-
-  @override
-  def sandbox_spec(self) -> SandboxSpec:
-    """Return the run context the caller's sandbox already carries."""
-    return self._spec
-
-  @override
-  def prompt(self) -> str:
-    """Unavailable — a spec-holding caller grades, it does not solve.
-
-    Returns:
-      Never — this method only raises.
-
-    Raises:
-      NotImplementedError: Always; the wrapper path has no dataset record.
-    """
-    raise NotImplementedError("a compiled spec carries no prompt")
-
-  @override
-  def gold_patch(self) -> str | None:
-    """Unavailable — a compiled spec carries no reference solution.
-
-    Returns:
-      Never — this method only raises.
-
-    Raises:
-      NotImplementedError: Always; the wrapper path has no dataset record.
-    """
-    raise NotImplementedError("a compiled spec carries no gold patch")
-
-  @override
-  def unit_test_spec(
-      self,
-      *,
-      patch: str | None,
-      checkout_golden_tests: bool = True,
-  ) -> UnitTestSpec[V]:
-    """Serve the precompiled spec back; its inputs are already baked in.
-
-    Args:
-      patch: Ignored — the caller compiled the spec with its patch.
-      checkout_golden_tests: Ignored, for the same reason.
-
-    Returns:
-      The spec the wrapper was handed.
-    """
-    del patch, checkout_golden_tests
-    return self._unit_test_spec
-
-
-def run_unit_test[V: Verdict](
-    sandbox: Sandbox,
-    unit_test_spec: UnitTestSpec[V],
-    *,
-    output_dir: epath.PathLike,
-    timeout: float = _DEFAULT_TIMEOUT_S,
-    retries: int = 1,
-    eval_env: Mapping[str, str] | None = None,
-    observers: Sequence[SandboxObserver] = (),
-) -> tuple[RunResult, V | None]:
-  """Run and grade one instance's unit-test evaluation.
-
-  A thin wrapper (frozen signature) over ``UnitTestEvalTask``: the compiled
-  spec is adapted into the task's instance seam and the result reshaped into
-  the historical pair — construction and reshaping, no logic of its own.
-  Kept for backward compatibility; running the task inside a workflow
-  (ADR-0007) is the intended entry point once workflows land, and this
-  wrapper is then slated for deprecation.
-
-  The sandbox is **injected, already constructed** — this function neither
-  chooses a backend nor threads its construction options (workspace / pull /
-  network / …). The caller builds it (``build_sandbox(...)`` or a fake) and
-  owns every construction knob, so adding one never touches this signature and
-  a test passes a ``FakeSandbox`` directly.
+  The parse observer is composed by the task and travels on the result
+  (``AttemptResult.observers``, composition order), which is what lets the
+  validity hooks — and any caller — stay out of task state.
 
   Args:
-    sandbox: The live sandbox to run the eval in.
-    unit_test_spec: The compiled eval script, mounts, and grader.
-    output_dir: The host directory collected artifacts are fetched into.
-    timeout: Seconds before *each* attempt is killed (see
-      ``UnitTestEvalTask.action``).
-    retries: Extra attempts allowed after a failed one (ADR-0005); a spec
-      carrying its own ``retries`` overrides this (see ``UnitTestEvalTask``).
-    eval_env: Extra environment for the eval script (mirrors ``run_rollout``'s
-      ``agent_env``). For a secret, use the sandbox's ``pass_env`` instead —
-      that passes it by reference, so the value never reaches a command line.
-    observers: Extra observers, composed **after** this method's own so they
-      see the run once it has post-processed (e.g. a persist observer).
+    result: The execution to read.
 
   Returns:
-    The engine ``RunResult`` and the verdict, which carries ``attempts`` and
-    derives ``flaky`` from it (resolved only after a retry). A setup failure
-    (bad mounts, or the sandbox failing to come up) is captured in
-    ``RunResult.status`` / ``RunResult.error`` rather than raised, and leaves
-    the verdict ``None`` (grading never ran) — so a caller has one code path
-    and gates on ``RunResult.status``.
-
-  Raises:
-    ValueError: If a retry budget (this argument's or the spec's) is negative.
+    The verdict, or ``None`` when grading never ran (a setup failure), or when
+    the result came from a task that composed no eval observer.
   """
-  if retries < 0:
-    # Also validated by the task's constructor; re-checked here so the
-    # docstring's contract is visibly this function's own.
-    raise ValueError(f"retries must be >= 0, got {retries}")
-  task: UnitTestEvalTask[V] = UnitTestEvalTask(
-      instance=_SpecInstance(unit_test_spec, sandbox.spec),
-      apply_patch=False,  # the spec already encodes whether a patch applies
-      retries=retries,
-      eval_env=eval_env,
+  parse = next(
+      (o for o in result.observers if isinstance(o, EvalParseObserver)), None
   )
-  result = task.execute(
-      sandbox,
-      output_dir=output_dir,
-      timeout=timeout,
-      extra_observers=observers,
-  )
-  # The observer the task kept for its retry loop holds the typed verdict.
-  return result.run, task._parse.verdict
-
-
-def _attempt_until_resolved[V: Verdict](
-    sb: SandboxFs,
-    parse: EvalParseObserver[V],
-    unit_test_spec: UnitTestSpec[V],
-    *,
-    retries: int,
-    timeout: float,
-    eval_env: Mapping[str, str] | None,
-) -> ExecResult:
-  """Run the entryscript, re-running it while it fails and budget remains.
-
-  Re-running is a *clean* repeat, not a resumption: the entryscript begins with
-  ``git reset --hard`` + ``git checkout`` of the base commit and re-applies the
-  patch and golden tests, so an attempt inherits nothing from its predecessor
-  but the container's warm caches (ADR-0005).
-
-  The patch never changes between attempts, so this averages out the harness's
-  nondeterminism rather than giving the candidate another chance.
-
-  Args:
-    sb: The live sandbox to run in.
-    parse: The observer the attempt state is handed to before teardown.
-    unit_test_spec: Supplies the grader that decides whether to retry.
-    retries: Extra attempts allowed after the first.
-    timeout: Seconds before *each* attempt is killed.
-    eval_env: Extra environment for the entryscript.
-
-  Returns:
-    The last attempt's execution result (also handed to ``parse``).
-  """
-  elapsed = 0.0
-  attempt = 0
-  while True:
-    attempt += 1
-    parse.attempts = attempt
-    started = time.monotonic()
-    try:
-      exec_result = sb.run_script(
-          ENTRYSCRIPT_NAME, timeout=timeout, env=eval_env
-      )
-      parse.exec_result = exec_result
-    finally:
-      # Total across attempts, not the last one: what a sweep needs from this
-      # is what the run *cost*.
-      elapsed += time.monotonic() - started
-      parse.wall_seconds = elapsed
-    if attempt > retries:
-      return exec_result  # budget spent; grade whatever this left behind
-    if unit_test_spec.grader.grade(sb).resolved:
-      return exec_result
-    _retain_attempt(sb, parse, attempt, unit_test_spec.native_outputs)
-
-
-def _retain_attempt[V: Verdict](
-    sb: SandboxFs,
-    parse: EvalParseObserver[V],
-    attempt: int,
-    native_outputs: Mapping[str, str],
-) -> None:
-  """Copy a failed attempt's outputs aside so the retry cannot overwrite them.
-
-  Copied *through the sandbox* rather than with a shell command, so it works on
-  every backend and in a Docker-free test.
-
-  Args:
-    sb: The live sandbox holding the attempt's outputs.
-    parse: The observer whose ``retained`` map registers them for collection.
-    attempt: Which attempt these outputs came from, 1-based.
-    native_outputs: The dataset's byproducts (artifact name → filename).
-  """
-  for filename in sorted(set(native_outputs.values())):
-    if not sb.exists(filename):
-      continue  # best effort: an attempt that died early leaves fewer files
-    kept = f"attempt{attempt}.{filename}"
-    sb.write(kept, sb.read(filename))
-    parse.retained[kept] = kept
+  return parse.verdict if parse is not None else None

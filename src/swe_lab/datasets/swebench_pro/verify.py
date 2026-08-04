@@ -21,9 +21,11 @@ resumable (a done instance is skipped), object-store-backed, not in git.
 ``--aggregate`` reads the sweep's shards into a summary + report. The store is a
 local ``FilesystemStore`` today; task 13 points it at R2 with no change here.
 
-The two graded runs go through ``instance.unit_test_spec`` + ``run_unit_test``
-on the sandbox engine, so the verdict is a ``SweBenchProVerdict`` and the run
-outcome a ``RunResult``.
+The two graded runs are the eval task's two **standalone** shapes — golden =
+``UnitTestEvalTask(inputs_builder=gold_patch)``, base =
+``UnitTestEvalTask(apply_patch=False)`` — executed directly on the sandbox
+engine, so the verdict is a ``SweBenchProVerdict`` and the run outcome a
+``RunResult``.
 """
 
 from __future__ import annotations
@@ -41,7 +43,11 @@ from etils import epath
 import typer
 
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.evaluation.methods.unit_test import run_unit_test
+from swe_lab.evaluation.methods.unit_test import (
+    gold_patch,
+    UnitTestEvalTask,
+    verdict_of,
+)
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import (
     AttemptRecord,
@@ -150,44 +156,57 @@ def _base_json(instance: SweBenchProInstance, base: _Run) -> dict[str, object]:
 def _graded_run(
     instance: SweBenchProInstance,
     *,
-    patch: str | None,
+    task: UnitTestEvalTask[SweBenchProVerdict],
     workspace: epath.PathLike,
     timeout: float,
     no_network: bool,
     retries: int,
 ) -> _Run:
-  """Compile and run one graded run (base or golden) in a fresh workspace.
+  """Run one graded run (base or golden), each attempt in a fresh container.
+
+  The two self-check modes are the eval task's two standalone shapes, so
+  nothing here is verification-specific except the retry rule below. Attempts
+  are re-executions of the same task — a fresh sandbox over a wiped workspace,
+  exactly what the workflow runner does, minus the persistence this tool does
+  its own way.
 
   Args:
     instance: The instance to grade.
-    patch: The diff to apply (``None`` for the base self-check).
-    workspace: Host workspace for this run (wiped clean first).
-    timeout: Wall-clock limit for the run, in seconds.
+    task: The configured eval task (golden fills its own patch input; base
+      applies none).
+    workspace: Host workspace for this run (wiped clean before each attempt).
+    timeout: Wall-clock limit for each attempt, in seconds.
     no_network: Run the container offline.
-    retries: Extra grading attempts after a failure (ADR-0005). Pass ``0`` for
-      the base self-check: there a failure is the *expected* result, so
-      retrying would pay twice to re-confirm the intended outcome.
+    retries: Extra attempts after an unresolved one. Pass ``0`` for the base
+      self-check: there a failure is the *expected* result, so retrying would
+      pay twice to re-confirm the intended outcome.
 
   Returns:
     The engine ``RunResult`` and the verdict (``None`` if grading never ran).
   """
-  unit_test_spec = instance.unit_test_spec(patch=patch)
-  # The sandbox refuses a non-empty workspace; start each run clean.
-  epath.Path(workspace).rmtree(missing_ok=True)
-  sandbox = build_sandbox(
-      "host",
-      instance.sandbox_spec(),
-      workspace=workspace,
-      network=not no_network,
-      pull=True,
-  )
-  return run_unit_test(
-      sandbox,
-      unit_test_spec,
-      output_dir=workspace,
-      timeout=timeout,
-      retries=retries,
-  )
+  verdict: SweBenchProVerdict | None = None
+  result = None
+  for _ in range(retries + 1):
+    # The sandbox refuses a non-empty workspace; start each attempt clean.
+    epath.Path(workspace).rmtree(missing_ok=True)
+    sandbox = build_sandbox(
+        "host",
+        instance.sandbox_spec(),
+        workspace=workspace,
+        network=not no_network,
+        pull=True,
+    )
+    result = task.execute(
+        sandbox, instance, output_dir=workspace, timeout=timeout
+    )
+    graded = verdict_of(result)
+    # This instance's grader is the dataset's own, so its verdict is ours.
+    assert graded is None or isinstance(graded, SweBenchProVerdict)
+    verdict = graded
+    if verdict is not None and verdict.resolved:
+      break
+  assert result is not None  # range(retries + 1) always runs at least once
+  return result.run, verdict
 
 
 def _prune_image(image_ref: str) -> None:
@@ -228,7 +247,7 @@ def verify_instance(
     timeout: Wall-clock limit for each graded run, in seconds.
     no_network: Run the containers offline.
     prune_images: Remove the instance's image after both runs.
-    retries: Extra attempts for the *golden* run only (ADR-0005) — a golden
+    retries: Extra attempts for the *golden* run only — a golden
       failure is either a corpus defect or a flake, and retrying separates
       them. The base run never retries: there, failing is the point.
 
@@ -247,17 +266,19 @@ def verify_instance(
   try:
     base = _graded_run(
         instance,
-        patch=None,
+        task=UnitTestEvalTask(apply_patch=False),
         workspace=epath.Path(ws_root) / iid / "base",
         timeout=timeout,
         no_network=no_network,
         # The base run is *supposed* to fail; retrying it would only pay twice
-        # for the same answer (ADR-0005).
+        # for the same answer.
         retries=0,
     )
     golden = _graded_run(
         instance,
-        patch=instance.patch,
+        # The reference solution is the task's own input, built from the
+        # instance — the standalone shape, no caller bytes involved.
+        task=UnitTestEvalTask(inputs_builder=gold_patch),
         workspace=epath.Path(ws_root) / iid / "golden",
         timeout=timeout,
         # The golden patch is supposed to pass, so a failure here is either a

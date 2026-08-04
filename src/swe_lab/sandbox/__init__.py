@@ -10,10 +10,14 @@ doubles live in :mod:`swe_lab.sandbox.testing`.
 from .backends import (
     build_sandbox,
     DockerHostSandbox,
+    DockerHostSandboxConfig,
+    GhjobSandboxConfig,
     GitHubJobSandbox,
     HostMetricsObserver,
     register_sandbox,
     registered_backends,
+    sandbox_config_type,
+    sandbox_factory,
     SandboxConfig,
 )
 from .errors import SandboxError
@@ -50,6 +54,8 @@ __all__ = [
     "Contribution",
     "NAME_SEPARATOR",
     "DockerHostSandbox",
+    "DockerHostSandboxConfig",
+    "GhjobSandboxConfig",
     "HostMetricsObserver",
     "ExecResult",
     "FilesystemStore",
@@ -83,5 +89,7 @@ __all__ = [
     "register_store",
     "qualified_name",
     "registered_backends",
+    "sandbox_config_type",
+    "sandbox_factory",
     "registered_stores",
 ]

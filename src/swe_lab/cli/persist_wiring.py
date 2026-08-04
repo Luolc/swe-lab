@@ -17,7 +17,6 @@ from swe_lab.paths import cache_root
 from swe_lab.sandbox import (
     AttemptRecord,
     build_store,
-    persist,
     RUNS_NAMESPACE,
     Store,
 )
@@ -25,9 +24,33 @@ from swe_lab.sandbox import (
 _STORE_SUBDIR = "store"
 
 
-def _run_ts() -> str:
+def run_ts() -> str:
   """Return a compact, sortable UTC launch timestamp for the record."""
   return datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+
+
+def run_store(
+    root: epath.PathLike, *, persist_to_t1: bool, scratch: epath.Path
+) -> Store:
+  """Return the store a command's run persists through.
+
+  Task-level running always persists — every attempt is evidence, and the
+  edges of a chain resolve through the store — so ``--persist`` no longer
+  decides *whether* but *where*: the shared T1 store, or a throwaway one under
+  the run's own output directory, which the next run of the command wipes with
+  it.
+
+  Args:
+    root: The repo root (locates the cache-backed T1 store).
+    persist_to_t1: Whether this run was opted into T1 (``--persist``).
+    scratch: The run's own directory, which holds the throwaway store.
+
+  Returns:
+    The store to run against.
+  """
+  if persist_to_t1:
+    return local_store(root)
+  return build_store("filesystem", root=scratch / _STORE_SUBDIR)
 
 
 def local_store(root: epath.PathLike) -> Store:
@@ -67,7 +90,7 @@ def new_record(
       task=task,
       rollout_id=rollout_id,
       attempt=attempt,
-      run_ts=_run_ts(),
+      run_ts=run_ts(),
       status=status,
       tier="formal",
       backend=backend,
@@ -75,53 +98,3 @@ def new_record(
       metrics=dict(metrics or {}),
       extra=dict(extra or {}),
   )
-
-
-def persist_run(
-    root: epath.PathLike,
-    *,
-    sweep: str,
-    instance_id: str,
-    task: str,
-    status: str,
-    backend: str,
-    artifacts: Mapping[str, epath.PathLike],
-    rollout_id: int = 0,
-    attempt: int = 0,
-    model: str = "",
-    metrics: Mapping[str, float] | None = None,
-    extra: Mapping[str, object] | None = None,
-) -> AttemptRecord:
-  """Persist a finished run's artifacts + a manifest shard to the local store.
-
-  Args:
-    root: The repo root (locates the cache-backed store).
-    sweep: The sweep id this run belongs to (``adhoc`` for a one-off).
-    instance_id: The dataset instance.
-    task: The task segment of the run's key (``rollout``, ``eval``).
-    status: The engine ``RunStatus`` value the run ended with.
-    backend: The sandbox backend name used.
-    artifacts: Collected artifacts (name → host path); uploaded under the
-      artifact name, which is what the manifest and the store key both speak.
-    rollout_id: Which sample of this instance (``0`` unless sampling K).
-    attempt: Retry index of this rollout (``0`` on a first try).
-    model: The agent model alias (empty for a grading-only run).
-    metrics: Scalar run metrics.
-    extra: Any other run facts to record.
-
-  Returns:
-    The written record (its ``artifacts`` are the store keys).
-  """
-  record = new_record(
-      sweep=sweep,
-      instance_id=instance_id,
-      task=task,
-      status=status,
-      backend=backend,
-      rollout_id=rollout_id,
-      attempt=attempt,
-      model=model,
-      metrics=metrics,
-      extra=extra,
-  )
-  return persist(local_store(root), record, artifacts)

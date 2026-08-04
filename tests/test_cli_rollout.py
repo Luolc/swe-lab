@@ -1,10 +1,19 @@
-"""Tests for the rollout CLI wiring (Typer CliRunner, composition mocked)."""
+"""Tests for the rollout CLI wiring (Typer CliRunner, on the fake backend).
 
+The command's own machinery is real here — the workflow, the edge from the
+agent's patch to the grading task, the store — and only what reaches outside
+is stood in for: the dataset, and the agent (a stub harness, so no Claude Code
+binary is provisioned and no process is spawned). Sandboxes come from the
+registered ``fake`` backend, whose file operations are real over a local
+directory.
+"""
+
+from collections.abc import Mapping
+import contextlib
 import json
 from pathlib import Path
-from typing import cast, final, override
+from typing import final, override
 
-from etils import epath
 import pytest
 from typer.testing import CliRunner
 
@@ -12,10 +21,27 @@ from swe_lab.cli import app
 import swe_lab.cli.rollout as rollout_mod
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.instance import TaskInstance
-from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
-from swe_lab.harnesses.claude_code import ClaudeCodeHarness
-from swe_lab.rollout import RolloutOutcome
-from swe_lab.sandbox import RunStatus, SandboxSpec
+from swe_lab.datasets.swebench_pro.unit_test import (
+    REQUIRED_TESTS_NAME,
+    SweBenchProGrader,
+    SweBenchProVerdict,
+)
+from swe_lab.evaluation.verdict import UnitTestSpec
+from swe_lab.harnesses import Harness, HarnessOutcomeObserver
+from swe_lab.sandbox import (
+    ExecResult,
+    Inline,
+    Mount,
+    Mounts,
+    SandboxFs,
+    SandboxObserver,
+    SandboxSpec,
+)
+from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers.diff_extract import RAW_PATCH_NAME
+
+# Importing the doubles registers the `fake` backend the CLI runs on here.
+from swe_lab.sandbox.testing import FakeSandboxConfig
 
 runner = CliRunner()
 TOKEN = "CLAUDE_CODE_OAUTH_TOKEN"
@@ -24,11 +50,14 @@ _SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "abc")
 
 
 @final
-class _Instance(
-    TaskInstance[Verdict]
-):  # a runnable instance, no concrete dataset
-  instance_id: str = "acme__widget-1"
-  problem_statement: str = "fix it"
+class _Instance(TaskInstance[SweBenchProVerdict]):
+  """A runnable instance with no concrete dataset behind it."""
+
+  instance_id = "acme__widget-1"
+  problem_statement = "fix it"
+
+  def __init__(self, *, passed: list[str]) -> None:
+    self._passed = passed
 
   @override
   def sandbox_spec(self) -> SandboxSpec:
@@ -46,11 +75,132 @@ class _Instance(
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
-  ) -> UnitTestSpec[Verdict]:
-    del patch, checkout_golden_tests
-    return cast(UnitTestSpec[Verdict], object())
+  ) -> UnitTestSpec[SweBenchProVerdict]:
+    del apply_patch, checkout_golden_tests
+    output = json.dumps(
+        {"tests": [{"name": n, "status": "PASSED"} for n in self._passed]}
+    )
+    return UnitTestSpec(
+        eval_script="echo eval\n",
+        mounts={
+            REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+            "output.json": Mount(Inline(output.encode())),
+        },
+        grader=SweBenchProGrader(),
+        patch_name=patch_name,
+    )
+
+
+@final
+class _StubAgent(Harness):
+  """Stands in for the agent: records its prompt, leaves a diff behind."""
+
+  def __init__(self, *, edits: bool, prompts: list[str]) -> None:
+    self._edits = edits
+    self.prompts = prompts
+
+  @property
+  @override
+  def name(self) -> str:
+    return "stub"
+
+  @override
+  def observers(self) -> tuple[SandboxObserver, ...]:
+    # The completion signal is the outcome observer's to report — a harness
+    # picks its own (ADR-0007 §3), and this one wants that half.
+    return (HarnessOutcomeObserver(self),)
+
+  @override
+  def mounts(self, workdir: str) -> Mounts:
+    del workdir
+    return {"agent.sh": Mount(Inline(b"true\n"), executable=True)}
+
+  @override
+  def run(
+      self,
+      sb: SandboxFs,
+      *,
+      prompt: str,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
+  ) -> ExecResult:
+    self.prompts.append(prompt)
+    if self._edits:
+      # What the agent's edits look like to the extraction observer: the raw
+      # diff its script would have produced (the fake backend runs no script).
+      sb.write(RAW_PATCH_NAME, b"diff --git a/x b/x\n")
+    return sb.run_script("agent.sh", timeout=timeout, env=env)
+
+  @override
+  def native_outputs(self) -> dict[str, str]:
+    return {}
+
+  @override
+  def to_conversation(self, sb: SandboxFs) -> Conversation:
+    del sb
+    return Conversation(messages=[])
+
+  @override
+  def completed(self, sb: SandboxFs) -> bool:
+    del sb
+    return True
+
+
+def _wire(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    edits: bool = True,
+    passed: list[str] | None = None,
+) -> dict[str, object]:
+  """Stand in for the dataset and the agent; keep everything else real."""
+  calls: dict[str, object] = {"prompts": []}
+  config = FakeSandboxConfig()
+  calls["config"] = config
+
+  @final
+  class _Dataset:
+
+    def require(self, instance_id: str) -> _Instance:
+      calls["required"] = instance_id
+      return _Instance(passed=passed if passed is not None else ["a"])
+
+  def fake_build_agent(
+      instance_id: str,
+      *,
+      model: str,
+      capture: object,
+      bare: bool,
+      proxy_log_dir: object,
+  ) -> tuple[Harness, contextlib.AbstractContextManager[object]]:
+    del instance_id, proxy_log_dir
+    calls["model"] = model
+    calls["capture"] = capture
+    calls["bare"] = bare
+    prompts = calls["prompts"]
+    assert isinstance(prompts, list)
+    return _StubAgent(edits=edits, prompts=prompts), contextlib.nullcontext()
+
+  monkeypatch.setenv(TOKEN, "tok")
+
+  def fake_load_dataset(name: str) -> _Dataset:
+    del name
+    return _Dataset()
+
+  def fake_invocation_config(
+      backend: str, **kwargs: object
+  ) -> FakeSandboxConfig:
+    del backend, kwargs
+    return config
+
+  monkeypatch.setattr(rollout_mod, "load_dataset", fake_load_dataset)
+  monkeypatch.setattr(rollout_mod, "find_repo_root", lambda: tmp_path)
+  monkeypatch.setattr(rollout_mod, "_build_agent", fake_build_agent)
+  monkeypatch.setattr(rollout_mod, "invocation_config", fake_invocation_config)
+  return calls
 
 
 def test_help_lists_rollout():
@@ -68,146 +218,144 @@ def test_requires_oauth_token(monkeypatch: pytest.MonkeyPatch):
   assert "not set" in result.output
 
 
-def _outcome(
-    *,
-    is_empty: bool,
-    patch: str,
-    artifacts: dict[str, epath.Path] | None = None,
-) -> RolloutOutcome:
-  return RolloutOutcome(
-      instance_id="acme__widget-1",
-      patch=patch,
-      is_empty=is_empty,
-      binary_stripped=False,
-      complete=True,
-      conversation=Conversation(messages=[]),
-      status=RunStatus.SUCCESS,
-      workspace=epath.Path("/tmp/ws"),
-      artifacts=artifacts or {},
-      metrics={},
+def test_solve_not_graded_exits_zero(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  calls = _wire(monkeypatch, tmp_path)
+  result = runner.invoke(
+      app, ["rollout", "acme__widget-1", "--backend", "fake"]
   )
-
-
-def _wire(
-    monkeypatch: pytest.MonkeyPatch, *, outcome: RolloutOutcome
-) -> dict[str, object]:
-  """Mock the dataset + composition so the CLI runs without Docker."""
-  calls: dict[str, object] = {}
-
-  @final
-  class _Dataset:
-
-    def require(self, instance_id: str) -> _Instance:
-      calls["required"] = instance_id
-      return _Instance()
-
-  def fake_load(name: str) -> _Dataset:
-    calls["dataset"] = name
-    return _Dataset()
-
-  def fake_build_sandbox(
-      backend: object,
-      spec: object,
-      **kwargs: object,
-  ) -> object:
-    del spec
-    calls["backend"] = backend
-    calls["pass_env"] = kwargs.get("pass_env")
-    return object()  # a sentinel sandbox; the mocked run_rollout ignores it
-
-  def fake_run_rollout(
-      sandbox: object,
-      harness: ClaudeCodeHarness,
-      *,
-      prompt: str,
-      output_dir: object,
-      timeout: object,
-      **kwargs: object,
-  ) -> RolloutOutcome:
-    del sandbox, output_dir, timeout, kwargs
-    calls["prompt"] = prompt
-    # model / capture / bare now ride on the injected harness, which the CLI
-    # builds — assert them there rather than as run_rollout arguments.
-    calls["model"] = harness.model
-    calls["capture"] = harness.capture
-    calls["bare"] = harness.bare
-    return outcome
-
-  monkeypatch.setenv(TOKEN, "tok")
-  monkeypatch.setattr(rollout_mod, "load_dataset", fake_load)
-  monkeypatch.setattr(rollout_mod, "build_sandbox", fake_build_sandbox)
-  monkeypatch.setattr(rollout_mod, "run_rollout", fake_run_rollout)
-  return calls
-
-
-def test_solve_not_graded_exits_zero(monkeypatch: pytest.MonkeyPatch):
-  calls = _wire(monkeypatch, outcome=_outcome(is_empty=False, patch="D"))
-  result = runner.invoke(app, ["rollout", "acme__widget-1"])
   assert result.exit_code == 0
   payload = json.loads(result.output)
   assert payload["outcome"] == "solved_not_graded"
-  assert (
-      calls["prompt"] == "PROMPT: fix it"
-  )  # dataset-derived, threaded through
-  # non-bare passes the OAuth token by reference
+  assert payload["is_empty_patch"] is False
+  assert payload["agent_complete"] is True
+  # the dataset's prompt reached the agent — as the task's declared input,
+  # built from the instance and read back out of the workspace
+  assert calls["prompts"] == ["PROMPT: fix it"]
   assert calls["bare"] is False
-  assert calls["pass_env"] == (TOKEN,)
+  # non-bare passes the OAuth token by reference: the entry declared it, and
+  # the runner merged that onto the invocation's config
+  config = calls["config"]
+  assert isinstance(config, FakeSandboxConfig)
+  built = config.built[0].config
+  assert isinstance(built, FakeSandboxConfig)
+  assert built.pass_env == (TOKEN,)
 
 
-def test_bare_requires_api_key_env(monkeypatch: pytest.MonkeyPatch):
-  _ = _wire(monkeypatch, outcome=_outcome(is_empty=False, patch="D"))
+def test_bare_requires_api_key_env(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  _ = _wire(monkeypatch, tmp_path)
   monkeypatch.delenv(API_KEY, raising=False)
   result = runner.invoke(app, ["rollout", "acme__widget-1", "--bare"])
   assert result.exit_code != 0
   assert API_KEY in result.output
 
 
-def test_bare_passes_api_key_env_by_reference(monkeypatch: pytest.MonkeyPatch):
-  calls = _wire(monkeypatch, outcome=_outcome(is_empty=False, patch="D"))
+def test_bare_passes_api_key_env_by_reference(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  calls = _wire(monkeypatch, tmp_path)
   monkeypatch.setenv(API_KEY, "sk-x")
-  result = runner.invoke(app, ["rollout", "acme__widget-1", "--bare"])
+  result = runner.invoke(
+      app, ["rollout", "acme__widget-1", "--bare", "--backend", "fake"]
+  )
   assert result.exit_code == 0
   assert calls["bare"] is True
+  config = calls["config"]
+  assert isinstance(config, FakeSandboxConfig)
+  built = config.built[0].config
+  assert isinstance(built, FakeSandboxConfig)
   # the key is passed by NAME (like the OAuth token), never its value
-  assert calls["pass_env"] == (API_KEY,)
+  assert built.pass_env == (API_KEY,)
 
 
 def test_persist_writes_a_manifest_shard(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  art = tmp_path / "patch.diff"
-  _ = art.write_text("DIFF")
-  _ = _wire(
-      monkeypatch,
-      outcome=_outcome(
-          is_empty=False, patch="D", artifacts={"patch": epath.Path(art)}
-      ),
-  )
-  monkeypatch.setattr(rollout_mod, "find_repo_root", lambda: tmp_path)
+  _ = _wire(monkeypatch, tmp_path)
   result = runner.invoke(
-      app, ["rollout", "acme__widget-1", "--persist", "--sweep", "sw1"]
+      app,
+      [
+          "rollout",
+          "acme__widget-1",
+          "--backend",
+          "fake",
+          "--persist",
+          "--sweep",
+          "sw1",
+      ],
   )
   assert result.exit_code == 0
-  shards = list((tmp_path / ".cache" / "store").rglob("run.json"))
+  shards = list((tmp_path / ".cache" / "store" / "runs").rglob("run.json"))
   assert len(shards) == 1  # one per-run shard under the sweep
   assert (tmp_path / ".cache" / "store" / "runs" / "sw1").is_dir()
   assert "persisted" in json.loads(result.output)
 
 
-def test_no_persist_writes_nothing(
+def test_no_persist_keeps_the_shared_store_clean(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  _ = _wire(monkeypatch, outcome=_outcome(is_empty=False, patch="D"))
-  monkeypatch.setattr(rollout_mod, "find_repo_root", lambda: tmp_path)
-  result = runner.invoke(app, ["rollout", "acme__widget-1"])
+  _ = _wire(monkeypatch, tmp_path)
+  result = runner.invoke(
+      app, ["rollout", "acme__widget-1", "--backend", "fake"]
+  )
   assert result.exit_code == 0
-  assert not (tmp_path / ".cache" / "store").exists()  # debug persists nothing
+  assert not (tmp_path / ".cache" / "store" / "runs").exists()
   assert "persisted" not in json.loads(result.output)
 
 
-def test_empty_patch_graded_exits_one(monkeypatch: pytest.MonkeyPatch):
-  _ = _wire(monkeypatch, outcome=_outcome(is_empty=True, patch=""))
-  result = runner.invoke(app, ["rollout", "acme__widget-1", "--grade"])
+def test_grade_chains_the_agents_patch_into_the_eval(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  # The whole point of the chain: the eval never sees the CLI's bytes, it
+  # consumes what the rollout persisted, matched by store name.
+  _ = _wire(monkeypatch, tmp_path, passed=["a"])
+  result = runner.invoke(
+      app,
+      [
+          "rollout",
+          "acme__widget-1",
+          "--grade",
+          "--backend",
+          "fake",
+          "--persist",
+      ],
+  )
+  assert result.exit_code == 0
+  payload = json.loads(result.output)
+  assert payload["outcome"] == "resolved"
+  assert payload["grade"]["resolved"] is True
+  assert payload["grade"]["attempts"] == 1
+  # both entries persisted under their own task keys
+  runs = tmp_path / ".cache" / "store" / "runs" / "adhoc" / "acme__widget-1"
+  assert (runs / "r0" / "rollout" / "a0" / PATCH_NAME).is_file()
+  assert (runs / "r0" / "eval" / "complete.json").is_file()
+  assert (runs / "r0" / "workflow.json").is_file()
+  # and the eval's container really got the agent's patch through the edge
+  staged = (
+      tmp_path
+      / ".cache"
+      / "rollout_workspaces"
+      / "acme__widget-1"
+      / "eval"
+      / "ws"
+      / "a0"
+      / PATCH_NAME
+  )
+  assert staged.read_text() == "diff --git a/x b/x\n"
+
+
+def test_empty_patch_graded_exits_one(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  # An agent that changed nothing never reaches a grading container: the edge
+  # refuses empty bytes, which is the same answer one container cheaper.
+  _ = _wire(monkeypatch, tmp_path, edits=False)
+  result = runner.invoke(
+      app, ["rollout", "acme__widget-1", "--grade", "--backend", "fake"]
+  )
   assert result.exit_code == 1
   payload = json.loads(result.output)
   assert payload["outcome"] == "empty_patch"  # never grades as a pass

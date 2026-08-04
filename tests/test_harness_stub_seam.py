@@ -10,7 +10,7 @@ the real ``SandboxManager`` + ``ConversationObserver`` + ``GitHubJobSandbox``
 from collections.abc import Iterator, Mapping
 import contextlib
 from pathlib import Path
-from typing import override
+from typing import final, override
 
 from etils import epath
 
@@ -21,12 +21,18 @@ from swe_lab.conversation import (
     Role,
     TextBlock,
 )
+from swe_lab.datasets.instance import TaskInstance
+from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.harnesses import (
     COMPLETE_METRIC,
     Harness,
     HarnessOutcomeObserver,
 )
-from swe_lab.rollout import run_rollout
+from swe_lab.rollout import (
+    CodingAgentTask,
+    conversation_of,
+    outcome_of,
+)
 from swe_lab.sandbox import (
     Contribution,
     ExecResult,
@@ -40,9 +46,39 @@ from swe_lab.sandbox import (
     SandboxObserver,
     SandboxSpec,
 )
+from swe_lab.sandbox.observers import PATCH_NAME
 
 _SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 _TRACE_NAME = "stub.trace"
+
+
+@final
+class _Instance(TaskInstance[Verdict]):
+  """The instance the task binds: this spec's run context and a statement."""
+
+  instance_id = "acme__widget-1"
+
+  @override
+  def sandbox_spec(self) -> SandboxSpec:
+    return _SPEC
+
+  @override
+  def prompt(self) -> str:
+    return "SOLVE THIS"
+
+  @override
+  def gold_patch(self) -> str | None:
+    return None
+
+  @override
+  def unit_test_spec(
+      self,
+      *,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
+      checkout_golden_tests: bool = True,
+  ) -> UnitTestSpec[Verdict]:
+    raise NotImplementedError("this instance is only solved, never graded")
 
 
 class StubHarness(Harness):
@@ -141,9 +177,9 @@ def test_stub_harness_composes_over_the_engine(tmp_path: Path):
   assert manager.result.metrics[COMPLETE_METRIC] == 1.0
 
 
-def test_run_rollout_takes_a_foreign_harness_and_proxy(tmp_path: Path):
+def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
   # The composition is harness-agnostic: a downstream user's own Harness and
-  # their own recorder (any context manager) are injected, and run_rollout
+  # their own recorder (any context manager) are injected, and the task
   # never reaches for a concrete agent.
   entered: list[str] = []
 
@@ -154,29 +190,29 @@ def test_run_rollout_takes_a_foreign_harness_and_proxy(tmp_path: Path):
     entered.append("closed")
 
   workspace = tmp_path / "run"
-  outcome = run_rollout(
+  result = CodingAgentTask(harness=StubHarness(), proxy=stub_proxy()).execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      StubHarness(),
-      prompt="SOLVE THIS",
+      _Instance(),
       output_dir=workspace,
       timeout=10.0,
-      proxy=stub_proxy(),
   )
 
-  assert outcome.status is RunStatus.SUCCESS
+  assert result.run.status is RunStatus.SUCCESS
   assert entered == ["open", "closed"]  # the recorder wrapped the whole run
   # the prompt landed where the *harness* chose to put it — there is no
   # composition-level filename contract anymore (ADR-0007 §8)
   assert (workspace / "stub.prompt").read_text() == "SOLVE THIS"
   # the stub's own completion signal + trace conversion drove the outcome
-  assert outcome.complete is True
-  assert outcome.conversation == Conversation(
+  outcome = outcome_of(result)
+  assert outcome is not None and outcome.complete is True
+  trace = conversation_of(result)
+  assert trace is not None and trace.conversation == Conversation(
       messages=[Message(role=Role.ASSISTANT, content=[TextBlock(text="hello")])]
   )
 
 
-def test_run_rollout_takes_extra_observers_and_agent_env(tmp_path: Path):
-  # Symmetry with run_unit_test: an extra observer is composed after the
+def test_the_task_takes_extra_observers_and_agent_env(tmp_path: Path):
+  # An extra observer is composed after the
   # composition's own, and env is forwarded to the harness.
   seen: list[str] = []
 
@@ -205,18 +241,19 @@ def test_run_rollout_takes_extra_observers_and_agent_env(tmp_path: Path):
       return super().run_script(name, timeout=timeout, env=env)
 
   workspace = tmp_path / "run"
-  outcome = run_rollout(
+  result = CodingAgentTask(
+      harness=StubHarness(), agent_env={"MY_FLAG": "1"}
+  ).execute(
       _Recording(spec=_SPEC, workspace=epath.Path(workspace)),
-      StubHarness(),
-      prompt="SOLVE THIS",
+      _Instance(),
       output_dir=workspace,
       timeout=10.0,
-      agent_env={"MY_FLAG": "1"},
-      observers=[_Probe()],
+      extra_observers=[_Probe()],
   )
   assert seen == ["probe"]
-  assert outcome.metrics["probe"] == 1.0  # its contribution reached the result
-  # run_rollout → harness.run(env=...) → the exec; the stub hands it straight on
+  # its contribution reached the result
+  assert result.run.metrics["probe"] == 1.0
+  # the task → harness.run(env=...) → the exec; the stub hands it straight on
   assert {"MY_FLAG": "1"} in envs
 
 
@@ -239,20 +276,19 @@ def test_a_timed_out_agent_is_reported_as_timeout(tmp_path: Path):
       return ExecResult(124, "", "killed after 10s", timed_out=True)
 
   workspace = tmp_path / "run"
-  outcome = run_rollout(
+  result = CodingAgentTask(harness=_TimingOut()).execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _TimingOut(),
-      prompt="SOLVE THIS",
+      _Instance(),
       output_dir=workspace,
       timeout=10.0,
   )
-  assert outcome.status is RunStatus.TIMEOUT
-  assert outcome.metrics["stub.timed_out"] == 1.0
-  assert outcome.metrics["stub.exit_code"] == 124.0
-  assert outcome.metrics["stub.wall_seconds"] >= 0.0
+  assert result.run.status is RunStatus.TIMEOUT
+  assert result.run.metrics["stub.timed_out"] == 1.0
+  assert result.run.metrics["stub.exit_code"] == 124.0
+  assert result.run.metrics["stub.wall_seconds"] >= 0.0
   # what the exec itself said is kept — the only clue when the agent's own
   # redirected logs never got written
-  assert outcome.artifacts["stub.exec_stderr.log"].read_text() == (
+  assert result.run.artifacts["stub.exec_stderr.log"].read_text() == (
       "killed after 10s"
   )
 
@@ -275,15 +311,14 @@ def test_backend_observers_are_composed_first(tmp_path: Path):
       return (_Meter(),)
 
   workspace = tmp_path / "run"
-  outcome = run_rollout(
+  result = CodingAgentTask(harness=StubHarness()).execute(
       _MeteredSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      StubHarness(),
-      prompt="SOLVE THIS",
+      _Instance(),
       output_dir=workspace,
       timeout=10.0,
   )
-  assert outcome.status is RunStatus.SUCCESS
-  assert outcome.metrics["sandbox.fake_metric"] == 42.0
+  assert result.run.status is RunStatus.SUCCESS
+  assert result.run.metrics["sandbox.fake_metric"] == 42.0
 
 
 def test_a_harness_without_the_generic_pair_still_runs(tmp_path: Path):
@@ -296,16 +331,15 @@ def test_a_harness_without_the_generic_pair_still_runs(tmp_path: Path):
       return ()
 
   workspace = tmp_path / "run"
-  outcome = run_rollout(
+  result = CodingAgentTask(harness=_Unobserved()).execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Unobserved(),
-      prompt="SOLVE THIS",
+      _Instance(),
       output_dir=workspace,
       timeout=10.0,
   )
-  assert outcome.status is RunStatus.SUCCESS
-  assert outcome.complete is False
-  assert outcome.conversation == Conversation(messages=[])
+  assert result.run.status is RunStatus.SUCCESS
+  assert outcome_of(result) is None  # no completion signal was composed
+  assert conversation_of(result) is None
 
 
 def test_a_harness_composes_its_own_extra_observer(tmp_path: Path):
@@ -325,13 +359,14 @@ def test_a_harness_composes_its_own_extra_observer(tmp_path: Path):
       return (*super().observers(), _Signal())
 
   workspace = tmp_path / "run"
-  outcome = run_rollout(
+  result = CodingAgentTask(harness=_Extra()).execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
-      _Extra(),
-      prompt="SOLVE THIS",
+      _Instance(),
       output_dir=workspace,
       timeout=10.0,
   )
-  assert outcome.status is RunStatus.SUCCESS
-  assert outcome.metrics["stub.extra_signal"] == 7.0
-  assert outcome.complete is True  # the generic pair still composed alongside
+  assert result.run.status is RunStatus.SUCCESS
+  assert result.run.metrics["stub.extra_signal"] == 7.0
+  outcome = outcome_of(result)
+  # the generic pair still composed alongside
+  assert outcome is not None and outcome.complete is True

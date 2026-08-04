@@ -60,7 +60,7 @@ _GOLDEN_CHECKOUT = "git checkout deadbeef -- test/a-test.ts"
 
 def _spec(instance_id: str):
   spec = compile_unit_test(
-      patch="diff --git a/x b/x\n",
+      apply_patch=True,
       base_commit="abc123",
       selected_test_files_to_run=("test/a-test.ts",),
       golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
@@ -84,7 +84,7 @@ def test_vendored_tarball_is_the_published_artifact():
 
 def test_an_instance_without_a_fix_is_returned_untouched():
   plain = compile_unit_test(
-      patch=None,
+      apply_patch=False,
       base_commit="abc123",
       selected_test_files_to_run=("test/a-test.ts",),
       golden_test_checkout_cmd="",
@@ -137,7 +137,7 @@ def test_the_fix_touches_no_test_expectations():
   # what counts as passing.
   fixed = _spec(_WYSIWYG_INSTANCE)
   plain = compile_unit_test(
-      patch="diff --git a/x b/x\n",
+      apply_patch=True,
       base_commit="abc123",
       selected_test_files_to_run=("test/a-test.ts",),
       golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
@@ -188,13 +188,17 @@ def test_every_workspace_file_a_script_names_is_staged_or_produced():
     named = set(
         re.findall(r'\$SANDBOX_WORKSPACE"?/([\w.-]+)', spec.eval_script)
     )
-    available = set(spec.mounts) | set(spec.native_outputs.values())
+    # The patch is the eval task's declared *input*: staged by whoever
+    # supplies it (an edge, a caller, a builder), never by the spec.
+    available = (
+        set(spec.mounts) | set(spec.native_outputs.values()) | {spec.patch_name}
+    )
     assert named <= available, f"{instance_id}: {sorted(named - available)}"
 
 
 def _plain():
   return compile_unit_test(
-      patch=None,
+      apply_patch=False,
       base_commit="abc123",
       selected_test_files_to_run=("test/a-test.ts",),
       golden_test_checkout_cmd=_GOLDEN_CHECKOUT,
@@ -358,17 +362,18 @@ def test_a_fix_that_is_not_a_plain_function_is_still_named(
 
 
 def test_with_setup_preserves_every_field_it_does_not_change():
-  # Regression: `with_setup` used to rebuild the spec field by field, so a field
-  # added later (`retries`) was silently dropped. This asserts the general rule
-  # rather than that one field, so the next addition cannot repeat it.
-  spec = replace(_plain(), retries=3, native_outputs={"log": "stdout.log"})
+  # Regression: `with_setup` used to rebuild the spec field by field, so a
+  # field added later was silently dropped. This asserts the general rule
+  # rather than any one field, so the next addition cannot repeat it.
+  spec = replace(
+      _plain(), patch_name="candidate.diff", native_outputs={"log": "out.log"}
+  )
   fixed = with_setup(spec, setup="echo patched", mounts={})
   changed = {"eval_script", "mounts"}
   for field in dataclasses.fields(spec):
     if field.name in changed:
       continue
     assert getattr(fixed, field.name) == getattr(spec, field.name), field.name
-  assert fixed.retries == 3  # named explicitly: this is the one that broke
 
 
 def test_the_clock_shim_ships_as_a_resource_the_fix_can_read():
@@ -393,10 +398,11 @@ def test_the_clock_probe_expects_the_hour_the_shim_actually_pins():
   assert f'if [ "$probe" != "{hour} 0 true" ]; then' in script
 
 
-def test_a_fixed_instance_keeps_its_retry_override():
-  # End to end: the override has to survive the fix, or a consumer setting it on
-  # an instance that happens to have a fix would be silently ignored.
-  compiled = replace(_plain(), retries=2)
+def test_a_fixed_instance_keeps_its_declared_patch_name():
+  # End to end: what the caller configured has to survive the fix, or a task
+  # grading `candidate.diff` on an instance that happens to have a fix would
+  # silently apply nothing.
+  compiled = replace(_plain(), patch_name="candidate.diff")
   fixed = apply_instance_fix(_WYSIWYG_INSTANCE, compiled)
-  assert fixed.retries == 2
+  assert fixed.patch_name == "candidate.diff"
   assert _WYSIWYG_TARBALL_NAME in fixed.mounts  # the fix did run

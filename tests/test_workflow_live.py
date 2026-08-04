@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import final, override
+from typing import Any, final, override
 
 from etils import epath
 import pytest
@@ -23,17 +23,17 @@ from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
-    DockerHostSandbox,
+    DockerHostSandboxConfig,
     ExecResult,
     FilesystemStore,
     Inline,
     Mount,
     Mounts,
-    Sandbox,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
 )
+from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.workflow import (
     EntryStatus,
     Task,
@@ -66,7 +66,8 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError
@@ -98,17 +99,20 @@ class _Collect(SandboxObserver):
 class _ScriptTask(Task):
   """Stages a script, runs it, collects the file it wrote."""
 
-  instance: TaskInstance[SweBenchProVerdict]
   script: str
   produces: str
   consumes: str = ""
 
   @override
-  def mounts(self) -> Mounts:
+  def mounts(self, instance: TaskInstance[Any]) -> Mounts:
+    del instance
     return {"main.sh": Mount(Inline(self.script.encode()), executable=True)}
 
   @override
-  def observers(self) -> tuple[SandboxObserver, ...]:
+  def observers(
+      self, instance: TaskInstance[Any]
+  ) -> tuple[SandboxObserver, ...]:
+    del instance
     return (_Collect(name=self.produces),)
 
   @override
@@ -118,33 +122,21 @@ class _ScriptTask(Task):
     return (ArtifactSchema(self.consumes, description="the upstream file"),)
 
   @override
-  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
+  def action(
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+  ) -> ExecResult:
+    del instance
     return sb.run_script("main.sh", timeout=timeout)
-
-
-def _factory(base: Path):
-  count = 0
-
-  def build() -> Sandbox:
-    nonlocal count
-    count += 1
-    return DockerHostSandbox(
-        spec=SPEC, workspace=epath.Path(base / f"ws{count}")
-    )
-
-  return build
 
 
 @pytest.mark.docker
 def test_live_two_container_chain_through_the_store(tmp_path: Path):
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   producer = _ScriptTask(
-      instance=_Instance(),
       script='printf HELLO > "$SANDBOX_WORKSPACE"/thing.txt\n',
       produces="thing.txt",
   )
   consumer = _ScriptTask(
-      instance=_Instance(),
       # proves the input landed AND is the exact bytes: transform it so the
       # output could only come from the mounted upstream artifact
       script=(
@@ -162,18 +154,22 @@ def test_live_two_container_chain_through_the_store(tmp_path: Path):
           WorkflowEntry(
               "producer",
               producer,
-              sandbox_factory=_factory(tmp_path / "p"),
               timeout=60.0,
           ),
           WorkflowEntry(
               "consumer",
               consumer,
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=60.0,
           ),
       ],
   )
-  outcome = wf.execute(output_dir=tmp_path / "out", run_ts="ts-live")
+  outcome = wf.execute(
+      _Instance(),
+      backend="host",
+      sandbox=DockerHostSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-live",
+  )
   assert outcome.succeeded is True
   assert [e.status for e in outcome.entries] == [
       EntryStatus.SUCCEEDED,
@@ -200,12 +196,10 @@ def test_live_failed_producer_persists_its_evidence_and_blocks(
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   # declares thing.txt but exits before writing it → invalid attempt
   broken = _ScriptTask(
-      instance=_Instance(),
       script='echo "boom: disk exploded" >&2\nexit 7\n',
       produces="thing.txt",
   )
   consumer = _ScriptTask(
-      instance=_Instance(),
       script="true\n",
       produces="consumed.txt",
       consumes="thing.txt",
@@ -218,18 +212,22 @@ def test_live_failed_producer_persists_its_evidence_and_blocks(
           WorkflowEntry(
               "producer",
               broken,
-              sandbox_factory=_factory(tmp_path / "p"),
               timeout=60.0,
           ),
           WorkflowEntry(
               "consumer",
               consumer,
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=60.0,
           ),
       ],
   )
-  outcome = wf.execute(output_dir=tmp_path / "out", run_ts="ts-live")
+  outcome = wf.execute(
+      _Instance(),
+      backend="host",
+      sandbox=DockerHostSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-live",
+  )
   assert outcome.succeeded is False
   assert [e.status for e in outcome.entries] == [
       EntryStatus.FAILED,

@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Self
 
 from swe_lab.sandbox import Mounts, SandboxFs
+from swe_lab.sandbox.observers import PATCH_NAME
 
 
 class Verdict(ABC):
@@ -23,10 +23,15 @@ class Verdict(ABC):
   model-judged eval method may report an intermediate score, so aggregation
   depends only on this scalar (it averages it).
 
+  A verdict is **one grading of one tree**: it says how that run went and
+  carries no history. Retrying is the runner's business (ADR-0008), and the
+  evidence for it is the persisted attempt sequence, not a counter riding on
+  the answer.
+
   An ABC rather than a Protocol (ADR-0006, superseding ADR-0002 for this one
-  interface): ``resolved`` and ``flaky`` are not fields but *derivations with a
-  rule*, and a Protocol can only state a rule it cannot enforce. They are
-  concrete here so every verdict inherits the same one.
+  interface): ``resolved`` is not a field but a *derivation with a rule*, and a
+  Protocol can only state a rule it cannot enforce. It is concrete here so
+  every verdict inherits the same one.
   """
 
   # Not decoration: ``ABC`` declares this, but a subclass that does not
@@ -35,17 +40,6 @@ class Verdict(ABC):
   # repo's own shape, and typo'd attributes stop raising. One verdict exists per
   # instance per rollout.
   __slots__: tuple[str, ...] = ()
-
-  # How many evaluation attempts produced this verdict (``1`` = first try). More
-  # than one means the eval was re-run against the **same patch** after a
-  # failure (ADR-0005) — the candidate never changes between attempts, so this
-  # averages out harness nondeterminism, not model quality.
-  #
-  # Declared, not abstract: this is the one member that really is *data*, and a
-  # subclass satisfies it with an ordinary dataclass field. An abstract property
-  # here would force every verdict to wrap a private field in a getter to say
-  # the same thing.
-  attempts: int
 
   @property
   @abstractmethod
@@ -57,33 +51,6 @@ class Verdict(ABC):
   def resolved(self) -> bool:
     """Whether the run is a full pass (``score >= 1.0``)."""
     return self.score >= 1.0
-
-  @property
-  def flaky(self) -> bool:
-    """Whether it resolved only after a retry.
-
-    Derived, never stored, and deliberately *not* ``attempts > 1``: a run that
-    failed every attempt is not flaky, it is failed. This is the signal that
-    feeds the known-flaky registry, so the difference is the difference between
-    recording a harness flake and recording an exhausted retry chain as one.
-    """
-    return self.attempts > 1 and self.resolved
-
-  @abstractmethod
-  def with_attempts(self, attempts: int) -> Self:
-    """Return a copy recording how many attempts the run took.
-
-    Implemented by the dataset's verdict (a one-line ``dataclasses.replace``)
-    because only it knows its own shape; the generic eval method counts the
-    attempts but cannot construct a concrete verdict.
-
-    Args:
-      attempts: The number of attempts, ``1`` or more.
-
-    Returns:
-      A verdict identical but for the attempt count.
-    """
-    ...
 
   @abstractmethod
   def summary(self) -> dict[str, object]:
@@ -135,28 +102,12 @@ class UnitTestSpec[V: Verdict]:
   Attributes:
     eval_script: The bash the container runs (staged as ``entryscript.sh``).
     mounts: The other files the run needs staged (e.g. the test harness and
-      the compiled expectation).
+      the compiled expectation). The **patch is not among them**: it is the
+      eval task's declared input, staged by whoever supplies it.
     grader: Judges the workspace after the run.
-    retries: Overrides the caller's retry budget for this instance (ADR-0005),
-      or ``None`` to accept whatever the caller passes. **swe-lab sets this
-      nowhere** — every instance ships ``None``, so the CLI default applies
-      uniformly and the shipped numbers stay comparable. It exists because a
-      consumer may know something we do not: an instance measured to fail 16% of
-      the time needs more attempts than one measured at 2%, and only whoever
-      took that measurement can say so.
-
-      Set it by compiling the spec and replacing the field::
-
-          compiled = instance.unit_test_spec(patch=patch)
-          spec = dataclasses.replace(compiled, retries=3)
-
-      or, to reach the CLI path where the spec is compiled internally, by
-      overriding ``unit_test_spec`` on a subclass of the dataset's record — the
-      same extension point ``run_script`` / ``parser`` already document.
-
-      Raising it for one instance is a **scoring decision** about that instance,
-      so it should be as visible as any other; this field is deliberately not
-      wired to ``known_flaky.py``, which annotates and never acts.
+    patch_name: The workspace file the compiled script applies, when it
+      applies one. Recorded so the spec self-describes what it reads, and so
+      the task's declared input and the script can never drift apart.
     native_outputs: Byproducts the eval script writes, as artifact name →
       workspace-relative filename. Declared by the dataset because the names
       are its own (``output.json``, the test logs), and registered *best
@@ -168,5 +119,5 @@ class UnitTestSpec[V: Verdict]:
   eval_script: str
   mounts: Mounts
   grader: Grader[V]
-  retries: int | None = None
+  patch_name: str = PATCH_NAME
   native_outputs: dict[str, str] = field(default_factory=dict)
