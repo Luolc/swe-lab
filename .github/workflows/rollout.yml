@@ -61,5 +61,5 @@ jobs:
           uv run python -m swe_lab run \
             ${{ inputs.grade && 'rollout_and_unit_test' || 'rollout' }} \
             "${{ inputs.instance_id }}" \
-            --rollout.harness.model "${{ inputs.model }}" \
-            --rollout.timeout 3000
+            --rollout.harness.model="${{ inputs.model }}" \
+            --rollout.timeout=3000
