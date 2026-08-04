@@ -204,7 +204,6 @@ class Workflow:
       output_dir: epath.PathLike,
       run_ts: str,
       resume: bool = True,
-      model: str = "",
       extra_record: Mapping[str, object] | None = None,
   ) -> WorkflowOutcome:
     """Bind the instance, resolve the edges, run the entries in order.
@@ -237,7 +236,6 @@ class Workflow:
       resume: Honor terminal markers (skip finished entries). ``False`` runs
         everything fresh, overwriting — the one-off CLI shape, where
         re-running a command means re-running it.
-      model: The agent model alias, recorded on the shards.
       extra_record: Extra facts merged into every entry's records (e.g. the
         instance's run provenance).
 
@@ -303,7 +301,6 @@ class Workflow:
           retries=entry.retries,
           resume=resume,
           run_ts=run_ts,
-          model=model,
           extra_mounts=staged,
           extra_record=extra_record,
       )

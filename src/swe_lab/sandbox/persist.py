@@ -60,7 +60,11 @@ class AttemptRecord:
     status: The engine ``RunStatus`` value the run ended with.
     tier: The persistence tier — always ``formal`` here (debug never persists).
     backend: The sandbox backend name the run used.
-    model: The agent model alias (empty for a grading-only run).
+    model: The agent model alias, when a caller records one. **Nothing
+      in-tree sets it**: a model is a per-task fact (one entry runs an agent,
+      the next grades and has no model at all), so no workflow-level value
+      could be right, and the workflow layer no longer carries one. Left
+      settable for a caller building records itself (``new_record``).
     artifact_keys: Object name → its full store key (filled by :func:`persist`).
     metrics: Scalar metrics from the run.
     extra: Any other run facts (e.g. ``is_empty_patch``, an error repr).
