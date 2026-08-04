@@ -562,3 +562,54 @@ the flake-absorption trigger survives as `UnitTestEvalTask.should_retry`
 - **Task-level `attempts`/`flaky` reach reports differently** — sweeps that
   read verdict-level flakiness must read record-level; called out for the
   downstream large-run pass this precedes.
+
+---
+
+## Result (2026-08-03)
+
+Landed as five commits: the `SandboxConfig` split, late binding, per-attempt
+sandbox synthesis, the eval/rollout contract change + retirement, and the
+registry. All of §§1–5 and §7 shipped as designed. What differs from the design
+above, and why:
+
+- **`Verdict.attempts` / `flaky` are deleted, not reduced to constants.** §7
+  said "reduce to constants at verdict level"; a field that can only hold one
+  value reads as data and invites exactly the confusion the change is meant to
+  end. It also said `run_task` would write a derived `flaky` into the final
+  record — it does not: the runner is generic and cannot judge "resolved". The
+  evidence is the attempt sequence the store already keeps (`a0` with
+  `eval.resolved = 0`, `a1` with `1`), and the CLI prints `attempts` / `flaky`
+  from the task run's own report, so both summaries keep their keys.
+- **A task with an `inputs_builder` may declare an input nothing produces.**
+  §5's three-supplier table implied this; phase A had to be taught it, or every
+  standalone task would be refused as a dangling edge. An unproduced name with
+  a builder present is left unbound and verified in-session; a name that *is*
+  produced still binds by edge, and then the builder's collision check has the
+  last word — the "must set `inputs_builder=None`" rule, enforced where the
+  plan says.
+- **`CodingAgentTask.inputs_builder` needs `field(..., kw_only=True)`.** The
+  sketch redeclares the base field plainly, which silently drops its
+  keyword-only status and orders a defaulted field ahead of `harness`
+  (a `TypeError` at class creation).
+- **`--pull` is filtered per backend at the CLI seam.** The config split made
+  `build_sandbox("ghjob", …, pull=True)` a loud error, which would have broken
+  `eval --backend ghjob` in CI, where the flag is never passed and its default
+  still travels. `cli/sandbox_wiring.invocation_config` passes `pull` only to a
+  config that declares it: a flag's *default* is not an instruction. The
+  override grammar (task 23) subsumes this.
+- **`--persist` decides *where*, not whether.** Task-level running always
+  persists (that is what makes every attempt evidence, and how edges resolve),
+  so a run without `--persist` writes to a throwaway store under its own output
+  directory rather than to the shared T1 store. Both CLIs keep their flag and
+  their `persisted` summary key.
+- **The record keeps the facts the CLI used to write into it.** The diff-extract
+  observer now reports `patch_is_empty` / `patch_binary_stripped` as metrics,
+  because `run_task` owns the record and a post-run fact can no longer be
+  injected by the command. The eval verdict's scalar summary entries
+  (`output_state`, `first_missing`) are no longer copied into the shard —
+  they are derivable from the persisted `output.json` artifact.
+- **§6's CLI plumbing landed on hand-built workflows, not on `build_workflow`.**
+  The registry ships and is tested, but the two commands still construct their
+  own entries, because a registered definition bakes its harness and the
+  invocation cannot yet adjust it. Moving them onto `build_workflow` is the
+  first thing the override grammar buys (task 23).

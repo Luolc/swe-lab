@@ -110,3 +110,16 @@ derivation to own.
   ()` is what makes that continue to mean something.
 - No behaviour changes for any existing run: the concrete derivations are
   byte-identical to the ones deleted from `SweBenchProVerdict`.
+
+## Amendment (2026-08-03): the derivations this ADR was written for are down to one
+
+The example throughout is `flaky` — a derivation over `attempts`, which
+[ADR-0005](ADR-0005-flaky-eval-retry.md) had put on the verdict.
+[ADR-0008](ADR-0008-retry-moves-to-the-task.md) moves retrying to the task
+level and deletes `attempts`, `flaky` and `with_attempts`: one verdict grades
+one tree, and how many attempts it took is the runner's fact.
+
+The decision itself is unchanged and still right. `resolved` is a derivation
+with a rule ("`score >= 1.0`") that every dataset must get identically, which
+a Protocol can state but not enforce; that is the whole argument, and one
+member is enough to carry it.

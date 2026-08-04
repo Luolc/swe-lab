@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0008](ADR-0008-retry-moves-to-the-task.md)
+
+The *reasoning* below stands unchanged — why a failed eval is re-run, why that
+is not pass@K, and what it costs. What ADR-0008 changes is the **level** it
+runs at: a fresh sandbox per attempt, persisted separately, instead of a loop
+inside one session. Read this for the why, ADR-0008 for the mechanism.
 
 ## Date
 
