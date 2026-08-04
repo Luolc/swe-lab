@@ -409,6 +409,27 @@ build_workflow(name, *, store, sweep_id, rollout_id) -> Workflow
   `inputs` as a field — **caller-input values move to
   `execute(instance, inputs={name: Mount}, …)`** (they are run-time values;
   the reserved `"inputs"` producer semantics are unchanged).
+
+  **Three suppliers, one conflict rule.** With the builder added, an input
+  can come from three places, and they are not redundant — each is the
+  natural channel for a different *source of the bytes*:
+
+  | supplier | the bytes come from | example |
+  |---|---|---|
+  | workflow edge | produced inside this run | rollout's `patch.diff` → eval |
+  | caller `inputs` at `execute` | held by the invoker at run time | `--patch-file`, `--gold` sugar in the CLI |
+  | `inputs_builder` | derivable from (instance, live sandbox) — part of the static definition | the default prompt; `gold_patch` in a registered self-check workflow |
+
+  Conflicts stay pairwise-loud, no new rule needed: edge vs caller inputs is
+  ordinary producer ambiguity (bind-time, explicit binding resolves);
+  builder vs either is the §3.1 in-session collision error. One consequence
+  worth a good error message: a chain that supplies `prompt.md` by edge must
+  set the coding task's `inputs_builder=None` — the default builder would
+  collide, on purpose, rather than silently losing to the edge. Gold grading
+  legitimately exists in two flavors because the caller differs: the CLI's
+  `--gold` feeds caller `inputs` (invocation-held), while a *registered*
+  golden-verify workflow bakes `inputs_builder=gold_patch` (definition-held,
+  what `verify.py` uses).
 - **Validation splits by what each phase can know.** At declaration
   (registry/`Workflow` construction): key uniqueness and shape, binding
   syntax, bindings against the *static* `input_schema()` (a dead binding is
