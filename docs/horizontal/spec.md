@@ -413,10 +413,16 @@ is refactored *into* this model.
 `rollout`/`evaluation` `__main__` packages dissolve into
 
 ```sh
-python -m swe_lab rollout <instance_id> [--grade] [--model] [--timeout] [--no-pull]
-python -m swe_lab eval    <instance_id> (--gold | --patch-file <p>) [--no-network]
+python -m swe_lab run <workflow> <instance_id> [--backend] [--no-pull] [--persist]
+python -m swe_lab run --list                                # registered workflows
 python -m swe_lab.datasets.swebench_pro.verify  --shard i/N [--aggregate]   # golden sweep
 ```
+
+A workflow is a **registered definition** (`rollout`, `unit_test`,
+`rollout_and_unit_test`, `gold_unit_test`), and any field of it is adjusted for
+one invocation by naming its path — `--rollout.harness.model=opus`,
+`--unit_test.retries=2` — rather than by a flag per knob. A workflow whose
+input the invoker holds takes it with `--input ./candidate.diff`.
 
 **Growth guard:** the dispatcher (`swe_lab/__main__.py`) is a table only; every
 subcommand lives in its own module (`swe_lab/cli/rollout.py`, `cli/eval.py`, …).

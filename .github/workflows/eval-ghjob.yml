@@ -79,18 +79,18 @@ jobs:
 
       - name: Grade on the ghjob backend
         run: |
-          uv run python -m swe_lab eval \
+          uv run python -m swe_lab run \
+            ${{ inputs.gold && 'gold_unit_test' || 'unit_test' }} \
             "${{ inputs.instance_id }}" \
             --backend ghjob \
-            ${{ inputs.gold && '--gold' || '' }} \
-            --timeout "${{ inputs.timeout }}"
+            --unit_test.timeout "${{ inputs.timeout }}"
 
       # The verdict says pass/fail; the log says how long each test took, which
       # is the whole question when an instance is suspected of racing a timeout.
       - name: Test durations (jest --verbose lines)
         if: always()
         run: |
-          find .cache/eval_workspaces -name 'stdout.log' -exec sh -c '
+          find .cache/runs -name 'stdout.log' -exec sh -c '
             echo "--- $1 ---"
             grep -E "^\s+(✓|✗|√|×)|Tests:|Time:" "$1" || true
           ' _ {} \; || true
@@ -100,5 +100,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ghjob-eval-workspace
-          path: .cache/eval_workspaces/**
+          path: .cache/runs/**
           if-no-files-found: warn
