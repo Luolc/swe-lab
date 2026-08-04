@@ -483,7 +483,8 @@ the override grammar reserves the bare-name form for it.
 swe-lab run <workflow> <instance_id>
     --dataset swebench_pro --sweep adhoc --rollout-id 0
     --backend host --pull/--no-pull --timeout-scale?          (invocation)
-    --model … --capture … --bare                              (RunOptions)
+    --model … --capture … --bare        (sugar over dotted overrides)
+    --<entry>.<field-path>=value        (the general override grammar)
     --input patch.diff=@candidate.diff | --gold               (caller inputs)
     --resume/--no-resume (default: no-resume — a re-run re-runs)
     --persist/--no-persist (off → throwaway FilesystemStore under the run dir)
@@ -555,10 +556,9 @@ the flake-absorption trigger survives as `UnitTestEvalTask.should_retry`
   a registry full of workflows is syntax-checked at import, edge-checked on
   first bind. Accepted: instance-derived output schemas make it inherent;
   every failure still precedes any container.
-- **`RunOptions` shape** — the builder argument starts minimal (model,
-  capture, bare, agent_env, proxy) and grows only with real flags; the
-  alternative (baking a harness into a constant definition) freezes model
-  choice into code, which is worse.
+- **The override grammar's coercion table** (str → field type) starts with
+  the primitives + epath.Path and grows only with real needs; an
+  unrepresentable field type simply is not overridable from the CLI.
 - **Deleting the wrappers is breaking** for any downstream caller; the
   migration story is one page (construct a workflow, or call
   `Task.execute`), and prototyping was the agreed bar for compat.
