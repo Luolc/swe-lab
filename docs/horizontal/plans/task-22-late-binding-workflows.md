@@ -57,9 +57,10 @@ side* checkable at declaration time (§5).
 @dataclass(kw_only=True)
 class Task(ABC):
   """A pure declaration: configuration fields only. One execute = one run
-  against one (sandbox, instance) pair; per-run state (a compiled spec, a
-  kept observer reference) is stashed on self during that run — sequential
-  re-execution stays allowed, concurrent does not (unchanged).
+  against one (sandbox, instance) pair. With the in-run retry retired
+  (§7) nothing is stashed on self anymore: hooks derive everything from
+  their arguments, and the validity hooks read typed results back from
+  ``AttemptResult.observers`` — a task is re-executable without caveats.
 
   A dataclass so the base FIELD below is truly inherited — subclasses stop
   redeclaring it; ``kw_only`` exempts it from the positional-ordering rule,
@@ -212,18 +213,40 @@ class UnitTestEvalTask[V: Verdict](Task):
   eval_env: Mapping[str, str] | None = None
   # `retries` is GONE: in-run retry retires (§7); the budget is the entry's.
 
-  def observers(self, instance):
-    # per-run compilation, stashed for mounts()/action() of this run —
-    # observers() is execute's first hook call, so it is the compile site
-    self._spec = instance.unit_test_spec(
+  def _compile(self, instance):
+    # No self-stash: each hook compiles from the instance directly.
+    # Compilation is pure and repeatable by contract (the fixes seam already
+    # promises "compiling twice yields the same thing twice") and cheap (the
+    # auxiliary files are disk-cached), so paying it twice per execute buys
+    # a genuinely stateless task — no lazy assign, no hook-order coupling.
+    return instance.unit_test_spec(
         apply_patch=self.apply_patch, patch_name=self.patch_name
     )
-    self._parse = EvalParseObserver(
-        self._spec.grader, native_outputs=self._spec.native_outputs
+
+  def observers(self, instance):
+    spec = self._compile(instance)
+    return (
+        EvalParseObserver(spec.grader, native_outputs=spec.native_outputs),
     )
-    return (self._parse,)
-  # mounts(instance): spec mounts + entryscript — no placeholder to drop
-  # action(sb, instance): ONE entryscript run — no loop (§7)
+
+  def mounts(self, instance):
+    spec = self._compile(instance)   # same spec, by the purity contract
+    return merge_mounts(
+        dict(spec.mounts),
+        {ENTRYSCRIPT_NAME: Mount(Inline(spec.eval_script.encode()),
+                                 executable=True)},
+    )
+  # action(sb, instance): ONE entryscript run — no loop (§7), no spec needed
+
+  def outputs_valid(self, result):
+    # the verdict is read back from the result's own observers — the very
+    # reason AttemptResult carries them — not from task state
+    parse = next(
+        o for o in result.observers if isinstance(o, EvalParseObserver)
+    )
+    return super().outputs_valid(result) and parse.verdict is not None
+
+  # should_retry: same read-back; unresolved → spend budget
 ```
 
 ### 3.2 The instance contract sheds the patch bytes (kills the placeholder)
