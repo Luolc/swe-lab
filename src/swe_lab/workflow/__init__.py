@@ -11,7 +11,6 @@ names the concrete tasks, which live with their domains:
 """
 
 from .registry import (
-    build_workflow,
     register_workflow,
     registered_workflows,
     workflow_definition,
@@ -51,7 +50,6 @@ __all__ = [
     "WorkflowEntry",
     "WorkflowError",
     "WorkflowOutcome",
-    "build_workflow",
     "read_marker",
     "register_workflow",
     "registered_workflows",
