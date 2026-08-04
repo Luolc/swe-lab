@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 import json
 from pathlib import Path
+import re
 from typing import final, override
 
 import pytest
@@ -44,6 +45,9 @@ from swe_lab.sandbox.observers.diff_extract import RAW_PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 
 runner = CliRunner()
+# Colour is escape sequences *between* characters, so it is stripped before a
+# message is read (see `_message`).
+_ANSI = re.compile("\x1b\\[[0-9;]*m")
 _SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "abc")
 _INSTANCE_ID = "acme__widget-1"
 
@@ -195,14 +199,17 @@ def _run(*args: str):
 def _message(output: str) -> str:
   """Return an error's text, free of the panel it was rendered in.
 
-  Click draws a refusal inside a Rich box and **wraps** it to the terminal,
-  so the words of one message arrive split across lines with border glyphs
-  between them. A test that reads the message has to undo that, or it passes
-  at one terminal width and fails at another (which is exactly how CI found
-  this).
+  Click draws a refusal inside a Rich box: it **wraps** the message to the
+  terminal, draws borders between the lines, and — where colour is on, as in
+  CI but not in a local capture — highlights fragments, which puts escape
+  sequences *inside* words (``--input`` arrives as two coloured runs). A test
+  that reads the message has to undo all of it, or it passes on one machine
+  and fails on another for reasons that have nothing to do with the message.
+  Both halves of that were found by CI rather than here.
   """
-  stripped = "".join(" " if char in "│╭╮╰╯─" else char for char in output)
-  return " ".join(stripped.split())
+  plain = _ANSI.sub("", output)
+  bordered = "".join(" " if char in "│╭╮╰╯─" else char for char in plain)
+  return " ".join(bordered.split()).replace("- -", "--")
 
 
 # ─── discovery ───────────────────────────────────────────────────────────────
@@ -297,9 +304,8 @@ def test_a_workflow_that_needs_an_input_says_which_one(
   _wire(monkeypatch, tmp_path)
   result = _run("unit_test", _INSTANCE_ID)
   assert result.exit_code != 0
-  # One line, because the panel this renders in clips what does not fit — and
-  # what would be clipped is exactly the actionable part. It carries the
-  # input's name, the schema's own description, and the flag.
+  # One line, carrying the input's name, the schema's own description, and
+  # the flag that supplies it.
   message = _message(result.output)
   assert "needs an input you did not supply" in message
   assert "the candidate patch to grade" in message
