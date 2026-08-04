@@ -425,7 +425,7 @@ one invocation by naming its path — `--rollout.harness.model=opus`,
 input the invoker holds takes it with `--input ./candidate.diff`.
 
 **Growth guard:** the dispatcher (`swe_lab/__main__.py`) is a table only; every
-subcommand lives in its own module (`swe_lab/cli/rollout.py`, `cli/eval.py`, …).
+subcommand lives in its own module (`swe_lab/cli/run.py`, `cli/promote.py`, …).
 Future subcommands (`annotate`, `audit`, `promote`) are new modules, never
 additions to a growing single file.
 
@@ -439,7 +439,8 @@ period. Rationale: keeping everything under `core/` would reduce the repo to a
 ```
 src/swe_lab/
   __main__.py     dispatcher table only → cli/<subcommand>.py modules
-  cli/            one module per subcommand (rollout, eval, verify, promote, …)
+  cli/            one module per subcommand (run, promote, …) + the override
+                  grammar `run` resolves against registered workflows
   sandbox/        SandboxManager, Sandbox, SandboxSpec, Mounts, SandboxObserver,
                   CompositeObserver, backends (A-host, A-ghjob), shared observers
                   (setup, diff-extract, persist, metrics, logging)
