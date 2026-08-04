@@ -8,7 +8,7 @@ back, and that a registered name really does run end to end — here over the
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, final, override
 
@@ -24,6 +24,7 @@ from swe_lab.sandbox import (
     Contribution,
     ExecResult,
     FilesystemStore,
+    SandboxConfig,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
@@ -35,11 +36,26 @@ from swe_lab.workflow import (
     register_workflow,
     registered_workflows,
     Task,
+    Workflow,
     WorkflowDef,
     WorkflowEntry,
     WorkflowError,
 )
 import swe_lab.workflow.definitions as definitions
+
+
+def _on(wf: Workflow, sandbox: SandboxConfig) -> Workflow:
+  """Run every entry of ``wf`` on ``sandbox`` — entries declare where they run.
+
+  Args:
+    wf: The workflow to place.
+    sandbox: The config (and therefore the backend) every entry gets.
+
+  Returns:
+    A copy whose entries all declare ``sandbox``.
+  """
+  return replace(wf, entries=[replace(e, sandbox=sandbox) for e in wf.entries])
+
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
@@ -225,10 +241,8 @@ def test_a_registered_definition_runs_by_name(tmp_path: Path):
       sweep_id="sw",
       rollout_id=0,
   )
-  outcome = workflow.execute(
+  outcome = _on(workflow, FakeSandboxConfig()).execute(
       _Instance(),
-      backend="fake",
-      sandbox=FakeSandboxConfig(),
       output_dir=tmp_path / "out",
       run_ts="ts-0",
   )
@@ -244,12 +258,11 @@ def test_a_definition_is_reusable_across_instances(tmp_path: Path):
   )
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   for index, instance_id in enumerate(["one", "two"]):
-    outcome = build_workflow(
-        "test_reuse", store=store, sweep_id="sw", rollout_id=0
+    outcome = _on(
+        build_workflow("test_reuse", store=store, sweep_id="sw", rollout_id=0),
+        FakeSandboxConfig(),
     ).execute(
         _Instance(instance_id=instance_id),
-        backend="fake",
-        sandbox=FakeSandboxConfig(),
         output_dir=tmp_path / f"out{index}",
         run_ts="ts-0",
     )

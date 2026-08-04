@@ -8,7 +8,9 @@ doubles live in :mod:`swe_lab.sandbox.testing`.
 """
 
 from .backends import (
+    backend_of,
     build_sandbox,
+    build_sandbox_config,
     DockerHostSandbox,
     DockerHostSandboxConfig,
     GhjobSandboxConfig,
@@ -82,7 +84,9 @@ __all__ = [
     "SandboxSpec",
     "Store",
     "WORKSPACE_ENV",
+    "backend_of",
     "build_sandbox",
+    "build_sandbox_config",
     "build_store",
     "index",
     "merge_mounts",

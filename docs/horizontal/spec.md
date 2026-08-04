@@ -417,7 +417,8 @@ is refactored *into* this model.
 `rollout`/`evaluation` `__main__` packages dissolve into
 
 ```sh
-python -m swe_lab run <workflow> <instance_id> [--backend] [--no-pull] [--persist]
+python -m swe_lab run <workflow> <instance_id> [--persist]
+#   where it runs is per-entry: --<entry>.sandbox=<backend>
 python -m swe_lab run --list                                # registered workflows
 python -m swe_lab.datasets.swebench_pro.verify  --shard i/N [--aggregate]   # golden sweep
 ```

@@ -90,7 +90,9 @@ jobs:
           uv run python -m swe_lab run \
             ${{ inputs.grade && 'rollout_and_unit_test' || 'rollout' }} \
             "${{ inputs.instance_id }}" \
-            --backend ghjob \
+            --rollout.sandbox=ghjob \
+            --rollout.sandbox.pass_env=CLAUDE_CODE_OAUTH_TOKEN \
+            --unit_test.sandbox=ghjob \
             --rollout.harness.model="${{ inputs.model }}" \
             --rollout.timeout=3000
 

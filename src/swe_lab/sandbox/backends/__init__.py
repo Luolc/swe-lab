@@ -39,7 +39,9 @@ __all__ = [
     "HostMetricsObserver",
     "SandboxConfig",
     "SandboxFactory",
+    "backend_of",
     "build_sandbox",
+    "build_sandbox_config",
     "register_sandbox",
     "registered_backends",
     "sandbox_config_type",
@@ -164,6 +166,52 @@ def sandbox_config_type(name: str) -> type[SandboxConfig]:
     The config class the backend consumes.
   """
   return _lookup(name)[1]
+
+
+def build_sandbox_config(name: str) -> SandboxConfig:
+  """Return a default instance of ``name``'s config class.
+
+  The registry hook a CLI override uses to swap a whole config by backend
+  name (``--rollout.sandbox=ghjob``), exactly as ``build_harness`` swaps an
+  agent. Fields are that class's defaults: a swap replaces, it does not merge.
+
+  Args:
+    name: The registered backend name.
+
+  Returns:
+    The backend's config, at its defaults. An unknown name raises
+    ``SandboxError`` from the lookup.
+  """
+  return _lookup(name)[1]()
+
+
+def backend_of(config: SandboxConfig) -> str:
+  """Return the backend name whose factory consumes this config.
+
+  A config *is* the backend choice — ``GhjobSandboxConfig`` can only mean the
+  job backend — so nothing has to carry the name alongside it.
+
+  Args:
+    config: The config to resolve.
+
+  Returns:
+    The registered backend name.
+
+  Raises:
+    SandboxError: If no registered backend consumes this config type.
+  """
+  declared = type(config)
+  for name, (_, config_type) in _REGISTRY.items():
+    if config_type is declared:
+      return name
+  # A downstream subclass of a registered config runs on that backend.
+  for name, (_, config_type) in _REGISTRY.items():
+    if isinstance(config, config_type) and config_type is not SandboxConfig:
+      return name
+  raise SandboxError(
+      f"no registered backend consumes {declared.__name__};"
+      f" registered: {registered_backends()}"
+  )
 
 
 def build_sandbox(name: str, spec: SandboxSpec, **settings: Any) -> Sandbox:

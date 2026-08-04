@@ -13,7 +13,7 @@ written last.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass
 from enum import StrEnum
 import json
 import math
@@ -71,14 +71,12 @@ class WorkflowEntry:
     timeout: Seconds before each of this entry's attempts is killed —
       the budget is the entry's own (an agent run and an eval have no reason
       to share one), so there is no workflow-wide value to fall back to.
-    sandbox: This entry's **run semantics**: the base ``SandboxConfig`` every
-      backend must honor or refuse (an eval declares ``network=False``, an
-      agent declares the secret it inherits). Statically declarable, so a
-      shipped workflow definition can carry it. Which backend realizes those
-      semantics — and that backend's own mechanics — comes from the
-      invocation, and the runner merges the two. An entry MAY declare a
-      backend's own config subclass; that binds the workflow to the backend,
-      and an invocation on another one is then refused.
+    sandbox: How this entry runs. Its **class is the backend** — declare the
+      one you most expect to run on. Used exactly as declared; nothing merges
+      anything into it. An invocation swaps it whole
+      (``--<key>.sandbox=ghjob``) or edits a field
+      (``--<key>.sandbox.network=false``), like ``harness``. Only the
+      per-attempt workspace is the runner's.
     inputs: Explicit edge bindings, each ``"<producer key>/<input name>"``
       (``"rollout/patch.diff"``). Only needed where name matching alone is
       ambiguous (two earlier producers of one name); a binding that matching
@@ -198,8 +196,6 @@ class Workflow:
       self,
       instance: TaskInstance[Any],
       *,
-      backend: str,
-      sandbox: SandboxConfig,
       inputs: Mapping[str, Mount] | None = None,
       output_dir: epath.PathLike,
       run_ts: str,
@@ -220,10 +216,6 @@ class Workflow:
 
     Args:
       instance: The instance every entry runs against.
-      backend: The registered sandbox backend this run builds on.
-      sandbox: That backend's config for this run — the **prototype**: the
-        invocation's own mechanics (an image pull, a remote pool), onto which
-        each entry's declared semantics are merged.
       inputs: Caller-provided artifacts, input name → mount — how a value the
         caller already holds (a gold patch, a candidate file) enters the same
         channel a workflow edge uses. In edge resolution they are a producer
@@ -245,8 +237,7 @@ class Workflow:
     Raises:
       WorkflowError: If the bound workflow can never run — an input nothing
         produces, one that several produce unbound, a binding to a
-        non-producer, a caller input no entry consumes, or an entry whose
-        declared sandbox config the invocation's backend cannot realize.
+        non-producer, or a caller input no entry consumes.
     """
     provided = dict(inputs or {})
     edges = _resolve_edges(self.entries, instance, provided=set(provided))
@@ -259,11 +250,6 @@ class Workflow:
     dead = sorted(provided.keys() - consumed)
     if dead:
       raise WorkflowError(f"workflow input(s) {dead} are consumed by no entry")
-    # Every entry's config is synthesized up front: a mismatch on the last
-    # entry must not surface after the first one has already burned a
-    # container.
-    configs = {e.key: _synthesize_config(e, sandbox) for e in self.entries}
-
     output_dir = epath.Path(output_dir)
     outcomes: list[EntryOutcome] = []
     runs: dict[str, TaskRunOutcome] = {}
@@ -294,8 +280,7 @@ class Workflow:
           instance,
           store=self.store,
           address=self._address(entry),
-          backend=backend,
-          sandbox=configs[entry.key],
+          sandbox=entry.sandbox,
           output_dir=output_dir / entry.key,
           timeout=entry.timeout,
           retries=entry.retries,
@@ -571,44 +556,6 @@ def _resolve_edges(
     ):
       produced.setdefault(schema.name, []).append(entry.key)
   return edges
-
-
-def _synthesize_config(
-    entry: WorkflowEntry, prototype: SandboxConfig
-) -> SandboxConfig:
-  """Merge an entry's declared sandbox onto the invocation's prototype.
-
-  Two layers meet here (the workspace is a third, added per attempt by
-  ``run_task``): the invocation brings the backend and its mechanics, the
-  entry brings the run semantics it declared, and the entry's win — they are
-  what the workflow *means* (an eval that declared ``network=False`` does not
-  get the network back because someone ran it differently). An entry that
-  declared a backend's own config subclass wins on that subclass's fields
-  too, and only that backend can run it.
-
-  Args:
-    entry: The entry whose declaration is merged in.
-    prototype: The invocation's config for this run.
-
-  Returns:
-    The config this entry's attempts are built from.
-
-  Raises:
-    WorkflowError: If the entry declared a backend config the invocation's
-      prototype is not an instance of.
-  """
-  declared = type(entry.sandbox)
-  if not isinstance(prototype, declared):
-    raise WorkflowError(
-        f"entry {entry.key!r} declares {declared.__name__}, which this run's"
-        f" {type(prototype).__name__} cannot realize"
-    )
-  overrides: dict[str, Any] = {
-      f.name: getattr(entry.sandbox, f.name)
-      for f in fields(declared)
-      if f.name != "workspace"
-  }
-  return replace(prototype, **overrides)
 
 
 def _known_empty(mount: Mount) -> bool:
