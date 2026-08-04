@@ -23,14 +23,12 @@ from swe_lab.sandbox import (
     Contribution,
     ExecResult,
     FilesystemStore,
-    Sandbox,
-    SandboxError,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
     Store,
 )
-from swe_lab.sandbox.testing import FakeSandbox
+from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.workflow import (
     AttemptResult,
     read_marker,
@@ -131,25 +129,6 @@ class _FlakyProducer(Task):
     )
 
 
-def _factory(tmp_path: Path, *, up_errors: int = 0):
-  """Return a fresh-workspace FakeSandbox factory; first N calls fail up."""
-  built: list[FakeSandbox] = []
-
-  def build() -> Sandbox:
-    sandbox = FakeSandbox(
-        spec=SPEC,
-        workspace=epath.Path(tmp_path / f"ws{len(built)}"),
-        up_error=(
-            SandboxError("infra down") if len(built) < up_errors else None
-        ),
-    )
-    built.append(sandbox)
-    return sandbox
-
-  build.built = built  # pyright: ignore[reportFunctionMemberAccess]
-  return build
-
-
 def _store(tmp_path: Path) -> Store:
   return FilesystemStore(epath.Path(tmp_path / "store"))
 
@@ -163,25 +142,25 @@ def _run(
     up_errors: int = 0,
 ):
   store = store if store is not None else _store(tmp_path)
-  factory = _factory(tmp_path, up_errors=up_errors)
+  config = FakeSandboxConfig(up_errors=up_errors)
   outcome = run_task(
       task,
       _Instance(),
       store=store,
       address=ADDRESS,
-      sandbox_factory=factory,
+      backend="fake",
+      sandbox=config,
       output_dir=tmp_path / "out",
       timeout=10.0,
       retries=retries,
       run_ts="ts-0",
-      backend="fake",
   )
-  return outcome, store, factory
+  return outcome, store, config
 
 
 def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
   task = _FlakyProducer()
-  outcome, store, factory = _run(tmp_path, task)
+  outcome, store, config = _run(tmp_path, task)
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   assert (outcome.resumed, outcome.attempts) == (False, 1)
   # the attempt's artifact landed under the task-keyed prefix
@@ -190,7 +169,7 @@ def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
       "sw/acme__widget-1/r0/probe/a0/out.txt"
   )
   assert store.get_bytes("sw/acme__widget-1/r0/probe/a0/out.txt") == b"OUT"
-  assert len(factory.built) == 1  # pyright: ignore[reportFunctionMemberAccess]
+  assert len(config.built) == 1
   marker = read_marker(store, ADDRESS, "acme__widget-1")
   assert marker is not None and marker.outcome is TaskOutcome.SUCCEEDED
   assert marker.attempts == 1
@@ -207,12 +186,11 @@ def test_a_missing_required_output_fails_the_attempt(tmp_path: Path):
 
 def test_an_invalid_attempt_retries_in_a_fresh_sandbox(tmp_path: Path):
   task = _FlakyProducer(produce_from=1)
-  outcome, store, factory = _run(tmp_path, task, retries=1)
+  outcome, store, config = _run(tmp_path, task, retries=1)
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   assert outcome.attempts == 2
-  built = factory.built  # pyright: ignore[reportFunctionMemberAccess]
-  assert len(built) == 2  # a fresh sandbox per attempt
-  assert built[0].workspace != built[1].workspace
+  assert len(config.built) == 2  # a fresh sandbox per attempt
+  assert config.built[0].workspace != config.built[1].workspace
   # every attempt persisted, the failing one included — it is the evidence
   shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
   assert [(s.attempt, s.extra["outputs_valid"]) for s in shards] == [
@@ -238,10 +216,10 @@ def test_infra_failure_spends_the_same_budget(tmp_path: Path):
 
 def test_budget_exhaustion_is_terminal_failure_not_absence(tmp_path: Path):
   task = _FlakyProducer(produce_from=99)
-  outcome, store, factory = _run(tmp_path, task, retries=2)
+  outcome, store, config = _run(tmp_path, task, retries=2)
   assert outcome.outcome is TaskOutcome.FAILED
   assert outcome.attempts == 3
-  assert len(factory.built) == 3  # pyright: ignore[reportFunctionMemberAccess]
+  assert len(config.built) == 3
   marker = read_marker(store, ADDRESS, "acme__widget-1")
   assert marker is not None and marker.outcome is TaskOutcome.FAILED
 
@@ -287,19 +265,19 @@ def test_resume_skips_a_succeeded_task_entirely(tmp_path: Path):
   assert first.outcome is TaskOutcome.SUCCEEDED
 
   # a later process re-enters: no sandbox is built, the record is read back
-  def exploding_factory() -> Sandbox:
-    raise AssertionError("resume must not build a sandbox")
-
+  config = FakeSandboxConfig()
   resumed = run_task(
       _FlakyProducer(),
       _Instance(),
       store=store,
       address=ADDRESS,
-      sandbox_factory=exploding_factory,
+      backend="fake",
+      sandbox=config,
       output_dir=tmp_path / "out2",
       timeout=10.0,
       run_ts="ts-1",
   )
+  assert config.built == []  # resume never pays for a container
   assert resumed.resumed is True
   assert resumed.outcome is TaskOutcome.SUCCEEDED
   assert resumed.record is not None
@@ -314,20 +292,20 @@ def test_resume_never_reruns_a_terminally_failed_task(tmp_path: Path):
   first, store, _ = _run(tmp_path, task)
   assert first.outcome is TaskOutcome.FAILED
 
-  def exploding_factory() -> Sandbox:
-    raise AssertionError("a terminal failure must not burn budget again")
-
+  config = FakeSandboxConfig()
   resumed = run_task(
       _FlakyProducer(produce_from=99),
       _Instance(),
       store=store,
       address=ADDRESS,
-      sandbox_factory=exploding_factory,
+      backend="fake",
+      sandbox=config,
       output_dir=tmp_path / "out2",
       timeout=10.0,
       retries=5,
       run_ts="ts-1",
   )
+  assert config.built == []  # a terminal failure never burns budget again
   assert resumed.resumed is True
   assert resumed.outcome is TaskOutcome.FAILED
 
@@ -351,7 +329,8 @@ def test_dead_attempts_without_a_marker_are_overwritten(tmp_path: Path):
       _Instance(),
       store=store,
       address=ADDRESS,
-      sandbox_factory=_factory(tmp_path / "second", up_errors=0),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
       output_dir=tmp_path / "out2",
       timeout=10.0,
       run_ts="ts-1",
@@ -368,7 +347,8 @@ def test_a_negative_budget_is_refused(tmp_path: Path):
         _Instance(),
         store=_store(tmp_path),
         address=ADDRESS,
-        sandbox_factory=_factory(tmp_path),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
         output_dir=tmp_path / "out",
         timeout=10.0,
         retries=-1,

@@ -22,17 +22,18 @@ from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
+    DockerHostSandboxConfig,
     ExecResult,
     FilesystemStore,
     Inline,
     Mount,
-    Sandbox,
+    SandboxConfig,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
     Store,
 )
-from swe_lab.sandbox.testing import FakeSandbox
+from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.workflow import (
     EntryStatus,
     read_marker,
@@ -142,22 +143,6 @@ class _Consumer(Task):
     return sb.run_script("main.sh", timeout=timeout)
 
 
-def _factory(base: Path):
-  count = 0
-
-  def build() -> Sandbox:
-    nonlocal count
-    count += 1
-    return FakeSandbox(spec=SPEC, workspace=epath.Path(base / f"ws{count}"))
-
-  return build
-
-
-def _exploding_factory() -> Sandbox:
-  """Prove a bind-time refusal costs no container: building one is a bug."""
-  raise AssertionError("a refused workflow must not build a sandbox")
-
-
 def _store(tmp_path: Path) -> Store:
   return FilesystemStore(epath.Path(tmp_path / "store"))
 
@@ -171,13 +156,11 @@ def _chain(tmp_path: Path, **consumer_kwargs: object) -> Workflow:
           WorkflowEntry(
               "producer",
               _Producer(),
-              sandbox_factory=_factory(tmp_path / "p"),
               timeout=10.0,
           ),
           WorkflowEntry(
               "consumer",
               _Consumer(),
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=10.0,
               **consumer_kwargs,  # pyright: ignore[reportArgumentType]
           ),
@@ -212,13 +195,11 @@ def test_duplicate_keys_are_refused(tmp_path: Path):
             WorkflowEntry(
                 "same",
                 _Producer(),
-                sandbox_factory=_factory(tmp_path),
                 timeout=10.0,
             ),
             WorkflowEntry(
                 "same",
                 _Consumer(),
-                sandbox_factory=_factory(tmp_path),
                 timeout=10.0,
             ),
         ],
@@ -239,13 +220,18 @@ def test_an_unproduced_input_is_refused_at_bind_time(tmp_path: Path):
           WorkflowEntry(
               "consumer",
               _Consumer(),
-              sandbox_factory=_exploding_factory,
               timeout=10.0,
           )
       ],
   )
   with pytest.raises(WorkflowError, match="nothing produces"):
-    _ = wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-0")
+    _ = wf.execute(
+        _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out",
+        run_ts="ts-0",
+    )
 
 
 def test_two_producers_of_one_name_demand_an_explicit_binding(tmp_path: Path):
@@ -258,13 +244,11 @@ def test_two_producers_of_one_name_demand_an_explicit_binding(tmp_path: Path):
             WorkflowEntry(
                 "one",
                 _Producer(),
-                sandbox_factory=_factory(tmp_path / "1"),
                 timeout=10.0,
             ),
             WorkflowEntry(
                 "two",
                 _Producer(content=b"FROM TWO"),
-                sandbox_factory=_factory(tmp_path / "2"),
                 timeout=10.0,
             ),
             consumer_entry,
@@ -275,13 +259,16 @@ def test_two_producers_of_one_name_demand_an_explicit_binding(tmp_path: Path):
       WorkflowEntry(
           "consumer",
           _Consumer(),
-          sandbox_factory=_exploding_factory,
           timeout=10.0,
       )
   )
   with pytest.raises(WorkflowError, match="bind it explicitly"):
     _ = ambiguous.execute(
-        _Instance(), output_dir=tmp_path / "out", run_ts="ts-0"
+        _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out",
+        run_ts="ts-0",
     )
   # the one-line fix the error asks for — and it picks the bound producer:
   consumer = _Consumer()
@@ -289,11 +276,16 @@ def test_two_producers_of_one_name_demand_an_explicit_binding(tmp_path: Path):
       WorkflowEntry(
           "consumer",
           consumer,
-          sandbox_factory=_factory(tmp_path / "c"),
           timeout=10.0,
           inputs=("two/thing.txt",),
       )
-  ).execute(_Instance(), output_dir=tmp_path / "out2", run_ts="ts-0")
+  ).execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out2",
+      run_ts="ts-0",
+  )
   assert outcome.succeeded is True
   assert consumer.seen == [b"FROM TWO"]
 
@@ -301,7 +293,86 @@ def test_two_producers_of_one_name_demand_an_explicit_binding(tmp_path: Path):
 def test_a_binding_to_a_non_producer_is_refused_at_bind_time(tmp_path: Path):
   wf = _chain(tmp_path, inputs=("ghost/thing.txt",))
   with pytest.raises(WorkflowError, match="not an earlier producer"):
-    _ = wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-0")
+    _ = wf.execute(
+        _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out",
+        run_ts="ts-0",
+    )
+
+
+# ─── the sandbox: declared semantics, synthesized per attempt ────────────────
+
+
+def test_an_entrys_declared_semantics_win_over_the_invocation(tmp_path: Path):
+  # The entry declares what the workflow MEANS (an offline eval stays
+  # offline); the invocation brings the backend and its mechanics; the
+  # runner adds the one thing neither may set — the attempt's own workspace.
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          WorkflowEntry(
+              "producer",
+              _Producer(),
+              timeout=10.0,
+              sandbox=SandboxConfig(network=False, env={"EVAL": "1"}),
+          )
+      ],
+  )
+  config = FakeSandboxConfig(network=True)
+  outcome = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=config,
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
+  assert outcome.succeeded is True
+  built = config.built[0].config
+  assert isinstance(built, FakeSandboxConfig)
+  assert (built.network, dict(built.env)) == (False, {"EVAL": "1"})
+  assert built.workspace == epath.Path(tmp_path / "out/producer/ws/a0")
+
+
+def test_an_entry_bound_to_one_backend_refuses_another(tmp_path: Path):
+  # Declaring a backend's own config binds the workflow to that backend —
+  # its own trade, and the mismatch is refused before anything runs.
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          WorkflowEntry(
+              "producer",
+              _Producer(),
+              timeout=10.0,
+              sandbox=DockerHostSandboxConfig(pull=False),
+          )
+      ],
+  )
+  config = FakeSandboxConfig()
+  with pytest.raises(WorkflowError, match="cannot realize"):
+    _ = wf.execute(
+        _Instance(),
+        backend="fake",
+        sandbox=config,
+        output_dir=tmp_path / "out",
+        run_ts="ts-0",
+    )
+  assert config.built == []
+
+
+def test_an_entry_may_not_declare_a_workspace(tmp_path: Path):
+  with pytest.raises(WorkflowError, match="workspace"):
+    _ = WorkflowEntry(
+        "producer",
+        _Producer(),
+        timeout=10.0,
+        sandbox=FakeSandboxConfig(workspace=epath.Path(tmp_path)),
+    )
 
 
 # ─── execution (phase B + the gate + the record) ─────────────────────────────
@@ -309,7 +380,13 @@ def test_a_binding_to_a_non_producer_is_refused_at_bind_time(tmp_path: Path):
 
 def test_the_chain_feeds_the_consumer_from_the_store(tmp_path: Path):
   wf = _chain(tmp_path)
-  outcome = wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-0")
+  outcome = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
   assert outcome.succeeded is True
   assert [e.status for e in outcome.entries] == [
       EntryStatus.SUCCEEDED,
@@ -341,18 +418,22 @@ def test_an_empty_upstream_artifact_is_the_distinct_edge_failure(
           WorkflowEntry(
               "producer",
               _Producer(content=b""),  # an empty patch
-              sandbox_factory=_factory(tmp_path / "p"),
               timeout=10.0,
           ),
           WorkflowEntry(
               "consumer",
               _Consumer(),
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=10.0,
           ),
       ],
   )
-  outcome = wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-0")
+  outcome = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
   assert outcome.succeeded is False
   producer, consumer = outcome.entries
   assert producer.status is EntryStatus.SUCCEEDED
@@ -379,7 +460,6 @@ def test_a_failed_entry_blocks_the_rest(tmp_path: Path):
               # simplest failure: a producer whose observer declares a name
               # it never emits — use a consumer with no input to reuse types
               _Producer(content=b"x"),
-              sandbox_factory=_factory(tmp_path / "p"),
               timeout=10.0,
           ),
       ],
@@ -420,19 +500,21 @@ def test_a_failed_entry_blocks_the_rest(tmp_path: Path):
           WorkflowEntry(
               "producer",
               _Failing(),
-              sandbox_factory=_factory(tmp_path / "f"),
               timeout=10.0,
           ),
           WorkflowEntry(
               "consumer",
               _Consumer(),
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=10.0,
           ),
       ],
   )
   outcome = chain.execute(
-      _Instance(), output_dir=tmp_path / "out", run_ts="ts-0"
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
   )
   assert outcome.succeeded is False
   assert [e.status for e in outcome.entries] == [
@@ -457,18 +539,22 @@ def test_reentry_resumes_the_finished_producer_and_does_no_work(
             WorkflowEntry(
                 "producer",
                 _Producer(),
-                sandbox_factory=_factory(tmp_path / "p"),
                 timeout=10.0,
             ),
             WorkflowEntry(
                 "consumer",
                 consumer,
-                sandbox_factory=_factory(tmp_path / "c"),
                 timeout=10.0,
             ),
         ],
     )
-    return wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-1")
+    return wf.execute(
+        _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out",
+        run_ts="ts-1",
+    )
 
   first_consumer = _Consumer()
   first = run(first_consumer)
@@ -494,20 +580,24 @@ def test_resume_false_runs_everything_fresh(tmp_path: Path):
         WorkflowEntry(
             "producer",
             _Producer(),
-            sandbox_factory=_factory(tmp_path / "p"),
             timeout=10.0,
         ),
         WorkflowEntry(
             "consumer",
             consumer,
-            sandbox_factory=_factory(tmp_path / "c"),
             timeout=10.0,
         ),
     ]
 
   first = Workflow(
       store=store, sweep_id="sw", rollout_id=0, entries=entries(consumer)
-  ).execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-1")
+  ).execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-1",
+  )
   assert first.succeeded is True
   rerun_consumer = _Consumer()
   rerun = Workflow(
@@ -520,18 +610,18 @@ def test_resume_false_runs_everything_fresh(tmp_path: Path):
           WorkflowEntry(
               "producer",
               _Producer(),
-              sandbox_factory=_factory(tmp_path / "p2"),
               timeout=10.0,
           ),
           WorkflowEntry(
               "consumer",
               rerun_consumer,
-              sandbox_factory=_factory(tmp_path / "c2"),
               timeout=10.0,
           ),
       ],
   ).execute(
       _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
       output_dir=tmp_path / "out2",
       run_ts="ts-2",
       resume=False,
@@ -558,13 +648,14 @@ def test_a_single_entry_workflow_takes_its_input_from_the_caller(
           WorkflowEntry(
               "consumer",
               consumer,
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=10.0,
           )
       ],
   )
   outcome = wf.execute(
       _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
       inputs={"thing.txt": Mount(Inline(b"FROM CALLER"))},
       output_dir=tmp_path / "out",
       run_ts="ts-0",
@@ -585,13 +676,14 @@ def test_an_empty_caller_input_is_the_same_edge_failure(tmp_path: Path):
           WorkflowEntry(
               "consumer",
               _Consumer(),
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=10.0,
           )
       ],
   )
   outcome = wf.execute(
       _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
       inputs={"thing.txt": Mount(Inline(b""))},
       output_dir=tmp_path / "out",
       run_ts="ts-0",
@@ -610,7 +702,6 @@ def test_an_unconsumed_caller_input_is_refused(tmp_path: Path):
           WorkflowEntry(
               "producer",
               _Producer(),
-              sandbox_factory=_exploding_factory,
               timeout=10.0,
           )
       ],
@@ -618,6 +709,8 @@ def test_an_unconsumed_caller_input_is_refused(tmp_path: Path):
   with pytest.raises(WorkflowError, match="consumed by no entry"):
     _ = wf.execute(
         _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
         inputs={"thing.txt": Mount(Inline(b"NOBODY WANTS ME"))},
         output_dir=tmp_path / "out",
         run_ts="ts-0",
@@ -638,7 +731,6 @@ def test_caller_input_vs_entry_output_is_ambiguity_like_any_other(
             WorkflowEntry(
                 "producer",
                 _Producer(),
-                sandbox_factory=_factory(tmp_path / "p"),
                 timeout=10.0,
             ),
             consumer_entry,
@@ -649,13 +741,14 @@ def test_caller_input_vs_entry_output_is_ambiguity_like_any_other(
       WorkflowEntry(
           "consumer",
           _Consumer(),
-          sandbox_factory=_exploding_factory,
           timeout=10.0,
       )
   )
   with pytest.raises(WorkflowError, match="bind it explicitly"):
     _ = ambiguous.execute(
         _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
         inputs=provided,
         output_dir=tmp_path / "out",
         run_ts="ts-0",
@@ -666,12 +759,13 @@ def test_caller_input_vs_entry_output_is_ambiguity_like_any_other(
       WorkflowEntry(
           "consumer",
           consumer,
-          sandbox_factory=_factory(tmp_path / "c"),
           timeout=10.0,
           inputs=("inputs/thing.txt",),
       )
   ).execute(
       _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
       inputs=provided,
       output_dir=tmp_path / "out2",
       run_ts="ts-0",
@@ -690,7 +784,6 @@ def test_the_inputs_entry_key_is_reserved(tmp_path: Path):
             WorkflowEntry(
                 "inputs",
                 _Producer(),
-                sandbox_factory=_factory(tmp_path),
                 timeout=10.0,
             )
         ],

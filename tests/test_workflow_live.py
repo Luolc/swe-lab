@@ -23,13 +23,12 @@ from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
-    DockerHostSandbox,
+    DockerHostSandboxConfig,
     ExecResult,
     FilesystemStore,
     Inline,
     Mount,
     Mounts,
-    Sandbox,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
@@ -128,19 +127,6 @@ class _ScriptTask(Task):
     return sb.run_script("main.sh", timeout=timeout)
 
 
-def _factory(base: Path):
-  count = 0
-
-  def build() -> Sandbox:
-    nonlocal count
-    count += 1
-    return DockerHostSandbox(
-        spec=SPEC, workspace=epath.Path(base / f"ws{count}")
-    )
-
-  return build
-
-
 @pytest.mark.docker
 def test_live_two_container_chain_through_the_store(tmp_path: Path):
   store = FilesystemStore(epath.Path(tmp_path / "store"))
@@ -166,19 +152,21 @@ def test_live_two_container_chain_through_the_store(tmp_path: Path):
           WorkflowEntry(
               "producer",
               producer,
-              sandbox_factory=_factory(tmp_path / "p"),
               timeout=60.0,
           ),
           WorkflowEntry(
               "consumer",
               consumer,
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=60.0,
           ),
       ],
   )
   outcome = wf.execute(
-      _Instance(), output_dir=tmp_path / "out", run_ts="ts-live"
+      _Instance(),
+      backend="host",
+      sandbox=DockerHostSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-live",
   )
   assert outcome.succeeded is True
   assert [e.status for e in outcome.entries] == [
@@ -222,19 +210,21 @@ def test_live_failed_producer_persists_its_evidence_and_blocks(
           WorkflowEntry(
               "producer",
               broken,
-              sandbox_factory=_factory(tmp_path / "p"),
               timeout=60.0,
           ),
           WorkflowEntry(
               "consumer",
               consumer,
-              sandbox_factory=_factory(tmp_path / "c"),
               timeout=60.0,
           ),
       ],
   )
   outcome = wf.execute(
-      _Instance(), output_dir=tmp_path / "out", run_ts="ts-live"
+      _Instance(),
+      backend="host",
+      sandbox=DockerHostSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-live",
   )
   assert outcome.succeeded is False
   assert [e.status for e in outcome.entries] == [
