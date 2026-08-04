@@ -147,7 +147,12 @@ def instance_prompt(sb, instance) -> Mapping[str, bytes]:
   return {PROMPT_NAME: instance.prompt().encode()}
 
 def gold_patch(sb, instance) -> Mapping[str, bytes]:
-  """UnitTestEvalTask's gold self-check filler (the --gold CLI shape)."""
+  """UnitTestEvalTask's gold self-check filler (the --gold CLI shape).
+
+  Fills the DEFAULT patch name; a task with a custom ``patch_name`` pairs
+  with its own builder — a mismatch trips the only-declared-inputs check,
+  loudly, rather than applying nothing.
+  """
   del sb
   patch = instance.gold_patch()
   if patch is None:
