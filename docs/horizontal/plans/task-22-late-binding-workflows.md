@@ -176,6 +176,10 @@ class SandboxConfig:
   network: bool = True                 # the run may/may not reach the net
   env: Mapping[str, str] = ...         # vars set on each exec
   pass_env: Sequence[str] = ()         # secrets inherited by reference
+  shell: str = "/bin/bash"             # the interpreter run_script uses —
+                                       # every backend execs scripts, so the
+                                       # knob is a run semantic, not a
+                                       # backend mechanic
 
 
 @dataclass(frozen=True)
@@ -183,19 +187,17 @@ class DockerHostSandboxConfig(SandboxConfig):
   """A-host mechanics: how THIS backend realizes a run."""
   workspace: epath.Path | None = None  # bind-mounted host dir
   pull: bool = True
-  shell: str = "/bin/bash"
 
 
 @dataclass(frozen=True)
 class GhjobSandboxConfig(SandboxConfig):
   """A-ghjob mechanics (the job container is already the sandbox)."""
   workspace: epath.Path | None = None
-  shell: str = "/bin/bash"
 ```
 
-Deliberately flat (base + one subclass per backend, `workspace`/`shell`
-repeated) rather than an intermediate `LocalSandboxConfig` — a three-level
-hierarchy for two backends is premature. A downstream backend brings its own
+Deliberately flat (base + one subclass per backend, `workspace` repeated)
+rather than an intermediate `LocalSandboxConfig` — a three-level hierarchy
+for two backends is premature. A downstream backend brings its own
 subclass, Resource-style ownership as before.
 
 ### 4.2 Who supplies what
@@ -204,7 +206,7 @@ subclass, Resource-style ownership as before.
 |---|---|---|
 | **entry** (static definition) | run semantics | base `SandboxConfig` — `network=False` for eval, `pass_env=("CLAUDE_CODE_OAUTH_TOKEN",)` for the agent |
 | **invocation** (CLI flags) | the backend + its mechanics | a backend-config *prototype*: `--backend host --no-pull` → `DockerHostSandboxConfig(pull=False)` |
-| **runner** (per attempt) | the merge + the workspace | `replace(prototype, network=…, env=…, pass_env=…, workspace=output_dir/"ws"/f"a{attempt}")` |
+| **runner** (per attempt) | the merge + the workspace | `replace(prototype, network=…, env=…, pass_env=…, shell=…, workspace=output_dir/"ws"/f"a{attempt}")` |
 
 ```python
 @dataclass(frozen=True)
