@@ -66,9 +66,12 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
   package.
 - `harnesses/claude_code/` — the rollout **harness axis** (the agent run body +
   its trace → `Conversation`); `rollout.py` is the rollout composition.
-- CLI (one entry point): `python -m swe_lab eval <id> (--gold | --patch-file)`,
-  `python -m swe_lab rollout <id> [--grade]`, `python -m swe_lab.datasets.swebench_pro.verify
-  --shard i/N`. A `--backend host|ghjob` selects the sandbox backend.
+- CLI (one entry point): `python -m swe_lab run <workflow> <id>` over the
+  registered workflows (`rollout`, `unit_test`, `rollout_and_unit_test`,
+  `gold_unit_test`), plus `python -m swe_lab.datasets.swebench_pro.verify
+  --shard i/N`. A `--backend host|ghjob` selects the sandbox backend, and
+  `--<entry>.<field-path>=value` adjusts any field of the workflow for that
+  invocation.
 - Golden verification runs via `.github/workflows/verify-golden.yml` →
   `python -m swe_lab.datasets.swebench_pro.verify` (the sharded base-fail + golden-pass sweep).
 

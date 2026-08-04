@@ -171,9 +171,22 @@ def test_proxy_invocation_routes_through_base_url_and_discards_stdout():
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script  # prompt still on stdin
 
 
-def test_proxy_capture_without_base_url_raises():
-  with pytest.raises(SandboxError, match="proxy_base_url"):
-    _ = ClaudeCodeHarness(capture=Capture.PROXY).mounts("/app")
+def test_proxy_capture_needs_no_url_and_composes_its_own_recorder():
+  # The harness runs the recorder itself, so a port is all it needs: the URL
+  # the agent dials defaults to the container→host gateway on that port, and
+  # the recorder is composed FIRST, before the converter that reads its log.
+  harness = ClaudeCodeHarness(capture=Capture.PROXY, proxy_port=20005)
+  assert harness.agent_proxy_url == "http://host.docker.internal:20005"
+  assert [type(o).__name__ for o in harness.observers()] == [
+      "ProxyRecorder",
+      "ConversationObserver",
+      "HarnessOutcomeObserver",
+  ]
+  # …and STREAM composes none of it.
+  assert [type(o).__name__ for o in ClaudeCodeHarness().observers()] == [
+      "ConversationObserver",
+      "HarnessOutcomeObserver",
+  ]
 
 
 def test_proxy_native_outputs_registers_proxy_log():

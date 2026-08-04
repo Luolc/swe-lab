@@ -24,9 +24,15 @@ uv run pre-commit install            # install the hooks (once)
 uv run pytest                        # run the test suite
 uv run pre-commit run --all-files    # ruff + pyink + isort + basedpyright + uv-lock
 
-# The engine CLI — one entry point, per-subcommand modules (cli/<name>.py):
-python -m swe_lab eval <instance_id> --gold                # grade an instance's gold patch
-python -m swe_lab rollout <instance_id>                    # run the container agent loop
+# The engine CLI — one entry point, per-subcommand modules (cli/<name>.py).
+# `run` takes a REGISTERED WORKFLOW and an instance; any field of it is
+# adjustable for that invocation by naming its path.
+python -m swe_lab run --list                               # what can be run
+python -m swe_lab run gold_unit_test <instance_id>         # grade an instance's gold patch
+python -m swe_lab run rollout <instance_id>                # run the container agent loop
+python -m swe_lab run rollout_and_unit_test <instance_id> \
+    --rollout.harness.model opus --unit_test.retries 2     # …solved, graded, adjusted
+python -m swe_lab run unit_test <instance_id> --input ./candidate.diff   # grade a patch you have
 python -m swe_lab.datasets.swebench_pro.verify --shard i/N                       # golden-sweep one shard
 # W1 annotation keeps its own module entrypoint:
 python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]

@@ -87,12 +87,12 @@ jobs:
 
       - name: Rollout (solve + grade) on the ghjob backend
         run: |
-          uv run python -m swe_lab rollout \
+          uv run python -m swe_lab run \
+            ${{ inputs.grade && 'rollout_and_unit_test' || 'rollout' }} \
             "${{ inputs.instance_id }}" \
             --backend ghjob \
-            --model "${{ inputs.model }}" \
-            ${{ inputs.grade && '--grade' || '' }} \
-            --timeout 3000
+            --rollout.harness.model "${{ inputs.model }}" \
+            --rollout.timeout 3000
 
       # Diagnostics printed straight into the log — the agent script swallows its
       # own failure (`|| true`), so an empty patch otherwise looks like success.
@@ -105,10 +105,10 @@ jobs:
           ls -la /opt/claude-code/claude || true
           /opt/claude-code/claude --version || echo "::warning::claude binary did not run (rc=$?)"
           echo "== agent stderr (the direct error, if any) =="
-          find .cache/rollout_workspaces -name claude.stderr.log \
+          find .cache/runs -name claude.stderr.log \
             -exec sh -c 'echo "--- $1 ($(wc -c < "$1") bytes) ---"; cat "$1"' _ {} \; || true
           echo "== event stream (turns produced) =="
-          find .cache/rollout_workspaces -name claude.event_stream.jsonl \
+          find .cache/runs -name claude.event_stream.jsonl \
             -exec sh -c 'echo "$1: $(wc -l < "$1") lines"' _ {} \; || true
 
       - name: Upload rollout workspace
@@ -116,5 +116,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ghjob-rollout-workspace
-          path: .cache/rollout_workspaces/**
+          path: .cache/runs/**
           if-no-files-found: warn

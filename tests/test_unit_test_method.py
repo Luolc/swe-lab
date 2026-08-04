@@ -247,7 +247,7 @@ def test_a_timed_out_run_is_reported_as_timeout(tmp_path: Path):
 
 
 def test_env_reaches_the_entryscript(tmp_path: Path):
-  # Mirrors the coding task's agent_env: extra env for the thing being run.
+  # Mirrors the coding task's `env`: extra environment for its own action.
   sandbox = _fake(tmp_path)
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(env={"MY_FLAG": "1"})
   _ = task.execute(

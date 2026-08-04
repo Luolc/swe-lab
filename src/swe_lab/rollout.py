@@ -87,9 +87,11 @@ class CodingAgentTask(Task):
     extra_inputs: Further inputs this task declares — files the harness or the
       prompt refers to, supplied by an edge or by the caller.
     exclude_globs: Build-noise denylist for the diff extraction.
-    agent_env: Extra environment for the agent process, handed to the
-      harness. For a secret, use the sandbox's ``pass_env`` instead — that
-      passes it by reference, so the value never reaches a command line.
+    env: Extra environment for this task's own action — the agent process,
+      handed to the harness. Distinct from the sandbox's ``env``, which every
+      exec of the run gets; this is the agent's alone. For a secret, use the
+      sandbox's ``pass_env`` instead — that passes it by reference, so the
+      value never reaches a command line.
     proxy_factory: Opens a recorder held open around the main action (e.g. a
       host-side reverse proxy capturing the agent's API traffic). Anything
       returning a context manager will do; ``None`` records nothing. A
@@ -110,7 +112,7 @@ class CodingAgentTask(Task):
   )
   extra_inputs: tuple[ArtifactSchema, ...] = ()
   exclude_globs: tuple[str, ...] = ()
-  agent_env: Mapping[str, str] | None = None
+  env: Mapping[str, str] | None = None
   proxy_factory: ProxyFactory | None = None
 
   @override
@@ -189,9 +191,7 @@ class CodingAgentTask(Task):
         self.proxy_factory() if self.proxy_factory else contextlib.nullcontext()
     )
     with recorder:
-      return self.harness.run(
-          sb, prompt=prompt, timeout=timeout, env=self.agent_env
-      )
+      return self.harness.run(sb, prompt=prompt, timeout=timeout, env=self.env)
 
 
 def patch_of(result: AttemptResult) -> DiffExtractObserver | None:

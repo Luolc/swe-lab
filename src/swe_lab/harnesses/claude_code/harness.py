@@ -39,6 +39,7 @@ from .constants import (
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
     BINARY_AT,
+    CONTAINER_PROXY_HOST,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
     PROMPT_FILENAME,
@@ -50,6 +51,8 @@ from .convert import (
     proxy_log_complete,
     proxy_log_to_conversation,
 )
+from .proxy import DEFAULT_BASE_PORT
+from .recorder import ProxyRecorder
 
 
 def _read_text(sb: SandboxFs, name: str) -> str:
@@ -92,8 +95,13 @@ class ClaudeCodeHarness(Harness):
     binary_path: Inject a ready binary (Docker-free tests); otherwise the pinned
       binary is provisioned by ``ensure_claude_binary``.
     capture: The output-capture strategy — ``STREAM`` (default) or ``PROXY``.
-    proxy_base_url: The API base URL the agent uses in ``PROXY`` capture (the
-      composition points this at the host-side proxy); unused for ``STREAM``.
+    proxy_port: The host port ``PROXY`` capture records on. This harness runs
+      the recorder itself (see ``observers``), so the port is all it needs;
+      two runs on one host must not share one.
+    proxy_base_url: What the *agent* dials to reach that recorder. Defaults to
+      the container→host gateway on the declared port, which is what a
+      containerized run needs; set it when the run reaches the host some other
+      way. Unused for ``STREAM``.
     bare: Run the agent with ``--bare`` — API-key auth mode, which disables the
       subscription OAuth token. The API key itself is supplied to the sandbox
       by the composition via the environment (``ANTHROPIC_API_KEY``, by
@@ -103,6 +111,7 @@ class ClaudeCodeHarness(Harness):
   model: str = DEFAULT_MODEL
   binary_path: epath.Path | None = None
   capture: Capture = Capture.STREAM
+  proxy_port: int = DEFAULT_BASE_PORT
   proxy_base_url: str | None = None
   bare: bool = False
 
@@ -112,16 +121,35 @@ class ClaudeCodeHarness(Harness):
     """This harness's identifier; namespaces its artifacts."""
     return "claude_code"
 
+  @property
+  def agent_proxy_url(self) -> str:
+    """The URL the in-container agent dials to reach the recorder."""
+    return (
+        self.proxy_base_url
+        or f"http://{CONTAINER_PROXY_HOST}:{self.proxy_port}"
+    )
+
   @override
   def observers(self) -> Sequence[SandboxObserver]:
-    """Return the generic pair: the converted trace, and the run's outcome.
+    """Return the generic pair, preceded by the recorder ``PROXY`` needs.
 
-    This harness's own choice (ADR-0007 §3), not an inherited default — both
-    observers are generic building blocks that delegate back to
+    This harness's own choice (ADR-0007 §3), not an inherited default — the
+    pair are generic building blocks that delegate back to
     ``to_conversation`` / ``completed`` / ``native_outputs``, which is where
     everything Claude-Code-specific lives.
+
+    In ``PROXY`` capture the trace *is* a recording this harness has to make,
+    so it composes the recorder itself, **first**: its ``before_destroy``
+    closes the proxy and lands the log, and only then does the converter read
+    it. Nothing above this class has to know a proxy exists.
     """
+    recorder = (
+        (ProxyRecorder(port=self.proxy_port),)
+        if self.capture is Capture.PROXY
+        else ()
+    )
     return (
+        *recorder,
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
     )
@@ -230,8 +258,6 @@ class ClaudeCodeHarness(Harness):
     Returns:
       The bash script text staged as the invocation mount.
 
-    Raises:
-      SandboxError: If ``PROXY`` capture is requested without a base URL.
     """
     home = shlex.quote(AGENT_HOME)
     binary = shlex.quote(BINARY_AT)
@@ -251,12 +277,10 @@ class ClaudeCodeHarness(Harness):
         f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
     if self.capture is Capture.PROXY:
-      if not self.proxy_base_url:
-        raise SandboxError("proxy capture requires proxy_base_url to be set")
       # Route the agent's API calls through the recording proxy; its own stdout
       # (a plain JSON result) is not the trace, so discard it.
       lines.append(
-          f"export ANTHROPIC_BASE_URL={shlex.quote(self.proxy_base_url)}"
+          f"export ANTHROPIC_BASE_URL={shlex.quote(self.agent_proxy_url)}"
       )
       output_format = "json"
       capture_redirect = "> /dev/null"

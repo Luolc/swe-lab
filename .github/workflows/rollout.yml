@@ -58,8 +58,8 @@ jobs:
 
       - name: Rollout (solve + grade)
         run: |
-          uv run python -m swe_lab rollout \
+          uv run python -m swe_lab run \
+            ${{ inputs.grade && 'rollout_and_unit_test' || 'rollout' }} \
             "${{ inputs.instance_id }}" \
-            --model "${{ inputs.model }}" \
-            ${{ inputs.grade && '--grade' || '' }} \
-            --timeout 3000
+            --rollout.harness.model "${{ inputs.model }}" \
+            --rollout.timeout 3000

@@ -496,3 +496,40 @@ this task because this task is what makes it reachable.
 - **A downstream user's task fields become CLI surface** the moment their
   workflow is registered. That is the intent, and it means field *names* are
   now part of a public contract — worth a line in the extensibility guide.
+
+---
+
+## Result (2026-08-04)
+
+Landed as three commits: the prep (entry validation, `agent_env` → `env`), the
+override engine + `run`, and the deletion of the old commands together with the
+recorder rework. §§1–11 shipped as designed, with the open questions answered
+and these deltas:
+
+- **The command is `run`, and the workflow stays an argument** (§3's open
+  question). A registered name becoming a top-level subcommand would put a
+  downstream user's workflow into a namespace we do not control, and `--list`
+  covers the discoverability that would have bought.
+- **Three exit codes shipped** (§8), unresolved being `2`. The one CI job that
+  cared (`rollout.yml`) treats any non-zero as failure, so nothing needed a
+  compatibility shim.
+- **No `Task.report()` hook** (§8's second open question). The metrics-only
+  summary carries the answer because an evaluation method already reports
+  `<method>.resolved` itself — which is also why the command needs no
+  verdict-shaped knowledge and a downstream task summarizes for free.
+- **The harness registry shipped now, not "when a second harness exists"**
+  (§6). The bare-name rule is a *parser* rule; retrofitting it into a stable
+  parser later would mean touching the core walk, whereas adding it now is one
+  branch and one test — and `--rollout.harness=stub` is how the CLI tests
+  register their own agent, which is the extensibility claim under test.
+- **`_FIXED_FIELDS` refuses a path that *ends* at `key` / `task`, not one that
+  passes through** — `--rollout.task.env=…` has to keep working, since it is
+  the disambiguating spelling §4.2 promises.
+- **Non-finite floats are refused in coercion as well as on the entry.** §4.6
+  put the check on `WorkflowEntry`; a `nan` for *any* float field is nonsense,
+  so the coercion layer refuses it universally and the entry keeps its own
+  semantic check (`timeout > 0`).
+- **The recorder rework went further than §10.** As an observer it needs no
+  host path at all: it writes its recording into the workspace through the
+  sandbox, so `proxy_base_url` became derived, the CLI's proxy plumbing
+  disappeared, and the whole thing would work on a backend with no bind mount.
