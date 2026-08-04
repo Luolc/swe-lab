@@ -517,6 +517,85 @@ def test_the_chain_feeds_the_consumer_from_the_store(tmp_path: Path):
       "consumer": {"thing.txt": "producer"},
   }
   assert [e["key"] for e in record["entries"]] == ["producer", "consumer"]
+  assert record["succeeded"] is True
+
+
+def test_the_workflow_record_is_written_whatever_the_outcome(tmp_path: Path):
+  # The invariant ADR-0009 turns on: once binding is past, a run leaves a
+  # roll-up — success or failure — so a consumer never has to reassemble one
+  # by globbing task prefixes. Absence now means only "never got past
+  # binding".
+
+  @final
+  class _NeverEmits(SandboxObserver):
+
+    @override
+    def output_schema(self) -> tuple[ArtifactSchema, ...]:
+      return (ArtifactSchema("thing.txt", description="never emitted"),)
+
+  @final
+  @dataclass
+  class _Failing(Task):
+
+    @override
+    def observers(
+        self, instance: TaskInstance[Any]
+    ) -> tuple[SandboxObserver, ...]:
+      del instance
+      return (_NeverEmits(),)  # declared, never emitted -> FAILED
+
+    @override
+    def action(
+        self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    ) -> ExecResult:
+      del sb, instance, timeout
+      return ExecResult(0, "", "")
+
+  for name, task in (("ok", _Producer()), ("bad", _Failing())):
+    store = _store(tmp_path / name)
+    wf = Workflow(
+        store=store,
+        sweep_id="sw",
+        rollout_id=0,
+        entries=[
+            WorkflowEntry(
+                "producer", task, timeout=10.0, sandbox=FakeSandboxConfig()
+            )
+        ],
+    )
+    outcome = wf.execute(
+        _Instance(), output_dir=tmp_path / f"out-{name}", run_ts="ts-0"
+    )
+    assert outcome.succeeded is (name == "ok")
+    assert outcome.record_key is not None
+    record = json.loads(store.get_bytes(outcome.record_key))
+    assert record["succeeded"] is (name == "ok")
+
+
+def test_the_record_carries_each_entrys_metrics(tmp_path: Path):
+  # The roll-up copies the metrics the attempt shard already holds, so a
+  # consumer reads one object per run instead of one per task per run.
+  store = _store(tmp_path)
+  wf = Workflow(
+      store=store,
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          WorkflowEntry(
+              "producer",
+              _Producer(),
+              timeout=10.0,
+              sandbox=FakeSandboxConfig(),
+          )
+      ],
+  )
+  outcome = wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-0")
+  assert outcome.record_key is not None
+  entry = json.loads(store.get_bytes(outcome.record_key))["entries"][0]
+  run = outcome.entries[0].run
+  assert run is not None
+  # exactly what the shard says — a roll-up, nothing newly measured
+  assert entry["metrics"] == dict(run.record.metrics)
 
 
 def test_an_empty_upstream_artifact_is_the_distinct_edge_failure(
@@ -554,8 +633,16 @@ def test_an_empty_upstream_artifact_is_the_distinct_edge_failure(
   # the consumer never became terminal: a repaired store can proceed
   address = TaskAddress(sweep_id="sw", rollout_id=0, task="consumer")
   assert read_marker(store, address, "acme__widget-1") is None
-  # and no workflow record exists — absence means "did not complete"
-  assert outcome.record_key is None
+  # …and the roll-up is still written, saying so: the failed run is the one
+  # most worth reading (ADR-0009).
+  assert outcome.record_key is not None
+  record = json.loads(store.get_bytes(outcome.record_key))
+  assert record["succeeded"] is False
+  consumer = next(e for e in record["entries"] if e["key"] == "consumer")
+  assert consumer["status"] == "edge_failed"
+  assert consumer["missing_inputs"] == ["thing.txt"]
+  # it never ran, and the record says that rather than omitting it
+  assert (consumer["attempts"], consumer["artifact_keys"]) == (0, {})
 
 
 def test_a_failed_entry_blocks_the_rest(tmp_path: Path):
@@ -631,7 +718,15 @@ def test_a_failed_entry_blocks_the_rest(tmp_path: Path):
       EntryStatus.BLOCKED,
   ]
   assert outcome.entries[1].run is None  # never attempted
-  assert outcome.record_key is None
+  # The roll-up is written anyway, and carries every entry's status — a
+  # blocked entry is a fact, not an omission (ADR-0009).
+  assert outcome.record_key is not None
+  record = json.loads(store.get_bytes(outcome.record_key))
+  assert record["succeeded"] is False
+  assert [(e["key"], e["status"]) for e in record["entries"]] == [
+      ("producer", "failed"),
+      ("consumer", "blocked"),
+  ]
 
 
 def test_reentry_resumes_the_finished_producer_and_does_no_work(

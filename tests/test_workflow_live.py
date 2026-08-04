@@ -253,5 +253,6 @@ def test_live_failed_producer_persists_its_evidence_and_blocks(
       store.get_bytes("smoke/workflow-smoke/r0/producer/complete.json")
   )
   assert marker["outcome"] == "failed"
-  # no workflow record: absence means "did not complete"
-  assert outcome.record_key is None
+  # the roll-up is written for a failed run too, and says so (ADR-0009)
+  assert outcome.record_key is not None
+  assert json.loads(store.get_bytes(outcome.record_key))["succeeded"] is False
