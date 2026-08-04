@@ -60,10 +60,19 @@ knobs a run might want to change. Enumerating them as flags means:
   without editing swe-lab;
 - each new field is a CLI change, a help-text change, and a plumbing change.
 
-Everything on the path is a **frozen dataclass**, so one mechanism covers all
-of it: walk the path by `dataclasses.fields`, coerce the leaf by its annotated
-type, rebuild with nested `replace()`. That is the whole design; the rest of
-this document is the rules that make it predictable.
+Everything on the path is **dataclass-shaped configuration**, so one mechanism
+covers all of it: walk the path by `dataclasses.fields`, coerce the leaf by its
+annotated type, rebuild with nested `replace()`. That is the whole design; the
+rest of this document is the rules that make it predictable.
+
+Frozen-ness is *not* what makes this work, and the levels differ: `WorkflowEntry`,
+`SandboxConfig` and `ClaudeCodeHarness` are frozen; the tasks are plain
+`@dataclass` (they carry a mutable `Mapping` field or two). `replace()` works on
+any dataclass, and the override path only ever *rebuilds* — it never assigns
+through a reference — so a mutable task is rebuilt exactly like a frozen config
+and the original object a definition holds is never touched. That last property
+is what a registry needs: overriding a run must not edit the definition every
+other run will use.
 
 ---
 
@@ -195,6 +204,50 @@ Sandbox overrides land on `WorkflowEntry.sandbox`, which the runner then
 merges onto the invocation's prototype exactly as it does today: the override
 changes what the entry *declares*, which is what an override should mean.
 
+### 4.6 The contract, precisely
+
+The rules a reader of the implementation should not have to infer:
+
+**Annotations are resolved, not read.** Every module here uses
+`from __future__ import annotations`, so `Field.type` is a *string*. Coercion
+walks `typing.get_type_hints(type(obj))` instead (cached per class) and looks
+each field's real type up in it. A field whose annotation cannot be resolved —
+a forward reference to something not importable at run time — is reported as
+not overridable, by name, rather than coerced by guesswork.
+
+**A repeated path is refused, not last-one-wins.** Two
+`--rollout.harness.model=` on one command line is a typo or a script bug, and
+silently keeping the last one hides both. Duplicates are an error everywhere
+else in this codebase (mount targets, output names, bindings); this is the same
+rule.
+
+**Ordering is not the caller's problem.** All overrides are parsed first,
+conflicts refused, and only then applied — shortest path first. That single
+ordering rule subsumes §6's swap-then-fields case: `--rollout.harness=codex`
+is a shorter path than `--rollout.harness.model=o3`, so the swap lands before
+the field, and no special case is needed to say so. Nothing else in the set can
+interact, because a repeated path is already refused.
+
+**Two fields are not overridable, by name and with the reason.**
+
+- `key` — an entry's identity: the store segment its records live under, what
+  resume matches, and what every binding on later entries names. Changing it
+  while resolving other overrides against the old name is order-dependent in
+  the one way that matters, and it silently re-homes a run's records.
+- `task` — a `Task` is not a value a command line can spell. (Swapping the
+  *harness* inside it is §6's registry form.)
+
+`inputs` (the binding list) *is* overridable — it coerces as a string sequence,
+and §4.5 re-validates the rebuilt workflow — so an ambiguity that only shows up
+for one invocation can be resolved without editing the definition.
+
+**Values are checked for meaning, not just for type.** `timeout=nan` and
+`retries=-1` coerce fine and are nonsense. The check belongs on
+`WorkflowEntry.__post_init__` (which already refuses a declared workspace), not
+in the override layer: an entry built by hand deserves the same refusal as one
+built by a flag. So step 2 adds it there — `timeout` finite and `> 0`,
+`retries >= 0` — and the CLI inherits it for free, reporting it as a refused
+override.
 ---
 
 ## 5. Workflows that need a value from you
@@ -241,6 +294,10 @@ flag:
    With two or more, `NAME=PATH` is required and the error lists them. The
    rule is mechanical, so nothing is guessed: a store name is an edge-contract
    detail, and a person grading one patch should not have to know it.
+
+   A repeated `--input` for one name is refused, like a repeated override: two
+   values for one input is a mistake in either direction, and picking one
+   hides it.
 
 3. **The refusal names what it wants, using the schema's own description**, and
    `--list` / `--help` show it up front:
@@ -295,9 +352,10 @@ grammar reserves the **bare-name form** for it:
 Deferred until a second harness exists (`ClaudeCodeHarness` is the only one).
 When it lands, it is a registry mirroring backends/stores/workflows, and the
 rule is: a bare name whose target field is a **non-dataclass-leaf** looks up
-the registry; anything deeper is a field walk. Both forms in one command
-resolve the swap first, then the fields — otherwise `--rollout.harness=codex
---rollout.harness.model=…` would set a field on the harness being replaced.
+the registry; anything deeper is a field walk. Both forms in one command work
+without a rule of their own — §4.6 applies shorter paths first, so the swap
+lands before any field set on it, rather than setting a field on the harness
+being replaced.
 
 ---
 
@@ -379,12 +437,30 @@ must implement. Recommendation: **not now**; the artifacts are persisted and
 1. `overrides.py`: parse `<entry>.<path>=<value>`, walk `fields(type(obj))`,
    coerce by annotation, rebuild with nested `replace()`. Pure, and tested
    directly — this is where the design's weight is.
-2. Apply-to-workflow: entry-then-task fall-through, re-validation of the
-   overridden definition, error messages that name the alternatives.
+2. Apply-to-workflow: entry-then-task fall-through, the two non-overridable
+   fields, re-validation of the overridden definition, and error messages that
+   name the alternatives. Adds `WorkflowEntry.__post_init__` validation for
+   `timeout` (finite, `> 0`) and `retries` (`>= 0`) — an entry deserves the
+   same refusal however it was built (§4.6).
 3. `swe-lab run`: the command, `--input`, the summary, the exit codes.
 4. `gold_unit_test` as a registered definition; `verify.py` checked against it.
-5. Delete `rollout` / `eval`; move the two CI workflow files; update
-   `docs/conventions.md`'s command examples.
+5. Delete `rollout` / `eval`, and move **everything that invokes or documents
+   them** in the same change — the command is the contract, so a stale copy is
+   a broken instruction:
+   - the three active GitHub workflows: `rollout.yml`, `rollout-ghjob.yml`,
+     `eval-ghjob.yml` (`verify-golden.yml` runs `…swebench_pro.verify` and is
+     untouched);
+   - `docs/conventions.md`'s command block;
+   - `docs/workstreams/w2-solve-eval/README.md`'s CLI line;
+   - `docs/horizontal/spec.md`'s Commands section — and the rest of the
+     spec reconciled, which a status change on this task requires anyway
+     (`AGENTS.md`: reconcile the spec at each checkpoint);
+   - a repo-wide search for the old invocations afterwards
+     (`rg -n "swe_lab (rollout|eval)"`), because the ones above are the ones
+     we know about.
+
+   Historical `plans/task-*.md` stay as they are: point-in-time records, not
+   instructions.
 6. Live smoke: `run rollout_and_unit_test` on the flipt parity instance with an
    override that demonstrably changes the run (`--rollout.harness.model=…`).
 
