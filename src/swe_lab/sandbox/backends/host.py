@@ -29,8 +29,9 @@ from typing import override
 from etils import epath
 
 from ..errors import SandboxError
-from ..mounts import Mount
+from ..mounts import Mount, Mounts
 from ..observer import SandboxObserver
+from ..resources import LocalFile
 from ..result import Contribution, qualified_name
 from ..sandbox import ExecResult, Sandbox, SandboxFs, WORKSPACE_ENV
 from ..spec import SandboxSpec
@@ -182,8 +183,16 @@ class DockerHostSandbox(Sandbox):
 
   @override
   def observers(self) -> Sequence[SandboxObserver]:
-    """Contribute the runtime-metrics observer (ADR-0007 §3, backend source)."""
-    return (HostMetricsObserver(sandbox=self),)
+    """Contribute this backend's own observers (ADR-0007 §3, backend source).
+
+    Runtime metrics (only the backend can measure its container), and the
+    agent binary — a fresh container starts with nothing in it, so this
+    backend's answer is to hand one over from the host cache.
+    """
+    return (
+        HostMetricsObserver(sandbox=self),
+        HostClaudeCodeBinaryObserver(),
+    )
 
   @override
   def fetch(self, name: str, dest: epath.PathLike) -> None:
@@ -398,6 +407,35 @@ class DockerHostSandbox(Sandbox):
       raise SandboxError(
           f"docker {args[0]} timed out after {timeout}s"
       ) from exc
+
+
+class HostClaudeCodeBinaryObserver(SandboxObserver):
+  """Put the pinned Claude Code binary into the container, from the host.
+
+  A fresh container starts with nothing installed and has no repo checkout of
+  its own, so this backend's answer is the one a mount already expresses well:
+  fetch the binary **once** into the host cache (``ensure_claude_binary`` is
+  idempotent and checksum-verified, so later runs only re-hash it) and let the
+  ``docker cp`` machinery place it read-only at the agreed path.
+
+  Contributed by the backend rather than the harness on purpose: the harness
+  only needs the agent to be *runnable at* ``BINARY_AT``, and each backend is
+  in a different position to make it so — compare
+  :class:`~swe_lab.sandbox.backends.ghjob.GitHubJobClaudeCodeBinaryObserver`,
+  which downloads in the job rather than being handed a copy.
+  """
+
+  @override
+  def mounts(self) -> Mounts:
+    """Stage the host-cached binary as a read-only executable asset."""
+    # Imported here, not at module scope: the harness package imports this one
+    # (a harness is written against the sandbox engine), so a top-level import
+    # would close the cycle. This one reach upward is the point of the class.
+    from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
+    from swe_lab.harnesses.claude_code.constants import BINARY_AT
+
+    binary = LocalFile(ensure_claude_binary())
+    return {BINARY_AT: Mount(binary, executable=True, read_only=True)}
 
 
 # The metric namespace for backend-contributed runtime metrics; distinct from

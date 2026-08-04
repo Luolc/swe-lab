@@ -10,7 +10,9 @@ import stat
 from etils import epath
 import pytest
 
+from swe_lab.harnesses.claude_code.constants import BINARY_AT
 from swe_lab.sandbox import (
+    GitHubJobClaudeCodeBinaryObserver,
     GitHubJobSandbox,
     Inline,
     LocalFile,
@@ -19,6 +21,8 @@ from swe_lab.sandbox import (
     SandboxManager,
     SandboxSpec,
 )
+
+from .conftest import FakeClaudeBinary
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
@@ -161,3 +165,35 @@ def test_manager_composition_runs_end_to_end(tmp_path: Path):
     _ = sb.run_script("main.sh", timeout=5.0)
   assert manager.result.status is RunStatus.SUCCESS
   assert (ws / "out.txt").read_text() == "done\n"
+
+
+# ─── the backend's own observer (ADR-0007 §3, backend source) ────────────────
+
+
+def test_backend_contributes_only_the_agent_binary(tmp_path: Path):
+  # No metrics observer here: the job IS the container, so there is no
+  # container lifecycle of ours to measure — only the agent to install.
+  sandbox = GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+  )
+  assert [type(o).__name__ for o in sandbox.observers()] == [
+      "GitHubJobClaudeCodeBinaryObserver"
+  ]
+
+
+def test_binary_observer_downloads_in_the_job_to_the_final_path(
+    tmp_path: Path, fake_claude_binary: FakeClaudeBinary
+):
+  sandbox = GitHubJobSandbox(
+      spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
+  )
+  (binary,) = sandbox.observers()
+  assert isinstance(binary, GitHubJobClaudeCodeBinaryObserver)
+  sandbox.up()
+  binary.after_create(sandbox)
+
+  # It fetched STRAIGHT to the in-sandbox path — no host copy was taken (which
+  # would have shown up as a `None` destination) and, crucially, it staged no
+  # mount: on this backend no bytes should travel at all.
+  assert fake_claude_binary.destinations == [BINARY_AT]
+  assert binary.mounts() == {}
