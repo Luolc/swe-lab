@@ -24,7 +24,7 @@ per knob — and puts the shipped commands on it.
 ```
 swe-lab run rollout_and_unit_test instance_flipt-io__flipt-6fe76d0 \
     --backend host --no-pull --persist --sweep smoke \
-    --rollout.harness.model=opus --eval.retries=2
+    --rollout.harness.model=opus --unit_test.retries=2
 ```
 
 ### In scope
@@ -132,7 +132,7 @@ the `WorkflowEntry` and falls through to its task:
 | `rollout.sandbox.network=false` | `WorkflowEntry.sandbox.network` |
 | `rollout.harness.model=opus` | the entry's **task**'s `harness.model` |
 | `rollout.task.harness.model=opus` | the same, spelled unambiguously |
-| `eval.patch_name=candidate.diff` | the eval **task**'s `patch_name` |
+| `unit_test.patch_name=cand.diff` | the grading **task**'s `patch_name` |
 
 Fall-through is what makes the common case short. Its cost is a shadowing
 rule: an entry field wins over a task field of the same name (`timeout`,
@@ -175,7 +175,7 @@ against what exists:
 ```
 
 ```
---eval.timeout=soon: 'soon' is not a float (WorkflowEntry.timeout)
+--unit_test.timeout=soon: 'soon' is not a float (WorkflowEntry.timeout)
 ```
 
 ```
@@ -197,33 +197,90 @@ changes what the entry *declares*, which is what an override should mean.
 
 ---
 
-## 5. Caller inputs, and where `--gold` goes
+## 5. Workflows that need a value from you
 
-`unit_test` needs a patch from outside the run. That is
-`Workflow.execute(inputs=)`
-and it gets one generic flag:
+Registered definitions come in two kinds, and the command has to make the
+difference visible rather than let the second kind look broken:
+
+| kind | runnable from | examples |
+|---|---|---|
+| **self-sufficient** | `(name, instance)` alone | `rollout`, `rollout_and_unit_test`, `gold_unit_test` |
+| **parameterized** | `(name, instance)` + a value the invoker holds | `unit_test` — *which* patch? |
+
+`unit_test` alone genuinely runs nothing, and that is correct: it grades a
+patch someone else produced (a previous sweep's, a competitor's, a hand-written
+one), and only the invoker knows which. Today it does not even bind — the
+declared `patch.diff` has no producer, so the workflow is refused before any
+container, with an engine-flavored message:
 
 ```
---input patch.diff=./candidate.diff        # repeatable, NAME=PATH
+nothing produces 'patch.diff', required by unit_test: no earlier entry declares
+it, the workflow's inputs do not provide it, and the task builds no inputs of
+its own
 ```
 
-**`--gold` stops being a flag and becomes a workflow.** Grading the reference
-solution is a *definition* — the eval task with `inputs_builder=gold_patch`
-(task 22 §3.1) — so it registers as `gold_unit_test` and is invoked like
-anything
-else:
+That is the right *behavior* and the wrong *sentence* for someone typing a
+command. Three things fix the ergonomics, and none of them is a per-workflow
+flag:
+
+1. **The command supplies inputs generically**, feeding
+   `Workflow.execute(inputs=)`:
+
+   ```
+   swe-lab run unit_test <id> --input patch.diff=./candidate.diff
+   ```
+
+2. **One unbound input needs no name.** When exactly one required input is
+   unbound after binding — the case for every workflow we ship or foresee —
+   the name may be omitted:
+
+   ```
+   swe-lab run unit_test <id> --input ./candidate.diff
+   ```
+
+   With two or more, `NAME=PATH` is required and the error lists them. The
+   rule is mechanical, so nothing is guessed: a store name is an edge-contract
+   detail, and a person grading one patch should not have to know it.
+
+3. **The refusal names what it wants, using the schema's own description**, and
+   `--list` / `--help` show it up front:
+
+   ```
+   workflow 'unit_test' needs an input you did not supply:
+     patch.diff — the candidate patch to grade
+   supply it with:  --input ./your.diff        (or --input patch.diff=./your.diff)
+   ```
+
+### `--gold` stops being a flag and becomes a workflow
+
+Grading the reference solution is a *definition*, not a mode: the unit-test
+task with `inputs_builder=gold_patch` (task 22 §3.1). It registers as
+`gold_unit_test` and is invoked like anything else:
 
 ```
 swe-lab run gold_unit_test <instance>
 ```
 
-This is the pattern the whole task is for: a variant that used to need a flag
-and a branch in the command is now four lines of definition, and the command
-does not know it exists. `verify.py`'s golden run is the same definition,
-which is worth checking as we go (it runs `Task.execute` directly today, and
-should keep doing so — it has its own store layout).
+This is the pattern the whole task is for — a variant that used to need a flag
+and a branch inside the command is four lines of definition, and the command
+does not know it exists. It also *cannot* be the same definition as
+`unit_test`: a task that builds its own patch cannot also be handed one (the
+in-session collision is deliberate), which is exactly why the two are separate
+names rather than one name with a switch.
 
----
+`verify.py`'s golden run is the same shape, and is worth checking against this
+definition as we go — it runs `Task.execute` directly today and should keep
+doing so, since it owns its own store layout.
+
+**Alternative considered — a patch-file *field* instead of an input.** A
+builder could be a small dataclass (`PatchFile(path=…)`), making the patch
+reachable by the override grammar alone (`--unit_test.inputs_builder.path=…`)
+and the workflow self-sufficient after overrides. Rejected: it moves "where
+the bytes come from" back into the task's static configuration — exactly what
+task 22 took out of it — and a task carrying such a builder can no longer be
+the tail of the chain, so the one shared grading entry would have to fork into
+two. `--input` keeps inputs as inputs, and generalizes to any workflow with an
+unbound one (a future task consuming `plan.md` gets it for free).
 
 ## 6. The harness swap, reserved
 
@@ -255,7 +312,7 @@ resolve the swap first, then the fields — otherwise `--rollout.harness=codex
 | `swe-lab rollout <id> --model X --capture proxy` | `… --rollout.harness.model=X --rollout.harness.capture=proxy` |
 | `swe-lab eval <id> --gold` | `swe-lab run gold_unit_test <id>` |
 | `swe-lab eval <id> --patch-file p.diff` | `swe-lab run unit_test <id> --input patch.diff=p.diff` |
-| `swe-lab eval <id> --eval-retries 2` | `… --eval.retries=2` |
+| `swe-lab eval <id> --eval-retries 2` | `… --unit_test.retries=2` |
 
 The two `.github/workflows/*-ghjob.yml` files move with them, in the same PR.
 `promote` is untouched (it is a store operation, not a run).
@@ -282,15 +339,16 @@ command-specific assembly:
     {"key": "rollout", "status": "succeeded", "attempts": 1,
      "metrics": {"agent_complete": 1.0, "patch_is_empty": 0.0},
      "artifacts": {"patch.diff": "adhoc/…/rollout/a0/patch.diff"}},
-    {"key": "eval", "status": "succeeded", "attempts": 2,
-     "metrics": {"eval.score": 1.0, "eval.resolved": 1.0}}
+    {"key": "unit_test", "status": "succeeded", "attempts": 2,
+     "metrics": {"unit_test.score": 1.0, "unit_test.resolved": 1.0}}
   ],
   "record_key": "adhoc/…/r0/workflow.json"
 }
 ```
 
 Metrics carry the answer, so the command needs no verdict-shaped knowledge:
-`eval.resolved` is already there because the eval observer reports it. The
+`unit_test.resolved` is already there because the method's observer reports
+it. The
 instance's `run_provenance()` is merged in at the top level, as today.
 
 **Exit codes** — three, because "did it run" and "did the patch pass" are
@@ -356,7 +414,7 @@ this task because this task is what makes it reachable.
   grows only when a field needs it; an unrepresentable field type is simply
   not overridable, which is honest and reversible.
 - **Overrides can express nonsense the definition would have caught** — e.g.
-  `--eval.inputs=…` pointing at a producer that does not exist. Re-validating
+  `--unit_test.inputs=…` pointing at a producer that does not exist. Re-validating
   the overridden workflow (§4.5) catches exactly the class the declaration
   check catches; the bind-time class is caught at bind time, as always.
 - **A downstream user's task fields become CLI surface** the moment their
