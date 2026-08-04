@@ -192,6 +192,8 @@ class CodingAgentTask(Task):
 @dataclass
 class UnitTestEvalTask[V: Verdict](Task):
   apply_patch: bool = True
+  patch_name: str = PATCH_NAME       # static config: input_schema declares
+                                     # it, the spec compiles against it
   inputs_builder: InputsBuilder | None = None
   # None (default) = the downstream shape: patch.diff arrives from the edge
   # or the workflow's caller inputs. Standalone gold self-check =
@@ -202,7 +204,9 @@ class UnitTestEvalTask[V: Verdict](Task):
   def observers(self, instance):
     # per-run compilation, stashed for mounts()/action() of this run —
     # observers() is execute's first hook call, so it is the compile site
-    self._spec = instance.unit_test_spec(apply_patch=self.apply_patch)
+    self._spec = instance.unit_test_spec(
+        apply_patch=self.apply_patch, patch_name=self.patch_name
+    )
     self._parse = EvalParseObserver(
         self._spec.grader, native_outputs=self._spec.native_outputs
     )
@@ -230,20 +234,34 @@ surface; this plan is the ask):
 
 ```python
 def unit_test_spec(
-    self, *, apply_patch: bool, checkout_golden_tests: bool = True
-) -> UnitTestSpec[V]:
+    self,
+    *,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,        # which workspace file the script
+    checkout_golden_tests: bool = True,  # applies; default = the store-name
+) -> UnitTestSpec[V]:                    # contract ("patch.diff")
   """… When ``apply_patch``, the compiled script applies the workspace file
-  ``patch.diff`` (the store-name contract); the bytes are NOT the spec's to
-  carry — they arrive as the eval task's declared input. ``False`` grades
-  the base commit untouched."""
+  named ``patch_name``; the bytes are NOT the spec's to carry — they arrive
+  as the eval task's declared input. ``False`` grades the base commit
+  untouched."""
 ```
 
-- `compile_unit_test` loses its `patch` parameter and the patch mount;
-  the spec never carries patch bytes, so there is no placeholder to drop.
+- The filename is **task configuration threaded through**: the eval task
+  carries `patch_name: str = PATCH_NAME` (static — `input_schema()` reads
+  it, so the declaration side stays declaration-time), passes it into
+  `unit_test_spec`, and `UnitTestSpec` records it as a field — the compiled
+  spec self-describes which file its script reads. Consistency between the
+  declared input and the compiled script is by construction, not by
+  convention. The default keeps the edge contract with `DiffExtractObserver`
+  (`patch.diff`); a custom name is for datasets whose harnesses expect
+  another filename — knowingly opting out of that default edge match.
+- `compile_unit_test` loses its `patch` parameter and the patch mount
+  (gaining `patch_name`); the spec never carries patch bytes, so there is
+  no placeholder to drop.
 - The named invariant test:
   `test_the_eval_script_reads_the_patch_from_the_workspace_mount` — the
-  compiled apply-mode script references `patch.diff` by the contract name
-  and embeds no bytes.
+  compiled apply-mode script references exactly ``patch_name`` and embeds
+  no bytes.
 - `verify.py` migrates off the dying wrapper onto the task: golden run =
   `UnitTestEvalTask(inputs_builder=gold_patch)`, base run =
   `UnitTestEvalTask(apply_patch=False)` — the two self-check modes are the
