@@ -326,7 +326,25 @@ must implement. Recommendation: **not now**; the artifacts are persisted and
 6. Live smoke: `run solve_and_grade` on the flipt parity instance with an
    override that demonstrably changes the run (`--rollout.harness.model=…`).
 
-## 10. Risks & open questions
+## 10. One thing this task makes reachable, so it must fix it
+
+`CodingAgentTask.proxy_factory` is built by the CLI as a closure over the
+**first attempt's** workspace (`…/rollout/ws/a0`), because that is where the
+in-container conversion reads the recording from and only the runner knows the
+per-attempt path. Nothing can reach the bug today: the rollout entry has no
+retry budget and no flag exposes one.
+
+`--rollout.retries=2` exposes one. A second attempt would then record into the
+first attempt's directory, and its trace would be silently wrong.
+
+The fix is not a bigger closure — it is that a recorder is an **observer**, not
+a context manager around the action: `before_create` opens it, `before_destroy`
+closes it, and it receives the sandbox it is recording for, which is the only
+thing that knows the attempt's workspace. That is a small change to the coding
+task and deletes `proxy_factory` along with the a0 assumption; it belongs in
+this task because this task is what makes it reachable.
+
+## 11. Risks & open questions
 
 - **`ignore_unknown_options` weakens Click's own typo detection** for the
   fixed flags (§4.1). Mitigated by refusing any extra argument without `=`.
