@@ -476,6 +476,24 @@ def test_an_entry_bound_to_one_backend_refuses_another(tmp_path: Path):
   assert config.built == []
 
 
+def test_an_entry_refuses_budgets_it_could_not_run(tmp_path: Path):
+  # Checked on the entry, not at one caller, so a definition written by hand,
+  # one built by a CLI override, and one a downstream user registers are all
+  # refused the same way.
+  del tmp_path
+  for timeout, retries, match in [
+      (0.0, 0, "positive, finite"),
+      (-1.0, 0, "positive, finite"),
+      (float("nan"), 0, "positive, finite"),
+      (float("inf"), 0, "positive, finite"),
+      (10.0, -1, "retries must be"),
+  ]:
+    with pytest.raises(WorkflowError, match=match):
+      _ = WorkflowEntry(
+          "producer", _Producer(), timeout=timeout, retries=retries
+      )
+
+
 def test_an_entry_may_not_declare_a_workspace(tmp_path: Path):
   with pytest.raises(WorkflowError, match="workspace"):
     _ = WorkflowEntry(

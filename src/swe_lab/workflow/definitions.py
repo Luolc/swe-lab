@@ -14,7 +14,7 @@ imports their own.
 
 from __future__ import annotations
 
-from swe_lab.evaluation.unit_test import UnitTestTask
+from swe_lab.evaluation.unit_test import gold_patch, UnitTestTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
@@ -71,6 +71,22 @@ UNIT_TEST: WorkflowDef = (
 
 ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 
+GOLD_UNIT_TEST: WorkflowDef = (
+    WorkflowEntry(
+        UNIT_TEST_KEY,
+        # The dataset's own reference solution, built from the instance — so
+        # this one runs from a name alone. It is a *separate* definition and
+        # not a flag on ``UNIT_TEST`` precisely because a task that builds its
+        # own patch cannot also be handed one: the two suppliers collide, on
+        # purpose, and the collision is the reason there are two names.
+        UnitTestTask(inputs_builder=gold_patch),
+        timeout=_UNIT_TEST_TIMEOUT_S,
+        sandbox=SandboxConfig(network=False),
+        retries=_UNIT_TEST_RETRIES,
+    ),
+)
+
 register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
+register_workflow("gold_unit_test", GOLD_UNIT_TEST)

@@ -16,6 +16,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, replace
 from enum import StrEnum
 import json
+import math
 from typing import Any
 
 from etils import epath
@@ -93,16 +94,30 @@ class WorkflowEntry:
   retries: int = 0
 
   def __post_init__(self) -> None:
-    """Refuse a declared workspace — allocation is the runner's, per attempt.
+    """Refuse an entry that could never run as declared.
+
+    Checked here rather than where an entry is built, so a definition written
+    by hand, one produced by a CLI override, and one a downstream user
+    registers are all refused the same way.
 
     Raises:
-      WorkflowError: If the declared config carries a workspace.
+      WorkflowError: If the declared config carries a workspace, or the
+        budgets are not runnable numbers.
     """
     if getattr(self.sandbox, "workspace", None) is not None:
       raise WorkflowError(
           f"entry {self.key!r} declares a sandbox workspace; the runner"
           " allocates one per attempt, so a declaration could only make two"
           " attempts share state"
+      )
+    if not math.isfinite(self.timeout) or self.timeout <= 0:
+      raise WorkflowError(
+          f"entry {self.key!r}: timeout must be a positive, finite number of"
+          f" seconds, got {self.timeout!r}"
+      )
+    if self.retries < 0:
+      raise WorkflowError(
+          f"entry {self.key!r}: retries must be >= 0, got {self.retries!r}"
       )
 
 

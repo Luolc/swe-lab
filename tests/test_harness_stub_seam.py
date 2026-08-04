@@ -223,7 +223,7 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
   )
 
 
-def test_the_task_takes_extra_observers_and_agent_env(tmp_path: Path):
+def test_the_task_takes_extra_observers_and_env(tmp_path: Path):
   # An extra observer is composed after the
   # composition's own, and env is forwarded to the harness.
   seen: list[str] = []
@@ -239,7 +239,7 @@ def test_the_task_takes_extra_observers_and_agent_env(tmp_path: Path):
   envs: list[Mapping[str, str] | None] = []
 
   class _Recording(GitHubJobSandbox):
-    """Records the env each exec received, to prove agent_env is forwarded."""
+    """Records the env each exec received, to prove `env` is forwarded."""
 
     @override
     def run_script(
@@ -253,9 +253,7 @@ def test_the_task_takes_extra_observers_and_agent_env(tmp_path: Path):
       return super().run_script(name, timeout=timeout, env=env)
 
   workspace = tmp_path / "run"
-  result = CodingAgentTask(
-      harness=StubHarness(), agent_env={"MY_FLAG": "1"}
-  ).execute(
+  result = CodingAgentTask(harness=StubHarness(), env={"MY_FLAG": "1"}).execute(
       _Recording(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
       output_dir=workspace,
