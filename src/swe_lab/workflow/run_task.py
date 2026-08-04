@@ -55,7 +55,8 @@ class TaskAddress:
   Attributes:
     sweep_id: The sweep the run belongs to (``adhoc`` for a one-off).
     rollout_id: Which sample of the instance.
-    task: The task segment — the workflow-entry key (``rollout``, ``eval``).
+    task: The task segment — the workflow-entry key (``rollout``,
+      ``unit_test``).
   """
 
   sweep_id: str
@@ -144,7 +145,9 @@ class TaskRunOutcome:
     resumed: Whether a terminal marker made this run a no-op.
     attempts: Attempts spent by whichever process finished the task.
     record: The final attempt's shard — held directly when this process ran
-      it, read back from the store when resumed. A workflow edge resolves
+      it, read back from the store when resumed. Always present: an attempt is
+      persisted before the marker that ends the task, so a run that reports an
+      outcome has a record behind it either way. A workflow edge resolves
       upstream artifacts through it (``record.artifact_keys``), never by
       assembling keys by hand.
     result: The final attempt's in-memory result; ``None`` when resumed (a
@@ -154,8 +157,62 @@ class TaskRunOutcome:
   outcome: TaskOutcome
   resumed: bool
   attempts: int
-  record: AttemptRecord | None
+  record: AttemptRecord
   result: AttemptResult | None
+
+
+def _final_shard(
+    shards: Sequence[AttemptRecord],
+    marker: TerminalMarker,
+    address: TaskAddress,
+    instance_id: str,
+) -> AttemptRecord:
+  """Return the shard the marker was written for — never an outlived one.
+
+  A forced re-run (``resume=False``) overwrites attempts from ``a0`` and may
+  spend **fewer** of them, so a later attempt's shard can outlive the run that
+  wrote it: after a two-attempt run followed by a one-attempt re-run, ``a1``
+  is still in the store while the marker says one attempt. Taking the last
+  shard would hand a downstream edge the *older* run's artifacts, silently
+  contradicting the marker that resume just trusted.
+
+  The marker names both the run (``run_ts``) and how many attempts it spent,
+  so the final shard is the one matching both — and it **must** be there. The
+  marker is written last, after that shard is durable (ADR-0007 §7), so its
+  absence is not a state this system can reach: the store lost data, or
+  something wrote a marker that never ran. Resume trusts the marker to skip
+  work entirely, so it verifies the one thing that trust rests on.
+
+  Args:
+    shards: The task's persisted attempt records.
+    marker: The terminal marker resume read.
+    address: The task's address, for the message.
+    instance_id: The instance, for the message.
+
+  Returns:
+    The marker's own final attempt record.
+
+  Raises:
+    SandboxError: If no shard matches the marker — the task's evidence is
+      gone, and a resume that carried on would report a success nothing backs.
+  """
+  attempt = marker.attempts - 1
+  for shard in shards:
+    if shard.attempt == attempt and shard.run_ts == marker.run_ts:
+      return shard
+  # Deliberately not "treat it as un-run and do it again": that would burn
+  # budget on an impossible state, and would re-enter a task the marker says
+  # is terminally failed. The remedy is explicit — re-run with resume off,
+  # which overwrites from a0 — and the operator should know they needed it.
+  raise SandboxError(
+      f"{address.prefix(instance_id)}: the terminal marker claims"
+      f" {marker.outcome.value} after {marker.attempts} attempt(s) at"
+      f" {marker.run_ts!r}, but no shard matches (a{attempt} of that run is"
+      f" not in the store; found"
+      f" {[(s.attempt, s.run_ts) for s in shards]}). The marker is written"
+      " last, so this cannot happen to a store that kept what it was given."
+      " Re-run this task with resume disabled to rebuild it."
+  )
 
 
 def _over_a_fresh_workspace(
@@ -246,7 +303,8 @@ def run_task(
   Returns:
     The terminal outcome — resumed or freshly earned. A task-assembly error
     (``execute``'s ``SandboxError``: duplicate mounts/outputs, a required
-    input nobody staged) propagates from the first attempt.
+    input nobody staged) propagates from the first attempt, as does a store
+    that contradicts its own marker on resume (see :func:`_final_shard`).
 
   Raises:
     ValueError: If ``retries`` is negative.
@@ -264,7 +322,7 @@ def run_task(
         outcome=marker.outcome,
         resumed=True,
         attempts=marker.attempts,
-        record=shards[-1] if shards else None,
+        record=_final_shard(shards, marker, address, instance_id),
         result=None,
     )
 
@@ -317,6 +375,9 @@ def run_task(
     if not task.should_retry(result):
       break
 
+  # The loop runs at least once (a non-negative budget), and every attempt
+  # persists before anything else can end the task.
+  assert record is not None
   outcome = TaskOutcome.SUCCEEDED if valid else TaskOutcome.FAILED
   # The marker goes last, after the attempts' artifacts and shards are
   # durable, and atomically (ADR-0007 §7): a crash before it re-runs the

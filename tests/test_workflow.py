@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 import json
+import pathlib
 from pathlib import Path
 from typing import Any, final, override
 
@@ -29,6 +30,7 @@ from swe_lab.sandbox import (
     Inline,
     Mount,
     SandboxConfig,
+    SandboxError,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
@@ -121,14 +123,21 @@ class _Producer(Task):
 @final
 @dataclass
 class _Consumer(Task):
-  """Requires ``consumes`` as an input; records what got staged."""
+  """Declares ``consumes`` as an input; records what got staged."""
 
   consumes: str = "thing.txt"
+  optional: bool = False
   seen: list[bytes] = field(default_factory=list)
 
   @override
   def input_schema(self) -> tuple[ArtifactSchema, ...]:
-    return (ArtifactSchema(self.consumes, description="the upstream thing"),)
+    return (
+        ArtifactSchema(
+            self.consumes,
+            required=not self.optional,
+            description="the upstream thing",
+        ),
+    )
 
   @override
   def observers(
@@ -142,7 +151,9 @@ class _Consumer(Task):
       self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
   ) -> ExecResult:
     del instance
-    self.seen.append(sb.read(self.consumes))
+    self.seen.append(
+        sb.read(self.consumes) if sb.exists(self.consumes) else b""
+    )
     return sb.run_script("main.sh", timeout=timeout)
 
 
@@ -318,6 +329,76 @@ def test_a_task_that_builds_its_own_input_needs_no_producer(tmp_path: Path):
   )
   assert outcome.succeeded is True
   assert consumer.seen == [b"SELF-MADE"]
+
+
+def test_an_optional_input_nothing_produces_leaves_the_workflow_valid(
+    tmp_path: Path,
+):
+  # Optional here means what it means at execution: a workflow that simply
+  # does not supply one is valid, and the entry runs without it. Refusing to
+  # bind would make an optional input harder to satisfy than a required one.
+  consumer = _Consumer(consumes="extra.txt", optional=True)
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[WorkflowEntry("consumer", consumer, timeout=10.0)],
+  )
+  outcome = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
+  assert outcome.succeeded is True
+  assert consumer.seen == [b""]  # it ran, and read nothing
+
+
+def test_an_optional_input_still_binds_where_something_produces_it(
+    tmp_path: Path,
+):
+  consumer = _Consumer(optional=True)
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[
+          WorkflowEntry("producer", _Producer(), timeout=10.0),
+          WorkflowEntry("consumer", consumer, timeout=10.0),
+      ],
+  )
+  outcome = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
+  assert outcome.succeeded is True
+  assert consumer.seen == [b"THING"]
+  record = json.loads(wf.store.get_bytes(outcome.record_key or ""))
+  assert record["edges"]["consumer"] == {"thing.txt": "producer"}
+
+
+def test_an_optional_input_the_caller_supplies_binds_too(tmp_path: Path):
+  consumer = _Consumer(optional=True)
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[WorkflowEntry("consumer", consumer, timeout=10.0)],
+  )
+  outcome = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      inputs={"thing.txt": Mount(Inline(b"FROM CALLER"))},
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
+  assert outcome.succeeded is True
+  assert consumer.seen == [b"FROM CALLER"]
 
 
 def test_a_binding_to_a_non_producer_is_refused_at_bind_time(tmp_path: Path):
@@ -599,6 +680,41 @@ def test_reentry_resumes_the_finished_producer_and_does_no_work(
   assert second.record_key is not None
   record = json.loads(store.get_bytes(second.record_key))
   assert record["entries"][0]["resumed"] is True
+
+
+def test_a_workflow_refuses_to_resume_past_a_broken_marker(tmp_path: Path):
+  # A single entry, so nothing downstream would have noticed the missing
+  # record by failing an edge: without the check the workflow would report
+  # success and write a workflow record over evidence that is not there.
+  store = _store(tmp_path)
+  wf = Workflow(
+      store=store,
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[WorkflowEntry("producer", _Producer(), timeout=10.0)],
+  )
+  first = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
+  assert first.succeeded is True
+  shard = (
+      pathlib.Path(str(tmp_path / "store"))
+      / "sw/acme__widget-1/r0/producer/a0/run.json"
+  )
+  shard.unlink()
+
+  with pytest.raises(SandboxError, match="no shard matches"):
+    _ = wf.execute(
+        _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out2",
+        run_ts="ts-1",
+    )
 
 
 def test_resume_false_runs_everything_fresh(tmp_path: Path):

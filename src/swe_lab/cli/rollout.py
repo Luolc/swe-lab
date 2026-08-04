@@ -15,7 +15,7 @@ from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.cli.sandbox_wiring import invocation_config
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.evaluation.methods.unit_test import UnitTestEvalTask, verdict_of
+from swe_lab.evaluation.unit_test import UnitTestTask, verdict_of
 from swe_lab.harnesses.claude_code import Capture, ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     API_KEY_ENV,
@@ -30,7 +30,12 @@ from swe_lab.harnesses.claude_code.proxy import (
     ReverseProxy,
 )
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.rollout import CodingAgentTask, outcome_of, patch_of
+from swe_lab.rollout import (
+    CodingAgentTask,
+    outcome_of,
+    patch_of,
+    ProxyFactory,
+)
 from swe_lab.sandbox import SandboxConfig
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.workflow import (
@@ -44,7 +49,7 @@ _ROLLOUT_SUBDIR = "rollout_workspaces"
 # The entry keys of this command's workflow — also the task segment of every
 # record it persists (ADR-0007 §6).
 _ROLLOUT_KEY = "rollout"
-_EVAL_KEY = "eval"
+_UNIT_TEST_KEY = "unit_test"
 _DEFAULT_TIMEOUT_S = 1800.0
 # Proxy ports are drawn from a wide band by a stable hash of the instance id, so
 # concurrent rollouts on one host never collide (mirrors W1's per-run distinct
@@ -59,8 +64,8 @@ def _build_agent(
     capture: Capture,
     bare: bool,
     proxy_log_dir: epath.PathLike,
-) -> tuple[ClaudeCodeHarness, contextlib.AbstractContextManager[object]]:
-  """Build this CLI's harness + its trace recorder for the capture mode.
+) -> tuple[ClaudeCodeHarness, ProxyFactory | None]:
+  """Build this CLI's harness + how it opens a trace recorder, per capture mode.
 
   Construction lives here, not in the task: the caller picks the agent (this
   CLI ships Claude Code) and hands the composition the built pair.
@@ -82,10 +87,11 @@ def _build_agent(
       not something this command offers.
 
   Returns:
-    The harness and a context manager held open around the run.
+    The harness, and how to open the recorder wrapped around one run
+    (``None`` records nothing).
   """
   if capture is Capture.STREAM:
-    return ClaudeCodeHarness(model=model, bare=bare), contextlib.nullcontext()
+    return ClaudeCodeHarness(model=model, bare=bare), None
   port = port_for_index(zlib.crc32(instance_id.encode()) % _PROXY_PORT_SPAN)
   harness = ClaudeCodeHarness(
       model=model,
@@ -93,12 +99,12 @@ def _build_agent(
       proxy_base_url=f"http://{CONTAINER_PROXY_HOST}:{port}",
       bare=bare,
   )
-  proxy = ReverseProxy(
-      port,
-      epath.Path(proxy_log_dir) / PROXY_LOG_NAME,
-      build_proxy(find_repo_root()),
-  )
-  return harness, proxy
+  log_path = epath.Path(proxy_log_dir) / PROXY_LOG_NAME
+
+  def open_recorder() -> contextlib.AbstractContextManager[object]:
+    return ReverseProxy(port, log_path, build_proxy(find_repo_root()))
+
+  return harness, open_recorder
 
 
 def rollout_in_docker(
@@ -174,7 +180,7 @@ def rollout_in_docker(
   # A re-run of a one-off command re-runs it: the previous run's attempts and
   # their workspaces go, and `resume=False` below ignores its terminal markers.
   output_dir.rmtree(missing_ok=True)
-  harness, proxy = _build_agent(
+  harness, proxy_factory = _build_agent(
       instance.instance_id,
       model=model,
       capture=capture,
@@ -185,7 +191,7 @@ def rollout_in_docker(
   entries = [
       WorkflowEntry(
           _ROLLOUT_KEY,
-          CodingAgentTask(harness=harness, proxy=proxy),
+          CodingAgentTask(harness=harness, proxy_factory=proxy_factory),
           timeout=timeout,
           # The agent needs the network and the auth secret; the secret travels
           # by name, so its value never reaches a command line.
@@ -195,8 +201,8 @@ def rollout_in_docker(
   if grade:
     entries.append(
         WorkflowEntry(
-            _EVAL_KEY,
-            UnitTestEvalTask(),  # its patch.diff input is the rollout's output
+            _UNIT_TEST_KEY,
+            UnitTestTask(),  # its patch.diff input is the rollout's output
             timeout=timeout,
             sandbox=SandboxConfig(network=False),
             retries=eval_retries,
@@ -277,7 +283,7 @@ def _summarize(
       ),
       "workspace": str(output_dir),
   } | instance.run_provenance()
-  if persist and rollout.run is not None and rollout.run.record is not None:
+  if persist and rollout.run is not None:
     summary["persisted"] = {
         "run_ts": rollout.run.record.run_ts,
         "keys": rollout.run.record.artifact_keys,
@@ -286,7 +292,7 @@ def _summarize(
   if not grade:
     summary["outcome"] = "solved_not_graded"
     return summary
-  evaluation = entries[_EVAL_KEY]
+  evaluation = entries[_UNIT_TEST_KEY]
   if evaluation.status is EntryStatus.EDGE_FAILED or is_empty:
     # An empty patch never reaches a container: the edge refuses to stage
     # empty bytes, which is the same answer, one container cheaper.

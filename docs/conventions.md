@@ -172,7 +172,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, shared observers (diff-extract). |
 | `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `claude_code/` (invocation, `convert`/`capture`, and the Claude Code runner utilities `binary`/`proxy`/`trace`/`errors`). |
 | `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus per-dataset packages (`swebench_pro/`: record, run setup, unit-test compile + grader). |
-| `src/swe_lab/evaluation/` | The **eval-method axis**: `verdict` contract + `methods/` (`unit_test`). |
+| `src/swe_lab/evaluation/` | The **evaluation axis**: the `verdict` contract + one module per method (`unit_test`). |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
 | `src/swe_lab/cli/` + `__main__.py` | The CLI entry point (`eval`/`rollout`/`promote`); `rollout.py` is the rollout composition. (`verify` — golden QA — moved into `datasets/swebench_pro/`, it is dataset-specific.) |
 | `src/swe_lab/repo/`, `paths.py`, `patch.py` | Repo checkout providers (W1) + repo-root/cache path helpers + the git-patch extraction/apply utility (extraction script, binary-hunk strip, emptiness — [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)). |
