@@ -159,8 +159,9 @@ def gold_patch(sb, instance) -> Mapping[str, bytes]:
 class CodingAgentTask(Task):
   harness: Harness
   inputs_builder: InputsBuilder | None = instance_prompt
-  inputs: tuple[ArtifactSchema, ...] = ()   # extra declared inputs (a chain
-                                            # binds "plan.md" here)
+  extra_inputs: tuple[ArtifactSchema, ...] = ()   # extra declared inputs
+                                                  # (a chain binds "plan.md"
+                                                  # here)
   exclude_globs: tuple[str, ...] = ()
   agent_env: Mapping[str, str] | None = None
   proxy: AbstractContextManager[object] | None = None
@@ -174,7 +175,7 @@ class CodingAgentTask(Task):
   def input_schema(self):              # static: the prompt is ALWAYS a
     return (                           # declared input now — default-built
         ArtifactSchema(PROMPT_NAME, description="the task prompt"),
-        *self.inputs,                  # standalone, edge-supplied in a chain
+        *self.extra_inputs,            # standalone, edge-supplied in a chain
     )
 
   def action(self, sb, instance, *, timeout):
