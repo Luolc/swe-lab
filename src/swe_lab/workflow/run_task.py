@@ -164,6 +164,7 @@ def run_task(
     output_dir: epath.PathLike,
     timeout: float,
     retries: int = 0,
+    resume: bool = True,
     run_ts: str,
     backend: str = "",
     model: str = "",
@@ -197,6 +198,10 @@ def run_task(
     timeout: Seconds before each attempt's main action is killed.
     retries: Extra attempts after the first (``0`` = single attempt). The
       budget absorbs validation failures and infrastructure failures alike.
+    resume: Honor an existing terminal marker (the workflow default).
+      ``False`` skips the check and runs fresh, overwriting attempts and
+      marker — the one-off CLI shape, where re-running a command means
+      re-running it.
     run_ts: Launch timestamp, injected by the caller — recorded, never read.
     backend: The sandbox backend name, recorded on the shards.
     model: The agent model alias, recorded on the shards.
@@ -218,7 +223,7 @@ def run_task(
     raise ValueError(f"retries must be >= 0, got {retries}")
   instance_id = task.instance.instance_id
 
-  marker = read_marker(store, address, instance_id)
+  marker = read_marker(store, address, instance_id) if resume else None
   if marker is not None:
     shards = store.read_manifest(
         address.sweep_id, instance_id, address.rollout_id, task=address.task
@@ -246,7 +251,13 @@ def run_task(
     )
     valid = task.outputs_valid(result)
     # Persist the attempt, valid or not: the failing attempt is evidence,
-    # and a record exists for every container that was paid for.
+    # and a record exists for every container that was paid for. The engine
+    # error travels too — a shard whose status says SETUP_ERROR with nothing
+    # to read is exactly the debugging dead end downstream has hit.
+    error = result.run.error
+    extra: dict[str, object] = {"outputs_valid": valid}
+    if error is not None:
+      extra["error"] = repr(error)
     record = persist(
         store,
         AttemptRecord(
@@ -261,7 +272,7 @@ def run_task(
             backend=backend,
             model=model,
             metrics=dict(result.run.metrics),
-            extra={"outputs_valid": valid, **(extra_record or {})},
+            extra=extra | dict(extra_record or {}),
         ),
         result.run.artifacts,
     )
