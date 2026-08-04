@@ -169,29 +169,10 @@ class Workflow:
   def __post_init__(self) -> None:
     """Validate everything the declaration alone can decide.
 
-    Raises:
-      WorkflowError: If the declaration is malformed — no entries, duplicate
-        or malformed keys, the reserved key, or a binding that is malformed,
-        duplicated, or names an input its task does not declare.
+    A malformed declaration raises ``WorkflowError`` from
+    :func:`validate_declaration`.
     """
-    if not self.entries:
-      raise WorkflowError("a workflow needs at least one entry")
-    keys = [entry.key for entry in self.entries]
-    if len(set(keys)) != len(keys):
-      raise WorkflowError(f"duplicate entry keys: {sorted(keys)}")
-    if INPUTS_KEY in keys:
-      raise WorkflowError(
-          f"entry key {INPUTS_KEY!r} is reserved for the workflow's own"
-          " inputs"
-      )
-    # TaskAddress re-validates each key's shape; building them here surfaces
-    # a malformed key at declaration, with the entry named.
-    for entry in self.entries:
-      try:
-        _ = self._address(entry)
-      except ValueError as error:
-        raise WorkflowError(f"entry {entry.key!r}: {error}") from error
-      _ = _parse_bindings(entry, {s.name for s in entry.task.input_schema()})
+    validate_declaration(self.entries)
 
   def _address(self, entry: WorkflowEntry) -> TaskAddress:
     return TaskAddress(
@@ -467,6 +448,42 @@ class Workflow:
         ).encode("utf-8"),
     )
     return key
+
+
+def validate_declaration(entries: Sequence[WorkflowEntry]) -> None:
+  """Check everything a list of entries can be judged on by itself.
+
+  What a definition can be wrong about with no instance and no store in hand:
+  its keys, and its bindings' syntax and targets. A registry runs this at
+  import, and every ``Workflow`` runs it at construction, so both fail in the
+  same place for the same reason. The *edges* are not resolved here — output
+  schemas can be instance-derived, so that waits for the bind (§5).
+
+  Args:
+    entries: The steps, in declared order.
+
+  Raises:
+    WorkflowError: If the declaration is malformed — no entries, duplicate or
+      malformed keys, the reserved key, or a binding that is malformed,
+      duplicated, or names an input its task does not declare.
+  """
+  if not entries:
+    raise WorkflowError("a workflow needs at least one entry")
+  keys = [entry.key for entry in entries]
+  if len(set(keys)) != len(keys):
+    raise WorkflowError(f"duplicate entry keys: {sorted(keys)}")
+  if INPUTS_KEY in keys:
+    raise WorkflowError(
+        f"entry key {INPUTS_KEY!r} is reserved for the workflow's own inputs"
+    )
+  for entry in entries:
+    # TaskAddress re-validates each key's shape; building one here surfaces a
+    # malformed key at declaration, with the entry named.
+    try:
+      _ = TaskAddress(sweep_id="", rollout_id=0, task=entry.key)
+    except ValueError as error:
+      raise WorkflowError(f"entry {entry.key!r}: {error}") from error
+    _ = _parse_bindings(entry, {s.name for s in entry.task.input_schema()})
 
 
 def _resolve_edges(
