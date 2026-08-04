@@ -608,6 +608,13 @@ above, and why:
   injected by the command. The eval verdict's scalar summary entries
   (`output_state`, `first_missing`) are no longer copied into the shard —
   they are derivable from the persisted `output.json` artifact.
+- **`CodingAgentTask` holds a proxy *factory*, not a proxy** (review
+  follow-up). §3's sketch keeps the single-use recorder as a field, which
+  contradicts the same task being registrable in a static definition and
+  executed once per instance: the second execution would reuse a closed
+  recorder. A task holds nothing a run dirties, so the field opens one per
+  execution instead. The built-ins were unaffected (their factory is `None`),
+  which is exactly why the boundary needed a test rather than an assumption.
 - **§6's CLI plumbing landed on hand-built workflows, not on `build_workflow`.**
   The registry ships and is tested, but the two commands still construct their
   own entries, because a registered definition bakes its harness and the

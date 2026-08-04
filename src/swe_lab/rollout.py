@@ -15,7 +15,7 @@ the prompt its solver reads.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 import contextlib
 from dataclasses import dataclass, field
 from typing import Any, override
@@ -37,6 +37,13 @@ from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 # The store name the task prompt arrives as. Markdown because that is what the
 # prompt is — and what an agent reading its own input file expects.
 PROMPT_NAME = "prompt.md"
+
+type ProxyFactory = Callable[[], contextlib.AbstractContextManager[object]]
+"""Opens one recorder for one execution.
+
+See ``CodingAgentTask.proxy_factory``: a factory rather than a recorder,
+because a task is executed as many times as it is invoked.
+"""
 
 
 def instance_prompt(
@@ -83,10 +90,13 @@ class CodingAgentTask(Task):
     agent_env: Extra environment for the agent process, handed to the
       harness. For a secret, use the sandbox's ``pass_env`` instead — that
       passes it by reference, so the value never reaches a command line.
-    proxy: A recorder held open around the main action (e.g. a host-side
-      reverse proxy capturing the agent's API traffic). Any context manager
-      will do; ``None`` means record nothing. Single-use, like one execution:
-      a re-executed task needs a fresh one.
+    proxy_factory: Opens a recorder held open around the main action (e.g. a
+      host-side reverse proxy capturing the agent's API traffic). Anything
+      returning a context manager will do; ``None`` records nothing. A
+      *factory*, not a recorder, because a task is a declaration that may be
+      executed any number of times — a registered definition is executed once
+      per instance — while a recorder is single-use. One execution, one
+      recorder, and the declaration stays reusable.
   """
 
   harness: Harness
@@ -101,7 +111,7 @@ class CodingAgentTask(Task):
   extra_inputs: tuple[ArtifactSchema, ...] = ()
   exclude_globs: tuple[str, ...] = ()
   agent_env: Mapping[str, str] | None = None
-  proxy: contextlib.AbstractContextManager[object] | None = None
+  proxy_factory: ProxyFactory | None = None
 
   @override
   def mounts(self, instance: TaskInstance[Any]) -> Mounts:
@@ -160,9 +170,9 @@ class CodingAgentTask(Task):
     text: the harness contract is untouched (ADR-0007 §8), and where the
     harness lands it stays the harness's own business.
 
-    The proxy's lifetime is the agent's — opened around the run and closed
+    The recorder's lifetime is the agent's — opened around the run and closed
     before ``before_destroy`` reads the log, so the recording is flushed by
-    the time conversion happens.
+    the time conversion happens, and a fresh one is opened per execution.
 
     Args:
       sb: The live sandbox to run in.
@@ -175,7 +185,10 @@ class CodingAgentTask(Task):
     """
     del instance
     prompt = sb.read(PROMPT_NAME).decode("utf-8", "backslashreplace")
-    with self.proxy or contextlib.nullcontext():
+    recorder = (
+        self.proxy_factory() if self.proxy_factory else contextlib.nullcontext()
+    )
+    with recorder:
       return self.harness.run(
           sb, prompt=prompt, timeout=timeout, env=self.agent_env
       )

@@ -519,10 +519,10 @@ def _resolve_edges(
   # name → earlier producers, in order; caller inputs exist before anything.
   produced: dict[str, list[str]] = {name: [INPUTS_KEY] for name in provided}
   for entry in entries:
-    declared_inputs = {s.name for s in entry.task.input_schema()}
-    explicit = _parse_bindings(entry, declared_inputs)
+    schemas = {s.name: s for s in entry.task.input_schema()}
+    explicit = _parse_bindings(entry, set(schemas))
     bound: dict[str, str] = {}
-    for name in sorted(declared_inputs):
+    for name in sorted(schemas):
       if name in explicit:
         producer = explicit[name]
         if producer not in produced.get(name, []):
@@ -536,12 +536,17 @@ def _resolve_edges(
         if len(candidates) == 1:
           bound[name] = candidates[0]
         elif not candidates:
-          if entry.task.inputs_builder is not None:
-            # The third supplier: a task with a builder fills its own inputs
-            # in-session, so an unproduced name is not dangling — it is the
-            # standalone shape. Requiredness is verified there, before the
-            # action. (A name that *is* produced still binds by edge, and
-            # then the builder's own collision check has the last word.)
+          # Two ways an unproduced name is not a dangling edge. A task with a
+          # builder fills its own inputs in-session — the standalone shape,
+          # where requiredness is verified there, before the action. And an
+          # *optional* input is optional here too, exactly as ``execute``
+          # treats it: a workflow that simply does not supply one is valid.
+          # (A name that *is* produced still binds by edge either way, and
+          # then the builder's own collision check has the last word.)
+          if (
+              entry.task.inputs_builder is not None
+              or not schemas[name].required
+          ):
             continue
           raise WorkflowError(
               f"nothing produces {name!r}, required by {entry.key}: no"

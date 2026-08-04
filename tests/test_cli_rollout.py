@@ -9,7 +9,6 @@ directory.
 """
 
 from collections.abc import Mapping
-import contextlib
 import json
 from pathlib import Path
 from typing import final, override
@@ -175,14 +174,14 @@ def _wire(
       capture: object,
       bare: bool,
       proxy_log_dir: object,
-  ) -> tuple[Harness, contextlib.AbstractContextManager[object]]:
+  ) -> tuple[Harness, None]:
     del instance_id, proxy_log_dir
     calls["model"] = model
     calls["capture"] = capture
     calls["bare"] = bare
     prompts = calls["prompts"]
     assert isinstance(prompts, list)
-    return _StubAgent(edits=edits, prompts=prompts), contextlib.nullcontext()
+    return _StubAgent(edits=edits, prompts=prompts), None
 
   monkeypatch.setenv(TOKEN, "tok")
 
