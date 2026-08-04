@@ -342,6 +342,61 @@ def test_dead_attempts_without_a_marker_are_overwritten(tmp_path: Path):
   assert [s.run_ts for s in shards] == ["ts-1"]  # a0 overwritten, not a1
 
 
+def test_a_shorter_rerun_does_not_leave_a_stale_record_behind(tmp_path: Path):
+  # A forced re-run overwrites attempts from a0 and may spend FEWER of them,
+  # so the previous run's last attempt outlives it in the store. Resume must
+  # hand back the marker's own final attempt — taking the last shard would
+  # feed a downstream edge the older run's artifacts while the marker it just
+  # trusted says something else.
+  store = _store(tmp_path)
+  first = run_task(
+      _FlakyProducer(produce_from=1),  # fails a0, succeeds a1
+      _Instance(),
+      store=store,
+      address=ADDRESS,
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      retries=1,
+      run_ts="ts-0",
+  )
+  assert first.attempts == 2
+
+  rerun = run_task(
+      _FlakyProducer(),  # succeeds at a0 this time
+      _Instance(),
+      store=store,
+      address=ADDRESS,
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out2",
+      timeout=10.0,
+      resume=False,
+      run_ts="ts-1",
+  )
+  assert rerun.attempts == 1
+  # the older a1 is still in the store — nothing deletes it
+  shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
+  assert [(s.attempt, s.run_ts) for s in shards] == [(0, "ts-1"), (1, "ts-0")]
+
+  resumed = run_task(
+      _FlakyProducer(),
+      _Instance(),
+      store=store,
+      address=ADDRESS,
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out3",
+      timeout=10.0,
+      run_ts="ts-2",
+  )
+  assert resumed.resumed is True
+  assert resumed.attempts == 1
+  assert resumed.record is not None
+  assert (resumed.record.attempt, resumed.record.run_ts) == (0, "ts-1")
+
+
 def test_a_negative_budget_is_refused(tmp_path: Path):
   with pytest.raises(ValueError, match="retries"):
     _ = run_task(

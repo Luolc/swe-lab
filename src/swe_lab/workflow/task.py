@@ -141,9 +141,10 @@ class Task(ABC):
     """Return ALL of this task's observers. Default: none.
 
     One per thing the task extracts, plus a harness's own if it uses one.
-    Fresh instances per call — observers are single-run, and so is each
-    execution; a task that keeps a reference for ``action`` (an eval's retry
-    loop drives its parse observer) stores it on itself.
+    Fresh instances per call — an observer is single-run, and so is each
+    execution. The typed results are read back off ``AttemptResult.observers``
+    afterwards (that is what it is for), so nothing needs a reference kept on
+    the task.
 
     Args:
       instance: The instance this execution is bound to.
@@ -425,9 +426,9 @@ def _hand_exec_outcome(
   ``exec_result`` / ``wall_seconds`` field (a harness-outcome collector, an
   eval parser) gets them before teardown, so ``before_destroy`` can report
   how the action ended. A field the action's own accounting already set is
-  left alone — an eval retry loop hands its parser each attempt's result and
-  the wall time *it* means (script cost, excluding grading), and clobbering
-  that with the whole action's duration would quietly change the metric.
+  left alone: an action that measures something narrower than "how long
+  ``action`` took" — the cost of one exec, excluding what the task does around
+  it — has the last word, and clobbering it would quietly change the metric.
 
   Args:
     observers: The run's composed observers.

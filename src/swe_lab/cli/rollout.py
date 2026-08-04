@@ -30,7 +30,12 @@ from swe_lab.harnesses.claude_code.proxy import (
     ReverseProxy,
 )
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.rollout import CodingAgentTask, outcome_of, patch_of
+from swe_lab.rollout import (
+    CodingAgentTask,
+    outcome_of,
+    patch_of,
+    ProxyFactory,
+)
 from swe_lab.sandbox import SandboxConfig
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.workflow import (
@@ -59,8 +64,8 @@ def _build_agent(
     capture: Capture,
     bare: bool,
     proxy_log_dir: epath.PathLike,
-) -> tuple[ClaudeCodeHarness, contextlib.AbstractContextManager[object]]:
-  """Build this CLI's harness + its trace recorder for the capture mode.
+) -> tuple[ClaudeCodeHarness, ProxyFactory | None]:
+  """Build this CLI's harness + how it opens a trace recorder, per capture mode.
 
   Construction lives here, not in the task: the caller picks the agent (this
   CLI ships Claude Code) and hands the composition the built pair.
@@ -82,10 +87,11 @@ def _build_agent(
       not something this command offers.
 
   Returns:
-    The harness and a context manager held open around the run.
+    The harness, and how to open the recorder wrapped around one run
+    (``None`` records nothing).
   """
   if capture is Capture.STREAM:
-    return ClaudeCodeHarness(model=model, bare=bare), contextlib.nullcontext()
+    return ClaudeCodeHarness(model=model, bare=bare), None
   port = port_for_index(zlib.crc32(instance_id.encode()) % _PROXY_PORT_SPAN)
   harness = ClaudeCodeHarness(
       model=model,
@@ -93,12 +99,12 @@ def _build_agent(
       proxy_base_url=f"http://{CONTAINER_PROXY_HOST}:{port}",
       bare=bare,
   )
-  proxy = ReverseProxy(
-      port,
-      epath.Path(proxy_log_dir) / PROXY_LOG_NAME,
-      build_proxy(find_repo_root()),
-  )
-  return harness, proxy
+  log_path = epath.Path(proxy_log_dir) / PROXY_LOG_NAME
+
+  def open_recorder() -> contextlib.AbstractContextManager[object]:
+    return ReverseProxy(port, log_path, build_proxy(find_repo_root()))
+
+  return harness, open_recorder
 
 
 def rollout_in_docker(
@@ -174,7 +180,7 @@ def rollout_in_docker(
   # A re-run of a one-off command re-runs it: the previous run's attempts and
   # their workspaces go, and `resume=False` below ignores its terminal markers.
   output_dir.rmtree(missing_ok=True)
-  harness, proxy = _build_agent(
+  harness, proxy_factory = _build_agent(
       instance.instance_id,
       model=model,
       capture=capture,
@@ -185,7 +191,7 @@ def rollout_in_docker(
   entries = [
       WorkflowEntry(
           _ROLLOUT_KEY,
-          CodingAgentTask(harness=harness, proxy=proxy),
+          CodingAgentTask(harness=harness, proxy_factory=proxy_factory),
           timeout=timeout,
           # The agent needs the network and the auth secret; the secret travels
           # by name, so its value never reaches a command line.

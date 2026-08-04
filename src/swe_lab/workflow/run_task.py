@@ -158,6 +158,41 @@ class TaskRunOutcome:
   result: AttemptResult | None
 
 
+def _final_shard(
+    shards: Sequence[AttemptRecord], marker: TerminalMarker
+) -> AttemptRecord | None:
+  """Return the shard the marker was written for — never an outlived one.
+
+  A forced re-run (``resume=False``) overwrites attempts from ``a0`` and may
+  spend **fewer** of them, so a later attempt's shard can outlive the run that
+  wrote it: after a two-attempt run followed by a one-attempt re-run, ``a1``
+  is still in the store while the marker says one attempt. Taking the last
+  shard would hand a downstream edge the *older* run's artifacts, silently
+  contradicting the marker that resume just trusted.
+
+  The marker names both the run (``run_ts``) and how many attempts it spent,
+  so the final shard is the one matching both. No match means the store and
+  the marker disagree, and a consumer meets that as a missing input — the
+  distinct, loud edge failure — rather than as the wrong bytes.
+
+  Args:
+    shards: The task's persisted attempt records.
+    marker: The terminal marker resume read.
+
+  Returns:
+    The marker's own final attempt record, or ``None`` if it is not there.
+  """
+  return next(
+      (
+          shard
+          for shard in shards
+          if shard.attempt == marker.attempts - 1
+          and shard.run_ts == marker.run_ts
+      ),
+      None,
+  )
+
+
 def _over_a_fresh_workspace(
     config: SandboxConfig, workspace: epath.Path
 ) -> SandboxConfig:
@@ -264,7 +299,7 @@ def run_task(
         outcome=marker.outcome,
         resumed=True,
         attempts=marker.attempts,
-        record=shards[-1] if shards else None,
+        record=_final_shard(shards, marker),
         result=None,
     )
 

@@ -190,7 +190,8 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
     entered.append("closed")
 
   workspace = tmp_path / "run"
-  result = CodingAgentTask(harness=StubHarness(), proxy=stub_proxy()).execute(
+  task = CodingAgentTask(harness=StubHarness(), proxy_factory=stub_proxy)
+  result = task.execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
       output_dir=workspace,
@@ -199,6 +200,17 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
 
   assert result.run.status is RunStatus.SUCCESS
   assert entered == ["open", "closed"]  # the recorder wrapped the whole run
+  # …and the task stayed a declaration: executing it again opens a FRESH
+  # recorder, which is what makes it registrable in a static definition.
+  second = tmp_path / "run2"
+  again = task.execute(
+      GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(second)),
+      _Instance(),
+      output_dir=second,
+      timeout=10.0,
+  )
+  assert again.run.status is RunStatus.SUCCESS
+  assert entered == ["open", "closed", "open", "closed"]
   # the prompt landed where the *harness* chose to put it — there is no
   # composition-level filename contract anymore (ADR-0007 §8)
   assert (workspace / "stub.prompt").read_text() == "SOLVE THIS"
