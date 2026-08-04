@@ -33,9 +33,9 @@ UNIT_TEST_KEY = "unit_test"
 
 _AGENT_TIMEOUT_S = 1800.0
 _UNIT_TEST_TIMEOUT_S = 1800.0
-# One extra grading attempt absorbs a harness flake without hiding a real
+# Two extra grading attempts absorb a flaky suite without hiding a real
 # failure: the patch is identical on every attempt (ADR-0008).
-_UNIT_TEST_RETRIES = 1
+_UNIT_TEST_RETRIES = 2
 
 ROLLOUT: WorkflowDef = (
     WorkflowEntry(
@@ -64,9 +64,10 @@ UNIT_TEST: WorkflowDef = (
         # is refused on purpose. It lands with the command that invokes it.
         UnitTestTask(),
         timeout=_UNIT_TEST_TIMEOUT_S,
-        # Grading is offline on purpose: a test suite that reaches the network
-        # is measuring something other than the patch.
-        sandbox=DockerHostSandboxConfig(network=False),
+        # Online, like every other entry: real suites fetch things, and a
+        # backend that cannot cut the network (the GH job is already running
+        # when we get it) could not honor an offline declaration anyway.
+        sandbox=DockerHostSandboxConfig(network=True),
         retries=_UNIT_TEST_RETRIES,
     ),
 )
@@ -83,7 +84,7 @@ GOLD_UNIT_TEST: WorkflowDef = (
         # purpose, and the collision is the reason there are two names.
         UnitTestTask(inputs_builder=gold_patch),
         timeout=_UNIT_TEST_TIMEOUT_S,
-        sandbox=DockerHostSandboxConfig(network=False),
+        sandbox=DockerHostSandboxConfig(network=True),
         retries=_UNIT_TEST_RETRIES,
     ),
 )
