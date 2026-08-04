@@ -131,16 +131,19 @@ class _Consumer(Task):
 
 def test_the_built_ins_register_at_import():
   # `definitions` is imported for its registrations, and names them too.
-  assert definitions.SOLVE_KEY == "rollout"
-  assert {"solve", "grade", "solve_and_grade"} <= set(registered_workflows())
+  assert definitions.ROLLOUT_KEY == "rollout"
+  assert {"rollout", "unit_test", "rollout_and_unit_test"} <= set(
+      registered_workflows()
+  )
 
 
 def test_the_shipped_chain_grades_what_the_agent_produced(tmp_path: Path):
-  # The definition is what a `swe-lab run solve_and_grade` invocation gets:
+  # The definition is what a `swe-lab run rollout_and_unit_test` invocation
+  # gets:
   # the agent's entry declares the credential it inherits, the grading entry
   # is offline, and the two are keyed the way their records are.
   workflow = build_workflow(
-      "solve_and_grade",
+      "rollout_and_unit_test",
       store=FilesystemStore(epath.Path(tmp_path / "store")),
       sweep_id="sw",
       rollout_id=0,
@@ -152,6 +155,23 @@ def test_the_shipped_chain_grades_what_the_agent_produced(tmp_path: Path):
   assert evaluation.sandbox.network is False
   # the edge that makes it a chain: the agent's patch is the grader's input
   assert [s.name for s in evaluation.task.input_schema()] == [PATCH_NAME]
+  # …and the grading entry supplies nothing itself, which is what lets the
+  # SAME entry be the standalone `unit_test` workflow (patch from the caller)
+  # and the tail of this chain (patch from the edge). A gold-patch variant
+  # would need a builder, and a builder cannot coexist with either supplier —
+  # so it is a separate definition, not a flag on this one.
+  assert evaluation.task.inputs_builder is None
+  assert (
+      build_workflow(
+          "unit_test",
+          store=FilesystemStore(epath.Path(tmp_path / "store")),
+          sweep_id="sw",
+          rollout_id=0,
+      )
+      .entries[0]
+      .task
+      is evaluation.task
+  )
   # …and the solving task builds its own prompt, so the chain needs no caller
   assert rollout.task.inputs_builder is not None
   assert [s.name for s in rollout.task.input_schema()] == [PROMPT_NAME]
