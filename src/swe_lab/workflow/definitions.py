@@ -1,4 +1,4 @@
-"""The shipped workflow definitions: solve, grade, and the chain of both.
+"""The shipped workflow definitions: rollout, unit_test, and the two chained.
 
 Statically written, registered at import, invoked by name against any
 instance. This module is the one place where a shipped workflow names a
@@ -28,8 +28,8 @@ from .workflow import WorkflowEntry
 
 # The entry keys, which are also the task segment of every record a run of
 # these workflows persists (ADR-0007 §6). Stable: resume trusts them.
-SOLVE_KEY = "rollout"
-GRADE_KEY = "eval"
+ROLLOUT_KEY = "rollout"
+EVAL_KEY = "eval"
 
 _AGENT_TIMEOUT_S = 1800.0
 _EVAL_TIMEOUT_S = 1800.0
@@ -37,9 +37,9 @@ _EVAL_TIMEOUT_S = 1800.0
 # failure: the patch is identical on every attempt (ADR-0008).
 _EVAL_RETRIES = 1
 
-SOLVE: WorkflowDef = (
+ROLLOUT: WorkflowDef = (
     WorkflowEntry(
-        SOLVE_KEY,
+        ROLLOUT_KEY,
         CodingAgentTask(harness=ClaudeCodeHarness(model=DEFAULT_MODEL)),
         timeout=_AGENT_TIMEOUT_S,
         # The agent needs the network, and its credential travels by name so
@@ -48,11 +48,18 @@ SOLVE: WorkflowDef = (
     ),
 )
 
-GRADE: WorkflowDef = (
+UNIT_TEST: WorkflowDef = (
     WorkflowEntry(
-        GRADE_KEY,
-        # Its patch input comes from whoever runs it: an earlier entry in a
-        # chain, or the caller's own bytes in this standalone definition.
+        EVAL_KEY,
+        # The task supplies **no** input of its own (`inputs_builder=None`),
+        # which is what lets this one entry serve both modes: run alone, its
+        # patch is the caller's (`execute(inputs=…)`); spliced into the chain
+        # below, the same entry takes the agent's by edge.
+        #
+        # Grading the *gold* patch is therefore a different definition, not a
+        # flag on this one: it needs `inputs_builder=gold_patch`, and a task
+        # that builds its own patch cannot also be handed one — the collision
+        # is refused on purpose. It lands with the command that invokes it.
         UnitTestEvalTask(),
         timeout=_EVAL_TIMEOUT_S,
         # Grading is offline on purpose: a test suite that reaches the network
@@ -62,8 +69,8 @@ GRADE: WorkflowDef = (
     ),
 )
 
-SOLVE_AND_GRADE: WorkflowDef = (*SOLVE, *GRADE)
+ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 
-register_workflow("solve", SOLVE)
-register_workflow("grade", GRADE)
-register_workflow("solve_and_grade", SOLVE_AND_GRADE)
+register_workflow("rollout", ROLLOUT)
+register_workflow("unit_test", UNIT_TEST)
+register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
