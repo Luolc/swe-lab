@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 import json
+import pathlib
 from pathlib import Path
 from typing import Any, final, override
 
@@ -29,6 +30,7 @@ from swe_lab.sandbox import (
     Inline,
     Mount,
     SandboxConfig,
+    SandboxError,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
@@ -678,6 +680,41 @@ def test_reentry_resumes_the_finished_producer_and_does_no_work(
   assert second.record_key is not None
   record = json.loads(store.get_bytes(second.record_key))
   assert record["entries"][0]["resumed"] is True
+
+
+def test_a_workflow_refuses_to_resume_past_a_broken_marker(tmp_path: Path):
+  # A single entry, so nothing downstream would have noticed the missing
+  # record by failing an edge: without the check the workflow would report
+  # success and write a workflow record over evidence that is not there.
+  store = _store(tmp_path)
+  wf = Workflow(
+      store=store,
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[WorkflowEntry("producer", _Producer(), timeout=10.0)],
+  )
+  first = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
+  assert first.succeeded is True
+  shard = (
+      pathlib.Path(str(tmp_path / "store"))
+      / "sw/acme__widget-1/r0/producer/a0/run.json"
+  )
+  shard.unlink()
+
+  with pytest.raises(SandboxError, match="no shard matches"):
+    _ = wf.execute(
+        _Instance(),
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out2",
+        run_ts="ts-1",
+    )
 
 
 def test_resume_false_runs_everything_fresh(tmp_path: Path):

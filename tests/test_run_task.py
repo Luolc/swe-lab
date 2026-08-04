@@ -9,6 +9,7 @@ decides the marker, retry-desire does not — get their named tests.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import pathlib
 from pathlib import Path
 from typing import final, override
 
@@ -23,6 +24,7 @@ from swe_lab.sandbox import (
     Contribution,
     ExecResult,
     FilesystemStore,
+    SandboxError,
     SandboxFs,
     SandboxObserver,
     SandboxSpec,
@@ -37,6 +39,7 @@ from swe_lab.workflow import (
     Task,
     TaskAddress,
     TaskOutcome,
+    TerminalMarker,
 )
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
@@ -395,6 +398,68 @@ def test_a_shorter_rerun_does_not_leave_a_stale_record_behind(tmp_path: Path):
   assert resumed.attempts == 1
   assert resumed.record is not None
   assert (resumed.record.attempt, resumed.record.run_ts) == (0, "ts-1")
+
+
+def _marker_key(instance_id: str = "acme__widget-1") -> str:
+  return f"{ADDRESS.prefix(instance_id)}/complete.json"
+
+
+def test_a_marker_whose_shard_is_gone_is_refused_not_believed(tmp_path: Path):
+  # The marker is written last, after the shard is durable, so a marker with
+  # no shard behind it is a state this system cannot reach. Resume skips the
+  # work entirely on the marker's word, so it verifies the one thing that word
+  # rests on — otherwise a task reports success with no evidence at all.
+  store = _store(tmp_path)
+  first, _, _ = _run(tmp_path, _FlakyProducer(), store=store)
+  assert first.outcome is TaskOutcome.SUCCEEDED
+  shard = (
+      pathlib.Path(str(tmp_path / "store"))
+      / "sw/acme__widget-1/r0/probe/a0/run.json"
+  )
+  shard.unlink()
+
+  with pytest.raises(SandboxError, match="no shard matches"):
+    _ = run_task(
+        _FlakyProducer(),
+        _Instance(),
+        store=store,
+        address=ADDRESS,
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out2",
+        timeout=10.0,
+        run_ts="ts-1",
+    )
+
+
+def test_a_shard_from_another_run_does_not_satisfy_the_marker(tmp_path: Path):
+  # Right attempt index, wrong run: the shard is evidence of a *different*
+  # execution, and a resume that accepted it would report this run's outcome
+  # over that run's artifacts.
+  store = _store(tmp_path)
+  first, _, _ = _run(tmp_path, _FlakyProducer(), store=store)
+  assert first.outcome is TaskOutcome.SUCCEEDED
+  store.put_bytes(
+      _marker_key(),
+      TerminalMarker(
+          outcome=TaskOutcome.SUCCEEDED, attempts=1, run_ts="ts-elsewhere"
+      )
+      .to_json()
+      .encode("utf-8"),
+  )
+
+  with pytest.raises(SandboxError, match="no shard matches"):
+    _ = run_task(
+        _FlakyProducer(),
+        _Instance(),
+        store=store,
+        address=ADDRESS,
+        backend="fake",
+        sandbox=FakeSandboxConfig(),
+        output_dir=tmp_path / "out2",
+        timeout=10.0,
+        run_ts="ts-1",
+    )
 
 
 def test_a_negative_budget_is_refused(tmp_path: Path):

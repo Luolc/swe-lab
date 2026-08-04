@@ -283,7 +283,7 @@ def _summarize(
       ),
       "workspace": str(output_dir),
   } | instance.run_provenance()
-  if persist and rollout.run is not None and rollout.run.record is not None:
+  if persist and rollout.run is not None:
     summary["persisted"] = {
         "run_ts": rollout.run.record.run_ts,
         "keys": rollout.run.record.artifact_keys,
