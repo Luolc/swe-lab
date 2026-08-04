@@ -625,3 +625,12 @@ above, and why:
   own entries, because a registered definition bakes its harness and the
   invocation cannot yet adjust it. Moving them onto `build_workflow` is the
   first thing the override grammar buys (task 23).
+
+  **Resolved the other way (2026-08-04).** The override grammar landed in task
+  23, and it lives in `cli/overrides.py` — which imports `swe_lab.workflow`, so
+  the registry cannot apply overrides without closing an import cycle. With
+  overrides in the picture the real flow is *look up → adjust → construct*,
+  which a one-shot `build_workflow(name, …)` cannot express. So the wrapper was
+  **deleted** rather than adopted: it had no production caller, and the tests
+  exercising it were validating a construction path nobody ran. `registry.py`
+  is now purely the name registry its docstring always claimed it was.

@@ -32,11 +32,11 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.workflow import (
-    build_workflow,
     register_workflow,
     registered_workflows,
     Task,
     Workflow,
+    workflow_definition,
     WorkflowDef,
     WorkflowEntry,
     WorkflowError,
@@ -153,17 +153,11 @@ def test_the_built_ins_register_at_import():
   )
 
 
-def test_the_shipped_chain_grades_what_the_agent_produced(tmp_path: Path):
+def test_the_shipped_chain_grades_what_the_agent_produced():
   # The definition is what a `swe-lab run rollout_and_unit_test` invocation
   # gets: the agent's entry declares the credential it inherits, and the two
   # are keyed the way their records are.
-  workflow = build_workflow(
-      "rollout_and_unit_test",
-      store=FilesystemStore(epath.Path(tmp_path / "store")),
-      sweep_id="sw",
-      rollout_id=0,
-  )
-  rollout, evaluation = workflow.entries
+  rollout, evaluation = workflow_definition("rollout_and_unit_test")
   assert (rollout.key, evaluation.key) == ("rollout", "unit_test")
   assert rollout.sandbox.network is True
   assert rollout.sandbox.pass_env == ("CLAUDE_CODE_OAUTH_TOKEN",)
@@ -178,30 +172,15 @@ def test_the_shipped_chain_grades_what_the_agent_produced(tmp_path: Path):
   # would need a builder, and a builder cannot coexist with either supplier —
   # so it is a separate definition, not a flag on this one.
   assert evaluation.task.inputs_builder is None
-  assert (
-      build_workflow(
-          "unit_test",
-          store=FilesystemStore(epath.Path(tmp_path / "store")),
-          sweep_id="sw",
-          rollout_id=0,
-      )
-      .entries[0]
-      .task
-      is evaluation.task
-  )
+  assert workflow_definition("unit_test")[0].task is evaluation.task
   # …and the solving task builds its own prompt, so the chain needs no caller
   assert rollout.task.inputs_builder is not None
   assert [s.name for s in rollout.task.input_schema()] == [PROMPT_NAME]
 
 
-def test_an_unknown_workflow_is_refused_by_name(tmp_path: Path):
+def test_an_unknown_workflow_is_refused_by_name():
   with pytest.raises(WorkflowError, match="unknown workflow"):
-    _ = build_workflow(
-        "does_not_exist",
-        store=FilesystemStore(epath.Path(tmp_path / "store")),
-        sweep_id="sw",
-        rollout_id=0,
-    )
+    _ = workflow_definition("does_not_exist")
 
 
 def test_a_malformed_definition_is_refused_at_registration():
@@ -236,11 +215,13 @@ def test_a_registered_definition_runs_by_name(tmp_path: Path):
           WorkflowEntry("consumer", consumer, timeout=10.0),
       ),
   )
-  workflow = build_workflow(
-      "test_chain",
+  # Built the way the CLI builds it: look the definition up by name, then
+  # construct. Nothing between them here; an invocation would apply overrides.
+  workflow = Workflow(
       store=FilesystemStore(epath.Path(tmp_path / "store")),
       sweep_id="sw",
       rollout_id=0,
+      entries=workflow_definition("test_chain"),
   )
   outcome = _on(workflow, FakeSandboxConfig()).execute(
       _Instance(),
@@ -260,7 +241,12 @@ def test_a_definition_is_reusable_across_instances(tmp_path: Path):
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   for index, instance_id in enumerate(["one", "two"]):
     outcome = _on(
-        build_workflow("test_reuse", store=store, sweep_id="sw", rollout_id=0),
+        Workflow(
+            store=store,
+            sweep_id="sw",
+            rollout_id=0,
+            entries=workflow_definition("test_reuse"),
+        ),
         FakeSandboxConfig(),
     ).execute(
         _Instance(instance_id=instance_id),

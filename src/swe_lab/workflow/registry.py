@@ -13,11 +13,8 @@ concrete tasks and a concrete agent, and the engine must not depend on either.
 
 from __future__ import annotations
 
-from swe_lab.sandbox import Store
-
 from .workflow import (
     validate_declaration,
-    Workflow,
     WorkflowEntry,
     WorkflowError,
 )
@@ -68,31 +65,3 @@ def workflow_definition(name: str) -> WorkflowDef:
     raise WorkflowError(
         f"unknown workflow {name!r}; registered: {registered_workflows()}"
     ) from None
-
-
-def build_workflow(
-    name: str, *, store: Store, sweep_id: str, rollout_id: int
-) -> Workflow:
-  """Build a runnable workflow from a registered definition.
-
-  The definition supplies the entries; this call supplies where the run's
-  records live. The instance — and any caller-provided inputs — arrive later
-  still, at ``execute``.
-
-  An unregistered name raises ``WorkflowError`` from the lookup.
-
-  Args:
-    name: The registered workflow name.
-    store: Where every entry persists and where edges are resolved from.
-    sweep_id: The sweep the run belongs to.
-    rollout_id: Which sample of the instance.
-
-  Returns:
-    The workflow, ready to bind an instance.
-  """
-  return Workflow(
-      store=store,
-      sweep_id=sweep_id,
-      rollout_id=rollout_id,
-      entries=workflow_definition(name),
-  )
