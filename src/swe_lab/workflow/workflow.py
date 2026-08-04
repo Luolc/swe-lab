@@ -380,8 +380,7 @@ class Workflow:
       the artifact was never recorded, cannot be fetched, or is empty. An
       empty patch is caught here, before a container is paid for (§5).
     """
-    record = producer.record
-    full_key = record.artifact_keys.get(name) if record is not None else None
+    full_key = producer.record.artifact_keys.get(name)
     if full_key is None:
       return None
     try:
@@ -424,11 +423,7 @@ class Workflow:
               "key": outcome.key,
               "attempts": run.attempts,
               "resumed": run.resumed,
-              "artifact_keys": (
-                  dict(run.record.artifact_keys)
-                  if run.record is not None
-                  else {}
-              ),
+              "artifact_keys": dict(run.record.artifact_keys),
           }
       )
     key = (

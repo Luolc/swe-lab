@@ -133,7 +133,7 @@ def eval_cmd(
   if run.result.run.error is not None:
     summary["error"] = repr(run.result.run.error)
   summary |= instance.run_provenance()
-  if persist and run.record is not None:
+  if persist:
     summary["persisted"] = {
         "run_ts": run.record.run_ts,
         "keys": run.record.artifact_keys,
