@@ -299,7 +299,7 @@ def test_overriding_a_run_never_edits_the_definition():
   assert rebuilt[1].retries == 5
   # …and the definition is untouched, object for object
   assert _agent(before[0]).model != "opus"
-  assert before[1].retries == 1
+  assert before[1].retries == 2
   assert definitions.ROLLOUT_AND_UNIT_TEST[0] is before[0]
 
 

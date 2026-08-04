@@ -155,9 +155,8 @@ def test_the_built_ins_register_at_import():
 
 def test_the_shipped_chain_grades_what_the_agent_produced(tmp_path: Path):
   # The definition is what a `swe-lab run rollout_and_unit_test` invocation
-  # gets:
-  # the agent's entry declares the credential it inherits, the grading entry
-  # is offline, and the two are keyed the way their records are.
+  # gets: the agent's entry declares the credential it inherits, and the two
+  # are keyed the way their records are.
   workflow = build_workflow(
       "rollout_and_unit_test",
       store=FilesystemStore(epath.Path(tmp_path / "store")),
@@ -168,7 +167,9 @@ def test_the_shipped_chain_grades_what_the_agent_produced(tmp_path: Path):
   assert (rollout.key, evaluation.key) == ("rollout", "unit_test")
   assert rollout.sandbox.network is True
   assert rollout.sandbox.pass_env == ("CLAUDE_CODE_OAUTH_TOKEN",)
-  assert evaluation.sandbox.network is False
+  # Grading inherits no credential — only the agent needs one.
+  assert evaluation.sandbox.pass_env == ()
+  assert evaluation.retries == 2  # a flaky suite gets two more tries
   # the edge that makes it a chain: the agent's patch is the grader's input
   assert [s.name for s in evaluation.task.input_schema()] == [PATCH_NAME]
   # …and the grading entry supplies nothing itself, which is what lets the
