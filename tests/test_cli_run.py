@@ -192,6 +192,19 @@ def _run(*args: str):
   return runner.invoke(app, ["run", *args, "--backend", "fake"])
 
 
+def _message(output: str) -> str:
+  """Return an error's text, free of the panel it was rendered in.
+
+  Click draws a refusal inside a Rich box and **wraps** it to the terminal,
+  so the words of one message arrive split across lines with border glyphs
+  between them. A test that reads the message has to undo that, or it passes
+  at one terminal width and fails at another (which is exactly how CI found
+  this).
+  """
+  stripped = "".join(" " if char in "│╭╮╰╯─" else char for char in output)
+  return " ".join(stripped.split())
+
+
 # ─── discovery ───────────────────────────────────────────────────────────────
 
 
@@ -208,7 +221,7 @@ def test_an_unknown_workflow_lists_the_registered_ones(
   _wire(monkeypatch, tmp_path)
   result = _run("nope", _INSTANCE_ID)
   assert result.exit_code != 0
-  assert "unknown workflow" in result.output
+  assert "unknown workflow" in _message(result.output)
 
 
 # ─── running ─────────────────────────────────────────────────────────────────
@@ -284,10 +297,13 @@ def test_a_workflow_that_needs_an_input_says_which_one(
   _wire(monkeypatch, tmp_path)
   result = _run("unit_test", _INSTANCE_ID)
   assert result.exit_code != 0
-  # the schema's own description, and the flag that satisfies it
-  assert "needs an input you did not supply" in result.output
-  assert "the candidate patch to grade" in result.output
-  assert "--input" in result.output
+  # One line, because the panel this renders in clips what does not fit — and
+  # what would be clipped is exactly the actionable part. It carries the
+  # input's name, the schema's own description, and the flag.
+  message = _message(result.output)
+  assert "needs an input you did not supply" in message
+  assert "the candidate patch to grade" in message
+  assert "--input" in message
 
 
 def test_one_unbound_input_needs_no_name(
@@ -324,7 +340,7 @@ def test_an_input_may_be_named_and_a_missing_file_is_refused(
   assert named.exit_code == run_mod.ExitCode.OK
   missing = _run("unit_test", _INSTANCE_ID, "--input", "./nowhere.diff")
   assert missing.exit_code != 0
-  assert "is not a file" in missing.output
+  assert "is not a file" in _message(missing.output)
 
 
 def test_gold_grading_is_a_workflow_not_a_flag(
@@ -363,7 +379,7 @@ def test_an_override_reaches_the_run_and_a_bad_one_is_refused(
 
   refused = _run("gold_unit_test", _INSTANCE_ID, "--unit_test.retires=1")
   assert refused.exit_code != 0
-  assert "not a field of" in refused.output
+  assert "not a field of" in _message(refused.output)
 
 
 def test_persisting_writes_the_run_under_its_sweep(

@@ -273,8 +273,12 @@ def _explain(
   """Turn a bind-time refusal into something a person can act on.
 
   The engine's message is precise and engine-flavored; when the reason is
-  simply that nobody supplied an input, the command says which one, quotes the
-  schema's own description, and shows the flag that satisfies it.
+  simply that nobody supplied an input, this says which one, quotes the
+  schema's own description, and names the flag that satisfies it.
+
+  Kept to a **single line**: the message is rendered inside a panel that clips
+  what does not fit, so an actionable last line is exactly the part that gets
+  lost.
 
   Args:
     error: The refusal from binding.
@@ -287,18 +291,21 @@ def _explain(
   unbound = _unbound_inputs(entries)
   if "nothing produces" not in str(error) or not unbound:
     return str(error)
-  lines = [f"workflow {workflow!r} needs an input you did not supply:"]
-  lines += [
-      f"  {schema.name} — {schema.description or 'no description'}"
+  wanted = ", ".join(
+      f"{schema.name} ({schema.description})"
+      if schema.description
+      else schema.name
       for schema in unbound
-  ]
-  flag = (
-      f"--input ./your-file  (or --input {unbound[0].name}=./your-file)"
+  )
+  how = (
+      "--input ./your-file"
       if len(unbound) == 1
       else "--input NAME=PATH, once per input"
   )
-  lines.append(f"supply it with:  {flag}")
-  return "\n".join(lines)
+  return (
+      f"workflow {workflow!r} needs an input you did not supply: {wanted}."
+      f" Supply it with {how}"
+  )
 
 
 def _summarize(
