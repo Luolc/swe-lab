@@ -99,44 +99,56 @@ The **schema stays static** — `input_schema()` declares what the task needs,
 period; the builder is one of two interchangeable *suppliers*:
 
 ```python
-# Generates declared inputs from the bound instance, pre-session; the
-# framework mounts the bytes inline. A plain callable, InstanceFix-style.
-type InputsBuilder = Callable[[TaskInstance[Any]], Mapping[str, bytes]]
+# Generates declared inputs inside the live session — so it can compose
+# from the instance AND the workspace (`sb.run_command("git status")`, an
+# already-mounted edge input). A plain callable, InstanceFix-style.
+type InputsBuilder = Callable[[SandboxFs, TaskInstance[Any]], Mapping[str, bytes]]
 ```
 
-`Task.execute` handles it uniformly (base class, once):
+`Task.execute` handles it uniformly (base class, once). Because the builder
+needs the live sandbox, its bytes land by ``sb.write`` **after session start
+and before the action** — same workspace files, later timing — and the
+checks move with it:
 
 ```python
-generated = self.inputs_builder(instance) if self.inputs_builder else {}
-# a builder may only fill DECLARED inputs — the schema is the contract
-undeclared = generated.keys() - {s.name for s in self.input_schema()}
-if undeclared: raise SandboxError(...)
-staged = merge_mounts(                      # duplicate name = loud, as ever:
-    extra_mounts or {},                     # an edge AND a builder both
-    {name: Mount(Inline(data)) for ...},    # supplying one input is a bug
-)
-# required-input check runs over the union
+with manager.session() as sb:
+  generated = self.inputs_builder(sb, instance) if self.inputs_builder else {}
+  declared = {s.name for s in self.input_schema()}
+  # the schema is the contract: a builder may only fill declared inputs,
+  # and colliding with an edge-supplied name is a bug, loud as ever
+  if generated.keys() - declared: raise SandboxError(...)
+  if generated.keys() & staged_input_names: raise SandboxError(...)
+  for name, data in generated.items():
+    sb.write(name, data)
+  # requiredness, verified before the action either way:
+  #   builder is None  → at assembly, as today (before any container)
+  #   builder present  → here, post-build: every required name must now
+  #                      exist in the workspace
+  ...
+  exec_result = self.action(sb, instance, timeout=timeout)
 ```
 
 - **As a downstream task the builder is simply absent** (`None`) — the edge
   supplies the inputs. Same task, both modes, zero special-casing.
-- **A builder is pre-session by design** (inputs are mounts; mounts precede
-  the live sandbox), so it composes from the *instance*, not the workspace.
-  A prompt that needs live-workspace facts (git status into the prompt) is
-  an `action` override, not a builder — stated as the trade for one uniform
-  bytes-in, mount-out concept.
+- One timing consequence, stated plainly: with a builder present, a missing
+  required input or a collision surfaces *in-session* (recorded as the
+  attempt's failure, message intact) rather than at assembly — the builder
+  is opaque until it runs, and it cannot run without the sandbox it probes.
+  Edge-supplied inputs keep their assembly-time strictness.
 
 The shipped tasks each ship their standalone default:
 
 ```python
 PROMPT_NAME = "prompt.md"    # the coding task's declared prompt input
 
-def instance_prompt(instance) -> Mapping[str, bytes]:
+def instance_prompt(sb, instance) -> Mapping[str, bytes]:
   """CodingAgentTask's default: the dataset's own task statement."""
+  del sb
   return {PROMPT_NAME: instance.prompt().encode()}
 
-def gold_patch(instance) -> Mapping[str, bytes]:
+def gold_patch(sb, instance) -> Mapping[str, bytes]:
   """UnitTestEvalTask's gold self-check filler (the --gold CLI shape)."""
+  del sb
   patch = instance.gold_patch()
   if patch is None:
     raise SandboxError("this dataset carries no gold patch")
