@@ -457,14 +457,25 @@ build_workflow(name, *, store, sweep_id, rollout_id) -> Workflow
   import (like backends/stores/fixes): `solve` (rollout only),
   `solve_and_grade` (rollout → eval), `grade` (eval, patch from `inputs`).
 
-**Agent knobs (model / capture / bare) are the one thing a constant
-definition cannot carry** — they are invocation config living inside the
-constructed `Harness`. Resolution: a registry value may be either a constant
-`WorkflowDef` **or a builder** `Callable[[RunOptions], WorkflowDef]`, where
-`RunOptions` is a small dataclass of the agent-ish invocation knobs (model,
-capture, bare, agent_env, proxy wiring); a builder ignores what it does not
-use, mirroring how `SandboxConfig` serves every backend. Built-ins that run
-an agent register builders; grade-only workflows register constants.
+**Agent knobs (model / capture / bare) ride the same override
+mechanism.** A definition bakes its default harness
+(`ClaudeCodeHarness(model=DEFAULT_MODEL)`); the invocation adjusts fields
+through the same dotted-path override the sandbox forward-note describes —
+`--rollout.harness.model=…` — because everything on the path is a
+dataclass: walk `fields(type(...))` segment by segment, coerce by the
+annotated type, rebuild with nested `replace()` (immutability makes the
+rebuild mechanical). One mechanism for sandbox mechanics, task config, and
+harness knobs alike; `--model` stays as sugar for the common path. This
+demotes builder-form definitions (`Callable[[RunOptions], WorkflowDef]`)
+from the design: constant definitions + overrides cover the known knobs,
+and a builder registry entry can be added later only if something
+*structural* must vary per invocation.
+
+**Swapping the harness itself** (Claude ↔ a future Codex harness) is not a
+field override — it is a different class — and wants a harness registry
+mirroring backends/stores (`--rollout.harness=codex` naming a registered
+constructor). Deliberately deferred until a second harness exists; noted so
+the override grammar reserves the bare-name form for it.
 
 ## 6. The CLI
 
