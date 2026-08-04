@@ -157,9 +157,54 @@ where the budget now lives.
 
 ## 4. Sandbox construction: declared config, synthesized per attempt
 
-`WorkflowEntry.sandbox_factory` retires. The entry declares **what kind of
-sandbox its task needs** with the existing `SandboxConfig`; the runner owns
-everything else:
+`WorkflowEntry.sandbox_factory` retires — and **`SandboxConfig` splits
+first**, because today's flat class carries Docker-host mechanics
+(`workspace`, `pull`, `shell`) that a remote backend has no use for, and its
+"each factory takes only what applies" rule is a silent-ignore trap.
+
+### 4.1 The split
+
+```python
+@dataclass(frozen=True)
+class SandboxConfig:
+  """Backend-agnostic run SEMANTICS — what an entry may declare statically.
+
+  Every backend must honor these or refuse loudly at construction — never
+  silently ignore (ghjob cannot cut network on an already-running job
+  container: network=False there is an error, not a no-op).
+  """
+  network: bool = True                 # the run may/may not reach the net
+  env: Mapping[str, str] = ...         # vars set on each exec
+  pass_env: Sequence[str] = ()         # secrets inherited by reference
+
+
+@dataclass(frozen=True)
+class DockerHostSandboxConfig(SandboxConfig):
+  """A-host mechanics: how THIS backend realizes a run."""
+  workspace: epath.Path | None = None  # bind-mounted host dir
+  pull: bool = True
+  shell: str = "/bin/bash"
+
+
+@dataclass(frozen=True)
+class GhjobSandboxConfig(SandboxConfig):
+  """A-ghjob mechanics (the job container is already the sandbox)."""
+  workspace: epath.Path | None = None
+  shell: str = "/bin/bash"
+```
+
+Deliberately flat (base + one subclass per backend, `workspace`/`shell`
+repeated) rather than an intermediate `LocalSandboxConfig` — a three-level
+hierarchy for two backends is premature. A downstream backend brings its own
+subclass, Resource-style ownership as before.
+
+### 4.2 Who supplies what
+
+| layer | supplies | as |
+|---|---|---|
+| **entry** (static definition) | run semantics | base `SandboxConfig` — `network=False` for eval, `pass_env=("CLAUDE_CODE_OAUTH_TOKEN",)` for the agent |
+| **invocation** (CLI flags) | the backend + its mechanics | a backend-config *prototype*: `--backend host --no-pull` → `DockerHostSandboxConfig(pull=False)` |
+| **runner** (per attempt) | the merge + the workspace | `replace(prototype, network=…, env=…, pass_env=…, workspace=output_dir/"ws"/f"a{attempt}")` |
 
 ```python
 @dataclass(frozen=True)
@@ -167,35 +212,22 @@ class WorkflowEntry:
   key: str
   task: Task
   timeout: float
-  sandbox: SandboxConfig = SandboxConfig()   # declaration-time knobs only:
-      # network / env / pass_env / shell. `workspace` must be None here —
-      # the runner allocates one per attempt — and `pull` is invocation
-      # config; both are refused at declaration if set. A downstream
-      # SandboxConfig SUBCLASS passes through untouched: replace() preserves
-      # the type and its extra fields, and the backend factory that
-      # registered alongside it is the only consumer (Resource-style
-      # ownership, ADR-0003).
+  sandbox: SandboxConfig = SandboxConfig()   # base semantics only in the
+      # shipped definitions. An entry MAY declare a backend subclass — that
+      # binds the workflow to the backend, its own trade — and then the
+      # invocation prototype's type must match, or the bind refuses.
   inputs: Sequence[str] = ()
   retries: int = 0
 ```
 
-Per attempt, `run_task` synthesizes (this replaces the fresh-workspace
-factory contract, which dissolves — allocation is the runner's again):
-
-```python
-config = replace(entry.sandbox, workspace=output_dir / "ws" / f"a{attempt}",
-                 pull=pull)                      # pull: from the invocation
-sandbox = _registry_factory(backend)(instance.sandbox_spec(), config)
-```
-
-- `backend` / `pull` arrive at `Workflow.execute` (CLI flags — invocation
-  config, not definition).
-- The flat-kwargs `build_sandbox(...)` convenience stays base-`SandboxConfig`
-  only; the workflow path goes through the registry factory with the config
-  *object*, which is what lets a subclass ride through.
-- `run_task`'s public signature swaps `sandbox_factory` for
-  `(backend, sandbox_config, instance)`; a direct caller who really wants a
-  hand-built sandbox still has `Task.execute`.
+The fresh-workspace factory contract dissolves — allocation is the runner's
+again. The registry factory signature stays
+`(SandboxSpec, SandboxConfig) -> Sandbox`; each factory narrows to its own
+config type and **rejects** what it cannot honor. The flat-kwargs
+`build_sandbox(...)` convenience is rebuilt per-backend (it constructs the
+host prototype for the CLI); `run_task`'s public signature swaps
+`sandbox_factory` for `(backend, prototype, instance)` — a direct caller who
+wants a hand-built sandbox still has `Task.execute`.
 
 ## 5. Definitions, the registry, and bind-time validation
 
@@ -288,15 +320,19 @@ the flake-absorption trigger survives as `UnitTestEvalTask.should_retry`
 1. Task contract late-binding (hooks take `instance`; both tasks; `execute`
    signature) + test updates.
 2. §7 retirement + ADR-0008 (its own commit; `Verdict` cleanup).
-3. `WorkflowEntry.sandbox` + runner synthesis (+ config-subclass test);
-   `run_task` signature; workspace allocation moves in.
-4. Registry + built-in definitions + bind-time validation split (+ tests:
+3. The `SandboxConfig` split (base semantics + per-backend subclasses;
+   silent-ignore becomes loud rejection) — its own commit, backends and
+   their tests updated.
+4. `WorkflowEntry.sandbox` + prototype merge + runner synthesis (+
+   config-subclass and type-mismatch tests); `run_task` signature;
+   workspace allocation moves in.
+5. Registry + built-in definitions + bind-time validation split (+ tests:
    declaration-time vs bind-time failures).
-5. CLI: `swe-lab run` + alias rebuild; wrappers deleted; CLI tests rebuilt
+6. CLI: `swe-lab run` + alias rebuild; wrappers deleted; CLI tests rebuilt
    over a registered fake backend (no monkeypatched wrappers).
-6. Live smoke: `swe-lab run solve_and_grade` on the flipt parity instance
+7. Live smoke: `swe-lab run solve_and_grade` on the flipt parity instance
    (agent + grade through the registry path); persisted keys inspected.
-7. Docs: plans/README statuses; conventions command examples; ADR-0007
+8. Docs: plans/README statuses; conventions command examples; ADR-0007
    §6 amendment note (budget location).
 
 ## 9. Risks & open questions
