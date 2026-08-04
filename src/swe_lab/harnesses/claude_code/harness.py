@@ -1,10 +1,16 @@
 """The ``claude_code`` harness: run Claude Code headless in the sandbox.
 
-Stages its invocation script and the pinned binary (a read-only executable
-mount at a fixed path), runs the agent, and converts the event-stream output
-into a canonical ``Conversation``. It is dataset-agnostic — ``run(prompt=...)``
-receives the dataset-derived prompt as text and lands it in a file of this
-harness's own choosing; the invocation script reads it from there.
+Stages its invocation script, runs the agent, and converts the event-stream
+output into a canonical ``Conversation``. It is dataset-agnostic —
+``run(prompt=...)`` receives the dataset-derived prompt as text and lands it in
+a file of this harness's own choosing; the invocation script reads it from
+there.
+
+The **binary is not this harness's to place**: it invokes it at the agreed
+absolute path (:data:`~swe_lab.harnesses.claude_code.constants.BINARY_AT`) and
+each backend's own observer puts it there the way that backend can (see
+``swe_lab.sandbox.backends``). Mounting it from here would have forced one
+backend's answer — hand over ~100 MB from the host — on every other.
 """
 
 from __future__ import annotations
@@ -15,16 +21,12 @@ import re
 import shlex
 from typing import override
 
-from etils import epath
-
 from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import Harness
-from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
     ExecResult,
     Inline,
-    LocalFile,
     Mount,
     Mounts,
     SandboxError,
@@ -92,8 +94,6 @@ class ClaudeCodeHarness(Harness):
 
   Attributes:
     model: The ``--model`` alias to run.
-    binary_path: Inject a ready binary (Docker-free tests); otherwise the pinned
-      binary is provisioned by ``ensure_claude_binary``.
     capture: The output-capture strategy — ``STREAM`` (default) or ``PROXY``.
     proxy_port: The host port ``PROXY`` capture records on. This harness runs
       the recorder itself (see ``observers``), so the port is all it needs;
@@ -109,7 +109,6 @@ class ClaudeCodeHarness(Harness):
   """
 
   model: str = DEFAULT_MODEL
-  binary_path: epath.Path | None = None
   capture: Capture = Capture.STREAM
   proxy_port: int = DEFAULT_BASE_PORT
   proxy_base_url: str | None = None
@@ -156,19 +155,27 @@ class ClaudeCodeHarness(Harness):
 
   @override
   def mounts(self, workdir: str) -> Mounts:
-    """Stage the invocation script, its env file, and the pinned binary.
+    """Stage the invocation script and its env file — and nothing else.
+
+    The agent binary is deliberately absent: it is machinery, not this run's
+    material, and the backend provisions it at ``BINARY_AT`` (see the module
+    docstring).
 
     The env file is staged **empty**: the script always sources it, and
     ``run(env=...)`` fills it in, so injected variables need no second version
     of the script.
+
+    Args:
+      workdir: The repo path the invocation script ``cd``s into.
+
+    Returns:
+      The two staged files.
     """
-    binary = self.binary_path or ensure_claude_binary()
     return {
         AGENT_SCRIPT_NAME: Mount(
             Inline(self._invocation_script(workdir).encode()), executable=True
         ),
         AGENT_ENV_NAME: Mount(Inline(b"")),
-        BINARY_AT: Mount(LocalFile(binary), executable=True, read_only=True),
     }
 
   @override

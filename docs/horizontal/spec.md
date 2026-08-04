@@ -61,8 +61,9 @@ Correct any of these before we build on them:
 1. **Harness is the primary axis** (Claude Code now; Codex, Grok Build next),
    dataset second (SWE-Bench Pro only today; a 2nd in the not-too-distant
    future), eval-method third (unit-test only today; model-/rubric-based later).
-2. **A harness wraps a real off-the-shelf agent CLI** (mount its binary/config,
-   write its invocation, capture stream-or-proxy) — unlike the sibling
+2. **A harness wraps a real off-the-shelf agent CLI** (write its invocation and
+   config, capture stream-or-proxy; the backend provisions the binary) — unlike
+   the sibling
    `locode-core`, which reimplements tools. The **patch is harness-agnostic**
    (`git diff` of the workdir).
 3. **Execution = model A** (host-orchestrated persistent container: bring the
@@ -293,8 +294,11 @@ persist pushes the workspace) — never through mutable state on the sandbox.
 ### The three axes compose a task
 
 - **Harness** (Claude Code / Codex / Grok Build) → the `main` body (the agent run:
-  invocation, its own mounts + binary asset, **capture = stream \| proxy**) + a
-  conversation observer. **Dataset-agnostic** — it never owns the prompt.
+  invocation + its own mounts, **capture = stream \| proxy**) + a conversation
+  observer. **Dataset-agnostic** — it never owns the prompt, and it does not
+  stage the agent binary either: it invokes the agent at an agreed absolute
+  path, and each **backend** puts it there (its `observers()`) the way that
+  backend can — a container is handed a host copy, a CI job downloads its own.
 - **Dataset** (SWE-Bench Pro / future) → `image/workdir/base_commit` + a setup
   observer + **(for solve) the prompt** + (for eval) the grading inputs.
 - **Eval method** (unit-test now; model/rubric later) → the `main` body (run the

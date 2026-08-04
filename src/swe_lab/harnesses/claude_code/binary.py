@@ -1,9 +1,16 @@
-"""Provision a pinned native Claude Code binary for the rollout container.
+"""Fetch a pinned native Claude Code binary, checksum-verified.
 
 ``rollout`` runs a headless coding agent *inside* each instance's prebuilt
 image. Rather than bake Claude Code into ~731 images (npm-in-a-wrapper), we
-download a **single pinned native binary** once, cache it (gitignored, never
-committed), and bind-mount it into the container at run time.
+download a **single pinned native binary** and put it in the sandbox at run
+time.
+
+This module only *gets the bytes*; **where they land is the sandbox's call**,
+because the answer differs per backend: a Docker sandbox caches one copy on the
+host (gitignored, never committed) and copies it into each container, while a CI
+job — whose filesystem already *is* the sandbox — downloads straight to the
+final path. Each backend's own observer does that, so nothing here, and nothing
+in the harness, has to choose for all of them.
 
 The download scheme is Anthropic's official one (from ``claude.ai/install.sh`` →
 ``downloads.claude.ai/claude-code-releases/bootstrap.sh``):
@@ -15,7 +22,7 @@ The download scheme is Anthropic's official one (from ``claude.ai/install.sh`` �
 
 We pin a version so a rollout can't silently pick up a new agent build mid-run;
 bump :data:`PINNED_CLAUDE_CODE_VERSION` deliberately. The container is
-``linux/amd64``, so the platform we mount is always :data:`LINUX_X64`,
+``linux/amd64``, so the platform we fetch is always :data:`LINUX_X64`,
 regardless of the host we download from (the bytes are host-agnostic; we only
 run them in the container).
 """
@@ -36,7 +43,7 @@ DOWNLOAD_BASE_URL = "https://downloads.claude.ai/claude-code-releases"
 # latest release when rollout was built (2026-07-16); bump deliberately, and
 # only after confirming the new binary still runs headless as rollout wants.
 PINNED_CLAUDE_CODE_VERSION = "2.1.212"
-# The rollout container is linux/amd64, so this is the only platform we mount.
+# The rollout container is linux/amd64, so this is the only platform we fetch.
 LINUX_X64 = "linux-x64"
 
 _FETCH_TIMEOUT_S = 60.0
@@ -88,37 +95,46 @@ def ensure_claude_binary(
     *,
     version: str = PINNED_CLAUDE_CODE_VERSION,
     platform: str = LINUX_X64,
+    dest: epath.PathLike | None = None,
     repo_root: epath.PathLike | None = None,
     refresh: bool = False,
 ) -> epath.Path:
-  """Ensure the pinned native binary is cached and checksum-verified.
+  """Ensure the pinned native binary is at ``dest``, checksum-verified.
 
-  Idempotent: a cached binary whose sha256 matches the release manifest is
-  reused; otherwise it is (re)downloaded and verified. The file is made
-  executable so it can be mounted and run directly in the container.
+  Idempotent: a binary already there whose sha256 matches the release manifest
+  is reused; otherwise it is (re)downloaded and verified. The file is made
+  executable so it can be copied around and run directly.
 
   Args:
     version: Claude Code release to fetch.
     platform: Release platform key (the container is always linux/amd64).
-    repo_root: Repository root used to locate the cache; discovered when
-      omitted.
-    refresh: If true, re-download even when a valid cached binary exists.
+    dest: Where the binary must end up. Defaults to the host cache, which is
+      what a backend that hands copies to its sandboxes wants; a sandbox that
+      *is* the local filesystem passes the final in-sandbox path instead and
+      skips the extra copy.
+    repo_root: Repository root used to locate the default cache; discovered
+      when omitted. Unused when ``dest`` is given.
+    refresh: If true, re-download even when a valid binary is already there.
 
   Returns:
-    The path of the verified, executable binary.
+    The path of the verified, executable binary (``dest``).
 
   Raises:
     ValueError: If the downloaded bytes do not match the manifest checksum
       (a corrupt or tampered download is never silently used).
   """
-  dest = binary_cache_path(
-      version=version, platform=platform, repo_root=repo_root
+  target = (
+      epath.Path(dest)
+      if dest is not None
+      else binary_cache_path(
+          version=version, platform=platform, repo_root=repo_root
+      )
   )
   expected = manifest_checksum(version, platform)
-  if not refresh and dest.is_file() and _sha256(dest) == expected:
-    return dest
+  if not refresh and target.is_file() and _sha256(target) == expected:
+    return target
 
-  dest.parent.mkdir(parents=True, exist_ok=True)
+  target.parent.mkdir(parents=True, exist_ok=True)
   data = _get(
       f"{DOWNLOAD_BASE_URL}/{version}/{platform}/claude",
       timeout=_DOWNLOAD_TIMEOUT_S,
@@ -129,9 +145,9 @@ def ensure_claude_binary(
         f"checksum mismatch for claude {version}/{platform}: "
         f"expected {expected}, got {actual}"
     )
-  _ = dest.write_bytes(data)
-  os.chmod(dest, 0o755)
-  return dest
+  _ = target.write_bytes(data)
+  os.chmod(target, 0o755)
+  return target
 
 
 def _get(url: str, *, timeout: float = _FETCH_TIMEOUT_S) -> bytes:

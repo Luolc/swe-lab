@@ -112,7 +112,7 @@ duplicate targets.
 | mount source | contributes | today |
 |---|---|---|
 | **the instance** | the dataset's material | `UnitTestSpec.mounts` — the run script, the parser, the compiled expectation |
-| **the runner** | its own files and assets | `Harness.mounts(workdir)` — launcher script, pinned binary |
+| **the runner** | its own files | `Harness.mounts(workdir)` — launcher script, env file (**not** the agent binary: that is machinery, and each backend provisions it its own way via its own observer) |
 | **upstream tasks** | their persisted outputs | hand-wired by the CLI today |
 | **observers** | whatever they need staged | `SandboxObserver.mounts()` |
 

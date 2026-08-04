@@ -7,8 +7,10 @@ import subprocess
 from etils import epath
 import pytest
 
+from swe_lab.harnesses.claude_code.constants import BINARY_AT
 from swe_lab.sandbox import (
     DockerHostSandbox,
+    HostClaudeCodeBinaryObserver,
     HostMetricsObserver,
     Inline,
     LocalFile,
@@ -18,6 +20,8 @@ from swe_lab.sandbox import (
     SandboxManager,
     SandboxSpec,
 )
+
+from .conftest import FakeClaudeBinary
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
@@ -377,7 +381,45 @@ def test_no_orphan_containers_left(tmp_path: Path):
   assert leftover.stdout.strip() == ""
 
 
-# ─── the backend's runtime-metrics observer (ADR-0007 §3, backend source) ────
+# ─── the backend's own observers (ADR-0007 §3, backend source) ───────────────
+
+
+def test_backend_contributes_metrics_and_the_agent_binary(tmp_path: Path):
+  # This backend drives a *container*, which starts with nothing installed, so
+  # it contributes both of the things only it can: its container's runtime
+  # metrics, and a copy of the agent binary to run.
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
+  assert [type(o).__name__ for o in sandbox.observers()] == [
+      "HostMetricsObserver",
+      "HostClaudeCodeBinaryObserver",
+  ]
+
+
+def test_binary_observer_mounts_the_host_cached_copy_read_only(
+    tmp_path: Path, fake_claude_binary: FakeClaudeBinary
+):
+  sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
+  binary = next(
+      o
+      for o in sandbox.observers()
+      if isinstance(o, HostClaudeCodeBinaryObserver)
+  )
+  # It takes the HOST copy (no dest asked for) and hands it over as a mount —
+  # a container cannot fetch its own, so the bytes have to travel here.
+  assert binary.mounts() == {
+      BINARY_AT: Mount(
+          LocalFile(fake_claude_binary.cached), executable=True, read_only=True
+      )
+  }
+  assert fake_claude_binary.destinations == [None]
+
+
+def _metrics_observer(sandbox: DockerHostSandbox) -> HostMetricsObserver:
+  """Pick the metrics observer out of the backend's contributions."""
+  observer = next(
+      o for o in sandbox.observers() if isinstance(o, HostMetricsObserver)
+  )
+  return observer
 
 
 def _metrics_setup(
@@ -386,8 +428,7 @@ def _metrics_setup(
   """Up a sandbox with the manager's hook order; return its observer."""
   _install(monkeypatch, fake)
   sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
-  (observer,) = sandbox.observers()
-  assert isinstance(observer, HostMetricsObserver)
+  observer = _metrics_observer(sandbox)
   # Mirror the manager: before_create → up → after_create, so the setup
   # window contains the pull the way it does in a real run.
   observer.before_create(sandbox)
@@ -479,8 +520,7 @@ def test_live_oom_kill_of_an_exec_is_counted(tmp_path: Path):
   sandbox = DockerHostSandbox(
       spec=spec, workspace=epath.Path(tmp_path / "ws"), pull=False
   )
-  (observer,) = sandbox.observers()
-  assert isinstance(observer, HostMetricsObserver)
+  observer = _metrics_observer(sandbox)
   observer.before_create(sandbox)
   sandbox.up()
   observer.after_create(sandbox)

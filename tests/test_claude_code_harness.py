@@ -28,8 +28,6 @@ from swe_lab.harnesses.claude_code.constants import (
 )
 from swe_lab.sandbox import (
     Inline,
-    LocalFile,
-    Mount,
     SandboxError,
     SandboxSpec,
 )
@@ -80,20 +78,6 @@ _EVENTS: list[dict[str, object]] = [
 ]
 
 
-@pytest.fixture(autouse=True)
-def _fake_binary(  # pyright: ignore[reportUnusedFunction]  # autouse fixture
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Path:
-  """Stand in for the pinned binary so ``mounts`` never provisions (network)."""
-  binary = tmp_path / "claude"
-  _ = binary.write_bytes(b"BIN")
-  monkeypatch.setattr(
-      "swe_lab.harnesses.claude_code.harness.ensure_claude_binary",
-      lambda: binary,
-  )
-  return binary
-
-
 def _stream_text(events: list[dict[str, object]]) -> str:
   return "\n".join(json.dumps(e) for e in events) + "\n"
 
@@ -104,11 +88,12 @@ def _script(workdir: str, harness: ClaudeCodeHarness | None = None) -> str:
   return mount.resource.content.decode()
 
 
-def test_mounts_stage_agent_script_env_and_binary_not_prompt():
+def test_mounts_stage_agent_script_and_env_only():
   mounts = ClaudeCodeHarness().mounts("/app")
-  # the agent script, its (empty) env file, and the pinned binary — NOT the
-  # prompt, which is the dataset's and staged by the composition
-  assert set(mounts) == {AGENT_SCRIPT_NAME, AGENT_ENV_NAME, BINARY_AT}
+  # the agent script and its (empty) env file — NOT the prompt, which is the
+  # dataset's and staged by the composition, and NOT the binary, which is the
+  # backend's (see test_binary_is_never_staged_by_the_harness)
+  assert set(mounts) == {AGENT_SCRIPT_NAME, AGENT_ENV_NAME}
   assert mounts[AGENT_SCRIPT_NAME].executable is True
   env_mount = mounts[AGENT_ENV_NAME]
   assert isinstance(env_mount.resource, Inline)
@@ -135,15 +120,18 @@ def test_bare_flag_added_when_set():
   assert f"{BINARY_AT} -p --bare " in script
 
 
-def test_binary_is_a_read_only_executable_mount_at_fixed_path(
-    _fake_binary: Path,
-):
-  # the pinned binary is now a read-only executable mount (ADR-0003: an asset is
-  # just a read-only mount), not a separate assets() seam
-  binary_mount = ClaudeCodeHarness().mounts("/app")[BINARY_AT]
-  assert binary_mount == Mount(
-      LocalFile(epath.Path(_fake_binary)), executable=True, read_only=True
-  )
+def test_binary_is_never_staged_by_the_harness():
+  # The harness INVOKES the agent at the agreed path but never puts it there:
+  # provisioning it is each backend's own call (its `observers()`), so this
+  # must hold for every harness configuration — otherwise a backend that
+  # downloads its own copy would collide with a mount it never wanted.
+  for harness in (
+      ClaudeCodeHarness(),
+      ClaudeCodeHarness(bare=True),
+      _proxy_harness(),
+  ):
+    assert BINARY_AT not in harness.mounts("/app")
+    assert BINARY_AT in _script("/app", harness)  # …but it is still invoked
 
 
 def test_native_outputs():

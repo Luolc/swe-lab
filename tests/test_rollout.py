@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import override
 
 from etils import epath
-import pytest
 
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.instance import TaskInstance
@@ -63,12 +62,12 @@ class _Instance(TaskInstance[Verdict]):
 
 @dataclasses.dataclass
 class _LocalFakeSandbox(FakeSandbox):
-  """A ``FakeSandbox`` that keeps absolute mounts inside the workspace.
+  """A ``FakeSandbox`` that records mount targets and keeps them local.
 
-  The harness stages its pinned binary at a fixed absolute path (``/opt/...``);
-  writing there on the host needs root, so redirect every mount under the real
-  workspace dir. Exec stays scripted, so the agent never actually runs.
-  Mount targets are recorded so a test can tell a *mount* from a ``write``.
+  Mount targets are recorded so a test can tell a *mount* from a ``write``,
+  and an absolute target is redirected under the real workspace dir (writing
+  to e.g. ``/opt`` on the host needs root). Exec stays scripted, so the agent
+  never actually runs.
   """
 
   mount_targets: list[str] = dataclasses.field(default_factory=list)
@@ -83,16 +82,7 @@ class _LocalFakeSandbox(FakeSandbox):
     return epath.Path(self.workspace / target.lstrip("/"))
 
 
-def test_the_task_wires_and_assembles(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-  binary = tmp_path / "claude"
-  _ = binary.write_bytes(b"BIN")
-  # avoid provisioning (network): the harness's mounts() calls this
-  monkeypatch.setattr(
-      "swe_lab.harnesses.claude_code.harness.ensure_claude_binary",
-      lambda: binary,
-  )
+def test_the_task_wires_and_assembles(tmp_path: Path):
   workspace = tmp_path / "ws"
   sandbox = _LocalFakeSandbox(spec=_SPEC, workspace=epath.Path(workspace))
 
