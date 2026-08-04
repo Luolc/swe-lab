@@ -23,8 +23,10 @@ sandbox construction is synthesized by the runner from declared
 - `Task` loses its `instance` field; hooks take the instance as an argument.
 - `WorkflowEntry.sandbox_factory` retired → `sandbox: SandboxConfig`.
 - Workflow definitions + `register_workflow` / `build_workflow` registry.
-- The CLI rewire (absorbed from task 21): `swe-lab run <workflow>` plus the
-  existing commands rebuilt over registered workflows.
+- CLI **plumbing only** (absorbed from task 21): the existing commands
+  keep their flags, internally re-plumbed onto workflows so the wrappers can
+  retire. The command surface itself is deferred to its own design round
+  (§6).
 - **The in-run eval retry retires** (with the wrappers that kept it alive);
   ADR-0008 supersedes ADR-0005.
 
@@ -477,28 +479,21 @@ mirroring backends/stores (`--rollout.harness=codex` naming a registered
 constructor). Deliberately deferred until a second harness exists; noted so
 the override grammar reserves the bare-name form for it.
 
-## 6. The CLI
+## 6. The CLI — DEFERRED, designed last
 
-```
-swe-lab run <workflow> <instance_id>
-    --dataset swebench_pro --sweep adhoc --rollout-id 0
-    --backend host --pull/--no-pull --timeout-scale?          (invocation)
-    --model … --capture … --bare        (sugar over dotted overrides)
-    --<entry>.<field-path>=value        (the general override grammar)
-    --input patch.diff=@candidate.diff | --gold               (caller inputs)
-    --resume/--no-resume (default: no-resume — a re-run re-runs)
-    --persist/--no-persist (off → throwaway FilesystemStore under the run dir)
-```
+The concrete CLI sketch that stood here is void. The command surface will
+get its own design round **after** the layers below it land, built around
+the **generic dotted-path override grammar** (§5): statically-registered
+workflows, dynamically adjusted per invocation —
+`--<entry>.<field-path>=value` over tasks, harnesses, and sandbox configs
+alike — rather than a hand-picked flag set. Nothing else about that UX is
+decided here.
 
-- `--gold` is sugar for `--input patch.diff=<instance.gold_patch()>`.
-- The existing `rollout` / `eval` commands are **rebuilt as thin aliases**
-  over `solve` / `solve_and_grade` / `grade` with their current flags mapped
-  (summary JSON keeps its fields; `attempts`/`flaky` now carry task-level
-  semantics; persisted records are task-keyed shards, one per attempt).
-- `run_rollout` / `run_unit_test` (and their private shims) are **deleted**,
-  not deprecated — nothing in-repo calls them after the rewire, and the
-  in-run retry they preserved is retiring with them (§7). Downstream
-  migrates to workflows or `Task.execute`; prototyping, no compat layer.
+What this task still does to the CLIs, as **plumbing only**: the existing
+`rollout` / `eval` commands keep their exact flags and summaries but are
+re-plumbed internally onto the workflow machinery — required so the
+wrappers (and with them the in-run retry, §7) can retire. No new commands,
+no new flags, no removed flags in this task.
 
 ## 7. The in-run eval retry retires (ADR-0008 supersedes ADR-0005)
 
@@ -543,10 +538,12 @@ the flake-absorption trigger survives as `UnitTestEvalTask.should_retry`
    workspace allocation moves in.
 6. Registry + built-in definitions + bind-time validation split (+ tests:
    declaration-time vs bind-time failures).
-7. CLI: `swe-lab run` + alias rebuild; wrappers deleted; CLI tests rebuilt
-   over a registered fake backend (no monkeypatched wrappers).
-8. Live smoke: `swe-lab run solve_and_grade` on the flipt parity instance
-   (agent + grade through the registry path); persisted keys inspected.
+7. CLI plumbing: existing commands re-plumbed onto workflows, flags and
+   summaries unchanged; wrappers deleted; CLI tests rebuilt over a
+   registered fake backend (no monkeypatched wrappers).
+8. Live smoke: `rollout --grade` (re-plumbed) on the flipt parity
+   instance — agent + grade through the registry path; persisted keys
+   inspected.
 9. Docs: plans/README statuses; conventions command examples; ADR-0007
    §6 amendment note (budget location).
 
