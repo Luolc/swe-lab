@@ -13,7 +13,8 @@
 ## 1. Purpose & scope
 
 Task 22 made a workflow a **statically-writable definition** and put three of
-them in a registry (`solve`, `grade`, `solve_and_grade`). Nothing invokes them
+them in a registry (`rollout`, `unit_test`, `rollout_and_unit_test`). Nothing
+invokes them
 by name yet: both commands still hand-build their entries, because a
 definition bakes its harness and an invocation has no way to adjust it.
 
@@ -21,7 +22,7 @@ This task builds that way — **one generic mechanism**, not a hand-picked flag
 per knob — and puts the shipped commands on it.
 
 ```
-swe-lab run solve_and_grade instance_flipt-io__flipt-6fe76d0 \
+swe-lab run rollout_and_unit_test instance_flipt-io__flipt-6fe76d0 \
     --backend host --no-pull --persist --sweep smoke \
     --rollout.harness.model=opus --eval.retries=2
 ```
@@ -88,8 +89,9 @@ swe-lab run <workflow> <instance> [options] [overrides]
 their entry keys — the discoverability the registry buys.
 
 **Open question (for review): the command's name.** `run` is short and
-honest; `swe-lab run solve_and_grade <id>` reads well. The alternative is to
-let the *workflow* be the subcommand (`swe-lab solve_and_grade <id>`), which
+honest; `swe-lab run rollout_and_unit_test <id>` reads well. The alternative
+is to let the *workflow* be the subcommand (`swe-lab rollout_and_unit_test
+<id>`), which
 reads better still but makes every registered name a top-level command,
 including a downstream user's — a namespace we do not control.
 
@@ -177,7 +179,7 @@ against what exists:
 ```
 
 ```
---lint.timeout=60: workflow 'solve_and_grade' has no entry 'lint'
+--lint.timeout=60: workflow 'rollout_and_unit_test' has no entry 'lint'
   (entries: rollout, eval)
 ```
 
@@ -197,7 +199,8 @@ changes what the entry *declares*, which is what an override should mean.
 
 ## 5. Caller inputs, and where `--gold` goes
 
-`grade` needs a patch from outside the run. That is `Workflow.execute(inputs=)`
+`unit_test` needs a patch from outside the run. That is
+`Workflow.execute(inputs=)`
 and it gets one generic flag:
 
 ```
@@ -206,11 +209,12 @@ and it gets one generic flag:
 
 **`--gold` stops being a flag and becomes a workflow.** Grading the reference
 solution is a *definition* — the eval task with `inputs_builder=gold_patch`
-(task 22 §3.1) — so it registers as `gold_grade` and is invoked like anything
+(task 22 §3.1) — so it registers as `gold_unit_test` and is invoked like
+anything
 else:
 
 ```
-swe-lab run gold_grade <instance>
+swe-lab run gold_unit_test <instance>
 ```
 
 This is the pattern the whole task is for: a variant that used to need a flag
@@ -246,11 +250,11 @@ resolve the swap first, then the fields — otherwise `--rollout.harness=codex
 
 | today | after |
 |---|---|
-| `swe-lab rollout <id>` | `swe-lab run solve <id>` |
-| `swe-lab rollout <id> --grade` | `swe-lab run solve_and_grade <id>` |
+| `swe-lab rollout <id>` | `swe-lab run rollout <id>` |
+| `swe-lab rollout <id> --grade` | `swe-lab run rollout_and_unit_test <id>` |
 | `swe-lab rollout <id> --model X --capture proxy` | `… --rollout.harness.model=X --rollout.harness.capture=proxy` |
-| `swe-lab eval <id> --gold` | `swe-lab run gold_grade <id>` |
-| `swe-lab eval <id> --patch-file p.diff` | `swe-lab run grade <id> --input patch.diff=p.diff` |
+| `swe-lab eval <id> --gold` | `swe-lab run gold_unit_test <id>` |
+| `swe-lab eval <id> --patch-file p.diff` | `swe-lab run unit_test <id> --input patch.diff=p.diff` |
 | `swe-lab eval <id> --eval-retries 2` | `… --eval.retries=2` |
 
 The two `.github/workflows/*-ghjob.yml` files move with them, in the same PR.
@@ -271,7 +275,7 @@ command-specific assembly:
 
 ```json
 {
-  "workflow": "solve_and_grade",
+  "workflow": "rollout_and_unit_test",
   "instance_id": "instance_flipt-io__flipt-6fe76d0",
   "succeeded": true,
   "entries": [
@@ -320,10 +324,10 @@ must implement. Recommendation: **not now**; the artifacts are persisted and
 2. Apply-to-workflow: entry-then-task fall-through, re-validation of the
    overridden definition, error messages that name the alternatives.
 3. `swe-lab run`: the command, `--input`, the summary, the exit codes.
-4. `gold_grade` as a registered definition; `verify.py` checked against it.
+4. `gold_unit_test` as a registered definition; `verify.py` checked against it.
 5. Delete `rollout` / `eval`; move the two CI workflow files; update
    `docs/conventions.md`'s command examples.
-6. Live smoke: `run solve_and_grade` on the flipt parity instance with an
+6. Live smoke: `run rollout_and_unit_test` on the flipt parity instance with an
    override that demonstrably changes the run (`--rollout.harness.model=…`).
 
 ## 10. One thing this task makes reachable, so it must fix it
