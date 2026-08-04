@@ -1,4 +1,4 @@
-"""Tests for UnitTestEvalTask: the composition on an injected FakeSandbox.
+"""Tests for UnitTestTask: the composition on an injected FakeSandbox.
 
 ``Task.execute`` takes the sandbox by **injection**, so a test just constructs
 a :class:`FakeSandbox` (real local-dir file ops, scripted exec, no Docker) and
@@ -26,10 +26,10 @@ from swe_lab.datasets.swebench_pro.unit_test import (
     SweBenchProGrader,
     SweBenchProVerdict,
 )
-from swe_lab.evaluation.methods.unit_test import (
+from swe_lab.evaluation.unit_test import (
     ENTRYSCRIPT_NAME,
     gold_patch,
-    UnitTestEvalTask,
+    UnitTestTask,
     verdict_of,
 )
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec
@@ -132,7 +132,7 @@ def _grade(
     **kwargs: object,
 ) -> AttemptResult:
   """Run the eval task over a caller-supplied patch (the standalone shape)."""
-  task: UnitTestEvalTask[SweBenchProVerdict] = UnitTestEvalTask()
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
   return task.execute(
       sandbox,
       _Instance(spec=spec, gold=gold),
@@ -198,10 +198,10 @@ def test_registers_the_entryscript_and_the_datasets_outputs(tmp_path: Path):
   result = _grade(
       sandbox, _spec_with_outputs(["a"], ["a"]), output_dir=tmp_path / "o"
   )
-  assert "eval.entryscript.sh" in result.run.artifacts
+  assert "unit_test.entryscript.sh" in result.run.artifacts
   # staged by the spec's mounts
-  assert "eval.output.json" in result.run.artifacts
-  assert "eval.logs" in result.run.artifacts
+  assert "unit_test.output.json" in result.run.artifacts
+  assert "unit_test.logs" in result.run.artifacts
 
 
 def test_absent_outputs_are_skipped_best_effort(tmp_path: Path):
@@ -211,8 +211,10 @@ def test_absent_outputs_are_skipped_best_effort(tmp_path: Path):
       _spec_with_outputs(["a"], ["a"]),
       output_dir=tmp_path / "o",
   )
-  assert "eval.logs" not in result.run.artifacts  # stdout.log never written
-  assert "eval.entryscript.sh" in result.run.artifacts  # this one did land
+  assert (
+      "unit_test.logs" not in result.run.artifacts
+  )  # stdout.log never written
+  assert "unit_test.entryscript.sh" in result.run.artifacts  # this one did land
 
 
 def test_metrics_carry_the_verdict_and_the_execution(tmp_path: Path):
@@ -222,16 +224,16 @@ def test_metrics_carry_the_verdict_and_the_execution(tmp_path: Path):
       output_dir=tmp_path / "o",
   )
   m = result.run.metrics
-  assert m["eval.score"] == 0.0 and m["eval.resolved"] == 0.0
-  assert m["eval.passed"] == 1.0  # one test reported PASSED
-  assert m["eval.missing"] == 1.0  # of two required
-  assert m["eval.required"] == 2.0
-  assert m["eval.exit_code"] == 3.0  # the entryscript's own outcome, kept
-  assert m["eval.timed_out"] == 0.0
-  assert m["eval.wall_seconds"] >= 0.0
+  assert m["unit_test.score"] == 0.0 and m["unit_test.resolved"] == 0.0
+  assert m["unit_test.passed"] == 1.0  # one test reported PASSED
+  assert m["unit_test.missing"] == 1.0  # of two required
+  assert m["unit_test.required"] == 2.0
+  assert m["unit_test.exit_code"] == 3.0  # the entryscript's own outcome, kept
+  assert m["unit_test.timed_out"] == 0.0
+  assert m["unit_test.wall_seconds"] >= 0.0
 
 
-def test_a_timed_out_eval_is_reported_as_timeout(tmp_path: Path):
+def test_a_timed_out_run_is_reported_as_timeout(tmp_path: Path):
   # Nothing raises on a timeout, so the engine assembles SUCCESS; the task
   # knows better. Without this a killed eval looked like one that produced
   # nothing.
@@ -241,14 +243,14 @@ def test_a_timed_out_eval_is_reported_as_timeout(tmp_path: Path):
       output_dir=tmp_path / "o",
   )
   assert result.run.status is RunStatus.TIMEOUT
-  assert result.run.metrics["eval.timed_out"] == 1.0
+  assert result.run.metrics["unit_test.timed_out"] == 1.0
 
 
-def test_eval_env_reaches_the_entryscript(tmp_path: Path):
+def test_script_env_reaches_the_entryscript(tmp_path: Path):
   # Mirrors the coding task's agent_env: extra env for the thing being run.
   sandbox = _fake(tmp_path)
-  task: UnitTestEvalTask[SweBenchProVerdict] = UnitTestEvalTask(
-      eval_env={"MY_FLAG": "1"}
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
+      script_env={"MY_FLAG": "1"}
   )
   _ = task.execute(
       sandbox,
@@ -328,7 +330,7 @@ def test_the_gold_builder_fills_the_patch_input_itself(tmp_path: Path):
   # The self-check shape: no edge, no caller bytes — the task builds its own
   # input from the instance's reference solution.
   sandbox = _fake(tmp_path)
-  task: UnitTestEvalTask[SweBenchProVerdict] = UnitTestEvalTask(
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
       inputs_builder=gold_patch
   )
   result = task.execute(
@@ -344,7 +346,7 @@ def test_the_gold_builder_fills_the_patch_input_itself(tmp_path: Path):
 def test_the_gold_builder_refuses_an_instance_without_one(tmp_path: Path):
   # Asking to grade a reference solution that does not exist is a caller
   # error, recorded as the attempt's failure rather than graded as unresolved.
-  task: UnitTestEvalTask[SweBenchProVerdict] = UnitTestEvalTask(
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
       inputs_builder=gold_patch
   )
   result = task.execute(
@@ -361,7 +363,7 @@ def test_the_gold_builder_refuses_an_instance_without_one(tmp_path: Path):
 def test_a_custom_patch_name_reaches_the_schema_and_the_spec():
   # The declared input and the compiled script read the same name by
   # construction — the task threads it into both.
-  task: UnitTestEvalTask[SweBenchProVerdict] = UnitTestEvalTask(
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
       patch_name="candidate.diff"
   )
   instance = _Instance(spec=_unit_test_spec(["a"], ["a"]))
@@ -424,10 +426,10 @@ def _run_eval(
   store = FilesystemStore(epath.Path(tmp_path / "store"))
   config = FakeSandboxConfig()
   outcome = run_task(
-      UnitTestEvalTask(),
+      UnitTestTask(),
       _Instance(spec=_flaky_spec(passes_on_attempt=passes_on_attempt)),
       store=store,
-      address=TaskAddress(sweep_id="sw", rollout_id=0, task="eval"),
+      address=TaskAddress(sweep_id="sw", rollout_id=0, task="unit_test"),
       backend="fake",
       sandbox=config,
       output_dir=tmp_path / "out",
@@ -448,11 +450,11 @@ def test_an_unresolved_verdict_spends_the_task_budget(tmp_path: Path):
   assert outcome.attempts == 2
   assert len(config.built) == 2
   assert config.built[0].workspace != config.built[1].workspace
-  shards = store.read_manifest("sw", "acme__widget-1", 0, task="eval")
+  shards = store.read_manifest("sw", "acme__widget-1", 0, task="unit_test")
   assert [s.attempt for s in shards] == [0, 1]
   # the evidence of the flake: the failing attempt's own grade, kept apart
-  assert shards[0].metrics["eval.resolved"] == 0.0
-  assert shards[1].metrics["eval.resolved"] == 1.0
+  assert shards[0].metrics["unit_test.resolved"] == 0.0
+  assert shards[1].metrics["unit_test.resolved"] == 1.0
 
 
 def test_a_first_attempt_pass_is_never_retried(tmp_path: Path):

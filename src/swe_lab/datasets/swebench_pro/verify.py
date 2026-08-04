@@ -22,8 +22,8 @@ resumable (a done instance is skipped), object-store-backed, not in git.
 local ``FilesystemStore`` today; task 13 points it at R2 with no change here.
 
 The two graded runs are the eval task's two **standalone** shapes — golden =
-``UnitTestEvalTask(inputs_builder=gold_patch)``, base =
-``UnitTestEvalTask(apply_patch=False)`` — executed directly on the sandbox
+``UnitTestTask(inputs_builder=gold_patch)``, base =
+``UnitTestTask(apply_patch=False)`` — executed directly on the sandbox
 engine, so the verdict is a ``SweBenchProVerdict`` and the run outcome a
 ``RunResult``.
 """
@@ -43,9 +43,9 @@ from etils import epath
 import typer
 
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.evaluation.methods.unit_test import (
+from swe_lab.evaluation.unit_test import (
     gold_patch,
-    UnitTestEvalTask,
+    UnitTestTask,
     verdict_of,
 )
 from swe_lab.paths import cache_root, find_repo_root
@@ -156,7 +156,7 @@ def _base_json(instance: SweBenchProInstance, base: _Run) -> dict[str, object]:
 def _graded_run(
     instance: SweBenchProInstance,
     *,
-    task: UnitTestEvalTask[SweBenchProVerdict],
+    task: UnitTestTask[SweBenchProVerdict],
     workspace: epath.PathLike,
     timeout: float,
     no_network: bool,
@@ -266,7 +266,7 @@ def verify_instance(
   try:
     base = _graded_run(
         instance,
-        task=UnitTestEvalTask(apply_patch=False),
+        task=UnitTestTask(apply_patch=False),
         workspace=epath.Path(ws_root) / iid / "base",
         timeout=timeout,
         no_network=no_network,
@@ -278,7 +278,7 @@ def verify_instance(
         instance,
         # The reference solution is the task's own input, built from the
         # instance — the standalone shape, no caller bytes involved.
-        task=UnitTestEvalTask(inputs_builder=gold_patch),
+        task=UnitTestTask(inputs_builder=gold_patch),
         workspace=epath.Path(ws_root) / iid / "golden",
         timeout=timeout,
         # The golden patch is supposed to pass, so a failure here is either a

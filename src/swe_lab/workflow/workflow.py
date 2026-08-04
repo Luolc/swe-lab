@@ -1,7 +1,7 @@
 """The workflow: a declared list of tasks, edges resolved from the store.
 
 A ``Workflow`` is `(key, task)` entries over one ``(sweep, rollout)`` and one
-instance, bound at ``execute`` (ADR-0007 §§5, 9–10). Edges are matched **by
+instance, bound at ``execute`` (ADR-0007 §§5, 9-10). Edges are matched **by
 store name** between one entry's declared outputs and a later entry's declared
 inputs — resolved at bind time, before any container, where any ambiguity is
 an error — and materialized by fetching the producer's recorded artifact out

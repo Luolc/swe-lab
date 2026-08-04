@@ -1,10 +1,10 @@
 """Run one instance's unit-test evaluation as a task over the engine.
 
-``UnitTestEvalTask`` is the composition (ADR-0007): it stages the compiled
-eval script as ``entryscript.sh``, runs it once by its workspace path, and
-composes an ``EvalParseObserver`` that grades the workspace in
-``before_destroy`` and holds the typed verdict. Retrying a flaky grade is the
-runner's job now, one fresh sandbox per attempt (ADR-0008).
+``UnitTestTask`` is the composition (ADR-0007): it stages the compiled script
+as ``entryscript.sh``, runs it once by its workspace path, and composes a
+``UnitTestParseObserver`` that grades the workspace in ``before_destroy`` and
+holds the typed verdict. Retrying a flaky grade is the runner's job now, one
+fresh sandbox per attempt (ADR-0008).
 
 The task is **stateless**: it compiles the spec from the instance it is handed,
 and reads its verdict back off the execution's own observers — so the same
@@ -37,28 +37,30 @@ from swe_lab.workflow import AttemptResult, Task
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
 # The default observer name: namespaces this method's artifacts and metrics,
-# so `stdout.log` says whose it is and a second eval method cannot collide.
-ARTIFACT_NAMESPACE = "eval"
+# so `stdout.log` says whose it is and a second evaluation method cannot
+# collide. It is this method's name — the same word the store key, the
+# registered workflow, and this module all use.
+ARTIFACT_NAMESPACE = "unit_test"
 
 
 @dataclass
-class EvalParseObserver[V: Verdict](SandboxObserver):
+class UnitTestParseObserver[V: Verdict](SandboxObserver):
   """Grade the workspace in ``before_destroy``; collect the run's evidence.
 
   Single-run, like every stateful observer: construct a fresh one per run.
 
   Beyond the verdict this registers everything needed to explain a grade after
-  the fact — the eval script that ran, the parsed result, the raw test logs, and
+  the fact — the script that ran, the parsed result, the raw test logs, and
   how the execution itself ended. A grading that goes wrong is otherwise a bare
   ``resolved: false`` with nothing to look at.
 
   Attributes:
     grader: Judges the workspace.
-    native_outputs: The eval script's byproducts (artifact name → filename), as
+    native_outputs: The script's byproducts (artifact name → filename), as
       declared by the dataset's spec; registered only if they landed.
     name: This observer's own identifier, namespacing everything it registers
       (artifacts and metrics) — the same role ``Harness.name`` plays for the
-      outcome observer, so a second eval method cannot collide with this one.
+      outcome observer, so a second method cannot collide with this one.
     verdict: The graded verdict; ``None`` until ``before_destroy`` has run.
     exec_result: The entryscript's own result, set by the composition before
       teardown; ``None`` if the body never got to run it.
@@ -74,7 +76,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
 
   @override
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
-    """Declare the eval script and the dataset's byproducts.
+    """Declare the compiled script and the dataset's byproducts.
 
     The entryscript always lands (it was staged, so a run whose sandbox came
     up has it); the dataset's outputs are best-effort, mirroring how they are
@@ -83,13 +85,13 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
     return (
         ArtifactSchema(
             qualified_name(self.name, ENTRYSCRIPT_NAME),
-            description="the eval script that ran",
+            description="the script that ran",
         ),
         *(
             ArtifactSchema(
                 qualified_name(self.name, name),
                 required=False,
-                description=f"the eval run's {name}",
+                description=f"the run's {name}",
             )
             for name in self.native_outputs
         ),
@@ -103,7 +105,7 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
       sb: The still-live sandbox — read through, never a host path.
 
     Returns:
-      The eval's artifacts (best effort: only files that landed) and its
+      The run's artifacts (best effort: only files that landed) and its
       metrics (the verdict's, plus how the execution ended).
     """
     self.verdict = self.grader.grade(sb)
@@ -167,11 +169,11 @@ class EvalParseObserver[V: Verdict](SandboxObserver):
 def gold_patch(
     sb: SandboxFs, instance: TaskInstance[Any]
 ) -> Mapping[str, bytes]:
-  """Build the eval task's patch input from the instance's own gold patch.
+  """Build the task's patch input from the instance's own gold patch.
 
   The standalone self-check shape: grading the reference solution needs no
   upstream task and no caller-held bytes, so the task supplies its own input
-  (``UnitTestEvalTask(inputs_builder=gold_patch)``).
+  (``UnitTestTask(inputs_builder=gold_patch)``).
 
   Fills the **default** patch name; a task configured with a custom
   ``patch_name`` pairs with its own builder — the mismatch trips the
@@ -199,12 +201,12 @@ def gold_patch(
 
 
 @dataclass
-class UnitTestEvalTask[V: Verdict](Task):
+class UnitTestTask[V: Verdict](Task):
   """Grade a patch against an instance's unit tests (ADR-0007).
 
-  The eval composition as a task: the spec is compiled from the instance the
+  The evaluation as a task: the spec is compiled from the instance the
   execution binds, its script staged as ``entryscript.sh``, and the run graded
-  by an ``EvalParseObserver`` carrying the dataset's grader directly — no
+  by an ``UnitTestParseObserver`` carrying the dataset's grader directly — no
   vehicle in between (ADR-0007 §4).
 
   The patch, when this task applies one, is an **input** (``input_schema``):
@@ -215,25 +217,26 @@ class UnitTestEvalTask[V: Verdict](Task):
   never of where this particular run's data happens to come from.
 
   Attributes:
-    apply_patch: Compile the eval script to apply the patch, and declare it as
+    apply_patch: Compile the script to apply the patch, and declare it as
       this task's required input. ``False`` grades the instance's tree
       untouched — the base-commit self-check.
     patch_name: Which workspace file the patch arrives as. Static
       configuration: ``input_schema`` declares it and the compiled script
       reads it, so the declaration and the script cannot drift apart. The
       default is the store name the rollout side produces, which is what makes
-      the rollout → eval edge match by name.
-    eval_env: Extra environment for the eval script. For a secret, use the
+      the rollout → unit-test edge match by name.
+    script_env: Extra environment for the compiled script. For a secret, use
+      the
       sandbox's ``pass_env`` instead — that passes it by reference, so the
       value never reaches a command line.
   """
 
   apply_patch: bool = True
   patch_name: str = PATCH_NAME
-  eval_env: Mapping[str, str] | None = None
+  script_env: Mapping[str, str] | None = None
 
   def _compile(self, instance: TaskInstance[Any]) -> UnitTestSpec[V]:
-    """Compile the bound instance's eval spec.
+    """Compile the bound instance's unit-test spec.
 
     No self-stash: each hook compiles from the instance it is handed.
     Compilation is pure and repeatable by contract (the fixes seam already
@@ -257,7 +260,7 @@ class UnitTestEvalTask[V: Verdict](Task):
     """Stage the compiled spec's files plus the entryscript.
 
     The compiled spec is self-contained — its ``mounts`` carry everything the
-    eval script reads, including any instance fix's files — so the
+    script reads, including any instance fix's files — so the
     instance-material default is deliberately not merged on top of it. The
     patch is not among them: it is this task's *input*, staged by whoever
     supplies it.
@@ -289,7 +292,9 @@ class UnitTestEvalTask[V: Verdict](Task):
       The one-element observer set.
     """
     spec = self._compile(instance)  # same spec, by the purity contract
-    return (EvalParseObserver(spec.grader, native_outputs=spec.native_outputs),)
+    return (
+        UnitTestParseObserver(spec.grader, native_outputs=spec.native_outputs),
+    )
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:
@@ -360,7 +365,7 @@ class UnitTestEvalTask[V: Verdict](Task):
       The entryscript's execution result.
     """
     del instance
-    return sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout, env=self.eval_env)
+    return sb.run_script(ENTRYSCRIPT_NAME, timeout=timeout, env=self.script_env)
 
 
 def verdict_of(result: AttemptResult) -> Verdict | None:
@@ -375,9 +380,10 @@ def verdict_of(result: AttemptResult) -> Verdict | None:
 
   Returns:
     The verdict, or ``None`` when grading never ran (a setup failure), or when
-    the result came from a task that composed no eval observer.
+    the result came from a task that composed no unit-test observer.
   """
   parse = next(
-      (o for o in result.observers if isinstance(o, EvalParseObserver)), None
+      (o for o in result.observers if isinstance(o, UnitTestParseObserver)),
+      None,
   )
   return parse.verdict if parse is not None else None

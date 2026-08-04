@@ -12,15 +12,16 @@ from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.cli.sandbox_wiring import invocation_config
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.evaluation.methods.unit_test import UnitTestEvalTask, verdict_of
+from swe_lab.evaluation.unit_test import UnitTestTask, verdict_of
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import Inline, Mount
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.workflow import run_task, TaskAddress
 
 _WORKSPACES_SUBDIR = "eval_workspaces"
-# The task segment of this command's persisted records (ADR-0007 §6).
-_TASK_KEY = "eval"
+# The task segment of this command's persisted records (ADR-0007 §6) — the
+# evaluation method's own name, like the workflow that runs it.
+_TASK_KEY = "unit_test"
 
 
 def eval_cmd(
@@ -98,7 +99,7 @@ def eval_cmd(
   # The patch is the task's declared input: whether it came from --gold or a
   # file, it enters the one channel a workflow edge would use.
   run = run_task(
-      UnitTestEvalTask(),
+      UnitTestTask(),
       instance,
       store=run_store(root, persist_to_t1=persist, scratch=output_dir),
       address=TaskAddress(sweep_id=sweep, rollout_id=0, task=_TASK_KEY),

@@ -55,7 +55,8 @@ class TaskAddress:
   Attributes:
     sweep_id: The sweep the run belongs to (``adhoc`` for a one-off).
     rollout_id: Which sample of the instance.
-    task: The task segment — the workflow-entry key (``rollout``, ``eval``).
+    task: The task segment — the workflow-entry key (``rollout``,
+      ``unit_test``).
   """
 
   sweep_id: str

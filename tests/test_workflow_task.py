@@ -2,7 +2,7 @@
 
 ``Task.execute`` is exercised over a :class:`FakeSandbox` (real local-dir file
 ops, scripted exec, no Docker). The observer-schema seam, the exec-outcome
-handoff, the timeout promotion, and ``UnitTestEvalTask``'s UPSTREAM mode are
+handoff, the timeout promotion, and ``UnitTestTask``'s UPSTREAM mode are
 the behaviors new in this layer; everything the wrappers preserve is already
 pinned by the composition tests, which this file deliberately does not touch.
 """
@@ -22,10 +22,10 @@ from swe_lab.datasets.swebench_pro.unit_test import (
     SweBenchProGrader,
     SweBenchProVerdict,
 )
-from swe_lab.evaluation.methods.unit_test import (
+from swe_lab.evaluation.unit_test import (
     ENTRYSCRIPT_NAME,
-    EvalParseObserver,
-    UnitTestEvalTask,
+    UnitTestParseObserver,
+    UnitTestTask,
 )
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import (
@@ -467,12 +467,14 @@ def test_a_required_input_the_builder_left_out_fails_the_attempt(
   assert task.outputs_valid(result) is False
 
 
-# ─── UnitTestEvalTask: patch modes ───────────────────────────────────────────
+# ─── UnitTestTask: patch modes ───────────────────────────────────────────
 
 
 def _verdict(result: AttemptResult) -> SweBenchProVerdict | None:
   """Read the graded verdict back off the run's own observers."""
-  parse = next(o for o in result.observers if isinstance(o, EvalParseObserver))
+  parse = next(
+      o for o in result.observers if isinstance(o, UnitTestParseObserver)
+  )
   verdict = parse.verdict
   assert verdict is None or isinstance(verdict, SweBenchProVerdict)
   return verdict
@@ -526,7 +528,7 @@ class _EvalInstance(TaskInstance[SweBenchProVerdict]):
 def test_the_patch_input_is_fixed_by_configuration():
   # One channel: in apply mode the task declares patch.diff as its input and
   # stages no placeholder of its own — regardless of who will supply it.
-  task = UnitTestEvalTask()
+  task = UnitTestTask()
   instance = _EvalInstance()
   assert [schema.name for schema in task.input_schema()] == [PATCH_NAME]
   assert PATCH_NAME not in task.mounts(instance)
@@ -542,7 +544,7 @@ def test_a_callers_literal_patch_arrives_through_the_same_channel(
   # already has through extra_mounts — the exact channel a workflow edge
   # uses, so the task cannot tell the difference.
   sandbox = _fake(tmp_path)
-  task = UnitTestEvalTask()
+  task = UnitTestTask()
   result = task.execute(
       sandbox,
       _EvalInstance(),
@@ -560,7 +562,7 @@ def test_a_workflow_edge_mounts_the_upstream_patch(tmp_path: Path):
   upstream.parent.mkdir(parents=True)
   upstream.write_text("FROM UPSTREAM")
   sandbox = _fake(tmp_path)
-  task = UnitTestEvalTask()
+  task = UnitTestTask()
   result = task.execute(
       sandbox,
       _EvalInstance(),
@@ -582,7 +584,7 @@ def test_a_missing_required_input_fails_at_assembly(tmp_path: Path):
   # Nobody staged patch.diff: the failure is an assembly error naming the
   # input, not a git-apply mystery inside the sandbox.
   sandbox = _fake(tmp_path)
-  task = UnitTestEvalTask()
+  task = UnitTestTask()
   with pytest.raises(SandboxError, match=PATCH_NAME):
     task.execute(
         sandbox, _EvalInstance(), output_dir=tmp_path / "out", timeout=10.0
@@ -591,20 +593,20 @@ def test_a_missing_required_input_fails_at_assembly(tmp_path: Path):
 
 
 def test_grading_the_base_commit_declares_no_input():
-  task = UnitTestEvalTask(apply_patch=False)
+  task = UnitTestTask(apply_patch=False)
   assert task.input_schema() == ()
   assert PATCH_NAME not in task.mounts(_EvalInstance())
 
 
-def test_the_task_output_schema_names_the_eval_outputs(tmp_path: Path):
-  task = UnitTestEvalTask(apply_patch=False)
+def test_the_task_output_schema_names_the_methods_outputs(tmp_path: Path):
+  task = UnitTestTask(apply_patch=False)
   result = task.execute(
       _fake(tmp_path),
       _EvalInstance(),
       output_dir=tmp_path / "out",
       timeout=10.0,
   )
-  assert "eval.entryscript.sh" in [s.name for s in result.output_schema]
+  assert "unit_test.entryscript.sh" in [s.name for s in result.output_schema]
 
 
 # ─── CodingAgentTask: the instance path ──────────────────────────────────────
@@ -684,12 +686,12 @@ def test_coding_agent_task_defaults_the_prompt_to_the_instance(
 
 def _graded_eval_run(
     tmp_path: Path, *, passing: bool
-) -> tuple[UnitTestEvalTask[SweBenchProVerdict], AttemptResult]:
+) -> tuple[UnitTestTask[SweBenchProVerdict], AttemptResult]:
   """Run an eval task whose staged output grades pass/fail."""
   instance: TaskInstance[SweBenchProVerdict] = (
       _EvalInstance() if passing else _FailingEvalInstance()
   )
-  task: UnitTestEvalTask[SweBenchProVerdict] = UnitTestEvalTask()
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
   result = task.execute(
       _fake(tmp_path),
       instance,
@@ -757,7 +759,7 @@ def test_an_unresolved_eval_is_valid_but_asks_for_a_retry(tmp_path: Path):
 def test_an_eval_that_never_graded_is_invalid(tmp_path: Path):
   # Setup failure: before_destroy never ran, so no verdict exists — that is
   # a failure (and a retryable one), not an answer.
-  task = UnitTestEvalTask()
+  task = UnitTestTask()
   sandbox = FakeSandbox(
       spec=SPEC,
       workspace=epath.Path(tmp_path / "ws"),

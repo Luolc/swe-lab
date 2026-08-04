@@ -439,7 +439,8 @@ src/swe_lab/
                   (setup, diff-extract, persist, metrics, logging)
   harnesses/      one per harness: claude_code/ (now), codex/, grok_build/ (next)
   datasets/       one per dataset: swebench_pro/ (now)   [moves up from core/]
-  evaluation/     the eval axis; methods/ (unit_test/ now, model_judge/ later)
+  evaluation/     the evaluation axis; verdict + one module per method
+                  (unit_test now, model_judge later)
   paths.py        [moves up from core/]
 ```
 

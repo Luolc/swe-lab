@@ -15,7 +15,7 @@ from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.cli.sandbox_wiring import invocation_config
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
-from swe_lab.evaluation.methods.unit_test import UnitTestEvalTask, verdict_of
+from swe_lab.evaluation.unit_test import UnitTestTask, verdict_of
 from swe_lab.harnesses.claude_code import Capture, ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     API_KEY_ENV,
@@ -49,7 +49,7 @@ _ROLLOUT_SUBDIR = "rollout_workspaces"
 # The entry keys of this command's workflow — also the task segment of every
 # record it persists (ADR-0007 §6).
 _ROLLOUT_KEY = "rollout"
-_EVAL_KEY = "eval"
+_UNIT_TEST_KEY = "unit_test"
 _DEFAULT_TIMEOUT_S = 1800.0
 # Proxy ports are drawn from a wide band by a stable hash of the instance id, so
 # concurrent rollouts on one host never collide (mirrors W1's per-run distinct
@@ -201,8 +201,8 @@ def rollout_in_docker(
   if grade:
     entries.append(
         WorkflowEntry(
-            _EVAL_KEY,
-            UnitTestEvalTask(),  # its patch.diff input is the rollout's output
+            _UNIT_TEST_KEY,
+            UnitTestTask(),  # its patch.diff input is the rollout's output
             timeout=timeout,
             sandbox=SandboxConfig(network=False),
             retries=eval_retries,
@@ -292,7 +292,7 @@ def _summarize(
   if not grade:
     summary["outcome"] = "solved_not_graded"
     return summary
-  evaluation = entries[_EVAL_KEY]
+  evaluation = entries[_UNIT_TEST_KEY]
   if evaluation.status is EntryStatus.EDGE_FAILED or is_empty:
     # An empty patch never reaches a container: the edge refuses to stage
     # empty bytes, which is the same answer, one container cheaper.
