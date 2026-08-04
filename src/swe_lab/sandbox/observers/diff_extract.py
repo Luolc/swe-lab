@@ -24,6 +24,9 @@ from swe_lab.sandbox.sandbox import SandboxFs
 RAW_PATCH_NAME = "patch.raw.diff"  # raw git-diff bytes (audit)
 PATCH_NAME = "patch.diff"  # clean, text-only patch that gets graded
 EXTRACT_SCRIPT_NAME = "extract.sh"  # persisted for audit
+# What the extraction found, on the run's metrics (and so on its record).
+EMPTY_METRIC = "patch_is_empty"
+BINARY_STRIPPED_METRIC = "patch_binary_stripped"
 _EXTRACT_TIMEOUT_S = 120.0
 
 
@@ -110,4 +113,11 @@ class DiffExtractObserver(SandboxObserver):
     return Contribution(
         artifacts=artifacts,
         inline_artifacts={PATCH_NAME: self.patch.encode("utf-8")},
+        # What the extraction *found*, as metrics: a persisted attempt has to
+        # be readable on its own, and "the patch is empty" is the difference
+        # between an agent that failed and one that changed nothing.
+        metrics={
+            EMPTY_METRIC: float(self.is_empty),
+            BINARY_STRIPPED_METRIC: float(self.binary_stripped),
+        },
     )

@@ -8,6 +8,7 @@ the same shape as rollout → eval, without Docker or datasets.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 import json
 from pathlib import Path
@@ -33,6 +34,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
     Store,
 )
+from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.workflow import (
     EntryStatus,
@@ -68,7 +70,8 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError
@@ -288,6 +291,33 @@ def test_two_producers_of_one_name_demand_an_explicit_binding(tmp_path: Path):
   )
   assert outcome.succeeded is True
   assert consumer.seen == [b"FROM TWO"]
+
+
+def test_a_task_that_builds_its_own_input_needs_no_producer(tmp_path: Path):
+  # The third supplier: a task carrying an inputs builder fills its declared
+  # input in-session, so an unproduced name is the standalone shape rather
+  # than a dangling edge. Requiredness is still verified — inside the session,
+  # before the action.
+  def build(sb: SandboxFs, instance: TaskInstance[Any]) -> Mapping[str, bytes]:
+    del sb, instance
+    return {"thing.txt": b"SELF-MADE"}
+
+  consumer = _Consumer(inputs_builder=build)
+  wf = Workflow(
+      store=_store(tmp_path),
+      sweep_id="sw",
+      rollout_id=0,
+      entries=[WorkflowEntry("consumer", consumer, timeout=10.0)],
+  )
+  outcome = wf.execute(
+      _Instance(),
+      backend="fake",
+      sandbox=FakeSandboxConfig(),
+      output_dir=tmp_path / "out",
+      run_ts="ts-0",
+  )
+  assert outcome.succeeded is True
+  assert consumer.seen == [b"SELF-MADE"]
 
 
 def test_a_binding_to_a_non_producer_is_refused_at_bind_time(tmp_path: Path):

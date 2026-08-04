@@ -7,6 +7,8 @@ both ``execution`` (which fetches it) and ``unit_test`` (which stages it).
 
 from __future__ import annotations
 
+from swe_lab.sandbox.observers import PATCH_NAME as _PATCH_NAME
+
 # --- Docker images -----------------------------------------------------------
 
 # Prebuilt per-instance images on Docker Hub (public mirror of Scale's ECR); the
@@ -37,7 +39,10 @@ PARSER_NAME = "parser.py"
 # The rest of the workspace the entryscript reads/writes. ``_build_eval_script``
 # (which references them by in-container path) and ``compile_unit_test`` (which
 # mounts them inline) both use these, so the script and the files never drift.
-PATCH_NAME = "patch.diff"
+# The patch is the exception: it is not this dataset's name to choose but the
+# cross-dataset store name the extraction side produces, so the default is
+# re-exported from there and the rollout → eval edge matches by construction.
+PATCH_NAME = _PATCH_NAME
 ENTRYSCRIPT_NAME = "entryscript.sh"
 OUTPUT_JSON_NAME = "output.json"
 STDOUT_LOG_NAME = "stdout.log"

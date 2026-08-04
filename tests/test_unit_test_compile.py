@@ -11,6 +11,7 @@ import json
 
 from swe_lab.datasets.swebench_pro.constants import (
     PARSER_NAME,
+    PATCH_NAME,
     RUN_SCRIPT_NAME,
     WORKDIR,
 )
@@ -63,6 +64,7 @@ def _script(
       selected_test_files_to_run=inst.selected_test_files_to_run,
       golden_test_checkout_cmd=inst.golden_test_checkout_cmd,
       apply_patch=apply_patch,
+      patch_name=PATCH_NAME,
       checkout_golden_tests=checkout_golden_tests,
   )
 
@@ -70,13 +72,15 @@ def _script(
 def _compile(
     inst: SweBenchProInstance,
     *,
-    patch: str | None,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
     run_script: bytes = b"echo run",
     parser: bytes = b"print('parse')",
     checkout_golden_tests: bool = True,
 ):
   return compile_unit_test(
-      patch=patch,
+      apply_patch=apply_patch,
+      patch_name=patch_name,
       checkout_golden_tests=checkout_golden_tests,
       base_commit=inst.base_commit,
       selected_test_files_to_run=inst.selected_test_files_to_run,
@@ -183,22 +187,33 @@ def test_script_quotes_selected_tests():
 # ─── compile ─────────────────────────────────────────────────────────────────
 
 
-def test_compile_mounts_the_harness_expectation_and_patch():
+def test_compile_mounts_the_harness_and_the_expectation():
   unit = _compile(
-      _instance(), patch="MY DIFF", run_script=b"echo run", parser=b"parse"
+      _instance(), apply_patch=True, run_script=b"echo run", parser=b"parse"
   )
-  # mounts carry the harness bytes + the compiled expectation + the patch
+  # mounts carry the harness bytes + the compiled expectation, and nothing else
   assert _content(unit.mounts[RUN_SCRIPT_NAME]) == b"echo run"
   assert _content(unit.mounts[PARSER_NAME]) == b"parse"
   required = json.loads(_content(unit.mounts[REQUIRED_TESTS_NAME]) or b"")
   assert required == ["test_a", "test_b"]  # sorted(fail ∪ pass)
-  assert _content(unit.mounts["patch.diff"]) == b"MY DIFF"
-  assert "git apply" in unit.eval_script
 
 
-def test_compile_without_patch_omits_patch_mount_and_apply():
-  unit = _compile(_instance(), patch=None)
-  assert "patch.diff" not in unit.mounts
+def test_the_eval_script_reads_the_patch_from_the_workspace_mount():
+  # The named invariant: a compiled spec never carries patch BYTES. It says
+  # which workspace file to apply, and whoever supplies the patch mounts it
+  # under exactly that name — so a spec cannot silently grade a patch other
+  # than the one the run declared as its input.
+  unit = _compile(_instance(), apply_patch=True, patch_name="candidate.diff")
+  assert unit.patch_name == "candidate.diff"
+  assert "git apply -v " in unit.eval_script
+  assert "candidate.diff" in unit.eval_script
+  assert PATCH_NAME not in unit.eval_script
+  assert not [name for name in unit.mounts if name.endswith(".diff")]
+
+
+def test_compile_without_a_patch_applies_nothing():
+  unit = _compile(_instance(), apply_patch=False)
+  assert PATCH_NAME not in unit.mounts
   assert "git apply" not in unit.eval_script
 
 

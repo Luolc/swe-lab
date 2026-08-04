@@ -20,6 +20,7 @@ from abc import ABC, abstractmethod
 
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.sandbox import Mounts, SandboxSpec
+from swe_lab.sandbox.observers import PATCH_NAME
 
 
 class TaskInstance[V: Verdict](ABC):
@@ -71,7 +72,7 @@ class TaskInstance[V: Verdict](ABC):
       The reference diff, or ``None`` when the dataset carries no reference
       solution — an unsolved corpus, or one collected for annotation rather
       than for grading. A caller that requires one has to say so: ``None`` is
-      *not* interchangeable with the ``patch=None`` that
+      *not* interchangeable with the ``apply_patch=False`` that
       :meth:`unit_test_spec` accepts, which means "grade the base commit" and
       is a perfectly gradeable request.
     """
@@ -81,7 +82,8 @@ class TaskInstance[V: Verdict](ABC):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[V]:
     """Compile this instance's unit-test evaluation spec.
@@ -89,9 +91,17 @@ class TaskInstance[V: Verdict](ABC):
     Pair it with :meth:`sandbox_spec` for the run context (that is not returned
     here — it is the same context solving uses).
 
+    The **bytes of the patch are not this method's business**: they arrive in
+    the workspace as the eval task's declared input, from wherever the caller
+    got them (a workflow edge, a file, the gold patch). What is compiled here
+    is only whether the script applies one, and which file it reads.
+
     Args:
-      patch: The candidate diff to apply, or ``None`` to grade the base commit
-        untouched (a self-check that the required tests fail without a fix).
+      apply_patch: Compile the script to apply the workspace file named
+        ``patch_name``. ``False`` grades the base commit untouched (a
+        self-check that the required tests fail without a fix).
+      patch_name: Which workspace file the script applies; the default is the
+        store name the extraction side produces.
       checkout_golden_tests: Restore the held-out golden test files after the
         reset (so a candidate patch cannot game them).
 

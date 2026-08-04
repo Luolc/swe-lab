@@ -364,38 +364,52 @@ class Workflow:
     staged: Mounts = {}
     missing: list[str] = []
     for schema in entry.task.input_schema():
-      producer_key = bound[schema.name]
+      producer_key = bound.get(schema.name)
+      if producer_key is None:
+        continue  # the task's own builder fills it, inside the session
       if producer_key == INPUTS_KEY:
-        mount = provided[schema.name]
-        if _known_empty(mount):
-          # The same rule an edge applies to a fetched artifact: empty bytes
-          # never reach a container.
-          if schema.required:
-            missing.append(schema.name)
-          continue
-        staged[schema.name] = mount
-        continue
-      record = runs[producer_key].record
-      full_key = (
-          record.artifact_keys.get(schema.name) if record is not None else None
-      )
-      if full_key is None:
+        caller = provided[schema.name]
+        # The same rule an edge applies to a fetched artifact: empty bytes
+        # never reach a container.
+        mount = None if _known_empty(caller) else caller
+      else:
+        mount = self._fetch_input(
+            runs[producer_key], schema.name, staging_dir / schema.name
+        )
+      if mount is None:
         if schema.required:
           missing.append(schema.name)
         continue
-      dest = staging_dir / schema.name
-      try:
-        self.store.get(full_key, dest)
-      except SandboxError:
-        full_key = None
-      if full_key is None or not dest.is_file() or not dest.read_bytes():
-        # Missing or empty bytes: an empty patch is caught here, before a
-        # container is paid for (ADR-0007 §5).
-        if schema.required:
-          missing.append(schema.name)
-        continue
-      staged[schema.name] = Mount(LocalFile(dest), read_only=True)
+      staged[schema.name] = mount
     return staged, missing
+
+  def _fetch_input(
+      self, producer: TaskRunOutcome, name: str, dest: epath.Path
+  ) -> Mount | None:
+    """Fetch one input out of the producer's recorded artifact.
+
+    Args:
+      producer: The producing entry's run report (its record is the authority
+        on where the artifact landed).
+      name: The input's store name.
+      dest: Where the bytes are staged on the host.
+
+    Returns:
+      The read-only mount, or ``None`` when there is nothing usable to mount —
+      the artifact was never recorded, cannot be fetched, or is empty. An
+      empty patch is caught here, before a container is paid for (§5).
+    """
+    record = producer.record
+    full_key = record.artifact_keys.get(name) if record is not None else None
+    if full_key is None:
+      return None
+    try:
+      self.store.get(full_key, dest)
+    except SandboxError:
+      return None
+    if not dest.is_file() or not dest.read_bytes():
+      return None
+    return Mount(LocalFile(dest), read_only=True)
 
   def _write_record(
       self,
@@ -505,10 +519,17 @@ def _resolve_edges(
         if len(candidates) == 1:
           bound[name] = candidates[0]
         elif not candidates:
+          if entry.task.inputs_builder is not None:
+            # The third supplier: a task with a builder fills its own inputs
+            # in-session, so an unproduced name is not dangling — it is the
+            # standalone shape. Requiredness is verified there, before the
+            # action. (A name that *is* produced still binds by edge, and
+            # then the builder's own collision check has the last word.)
+            continue
           raise WorkflowError(
               f"nothing produces {name!r}, required by {entry.key}: no"
-              " earlier entry declares it and the workflow's inputs do"
-              " not provide it"
+              " earlier entry declares it, the workflow's inputs do not"
+              " provide it, and the task builds no inputs of its own"
           )
         else:
           raise WorkflowError(

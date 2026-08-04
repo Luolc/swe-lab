@@ -85,7 +85,8 @@ class _BareInstance(TaskInstance[SweBenchProVerdict]):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError("this instance compiles no eval")
@@ -505,21 +506,20 @@ class _EvalInstance(TaskInstance[SweBenchProVerdict]):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
-    del checkout_golden_tests
+    del apply_patch, checkout_golden_tests
     output = json.dumps({"tests": [{"name": "a", "status": "PASSED"}]})
-    mounts: Mounts = {
-        REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
-        "output.json": Mount(Inline(output.encode())),
-    }
-    if patch is not None:
-      mounts[PATCH_NAME] = Mount(Inline(patch.encode()))
     return UnitTestSpec(
         eval_script="echo eval\n",
-        mounts=mounts,
+        mounts={
+            REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+            "output.json": Mount(Inline(output.encode())),
+        },
         grader=SweBenchProGrader(),
+        patch_name=patch_name,
     )
 
 
@@ -723,18 +723,19 @@ class _FailingEvalInstance(TaskInstance[SweBenchProVerdict]):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
-    del checkout_golden_tests
-    mounts: Mounts = {
-        REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
-        "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
-    }
-    if patch is not None:
-      mounts[PATCH_NAME] = Mount(Inline(patch.encode()))
+    del apply_patch, checkout_golden_tests
     return UnitTestSpec(
-        eval_script="echo eval\n", mounts=mounts, grader=SweBenchProGrader()
+        eval_script="echo eval\n",
+        mounts={
+            REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(["a"]).encode())),
+            "output.json": Mount(Inline(json.dumps({"tests": []}).encode())),
+        },
+        grader=SweBenchProGrader(),
+        patch_name=patch_name,
     )
 
 

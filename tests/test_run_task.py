@@ -28,6 +28,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
     Store,
 )
+from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.workflow import (
     AttemptResult,
@@ -63,7 +64,8 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
   def unit_test_spec(
       self,
       *,
-      patch: str | None,
+      apply_patch: bool,
+      patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError

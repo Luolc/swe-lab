@@ -11,7 +11,7 @@ record — the dependency runs one way, ``record`` → ``unit_test``.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from enum import StrEnum
 import json
 import shlex
@@ -51,8 +51,8 @@ class OutputState(StrEnum):
 class SweBenchProVerdict(Verdict):
   """The graded outcome of one SWE-Bench Pro run.
 
-  ``resolved`` and ``flaky`` are inherited from :class:`Verdict` (ADR-0006), so
-  the derivations are not restated here.
+  ``resolved`` is inherited from :class:`Verdict` (ADR-0006), so the
+  derivation is not restated here.
 
   Attributes:
     passed: Names of the tests the parser reported as passed.
@@ -61,16 +61,12 @@ class SweBenchProVerdict(Verdict):
     required: The expectation this was judged against (``fail_to_pass ∪
       pass_to_pass``). Kept so a run can report *how many* tests it was held to,
       not just how many it missed — ``0`` on a verdict built without it.
-    attempts: How many evaluation attempts produced this verdict (ADR-0005).
-      ``1`` unless the eval was re-run after a failure; the grader always builds
-      it at ``1`` and the method annotates it afterwards.
   """
 
   passed: frozenset[str]
   missing: frozenset[str]
   output_state: OutputState
   required: frozenset[str] = frozenset()
-  attempts: int = 1
 
   @property
   @override
@@ -80,20 +76,8 @@ class SweBenchProVerdict(Verdict):
     return 1.0 if ok else 0.0
 
   @override
-  def with_attempts(self, attempts: int) -> SweBenchProVerdict:
-    """Return this verdict with the attempt count recorded.
-
-    Args:
-      attempts: How many attempts the eval took, ``1`` or more.
-
-    Returns:
-      An identical verdict but for ``attempts``.
-    """
-    return replace(self, attempts=attempts)
-
-  @override
   def summary(self) -> dict[str, object]:
-    """Return the report detail: output state, retry outcome, passed / missing.
+    """Return the report detail: output state, passed / missing.
 
     ``first_missing`` is the scalar a persisted record keeps — the full
     ``missing`` list is for a human report, and would otherwise bloat a shard
@@ -102,8 +86,6 @@ class SweBenchProVerdict(Verdict):
     """
     return {
         "output_state": self.output_state.value,
-        "attempts": self.attempts,
-        "flaky": self.flaky,
         "first_missing": min(self.missing) if self.missing else None,
         "passed": sorted(self.passed),
         "missing": sorted(self.missing),
@@ -111,13 +93,11 @@ class SweBenchProVerdict(Verdict):
 
   @override
   def metrics(self) -> dict[str, float]:
-    """Return counts a sweep can aggregate, plus the retry outcome."""
+    """Return counts a sweep can aggregate."""
     return {
         "passed": float(len(self.passed)),
         "missing": float(len(self.missing)),
         "required": float(len(self.required)),
-        "attempts": float(self.attempts),
-        "flaky": float(self.flaky),
     }
 
 
@@ -188,6 +168,7 @@ def _build_eval_script(
     selected_test_files_to_run: Sequence[str],
     golden_test_checkout_cmd: str,
     apply_patch: bool,
+    patch_name: str,
     checkout_golden_tests: bool,
 ) -> str:
   """Build the in-container eval script (ports Scale's create_entryscript).
@@ -206,7 +187,10 @@ def _build_eval_script(
     selected_test_files_to_run: The test files passed to the run script.
     golden_test_checkout_cmd: The command restoring the held-out golden tests
       after the reset (``""`` when the instance has none).
-    apply_patch: Apply ``patch.diff`` after resetting to the base commit.
+    apply_patch: Apply the workspace patch after resetting to the base commit.
+    patch_name: The workspace file that patch is read from — a *mount*, never
+      bytes baked into the script, so the same compiled script grades whatever
+      the run's declared input turns out to be.
     checkout_golden_tests: Restore the golden test files after the reset.
 
   Returns:
@@ -266,7 +250,7 @@ def _build_eval_script(
       f"git checkout {base_commit}",
   ]
   if apply_patch:
-    lines.append(f"git apply -v {_WS}/{PATCH_NAME}")
+    lines.append(f"git apply -v {_WS}/{shlex.quote(patch_name)}")
   if checkout_golden_tests and golden_test_checkout_cmd:
     lines.append(golden_test_checkout_cmd)
   lines += [
@@ -289,7 +273,8 @@ def _build_eval_script(
 
 def compile_unit_test(
     *,
-    patch: str | None,
+    apply_patch: bool,
+    patch_name: str = PATCH_NAME,
     checkout_golden_tests: bool = True,
     base_commit: str,
     selected_test_files_to_run: Sequence[str],
@@ -309,8 +294,11 @@ def compile_unit_test(
   separate concern (``SweBenchProInstance.sandbox_spec``) and is not built here.
 
   Args:
-    patch: The candidate diff to apply, or ``None`` to grade the base commit
-      untouched (a self-check that the required tests fail without a fix).
+    apply_patch: Compile the script to apply the workspace file named
+      ``patch_name``; ``False`` grades the base commit untouched (a self-check
+      that the required tests fail without a fix). The patch's **bytes** are
+      not compiled in — they arrive as the eval task's declared input.
+    patch_name: The workspace file the script applies.
     checkout_golden_tests: Forwarded to the eval script (see its self-check
       modes).
     base_commit: The commit the working tree is reset to before grading.
@@ -331,19 +319,19 @@ def compile_unit_test(
       PARSER_NAME: Mount(Inline(parser)),
       REQUIRED_TESTS_NAME: Mount(Inline(json.dumps(required).encode())),
   }
-  if patch is not None:
-    mounts[PATCH_NAME] = Mount(Inline(patch.encode()))
   eval_script = _build_eval_script(
       base_commit=base_commit,
       selected_test_files_to_run=selected_test_files_to_run,
       golden_test_checkout_cmd=golden_test_checkout_cmd,
-      apply_patch=patch is not None,
+      apply_patch=apply_patch,
+      patch_name=patch_name,
       checkout_golden_tests=checkout_golden_tests,
   )
   return UnitTestSpec(
       eval_script=eval_script,
       mounts=mounts,
       grader=SweBenchProGrader(),
+      patch_name=patch_name,
       # Kept so a grading that went wrong can be read afterwards: the parsed
       # result, and — the useful part when it did go wrong — the raw test logs
       # the parser was fed. Registered best-effort by the method.
