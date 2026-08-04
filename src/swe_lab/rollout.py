@@ -80,11 +80,10 @@ class CodingAgentTask(Task):
   internal proxy compose here unchanged.
 
   Attributes:
-    instance: The dataset instance to solve.
     harness: The agent to run. It supplies its own mounts, observers, the
       main action, the trace conversion, and the completion signal.
     prompt: The task prompt handed to ``harness.run`` as text; ``None`` asks
-      the instance (``instance.prompt()``).
+      the bound instance (``instance.prompt()``).
     exclude_globs: Build-noise denylist for the diff extraction.
     agent_env: Extra environment for the agent process, handed to the
       harness. For a secret, use the sandbox's ``pass_env`` instead — that
@@ -95,7 +94,6 @@ class CodingAgentTask(Task):
       execution: a re-executed task needs a fresh one.
   """
 
-  instance: TaskInstance[Any]
   harness: Harness
   prompt: str | None = None
   exclude_globs: tuple[str, ...] = ()
@@ -103,20 +101,27 @@ class CodingAgentTask(Task):
   proxy: contextlib.AbstractContextManager[object] | None = None
 
   @override
-  def mounts(self) -> Mounts:
+  def mounts(self, instance: TaskInstance[Any]) -> Mounts:
     """Stage the instance's material and the harness's own files.
+
+    Args:
+      instance: The instance being solved.
 
     Returns:
       The merged staging set (duplicate targets refused).
     """
     return merge_mounts(
-        super().mounts(),
-        self.harness.mounts(self.instance.sandbox_spec().workdir),
+        super().mounts(instance),
+        self.harness.mounts(instance.sandbox_spec().workdir),
     )
 
   @override
-  def observers(self) -> Sequence[SandboxObserver]:
+  def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:
     """Return the harness's own observers plus the deliverable's extractor.
+
+    Args:
+      instance: Unused — what this task extracts is fixed by its own
+        configuration.
 
     Returns:
       The harness's pair (or whatever it chooses) followed by a fresh
@@ -124,13 +129,16 @@ class CodingAgentTask(Task):
       §3), or the same harness could never run a task producing something
       other than a diff.
     """
+    del instance
     return (
         *self.harness.observers(),
         DiffExtractObserver(exclude_globs=self.exclude_globs),
     )
 
   @override
-  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
+  def action(
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+  ) -> ExecResult:
     """Run the agent against the prompt, inside the recording proxy.
 
     The proxy's lifetime is the agent's — opened around the run and closed
@@ -139,13 +147,15 @@ class CodingAgentTask(Task):
 
     Args:
       sb: The live sandbox to run in.
+      instance: The instance being solved; asked for the prompt when this
+        task carries none.
       timeout: Seconds before the agent run is killed.
 
     Returns:
       The agent execution's outcome (a timeout comes back as a timed-out
       ``ExecResult``, not a raise).
     """
-    prompt = self.prompt if self.prompt is not None else self.instance.prompt()
+    prompt = self.prompt if self.prompt is not None else instance.prompt()
     with self.proxy or contextlib.nullcontext():
       return self.harness.run(
           sb, prompt=prompt, timeout=timeout, env=self.agent_env
@@ -270,7 +280,6 @@ def run_rollout(
   """
   spec = sandbox.spec
   task = CodingAgentTask(
-      instance=_SpecOnlyInstance(spec),
       harness=harness,
       prompt=prompt,
       exclude_globs=exclude_globs,
@@ -279,6 +288,7 @@ def run_rollout(
   )
   result = task.execute(
       sandbox,
+      _SpecOnlyInstance(spec),
       output_dir=output_dir,
       timeout=timeout,
       extra_observers=observers,

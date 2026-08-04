@@ -100,17 +100,26 @@ class _FlakyProducer(Task):
   state lives on it.
   """
 
-  instance: TaskInstance[SweBenchProVerdict]
   produce_from: int = 0
   retry_even_when_valid_until: int = 0
   executions: int = field(default=0, init=False)
 
   @override
-  def observers(self) -> tuple[SandboxObserver, ...]:
+  def observers(
+      self, instance: TaskInstance[SweBenchProVerdict]
+  ) -> tuple[SandboxObserver, ...]:
+    del instance
     return (_MaybeProduce(produce=self.executions >= self.produce_from),)
 
   @override
-  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
+  def action(
+      self,
+      sb: SandboxFs,
+      instance: TaskInstance[SweBenchProVerdict],
+      *,
+      timeout: float,
+  ) -> ExecResult:
+    del instance
     self.executions += 1
     return sb.run_script("main.sh", timeout=timeout)
 
@@ -157,6 +166,7 @@ def _run(
   factory = _factory(tmp_path, up_errors=up_errors)
   outcome = run_task(
       task,
+      _Instance(),
       store=store,
       address=ADDRESS,
       sandbox_factory=factory,
@@ -170,7 +180,7 @@ def _run(
 
 
 def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
-  task = _FlakyProducer(instance=_Instance())
+  task = _FlakyProducer()
   outcome, store, factory = _run(tmp_path, task)
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   assert (outcome.resumed, outcome.attempts) == (False, 1)
@@ -188,7 +198,7 @@ def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
 
 def test_a_missing_required_output_fails_the_attempt(tmp_path: Path):
   # The named invariant: ArtifactSchema.required is the gate, not advisory.
-  task = _FlakyProducer(instance=_Instance(), produce_from=99)
+  task = _FlakyProducer(produce_from=99)
   outcome, store, _ = _run(tmp_path, task)
   assert outcome.outcome is TaskOutcome.FAILED
   marker = read_marker(store, ADDRESS, "acme__widget-1")
@@ -196,7 +206,7 @@ def test_a_missing_required_output_fails_the_attempt(tmp_path: Path):
 
 
 def test_an_invalid_attempt_retries_in_a_fresh_sandbox(tmp_path: Path):
-  task = _FlakyProducer(instance=_Instance(), produce_from=1)
+  task = _FlakyProducer(produce_from=1)
   outcome, store, factory = _run(tmp_path, task, retries=1)
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   assert outcome.attempts == 2
@@ -213,7 +223,7 @@ def test_an_invalid_attempt_retries_in_a_fresh_sandbox(tmp_path: Path):
 
 def test_infra_failure_spends_the_same_budget(tmp_path: Path):
   # A sandbox that cannot come up is just an invalid attempt (ADR-0007 §6).
-  task = _FlakyProducer(instance=_Instance())
+  task = _FlakyProducer()
   outcome, store, _ = _run(tmp_path, task, retries=1, up_errors=1)
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   assert outcome.attempts == 2
@@ -227,7 +237,7 @@ def test_infra_failure_spends_the_same_budget(tmp_path: Path):
 
 
 def test_budget_exhaustion_is_terminal_failure_not_absence(tmp_path: Path):
-  task = _FlakyProducer(instance=_Instance(), produce_from=99)
+  task = _FlakyProducer(produce_from=99)
   outcome, store, factory = _run(tmp_path, task, retries=2)
   assert outcome.outcome is TaskOutcome.FAILED
   assert outcome.attempts == 3
@@ -240,7 +250,7 @@ def test_retry_desire_is_not_failure(tmp_path: Path):
   # The eval shape: every attempt is VALID, but the task keeps asking for
   # another (flake absorption). The budget bounds it and the marker still
   # says succeeded — retry-desire never turns into failure.
-  task = _FlakyProducer(instance=_Instance(), retry_even_when_valid_until=99)
+  task = _FlakyProducer(retry_even_when_valid_until=99)
   outcome, store, _ = _run(tmp_path, task, retries=1)
   assert outcome.attempts == 2  # budget spent on the extra desire
   assert outcome.outcome is TaskOutcome.SUCCEEDED
@@ -262,7 +272,7 @@ class _SpyStore(FilesystemStore):
 
 def test_the_marker_is_written_last(tmp_path: Path):
   store = _SpyStore(epath.Path(tmp_path / "store"))
-  task = _FlakyProducer(instance=_Instance())
+  task = _FlakyProducer()
   outcome, _, _ = _run(tmp_path, task, store=store)
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   # exactly one put_bytes — the marker — and by then the shard exists, so a
@@ -272,7 +282,7 @@ def test_the_marker_is_written_last(tmp_path: Path):
 
 
 def test_resume_skips_a_succeeded_task_entirely(tmp_path: Path):
-  task = _FlakyProducer(instance=_Instance())
+  task = _FlakyProducer()
   first, store, _ = _run(tmp_path, task)
   assert first.outcome is TaskOutcome.SUCCEEDED
 
@@ -281,7 +291,8 @@ def test_resume_skips_a_succeeded_task_entirely(tmp_path: Path):
     raise AssertionError("resume must not build a sandbox")
 
   resumed = run_task(
-      _FlakyProducer(instance=_Instance()),
+      _FlakyProducer(),
+      _Instance(),
       store=store,
       address=ADDRESS,
       sandbox_factory=exploding_factory,
@@ -299,7 +310,7 @@ def test_resume_skips_a_succeeded_task_entirely(tmp_path: Path):
 
 
 def test_resume_never_reruns_a_terminally_failed_task(tmp_path: Path):
-  task = _FlakyProducer(instance=_Instance(), produce_from=99)
+  task = _FlakyProducer(produce_from=99)
   first, store, _ = _run(tmp_path, task)
   assert first.outcome is TaskOutcome.FAILED
 
@@ -307,7 +318,8 @@ def test_resume_never_reruns_a_terminally_failed_task(tmp_path: Path):
     raise AssertionError("a terminal failure must not burn budget again")
 
   resumed = run_task(
-      _FlakyProducer(instance=_Instance(), produce_from=99),
+      _FlakyProducer(produce_from=99),
+      _Instance(),
       store=store,
       address=ADDRESS,
       sandbox_factory=exploding_factory,
@@ -324,7 +336,7 @@ def test_dead_attempts_without_a_marker_are_overwritten(tmp_path: Path):
   # A preempted process left a shard but no marker: the task is not terminal,
   # and the re-run starts from a0 — deterministic overwrite, not resumption.
   store = _store(tmp_path)
-  ghost = _FlakyProducer(instance=_Instance())
+  ghost = _FlakyProducer()
   outcome, _, _ = _run(tmp_path, ghost, store=store)
   assert outcome.outcome is TaskOutcome.SUCCEEDED
   # simulate the preemption: strip the marker, keep the attempt
@@ -335,7 +347,8 @@ def test_dead_attempts_without_a_marker_are_overwritten(tmp_path: Path):
   )
   marker_path.unlink()
   fresh = run_task(
-      _FlakyProducer(instance=_Instance()),
+      _FlakyProducer(),
+      _Instance(),
       store=store,
       address=ADDRESS,
       sandbox_factory=_factory(tmp_path / "second", up_errors=0),
@@ -351,7 +364,8 @@ def test_dead_attempts_without_a_marker_are_overwritten(tmp_path: Path):
 def test_a_negative_budget_is_refused(tmp_path: Path):
   with pytest.raises(ValueError, match="retries"):
     _ = run_task(
-        _FlakyProducer(instance=_Instance()),
+        _FlakyProducer(),
+        _Instance(),
         store=_store(tmp_path),
         address=ADDRESS,
         sandbox_factory=_factory(tmp_path),

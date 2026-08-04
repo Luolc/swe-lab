@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import time
-from typing import final, override
+from typing import Any, final, override
 
 from etils import epath
 
@@ -199,7 +199,6 @@ class UnitTestEvalTask[V: Verdict](Task):
   this particular run's data happens to come from.
 
   Attributes:
-    instance: The dataset instance whose tests judge the patch.
     apply_patch: Compile the eval script to apply ``patch.diff`` and declare
       it as this task's required input. ``False`` grades the tree the
       compiled spec produces untouched — the base-commit self-check, and the
@@ -214,44 +213,39 @@ class UnitTestEvalTask[V: Verdict](Task):
       value never reaches a command line.
   """
 
-  instance: TaskInstance[V]
   apply_patch: bool = True
   retries: int = 1
   eval_env: Mapping[str, str] | None = None
   _spec: UnitTestSpec[V] = field(init=False, repr=False)
-  _retries: int = field(init=False, repr=False)
   _parse: EvalParseObserver[V] = field(init=False, repr=False)
 
   def __post_init__(self) -> None:
-    """Compile the spec once and resolve the retry budget (ADR-0005).
-
-    In apply mode the spec is compiled with an empty placeholder patch — the
-    script must ``git apply patch.diff``, but the actual bytes are this
-    task's declared input and arrive by mount; the placeholder never
-    survives (``mounts`` drops it).
-
-    Validation happens here — at construction, before anything runs — so a
-    bad budget raises to the caller instead of surfacing as a failed run.
+    """Validate the retry budget before anything runs.
 
     Raises:
-      ValueError: If a retry budget (the caller's or the spec's) is negative.
+      ValueError: If the retry budget is negative.
     """
     if self.retries < 0:
       raise ValueError(f"retries must be >= 0, got {self.retries}")
-    self._spec = self.instance.unit_test_spec(
-        patch="" if self.apply_patch else None
-    )
-    # A spec may know better than its caller: the dataset has the measured
-    # rate, the caller only has a default (ADR-0005).
-    if self._spec.retries is not None:
-      if self._spec.retries < 0:
-        raise ValueError(f"spec retries must be >= 0, got {self._spec.retries}")
-      self._retries = self._spec.retries
-    else:
-      self._retries = self.retries
+
+  def _compile(self, instance: TaskInstance[V]) -> UnitTestSpec[V]:
+    """Compile the bound instance's eval spec.
+
+    In apply mode the spec is compiled with an empty placeholder patch — the
+    script must ``git apply patch.diff``, but the actual bytes are this
+    task's declared input and arrive by mount; the placeholder never survives
+    (``mounts`` drops it).
+
+    Args:
+      instance: The instance whose tests judge the patch.
+
+    Returns:
+      The compiled spec.
+    """
+    return instance.unit_test_spec(patch="" if self.apply_patch else None)
 
   @override
-  def mounts(self) -> Mounts:
+  def mounts(self, instance: TaskInstance[Any]) -> Mounts:
     """Stage the compiled spec's files plus the entryscript.
 
     The compiled spec is self-contained — its ``mounts`` carry everything the
@@ -261,33 +255,41 @@ class UnitTestEvalTask[V: Verdict](Task):
     the patch is this task's *input*, staged by whoever supplies it (a
     workflow edge, or the caller's ``extra_mounts``), never by the task.
 
+    Args:
+      instance: The instance whose tests judge the patch.
+
     Returns:
       The staging set: the spec's mounts (minus the patch placeholder in
       apply mode) plus the executable entryscript.
     """
-    mounts = dict(self._spec.mounts)
+    spec = self._compile(instance)
+    mounts = dict(spec.mounts)
     if self.apply_patch:
       del mounts[PATCH_NAME]
     return merge_mounts(
         mounts,
         {
             ENTRYSCRIPT_NAME: Mount(
-                Inline(self._spec.eval_script.encode()), executable=True
+                Inline(spec.eval_script.encode()), executable=True
             )
         },
     )
 
   @override
-  def observers(self) -> Sequence[SandboxObserver]:
+  def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:
     """Return the parse observer, carrying the dataset's grader directly.
 
-    The reference is kept on the task because ``action``'s retry loop drives
-    this observer between attempts — the task is single-run per ``execute``,
-    like the observer itself.
+    The spec and the observer are kept on the task for the run because
+    ``action``'s retry loop drives both — the task is single-run per
+    ``execute``, like the observer itself.
+
+    Args:
+      instance: The instance whose grader judges the run.
 
     Returns:
       The one-element observer set.
     """
+    self._spec = self._compile(instance)
     self._parse = EvalParseObserver(
         self._spec.grader, native_outputs=self._spec.native_outputs
     )
@@ -323,7 +325,7 @@ class UnitTestEvalTask[V: Verdict](Task):
     Returns:
       Whether the attempt produced a graded verdict.
     """
-    return super().outputs_valid(result) and self._parse.verdict is not None
+    return super().outputs_valid(result) and _verdict_of(result) is not None
 
   @override
   def should_retry(self, result: AttemptResult) -> bool:
@@ -341,13 +343,15 @@ class UnitTestEvalTask[V: Verdict](Task):
     Returns:
       Whether to spend budget on another attempt.
     """
-    verdict = self._parse.verdict
+    verdict = _verdict_of(result)
     return super().should_retry(result) or (
         verdict is not None and not verdict.resolved
     )
 
   @override
-  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
+  def action(
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+  ) -> ExecResult:
     """Run the entryscript, re-running while it fails and budget remains.
 
     In-run retry is ADR-0005's and stays inside the action — a workaround
@@ -359,16 +363,22 @@ class UnitTestEvalTask[V: Verdict](Task):
 
     Args:
       sb: The live sandbox to run in.
+      instance: Unused — the spec compiled for this run already carries
+        everything the loop needs.
       timeout: Seconds before *each* attempt is killed.
 
     Returns:
       The last attempt's execution result.
     """
+    del instance
+    # A spec may know better than its caller: the dataset has the measured
+    # rate, the caller only has a default (ADR-0005).
+    retries = self.retries if self._spec.retries is None else self._spec.retries
     return _attempt_until_resolved(
         sb,
         self._parse,
         self._spec,
-        retries=self._retries,
+        retries=retries,
         timeout=timeout,
         eval_env=self.eval_env,
     )
@@ -499,20 +509,41 @@ def run_unit_test[V: Verdict](
     # Also validated by the task's constructor; re-checked here so the
     # docstring's contract is visibly this function's own.
     raise ValueError(f"retries must be >= 0, got {retries}")
+  if unit_test_spec.retries is not None and unit_test_spec.retries < 0:
+    raise ValueError(f"spec retries must be >= 0, got {unit_test_spec.retries}")
   task: UnitTestEvalTask[V] = UnitTestEvalTask(
-      instance=_SpecInstance(unit_test_spec, sandbox.spec),
       apply_patch=False,  # the spec already encodes whether a patch applies
       retries=retries,
       eval_env=eval_env,
   )
   result = task.execute(
       sandbox,
+      _SpecInstance(unit_test_spec, sandbox.spec),
       output_dir=output_dir,
       timeout=timeout,
       extra_observers=observers,
   )
-  # The observer the task kept for its retry loop holds the typed verdict.
-  return result.run, task._parse.verdict
+  parse: EvalParseObserver[V] = next(
+      o for o in result.observers if isinstance(o, EvalParseObserver)
+  )
+  return result.run, parse.verdict
+
+
+def _verdict_of(result: AttemptResult) -> Verdict | None:
+  """Read the graded verdict back off the execution's own observers.
+
+  The parse observer is composed by the task and travels on the result
+  (``AttemptResult.observers``, composition order), which is what lets the
+  validity hooks — and this wrapper — stay out of task state.
+
+  Args:
+    result: The execution to read.
+
+  Returns:
+    The verdict, or ``None`` when grading never ran (a setup failure).
+  """
+  parse = next(o for o in result.observers if isinstance(o, EvalParseObserver))
+  return parse.verdict
 
 
 def _attempt_until_resolved[V: Verdict](

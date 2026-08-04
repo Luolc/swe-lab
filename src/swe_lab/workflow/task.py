@@ -7,12 +7,17 @@ supply the parts through three total hooks (``mounts`` / ``observers`` /
 ``action``) plus the ``input_schema`` declaration a workflow resolves; the
 concrete tasks live with their domains (``swe_lab.rollout.CodingAgentTask``,
 ``swe_lab.evaluation.methods.unit_test.UnitTestEvalTask``).
+
+The instance is **late-bound**: a task is configuration only, and the one
+instance arrives at ``execute``, from where every hook receives it. That is
+what lets a workflow definition be written statically, once, and invoked
+against any instance.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 import time
 from typing import Any, final, Protocol, runtime_checkable
@@ -34,6 +39,17 @@ from swe_lab.sandbox import (
     SandboxManager,
     SandboxObserver,
 )
+
+type InputsBuilder = Callable[
+    [SandboxFs, TaskInstance[Any]], Mapping[str, bytes]
+]
+"""Generates a task's declared inputs from the instance and the live session.
+
+The standalone-mode supplier of what an edge would otherwise carry (the task's
+prompt, a gold patch). It runs **inside** the session, so it can compose from
+the workspace as well as the instance, and may only fill names the task
+declares — see ``Task.execute``.
+"""
 
 
 @dataclass(frozen=True)
@@ -62,6 +78,7 @@ class AttemptResult:
   observers: tuple[SandboxObserver, ...]
 
 
+@dataclass(kw_only=True)
 class Task(ABC):
   """One unit of work in one sandbox (ADR-0007 §1).
 
@@ -70,15 +87,16 @@ class Task(ABC):
   outputs (§2); subclasses supply the parts and ``execute`` runs the five
   steps once.
 
-  A task is a **declaration** — instance, config, nothing a run dirties — and
-  each ``execute`` call is one run: everything stateful is either built fresh
-  inside it (the observers, the manager) or handed in fresh (the sandbox).
-  That is why ``sandbox`` is an *argument*, not a field: a retry calls
-  ``execute`` again on the same task with a fresh sandbox per attempt, and
-  the caller owns every construction knob (backend, workspace, network) per
-  the repo's inject-collaborators rule. Re-executable sequentially, not
-  concurrently — a task may keep a per-run observer reference on itself for
-  ``action``.
+  A task is a **declaration** — configuration, nothing a run dirties — and
+  each ``execute`` call is one run against one ``(sandbox, instance)`` pair:
+  everything stateful is either built fresh inside it (the observers, the
+  manager) or handed in fresh (the sandbox, the instance). That is why both
+  are *arguments*, not fields: a retry calls ``execute`` again on the same
+  task with a fresh sandbox per attempt, the caller owns every construction
+  knob (backend, workspace, network) per the repo's inject-collaborators
+  rule, and one statically-written declaration runs against any instance.
+  Re-executable sequentially, not concurrently — a task may keep a per-run
+  observer reference on itself for ``action``.
 
   **Three hooks, one channel each — and each hook is total.** ``mounts()`` is
   *all* of this task's mounts; ``observers()`` is *all* of its observers.
@@ -88,31 +106,38 @@ class Task(ABC):
   for it, adds only what a task cannot know (the backend's observers, the
   caller's extras), and runs.
 
+  A dataclass so the base field below is genuinely inherited rather than
+  redeclared by every subclass; ``kw_only`` exempts it from the positional
+  ordering rule, so a subclass keeps its own required positional fields.
+
   Attributes:
-    instance: The dataset instance this task is bound to (ADR-0007 §2),
-      provided by the concrete subclass. Deliberately untyped in the verdict
-      dimension: a task's outputs are whatever its observers declare — a
-      verdict is one subclass's output, not part of this contract — so only
-      a subclass that needs the typed view (the eval task's spec
-      compilation) declares its own generic.
+    inputs_builder: Generates this task's declared inputs inside the live
+      session (the standalone mode), or ``None`` when something else supplies
+      them — a workflow edge, or the caller's own bytes. Same task, both
+      modes, no special-casing; ``execute`` consumes it uniformly.
   """
 
-  instance: TaskInstance[Any]
+  inputs_builder: InputsBuilder | None = None
 
-  def mounts(self) -> Mounts:
+  def mounts(self, instance: TaskInstance[Any]) -> Mounts:
     """Return ALL files this task stages. Default: the instance's material.
 
     A subclass overrides and merges in whatever else it uses::
 
-        return merge_mounts(super().mounts(), self.harness.mounts(...), ...)
+        return merge_mounts(
+            super().mounts(instance), self.harness.mounts(...), ...
+        )
+
+    Args:
+      instance: The instance this execution is bound to.
 
     Returns:
       Target path → mount; what this returns **is** the staging set (plus the
       observers' own mounts, which the manager merges as everywhere else).
     """
-    return dict(self.instance.mounts())
+    return dict(instance.mounts())
 
-  def observers(self) -> Sequence[SandboxObserver]:
+  def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:
     """Return ALL of this task's observers. Default: none.
 
     One per thing the task extracts, plus a harness's own if it uses one.
@@ -120,22 +145,25 @@ class Task(ABC):
     execution; a task that keeps a reference for ``action`` (an eval's retry
     loop drives its parse observer) stores it on itself.
 
+    Args:
+      instance: The instance this execution is bound to.
+
     Returns:
       The observers, in composition order after the backend's own.
     """
+    del instance
     return ()
 
   def input_schema(self) -> Sequence[ArtifactSchema]:
     """Declare the artifacts this task consumes, by store name.
 
-    Default: none. **Inputs always arrive by mount, through ``execute``'s
-    ``extra_mounts``** — a workflow resolves each name against earlier
-    tasks' outputs, and a standalone caller stages the bytes it already has
-    under the same names. One channel, so what this returns is a fixed
-    property of the task's configuration, never of where one run's data
-    happens to come from; the task itself never reaches into the store. A
-    required name with no artifact behind it is the *distinct* edge failure
-    of ADR-0007 §5.
+    Default: none. **The schema is static** — a fixed property of the task's
+    configuration, never of where one run's data happens to come from — and
+    every input lands in the workspace the same way: staged as a mount
+    through ``execute``'s ``extra_mounts`` (a workflow edge, or the caller's
+    own bytes), or written in-session by this task's ``inputs_builder``.
+    The task itself never reaches into the store. A required name with no
+    artifact behind it is the *distinct* edge failure of ADR-0007 §5.
 
     Returns:
       The inputs, empty for a task that consumes nothing.
@@ -143,11 +171,14 @@ class Task(ABC):
     return ()
 
   @abstractmethod
-  def action(self, sb: SandboxFs, *, timeout: float) -> ExecResult:
+  def action(
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+  ) -> ExecResult:
     """Run the main action: exec the harness, or run the entryscript.
 
     Args:
       sb: The live sandbox to run in.
+      instance: The instance this execution is bound to.
       timeout: Seconds before the action is killed.
 
     Returns:
@@ -212,13 +243,14 @@ class Task(ABC):
   def execute(
       self,
       sandbox: Sandbox,
+      instance: TaskInstance[Any],
       *,
       output_dir: epath.PathLike,
       timeout: float,
       extra_mounts: Mounts | None = None,
       extra_observers: Sequence[SandboxObserver] = (),
   ) -> AttemptResult:
-    """Run the five steps once against a fresh sandbox.
+    """Run the five steps once against a fresh sandbox and one instance.
 
     The hooks are total, so this adds only what the task cannot know: the
     backend's own observers (composed first — they measure the whole run,
@@ -231,6 +263,7 @@ class Task(ABC):
 
     Args:
       sandbox: The built, not-yet-up sandbox to run in.
+      instance: The instance to run against — handed to every hook.
       output_dir: The host directory collected artifacts are fetched into.
       timeout: Seconds before the main action is killed.
       extra_mounts: The caller channel mirroring ``extra_observers`` — a
@@ -243,25 +276,27 @@ class Task(ABC):
       The task result: engine run, action outcome, derived schema, observers.
 
     Raises:
-      SandboxError: If assembly fails — a required input nobody staged, or
-        (from the merges) two contributors claiming one mount target or one
-        output name.
+      SandboxError: If assembly fails — a required input nobody staged (only
+        checkable here when no ``inputs_builder`` runs; see
+        :meth:`_build_inputs`) — or (from the merges) two contributors
+        claiming one mount target or one output name.
     """
-    # Inputs arrive only through extra_mounts, so a required input that
-    # nobody staged is detectable HERE — an assembly error like a duplicate
-    # mount target, not a mid-script mystery inside the sandbox.
-    staged = extra_mounts or {}
-    missing = [
-        schema.name
-        for schema in self.input_schema()
-        if schema.required and schema.name not in staged
+    staged: Mounts = dict(extra_mounts or {})
+    if self.inputs_builder is None:
+      # Every input arrives by mount, so a required one that nobody staged is
+      # detectable HERE — an assembly error like a duplicate mount target,
+      # not a mid-script mystery inside the sandbox.
+      missing = _missing_required(self.input_schema(), staged.__contains__)
+      if missing:
+        raise SandboxError(
+            f"required input(s) not mounted: {missing}; supply them via"
+            " extra_mounts (a workflow edge, or the caller's own bytes)"
+        )
+    observers = [
+        *sandbox.observers(),
+        *self.observers(instance),
+        *extra_observers,
     ]
-    if missing:
-      raise SandboxError(
-          f"required input(s) not mounted: {missing}; supply them via"
-          " extra_mounts (a workflow edge, or the caller's own bytes)"
-      )
-    observers = [*sandbox.observers(), *self.observers(), *extra_observers]
     # The task's output schema is derived — and a duplicate store name across
     # observers fails HERE, at assembly, like a duplicate mount target.
     schema = merge_output_schemas(*(o.output_schema() for o in observers))
@@ -269,14 +304,15 @@ class Task(ABC):
         sandbox=sandbox,
         output_dir=epath.Path(output_dir),
         observers=observers,
-        mounts=merge_mounts(self.mounts(), extra_mounts or {}),
+        mounts=merge_mounts(self.mounts(instance), staged),
     )
     exec_result: ExecResult | None = None
     try:
       with manager.session() as sb:
+        self._build_inputs(sb, instance, staged=staged)
         started = time.monotonic()
         try:
-          exec_result = self.action(sb, timeout=timeout)
+          exec_result = self.action(sb, instance, timeout=timeout)
         finally:
           _hand_exec_outcome(observers, exec_result, time.monotonic() - started)
     except SandboxError:
@@ -287,6 +323,77 @@ class Task(ABC):
         output_schema=schema,
         observers=tuple(observers),
     )
+
+  def _build_inputs(
+      self, sb: SandboxFs, instance: TaskInstance[Any], *, staged: Mounts
+  ) -> None:
+    """Run the inputs builder, land its bytes, and re-check requiredness.
+
+    The builder needs the live sandbox (it may compose from the workspace as
+    well as the instance), so its files land here — after the session
+    started, before the action — and the checks land with them: it may only
+    fill *declared* inputs, and colliding with a name something else already
+    staged is a bug, not a silent overwrite. Requiredness is verified before
+    the action either way; with a builder present that verdict can only be
+    reached here, so a misconfiguration costs one container startup and says
+    exactly what was missing.
+
+    Args:
+      sb: The live sandbox to write into.
+      instance: The instance this execution is bound to.
+      staged: The mounts already staged for this run (the edge's, the
+        caller's).
+
+    Raises:
+      SandboxError: If the builder fills an undeclared input, collides with a
+        staged one, or leaves a required input absent from the workspace.
+    """
+    if self.inputs_builder is None:
+      return
+    generated = self.inputs_builder(sb, instance)
+    declared = {schema.name for schema in self.input_schema()}
+    undeclared = sorted(generated.keys() - declared)
+    if undeclared:
+      raise SandboxError(
+          f"the inputs builder produced undeclared input(s): {undeclared};"
+          f" this task declares {sorted(declared)}"
+      )
+    collisions = sorted(generated.keys() & staged.keys())
+    if collisions:
+      raise SandboxError(
+          f"the inputs builder would overwrite staged input(s):"
+          f" {collisions}; a task supplied from outside (a workflow edge, a"
+          " caller's bytes) must not also build them — set"
+          " inputs_builder=None"
+      )
+    for name, data in generated.items():
+      sb.write(name, data)
+    missing = _missing_required(self.input_schema(), sb.exists)
+    if missing:
+      raise SandboxError(
+          f"required input(s) missing after the inputs builder ran:"
+          f" {missing}"
+      )
+
+
+def _missing_required(
+    schemas: Sequence[ArtifactSchema], is_present: Callable[[str], bool]
+) -> list[str]:
+  """Return the required input names ``is_present`` does not vouch for.
+
+  Args:
+    schemas: The task's declared inputs.
+    is_present: Answers whether one input is there — membership in the staged
+      mounts before the session, existence in the workspace inside it.
+
+  Returns:
+    The missing required names, in declaration order.
+  """
+  return [
+      schema.name
+      for schema in schemas
+      if schema.required and not is_present(schema.name)
+  ]
 
 
 @runtime_checkable

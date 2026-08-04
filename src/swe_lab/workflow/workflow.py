@@ -1,23 +1,26 @@
 """The workflow: a declared list of tasks, edges resolved from the store.
 
-A ``Workflow`` is `(key, task)` entries over one ``(sweep, instance,
-rollout)`` (ADR-0007 §§5, 9–10). Edges are matched **by store name** between
-one entry's declared outputs and a later entry's declared inputs — statically
-at construction, where any ambiguity is an error — and materialized at run
-time by fetching the producer's recorded artifact out of the store and
-mounting it read-only. Execution is resume-aware (Task 20's ``run_task`` per
-entry), all-or-nothing, and leaves a derived workflow record, written last.
+A ``Workflow`` is `(key, task)` entries over one ``(sweep, rollout)`` and one
+instance, bound at ``execute`` (ADR-0007 §§5, 9–10). Edges are matched **by
+store name** between one entry's declared outputs and a later entry's declared
+inputs — resolved at bind time, before any container, where any ambiguity is
+an error — and materialized by fetching the producer's recorded artifact out
+of the store and mounting it read-only. Execution is resume-aware (Task 20's
+``run_task`` per entry), all-or-nothing, and leaves a derived workflow record,
+written last.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 import json
+from typing import Any
 
 from etils import epath
 
+from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
     Inline,
     LocalFile,
@@ -123,12 +126,15 @@ class WorkflowOutcome:
 
 @dataclass(frozen=True)
 class Workflow:
-  """A declared, ordered list of tasks over one ``(sweep, instance, rollout)``.
+  """A declared, ordered list of tasks over one ``(sweep, rollout)``.
 
-  Construction **is** the static check: entry keys, instance consistency, and
-  every edge (explicit bindings verified, name matches unambiguous) are
-  validated before anything can run — a workflow that would ever dangle is
-  refused at declaration.
+  Validation splits by what each phase can know. **Construction** checks
+  everything that is pure declaration: entry keys and their shape, binding
+  syntax, and each binding against the consuming task's static
+  ``input_schema()``. **Binding** (``execute``, before any container) resolves
+  the edges themselves, because output schemas may be instance-derived — an
+  eval's declared byproducts come from the compiled spec. Either way a
+  workflow that would dangle is refused before anything runs.
 
   Attributes:
     store: Where every entry persists and where edges are resolved from.
@@ -136,30 +142,20 @@ class Workflow:
     rollout_id: Which sample of the instance.
     entries: The steps, in order — the caller owns the topological sort
       (ADR-0007 §9: a list before it is a DAG).
-    inputs: Caller-provided artifacts, input name → mount — how a value the
-      caller already holds (a gold patch, a candidate file) enters the same
-      channel a workflow edge uses. In edge resolution they are a producer
-      named ``"inputs"`` that exists before anything runs, so a single-entry
-      workflow with a declared input is as runnable as a chain; an input no
-      entry consumes is refused (the author believes something false).
   """
 
   store: Store
   sweep_id: str
   rollout_id: int
   entries: Sequence[WorkflowEntry]
-  inputs: Mapping[str, Mount] = field(default_factory=dict)
-  _edges: dict[str, dict[str, str]] = field(
-      init=False, repr=False, compare=False
-  )
 
   def __post_init__(self) -> None:
-    """Validate the declaration and resolve every edge, statically.
+    """Validate everything the declaration alone can decide.
 
     Raises:
-      WorkflowError: If the declaration can never run — duplicate or
-        malformed keys, mixed instances, a dead or unverifiable binding, an
-        input no earlier entry produces, or one that two produce unbound.
+      WorkflowError: If the declaration is malformed — no entries, duplicate
+        or malformed keys, the reserved key, or a binding that is malformed,
+        duplicated, or names an input its task does not declare.
     """
     if not self.entries:
       raise WorkflowError("a workflow needs at least one entry")
@@ -171,12 +167,6 @@ class Workflow:
           f"entry key {INPUTS_KEY!r} is reserved for the workflow's own"
           " inputs"
       )
-    instance_ids = {e.task.instance.instance_id for e in self.entries}
-    if len(instance_ids) != 1:
-      raise WorkflowError(
-          "one workflow runs one instance; entries bind"
-          f" {sorted(instance_ids)}"
-      )
     # TaskAddress re-validates each key's shape; building them here surfaces
     # a malformed key at declaration, with the entry named.
     for entry in self.entries:
@@ -184,22 +174,7 @@ class Workflow:
         _ = self._address(entry)
       except ValueError as error:
         raise WorkflowError(f"entry {entry.key!r}: {error}") from error
-    edges = _resolve_edges(self.entries, provided=set(self.inputs))
-    consumed = {
-        name
-        for bound in edges.values()
-        for name, producer in bound.items()
-        if producer == INPUTS_KEY
-    }
-    dead = sorted(set(self.inputs) - consumed)
-    if dead:
-      raise WorkflowError(f"workflow input(s) {dead} are consumed by no entry")
-    object.__setattr__(self, "_edges", edges)
-
-  @property
-  def instance_id(self) -> str:
-    """The one instance every entry is bound to."""
-    return self.entries[0].task.instance.instance_id
+      _ = _parse_bindings(entry, {s.name for s in entry.task.input_schema()})
 
   def _address(self, entry: WorkflowEntry) -> TaskAddress:
     return TaskAddress(
@@ -208,7 +183,9 @@ class Workflow:
 
   def execute(
       self,
+      instance: TaskInstance[Any],
       *,
+      inputs: Mapping[str, Mount] | None = None,
       output_dir: epath.PathLike,
       run_ts: str,
       resume: bool = True,
@@ -216,17 +193,26 @@ class Workflow:
       model: str = "",
       extra_record: Mapping[str, object] | None = None,
   ) -> WorkflowOutcome:
-    """Run the entries in order; stop at the first failure; record last.
+    """Bind the instance, resolve the edges, run the entries in order.
 
-    Per entry: materialize its resolved inputs out of the store (phase B —
-    a required input that is missing or empty is the *distinct* edge
-    failure, and costs no container), then ``run_task`` (resume check,
-    attempts, marker). A failed or edge-failed entry blocks everything
-    after it and fails the workflow (ADR-0007 §10). After every entry
-    succeeds, the derived workflow record is written — last, atomically —
-    and its absence means the workflow did not complete.
+    Binding comes first (phase A): with the instance in hand every entry's
+    output schema is known, so the whole edge map is resolved and checked
+    before any container exists. Then, per entry: materialize its resolved
+    inputs out of the store (phase B — a required input that is missing or
+    empty is the *distinct* edge failure, and costs no container), then
+    ``run_task`` (resume check, attempts, marker). A failed or edge-failed
+    entry blocks everything after it and fails the workflow (ADR-0007 §10).
+    After every entry succeeds, the derived workflow record is written —
+    last, atomically — and its absence means the workflow did not complete.
 
     Args:
+      instance: The instance every entry runs against.
+      inputs: Caller-provided artifacts, input name → mount — how a value the
+        caller already holds (a gold patch, a candidate file) enters the same
+        channel a workflow edge uses. In edge resolution they are a producer
+        named ``"inputs"`` that exists before anything runs, so a single-entry
+        workflow with a declared input is as runnable as a chain; an input no
+        entry consumes is refused (the author believes something false).
       output_dir: Host directory for the run (per-entry subdirectories; edge
         staging under ``edges/``).
       run_ts: Launch timestamp, injected — recorded, never read.
@@ -240,7 +226,24 @@ class Workflow:
 
     Returns:
       The workflow outcome, entry by entry.
+
+    Raises:
+      WorkflowError: If the bound workflow can never run — an input nothing
+        produces, one that several produce unbound, a binding to a
+        non-producer, or a caller input no entry consumes.
     """
+    provided = dict(inputs or {})
+    edges = _resolve_edges(self.entries, instance, provided=set(provided))
+    consumed = {
+        name
+        for bound in edges.values()
+        for name, producer in bound.items()
+        if producer == INPUTS_KEY
+    }
+    dead = sorted(provided.keys() - consumed)
+    if dead:
+      raise WorkflowError(f"workflow input(s) {dead} are consumed by no entry")
+
     output_dir = epath.Path(output_dir)
     outcomes: list[EntryOutcome] = []
     runs: dict[str, TaskRunOutcome] = {}
@@ -250,7 +253,11 @@ class Workflow:
         outcomes.append(EntryOutcome(key=entry.key, status=EntryStatus.BLOCKED))
         continue
       staged, missing = self._materialize_inputs(
-          entry, runs, staging_dir=output_dir / "edges" / entry.key
+          entry,
+          runs,
+          bound=edges[entry.key],
+          provided=provided,
+          staging_dir=output_dir / "edges" / entry.key,
       )
       if missing:
         outcomes.append(
@@ -264,6 +271,7 @@ class Workflow:
         continue
       run = run_task(
           entry.task,
+          instance,
           store=self.store,
           address=self._address(entry),
           sandbox_factory=entry.sandbox_factory,
@@ -288,7 +296,13 @@ class Workflow:
         )
         failed = True
 
-    record_key = None if failed else self._write_record(outcomes, run_ts)
+    record_key = (
+        None
+        if failed
+        else self._write_record(
+            outcomes, run_ts, instance_id=instance.instance_id, edges=edges
+        )
+    )
     return WorkflowOutcome(
         succeeded=not failed, entries=tuple(outcomes), record_key=record_key
     )
@@ -298,6 +312,8 @@ class Workflow:
       entry: WorkflowEntry,
       runs: dict[str, TaskRunOutcome],
       *,
+      bound: Mapping[str, str],
+      provided: Mapping[str, Mount],
       staging_dir: epath.Path,
   ) -> tuple[Mounts, list[str]]:
     """Fetch the entry's resolved inputs out of the store (phase B).
@@ -310,6 +326,8 @@ class Workflow:
     Args:
       entry: The consuming entry.
       runs: The producers' run reports so far, by entry key.
+      bound: This entry's resolved edges (input name → producer key).
+      provided: The caller's own inputs (the ``"inputs"`` producer).
       staging_dir: Host directory the fetched bytes land in.
 
     Returns:
@@ -320,9 +338,9 @@ class Workflow:
     staged: Mounts = {}
     missing: list[str] = []
     for schema in entry.task.input_schema():
-      producer_key = self._edges[entry.key][schema.name]
+      producer_key = bound[schema.name]
       if producer_key == INPUTS_KEY:
-        mount = self.inputs[schema.name]
+        mount = provided[schema.name]
         if _known_empty(mount):
           # The same rule an edge applies to a fetched artifact: empty bytes
           # never reach a container.
@@ -353,7 +371,14 @@ class Workflow:
       staged[schema.name] = Mount(LocalFile(dest), read_only=True)
     return staged, missing
 
-  def _write_record(self, outcomes: Sequence[EntryOutcome], run_ts: str) -> str:
+  def _write_record(
+      self,
+      outcomes: Sequence[EntryOutcome],
+      run_ts: str,
+      *,
+      instance_id: str,
+      edges: Mapping[str, Mapping[str, str]],
+  ) -> str:
     """Derive and write the workflow record — last, atomically.
 
     A roll-up of the entries' final attempt records (nothing new is
@@ -363,6 +388,8 @@ class Workflow:
     Args:
       outcomes: Every entry's outcome, all ``SUCCEEDED``.
       run_ts: The launch timestamp, recorded.
+      instance_id: The bound instance, naming the record's prefix.
+      edges: The bound edge map, recorded as resolved.
 
     Returns:
       The record's store key.
@@ -384,7 +411,7 @@ class Workflow:
           }
       )
     key = (
-        f"{self.sweep_id}/{self.instance_id}/r{self.rollout_id}"
+        f"{self.sweep_id}/{instance_id}/r{self.rollout_id}"
         f"/{WORKFLOW_RECORD_NAME}"
     )
     self.store.put_bytes(
@@ -393,7 +420,7 @@ class Workflow:
             {
                 "run_ts": run_ts,
                 "entries": entries_json,
-                "edges": self._edges,
+                "edges": {k: dict(v) for k, v in edges.items()},
             },
             indent=2,
             sort_keys=True,
@@ -404,19 +431,22 @@ class Workflow:
 
 def _resolve_edges(
     entries: Sequence[WorkflowEntry],
+    instance: TaskInstance[Any],
     *,
     provided: set[str],
 ) -> dict[str, dict[str, str]]:
-  """Resolve every input to its producing source, statically (phase A).
+  """Resolve every input to its producing source at bind time (phase A).
 
-  Everything here is declaration data — ``input_schema()`` is fixed by task
-  configuration and output schemas derive from the observers at construction
-  time — so the whole edge map is computed, and checked, before any sandbox
-  exists. The workflow's own ``inputs`` participate as the producer
-  ``"inputs"``, existing before every entry.
+  Inputs are pure declaration (``input_schema()`` is fixed by task
+  configuration), but outputs are not: an entry's observers — and therefore
+  the names it produces — may be derived from the instance, so the map is
+  computed once the instance is bound. Still before any sandbox exists. The
+  caller's own ``inputs`` participate as the producer ``"inputs"``, existing
+  before every entry.
 
   Args:
     entries: The workflow's entries, in declared (topological) order.
+    instance: The bound instance, from which each entry's observers derive.
     provided: The caller-provided input names (the ``"inputs"`` producer).
 
   Returns:
@@ -461,7 +491,7 @@ def _resolve_edges(
           )
     edges[entry.key] = bound
     for schema in merge_output_schemas(
-        *(o.output_schema() for o in entry.task.observers())
+        *(o.output_schema() for o in entry.task.observers(instance))
     ):
       produced.setdefault(schema.name, []).append(entry.key)
   return edges

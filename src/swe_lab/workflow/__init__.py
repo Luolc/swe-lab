@@ -15,7 +15,7 @@ from .run_task import (
     TaskRunOutcome,
     TerminalMarker,
 )
-from .task import AttemptResult, Task
+from .task import AttemptResult, InputsBuilder, Task
 from .workflow import (
     EntryOutcome,
     EntryStatus,
@@ -29,6 +29,7 @@ __all__ = [
     "AttemptResult",
     "EntryOutcome",
     "EntryStatus",
+    "InputsBuilder",
     "Task",
     "TaskAddress",
     "TaskOutcome",

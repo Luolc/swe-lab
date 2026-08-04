@@ -15,9 +15,11 @@ from dataclasses import dataclass
 from enum import StrEnum
 import json
 import re
+from typing import Any
 
 from etils import epath
 
+from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
     AttemptRecord,
     Mounts,
@@ -157,6 +159,7 @@ class TaskRunOutcome:
 
 def run_task(
     task: Task,
+    instance: TaskInstance[Any],
     *,
     store: Store,
     address: TaskAddress,
@@ -190,6 +193,8 @@ def run_task(
 
   Args:
     task: The task to run (a declaration — re-executed as-is per attempt).
+    instance: The instance to run it against; supplies the store key's
+      instance segment and reaches every hook through ``execute``.
     store: Where attempts, records, and the marker are persisted.
     address: The task's store address (sweep / rollout / task key).
     sandbox_factory: Builds each attempt's sandbox, fresh workspace included.
@@ -221,7 +226,7 @@ def run_task(
   """
   if retries < 0:
     raise ValueError(f"retries must be >= 0, got {retries}")
-  instance_id = task.instance.instance_id
+  instance_id = instance.instance_id
 
   marker = read_marker(store, address, instance_id) if resume else None
   if marker is not None:
@@ -244,6 +249,7 @@ def run_task(
     sandbox = sandbox_factory()
     result = task.execute(
         sandbox,
+        instance,
         output_dir=epath.Path(output_dir) / f"a{attempt}",
         timeout=timeout,
         extra_mounts=extra_mounts,
