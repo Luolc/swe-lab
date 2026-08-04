@@ -87,22 +87,36 @@ class Task(ABC):
 The two shipped tasks:
 
 ```python
+# The prompt is BUILT, not stored: a builder runs inside the live session —
+# inputs mounted, sandbox up — so it can read an upstream artifact, probe
+# the workspace (`sb.run_command("git status")`), or compose freely. A plain
+# callable type, like the fixes seam's InstanceFix.
+type PromptBuilder = Callable[[SandboxFs, TaskInstance[Any]], str]
+
+def instance_prompt(sb: SandboxFs, instance: TaskInstance[Any]) -> str:
+  """The default builder: the dataset's own task statement."""
+  del sb
+  return instance.prompt()
+
+
 @dataclass
 class CodingAgentTask(Task):
   harness: Harness
-  prompt_input: str | None = None
-  # The prompt is this task's patch-shaped input, same treatment (§ eval):
-  #   None     → the instance's own prompt (the dataset's task statement) —
-  #              the common solve case, not an external input at all;
-  #   a name   → the prompt arrives as this declared input, by mount — an
-  #              upstream agent's output in a chain, or the caller's bytes
-  #              via the workflow's `inputs`. Configurable rather than a
-  #              fixed contract name because, unlike `patch.diff` (which
-  #              DiffExtract already emits), no natural producer-side name
-  #              exists: agent 2 binds directly to whatever agent 1 calls
-  #              its artifact ("plan.md"), no re-emission.
-  # The old `prompt: str` literal field dies with the wrapper: a caller
-  # literal is `inputs={name: Mount(Inline(...))}` — one channel.
+  prompt_builder: PromptBuilder = instance_prompt
+  inputs: tuple[ArtifactSchema, ...] = ()
+  # The two compose: `inputs` DECLARES what must be mounted (the builder is
+  # opaque — edges cannot be derived from it), the builder READS it. The
+  # chain case:
+  #     CodingAgentTask(
+  #         harness=...,
+  #         inputs=(ArtifactSchema("plan.md"),),
+  #         prompt_builder=lambda sb, inst: PROMPT_TMPL.format(
+  #             plan=sb.read("plan.md").decode(),
+  #             task=inst.prompt(),
+  #         ),
+  #     )
+  # A caller literal is the same shape: declare a name, provide it via the
+  # workflow's `inputs`, read it in the builder. No prompt field remains.
   exclude_globs: tuple[str, ...] = ()
   agent_env: Mapping[str, str] | None = None
   proxy: AbstractContextManager[object] | None = None
@@ -114,18 +128,12 @@ class CodingAgentTask(Task):
     )
 
   def input_schema(self):              # still config-static
-    if self.prompt_input is None:
-      return ()
-    return (ArtifactSchema(self.prompt_input, description="the task prompt"),)
+    return self.inputs
 
   def action(self, sb, instance, *, timeout):
     # The harness contract is untouched (prompt as a string, ADR-0007 §8):
-    # the task reads the mounted input and hands over text.
-    prompt = (
-        sb.read(self.prompt_input).decode("utf-8", "backslashreplace")
-        if self.prompt_input is not None
-        else instance.prompt()
-    )
+    # the builder produces text, the harness lands it wherever it wants.
+    prompt = self.prompt_builder(sb, instance)
     with self.proxy or nullcontext():
       return self.harness.run(sb, prompt=prompt, timeout=timeout,
                               env=self.agent_env)
