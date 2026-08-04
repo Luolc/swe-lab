@@ -343,6 +343,19 @@ class WorkflowEntry:
   retries: int = 0
 ```
 
+**Forward note — generic CLI overrides** (`--workflow.<entry>.sandbox.
+<field>=value`, a later task): no generics and no class field are needed,
+because **the config instance is the type carrier** — `type(config)` at run
+time is the concrete class, `dataclasses.fields()` yields names and
+annotated types for coercion, and `replace()` preserves the subclass.
+Overrides apply at the one synthesis point (the merged prototype, just
+before the factory call), so base-semantic fields, backend mechanics, and a
+downstream subclass's own fields all ride one mechanism; an unknown field
+errors listing the class's real ones. (A generic `WorkflowEntry[C]` would
+NOT help: type parameters are erased at run time — `__orig_class__` exists
+only for explicitly subscripted construction — so the instance, not the
+annotation, is the reliable source.)
+
 The fresh-workspace factory contract dissolves — allocation is the runner's
 again. The registry factory signature stays
 `(SandboxSpec, SandboxConfig) -> Sandbox`; each factory narrows to its own
