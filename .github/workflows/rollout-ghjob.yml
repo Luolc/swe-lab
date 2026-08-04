@@ -91,8 +91,8 @@ jobs:
             ${{ inputs.grade && 'rollout_and_unit_test' || 'rollout' }} \
             "${{ inputs.instance_id }}" \
             --backend ghjob \
-            --rollout.harness.model "${{ inputs.model }}" \
-            --rollout.timeout 3000
+            --rollout.harness.model="${{ inputs.model }}" \
+            --rollout.timeout=3000
 
       # Diagnostics printed straight into the log — the agent script swallows its
       # own failure (`|| true`), so an empty patch otherwise looks like success.
