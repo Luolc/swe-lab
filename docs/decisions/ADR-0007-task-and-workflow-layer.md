@@ -344,6 +344,11 @@ fails again **having done no work**. Recording the failure at the workflow level
 too would save a cheap re-entry, but it is a nicety, not a correctness
 requirement; v1 can record success only.
 
+> **Superseded by [ADR-0009](ADR-0009-workflow-record-always-written.md).** The
+> record is now written whatever the outcome, with `succeeded` and each entry's
+> status and metrics *in* it — for reporting, not for control flow. Resume is
+> unchanged and still reads task markers, exactly as argued above.
+
 ### 11. Provided subclasses, open registry
 
 A small set ships (a coding-agent task, a unit-test evaluation task); a

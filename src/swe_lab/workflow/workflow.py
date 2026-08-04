@@ -37,7 +37,9 @@ from .run_task import run_task, TaskAddress, TaskOutcome, TaskRunOutcome
 from .task import Task
 
 # The derived workflow record's object name under the rollout prefix
-# (ADR-0007 §10): written last, and its absence means "did not complete".
+# (ADR-0007 §6, ADR-0009): written last, whatever the outcome. Its absence
+# means the workflow never got past binding — resume does not read it at all
+# (that stays the task markers' job).
 WORKFLOW_RECORD_NAME = "workflow.json"
 
 # The reserved producer key naming the workflow's own ``inputs`` in edge
@@ -145,8 +147,8 @@ class WorkflowOutcome:
   Attributes:
     succeeded: Whether every entry succeeded (ADR-0007 §10 — all or nothing).
     entries: Per-entry outcomes, in declared order.
-    record_key: The written workflow record's store key; ``None`` unless the
-      workflow succeeded (its absence *means* "did not complete").
+    record_key: The written workflow record's store key. Always populated —
+      the record is written whether or not the workflow succeeded (ADR-0009).
   """
 
   succeeded: bool
@@ -300,12 +302,12 @@ class Workflow:
         )
         failed = True
 
-    record_key = (
-        None
-        if failed
-        else self._write_record(
-            outcomes, run_ts, instance_id=instance.instance_id, edges=edges
-        )
+    record_key = self._write_record(
+        outcomes,
+        run_ts,
+        instance_id=instance.instance_id,
+        edges=edges,
+        succeeded=not failed,
     )
     return WorkflowOutcome(
         succeeded=not failed, entries=tuple(outcomes), record_key=record_key
@@ -395,34 +397,44 @@ class Workflow:
       *,
       instance_id: str,
       edges: Mapping[str, Mapping[str, str]],
+      succeeded: bool,
   ) -> str:
     """Derive and write the workflow record — last, atomically.
 
     A roll-up of the entries' final attempt records (nothing new is
-    measured): per entry its key, attempts, resumed flag, and artifact keys,
-    plus the resolved edge map. v1 records success only (ADR-0007 §10).
+    measured): per entry its status, attempts, resumed flag, artifact keys and
+    metrics, plus the resolved edge map. Written whatever the outcome
+    (ADR-0009): the failed run is the one most worth reading, and copying the
+    metrics here saves a consumer one object read per task per run.
+
+    An entry that never ran (``BLOCKED``, or ``EDGE_FAILED`` before any
+    sandbox existed) is still emitted — that it never ran is the fact worth
+    recording — with its counters zeroed and its ``missing_inputs`` named.
 
     Args:
-      outcomes: Every entry's outcome, all ``SUCCEEDED``.
+      outcomes: Every entry's outcome, in declared order.
       run_ts: The launch timestamp, recorded.
       instance_id: The bound instance, naming the record's prefix.
       edges: The bound edge map, recorded as resolved.
+      succeeded: Whether every entry succeeded.
 
     Returns:
       The record's store key.
     """
-    entries_json = []
+    entries_json: list[dict[str, object]] = []
     for outcome in outcomes:
       run = outcome.run
-      assert run is not None  # succeeded entries always ran or resumed
-      entries_json.append(
-          {
-              "key": outcome.key,
-              "attempts": run.attempts,
-              "resumed": run.resumed,
-              "artifact_keys": dict(run.record.artifact_keys),
-          }
-      )
+      entry: dict[str, object] = {
+          "key": outcome.key,
+          "status": outcome.status.value,
+          "attempts": run.attempts if run else 0,
+          "resumed": run.resumed if run else False,
+          "artifact_keys": dict(run.record.artifact_keys) if run else {},
+          "metrics": dict(run.record.metrics) if run else {},
+      }
+      if outcome.missing_inputs:
+        entry["missing_inputs"] = list(outcome.missing_inputs)
+      entries_json.append(entry)
     key = (
         f"{self.sweep_id}/{instance_id}/r{self.rollout_id}"
         f"/{WORKFLOW_RECORD_NAME}"
@@ -432,6 +444,7 @@ class Workflow:
         json.dumps(
             {
                 "run_ts": run_ts,
+                "succeeded": succeeded,
                 "entries": entries_json,
                 "edges": {k: dict(v) for k, v in edges.items()},
             },
