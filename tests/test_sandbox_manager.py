@@ -306,6 +306,44 @@ def test_inline_artifacts_land_without_touching_the_sandbox(tmp_path: Path):
   assert not (sb.workspace / "conversation.json").exists()
 
 
+def test_an_artifact_that_never_landed_is_omitted_not_recorded(
+    tmp_path: Path,
+):
+  # A `fetch` that quietly produces nothing (a remote sandbox whose connection
+  # dropped) must not leave a phantom path in `artifacts`: the downstream
+  # persist would raise FileNotFoundError on it and take the whole record with
+  # it. What did land is still collected.
+  class _SilentFetch(FakeSandbox):
+
+    @override
+    def fetch(self, name: str, dest: epath.PathLike) -> None:
+      self.calls.append(("fetch", name))
+      if name != "gone.log":
+        super().fetch(name, dest)
+
+  sb = _SilentFetch(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
+  sb.workspace.mkdir(parents=True)
+  _ = (sb.workspace / "p.diff").write_bytes(b"diff")
+  out = tmp_path / "out"
+  mgr = _manager(
+      sb,
+      output_dir=out,
+      observers=[
+          RecordingObserver(
+              "a",
+              contribution=Contribution(
+                  artifacts={"patch": "p.diff", "agent.log": "gone.log"}
+              ),
+          )
+      ],
+  )
+  with mgr.session():
+    pass
+  assert ("fetch", "gone.log") in sb.calls  # attempted, best-effort
+  assert mgr.result.artifacts == {"patch": out / "patch"}
+  assert mgr.result.status is RunStatus.SUCCESS  # not an error, just absent
+
+
 def test_an_absolute_in_sandbox_filename_still_lands_in_the_output_dir(
     tmp_path: Path,
 ):

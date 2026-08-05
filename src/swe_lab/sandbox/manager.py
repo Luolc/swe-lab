@@ -210,18 +210,34 @@ class SandboxManager:
     The name has neither problem: it is unique by construction (the merge
     refuses a duplicate) and vetted as a plain filename.
 
+    Only what **actually landed** is recorded. ``fetch`` is best-effort by
+    nature — the collect step runs immediately before teardown, which is exactly
+    when a sandbox killed by a constraint violation is already gone, and a
+    remote backend may legitimately log the miss and continue. Recording a
+    destination the fetch never wrote would hand the post-run persist a path
+    that does not exist, and a `FileNotFoundError` there aborts the whole
+    attempt record — losing everything that *did* succeed, over one artifact
+    that was declared ``required=False`` in the first place. An incomplete
+    record beats no record.
+
     Args:
       sb: The still-live sandbox to fetch from.
       merged: The merged contribution naming both artifact channels.
 
     Returns:
-      Canonical artifact name → the host path it landed at.
+      Canonical artifact name → the host path it landed at. Absent artifacts
+      are omitted.
     """
     self.output_dir.mkdir(parents=True, exist_ok=True)
     collected: dict[str, epath.Path] = {}
     for name, filename in merged.artifacts.items():
       dest = self.output_dir / name
       sb.fetch(filename, dest)
+      if not dest.exists():
+        _logger.warning(
+            "artifact %r (%s) was not collected; omitting it", name, filename
+        )
+        continue
       collected[name] = dest
     for name, content in merged.inline_artifacts.items():
       dest = self.output_dir / name
