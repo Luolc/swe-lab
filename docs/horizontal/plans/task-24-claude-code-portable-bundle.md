@@ -22,11 +22,32 @@ commands are inline so a reader can re-run them.
 > change that breaks this rule, so every hosting change gets checked against
 > it.
 
-### Hosting
+### Hosting — live
+
+**`Luolc/agent-assets-private`** (private), one release per asset per version,
+tagged `<product>-v<version>` so the repo can hold Codex, Grok Build and a
+standalone `rg` alongside this. Hyphen, not slash: slashes are valid git refs
+but need URL-encoding in GitHub API paths and quoting in the shell.
+
+```sh
+gh release download claude-code-v2.1.220 \
+  -R Luolc/agent-assets-private -p 'claude-*.tar.gz'
+tar xzf claude-2.1.220-linux-x64.tar.gz
+./claude-2.1.220-linux-x64/claude --version      # -> 2.1.220 (Claude Code)
+```
+
+Needs a token with `repo` scope. Each release carries the tarball, its
+`.sha256`, and `MANIFEST.txt` uploaded **separately**, so the manifest can be
+read without pulling ~96 MB.
+
+Round-trip verified 2026-08-05: downloaded from the release, sha256 matched the
+build output byte for byte, and the downloaded artifact ran on `alpine:3.19`.
+
+### Options considered
 
 | Option | Verdict |
 |---|---|
-| **Private GitHub repo + Release assets** | **Recommended.** `gh release download` or the REST API with a token the downstream machine already has; handles a ~290 MB asset without LFS |
+| **Private GitHub repo + Release assets** | **Chosen** — see above |
 | Private Hugging Face repo | Fine — `hf_hub_download` with `HF_TOKEN` |
 | Private object store (R2/S3) | Fine, and R2 is already on this repo's roadmap (task 13) |
 | *Any public channel* | **Excluded** |
@@ -457,7 +478,8 @@ by its own smoke matrix.
 
 ## 12. Decisions taken
 
-1. **Hosting** — private GitHub repo + Release assets (§0).
+1. **Hosting** — `Luolc/agent-assets-private`, tag `claude-code-v<version>`
+   (§0). Live and round-trip verified.
 2. **Builder base** — `debian:11-slim` @ `sha256:4a2e40d0…baf490`, glibc
    2.31-13+deb11u14, verified pre-2.34 (§2).
 3. **ADR** — deferred. The glibc-over-musl reasoning lives in §2 for now.
