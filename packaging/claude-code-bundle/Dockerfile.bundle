@@ -15,6 +15,9 @@
 ARG BASE_DIGEST=sha256:4a2e40d0d34f8f86f60ef0d79c14d3b6b3d2620825dcdf93152535b5efbaf490
 FROM debian:11-slim@${BASE_DIGEST} AS builder
 
+# Re-declared: an ARG from before the first FROM is out of scope inside the
+# stage, and MANIFEST.txt records this digest as the reproducibility anchor.
+ARG BASE_DIGEST
 ARG CLAUDE_VERSION
 ARG PLATFORM=linux-x64
 ARG RIPGREP_VERSION=15.2.0
@@ -37,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # If these three are absent, the base image is glibc 2.34+ and too new. Fail
 # loudly rather than shipping a bundle that only runs on modern hosts.
 RUN set -eux; \
-    ldd --version | head -1; \
+    ldd --version | sed -n 1p; \
     for lib in libpthread.so.0 librt.so.1 libdl.so.2; do \
       test -e "/lib/x86_64-linux-gnu/$lib" \
         || { echo "FATAL: /lib/x86_64-linux-gnu/$lib missing — base image is glibc 2.34+ and too new for an old-baseline bundle" >&2; exit 1; }; \
@@ -164,7 +167,7 @@ RUN set -eux; \
       echo "claude_version:  ${CLAUDE_VERSION}"; \
       echo "platform:        ${PLATFORM}"; \
       echo "builder_base:    debian:11-slim@${BASE_DIGEST:-<unset>}"; \
-      echo "glibc:           $(ldd --version | head -1)"; \
+      echo "glibc:           $(ldd --version | sed -n 1p)"; \
       echo "glibc_package:   libc6 ${glibc_ver}"; \
       echo "ripgrep:         ${RIPGREP_VERSION} (x86_64-unknown-linux-musl, static)"; \
       echo; \
@@ -173,7 +176,7 @@ RUN set -eux; \
       echo; \
       echo "# files: sha256  path  source"; \
       cd "$root"; \
-      find . -type f | LC_ALL=C sort | while read -r f; do \
+      find . -type f ! -name MANIFEST.txt | LC_ALL=C sort | while read -r f; do \
         sum=$(sha256sum "$f" | cut -d' ' -f1); \
         case "$f" in \
           ./lib/*) src=$(dpkg -S "$(readlink -f "/lib/x86_64-linux-gnu/$(basename "$f")" 2>/dev/null || echo /nonexistent)" 2>/dev/null | cut -d: -f1 | head -1);; \

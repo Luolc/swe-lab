@@ -16,7 +16,8 @@ backend's answer — hand over ~100 MB from the host — on every other.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import logging
 import re
 import shlex
 from typing import override
@@ -25,6 +26,8 @@ from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import Harness
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
+    ArtifactSchema,
+    Contribution,
     ExecResult,
     Inline,
     Mount,
@@ -38,12 +41,14 @@ from .capture import Capture
 from .constants import (
     AGENT_ENV_NAME,
     AGENT_HOME,
+    AGENT_INFO_NAME,
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
     BINARY_AT,
     CONTAINER_PROXY_HOST,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
+    INFO_ARTIFACT,
     PROMPT_FILENAME,
     PROXY_LOG_NAME,
 )
@@ -55,6 +60,95 @@ from .convert import (
 )
 from .proxy import DEFAULT_BASE_PORT
 from .recorder import ProxyRecorder
+
+_logger = logging.getLogger(__name__)
+
+# Generous: `--help` on a cold 275 MB binary is mostly process start-up.
+_INFO_TIMEOUT_S = 60.0
+
+
+@dataclass
+class AgentInfoObserver(SandboxObserver):
+  """Record the agent's own account of itself, for post-hoc debugging.
+
+  Runs ``--version`` and ``--help`` against the provisioned binary once the
+  sandbox is up, lands the combined output in the workspace, and registers it
+  as an artifact. *Which build actually ran* is the first question anyone asks
+  when a run behaves oddly, and once the sandbox is gone the answer is
+  otherwise unrecoverable — the pin says what we asked for, not what the
+  sandbox had.
+
+  **Never fails a run.** Every step is caught: a diagnostic that can abort the
+  thing it documents is worse than no diagnostic. A failed capture is logged
+  and simply contributes nothing.
+
+  Single-run, like every stateful observer: ``after_create`` captures (that
+  hook cannot return a contribution) and ``before_destroy`` hands it over.
+
+  Attributes:
+    binary: The in-sandbox path to interrogate.
+    filename: The workspace file the output lands in.
+    artifact: The name it is registered under.
+  """
+
+  binary: str = BINARY_AT
+  filename: str = AGENT_INFO_NAME
+  artifact: str = INFO_ARTIFACT
+  _captured: bool = field(default=False, init=False, repr=False)
+
+  @override
+  def output_schema(self) -> Sequence[ArtifactSchema]:
+    """Declare the info file — advisory, since a run is valid without it."""
+    return (
+        ArtifactSchema(
+            self.artifact,
+            required=False,
+            description="the agent's own --version and --help output",
+        ),
+    )
+
+  @override
+  def after_create(self, sb: SandboxFs) -> None:
+    """Interrogate the binary and land the output in the workspace.
+
+    Args:
+      sb: The live sandbox, with the binary already provisioned (the backend's
+        own observer runs first).
+    """
+    binary = shlex.quote(self.binary)
+    sections: list[str] = []
+    for flag in ("--version", "--help"):
+      try:
+        # 2>&1 because a binary that cannot run at all says so on stderr, and
+        # that is exactly the case this file exists to explain.
+        result = sb.run_command(
+            f"{binary} {flag} 2>&1", timeout=_INFO_TIMEOUT_S
+        )
+        body = (result.stdout + result.stderr).strip()
+        sections.append(f"$ claude {flag}\n[exit {result.exit_code}]\n{body}")
+      except Exception:  # noqa: BLE001 — a diagnostic must never fail the run
+        _logger.exception("claude %s failed; recording that instead", flag)
+        sections.append(f"$ claude {flag}\n[did not run]")
+    try:
+      sb.write(self.filename, ("\n\n".join(sections) + "\n").encode())
+      self._captured = True
+    except Exception:  # noqa: BLE001 — as above
+      _logger.exception("could not write %s; skipping it", self.filename)
+
+  @override
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+    """Register the captured file, if there is one.
+
+    Args:
+      sb: Unused — the file is already in the workspace.
+
+    Returns:
+      The artifact registration, or ``None`` when nothing was captured.
+    """
+    del sb
+    if not self._captured:
+      return None
+    return Contribution(artifacts={self.artifact: self.filename})
 
 
 def _read_text(sb: SandboxFs, name: str) -> str:
@@ -148,6 +242,9 @@ class ClaudeCodeHarness(Harness):
         else ()
     )
     return (
+        # First: record which build the sandbox actually got, before anything
+        # can go wrong with the run it describes.
+        AgentInfoObserver(),
         *recorder,
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),

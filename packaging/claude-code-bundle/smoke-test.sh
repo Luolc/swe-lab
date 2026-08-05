@@ -131,9 +131,9 @@ EOF
           set -e
           mkdir -p /w && cd /w && tar xzf /bundle.tar.gz
           export HOME=/w/home IS_SANDBOX=1; mkdir -p $HOME
-          "/w/$BDIR/claude" -p --allowedTools "Bash(echo *)" \
-            --dangerously-skip-permissions \
-            <<< "run: echo hello-from-subprocess" 2>&1 | tail -5
+          printf "%s\n" "Run this exact shell command and show me its output: echo hello-from-subprocess" \
+          | "/w/$BDIR/claude" -p --allowedTools "Bash(echo *)" \
+              --dangerously-skip-permissions 2>&1 | tail -5
         ' 2>&1) && rc=0 || rc=$?
     if [ "$rc" = 0 ]; then
       record "$image" "subprocess-sanity" PASS
@@ -147,9 +147,9 @@ EOF
           set -e
           mkdir -p /w && cd /w && tar xzf /bundle.tar.gz
           export HOME=/w/home IS_SANDBOX=1; mkdir -p $HOME
-          "/w/$BDIR/claude" -p --output-format stream-json --verbose \
-            --dangerously-skip-permissions \
-            <<< "list ten programming languages, one per line" 2>/dev/null | tail -1
+          printf "%s\n" "List ten programming languages, one per line." \
+          | "/w/$BDIR/claude" -p --output-format stream-json --verbose \
+              --dangerously-skip-permissions 2>/dev/null | tail -1
         ' 2>&1) && rc=0 || rc=$?
     # The regression guard for the pre-2.1.214 truncation bug: the LAST line
     # must parse as a `result` message.

@@ -36,6 +36,13 @@ PROMPT_FILENAME = "prompt.txt"
 EVENT_STREAM_NAME = "claude.event_stream.jsonl"  # stream-json trace (primary)
 AGENT_STDERR_NAME = "claude.stderr.log"  # the run's stderr log
 
+# The agent's own account of itself (`--version` + `--help`), captured once the
+# sandbox is up. `AGENT_INFO_NAME` is the workspace file; `INFO_ARTIFACT` is the
+# name it is registered under, which is what a reader of a persisted manifest
+# sees.
+AGENT_INFO_NAME = "claude.info.txt"
+INFO_ARTIFACT = "claude_code.info"
+
 # The proxy-capture trace: the cc-reverse-proxy appends one request/response
 # record per API call here. The proxy is a host process, but the composition
 # points it at the (shared) workspace so the log is a normal workspace artifact.

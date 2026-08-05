@@ -22,11 +22,16 @@ from swe_lab.harnesses.claude_code import (
 )
 from swe_lab.harnesses.claude_code.constants import (
     AGENT_ENV_NAME,
+    AGENT_INFO_NAME,
     AGENT_SCRIPT_NAME,
     BINARY_AT,
+    INFO_ARTIFACT,
     PROXY_LOG_NAME,
 )
+from swe_lab.harnesses.claude_code.harness import AgentInfoObserver
 from swe_lab.sandbox import (
+    Contribution,
+    ExecResult,
     Inline,
     SandboxError,
     SandboxSpec,
@@ -166,12 +171,15 @@ def test_proxy_capture_needs_no_url_and_composes_its_own_recorder():
   harness = ClaudeCodeHarness(capture=Capture.PROXY, proxy_port=20005)
   assert harness.agent_proxy_url == "http://host.docker.internal:20005"
   assert [type(o).__name__ for o in harness.observers()] == [
+      "AgentInfoObserver",
       "ProxyRecorder",
       "ConversationObserver",
       "HarnessOutcomeObserver",
   ]
-  # …and STREAM composes none of it.
+  # …and STREAM composes none of the proxy machinery (the info observer is
+  # unconditional — which build ran is worth recording either way).
   assert [type(o).__name__ for o in ClaudeCodeHarness().observers()] == [
+      "AgentInfoObserver",
       "ConversationObserver",
       "HarnessOutcomeObserver",
   ]
@@ -302,3 +310,76 @@ def test_event_stream_complete():
   assert event_stream_complete(errored) is False
 
   assert event_stream_complete("") is False
+
+
+# ─── the agent-info observer ────────────────────────────────────────────────
+
+
+def _info_run(
+    tmp_path: Path, results: list[ExecResult]
+) -> tuple[FakeSandbox, Contribution | None]:
+  """Drive the observer's hooks the way the manager does."""
+  sb = FakeSandbox(
+      spec=_SPEC, workspace=epath.Path(tmp_path), run_results=results
+  )
+  observer = AgentInfoObserver()
+  observer.after_create(sb)
+  return sb, observer.before_destroy(sb)
+
+
+def test_agent_info_captures_version_and_help_as_an_artifact(tmp_path: Path):
+  sb, contribution = _info_run(
+      tmp_path,
+      [
+          ExecResult(0, "2.1.220 (Claude Code)\n", ""),
+          ExecResult(0, "Usage: claude\n", ""),
+      ],
+  )
+  # both flags were asked for, against the agreed path
+  assert len(sb.commands) == 2
+  assert all(BINARY_AT in c for c in sb.commands)
+  assert "--version" in sb.commands[0] and "--help" in sb.commands[1]
+  # …and the combined output landed in the workspace, registered under the
+  # name a reader of a persisted manifest will see
+  assert contribution is not None
+  assert contribution.artifacts == {INFO_ARTIFACT: AGENT_INFO_NAME}
+  text = (tmp_path / AGENT_INFO_NAME).read_text()
+  assert "2.1.220 (Claude Code)" in text
+  assert "Usage: claude" in text
+
+
+def test_agent_info_records_a_binary_that_cannot_run(tmp_path: Path):
+  # The case the file exists FOR: the binary is there but unrunnable (wrong
+  # libc, bad mode). The failure text is the artifact's whole value, so it must
+  # be captured, not swallowed.
+  sb, contribution = _info_run(
+      tmp_path,
+      [ExecResult(126, "", "cannot execute: no such file\n")] * 2,
+  )
+  assert contribution is not None
+  text = (tmp_path / AGENT_INFO_NAME).read_text()
+  assert "cannot execute" in text
+  assert "[exit 126]" in text
+  del sb
+
+
+def test_agent_info_never_fails_the_run(tmp_path: Path):
+  # A diagnostic that can abort the thing it documents is worse than none.
+  sb = FakeSandbox(
+      spec=_SPEC,
+      workspace=epath.Path(tmp_path),
+      run_error=SandboxError("exec is broken"),
+  )
+  observer = AgentInfoObserver()
+  observer.after_create(sb)  # must not raise
+  contribution = observer.before_destroy(sb)
+  # it still recorded that the interrogation itself failed
+  assert contribution is not None
+  assert "[did not run]" in (tmp_path / AGENT_INFO_NAME).read_text()
+
+
+def test_agent_info_output_is_declared_but_not_required(tmp_path: Path):
+  del tmp_path
+  (schema,) = AgentInfoObserver().output_schema()
+  assert schema.name == INFO_ARTIFACT
+  assert schema.required is False  # a run without it is still a valid run
