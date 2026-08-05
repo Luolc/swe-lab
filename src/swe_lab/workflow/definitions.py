@@ -40,7 +40,14 @@ _UNIT_TEST_RETRIES = 2
 ROLLOUT: WorkflowDef = (
     WorkflowEntry(
         ROLLOUT_KEY,
-        CodingAgentTask(harness=ClaudeCodeHarness(model=DEFAULT_MODEL)),
+        CodingAgentTask(
+            # bare=False explicitly: bare mode reads neither OAuth nor the
+            # keychain (verified on 2.1.220 — a bare run with a valid
+            # CLAUDE_CODE_OAUTH_TOKEN still fails "Not logged in"), and this
+            # definition authenticates by that token. A composition using
+            # ANTHROPIC_API_KEY should leave the default alone.
+            harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
+        ),
         timeout=_AGENT_TIMEOUT_S,
         # The agent needs the network, and its credential travels by name so
         # the value never reaches a command line.

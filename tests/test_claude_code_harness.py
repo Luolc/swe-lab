@@ -22,11 +22,16 @@ from swe_lab.harnesses.claude_code import (
 )
 from swe_lab.harnesses.claude_code.constants import (
     AGENT_ENV_NAME,
+    AGENT_INFO_NAME,
     AGENT_SCRIPT_NAME,
     BINARY_AT,
+    INFO_ARTIFACT,
     PROXY_LOG_NAME,
 )
+from swe_lab.harnesses.claude_code.harness import AgentInfoObserver
 from swe_lab.sandbox import (
+    Contribution,
+    ExecResult,
     Inline,
     SandboxError,
     SandboxSpec,
@@ -106,18 +111,69 @@ def test_invocation_script_shape_and_quoting():
   assert "export IS_SANDBOX=1" in script
   assert "cd '/weird dir'" in script  # shlex.quote'd workdir with a space
   assert f"{BINARY_AT} -p " in script  # no inline prompt in the argv
-  assert "--bare" not in script  # bare defaults off
+  assert "--bare" in script  # bare is the default for an unattended run
   assert "--output-format stream-json --verbose" in script
   assert "--dangerously-skip-permissions" in script
+  # every interactive/plan-mode tool denied — none is covered by
+  # --dangerously-skip-permissions, and each hangs an unattended run
+  assert (
+      "--disallowedTools EnterPlanMode,ExitPlanMode,AskUserQuestion" in script
+  )
+  assert "--max-turns 500" in script  # agent-loop runaway guard
+  # the agent's status is reported out-of-band; the script itself exits 0 so
+  # container teardown is unchanged
+  assert '> "$SANDBOX_WORKSPACE"/claude.exit_code' in script
+  assert script.rstrip().endswith("exit 0")
+  assert "|| true" not in script
   # the prompt is piped in on stdin (no shell-quoting hazard)
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
-  assert script.rstrip().endswith("|| true")
 
 
-def test_bare_flag_added_when_set():
+def test_bare_can_be_turned_off_for_an_oauth_composition():
+  # Bare reads neither OAuth nor the keychain, so a composition authenticating
+  # by CLAUDE_CODE_OAUTH_TOKEN must opt out — and then gets no API-key guard.
+  script = _script("/app", ClaudeCodeHarness(bare=False))
+  assert "--bare" not in script
+  assert "ANTHROPIC_API_KEY" not in script
+
+
+def test_bare_guards_the_only_credential_it_can_use():
+  # Without the guard a missing key surfaces as a plain-text "Not logged in"
+  # result on stdout — a successful-looking run that did nothing.
   script = _script("/app", ClaudeCodeHarness(bare=True))
   assert f"{BINARY_AT} -p --bare " in script
+  assert 'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then' in script
+  assert "exit 78" in script
+
+
+def test_proxy_capture_also_guards_its_base_url():
+  script = _script("/app", _proxy_harness())
+  assert 'if [ -z "${ANTHROPIC_BASE_URL:-}" ]; then' in script
+
+
+def test_optional_bounds_are_omitted_unless_asked_for():
+  # None means "leave the agent's own default alone", not "pass a default".
+  plain = _script("/app")
+  assert "--max-budget-usd" not in plain
+  assert "CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS" not in plain
+  bounded = _script(
+      "/app",
+      ClaudeCodeHarness(max_budget_usd=2.5, subagent_wait_ceiling_ms=90_000),
+  )
+  assert "--max-budget-usd 2.5" in bounded
+  assert "export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=90000" in bounded
+
+
+def test_an_oversized_prompt_is_refused_before_it_is_staged(tmp_path: Path):
+  # Claude Code caps piped stdin at 10 MB and exits non-zero past it; failing
+  # here says so, instead of reading the cap back as an opaque agent failure.
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  with pytest.raises(SandboxError, match="caps piped stdin"):
+    ClaudeCodeHarness().run(
+        sb, prompt="x" * (10 * 1024 * 1024 + 1), timeout=1.0
+    )
+  assert not (tmp_path / "prompt.txt").exists()  # never staged
 
 
 def test_binary_is_never_staged_by_the_harness():
@@ -138,6 +194,7 @@ def test_native_outputs():
   assert ClaudeCodeHarness().native_outputs() == {
       "event_stream.jsonl": "claude.event_stream.jsonl",
       "stderr.log": "claude.stderr.log",
+      "exit_code.txt": "claude.exit_code",
   }
 
 
@@ -166,12 +223,15 @@ def test_proxy_capture_needs_no_url_and_composes_its_own_recorder():
   harness = ClaudeCodeHarness(capture=Capture.PROXY, proxy_port=20005)
   assert harness.agent_proxy_url == "http://host.docker.internal:20005"
   assert [type(o).__name__ for o in harness.observers()] == [
+      "AgentInfoObserver",
       "ProxyRecorder",
       "ConversationObserver",
       "HarnessOutcomeObserver",
   ]
-  # …and STREAM composes none of it.
+  # …and STREAM composes none of the proxy machinery (the info observer is
+  # unconditional — which build ran is worth recording either way).
   assert [type(o).__name__ for o in ClaudeCodeHarness().observers()] == [
+      "AgentInfoObserver",
       "ConversationObserver",
       "HarnessOutcomeObserver",
   ]
@@ -181,6 +241,7 @@ def test_proxy_native_outputs_registers_proxy_log():
   assert _proxy_harness().native_outputs() == {
       "proxy_log.jsonl": PROXY_LOG_NAME,
       "stderr.log": "claude.stderr.log",
+      "exit_code.txt": "claude.exit_code",
   }
 
 
@@ -302,3 +363,76 @@ def test_event_stream_complete():
   assert event_stream_complete(errored) is False
 
   assert event_stream_complete("") is False
+
+
+# ─── the agent-info observer ────────────────────────────────────────────────
+
+
+def _info_run(
+    tmp_path: Path, results: list[ExecResult]
+) -> tuple[FakeSandbox, Contribution | None]:
+  """Drive the observer's hooks the way the manager does."""
+  sb = FakeSandbox(
+      spec=_SPEC, workspace=epath.Path(tmp_path), run_results=results
+  )
+  observer = AgentInfoObserver()
+  observer.after_create(sb)
+  return sb, observer.before_destroy(sb)
+
+
+def test_agent_info_captures_version_and_help_as_an_artifact(tmp_path: Path):
+  sb, contribution = _info_run(
+      tmp_path,
+      [
+          ExecResult(0, "2.1.220 (Claude Code)\n", ""),
+          ExecResult(0, "Usage: claude\n", ""),
+      ],
+  )
+  # both flags were asked for, against the agreed path
+  assert len(sb.commands) == 2
+  assert all(BINARY_AT in c for c in sb.commands)
+  assert "--version" in sb.commands[0] and "--help" in sb.commands[1]
+  # …and the combined output landed in the workspace, registered under the
+  # name a reader of a persisted manifest will see
+  assert contribution is not None
+  assert contribution.artifacts == {INFO_ARTIFACT: AGENT_INFO_NAME}
+  text = (tmp_path / AGENT_INFO_NAME).read_text()
+  assert "2.1.220 (Claude Code)" in text
+  assert "Usage: claude" in text
+
+
+def test_agent_info_records_a_binary_that_cannot_run(tmp_path: Path):
+  # The case the file exists FOR: the binary is there but unrunnable (wrong
+  # libc, bad mode). The failure text is the artifact's whole value, so it must
+  # be captured, not swallowed.
+  sb, contribution = _info_run(
+      tmp_path,
+      [ExecResult(126, "", "cannot execute: no such file\n")] * 2,
+  )
+  assert contribution is not None
+  text = (tmp_path / AGENT_INFO_NAME).read_text()
+  assert "cannot execute" in text
+  assert "[exit 126]" in text
+  del sb
+
+
+def test_agent_info_never_fails_the_run(tmp_path: Path):
+  # A diagnostic that can abort the thing it documents is worse than none.
+  sb = FakeSandbox(
+      spec=_SPEC,
+      workspace=epath.Path(tmp_path),
+      run_error=SandboxError("exec is broken"),
+  )
+  observer = AgentInfoObserver()
+  observer.after_create(sb)  # must not raise
+  contribution = observer.before_destroy(sb)
+  # it still recorded that the interrogation itself failed
+  assert contribution is not None
+  assert "[did not run]" in (tmp_path / AGENT_INFO_NAME).read_text()
+
+
+def test_agent_info_output_is_declared_but_not_required(tmp_path: Path):
+  del tmp_path
+  (schema,) = AgentInfoObserver().output_schema()
+  assert schema.name == INFO_ARTIFACT
+  assert schema.required is False  # a run without it is still a valid run
