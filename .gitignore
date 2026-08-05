@@ -59,3 +59,8 @@ experiments/related_files/prompt_variance/runs/**/*.proxy.jsonl
 # NOT blanket-ignore .claude/.
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Built bundles — large binary artifacts, and the agent inside them is
+# internal-use only (see docs/horizontal/plans/task-24-*.md §0). Never commit,
+# never publish; they are built on demand and uploaded to a private channel.
+packaging/*/dist/

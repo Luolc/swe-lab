@@ -63,15 +63,15 @@ $ curl -fsSL https://downloads.claude.ai/claude-code-releases/latest
 Both return a bare version string. `stable` trails `latest` by roughly a week
 and skips releases with known major regressions — the right channel for a
 harness. `build.sh` resolves `stable`, then **pins** the result into
-`build/VERSION`; a rebuild from a checked-out `VERSION` re-fetches that exact
-version and is byte-identical.
+`VERSION`; a rebuild from a checked-out `VERSION` re-fetches that exact version
+and is byte-identical (`./build.sh --pinned`).
 
 `./build.sh --version 2.1.222` overrides, and the script prints loudly which
 path it took.
 
 ### The floor
 
-Refuse to build below **2.1.214**. Below it the `stream-json` exit drain is
+`build.sh` refuses to build below **2.1.214**. Below it the `stream-json` exit drain is
 capped at ~2 s and can silently truncate the final `result` message on long
 runs. We consume that stream as our trace
 (`swe_lab.harnesses.claude_code.convert.event_stream_complete` reads exactly
@@ -109,7 +109,15 @@ The musl build's honest advantage is simplicity. We are paying complexity once,
 in a build script, to avoid an allocator and a resolver we have not
 characterized under our own batch load.
 
-**Baseline: `debian:11-slim` (glibc 2.31), pinned by digest.**
+**Baseline: `debian:11-slim` (glibc 2.31), pinned by digest.** Verified
+2026-08-05 at `sha256:4a2e40d0…baf490`:
+
+```console
+$ ldd --version | head -1
+ldd (Debian GLIBC 2.31-13+deb11u14) 2.31
+$ ls /lib/x86_64-linux-gnu/ | grep -E '^(libpthread|librt|libdl)\.so'
+libdl.so.2   libpthread.so.0   librt.so.1
+```
 
 Sanity check that the baseline is old enough: glibc **2.34** merged
 `libpthread`, `librt` and `libdl` into `libc.so.6`. A correct old-baseline
@@ -295,13 +303,13 @@ Every line is load-bearing:
 
 | Path | What |
 |---|---|
-| `build/Dockerfile.bundle` | hermetic builder, base pinned **by digest** |
-| `build/build.sh` | host driver: resolve version → docker build → extract tarball |
-| `build/launcher.sh` | §5, copied into the bundle |
-| `build/smoke-test.sh` | the §7 matrix |
-| `build/VERSION` | the pinned resolved version |
-| `build/MANIFEST.txt` | generated: every file, sha256, and source package/image |
-| `docs/claude-code-bundle.md` | the operator-facing how-to (this doc is the *design*; that one is the runbook) |
+| `packaging/claude-code-bundle/Dockerfile.bundle` | hermetic builder, base pinned **by digest** |
+| `packaging/claude-code-bundle/build.sh` | host driver: resolve version → docker build → extract tarball |
+| `packaging/claude-code-bundle/launcher.sh` | §5, copied into the bundle |
+| `packaging/claude-code-bundle/smoke-test.sh` | the §7 matrix |
+| `packaging/claude-code-bundle/VERSION` | the pinned resolved version |
+| `MANIFEST.txt` | generated **into the bundle**: every file, sha256, source package/image |
+| `packaging/claude-code-bundle/dist/` | build output — **gitignored**, never committed |
 
 ---
 
@@ -317,7 +325,7 @@ rather than `sh -c`.
 
 Every target must pass **all** of:
 
-1. `claude --version` prints exactly `build/VERSION`.
+1. `claude --version` prints exactly `VERSION`.
 2. **DNS via a hostname** — point `ANTHROPIC_BASE_URL` at a hostname served by
    a throwaway local listener and confirm the request arrives. This is the NSS
    check and the one that matters. A ping or an IP-based check does **not**
@@ -337,6 +345,42 @@ Every target must pass **all** of:
 
 Non-zero exit on any failure, naming the check and the image.
 
+### Result — 2026-08-05, `claude-2.1.220-linux-x64.tar.gz` (96 MB)
+
+```
+pass=21 fail=0 skip=10
+```
+
+Green on every image, **including `alpine:3.19` (musl) and `debian:10-slim`
+(glibc 2.28)** — the two targets the whole exercise exists for — and on
+distroless. The 10 skips are the live-agent checks (4 and 6), which need
+`CLAUDE_CODE_OAUTH_TOKEN`; they report as SKIP, never as a silent pass.
+
+The first run failed 6 checks, and both causes are worth keeping:
+
+**1. `no-host-leakage` was wrong, not the bundle.** It backgrounded the process
+and read `/proc/<pid>/maps` after 1 s — but `--version` exits immediately, so
+maps was always empty and every image reported a false failure. Replaced with
+the loader's own `--list`, which is deterministic and needs no live process:
+
+```console
+$ ld-linux-x86-64.so.2 --library-path <bundle>/lib --list <bundle>/claude.real   # on alpine
+  libc.so.6 => /w/claude-2.1.220-linux-x64/lib/libc.so.6
+  libpthread.so.0 => /w/claude-2.1.220-linux-x64/lib/libpthread.so.0
+  …6/6 from the bundle
+```
+
+Every library — `libc.so.6` included — resolving into the bundle **on a system
+with no glibc at all** is the clearest possible statement that nothing comes
+from the host.
+
+**2. The `rg` staticness check tested the wrong property.** It asserted
+`file` reports `statically linked`; upstream ships a **static-PIE** binary,
+which `file` calls `dynamically linked` because it is `ET_DYN`. The check
+rejected a perfectly good binary. It now asserts what actually matters — zero
+`NEEDED` entries and no program interpreter — which was confirmed by running
+that exact `rg` unchanged on alpine, debian:10-slim and distroless.
+
 ---
 
 ## 8. Troubleshooting
@@ -352,6 +396,8 @@ Non-zero exit on any failure, naming the check and the image.
 | Trace truncated, run reads as unfinished | agent below 2.1.214 | Rebuild at ≥ the floor |
 | Works as root, `permission denied` as app user | mode lost on unpack | `chmod -R a+rX`; verify in smoke test |
 | TLS failures on a minimal image | no CA store (out of scope, §10) | Caller ships certs, sets `SSL_CERT_FILE` |
+| `exec …/claude: no such file or directory` on a shell-less image, and the file plainly exists | The launcher is `#!/bin/sh`; the message names the missing **interpreter**, not the script | Invoke the loader directly and set the launcher's env vars yourself (§11) |
+| `file` says `rg` is "dynamically linked" | static-PIE is `ET_DYN`, and `file` misreports it | Check `objdump -p` NEEDED (0) and the absence of a program interpreter instead |
 
 ---
 
@@ -392,22 +438,36 @@ by its own smoke matrix.
 
 - x86_64 only.
 - Symlink invocation of the launcher is unsupported (`$0` resolution, §5).
+- **The `claude` launcher needs `/bin/sh`.** On a shell-less image (distroless)
+  it cannot be the entrypoint — exec fails with `no such file or directory`,
+  which names the missing interpreter, not the script. Invoke the loader
+  directly and set what the launcher would have exported. Verified working:
+
+  ```dockerfile
+  ENV USE_BUILTIN_RIPGREP=0 DISABLE_AUTOUPDATER=1 DISABLE_UPDATES=1 \
+      PATH=/w/<bundle>/tools:/usr/bin:/bin
+  ENTRYPOINT ["/w/<bundle>/lib/ld-linux-x86-64.so.2", \
+              "--library-path", "/w/<bundle>/lib", \
+              "/w/<bundle>/claude.real"]
+  ```
 - CA certificates are the caller's responsibility (§10).
 - **Internal use only — the artifact must never be published** (§0).
 
 ---
 
-## 12. Open questions for review
+## 12. Decisions taken
 
-1. **Hosting** — private GitHub repo + Release assets (§0), or somewhere the
-   company core machine already authenticates against? This decides what
-   `build.sh` publishes to and what downstream fetches with.
-2. **Builder base** — `debian:11-slim` / glibc 2.31 is the proposal (§2). Older
-   (`debian:10`, glibc 2.28) buys a little more reach at the cost of a
-   security-EOL base image in the build path. Fine as is?
-3. **ADR** — glibc-over-musl (§2) is a real architecture decision with a
-   rejected alternative, which `docs/doc-map.md` routes to an ADR. Promote it
-   when the build lands, or leave it recorded here?
-4. **Where the build lives** — `build/` at repo root as the brief assumed, or
-   under an existing directory? It is the only part of this that does not
-   obviously belong to an existing tree.
+1. **Hosting** — private GitHub repo + Release assets (§0).
+2. **Builder base** — `debian:11-slim` @ `sha256:4a2e40d0…baf490`, glibc
+   2.31-13+deb11u14, verified pre-2.34 (§2).
+3. **ADR** — deferred. The glibc-over-musl reasoning lives in §2 for now.
+4. **Location** — `packaging/claude-code-bundle/`. Not `build/`: that path is
+   already in `.gitignore` (standard Python build dir), so committed sources
+   under it would be silently ignored.
+
+### Still open
+
+- **Wiring into swe-lab** (§9) is designed but not built — sequenced after this.
+- **Live-agent smoke checks** (4 and 6) have never run green, only SKIP: they
+  need `CLAUDE_CODE_OAUTH_TOKEN` in the environment. Run once with a token
+  before trusting the bundle in a real rollout.

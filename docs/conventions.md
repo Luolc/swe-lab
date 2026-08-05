@@ -189,6 +189,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `docs/` | This map, the [workstream](workstreams/) detail, [decisions](decisions/), the [experiment playbook](experiments/playbook.md), and grounded specs (`patch-extraction.md`, `traces.md`). |
 | (external) `cc-reverse-proxy` | The optional `--capture proxy` mode compiles this **standalone** Go project — not a submodule. Default: a sibling checkout `../cc-reverse-proxy/`; override with `CC_REVERSE_PROXY_SRC`. |
 | `.cache/` | **Gitignored** — cloned repos, the pinned Claude Code linux-x64 binary, batch logs. Reproducible, never committed. |
+| `packaging/claude-code-bundle/` | Builds the portable Claude Code tarball (agent + glibc + loader + `rg`) that runs on musl/Alpine, ancient glibc and distroless. `build.sh` resolves + pins the version, `Dockerfile.bundle` is the hermetic builder, `smoke-test.sh` is the target matrix. Output lands in `dist/` (**gitignored**). The artifact is **internal-use only** — private channels, never published. Design: [task 24](horizontal/plans/task-24-claude-code-portable-bundle.md). |
 | `tests/` | pytest suite over the engine, axes, and tasks. |
 
 ## Source-of-truth rule

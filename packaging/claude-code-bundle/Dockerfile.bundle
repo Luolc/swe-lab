@@ -1,0 +1,209 @@
+# Hermetic builder for the portable Claude Code bundle.
+#
+# Base is pinned BY DIGEST, not by tag: the whole point of the artifact is a
+# known glibc baseline, and `debian:11-slim` is a moving target.
+#
+# glibc 2.31 (pre-2.34) is the baseline on purpose — 2.34 merged libpthread,
+# librt and libdl into libc.so.6, so a correct old-baseline bundle contains all
+# three as separate files. The build asserts exactly that below and stops if the
+# base was bumped to something too new.
+#
+# Everything bundled — loader, glibc, NSS modules, libgcc_s — comes from THIS
+# image. Mixing versions across images defeats the exercise.
+#
+# Build via build.sh, which resolves the version and passes it in.
+ARG BASE_DIGEST=sha256:4a2e40d0d34f8f86f60ef0d79c14d3b6b3d2620825dcdf93152535b5efbaf490
+FROM debian:11-slim@${BASE_DIGEST} AS builder
+
+ARG CLAUDE_VERSION
+ARG PLATFORM=linux-x64
+ARG RIPGREP_VERSION=15.2.0
+# The upstream musl build is a **static-PIE** binary — no interpreter, no NEEDED
+# entries — so rg depends on nothing from the target image. Asserted below.
+ARG RIPGREP_SHA256=""
+ARG SIGNING_FINGERPRINT=31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
+ARG RELEASES=https://downloads.claude.ai/claude-code-releases
+ARG KEY_URL=https://downloads.claude.ai/keys/claude-code.asc
+
+SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
+
+RUN test -n "${CLAUDE_VERSION}" || { echo "FATAL: CLAUDE_VERSION not set" >&2; exit 1; }
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates curl gnupg binutils file jq xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── the baseline assertion ────────────────────────────────────────────────────
+# If these three are absent, the base image is glibc 2.34+ and too new. Fail
+# loudly rather than shipping a bundle that only runs on modern hosts.
+RUN set -eux; \
+    ldd --version | head -1; \
+    for lib in libpthread.so.0 librt.so.1 libdl.so.2; do \
+      test -e "/lib/x86_64-linux-gnu/$lib" \
+        || { echo "FATAL: /lib/x86_64-linux-gnu/$lib missing — base image is glibc 2.34+ and too new for an old-baseline bundle" >&2; exit 1; }; \
+    done
+
+# ── fetch + verify the agent ──────────────────────────────────────────────────
+WORKDIR /work
+RUN set -eux; \
+    curl -fsSL "${KEY_URL}" -o claude-code.asc; \
+    export GNUPGHOME=/work/.gnupg; mkdir -p "$GNUPGHOME"; chmod 700 "$GNUPGHOME"; \
+    gpg --batch --import claude-code.asc; \
+    # Assert the fingerprint explicitly. `gpg --verify` alone only proves SOME
+    # key in the keyring signed it; we trust this key by pinned fingerprint.
+    gpg --batch --with-colons --fingerprint \
+      | awk -F: '/^fpr:/{print $10}' | grep -qx "${SIGNING_FINGERPRINT}" \
+      || { echo "FATAL: signing key fingerprint mismatch" >&2; exit 1; }; \
+    curl -fsSLO "${RELEASES}/${CLAUDE_VERSION}/manifest.json"; \
+    curl -fsSLO "${RELEASES}/${CLAUDE_VERSION}/manifest.json.sig"; \
+    gpg --batch --verify manifest.json.sig manifest.json; \
+    jq -e --arg v "${CLAUDE_VERSION}" '.version == $v' manifest.json >/dev/null \
+      || { echo "FATAL: manifest version != requested ${CLAUDE_VERSION}" >&2; exit 1; }
+
+# The manifest carries {binary, checksum, size} per platform and NO url field,
+# so the URL is composed the way this repo already composes it in production
+# (src/swe_lab/harnesses/claude_code/binary.py). Verifying the manifest's
+# signature transitively verifies every binary it lists.
+RUN set -eux; \
+    binary=$(jq -er --arg p "${PLATFORM}" '.platforms[$p].binary' manifest.json); \
+    checksum=$(jq -er --arg p "${PLATFORM}" '.platforms[$p].checksum' manifest.json); \
+    size=$(jq -er --arg p "${PLATFORM}" '.platforms[$p].size' manifest.json); \
+    curl -fsSL "${RELEASES}/${CLAUDE_VERSION}/${PLATFORM}/${binary}" -o claude.real; \
+    echo "${checksum}  claude.real" | sha256sum -c -; \
+    actual=$(stat -c%s claude.real); \
+    test "${actual}" = "${size}" \
+      || { echo "FATAL: size ${actual} != manifest ${size}" >&2; exit 1; }; \
+    chmod 0755 claude.real
+
+# ── enumerate what it actually needs ─────────────────────────────────────────
+# Never a hardcoded list: NEEDED is version-dependent. Recorded in the build log
+# and in MANIFEST.txt.
+RUN set -eux; \
+    objdump -p claude.real | awk '/NEEDED/{print $2}' | sort -u | tee /work/needed.txt; \
+    test -s /work/needed.txt || { echo "FATAL: no NEEDED entries — not a dynamic ELF?" >&2; exit 1; }
+
+# ── assemble ─────────────────────────────────────────────────────────────────
+RUN set -eux; \
+    root=/work/bundle; \
+    mkdir -p "$root/lib" "$root/tools" "$root/LICENSES"; \
+    mv claude.real "$root/claude.real"; \
+    \
+    # (a) everything in NEEDED, resolved against THIS image
+    while read -r lib; do \
+      src=$(find /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu -maxdepth 1 -name "$lib" -print -quit); \
+      test -n "$src" || { echo "FATAL: NEEDED lib $lib not found in builder" >&2; exit 1; }; \
+      cp -L "$src" "$root/lib/"; \
+    done < /work/needed.txt; \
+    \
+    # (b) the loader itself
+    cp -L /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 "$root/lib/"; \
+    \
+    # (c) the dlopen'd libraries that NEVER appear in NEEDED. Each fails in a
+    #     way a naive smoke test passes:
+    #       libnss_dns/files — getaddrinfo dlopens these per nsswitch.conf.
+    #         Missing => /etc/hosts resolves but real DNS does not. Partial
+    #         failure, and the most likely one in the field.
+    #       libgcc_s        — stack unwinding / pthread_cancel. Missing => a
+    #         latent crash on an error path, not a startup error.
+    for lib in libnss_dns.so.2 libnss_files.so.2 libgcc_s.so.1; do \
+      src=$(find /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu -maxdepth 1 -name "$lib" -print -quit); \
+      test -n "$src" || { echo "FATAL: dlopen'd lib $lib not found in builder" >&2; exit 1; }; \
+      cp -L "$src" "$root/lib/"; \
+    done
+# gconv modules are deliberately NOT bundled — only needed if iconv/charset
+# errors show up. The symptom and the GCONV_PATH fix are documented instead.
+
+# ── vendor ripgrep ───────────────────────────────────────────────────────────
+RUN set -eux; \
+    url="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}"; \
+    tarball="ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl.tar.gz"; \
+    curl -fsSLO "${url}/${tarball}"; \
+    if [ -n "${RIPGREP_SHA256}" ]; then \
+      echo "${RIPGREP_SHA256}  ${tarball}" | sha256sum -c -; \
+    else \
+      curl -fsSL "${url}/${tarball}.sha256" -o rg.sha256; \
+      awk -v f="${tarball}" '{print $1"  "f}' rg.sha256 | sha256sum -c -; \
+    fi; \
+    tar xzf "${tarball}"; \
+    cp "ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl/rg" /work/bundle/tools/rg; \
+    cp "ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl/COPYING" /work/bundle/LICENSES/ripgrep-COPYING 2>/dev/null || true; \
+    cp "ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl/LICENSE-MIT" /work/bundle/LICENSES/ripgrep-LICENSE-MIT 2>/dev/null || true; \
+    cp "ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl/UNLICENSE" /work/bundle/LICENSES/ripgrep-UNLICENSE 2>/dev/null || true; \
+    # rg must need NOTHING from the host: it is spawned as a CHILD process and
+    # children do not inherit --library-path, so anything it links against comes
+    # from the target image.
+    #
+    # Do NOT test this with `file`. Upstream ships a **static-PIE** binary, and
+    # `file` reports static-PIE as "dynamically linked" because it is ET_DYN —
+    # the check that read `grep "statically linked"` failed on a perfectly good
+    # binary. Assert the real property instead: no program interpreter, and zero
+    # NEEDED entries. (Verified 2026-08-05: this exact binary runs unchanged on
+    # alpine:3.19, debian:10-slim and gcr.io/distroless/base-debian12.)
+    rg_needed=$(objdump -p /work/bundle/tools/rg | grep -c NEEDED || true); \
+    test "${rg_needed}" -eq 0 \
+      || { echo "FATAL: vendored rg has ${rg_needed} NEEDED entries; it must depend on nothing from the host" >&2; exit 1; }; \
+    if readelf -l /work/bundle/tools/rg | grep -q "program interpreter"; then \
+      echo "FATAL: vendored rg requests a program interpreter; it must be static-PIE" >&2; exit 1; \
+    fi; \
+    echo "rg: static-PIE, 0 NEEDED, no interpreter — depends on nothing from the host"
+
+# ── licenses + launcher + version ────────────────────────────────────────────
+COPY launcher.sh /work/bundle/claude
+RUN set -eux; \
+    cp /usr/share/doc/libc6/copyright /work/bundle/LICENSES/glibc-copyright; \
+    echo "${CLAUDE_VERSION}" > /work/bundle/VERSION
+
+# ── MANIFEST.txt ─────────────────────────────────────────────────────────────
+# Every file, its sha256, and where it came from — so the bundle is auditable
+# without unpacking it.
+RUN set -eux; \
+    root=/work/bundle; \
+    glibc_ver=$(dpkg-query -W -f='${Version}' libc6); \
+    { \
+      echo "# Claude Code portable bundle — MANIFEST"; \
+      echo "claude_version:  ${CLAUDE_VERSION}"; \
+      echo "platform:        ${PLATFORM}"; \
+      echo "builder_base:    debian:11-slim@${BASE_DIGEST:-<unset>}"; \
+      echo "glibc:           $(ldd --version | head -1)"; \
+      echo "glibc_package:   libc6 ${glibc_ver}"; \
+      echo "ripgrep:         ${RIPGREP_VERSION} (x86_64-unknown-linux-musl, static)"; \
+      echo; \
+      echo "# NEEDED (objdump -p claude.real)"; \
+      sed 's/^/  /' /work/needed.txt; \
+      echo; \
+      echo "# files: sha256  path  source"; \
+      cd "$root"; \
+      find . -type f | LC_ALL=C sort | while read -r f; do \
+        sum=$(sha256sum "$f" | cut -d' ' -f1); \
+        case "$f" in \
+          ./lib/*) src=$(dpkg -S "$(readlink -f "/lib/x86_64-linux-gnu/$(basename "$f")" 2>/dev/null || echo /nonexistent)" 2>/dev/null | cut -d: -f1 | head -1);; \
+          ./tools/rg) src="ripgrep-${RIPGREP_VERSION}-upstream";; \
+          ./claude.real) src="downloads.claude.ai/${CLAUDE_VERSION}/${PLATFORM}";; \
+          *) src="this-repo";; \
+        esac; \
+        echo "  ${sum}  ${f#./}  ${src:-unknown}"; \
+      done; \
+    } > "$root/MANIFEST.txt"
+
+# ── permissions + tarball ────────────────────────────────────────────────────
+# a+rX: world-readable everywhere, directories traversable, execute bit only
+# where one already exists. These tarballs are unpacked as NON-ROOT and by users
+# other than the builder; a mode that happens to work here is not one that works
+# in the field.
+RUN set -eux; \
+    root=/work/bundle; \
+    chmod -R a+rX "$root"; \
+    chmod a+rx "$root/claude" "$root/claude.real" \
+                "$root/lib/ld-linux-x86-64.so.2" "$root/tools/rg"; \
+    out="claude-${CLAUDE_VERSION}-${PLATFORM}"; \
+    mkdir -p /out; \
+    mv "$root" "/work/${out}"; \
+    tar -C /work --owner=0 --group=0 --numeric-owner \
+        -czf "/out/${out}.tar.gz" "${out}"; \
+    ls -l "/out/${out}.tar.gz"; \
+    sha256sum "/out/${out}.tar.gz" | tee "/out/${out}.tar.gz.sha256"
+
+# Export stage: `docker build --output type=local,dest=dist` lands the tarball
+# and nothing else.
+FROM scratch AS export
+COPY --from=builder /out/ /
