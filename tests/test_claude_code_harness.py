@@ -111,18 +111,69 @@ def test_invocation_script_shape_and_quoting():
   assert "export IS_SANDBOX=1" in script
   assert "cd '/weird dir'" in script  # shlex.quote'd workdir with a space
   assert f"{BINARY_AT} -p " in script  # no inline prompt in the argv
-  assert "--bare" not in script  # bare defaults off
+  assert "--bare" in script  # bare is the default for an unattended run
   assert "--output-format stream-json --verbose" in script
   assert "--dangerously-skip-permissions" in script
+  # every interactive/plan-mode tool denied — none is covered by
+  # --dangerously-skip-permissions, and each hangs an unattended run
+  assert (
+      "--disallowedTools EnterPlanMode,ExitPlanMode,AskUserQuestion" in script
+  )
+  assert "--max-turns 500" in script  # agent-loop runaway guard
+  # the agent's status is reported out-of-band; the script itself exits 0 so
+  # container teardown is unchanged
+  assert '> "$SANDBOX_WORKSPACE"/claude.exit_code' in script
+  assert script.rstrip().endswith("exit 0")
+  assert "|| true" not in script
   # the prompt is piped in on stdin (no shell-quoting hazard)
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script
   assert '> "$SANDBOX_WORKSPACE"/claude.event_stream.jsonl' in script
-  assert script.rstrip().endswith("|| true")
 
 
-def test_bare_flag_added_when_set():
+def test_bare_can_be_turned_off_for_an_oauth_composition():
+  # Bare reads neither OAuth nor the keychain, so a composition authenticating
+  # by CLAUDE_CODE_OAUTH_TOKEN must opt out — and then gets no API-key guard.
+  script = _script("/app", ClaudeCodeHarness(bare=False))
+  assert "--bare" not in script
+  assert "ANTHROPIC_API_KEY" not in script
+
+
+def test_bare_guards_the_only_credential_it_can_use():
+  # Without the guard a missing key surfaces as a plain-text "Not logged in"
+  # result on stdout — a successful-looking run that did nothing.
   script = _script("/app", ClaudeCodeHarness(bare=True))
   assert f"{BINARY_AT} -p --bare " in script
+  assert 'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then' in script
+  assert "exit 78" in script
+
+
+def test_proxy_capture_also_guards_its_base_url():
+  script = _script("/app", _proxy_harness())
+  assert 'if [ -z "${ANTHROPIC_BASE_URL:-}" ]; then' in script
+
+
+def test_optional_bounds_are_omitted_unless_asked_for():
+  # None means "leave the agent's own default alone", not "pass a default".
+  plain = _script("/app")
+  assert "--max-budget-usd" not in plain
+  assert "CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS" not in plain
+  bounded = _script(
+      "/app",
+      ClaudeCodeHarness(max_budget_usd=2.5, subagent_wait_ceiling_ms=90_000),
+  )
+  assert "--max-budget-usd 2.5" in bounded
+  assert "export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=90000" in bounded
+
+
+def test_an_oversized_prompt_is_refused_before_it_is_staged(tmp_path: Path):
+  # Claude Code caps piped stdin at 10 MB and exits non-zero past it; failing
+  # here says so, instead of reading the cap back as an opaque agent failure.
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  with pytest.raises(SandboxError, match="caps piped stdin"):
+    ClaudeCodeHarness().run(
+        sb, prompt="x" * (10 * 1024 * 1024 + 1), timeout=1.0
+    )
+  assert not (tmp_path / "prompt.txt").exists()  # never staged
 
 
 def test_binary_is_never_staged_by_the_harness():
@@ -143,6 +194,7 @@ def test_native_outputs():
   assert ClaudeCodeHarness().native_outputs() == {
       "event_stream.jsonl": "claude.event_stream.jsonl",
       "stderr.log": "claude.stderr.log",
+      "exit_code.txt": "claude.exit_code",
   }
 
 
@@ -189,6 +241,7 @@ def test_proxy_native_outputs_registers_proxy_log():
   assert _proxy_harness().native_outputs() == {
       "proxy_log.jsonl": PROXY_LOG_NAME,
       "stderr.log": "claude.stderr.log",
+      "exit_code.txt": "claude.exit_code",
   }
 
 

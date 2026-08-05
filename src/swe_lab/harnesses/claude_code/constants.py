@@ -32,6 +32,20 @@ AGENT_ENV_NAME = "agent_env.sh"
 # composition-level convention exists anymore.
 PROMPT_FILENAME = "prompt.txt"
 
+# The agent's real exit status, reported out-of-band. The invocation script
+# always exits 0 (container teardown must not change), so this file is the only
+# way to tell success from failure from a caller-initiated kill. 143 = SIGTERM.
+AGENT_EXIT_CODE_NAME = "claude.exit_code"
+
+# Interactive / plan-mode tools, always denied for an unattended run. They are
+# not covered by --dangerously-skip-permissions: EnterPlanMode needs no
+# permission at all, and ExitPlanMode / AskUserQuestion ask for a *reply*, which
+# never arrives and never times out. Bare names, no parenthesized specifier.
+UNATTENDED_DENIED_TOOLS = ("EnterPlanMode", "ExitPlanMode", "AskUserQuestion")
+
+# Claude Code caps piped stdin at 10 MB (v2.1.128+) and exits non-zero past it.
+MAX_PROMPT_BYTES = 10 * 1024 * 1024
+
 # Native outputs the run writes into the workspace (registered as artifacts).
 EVENT_STREAM_NAME = "claude.event_stream.jsonl"  # stream-json trace (primary)
 AGENT_STDERR_NAME = "claude.stderr.log"  # the run's stderr log

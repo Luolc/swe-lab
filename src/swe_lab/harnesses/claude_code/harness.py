@@ -40,6 +40,7 @@ from swe_lab.sandbox import (
 from .capture import Capture
 from .constants import (
     AGENT_ENV_NAME,
+    AGENT_EXIT_CODE_NAME,
     AGENT_HOME,
     AGENT_INFO_NAME,
     AGENT_SCRIPT_NAME,
@@ -49,8 +50,10 @@ from .constants import (
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
+    MAX_PROMPT_BYTES,
     PROMPT_FILENAME,
     PROXY_LOG_NAME,
+    UNATTENDED_DENIED_TOOLS,
 )
 from .convert import (
     event_stream_complete,
@@ -196,17 +199,39 @@ class ClaudeCodeHarness(Harness):
       the container→host gateway on the declared port, which is what a
       containerized run needs; set it when the run reaches the host some other
       way. Unused for ``STREAM``.
-    bare: Run the agent with ``--bare`` — API-key auth mode, which disables the
-      subscription OAuth token. The API key itself is supplied to the sandbox
-      by the composition via the environment (``ANTHROPIC_API_KEY``, by
-      reference — like the OAuth token), not held by this harness.
+    bare: Run the agent with ``--bare`` — minimal mode: no hooks, plugins, MCP
+      config, auto-memory or CLAUDE.md discovery, so the repo under test cannot
+      inject instructions into the harness. **It also disables keychain and
+      OAuth reads**, so a bare run authenticates by ``ANTHROPIC_API_KEY``
+      only; verified on 2.1.220, where a bare run with a valid
+      ``CLAUDE_CODE_OAUTH_TOKEN`` still fails "Not logged in".
+
+      **On by default**: an unattended run should be reproducible across
+      machines, and without it the repo under test can inject instructions via
+      CLAUDE.md, hooks or MCP config. A composition that authenticates by OAuth
+      sets it back to ``False`` explicitly — the shipped ``rollout`` definition
+      does exactly that. See the script's guard.
+    max_turns: Agent-loop runaway guard, passed as ``--max-turns``. The flag is
+      undocumented in ``--help`` on 2.1.220 but accepted (a bogus flag is
+      rejected with "unknown option" in the same position, so this is
+      acceptance, not a parser that ignores everything).
+    max_budget_usd: Optional spend ceiling (``--max-budget-usd``, print mode
+      only). Omitted entirely when ``None``.
+    subagent_wait_ceiling_ms: Optional ceiling on waiting for background
+      subagents (``CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS``). Omitted when
+      ``None``, which leaves the agent's own ten-minute default in place.
+      Letting the run bound itself yields a clean exit and a complete trace
+      where an external kill would truncate mid-write.
   """
 
   model: str = DEFAULT_MODEL
   capture: Capture = Capture.STREAM
   proxy_port: int = DEFAULT_BASE_PORT
   proxy_base_url: str | None = None
-  bare: bool = False
+  bare: bool = True
+  max_turns: int = 500
+  max_budget_usd: float | None = None
+  subagent_wait_ceiling_ms: int | None = None
 
   @property
   @override
@@ -298,11 +323,24 @@ class ClaudeCodeHarness(Harness):
         than corrupting the file and skipping the run.
 
     Returns:
-      The agent script's outcome. The script ends in ``|| true`` so the agent's
-      own exit code never fails the step — what this still carries is whether
-      *we* killed it on timeout.
+      The agent script's outcome. The script always exits 0, so this carries
+      only whether *we* killed it on timeout; the agent's own status is written
+      to ``claude.exit_code`` in the workspace.
+
+    Raises:
+      SandboxError: If the prompt exceeds Claude Code's 10 MB stdin cap, or an
+        env name is not a shell identifier.
     """
-    sb.write(PROMPT_FILENAME, prompt.encode())
+    encoded = prompt.encode()
+    if len(encoded) > MAX_PROMPT_BYTES:
+      # Claude Code caps piped stdin at 10 MB and exits non-zero past it. Fail
+      # here, where the size is known and the message can say so, rather than
+      # staging it and reading the cap back as an opaque agent failure.
+      raise SandboxError(
+          f"prompt is {len(encoded)} bytes; Claude Code caps piped stdin at"
+          f" {MAX_PROMPT_BYTES}"
+      )
+    sb.write(PROMPT_FILENAME, encoded)
     if env:
       sb.write(AGENT_ENV_NAME, _env_exports(env).encode())
     return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
@@ -322,7 +360,10 @@ class ClaudeCodeHarness(Harness):
         if self.capture is Capture.PROXY
         else {"event_stream.jsonl": EVENT_STREAM_NAME}
     )
-    return trace | {"stderr.log": AGENT_STDERR_NAME}
+    return trace | {
+        "stderr.log": AGENT_STDERR_NAME,
+        "exit_code.txt": AGENT_EXIT_CODE_NAME,
+    }
 
   @override
   def to_conversation(self, sb: SandboxFs) -> Conversation:
@@ -349,7 +390,21 @@ class ClaudeCodeHarness(Harness):
     return event_stream_complete(_read_text(sb, EVENT_STREAM_NAME))
 
   def _invocation_script(self, workdir: str) -> str:
-    """Build the run script: run the agent, redirect its outputs, never fail.
+    """Build the run script for an *unattended* run.
+
+    The invariants it enforces, each of which an unattended run needs and none
+    of which ``--dangerously-skip-permissions`` provides:
+
+    - **Interactive and plan-mode tools are always denied.** ``EnterPlanMode``
+      needs no permission at all, so nothing ever asks; ``ExitPlanMode`` and
+      ``AskUserQuestion`` ask for a *reply*, which never comes. Denying only
+      ``ExitPlanMode`` is worse than denying neither — the agent enters plan
+      mode, cannot leave, and burns the budget read-only.
+    - **Turns are bounded** (``--max-turns``), so an agent loop cannot run away.
+    - **The exit status is reported out-of-band.** The script itself always
+      exits 0 so teardown is unchanged; the real code lands in
+      ``claude.exit_code`` (143 = SIGTERM, i.e. someone killed the turn).
+    - **Wall-clock is the caller's**, deliberately not here.
 
     In ``STREAM`` capture the agent's ``stream-json`` stdout *is* the trace
     (redirected to the event-stream file). In ``PROXY`` capture the host-side
@@ -392,18 +447,66 @@ class ClaudeCodeHarness(Harness):
       event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
       output_format = "stream-json --verbose"
       capture_redirect = f"> {event_stream}"
-    bare = " --bare" if self.bare else ""
+    # Always denied: not covered by --dangerously-skip-permissions, and each
+    # hangs an unattended run in its own way (see the constant).
+    denied = ",".join(UNATTENDED_DENIED_TOOLS)
+    flags = [
+        "-p",
+        f"--model {shlex.quote(self.model)}",
+        f"--output-format {output_format}",
+        "--dangerously-skip-permissions",
+        f"--disallowedTools {shlex.quote(denied)}",
+        # Undocumented in --help on 2.1.220, but accepted — verified against a
+        # bogus flag in the same position, which is rejected outright.
+        f"--max-turns {int(self.max_turns)}",
+    ]
+    if self.bare:
+      flags.insert(1, "--bare")
+    if self.max_budget_usd is not None:
+      flags.append(f"--max-budget-usd {self.max_budget_usd}")
+
+    if self.subagent_wait_ceiling_ms is not None:
+      # After the caller env block on purpose: this bound is the harness's, and
+      # a prompt-supplied env must not raise it.
+      lines.append(
+          "export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS="
+          f"{int(self.subagent_wait_ceiling_ms)}"
+      )
+
+    if self.bare:
+      # Bare mode reads neither the keychain nor OAuth, so a missing API key
+      # would otherwise surface as a plain-text "Not logged in" result on
+      # stdout — a *successful-looking* run that did nothing.
+      lines += [
+          'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then',
+          '  echo "FATAL: --bare needs ANTHROPIC_API_KEY (it does not read'
+          ' OAuth or the keychain)" >&2',
+          "  exit 78",
+          "fi",
+      ]
+      if self.capture is Capture.PROXY:
+        lines += [
+            'if [ -z "${ANTHROPIC_BASE_URL:-}" ]; then',
+            '  echo "FATAL: PROXY capture needs ANTHROPIC_BASE_URL" >&2',
+            "  exit 78",
+            "fi",
+        ]
+
+    exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
         f"cd {shlex.quote(workdir)}",
         # Feed the prompt on stdin (``-p`` with no argument reads it) rather
         # than inlining it into the argv — no shell-quoting hazard for a large,
         # arbitrary prompt.
         (
-            f"{binary} -p{bare}"
-            f" --model {shlex.quote(self.model)}"
-            f" --output-format {output_format}"
-            " --dangerously-skip-permissions"
-            f" < {prompt} {capture_redirect} 2> {stderr} || true"
+            f"{binary} {' '.join(flags)}"
+            f" < {prompt} {capture_redirect} 2> {stderr}"
         ),
+        # The agent's real status, reported out-of-band. `set -u` is on but
+        # `set -e` is not, so execution continues here; capturing $? on the very
+        # next line and then exiting 0 keeps container teardown unchanged while
+        # still telling a caller success from failure from a kill (143=SIGTERM).
+        f"printf '%s\\n' \"$?\" > {exit_file}",
+        "exit 0",
     ]
     return "\n".join(lines) + "\n"
