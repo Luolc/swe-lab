@@ -30,6 +30,7 @@ from swe_lab.evaluation.unit_test import (
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.sandbox import (
     ArtifactSchema,
+    Contribution,
     ExecResult,
     Inline,
     LocalFile,
@@ -199,6 +200,46 @@ def test_execute_composes_backend_task_and_extra_observers_in_order(
       "task.after_destroy",
       "extra.after_destroy",
   ]
+
+
+def test_a_required_output_whose_fetch_never_landed_fails_the_attempt(
+    tmp_path: Path,
+):
+  # The collect step records only what actually landed, so a required artifact
+  # a best-effort `fetch` failed to produce is simply absent from `artifacts`,
+  # and `outputs_valid` fails the attempt on it. This is the safety net under
+  # that omission: recording the destination unconditionally (as collect used
+  # to) made this same check *pass* a run whose required artifact was never
+  # there — a false success, before persist crashed on the phantom path.
+  class _SilentFetch(FakeSandbox):
+
+    @override
+    def fetch(self, name: str, dest: epath.PathLike) -> None:
+      if name != "thing.json":
+        super().fetch(name, dest)
+
+  task = _ScriptTask(
+      task_observers=(
+          _DeclaringObserver(schema=(ArtifactSchema("thing.json"),)),
+          RecordingObserver(
+              name="producer",
+              contribution=Contribution(artifacts={"thing.json": "thing.json"}),
+          ),
+      ),
+  )
+  result = task.execute(
+      _SilentFetch(spec=SPEC, workspace=epath.Path(tmp_path / "ws")),
+      _BareInstance(),
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+  )
+  # The run itself was fine — nothing raised, nothing timed out ...
+  assert result.run.status is RunStatus.SUCCESS
+  assert "thing.json" not in result.run.artifacts
+  # ... but the attempt did not produce what it declared, so it is not valid,
+  # and the task asks for another go rather than recording a success.
+  assert task.outputs_valid(result) is False
+  assert task.should_retry(result) is True
 
 
 def test_execute_derives_the_schema_from_every_composed_observer(

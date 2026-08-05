@@ -35,8 +35,14 @@ class ArtifactSchema:
   Attributes:
     name: The artifact name as it appears in the store (format-suffixed:
       ``patch.diff``, ``conversation.json``).
-    required: Whether a completed run without this artifact is a failed run.
-      Advisory today; becomes the validation/retry gate of ADR-0007 §5.
+    required: Whether the artifact must be there. Enforced in both directions,
+      which fail differently. A missing required **input** is the distinct edge
+      failure of ADR-0007 §5 (``EDGE_FAILED``), and is refused earlier still —
+      at assembly — when nothing in the workflow produces the name at all. A
+      missing required **output** fails the attempt through
+      ``Task.outputs_valid``, so it is retried (§6). ``False`` means advisory:
+      an artifact that never lands is omitted from the run's artifacts, and the
+      record still lands without it.
     description: One line saying what this artifact is, for a reader of a
       merged schema.
   """
