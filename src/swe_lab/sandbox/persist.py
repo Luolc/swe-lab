@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 import json
+import logging
 import pathlib
 from typing import TYPE_CHECKING
 
@@ -24,6 +25,8 @@ from etils import epath
 
 if TYPE_CHECKING:
   from .store import Store
+
+_logger = logging.getLogger(__name__)
 
 # The namespace a run store's *root* is configured with (ADR-0004): it is not
 # part of any key, so a shared bucket keeps runs separated from future siblings
@@ -122,18 +125,30 @@ def persist(
 ) -> AttemptRecord:
   """Upload a run's files under its key and append its manifest shard.
 
+  A path that does not exist is skipped, not fatal. The collect step already
+  omits an artifact its ``fetch`` failed to land, so this is defence in depth at
+  the layer that would actually raise: the record's value is that it *says* how
+  the run went, and a run whose sandbox died mid-collect is precisely when that
+  matters most. Dropping the shard over one missing best-effort artifact would
+  make the attempt look never-started to a resume or a summary.
+
   Args:
     store: The T1 store to write to.
     record: The run's metadata (its ``artifact_keys`` field is filled in here).
     files: Object name (the key suffix under the run prefix) → host path.
 
   Returns:
-    The completed record (``artifact_keys`` = object name → full store key), as
-    written to the manifest.
+    The completed record (``artifact_keys`` = object name → full store key, for
+    the files that were there), as written to the manifest.
   """
   prefix = run_prefix(record)
   artifact_keys: dict[str, str] = {}
   for name, path in files.items():
+    if not epath.Path(path).exists():
+      _logger.warning(
+          "artifact %r is missing at %s; not persisting it", name, path
+      )
+      continue
     key = f"{prefix}/{name}"
     store.put(key, path)
     artifact_keys[name] = key

@@ -85,6 +85,25 @@ def test_persist_keeps_failed_runs(tmp_path: Path):
   ]  # failures persist (gate is tier, not success)
 
 
+def test_persist_skips_a_file_that_is_not_there(tmp_path: Path):
+  # Defence in depth behind the collect step: an artifact path that does not
+  # exist is dropped from the record, never allowed to abort a shard that is
+  # otherwise complete.
+  art = tmp_path / "patch.diff"
+  _ = art.write_text("DIFF")
+  store = FakeStore()
+
+  out = persist(
+      store,
+      _record("flipt__flipt-1", "1706-0"),
+      {"patch.diff": art, "claude.info": tmp_path / "claude.info"},
+  )
+
+  prefix = f"{_SWEEP}/flipt__flipt-1/r0/rollout/a0"
+  assert out.artifact_keys == {"patch.diff": f"{prefix}/patch.diff"}
+  assert store.manifests == [out]  # the record still lands
+
+
 def test_promote_uploads_whole_workspace_preserving_nesting(tmp_path: Path):
   ws = tmp_path / "ws"
   (ws / "diagnostics").mkdir(parents=True)
