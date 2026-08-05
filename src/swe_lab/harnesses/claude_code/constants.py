@@ -55,7 +55,7 @@ AGENT_STDERR_NAME = "claude.stderr.log"  # the run's stderr log
 # name it is registered under, which is what a reader of a persisted manifest
 # sees.
 AGENT_INFO_NAME = "claude.info.txt"
-INFO_ARTIFACT = "claude_code.info"
+INFO_ARTIFACT = "claude.info"
 
 # The proxy-capture trace: the cc-reverse-proxy appends one request/response
 # record per API call here. The proxy is a host process, but the composition
