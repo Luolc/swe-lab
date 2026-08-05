@@ -41,6 +41,19 @@ AGENT_EXIT_CODE_NAME = "claude.exit_code"
 # not covered by --dangerously-skip-permissions: EnterPlanMode needs no
 # permission at all, and ExitPlanMode / AskUserQuestion ask for a *reply*, which
 # never arrives and never times out. Bare names, no parenthesized specifier.
+#
+# Probed against the bundled 2.1.220 (init event's `tools` array, both with and
+# without the rule, under ENABLE_TOOL_SEARCH=false):
+#
+#   - **none of these three is offered** — absent under
+#     --dangerously-skip-permissions, --permission-mode plan, and
+#     --permission-mode acceptEdits alike. So on this version the rule is inert.
+#   - the rule itself works: adding `WebSearch` (which *is* offered) to the list
+#     removes it from the array. So an empty diff here means "nothing to strip",
+#     not "the flag is ignored" — do not read it as the flag being broken.
+#
+# Kept anyway: it costs one argument, it was load-bearing on 2.1.185 where
+# EnterPlanMode was observed self-invoked, and the pinned version moves.
 UNATTENDED_DENIED_TOOLS = ("EnterPlanMode", "ExitPlanMode", "AskUserQuestion")
 
 # Claude Code caps piped stdin at 10 MB (v2.1.128+) and exits non-zero past it.
