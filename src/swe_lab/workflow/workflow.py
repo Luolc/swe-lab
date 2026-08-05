@@ -147,13 +147,14 @@ class WorkflowOutcome:
   Attributes:
     succeeded: Whether every entry succeeded (ADR-0007 §10 — all or nothing).
     entries: Per-entry outcomes, in declared order.
-    record_key: The written workflow record's store key. Always populated —
-      the record is written whether or not the workflow succeeded (ADR-0009).
+    record_key: The written workflow record's store key. Always a key: the
+      record is written whether or not the workflow succeeded (ADR-0009), so
+      there is no absent case to check for.
   """
 
   succeeded: bool
   entries: tuple[EntryOutcome, ...]
-  record_key: str | None
+  record_key: str
 
 
 @dataclass(frozen=True)
@@ -407,6 +408,10 @@ class Workflow:
     (ADR-0009): the failed run is the one most worth reading, and copying the
     metrics here saves a consumer one object read per task per run.
 
+    The body names the run it describes — sweep, instance, rollout — as
+    ``AttemptRecord`` does, so a consumer globbing ``**/workflow.json`` reads
+    the blob rather than parsing the key it was found under.
+
     An entry that never ran (``BLOCKED``, or ``EDGE_FAILED`` before any
     sandbox existed) is still emitted — that it never ran is the fact worth
     recording — with its counters zeroed and its ``missing_inputs`` named.
@@ -443,6 +448,9 @@ class Workflow:
         key,
         json.dumps(
             {
+                "sweep_id": self.sweep_id,
+                "instance_id": instance_id,
+                "rollout_id": self.rollout_id,
                 "run_ts": run_ts,
                 "succeeded": succeeded,
                 "entries": entries_json,

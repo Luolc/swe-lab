@@ -381,7 +381,7 @@ def test_an_optional_input_still_binds_where_something_produces_it(
   )
   assert outcome.succeeded is True
   assert consumer.seen == [b"THING"]
-  record = json.loads(wf.store.get_bytes(outcome.record_key or ""))
+  record = json.loads(wf.store.get_bytes(outcome.record_key))
   assert record["edges"]["consumer"] == {"thing.txt": "producer"}
 
 
@@ -567,9 +567,40 @@ def test_the_workflow_record_is_written_whatever_the_outcome(tmp_path: Path):
         _Instance(), output_dir=tmp_path / f"out-{name}", run_ts="ts-0"
     )
     assert outcome.succeeded is (name == "ok")
-    assert outcome.record_key is not None
     record = json.loads(store.get_bytes(outcome.record_key))
     assert record["succeeded"] is (name == "ok")
+
+
+def test_the_record_names_the_run_it_describes(tmp_path: Path):
+  # Self-describing, like the AttemptRecord it rolls up: a consumer globbing
+  # **/workflow.json reads the blob instead of parsing the key it was found
+  # under, and the two agree.
+  store = _store(tmp_path)
+  wf = Workflow(
+      store=store,
+      sweep_id="sw",
+      rollout_id=3,
+      entries=[
+          WorkflowEntry(
+              "producer",
+              _Producer(),
+              timeout=10.0,
+              sandbox=FakeSandboxConfig(),
+          )
+      ],
+  )
+  outcome = wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-0")
+  record = json.loads(store.get_bytes(outcome.record_key))
+  assert (
+      record["sweep_id"],
+      record["instance_id"],
+      record["rollout_id"],
+  ) == ("sw", "acme__widget-1", 3)
+  # …and what the body says is where the body lives
+  assert outcome.record_key == (
+      f"{record['sweep_id']}/{record['instance_id']}"
+      f"/r{record['rollout_id']}/workflow.json"
+  )
 
 
 def test_the_record_carries_each_entrys_metrics(tmp_path: Path):
@@ -590,7 +621,6 @@ def test_the_record_carries_each_entrys_metrics(tmp_path: Path):
       ],
   )
   outcome = wf.execute(_Instance(), output_dir=tmp_path / "out", run_ts="ts-0")
-  assert outcome.record_key is not None
   entry = json.loads(store.get_bytes(outcome.record_key))["entries"][0]
   run = outcome.entries[0].run
   assert run is not None
@@ -635,7 +665,6 @@ def test_an_empty_upstream_artifact_is_the_distinct_edge_failure(
   assert read_marker(store, address, "acme__widget-1") is None
   # …and the roll-up is still written, saying so: the failed run is the one
   # most worth reading (ADR-0009).
-  assert outcome.record_key is not None
   record = json.loads(store.get_bytes(outcome.record_key))
   assert record["succeeded"] is False
   consumer = next(e for e in record["entries"] if e["key"] == "consumer")
@@ -720,7 +749,6 @@ def test_a_failed_entry_blocks_the_rest(tmp_path: Path):
   assert outcome.entries[1].run is None  # never attempted
   # The roll-up is written anyway, and carries every entry's status — a
   # blocked entry is a fact, not an omission (ADR-0009).
-  assert outcome.record_key is not None
   record = json.loads(store.get_bytes(outcome.record_key))
   assert record["succeeded"] is False
   assert [(e["key"], e["status"]) for e in record["entries"]] == [
@@ -768,7 +796,6 @@ def test_reentry_resumes_the_finished_producer_and_does_no_work(
   assert all(e.run is not None and e.run.resumed for e in second.entries)
   assert second_consumer.seen == []  # its action never ran
   # the resumed producer's record still fed the edge map of the new record
-  assert second.record_key is not None
   record = json.loads(store.get_bytes(second.record_key))
   assert record["entries"][0]["resumed"] is True
 
@@ -895,7 +922,6 @@ def test_a_single_entry_workflow_takes_its_input_from_the_caller(
   )
   assert outcome.succeeded is True
   assert consumer.seen == [b"FROM CALLER"]
-  assert outcome.record_key is not None
   record = json.loads(wf.store.get_bytes(outcome.record_key))
   assert record["edges"] == {"consumer": {"thing.txt": "inputs"}}
 

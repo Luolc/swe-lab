@@ -197,7 +197,6 @@ def test_live_two_container_chain_through_the_store(tmp_path: Path):
   # both terminal markers and the workflow record are durable
   assert store.get_bytes("smoke/workflow-smoke/r0/producer/complete.json")
   assert store.get_bytes("smoke/workflow-smoke/r0/consumer/complete.json")
-  assert outcome.record_key is not None
   record = json.loads(store.get_bytes(outcome.record_key))
   assert record["edges"]["consumer"] == {"thing.txt": "producer"}
 
@@ -254,5 +253,4 @@ def test_live_failed_producer_persists_its_evidence_and_blocks(
   )
   assert marker["outcome"] == "failed"
   # the roll-up is written for a failed run too, and says so (ADR-0009)
-  assert outcome.record_key is not None
   assert json.loads(store.get_bytes(outcome.record_key))["succeeded"] is False
