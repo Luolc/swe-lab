@@ -53,8 +53,10 @@ AGENT_STDERR_NAME = "claude.stderr.log"  # the run's stderr log
 # The agent's own account of itself (`--version` + `--help`), captured once the
 # sandbox is up. `AGENT_INFO_NAME` is the workspace file; `INFO_ARTIFACT` is the
 # name it is registered under, which is what a reader of a persisted manifest
-# sees.
-AGENT_INFO_NAME = "claude.info.txt"
+# sees. They coincide here — unlike the trace and stderr, whose in-sandbox names
+# are namespaced `claude.*` while their artifact names are not — but they stay
+# separate constants because they answer different questions.
+AGENT_INFO_NAME = "claude.info"
 INFO_ARTIFACT = "claude.info"
 
 # The proxy-capture trace: the cc-reverse-proxy appends one request/response
