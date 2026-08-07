@@ -26,7 +26,7 @@ repo-provisioning / agent modes can rely on them without a schema change.
 from __future__ import annotations
 
 import ast
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 import json
 import re
@@ -189,6 +189,11 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     """The output parser for this instance (its content); see ``run_script``."""
     _, parser_path = fetch_auxiliary(self.instance_id)
     return parser_path.read_bytes()
+
+  @override
+  def required_tests(self) -> Sequence[str]:
+    """Return ``fail_to_pass ∪ pass_to_pass`` — what grading holds this to."""
+    return (*self.fail_to_pass, *self.pass_to_pass)
 
   @override
   def solution_sha(self) -> str:
