@@ -45,7 +45,7 @@ from swe_lab.sandbox import (
 )
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.testing import FakeSandbox, RecordingObserver
-from swe_lab.workflow import AttemptResult, Task
+from swe_lab.workflow import AttemptResult, retry_permitted, Task
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "abc123")
 
@@ -660,7 +660,7 @@ def test_coding_agent_task_defaults_the_prompt_to_the_instance(
   # from the instance alone, and the instance's own prompt must reach the
   # harness. Imported here (not at module scope) to keep the fixture close.
   from swe_lab.conversation import Conversation
-  from swe_lab.harnesses import Harness
+  from swe_lab.harnesses import AgentOutcome, Harness
   from swe_lab.rollout import CodingAgentTask
 
   prompts: list[str] = []
@@ -704,8 +704,8 @@ def test_coding_agent_task_defaults_the_prompt_to_the_instance(
       raise NotImplementedError
 
     @override
-    def completed(self, sb: SandboxFs) -> bool:
-      return False
+    def outcome(self, sb: SandboxFs) -> AgentOutcome:
+      return AgentOutcome.EXECUTION_ERROR
 
   sandbox = _fake(tmp_path)
   task = CodingAgentTask(harness=_PromptProbeHarness())
@@ -815,3 +815,92 @@ def test_an_eval_that_never_graded_is_invalid(tmp_path: Path):
   )
   assert task.outputs_valid(result) is False
   assert task.should_retry(result) is True
+
+
+# ─── the timeout veto (ADR-0011) ─────────────────────────────────────────────
+
+
+def _timed_out(tmp_path: Path, task: Task) -> AttemptResult:
+  """Execute ``task`` against a sandbox whose action is killed on timeout."""
+  return task.execute(
+      _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
+      _BareInstance(),
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+  )
+
+
+def test_a_timed_out_attempt_is_not_retried_by_default(tmp_path: Path):
+  # Wall-clock is a BUDGET, not an infrastructure fault: a run that spent it
+  # produced a result, and re-running it would hand out a second budget. The
+  # attempt is still *invalid* — validity and retry answer different questions.
+  task = _ScriptTask()
+  result = _timed_out(tmp_path, task)
+  assert result.run.status is RunStatus.TIMEOUT
+  assert task.outputs_valid(result) is False
+  assert retry_permitted(task, result) is False
+
+
+def test_retry_on_timeout_opts_back_in(tmp_path: Path):
+  task = _ScriptTask(retry_on_timeout=True)
+  assert retry_permitted(task, _timed_out(tmp_path, task)) is True
+
+
+def test_the_timeout_veto_cannot_be_reinstated_by_a_task(tmp_path: Path):
+  # The veto is the runner's gate, not a second overridable hook, so a task
+  # whose own reasoning says "retry" — as both shipped ones do, since a kill
+  # leaves no terminal trace event and no resolved verdict — cannot get one.
+  @final
+  @dataclass
+  class _AlwaysWants(Task):
+
+    @override
+    def action(
+        self, sb: SandboxFs, instance: TaskInstance[Any], *, timeout: float
+    ) -> ExecResult:
+      del instance
+      return sb.run_script("main.sh", timeout=timeout)
+
+    @override
+    def should_retry(self, result: AttemptResult) -> bool:
+      del result
+      return True
+
+  eager = _AlwaysWants()
+  result = _timed_out(tmp_path, eager)
+  assert eager.should_retry(result) is True  # it still asks ...
+  assert retry_permitted(eager, result) is False  # ... and is still refused
+  assert retry_permitted(_AlwaysWants(retry_on_timeout=True), result) is True
+
+
+def test_a_non_timeout_attempt_is_left_to_the_task(tmp_path: Path):
+  # The gate adds nothing where the veto does not apply: an ordinary failed
+  # attempt is exactly what the task said it was.
+  task = _ScriptTask(
+      task_observers=(_DeclaringObserver(schema=(ArtifactSchema("gone"),)),)
+  )
+  result = task.execute(
+      _fake(tmp_path),
+      _BareInstance(),
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+  )
+  assert result.run.status is RunStatus.SUCCESS
+  assert retry_permitted(task, result) is task.should_retry(result) is True
+
+
+def test_a_timed_out_eval_is_not_retried_by_default(tmp_path: Path):
+  # An eval's own flake absorption must not resurrect it either: a suite that
+  # outran its budget usually did so on the patch under test, and re-running
+  # pays the full timeout again to reach the same place.
+  task: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
+  result = task.execute(
+      _fake(tmp_path, run_results=[ExecResult(124, "", "", timed_out=True)]),
+      _EvalInstance(),
+      output_dir=tmp_path / "out",
+      timeout=10.0,
+      extra_mounts={PATCH_NAME: Mount(Inline(b"P"))},
+  )
+  assert result.run.status is RunStatus.TIMEOUT
+  assert retry_permitted(task, result) is False
+  assert retry_permitted(UnitTestTask(retry_on_timeout=True), result) is True

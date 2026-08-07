@@ -29,7 +29,12 @@ from swe_lab.datasets.swebench_pro.unit_test import (
     SweBenchProVerdict,
 )
 from swe_lab.evaluation.verdict import UnitTestSpec
-from swe_lab.harnesses import Harness, HarnessOutcomeObserver, register_harness
+from swe_lab.harnesses import (
+    AgentOutcome,
+    Harness,
+    HarnessOutcomeObserver,
+    register_harness,
+)
 from swe_lab.sandbox import (
     ExecResult,
     Inline,
@@ -102,9 +107,9 @@ class _StubAgent(Harness):
     return Conversation(messages=[])
 
   @override
-  def completed(self, sb: SandboxFs) -> bool:
+  def outcome(self, sb: SandboxFs) -> AgentOutcome:
     del sb
-    return True
+    return AgentOutcome.FINISHED
 
 
 register_harness("stub", _StubAgent)

@@ -145,9 +145,10 @@ def _run(
     store: Store | None = None,
     retries: int = 0,
     up_errors: int = 0,
+    run_results: tuple[ExecResult, ...] = (),
 ):
   store = store if store is not None else _store(tmp_path)
-  config = FakeSandboxConfig(up_errors=up_errors)
+  config = FakeSandboxConfig(up_errors=up_errors, run_results=run_results)
   outcome = run_task(
       task,
       _Instance(),
@@ -476,3 +477,27 @@ def test_a_negative_budget_is_refused(tmp_path: Path):
 def test_a_malformed_task_key_is_refused():
   with pytest.raises(ValueError, match="task key"):
     _ = TaskAddress(sweep_id="sw", rollout_id=0, task="Not/AKey")
+
+
+def test_a_timed_out_attempt_never_spends_the_retry_budget(tmp_path: Path):
+  # The runner's gate (ADR-0011): wall-clock is a budget, so a killed attempt
+  # is a result and not an infrastructure fault. The task here asks for a
+  # retry on every attempt — it is refused anyway, and the run costs ONE
+  # container instead of two.
+  task = _FlakyProducer(retry_even_when_valid_until=99)
+  killed = (ExecResult(124, "", "", timed_out=True),)
+  outcome, store, config = _run(tmp_path, task, retries=1, run_results=killed)
+  assert outcome.attempts == 1
+  assert len(config.built) == 1
+  assert outcome.outcome is TaskOutcome.FAILED  # still an invalid attempt
+  shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
+  assert [(s.attempt, s.status) for s in shards] == [(0, "timeout")]
+
+
+def test_retry_on_timeout_lets_the_runner_spend_it(tmp_path: Path):
+  # Opting in is a per-run decision, and it is the whole difference.
+  task = _FlakyProducer(retry_on_timeout=True)
+  killed = (ExecResult(124, "", "", timed_out=True),)
+  outcome, _, config = _run(tmp_path, task, retries=1, run_results=killed)
+  assert outcome.attempts == 2
+  assert len(config.built) == 2

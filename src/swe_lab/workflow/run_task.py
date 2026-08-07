@@ -25,6 +25,7 @@ from swe_lab.sandbox import (
     backend_of,
     Mounts,
     persist,
+    RunStatus,
     sandbox_factory,
     SandboxConfig,
     SandboxError,
@@ -40,6 +41,35 @@ MARKER_NAME = "complete.json"
 # The task segment of the store key: kept to characters that read unambiguously
 # in a path and can never collide with the `r<N>` / `a<N>` segments.
 _TASK_KEY_RE = re.compile(r"[a-z][a-z0-9_-]*\Z")
+
+
+def retry_permitted(task: Task, result: AttemptResult) -> bool:
+  """Whether the runner may spend budget on another attempt (ADR-0011).
+
+  The gate every attempt loop goes through, and the **only** place the timeout
+  veto lives. A killed attempt is not a failed one: it spent the wall-clock
+  budget it was given, which is a *result* — usually a slow or thrashing agent,
+  or a suite looping on the patch under test — so re-running it would buy a
+  second budget and quietly inflate whatever the run reports. That is answered
+  by ``task.retry_on_timeout`` alone; anything else is the task's own call.
+
+  Deliberately a **function, not a second hook**. A task has exactly one
+  overridable retry method (``Task.should_retry``), so there is no near-twin to
+  override by mistake — and the veto cannot be weakened from a subclass, which
+  matters because both shipped tasks would otherwise reinstate it by accident:
+  a killed run has no terminal trace event and no resolved verdict, so each
+  one's own reasoning says "retry" *because* of the kill.
+
+  Args:
+    task: The task being run; supplies both the veto's setting and the hook.
+    result: The attempt just finished.
+
+  Returns:
+    Whether another attempt is owed.
+  """
+  if result.run.status is RunStatus.TIMEOUT:
+    return task.retry_on_timeout
+  return task.should_retry(result)
 
 
 class TaskOutcome(StrEnum):
@@ -347,7 +377,12 @@ def run_task(
     # error travels too — a shard whose status says SETUP_ERROR with nothing
     # to read is exactly the debugging dead end downstream has hit.
     error = result.run.error
-    extra: dict[str, object] = {"outputs_valid": valid}
+    # The task's own facts first: the runner's two keys are the shard's
+    # contract and must win a name collision rather than be shadowed by one.
+    extra: dict[str, object] = {
+        **task.record_extra(result),
+        "outputs_valid": valid,
+    }
     if error is not None:
       extra["error"] = repr(error)
     record = persist(
@@ -367,7 +402,7 @@ def run_task(
         ),
         result.run.artifacts,
     )
-    if not task.should_retry(result):
+    if not retry_permitted(task, result):
       break
 
   # The loop runs at least once (a non-negative budget), and every attempt

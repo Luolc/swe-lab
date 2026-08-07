@@ -7,15 +7,100 @@ and the **main action** (``run``). The engine never imports a concrete harness �
 the rollout composition calls these and wires them into a manager + sandbox.
 Nothing dataset-specific lives here: a harness is agnostic to the task (the
 prompt is the dataset's).
+
+How a run *ended* is :class:`AgentOutcome`, not a boolean: an agent that spent
+its own turn budget and one that died on an API error are different facts, and
+only the first is the agent's own doing. That distinction is what makes a fair
+retry decidable (ADR-0011), so the contract asks a harness for the outcome and
+derives ``completed`` from it.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
+from enum import StrEnum
+from typing import final
 
 from swe_lab.conversation import ConversationProducer
 from swe_lab.sandbox import ExecResult, Mounts, SandboxFs, SandboxObserver
+
+
+class AgentOutcome(StrEnum):
+  """How an agent run ended, as its own trace reports it (ADR-0011).
+
+  Orthogonal to every other axis a run has: the engine's ``RunStatus`` (did
+  the sandbox come up, did we kill the action), the patch axis, and the grade.
+  This one answers "what did the *agent* do", and each member is either the
+  agent spending a budget it was given or something that happened *to* it —
+  which is exactly the retry question (:attr:`retryable`).
+
+  Two states deliberately have no member here, because they already have a
+  home and one fact gets one home: **not started** is
+  ``RunStatus.SETUP_ERROR``, and **timed out** is ``RunStatus.TIMEOUT`` (the
+  task promotes a killed action to it). Both are the engine's axis — a
+  harness reading its own trace cannot see either, and duplicating them would
+  create a second, disagreeing source.
+
+  Attributes:
+    NO_OUTPUT: The trace is absent or empty — nothing was ever written.
+    TRUNCATED: A partial trace with no terminal result: the process died
+      mid-flight (SIGKILL, OOM) before it could report.
+    FINISHED: The agent loop ended cleanly.
+    FINISHED_WITH_API_ERROR: The loop ended, but its final turn was an API
+      error.
+    MAX_TURNS: It ran out of the turn budget it was given.
+    MAX_BUDGET: It ran out of the spend budget it was given.
+    MAX_OUTPUT_RETRIES: It could not produce schema-valid structured output
+      within the allowed retries.
+    EXECUTION_ERROR: An exception escaped the turn loop — the catch-all,
+      covering an exhausted API retry, an auth or billing failure, and an
+      internal agent bug alike.
+  """
+
+  NO_OUTPUT = "no_output"
+  TRUNCATED = "truncated"
+  FINISHED = "finished"
+  FINISHED_WITH_API_ERROR = "finished_with_api_error"
+  MAX_TURNS = "max_turns"
+  MAX_BUDGET = "max_budget"
+  MAX_OUTPUT_RETRIES = "max_output_retries"
+  EXECUTION_ERROR = "execution_error"
+
+  @property
+  def retryable(self) -> bool:
+    """Whether re-running this ending is fair — it was ours, not the agent's.
+
+    The one principle behind the whole table (ADR-0011): **retry only a
+    failure that is not attributable to the agent**. Re-running an agent that
+    spent its own budget hands it attempts a better-behaved agent would not
+    need, and the score inflates; not re-running our own crash penalizes the
+    agent for our problem, and the score deflates. The axis is causal
+    attribution, never severity — a crash is retryable because it is *ours*,
+    not because it is bad.
+
+    ``FINISHED`` is not retryable for the same reason a solved task is not
+    re-rolled: there is nothing to absorb. Note what this does **not** read —
+    the patch and the verdict. A predicate that retried an empty patch or a
+    failing test would re-roll bad luck and inflate pass@1 directly.
+
+    Returns:
+      Whether a retry is owed rather than earned.
+    """
+    return self in _RETRYABLE_OUTCOMES
+
+
+# Everything the agent did *not* choose, given the budget it was handed. Kept
+# as a frozenset beside the enum rather than inline in the property so the
+# policy reads as one table.
+_RETRYABLE_OUTCOMES: frozenset[AgentOutcome] = frozenset(
+    {
+        AgentOutcome.NO_OUTPUT,
+        AgentOutcome.TRUNCATED,
+        AgentOutcome.FINISHED_WITH_API_ERROR,
+        AgentOutcome.EXECUTION_ERROR,
+    }
+)
 
 
 class Harness(ConversationProducer, ABC):
@@ -23,7 +108,7 @@ class Harness(ConversationProducer, ABC):
 
   A behavior interface (ABC, per ADR-0002). It also inherits
   ``to_conversation`` from ``ConversationProducer`` — the conversion contract —
-  while the run's own side effects (``native_outputs``, ``completed``) are the
+  while the run's own side effects (``native_outputs``, ``outcome``) are the
   harness's, collected by ``HarnessOutcomeObserver``.
   """
 
@@ -119,14 +204,34 @@ class Harness(ConversationProducer, ABC):
     ...
 
   @abstractmethod
-  def completed(self, sb: SandboxFs) -> bool:
-    """Whether the agent finished cleanly, read from its own captured trace.
+  def outcome(self, sb: SandboxFs) -> AgentOutcome:
+    """How the run ended, read from the harness's own captured trace.
 
     Only the harness knows which file carries the signal and how to read it, so
     the composition asks rather than parsing an agent-specific format itself.
     Read through the sandbox (like ``to_conversation``), never a host path, and
-    return ``False`` — don't raise — when the trace is absent or unreadable: a
-    crashed run is a legitimate outcome to report.
+    **return a value — don't raise — when the trace is absent or unreadable**:
+    that is ``NO_OUTPUT`` or ``TRUNCATED``, a legitimate outcome to report.
+
+    A harness whose agent cannot distinguish the budget endings should say so
+    conservatively: report ``FINISHED`` for a clean end and, for an unexplained
+    one, prefer a non-retryable member over guessing ``EXECUTION_ERROR`` —
+    retrying an ending the agent may have chosen is what inflates a score.
+
+    Args:
+      sb: The live sandbox, for reading the harness's own output files.
+
+    Returns:
+      How the agent's own loop ended.
+    """
+    ...
+
+  @final
+  def completed(self, sb: SandboxFs) -> bool:
+    """Whether the agent finished cleanly — ``outcome`` is ``FINISHED``.
+
+    Derived, not asked for separately: two sources for one fact could
+    disagree, and the bit is the coarse view of :meth:`outcome`.
 
     Args:
       sb: The live sandbox, for reading the harness's own output files.
@@ -134,4 +239,4 @@ class Harness(ConversationProducer, ABC):
     Returns:
       Whether the run reached a clean finish.
     """
-    ...
+    return self.outcome(sb) is AgentOutcome.FINISHED

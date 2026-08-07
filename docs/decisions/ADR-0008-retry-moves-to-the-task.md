@@ -109,3 +109,18 @@ shipped with — and ADR-0005's reasoning for each line stands.
 - ADR-0005's "Future direction" (narrow retry to registered instances once the
   registry's coverage argument can be made) survives untouched — it is a
   question about *when* to retry, not *where*.
+
+## Amendment (2026-08-07)
+
+[ADR-0011](ADR-0011-fair-retry.md) settles *which* failures are retried, and
+renames the hook this ADR names throughout. Two deltas, neither changing
+anything decided above:
+
+- **`Task.should_retry` is unchanged as the hook**, but the runner no longer
+  asks it about a *timed-out* attempt: `run_task` goes through
+  `retry_permitted`, which answers that one from `Task.retry_on_timeout`
+  (default off). So the trigger this ADR describes still reads
+  `UnitTestTask.should_retry` — it is simply never consulted after a kill.
+- **A timed-out eval is no longer retried by default.** This ADR's flake
+  absorption is unchanged for every other outcome; the reasoning is in
+  ADR-0011 §2.

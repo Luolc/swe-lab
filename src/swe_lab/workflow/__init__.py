@@ -18,6 +18,7 @@ from .registry import (
 )
 from .run_task import (
     read_marker,
+    retry_permitted,
     run_task,
     TaskAddress,
     TaskOutcome,
@@ -51,6 +52,7 @@ __all__ = [
     "WorkflowError",
     "WorkflowOutcome",
     "read_marker",
+    "retry_permitted",
     "register_workflow",
     "registered_workflows",
     "run_task",

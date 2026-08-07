@@ -8,9 +8,9 @@ from swe_lab.harnesses import register_harness
 
 from .capture import Capture, Effort
 from .convert import (
-    event_stream_complete,
+    event_stream_outcome,
     event_stream_to_conversation,
-    proxy_log_complete,
+    proxy_log_outcome,
     proxy_log_to_conversation,
 )
 from .harness import ClaudeCodeHarness
@@ -23,8 +23,8 @@ __all__ = [
     "Capture",
     "Effort",
     "ClaudeCodeHarness",
-    "event_stream_complete",
+    "event_stream_outcome",
     "event_stream_to_conversation",
-    "proxy_log_complete",
+    "proxy_log_outcome",
     "proxy_log_to_conversation",
 ]

@@ -115,9 +115,17 @@ class Task(ABC):
       session (the standalone mode), or ``None`` when something else supplies
       them — a workflow edge, or the caller's own bytes. Same task, both
       modes, no special-casing; ``execute`` consumes it uniformly.
+    retry_on_timeout: Whether a killed attempt may be retried — the runner's
+      whole answer for one, in place of :meth:`should_retry`. **Off**, and the
+      default is the point (ADR-0011): wall-clock is a *budget*, so a run that
+      spent it has produced a result — usually a slow or thrashing agent — and
+      re-running it hands out time a better-behaved run would not have needed.
+      Opt in deliberately, for a run whose timeouts are known to be the
+      machine's rather than the work's, and say so when publishing the number.
   """
 
   inputs_builder: InputsBuilder | None = None
+  retry_on_timeout: bool = False
 
   def mounts(self, instance: TaskInstance[Any]) -> Mounts:
     """Return ALL files this task stages. Default: the instance's material.
@@ -222,15 +230,20 @@ class Task(ABC):
 
     Default: exactly when the attempt failed (``outputs_valid`` is false) —
     an invalid attempt is a retryable failure, and infrastructure failures
-    land there too. A subclass overrides to *add* retry-desire on top, never
-    to weaken the failure half — eval's flake absorption retries an
-    unresolved-but-valid verdict::
+    land there too. A subclass overrides to *add* retry-desire on top, or to
+    withdraw it where a repeat provably buys the same answer::
 
         def should_retry(self, result):
           return super().should_retry(result) or not resolved
 
     Retry-desire is not failure: the terminal marker reads
     :meth:`outputs_valid`, never this.
+
+    **A timed-out attempt never reaches this method.** The runner answers that
+    one from :attr:`retry_on_timeout` and does not ask
+    (:func:`~swe_lab.workflow.run_task.retry_permitted`, ADR-0011) — so an
+    override may reason freely about the outputs it sees without having to
+    remember that a kill is what produced them.
 
     Args:
       result: The execution to judge.
@@ -239,6 +252,24 @@ class Task(ABC):
       Whether the runner should spend budget on another attempt.
     """
     return not self.outputs_valid(result)
+
+  def record_extra(self, result: AttemptResult) -> Mapping[str, object]:
+    """Facts about this attempt worth persisting on its record shard.
+
+    Default: none. The runner merges what this returns into the attempt's
+    ``extra``, which is where a fact that is neither an artifact nor a scalar
+    metric belongs — an agent's outcome, say, which decides whether the
+    attempt was retried and therefore has to be auditable afterwards from the
+    manifest alone.
+
+    Args:
+      result: The execution being recorded.
+
+    Returns:
+      JSON-serializable facts, merged into the shard's ``extra``.
+    """
+    del result
+    return {}
 
   @final
   def execute(

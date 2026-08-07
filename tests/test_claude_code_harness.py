@@ -15,11 +15,12 @@ from swe_lab.conversation import (
     ToolResultBlock,
     ToolUseBlock,
 )
+from swe_lab.harnesses import AgentOutcome
 from swe_lab.harnesses.claude_code import (
     Capture,
     ClaudeCodeHarness,
     Effort,
-    event_stream_complete,
+    event_stream_outcome,
     event_stream_to_conversation,
 )
 from swe_lab.harnesses.claude_code.constants import (
@@ -356,15 +357,65 @@ def test_to_conversation_empty_text_is_empty():
   assert event_stream_to_conversation("") == Conversation(messages=[])
 
 
-def test_event_stream_complete():
-  assert event_stream_complete(_stream_text(_EVENTS)) is True
+def test_event_stream_outcome_reads_the_terminal_result():
+  assert event_stream_outcome(_stream_text(_EVENTS)) is AgentOutcome.FINISHED
 
   errored = _stream_text(
       [{"type": "result", "subtype": "error", "is_error": True}]
   )
-  assert event_stream_complete(errored) is False
+  # an unrecognized error subtype falls back to the catch-all it is a flavour
+  # of, rather than reading as a clean finish
+  assert event_stream_outcome(errored) is AgentOutcome.EXECUTION_ERROR
 
-  assert event_stream_complete("") is False
+  assert event_stream_outcome("") is AgentOutcome.NO_OUTPUT
+
+
+@pytest.mark.parametrize(
+    ("subtype", "expected"),
+    [
+        ("error_max_turns", AgentOutcome.MAX_TURNS),
+        ("error_max_budget_usd", AgentOutcome.MAX_BUDGET),
+        (
+            "error_max_structured_output_retries",
+            AgentOutcome.MAX_OUTPUT_RETRIES,
+        ),
+        ("error_during_execution", AgentOutcome.EXECUTION_ERROR),
+    ],
+)
+def test_every_error_subtype_maps_to_its_own_outcome(
+    subtype: str, expected: AgentOutcome
+):
+  # SDKResultErrorSchema enumerates exactly these four; collapsing them would
+  # lose the budget-vs-infrastructure distinction the retry policy is built on.
+  raw = _stream_text([{"type": "result", "subtype": subtype, "is_error": True}])
+  assert event_stream_outcome(raw) is expected
+
+
+def test_success_carrying_is_error_is_not_a_clean_finish():
+  # is_error is independent of the subtype: the loop ended, but its final turn
+  # was an API error — ours, and so retryable, unlike a clean finish.
+  raw = _stream_text(
+      [{"type": "result", "subtype": "success", "is_error": True}]
+  )
+  assert event_stream_outcome(raw) is AgentOutcome.FINISHED_WITH_API_ERROR
+  assert AgentOutcome.FINISHED_WITH_API_ERROR.retryable is True
+  assert AgentOutcome.FINISHED.retryable is False
+
+
+def test_a_trace_without_a_result_event_is_truncated():
+  # A hard kill (SIGKILL, OOM) emits no result at all — distinct from "no
+  # trace", and distinct from any ending the agent chose.
+  raw = _stream_text([{"type": "system", "subtype": "init"}])
+  assert event_stream_outcome(raw) is AgentOutcome.TRUNCATED
+  assert AgentOutcome.TRUNCATED.retryable is True
+
+
+def test_budget_endings_are_never_retryable():
+  # The fairness invariant: an agent that spent a budget it was given does not
+  # get a second one. Named so a future member cannot quietly join this set.
+  assert AgentOutcome.MAX_TURNS.retryable is False
+  assert AgentOutcome.MAX_BUDGET.retryable is False
+  assert AgentOutcome.MAX_OUTPUT_RETRIES.retryable is False
 
 
 # ─── the agent-info observer ────────────────────────────────────────────────

@@ -2,6 +2,19 @@
 
 **Date:** 2026-07-29 · **Kind:** engineering audit (a snapshot, not a spec)
 
+> **Resolved 2026-08-07 — read [ADR-0011](../decisions/ADR-0011-fair-retry.md)
+> for what shipped.** This review's §2 taxonomy was re-confirmed against the
+> vendored source and stands; §5 and §6 are now implemented (`AgentOutcome`,
+> `Harness.outcome`, the timeout veto, the attribution-based predicate), with
+> two deliberate departures the ADR argues: `TIMED_OUT` gets no enum member
+> (it is `RunStatus.TIMEOUT`, the engine's axis), and eval's unresolved-retry
+> is exempt from §6's "never read the grade" rule because it re-runs a fixed
+> patch. **F3 and F4 are fixed; F5 is not.** Corrections to the snapshot: the
+> `api_retry` error category has **seven** values, not ten
+> (`SDKAssistantMessageErrorSchema`), and the vendored `claude-code` submodule
+> is a 2026-03-31 source snapshot, so a newer CLI build may add subtypes — an
+> unrecognized one maps to `EXECUTION_ERROR`.
+
 A rollout has no single status. It has **four independent axes**, and the agent
 axis — the one the question is really about — is currently collapsed to a single
 boolean. This maps the real state space, from three sources: our code, the
