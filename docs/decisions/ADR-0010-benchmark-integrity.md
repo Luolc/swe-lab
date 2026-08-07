@@ -213,4 +213,50 @@ footnote someone loses.
   reference implementations; packed refs, `alternates` and any second copy of
   the repo in the image remain unverified. First implementation task is
   empirical validation, and the assertions in §4 are what make that validation
-  ongoing rather than one-off.
+  ongoing rather than one-off. *(Done — see the amendment below.)*
+
+## Amendment (2026-08-06): priority, and egress is configuration not construction
+
+The decisions above stand. What changes is the **ordering** in §3 and how much
+of §3a is ours to build.
+
+**Egress (§3a) drops from first to already-handled.** The 57% figure is not in
+doubt, but the control is a setting rather than a project for this repo:
+
+- **Docker backend:** set `network=False` on the rollout entry. It already
+  exists and is already honored (`--network none`). The agent's model API is
+  reached through the recorder we already own, so nothing else has to change.
+- **Downstream remote sandbox:** a custom egress rule via a host-side proxy is
+  **already solved there** and is not the harness's job to re-implement.
+
+So §3a is a configuration change plus the §5 stamp that records it, not a
+control to design. It is *not* deprioritized as a risk — the risk is unchanged,
+and task 25 §9 states that the history purge is only sound in combination with
+it.
+
+**Git history (§3b) is now P0**, and is designed in
+[task 25](../horizontal/plans/task-25-git-history-purge.md). That plan is
+empirically validated against five real images (four languages, including an
+Alpine one), which closed the "not run against a real image" consequence above
+and found two defects in the reference implementations we would otherwise have
+inherited: a batch ref delete that **aborts on the `origin/HEAD` symref**,
+purging nothing, and an assertion whose `date -d` is **GNU-only** and breaks on
+the Alpine images this dataset actually ships. Both are fixed there.
+
+**Verifier tampering (§3c) becomes a post-rollout verifier task, at P1.** Two
+things reduce its urgency, and one keeps it on the list:
+
+- the eval already `git reset --hard`s and restores the golden test files by
+  path, so the common shape — editing the tests — is already dead;
+- a planted `conftest.py` is a much rarer shape, and we have not observed one.
+
+So **we build no control against it.** Instead a *verifier* runs as its own
+workflow entry after the rollout — rule-based if that suffices, a small model
+judge otherwise — reporting what it finds on the record. Detection, never a
+gate, exactly as §3c already decided; what changes is that it is scheduled after
+task 25 rather than alongside it, and that no blocking rule is contemplated at
+all.
+
+Unchanged: §1 (environment, not prompt), §2 (declared per entry, refused
+loudly), §4 (every control asserts; a failure is a recorded failed attempt),
+§5 (policy stamp; no pooling across policies), §6 (post-hoc trace audit).
