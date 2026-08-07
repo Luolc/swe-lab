@@ -194,16 +194,21 @@ def test_tags_are_kept_by_reachability_not_by_date():
   # four tags still reached it (tutanota, measured). Never a blanket delete
   # either: the past that IS in the base's history stays.
   script = build_purge_script(workdir="/app")
+  assert 'git for-each-ref --no-merged "$BASE"' in script
   assert "refs/tags" in script
-  assert 'git merge-base --is-ancestor "${obj}^{}" "$BASE"' in script
   assert "BASE_TS" not in script  # no timestamp proxy anywhere
-  assert "git tag -d" not in script
+  assert "git tag -d" not in script  # never a blanket delete
 
 
-def test_annotated_tags_are_dereferenced_to_their_commit():
-  # An annotated tag is its own object pointing at the commit; comparing the
-  # tag object's date would let tag-object indirection hide a future commit.
-  assert '"${obj}^{}"' in build_purge_script(workdir="/app")
+def test_the_tag_purge_is_one_traversal_not_one_per_tag():
+  # THE outage guard. Spelling the ancestry test as a shell loop calling
+  # `merge-base` per tag was correct and far too slow: teleport carries 5240
+  # tags, measured at ~366s, which blew the purge timeout on 76 of 731
+  # instances. `--no-merged` is the same predicate in one traversal (~1s), and
+  # it peels annotated tags itself, so tag-object indirection is still covered.
+  script = build_purge_script(workdir="/app")
+  assert "merge-base" not in script  # no per-tag subprocess
+  assert 'for-each-ref --no-merged "$BASE"' in script
 
 
 def test_the_purge_prunes_so_a_bare_sha_stops_resolving():
@@ -641,3 +646,53 @@ def test_an_env_setup_sha_mistaken_for_the_fix_is_refused(tmp_path: Path):
   with pytest.raises(GitHistoryLeakError, match="ancestor of HEAD"):
     GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
   assert sb.scripts == ["git_report.sh"]  # refused before purging anything
+
+
+def test_a_purge_that_timed_out_is_not_reported_as_a_leak(tmp_path: Path):
+  # A timeout and a leak are different facts and call for opposite follow-ups:
+  # a leak is deterministic so retrying buys the same answer a container later,
+  # while a timeout is exactly the kind of thing that passes on a second try.
+  # Both still fail the attempt closed.
+  from swe_lab.sandbox.observers.git_history_purge import (
+      GitHistoryPurgeTimeoutError,
+  )
+
+  sb = FakeSandbox(
+      spec=SPEC,
+      workspace=epath.Path(tmp_path / "ws"),
+      run_results=[
+          ExecResult(0, _report_json(future_commits=99), ""),
+          ExecResult(124, "", "", timed_out=True),
+      ],
+      git_report=None,
+  )
+  with pytest.raises(GitHistoryPurgeTimeoutError, match="did not finish"):
+    GitHistoryPurgeObserver(solution_sha=None).after_create(sb)
+
+
+def test_a_timeout_is_retryable_while_a_leak_is_not():
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.sandbox import RunResult, RunStatus
+  from swe_lab.sandbox.observers.git_history_purge import (
+      GitHistoryPurgeTimeoutError,
+  )
+  from swe_lab.workflow import AttemptResult
+
+  def attempt(error: Exception) -> AttemptResult:
+    return AttemptResult(
+        run=RunResult(
+            label="x",
+            status=RunStatus.SETUP_ERROR,
+            artifacts={},
+            metrics={},
+            error=error,
+        ),
+        exec_result=None,
+        output_schema=(),
+        observers=(),
+    )
+
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  assert task.should_retry(attempt(GitHistoryLeakError("leak"))) is False
+  assert task.should_retry(attempt(GitHistoryPurgeTimeoutError("slow"))) is True

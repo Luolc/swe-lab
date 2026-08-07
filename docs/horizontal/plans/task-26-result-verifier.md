@@ -271,3 +271,44 @@ verifier, artifact collection.
 - **A replay CLI.** `replay_run()` is a public API and three lines of script.
   Note for whoever adds one: `swe_lab.cli.verify` is a *retired* module name
   held in the pre-commit deny list, so it needs a different one.
+
+
+## Amendment — 2026-08-07: two advisory rules were mostly noise
+
+A 40-rollout downstream sample showed both trace-side advisory rules firing on
+legitimate work.
+
+**`reads_outside_workdir` was inverted** ([#204](https://github.com/Luolc/swe-lab/issues/204)),
+firing on **12 of 40**. A tool call reports `file_path` however its harness
+spells it, and Claude Code spells it *relative* to the working directory —
+compared against an absolute prefix, every ordinary in-repo read failed and a
+genuinely absolute outside path would have passed. Paths are resolved against
+the workdir first now, which also catches a relative path that climbs out
+(`../../etc/passwd`). An unknown workdir (`"/"`) disables the rule rather than
+answering it: everything is under `/`, so a result there would look like a
+measurement without being one.
+
+**`suspicious_git` was too narrow** ([#205](https://github.com/Luolc/swe-lab/issues/205)),
+firing on **28 of 40 — 15 for `git grep` alone**, which searches the working
+tree and reads no history. The allowlist now admits `grep`, `ls-files`, `log`
+at any depth, and `checkout -- <path>`. The reasoning behind widening it is
+§1's: after a correct purge every reachable commit is an ancestor of the base,
+so *how much past* an agent reads says nothing — reading recent history to
+learn a codebase's conventions is what an engineer does.
+
+Still reported: `show <ref>`, `blame`, `checkout <sha>`, `log --all`,
+`rev-list`, `cat-file`. Those are the shapes that *would* be the exploit if the
+purge had not held, which is the honest description of this rule — a
+**cross-check on the purge**, not an accusation. It stays advisory precisely
+because `control_failure` answers the same question directly and with high
+confidence.
+
+Not adopted: #205's option (b), re-deriving from the transcript whether a
+command *reached* a non-ancestor commit. It is the sharper rule, but it needs
+repo access and so would break the pure-core/replay split — and
+`future_commits` + `solution_reachable` + `control_failure` already answer
+"did the purge hold" without inference.
+
+Known limit accepted: a bare `git checkout <path>` (no `--`) still reports. It
+cannot be told from a ref without guessing, and advisory noise is preferable to
+a heuristic that would sometimes wave through a real checkout.

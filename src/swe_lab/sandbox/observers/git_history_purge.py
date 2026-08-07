@@ -42,9 +42,23 @@ REPORT_SCRIPT_NAME = "git_report.sh"
 CLEAN_METRIC = "git_history_clean"
 FUTURE_BEFORE_METRIC = "git_future_commits_before"
 _PURGE_TIMEOUT_S = 600.0  # a large repo's `gc` is the long pole (~51s observed)
+# `timeout`'s convention, which the backends follow.
+_TIMEOUT_EXIT_CODE = 124
 _REPORT_TIMEOUT_S = 300.0
 
 _logger = logging.getLogger(__name__)
+
+
+class GitHistoryPurgeTimeoutError(SandboxError):
+  """The purge ran out of time — an infrastructure fact, not a verdict.
+
+  Deliberately **not** a ``GitHistoryLeakError``. Both are fatal to the attempt
+  and both fail closed, but they are different facts and call for opposite
+  follow-ups: a leak is deterministic, so retrying it buys the same answer a
+  container later, while a timeout is the kind of thing that passes on a second
+  try. Keeping them apart also lets a sweep tell an infrastructure problem from
+  an integrity one instead of reading a timeout as contamination.
+  """
 
 
 class GitHistoryLeakError(SandboxError):
@@ -106,9 +120,11 @@ class GitHistoryPurgeObserver(SandboxObserver):
       sb: The live sandbox, whose repo is at ``sb.spec.workdir``.
 
     Raises:
+      GitHistoryPurgeTimeoutError: If the purge did not finish in time — an
+        infrastructure fact, and the one failure here worth retrying.
       GitHistoryLeakError: If an assertion fails — the solution sha could not be
         confirmed *before* the purge, the base commit is gone afterwards, the
-        solution is still reachable, or a reachable commit postdates the base.
+        solution is still reachable, or a commit outside the base's history is.
     """
     workdir = sb.spec.workdir
     self.before = self._report(sb, workdir)
@@ -121,8 +137,14 @@ class GitHistoryPurgeObserver(SandboxObserver):
           build_purge_script(workdir=workdir).encode("utf-8"),
       )
       result = sb.run_script(PURGE_SCRIPT_NAME, timeout=_PURGE_TIMEOUT_S)
+      if result.timed_out or result.exit_code == _TIMEOUT_EXIT_CODE:
+        raise GitHistoryPurgeTimeoutError(
+            f"git-history purge did not finish within {_PURGE_TIMEOUT_S:.0f}s."
+            " The repo is not known to be contaminated — the purge simply did"
+            " not run to completion, so this is worth retrying."
+        )
       if result.exit_code != 0:
-        # The purge itself failing is already a leak: nothing was removed.
+        # A purge that failed removed nothing, so the repo still leaks.
         raise GitHistoryLeakError(
             f"git-history purge failed (exit {result.exit_code}):"
             f" {(result.stderr or result.stdout).strip()[-500:]}"

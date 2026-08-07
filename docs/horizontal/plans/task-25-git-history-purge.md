@@ -407,7 +407,46 @@ settles the rest: a contaminated result is worse than a thinner one.
 Verified on the reported instance: `solution_reachable` goes `true → false`,
 `future_commits` `5101 → 0`, tags `1504 → 988`, no violations.
 
-## 12. Known limits
+## 12. Amendment (2026-08-07): the ancestry test runs once, not per tag
+
+§11's fix was correct and far too slow. Spelling "is this tag an ancestor of
+the base" as a shell loop calling `git merge-base` per tag costs a process
+spawn plus a graph walk each time. A downstream 731-instance audit found
+**every `gravitational__teleport` instance failing — 76 of 731, 10.4%** — with
+`exit 124`, the purge timeout ([#206](https://github.com/Luolc/swe-lab/issues/206)).
+Measured in the image: teleport carries **5240 tags**, and 200 of them took 14s
+→ ~366s for the loop alone, before `gc`.
+
+`git for-each-ref` has the predicate built in. `--no-merged <commit>` lists
+refs whose tips are *not* reachable from that commit — exactly "not an ancestor
+of the base" — in one traversal:
+
+```sh
+git for-each-ref --no-merged "$BASE" --format='delete %(refname)' refs/tags |
+  git update-ref --stdin
+```
+
+**Same criterion, verified rather than assumed.** On 400-tag samples across
+teleport, tutanota and ansible the two spellings selected the *identical* set,
+and no tag the new one keeps can reach the fix. `--no-merged` peels annotated
+tags itself, so the `^{}` indirection the loop needed is still covered.
+
+| | teleport (5240 tags) |
+|---|---|
+| per-tag `merge-base` | ~366 s → timeout |
+| `--no-merged` | **~1 s** |
+
+End to end, the teleport instance now audits in **9 s**; the #200 instance is
+unchanged at `future_before=5101 → 0`.
+
+**A timeout is not a leak.** It surfaced as `GitHistoryLeakError`, the type
+that means "this repo is contaminated, refuse it". A purge that never finished
+is a different fact: both fail the attempt closed, but a leak is deterministic
+while a timeout is worth retrying. `GitHistoryPurgeTimeoutError` (still a
+`SandboxError`) now carries that distinction, and `should_retry` returns
+`True` for it and `False` for a leak.
+
+## 13. Known limits
 
 - ~~A past-dated commit is kept even if it is topologically future work.~~
   **Closed by §11** — the filter is reachability now, so date carries no weight.
