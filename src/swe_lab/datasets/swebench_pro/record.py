@@ -29,6 +29,7 @@ import ast
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 import json
+import re
 from typing import ClassVar, override
 
 from swe_lab.datasets.instance import TaskInstance
@@ -62,6 +63,11 @@ COLUMNS: tuple[str, ...] = (
     "selected_test_files_to_run",
     "dockerhub_tag",
 )
+
+
+# The fix commit inside an instance id (`instance_<Org>__<Repo>-<sha>[-v...]`).
+# Anchored on the 40-hex shape because repo names contain hyphens.
+_FIX_SHA_RE = re.compile(r"-([0-9a-f]{40})(?:-|$)")
 
 
 def _parse_list(raw: str) -> tuple[str, ...]:
@@ -183,6 +189,23 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     """The output parser for this instance (its content); see ``run_script``."""
     _, parser_path = fetch_auxiliary(self.instance_id)
     return parser_path.read_bytes()
+
+  @override
+  def solution_sha(self) -> str | None:
+    """Return the fix commit, read out of the instance id.
+
+    SWE-Bench Pro names an instance
+    ``instance_<Org>__<Repo>-<fix_sha>[-v<env_sha>]``, so the fix commit is
+    already in hand — it is **not** ``base_commit``, which is the commit
+    *before* the fix and is a separate column. Matched as the first
+    40-hex-character token rather than by splitting on ``-``: repo names
+    contain hyphens, and the optional ``-v`` suffix is sometimes ``nan``.
+
+    Returns:
+      The 40-character fix sha, or ``None`` if the id does not carry one.
+    """
+    match = _FIX_SHA_RE.search(self.instance_id)
+    return match.group(1) if match else None
 
   @property
   def golden_test_checkout_cmd(self) -> str:

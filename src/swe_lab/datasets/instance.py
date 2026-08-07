@@ -44,6 +44,24 @@ class TaskInstance[V: Verdict](ABC):
     """Return the run context (image / workdir / base commit) to run in."""
     ...
 
+  def solution_sha(self) -> str | None:
+    """Return the upstream commit that fixed this instance, if it is known.
+
+    Used to *assert its absence*: the images ship the whole upstream history,
+    so an agent that reaches this commit can read the reference solution
+    (ADR-0010). The history purge deletes it and then checks it is gone, and
+    this is the only exact way to make that check.
+
+    Default: ``None``, which is honest for a dataset that does not record one.
+    The purge's other assertion — that nothing reachable postdates the base
+    commit — still runs, and is the load-bearing one precisely because it does
+    not need this.
+
+    Returns:
+      The 40-character fix commit sha, or ``None`` when the dataset has none.
+    """
+    return None
+
   def mounts(self) -> Mounts:
     """Return the dataset's own material to stage for a run of this instance.
 

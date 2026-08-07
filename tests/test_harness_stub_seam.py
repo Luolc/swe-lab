@@ -190,7 +190,9 @@ def test_the_task_takes_a_foreign_harness_and_proxy(tmp_path: Path):
     entered.append("closed")
 
   workspace = tmp_path / "run"
-  task = CodingAgentTask(harness=StubHarness(), proxy_factory=stub_proxy)
+  task = CodingAgentTask(
+      harness=StubHarness(), proxy_factory=stub_proxy, purge_git_history=False
+  )
   result = task.execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
@@ -253,7 +255,9 @@ def test_the_task_takes_extra_observers_and_env(tmp_path: Path):
       return super().run_script(name, timeout=timeout, env=env)
 
   workspace = tmp_path / "run"
-  result = CodingAgentTask(harness=StubHarness(), env={"MY_FLAG": "1"}).execute(
+  result = CodingAgentTask(
+      harness=StubHarness(), env={"MY_FLAG": "1"}, purge_git_history=False
+  ).execute(
       _Recording(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
       output_dir=workspace,
@@ -286,7 +290,9 @@ def test_a_timed_out_agent_is_reported_as_timeout(tmp_path: Path):
       return ExecResult(124, "", "killed after 10s", timed_out=True)
 
   workspace = tmp_path / "run"
-  result = CodingAgentTask(harness=_TimingOut()).execute(
+  result = CodingAgentTask(
+      harness=_TimingOut(), purge_git_history=False
+  ).execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
       output_dir=workspace,
@@ -321,7 +327,9 @@ def test_backend_observers_are_composed_first(tmp_path: Path):
       return (_Meter(),)
 
   workspace = tmp_path / "run"
-  result = CodingAgentTask(harness=StubHarness()).execute(
+  result = CodingAgentTask(
+      harness=StubHarness(), purge_git_history=False
+  ).execute(
       _MeteredSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
       output_dir=workspace,
@@ -341,7 +349,9 @@ def test_a_harness_without_the_generic_pair_still_runs(tmp_path: Path):
       return ()
 
   workspace = tmp_path / "run"
-  result = CodingAgentTask(harness=_Unobserved()).execute(
+  result = CodingAgentTask(
+      harness=_Unobserved(), purge_git_history=False
+  ).execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
       output_dir=workspace,
@@ -369,7 +379,7 @@ def test_a_harness_composes_its_own_extra_observer(tmp_path: Path):
       return (*super().observers(), _Signal())
 
   workspace = tmp_path / "run"
-  result = CodingAgentTask(harness=_Extra()).execute(
+  result = CodingAgentTask(harness=_Extra(), purge_git_history=False).execute(
       GitHubJobSandbox(spec=_SPEC, workspace=epath.Path(workspace)),
       _Instance(),
       output_dir=workspace,
