@@ -1,7 +1,7 @@
 """The ``claude_code`` harness: Claude Code headless, plugged into the engine.
 
 ``ClaudeCodeHarness`` + the fresh agent-trace → ``Conversation`` converters for
-both capture strategies (``Capture.STREAM`` / ``Capture.PROXY``).
+both capture strategies (``capture="stream"`` / ``capture="proxy"``).
 """
 
 from swe_lab.harnesses import register_harness

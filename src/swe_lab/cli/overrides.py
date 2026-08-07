@@ -24,7 +24,7 @@ import functools
 import math
 import types
 import typing
-from typing import Any, get_args, get_origin
+from typing import Any, get_args, get_origin, Literal
 
 from etils import epath
 
@@ -277,7 +277,20 @@ def _coerce(annotation: Any, override: Override) -> Any:
       text is not a value of it.
   """
   raw = override.value
+  # A PEP 695 `type X = ...` alias arrives as a TypeAliasType, which carries no
+  # origin of its own — unwrap to what it stands for before dispatching, so a
+  # named alias behaves exactly like the type spelled inline.
+  annotation = getattr(annotation, "__value__", annotation)
   origin, args = get_origin(annotation), get_args(annotation)
+  if origin is Literal:
+    # A closed set of literal values. Validating here matters more than the
+    # type checker does: a sweep config's text only meets its annotation at
+    # this boundary, so this is the last place a typo can be caught before a
+    # container is paid for.
+    if raw in args:
+      return raw
+    values = ", ".join(str(arg) for arg in args)
+    raise OverrideError(f"{override.spelling}: expected one of {values}")
   if origin is types.UnionType:
     inner = [arg for arg in args if arg is not type(None)]
     if raw.lower() == "none" and len(inner) < len(args):

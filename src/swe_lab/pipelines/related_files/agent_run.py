@@ -111,7 +111,7 @@ def run_agent(
     variant: str = "",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: Capture = Capture.STREAM,
+    capture: Capture = "stream",
 ) -> RunResult:
   """Run an agent in an isolated workspace and return its validated result.
 
@@ -151,7 +151,7 @@ def run_agent(
   instance_id = instance.instance_id
   root = repo_root or find_repo_root()
   provider = provider or GitCheckoutProvider()
-  binary = build_proxy(root) if capture == Capture.PROXY else None
+  binary = build_proxy(root) if capture == "proxy" else None
 
   workspace = prepare_workspace(instance, provider, variant=variant)
   for name, content in (context_files or {}).items():
@@ -161,7 +161,7 @@ def run_agent(
       port if port is not None else port_for_index(index, base_port=base_port)
   )
   tag = instance_id if not variant else f"{instance_id}__{variant}"
-  if capture == Capture.PROXY:
+  if capture == "proxy":
     trace_log = cache_root(root) / "proxy-logs" / f"{tag}.jsonl"
   else:
     trace_log = cache_root(root) / "agent-traces" / f"{tag}.stream.jsonl"
@@ -182,7 +182,7 @@ def run_agent(
   )
 
   validation_problems = validate_workspace(workspace)
-  if capture == Capture.PROXY:
+  if capture == "proxy":
     last_record = last_proxy_record(trace_log)
   else:
     last_record = last_stream_record(trace_log)
@@ -191,7 +191,7 @@ def run_agent(
   metadata = _build_metadata(
       cli_result, model, run_port, complete, snippets, validation_problems, kind
   )
-  metadata["capture"] = capture.value
+  metadata["capture"] = capture
   # Wall-clock of this whole run (provision + agent + validate + store) vs the
   # agent's own duration reveals stalls: if wall_clock >> the run's active time,
   # the box was starved (e.g. swap-thrashing under too much concurrency).
@@ -287,7 +287,7 @@ def invoke_with_retries(
   """
   for attempt in range(1, max_attempts + 1):
     try:
-      if capture == Capture.PROXY:
+      if capture == "proxy":
         assert binary is not None  # built by run_agent for proxy capture
         with ReverseProxy(
             port, epath.Path(trace_log), epath.Path(binary)

@@ -419,7 +419,7 @@ def test_effort_is_overridable_and_a_typo_is_refused():
       OverrideError,
       parse_overrides,
   )
-  from swe_lab.harnesses.claude_code import ClaudeCodeHarness, Effort
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
   from swe_lab.rollout import CodingAgentTask
   import swe_lab.workflow.definitions as definitions
   from swe_lab.workflow.registry import workflow_definition
@@ -433,7 +433,7 @@ def test_effort_is_overridable_and_a_typo_is_refused():
   assert isinstance(task, CodingAgentTask)
   harness = task.harness
   assert isinstance(harness, ClaudeCodeHarness)
-  assert harness.effort is Effort.XHIGH
+  assert harness.effort == "xhigh"
 
   with pytest.raises(OverrideError, match="low, medium, high, xhigh, max"):
     _ = apply_overrides(

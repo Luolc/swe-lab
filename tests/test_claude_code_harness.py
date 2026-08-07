@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import get_args
 
 from etils import epath
 import pytest
@@ -204,7 +205,7 @@ def test_native_outputs():
 
 def _proxy_harness() -> ClaudeCodeHarness:
   return ClaudeCodeHarness(
-      capture=Capture.PROXY, proxy_base_url="http://host.docker.internal:20001"
+      capture="proxy", proxy_base_url="http://host.docker.internal:20001"
   )
 
 
@@ -221,7 +222,7 @@ def test_proxy_capture_needs_no_url_and_composes_its_own_recorder():
   # The harness runs the recorder itself, so a port is all it needs: the URL
   # the agent dials defaults to the container→host gateway on that port, and
   # the recorder is composed FIRST, before the converter that reads its log.
-  harness = ClaudeCodeHarness(capture=Capture.PROXY, proxy_port=20005)
+  harness = ClaudeCodeHarness(capture="proxy", proxy_port=20005)
   assert harness.agent_proxy_url == "http://host.docker.internal:20005"
   assert [type(o).__name__ for o in harness.observers()] == [
       "AgentInfoObserver",
@@ -443,27 +444,26 @@ def test_the_effort_is_pinned_and_defaults_to_high():
   # `--help` on 2.1.220 does not state the agent's own default, so leaving it
   # unset makes a sweep depend on whatever the build prefers.
   assert "--effort high" in _script("/app", ClaudeCodeHarness())
-  assert "--effort xhigh" in _script(
-      "/app", ClaudeCodeHarness(effort=Effort.XHIGH)
-  )
+  assert "--effort xhigh" in _script("/app", ClaudeCodeHarness(effort="xhigh"))
 
 
 def test_effort_carries_exactly_the_values_the_pinned_agent_accepts():
   # Read off the binary, not a doc: 2.1.220 answers an unknown value with
-  # "Valid values: low, medium, high, xhigh, max." Probed all five as accepted
+  # "Valid values: low, medium, high, xhigh, max." All five probed as accepted
   # and a sixth as rejected.
-  assert [e.value for e in Effort] == [
+  #
+  # A Literal rather than an enum: the value IS the flag text and carries no
+  # behavior. Runtime validation lives where the text actually arrives — the
+  # CLI override boundary — see
+  # `test_effort_is_overridable_and_a_typo_is_refused`.
+  assert get_args(Effort.__value__) == (
       "low",
       "medium",
       "high",
       "xhigh",
       "max",
-  ]
+  )
 
 
-def test_an_unknown_effort_cannot_be_constructed():
-  # THE reason this is typed. The agent treats an unknown value as a WARNING
-  # and silently runs at its default, so a typo would mis-run a whole sweep
-  # with nothing in the logs. Python refuses it before a container is paid for.
-  with pytest.raises(ValueError):
-    _ = Effort("ultra")
+def test_capture_carries_both_strategies():
+  assert get_args(Capture.__value__) == ("stream", "proxy")

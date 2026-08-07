@@ -30,8 +30,6 @@ import subprocess
 
 from etils import epath
 
-from swe_lab.harnesses.claude_code.capture import Capture
-
 # Where the run's trace (the audit record + the ``complete`` signal) comes from,
 # named by the shared ``Capture`` enum:
 # ``PROXY``  — a ``cc-reverse-proxy`` in front of the API logs the raw wire
@@ -257,7 +255,7 @@ def build_exchange_from_proxy(raw: dict[str, object]) -> dict[str, object]:
 
   return _redact_pii(
       {
-          "source": Capture.PROXY.value,
+          "source": "proxy",
           "complete": bool(raw.get("complete", False)),
           "model": body.get("model"),
           "messages": [_normalize_message(m) for m in messages_src],
@@ -298,7 +296,7 @@ def build_exchange_from_stream(
   model = final_message.get("model") if final_message else None
   return _redact_pii(
       {
-          "source": Capture.STREAM.value,
+          "source": "stream",
           "complete": _stream_complete(result_event),
           "model": model,
           "messages": [_normalize_message(m) for m in messages_src],
