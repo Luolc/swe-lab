@@ -106,11 +106,13 @@ class GitHistoryPurgeObserver(SandboxObserver):
       sb: The live sandbox, whose repo is at ``sb.spec.workdir``.
 
     Raises:
-      GitHistoryLeakError: If an assertion fails — the base commit is gone, the
+      GitHistoryLeakError: If an assertion fails — the solution sha could not be
+        confirmed *before* the purge, the base commit is gone afterwards, the
         solution is still reachable, or a reachable commit postdates the base.
     """
     workdir = sb.spec.workdir
     self.before = self._report(sb, workdir)
+    self._check_solution_sha_is_real()
     if not self.purge:
       self.after = self.before
     else:
@@ -172,6 +174,46 @@ class GitHistoryPurgeObserver(SandboxObserver):
             FUTURE_BEFORE_METRIC: float(self.before.future_commits),
         },
     )
+
+  def _check_solution_sha_is_real(self) -> None:
+    """Confirm the fix commit was actually *there* before we purged it.
+
+    Without this the solution assertion is decoration. A sha that is simply
+    **wrong** — a changed id format, a bad regex — is not in the repo either,
+    so ``git cat-file -e`` fails on it exactly as it does on a successfully
+    purged one, and the post-purge check reports "solution unreachable" having
+    proved nothing. Measured on a real image: a bogus sha reads
+    ``solution_reachable=False`` *before* any purge, while the correct one
+    reads ``True``.
+
+    The ``future_commits`` precondition is what keeps this from misfiring on
+    the outcome we actually want. If upstream ever ships already-purged images
+    (the point of `SWE-bench_Pro-os#93`), the fix commit is legitimately absent
+    from the start — and a repo with no future history at all has nothing for
+    this observer to prove. Only "future history is present, yet the commit we
+    were told is the answer is not" indicts the sha.
+
+    Raises:
+      GitHistoryLeakError: If the sha cannot be confirmed against the repo.
+    """
+    if self.solution_sha is None or self.before is None:
+      return
+    if not self.before.future_commits:
+      return  # already-purged image: nothing here to prove
+    if not self.before.solution_reachable:
+      raise GitHistoryLeakError(
+          f"the fix commit {self.solution_sha} is not in this repo, but"
+          f" {self.before.future_commits} future commits are — so the sha is"
+          " wrong (a changed instance-id format, most likely) and asserting it"
+          " is unreachable after the purge would prove nothing"
+      )
+    if self.before.solution_is_future is False:
+      raise GitHistoryLeakError(
+          f"the commit {self.solution_sha} is an ancestor of HEAD, so it is"
+          " past history, not the fix — the id most likely yielded its"
+          " environment-setup sha instead. Purging cannot remove it, and"
+          " asserting on it would prove nothing"
+      )
 
   def _report(self, sb: SandboxFs, workdir: str) -> GitHistoryReport:
     """Run the report script and parse its stdout.

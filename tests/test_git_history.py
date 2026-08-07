@@ -17,6 +17,7 @@ from etils import epath
 import pytest
 
 from swe_lab.datasets.instance import TaskInstance
+from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
 from swe_lab.git.history import (
     build_purge_script,
     build_report_script,
@@ -31,6 +32,16 @@ from swe_lab.sandbox.observers.git_history_purge import (
     INTEGRITY_ARTIFACT,
 )
 from swe_lab.sandbox.testing import FakeSandbox
+
+
+@final
+@dataclass(frozen=True)
+class _NullGrader(Grader[Any]):
+  """Never actually runs — the tests here only assemble, never grade."""
+
+  @override
+  def grade(self, sb: Any) -> Verdict:
+    raise NotImplementedError("assembly-only stub")
 
 
 @final
@@ -57,8 +68,19 @@ class _PurgeInstance(TaskInstance[Any]):
     return None
 
   @override
-  def unit_test_spec(self, **kwargs: Any) -> Any:
-    raise NotImplementedError("this instance compiles no eval")
+  def unit_test_spec(self, **kwargs: Any) -> UnitTestSpec[Any]:
+    """Return a spec thin enough to assemble, but never to run.
+
+    Lets the grading task be asked for its observers without the real dataset,
+    which is gitignored and which CI does not download.
+    """
+    del kwargs
+    return UnitTestSpec(
+        eval_script="true\n",
+        mounts={},
+        grader=_NullGrader(),
+        native_outputs={},
+    )
 
 
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "basesha")
@@ -77,7 +99,38 @@ _CLEAN_REPORT = GitHistoryReport(
     future_commits=0,
     base_reachable=True,
     solution_reachable=False,
+    solution_is_future=None,
 )
+
+
+def _pro_instance(**overrides: Any) -> Any:
+  """Build a SWE-Bench Pro record with only the fields these tests read.
+
+  Built by hand rather than loaded: the real parquet is gitignored and CI does
+  not download it, so a dataset-backed test would pass locally and fail there.
+  """
+  from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
+
+  fields: dict[str, Any] = {
+      "repo": "acme/widget",
+      "instance_id": f"instance_acme__widget-{'b' * 40}-vnan",
+      "base_commit": "c" * 40,
+      "patch": "",
+      "test_patch": "",
+      "problem_statement": "",
+      "requirements": "",
+      "interface": "",
+      "repo_language": "python",
+      "fail_to_pass": (),
+      "pass_to_pass": (),
+      "issue_specificity": "",
+      "issue_categories": (),
+      "before_repo_set_cmd": "",
+      "selected_test_files_to_run": (),
+      "dockerhub_tag": "acme.widget-tag",
+  }
+  fields.update(overrides)
+  return SweBenchProInstance(**fields)
 
 
 def _report_json(**overrides: Any) -> str:
@@ -240,6 +293,7 @@ def test_the_reports_json_round_trips_over_every_field():
       future_commits=3426,
       base_reachable=True,
       solution_reachable=True,
+      solution_is_future=True,
   )
   assert GitHistoryReport.from_json(json.dumps(report.to_dict())) == report
 
@@ -310,7 +364,12 @@ def test_the_purge_runs_before_the_agent_and_reports_both_sides(
 ):
   sb = _sandbox(
       tmp_path,
-      _report_json(refs=237, future_commits=3426, solution_reachable=True),
+      _report_json(
+          refs=237,
+          future_commits=3426,
+          solution_reachable=True,
+          solution_is_future=True,
+      ),
       "",  # the purge itself
       _report_json(refs=68, non_ancestor_commits=18, future_commits=0),
   )
@@ -331,14 +390,43 @@ def test_the_purge_runs_before_the_agent_and_reports_both_sides(
   assert contribution.metrics[FUTURE_BEFORE_METRIC] == 3426.0
 
 
+def test_a_fix_sha_that_is_not_in_the_repo_is_refused(tmp_path: Path):
+  # A WRONG sha is absent exactly like a purged one, so the post-purge check
+  # would report "solution unreachable" having proved nothing. Confirm it was
+  # there to begin with, or the assertion is decoration.
+  sb = _sandbox(
+      tmp_path, _report_json(future_commits=3426, solution_reachable=False)
+  )
+  with pytest.raises(GitHistoryLeakError, match="is not in this repo"):
+    GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
+  assert sb.scripts == ["git_report.sh"]  # refused before purging anything
+
+
+def test_an_already_clean_image_is_not_mistaken_for_a_bad_sha(tmp_path: Path):
+  # The outcome we WANT: upstream ships purged images, so the fix commit is
+  # legitimately absent from the start. A repo with no future history has
+  # nothing for this observer to prove, and must not be failed for it.
+  sb = _sandbox(
+      tmp_path,
+      _report_json(future_commits=0, solution_reachable=False),
+      "",
+      _report_json(future_commits=0, solution_reachable=False),
+  )
+  GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)  # no raise
+
+
 def test_a_leak_that_survives_the_purge_stops_the_run(tmp_path: Path):
   # The whole point: refuse to run the agent against a contaminated repo,
   # rather than produce a number that looks real and is not.
   sb = _sandbox(
       tmp_path,
-      _report_json(solution_reachable=True),
+      _report_json(
+          solution_reachable=True, solution_is_future=True, future_commits=3426
+      ),
       "",
-      _report_json(solution_reachable=True, future_commits=3426),
+      _report_json(
+          solution_reachable=True, solution_is_future=True, future_commits=3426
+      ),
   )
   with pytest.raises(GitHistoryLeakError, match="still reachable"):
     GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
@@ -352,7 +440,15 @@ def test_a_purge_that_fails_to_run_is_itself_a_leak(tmp_path: Path):
       spec=SPEC,
       workspace=epath.Path(tmp_path / "ws"),
       run_results=[
-          ExecResult(0, _report_json(solution_reachable=True), ""),
+          ExecResult(
+              0,
+              _report_json(
+                  solution_reachable=True,
+                  solution_is_future=True,
+                  future_commits=3426,
+              ),
+              "",
+          ),
           ExecResult(128, "fatal: multiple updates for 'refs/...'", ""),
       ],
       git_report=None,
@@ -434,6 +530,30 @@ def test_the_audit_workflow_is_registered_and_offline():
   assert entries[0].sandbox.network is False
 
 
+def test_an_unreadable_instance_id_raises_instead_of_returning_none():
+  # THE silent-decay guard the user asked for. The base class allows None for a
+  # dataset with no fix commit; SWE-Bench Pro has one in all 731 ids, so a
+  # parse failure is an upstream FORMAT CHANGE. Returning None there would
+  # quietly downgrade the solution assertion to "not checked" while every run
+  # kept reporting success.
+  from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
+
+  moved = _pro_instance(instance_id="instance_acme__widget-42")
+  with pytest.raises(ValueError, match="upstream format change"):
+    _ = moved.solution_sha()
+
+  # And a sha that IS parsed but equals base_commit means the id is carrying
+  # something else now — also a moved convention, not a value to default around.
+  collided = _pro_instance(
+      instance_id=f"instance_acme__widget-{'a' * 40}", base_commit="a" * 40
+  )
+  with pytest.raises(ValueError, match="equal to its base_commit"):
+    _ = collided.solution_sha()
+
+  assert isinstance(_pro_instance().solution_sha(), str)
+  del SweBenchProInstance
+
+
 def test_swebench_pro_reads_the_fix_sha_out_of_the_instance_id():
   # It is NOT base_commit (that is the commit before the fix, a separate
   # column); matched on the 40-hex shape because repo names contain hyphens
@@ -490,16 +610,30 @@ def test_an_integrity_failure_is_never_retried():
 def test_the_evaluation_sandbox_is_never_purged():
   # The eval needs its refs for the golden-test restore step, and no agent runs
   # in it — so the purge attaches to the solving task alone (ADR-0010 §3b).
-  from swe_lab.datasets.loader import load_dataset
   import swe_lab.workflow.definitions as definitions
   from swe_lab.workflow.registry import workflow_definition
 
   del definitions  # imported for its registration side effect
-  # A real instance: the grading task compiles an eval spec from it, which a
-  # stub cannot supply.
-  record = next(iter(load_dataset("swebench_pro")))
-  assert isinstance(record, TaskInstance)
+  instance = _PurgeInstance()
   for name in ("unit_test", "gold_unit_test"):
     for entry in workflow_definition(name):
-      kinds = [type(o).__name__ for o in entry.task.observers(record)]
+      kinds = [type(o).__name__ for o in entry.task.observers(instance)]
       assert "GitHistoryPurgeObserver" not in kinds, f"{name}/{entry.key}"
+
+
+def test_an_env_setup_sha_mistaken_for_the_fix_is_refused(tmp_path: Path):
+  # Measured, not imagined: a SWE-Bench Pro instance id can carry a SECOND sha
+  # (`-v<sha>`) that is an environment-setup commit, and on vuls that one is an
+  # ancestor of HEAD. If the id format ever reorders them we would extract it,
+  # find it present, and "prove" a purge that never had anything to remove.
+  sb = _sandbox(
+      tmp_path,
+      _report_json(
+          future_commits=3426,
+          solution_reachable=True,
+          solution_is_future=False,
+      ),
+  )
+  with pytest.raises(GitHistoryLeakError, match="ancestor of HEAD"):
+    GitHistoryPurgeObserver(solution_sha=_FIX).after_create(sb)
+  assert sb.scripts == ["git_report.sh"]  # refused before purging anything

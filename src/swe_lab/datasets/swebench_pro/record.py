@@ -191,7 +191,7 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     return parser_path.read_bytes()
 
   @override
-  def solution_sha(self) -> str | None:
+  def solution_sha(self) -> str:
     """Return the fix commit, read out of the instance id.
 
     SWE-Bench Pro names an instance
@@ -201,11 +201,39 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
     40-hex-character token rather than by splitting on ``-``: repo names
     contain hyphens, and the optional ``-v`` suffix is sometimes ``nan``.
 
+    **Raises rather than returning ``None``.** The base class allows ``None``
+    for a dataset that genuinely records no fix commit; this dataset does
+    record one, in every one of its 731 ids, so a failure to read it is an
+    upstream **format change**, not a missing value. Returning ``None`` there
+    would silently downgrade the history purge's solution assertion to "not
+    checked" while every run still reported success — the exact silent
+    decay this is here to prevent (ADR-0010 §4).
+
     Returns:
-      The 40-character fix sha, or ``None`` if the id does not carry one.
+      The 40-character fix sha.
+
+    Raises:
+      ValueError: If the id carries no fix sha, or carries one equal to
+        ``base_commit`` — either means the naming convention moved and the
+        derivation has to be revisited, not defaulted around.
     """
     match = _FIX_SHA_RE.search(self.instance_id)
-    return match.group(1) if match else None
+    if match is None:
+      raise ValueError(
+          f"no fix commit in instance id {self.instance_id!r}: SWE-Bench Pro"
+          " names instances `instance_<Org>__<Repo>-<fix_sha>[-v<env_sha>]`,"
+          " so this is an upstream format change. The git-history purge"
+          " asserts this commit is unreachable; fix the derivation rather"
+          " than letting the assertion quietly stop checking anything."
+      )
+    sha = match.group(1)
+    if sha == self.base_commit:
+      raise ValueError(
+          f"instance {self.instance_id!r} yields a fix sha equal to its"
+          " base_commit; the id must be carrying something other than the fix"
+          " commit now, so the derivation is wrong"
+      )
+    return sha
 
   @property
   def golden_test_checkout_cmd(self) -> str:

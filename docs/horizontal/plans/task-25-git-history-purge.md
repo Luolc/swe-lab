@@ -228,7 +228,45 @@ git reset --hard <base>                     ->  OK
 5. **`.git/logs/HEAD` survives as a 0-byte file.** `git reflog` reports 0
    entries; harmless, and not worth a special case.
 
-## 6. Where it lives
+## 6. What the two shas in an `instance_id` actually are
+
+`instance_<Org>__<Repo>-<sha1>[-v<sha2>]`. The dataset has **no fix-commit
+column** — only `base_commit` — so the fix commit is read out of the id. That
+made it worth proving rather than assuming. Measured against 15 cached images
+across 8 repos, plus the full 731-row parquet:
+
+**sha1 is the fix commit.** Not inferred from the naming convention:
+
+| Check | Result |
+|---|---|
+| `git diff <base_commit> <sha1>` == the `patch` ∪ `test_patch` columns | **15/15 exact** |
+| `sha1^` (first parent) == `base_commit` | 15/15 |
+| `sha1` is **not** an ancestor of HEAD (it is future history) | 15/15 |
+
+The file-set comparison is the decisive one: the dataset splits the upstream
+commit into a solution half (`patch`) and a test half (`test_patch`), and their
+union is exactly what that commit changed.
+
+*Two NodeBB instances are **merge commits** (2 parents), where
+`git show --name-only` lists nothing — they compared as mismatches until the
+diff was taken as `git diff base sha1`. The data was right; the first
+comparison was wrong.*
+
+**sha2 is an environment-setup commit, and it is shared.** Present on only
+**368/731** ids, and those carry just **58 distinct** values (one appears 25×),
+so several instances of a repo point at the same one. Subjects are env/dep
+churn — *"docsite requirements path"*, *"v3.98.12"*, *"lint: fix missing
+comma"*.
+
+**It can be an ancestor of HEAD** (observed on vuls) — which is why §4's
+assertion checks the sha is *future*, not merely present. If the id format ever
+reordered the two, an env sha would be found, exist, and let a purge "prove"
+something it never removed.
+
+`dockerhub_tag` carries the same sha1, but **211/731 tags hit Docker's 128-char
+limit** and are truncated, so the id is the better source of the two.
+
+## 7. Where it lives
 
 `swe_lab/git/` owns the git-state modules — `patch.py` (get the work out),
 `history.py` (keep the answer out), `audit.py` (the agent-free sweep) — with
@@ -255,7 +293,7 @@ an explicit optional field on the observer, supplied by the task from the
 instance; when absent, A1 and A3 still run (A3 is the load-bearing one — it
 catches leaks whose sha we never knew).
 
-## 7. A standalone audit workflow — sweep the dataset before trusting it
+## 8. A standalone audit workflow — sweep the dataset before trusting it
 
 The purge is also the answer to a question worth asking *before* a full run:
 **does any instance in the dataset fail to purge cleanly?** Finding that out by
@@ -279,7 +317,7 @@ swe-lab run git_integrity_audit <instance>      # one instance
   remote refs, commits-ahead, commits-postdating-base — plus each assertion's
   result. A *passing* instance is data too: "3444 ahead → 0" is what makes the
   sweep interpretable, and it is the per-instance evidence behind §5's table.
-- **A failing instance fails its attempt**, exactly as in the rollout (§8), so
+- **A failing instance fails its attempt**, exactly as in the rollout (§9), so
   a sweep's failed set *is* the list of instances to investigate. Because the
   record is always written (ADR-0009), the reason is on the record rather than
   in a lost run.
@@ -291,7 +329,7 @@ on that instance is the same code doing the same thing.
 Downstream validates this against the full SWE-Bench Pro dataset before the next
 full run; a clean sweep is the precondition for trusting any number that follows.
 
-## 8. Failure handling
+## 9. Failure handling
 
 A failed assertion is a **failed attempt with a named reason**, never a crash
 that loses the record and never a silent pass — ADR-0009 and
@@ -304,7 +342,7 @@ or the numbers lie in the other direction.
 — the same image purges the same way every time — so a retry burns a container
 to reach the same verdict.
 
-## 9. Tasks
+## 10. Tasks
 
 | # | Work | Size |
 |---|---|---|
@@ -321,7 +359,7 @@ fails the attempt with the named reason rather than scoring it; extraction and
 grading are byte-unchanged on a known instance; and `git_integrity_audit` runs
 standalone on an instance and writes its report.
 
-## 10. Known limits
+## 11. Known limits
 
 - **A past-dated commit is kept even if it is topologically future work.**
   Committer date (`%ct`) is the filter, and a rebase or cherry-pick can carry an

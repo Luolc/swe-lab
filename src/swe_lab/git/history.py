@@ -191,12 +191,21 @@ def build_report_script(
       " then BASE_OK=true; else BASE_OK=false; fi",
   ]
   if solution_sha:
+    quoted = shlex.quote(solution_sha)
     lines += [
-        f"if git cat-file -e {shlex.quote(solution_sha)} 2>/dev/null;"
-        " then SOL=true; else SOL=false; fi",
+        # Existence alone does not prove we were handed the *fix* commit: an
+        # instance id also carries an environment-setup sha, and that one is
+        # sometimes an ancestor of HEAD (observed on vuls). So record whether
+        # it is future history too — only a commit that is both present and
+        # future can be the answer this purge exists to remove.
+        f"if git cat-file -e {quoted} 2>/dev/null; then SOL=true;"
+        f" if git merge-base --is-ancestor {quoted} HEAD 2>/dev/null;"
+        " then SOL_FUTURE=false; else SOL_FUTURE=true; fi;"
+        " else SOL=false; SOL_FUTURE=null; fi",
     ]
   else:
     lines.append("SOL=null")
+    lines.append("SOL_FUTURE=null")
   lines += [_emit_json(), "exit 0"]
   return "\n".join(lines) + "\n"
 
@@ -217,6 +226,7 @@ _SHELL_VARS: tuple[tuple[str, str], ...] = (
     ("future_commits", "FUTURE"),
     ("base_reachable", "BASE_OK"),
     ("solution_reachable", "SOL"),
+    ("solution_is_future", "SOL_FUTURE"),
 )
 
 
@@ -265,6 +275,11 @@ class GitHistoryReport:
     base_reachable: Whether the base commit still exists (ADR-0001 needs it).
     solution_reachable: Whether the fix commit still exists; ``None`` when no
       solution sha was supplied.
+    solution_is_future: Whether that commit is *not* an ancestor of ``HEAD``.
+      ``None`` when no sha was supplied or the commit is absent. Recorded
+      because existence alone does not prove the sha is the fix commit — an
+      instance id also carries an environment-setup sha, and that one can be an
+      ancestor (measured on vuls).
   """
 
   base_sha: str
@@ -278,6 +293,7 @@ class GitHistoryReport:
   future_commits: int
   base_reachable: bool
   solution_reachable: bool | None
+  solution_is_future: bool | None
 
   def to_dict(self) -> dict[str, object]:
     """Render for the JSON artifact — field order follows the declaration."""

@@ -73,6 +73,7 @@ CLEAN_GIT_REPORT = json.dumps(
         future_commits=0,
         base_reachable=True,
         solution_reachable=False,
+        solution_is_future=None,
     ).to_dict()
 )
 
