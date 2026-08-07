@@ -8,7 +8,7 @@ invisible to reading and only showed up when run.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 from pathlib import Path
 from typing import Any, final, override
@@ -17,7 +17,7 @@ from etils import epath
 import pytest
 
 from swe_lab.datasets.instance import TaskInstance
-from swe_lab.git_history import (
+from swe_lab.git.history import (
     build_purge_script,
     build_report_script,
     GitHistoryReport,
@@ -64,23 +64,30 @@ class _PurgeInstance(TaskInstance[Any]):
 SPEC = SandboxSpec("acme__widget-1", "acme/widget:tag", "/app", "basesha")
 _FIX = "f" * 40
 
+# The baseline every report in this file is a variation of — see _report_json.
+_CLEAN_REPORT = GitHistoryReport(
+    base_sha="basesha",
+    refs=0,
+    tags=0,
+    heads=0,
+    remote_refs=0,
+    remotes=0,
+    reflog=0,
+    non_ancestor_commits=0,
+    future_commits=0,
+    base_reachable=True,
+    solution_reachable=False,
+)
+
 
 def _report_json(**overrides: Any) -> str:
-  payload: dict[str, Any] = {
-      "base_sha": "basesha",
-      "refs": 0,
-      "tags": 0,
-      "heads": 0,
-      "remote_refs": 0,
-      "remotes": 0,
-      "reflog": 0,
-      "non_ancestor_commits": 0,
-      "future_commits": 0,
-      "base_reachable": True,
-      "solution_reachable": False,
-  }
-  payload.update(overrides)
-  return json.dumps(payload)
+  """Serialize a clean report, varied by keyword — through the dataclass.
+
+  `replace` rather than a dict literal so a field added to
+  ``GitHistoryReport`` fails here at type-check time, and an override naming a
+  field that does not exist is caught instead of silently landing in the JSON.
+  """
+  return json.dumps(replace(_CLEAN_REPORT, **overrides).to_dict())
 
 
 def _sandbox(tmp_path: Path, *outputs: str) -> FakeSandbox:
@@ -197,7 +204,7 @@ def test_the_report_script_emits_exactly_the_dataclass_fields():
   # run failing later on a TypeError from `cls(**...)`.
   from dataclasses import fields
 
-  from swe_lab.git_history import _SHELL_VARS
+  from swe_lab.git.history import _SHELL_VARS
 
   emitted = [name for name, _ in _SHELL_VARS]
   declared = [f.name for f in fields(GitHistoryReport)]
@@ -403,7 +410,7 @@ def test_the_purge_can_be_turned_off_deliberately():
 def test_the_audit_task_is_the_same_observer_with_no_agent():
   # An audit pass must mean the rollout's purge is the same code, not a
   # lookalike — so it contributes the identical observer and nothing else.
-  from swe_lab.integrity import GitIntegrityAuditTask
+  from swe_lab.git.audit import GitIntegrityAuditTask
 
   observers = GitIntegrityAuditTask().observers(_PurgeInstance())
   assert len(observers) == 1
@@ -456,8 +463,8 @@ def test_an_integrity_failure_is_never_retried():
   # Deterministic, not flaky: the same image purges the same way every time, so
   # a retry buys the same verdict a container later — and reads as flakiness in
   # the record when it is a property of the image.
+  from swe_lab.git.audit import GitIntegrityAuditTask
   from swe_lab.harnesses.claude_code import ClaudeCodeHarness
-  from swe_lab.integrity import GitIntegrityAuditTask
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.sandbox import RunResult, RunStatus
   from swe_lab.workflow import AttemptResult

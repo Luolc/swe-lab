@@ -14,7 +14,7 @@ state of the repo is a property of the environment, not of whichever agent is
 being run in it (ADR-0010 §3b).
 
 The engine-generic mechanics — the script text and the report parsing — live in
-:mod:`swe_lab.git_history`; this is the observer that drives them.
+:mod:`swe_lab.git.history`; this is the observer that drives them.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import json
 import logging
 from typing import override
 
-from swe_lab.git_history import (
+from swe_lab.git.history import (
     build_purge_script,
     build_report_script,
     GitHistoryReport,

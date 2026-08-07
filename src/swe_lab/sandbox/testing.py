@@ -26,6 +26,8 @@ from typing import override
 
 from etils import epath
 
+from swe_lab.git.history import GitHistoryReport
+
 from .backends import register_sandbox, SandboxConfig
 from .errors import SandboxError
 from .mounts import Mount, Mounts
@@ -49,20 +51,25 @@ def _maybe_raise(error: Exception | None) -> None:
 # purge. Composition tests care about the composition, not the purge, and
 # without this every one of them would have to script the two probes to reach
 # the behavior it is actually about.
+#
+# Built from the dataclass rather than as a literal dict, so a field added to
+# `GitHistoryReport` breaks *here*, at import, with the type checker naming the
+# one that is missing — instead of yielding JSON the real parser then rejects at
+# runtime. Vary it with `dataclasses.replace` to model a repo that still leaks.
 CLEAN_GIT_REPORT = json.dumps(
-    {
-        "base_sha": "basesha",
-        "refs": 0,
-        "tags": 0,
-        "heads": 0,
-        "remote_refs": 0,
-        "remotes": 0,
-        "reflog": 0,
-        "non_ancestor_commits": 0,
-        "future_commits": 0,
-        "base_reachable": True,
-        "solution_reachable": False,
-    }
+    GitHistoryReport(
+        base_sha="basesha",
+        refs=0,
+        tags=0,
+        heads=0,
+        remote_refs=0,
+        remotes=0,
+        reflog=0,
+        non_ancestor_commits=0,
+        future_commits=0,
+        base_reachable=True,
+        solution_reachable=False,
+    ).to_dict()
 )
 
 

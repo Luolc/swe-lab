@@ -6,9 +6,9 @@ solution, and ``git log --all`` finds it without knowing any sha. Measured at a
 100% exposure rate upstream (`SWE-bench_Pro-os#93`), and reproduced here — see
 the task-25 plan for the numbers.
 
-This module is the pure half, mirroring :mod:`swe_lab.patch`: it *builds* the
-in-container shell and *parses* what that shell reports. The observer that runs
-it lives in :mod:`swe_lab.sandbox.observers.git_history`.
+This module is the pure half, mirroring its sibling :mod:`~swe_lab.git.patch`:
+it *builds* the in-container shell and *parses* what that shell reports. The
+observer that runs it lives in :mod:`swe_lab.sandbox.observers.git_history`.
 
 Two functions, matching the two halves of ADR-0010 §3b/§4:
 

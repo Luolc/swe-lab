@@ -15,12 +15,12 @@ imports their own.
 from __future__ import annotations
 
 from swe_lab.evaluation.unit_test import gold_patch, UnitTestTask
+from swe_lab.git.audit import GitIntegrityAuditTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
     OAUTH_TOKEN_ENV,
 )
-from swe_lab.integrity import GitIntegrityAuditTask
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import DockerHostSandboxConfig
 

@@ -230,8 +230,14 @@ git reset --hard <base>                     ->  OK
 
 ## 6. Where it lives
 
-A `SandboxObserver` contributed by `CodingAgentTask` itself, purging in
-`after_create` — #191's placement argument, adopted as stated:
+`swe_lab/git/` owns the git-state modules — `patch.py` (get the work out),
+`history.py` (keep the answer out), `audit.py` (the agent-free sweep) — with
+the pure script builders there and the observer that runs them alongside
+`diff_extract` in `sandbox/observers/`.
+
+The purge itself is a `SandboxObserver` contributed by `CodingAgentTask`
+itself, purging in `after_create` — #191's placement argument, adopted as
+stated:
 
 - the sandbox is up and the repo is present, and the agent has not started;
 - it attaches to the **rollout only**, so the eval sandbox — which needs refs
