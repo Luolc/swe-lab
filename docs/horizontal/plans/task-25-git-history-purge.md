@@ -249,7 +249,43 @@ an explicit optional field on the observer, supplied by the task from the
 instance; when absent, A1 and A3 still run (A3 is the load-bearing one — it
 catches leaks whose sha we never knew).
 
-## 7. Failure handling
+## 7. A standalone audit workflow — sweep the dataset before trusting it
+
+The purge is also the answer to a question worth asking *before* a full run:
+**does any instance in the dataset fail to purge cleanly?** Finding that out by
+discovering an integrity failure two hours into a 731-instance sweep is the
+expensive way.
+
+So the purge ships as its own registered workflow — one entry, no agent — that
+can be swept across the whole dataset cheaply:
+
+```sh
+swe-lab run git_integrity_audit <instance>      # one instance
+```
+
+- **One entry, no harness.** The task's action is trivial; the observer does the
+  work in `after_create`. Cost per instance is an image pull, the purge, and the
+  assertions — seconds, not an agent budget.
+- **`network=False`.** Nothing here needs egress, and it keeps the audit honest
+  about what the rollout will actually see.
+- **It reports, not just passes/fails.** Every run emits `git_integrity.json`
+  (a required declared output) carrying the before/after counts — refs, tags,
+  remote refs, commits-ahead, commits-postdating-base — plus each assertion's
+  result. A *passing* instance is data too: "3444 ahead → 0" is what makes the
+  sweep interpretable, and it is the per-instance evidence behind §5's table.
+- **A failing instance fails its attempt**, exactly as in the rollout (§8), so
+  a sweep's failed set *is* the list of instances to investigate. Because the
+  record is always written (ADR-0009), the reason is on the record rather than
+  in a lost run.
+
+This is the same observer and the same assertions as the rollout path — not a
+parallel implementation. If the audit passes on an instance, the rollout's purge
+on that instance is the same code doing the same thing.
+
+Downstream validates this against the full SWE-Bench Pro dataset before the next
+full run; a clean sweep is the precondition for trusting any number that follows.
+
+## 8. Failure handling
 
 A failed assertion is a **failed attempt with a named reason**, never a crash
 that loses the record and never a silent pass — ADR-0009 and
@@ -262,22 +298,24 @@ or the numbers lie in the other direction.
 — the same image purges the same way every time — so a retry burns a container
 to reach the same verdict.
 
-## 8. Tasks
+## 9. Tasks
 
 | # | Work | Size |
 |---|---|---|
 | 1 | `GitHistoryPurgeObserver` + the sequence as a staged script; unit tests over `FakeSandbox` | M |
 | 2 | The three assertions + a distinct failure reason plumbed to the record; `should_retry=False` | S |
 | 3 | Wire into `CodingAgentTask`; confirm the eval sandbox is untouched | S |
-| 4 | Live check on ≥5 images incl. one Alpine, asserting §5's table | S |
-| 5 | Policy stamp on the record (ADR-0010 §5) — shared with task 26 | S |
+| 4 | The `git_integrity_audit` workflow (§7) — one entry, no harness, `git_integrity.json` output | S |
+| 5 | Live check on ≥5 images incl. one Alpine, asserting §5's table | S |
+| 6 | Policy stamp on the record (ADR-0010 §5) — shared with task 26 | S |
 
 **Definition of done:** every rollout sandbox purges before the agent starts;
 all three assertions pass on the live matrix; an induced leak (skip step 1a)
 fails the attempt with the named reason rather than scoring it; extraction and
-grading are byte-unchanged on a known instance.
+grading are byte-unchanged on a known instance; and `git_integrity_audit` runs
+standalone on an instance and writes its report.
 
-## 9. Known limits
+## 10. Known limits
 
 - **A past-dated commit is kept even if it is topologically future work.**
   Committer date (`%ct`) is the filter, and a rebase or cherry-pick can carry an
