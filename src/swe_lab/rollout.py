@@ -31,7 +31,11 @@ from swe_lab.sandbox import (
     SandboxFs,
     SandboxObserver,
 )
-from swe_lab.sandbox.observers import DiffExtractObserver
+from swe_lab.sandbox.observers import (
+    DiffExtractObserver,
+    GitHistoryLeakError,
+    GitHistoryPurgeObserver,
+)
 from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 
 # The store name the task prompt arrives as. Markdown because that is what the
@@ -87,6 +91,11 @@ class CodingAgentTask(Task):
     extra_inputs: Further inputs this task declares — files the harness or the
       prompt refers to, supplied by an edge or by the caller.
     exclude_globs: Build-noise denylist for the diff extraction.
+    purge_git_history: Strip future git history before the agent starts, and
+      refuse to run if it is still reachable (ADR-0010 §3b). **On by default**:
+      the images ship the whole upstream history, so without it the reference
+      fix is one ``git show`` away. Set it ``False`` only to characterize an
+      unpurged image deliberately.
     env: Extra environment for this task's own action — the agent process,
       handed to the harness. Distinct from the sandbox's ``env``, which every
       exec of the run gets; this is the agent's alone. For a secret, use the
@@ -112,6 +121,7 @@ class CodingAgentTask(Task):
   )
   extra_inputs: tuple[ArtifactSchema, ...] = ()
   exclude_globs: tuple[str, ...] = ()
+  purge_git_history: bool = True
   env: Mapping[str, str] | None = None
   proxy_factory: ProxyFactory | None = None
 
@@ -132,23 +142,54 @@ class CodingAgentTask(Task):
 
   @override
   def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:
-    """Return the harness's own observers plus the deliverable's extractor.
+    """Return the history purge, the harness's own observers, and the extractor.
+
+    The purge comes **first**: it is an environment precondition, and every
+    later hook — and the agent — must see an already-clean repo. It is
+    contributed here rather than by the caller so it cannot be forgotten on one
+    code path, and it attaches to this task alone, leaving the evaluation
+    sandbox (which needs its refs) untouched. ADR-0010 §3b.
 
     Args:
-      instance: Unused — what this task extracts is fixed by its own
-        configuration.
+      instance: Supplies the fix commit the purge asserts the absence of;
+        ``None`` for a dataset that records none, which weakens the assertion
+        but never disables it.
 
     Returns:
-      The harness's pair (or whatever it chooses) followed by a fresh
-      ``DiffExtractObserver`` — the patch belongs to the *task* (ADR-0007
-      §3), or the same harness could never run a task producing something
-      other than a diff.
+      The purge, then the harness's pair (or whatever it chooses), then a fresh
+      ``DiffExtractObserver`` — the patch belongs to the *task* (ADR-0007 §3),
+      or the same harness could never run a task producing something other
+      than a diff.
     """
-    del instance
+    purge = (
+        (GitHistoryPurgeObserver(solution_sha=instance.solution_sha()),)
+        if self.purge_git_history
+        else ()
+    )
     return (
+        *purge,
         *self.harness.observers(),
         DiffExtractObserver(exclude_globs=self.exclude_globs),
     )
+
+  @override
+  def should_retry(self, result: AttemptResult) -> bool:
+    """Retry as usual, except after an integrity failure — which never helps.
+
+    A contaminated repo is deterministic: the same image purges the same way
+    every time, so a retry buys the same verdict one container later. Worse, a
+    retried integrity failure reads like flakiness in the record when it is a
+    property of the image.
+
+    Args:
+      result: The attempt to judge.
+
+    Returns:
+      Whether another attempt is worth paying for.
+    """
+    if isinstance(result.run.error, GitHistoryLeakError):
+      return False
+    return super().should_retry(result)
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:

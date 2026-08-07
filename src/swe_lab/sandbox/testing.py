@@ -20,15 +20,24 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+import json
 import os
 from typing import override
 
 from etils import epath
 
+from swe_lab.git.history import GitHistoryReport
+
 from .backends import register_sandbox, SandboxConfig
 from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
+from .observers.git_history_purge import (
+    PURGE_SCRIPT_NAME as GIT_PURGE_SCRIPT_NAME,
+)
+from .observers.git_history_purge import (
+    REPORT_SCRIPT_NAME as GIT_REPORT_SCRIPT_NAME,
+)
 from .persist import AttemptRecord
 from .result import Contribution
 from .sandbox import ExecResult, Sandbox, SandboxFs
@@ -40,6 +49,36 @@ def _maybe_raise(error: Exception | None) -> None:
   """Raise the scripted error when one is set."""
   if error is not None:
     raise error
+
+
+# What the git-integrity probe reports by default: a repo with nothing left to
+# purge. Composition tests care about the composition, not the purge, and
+# without this every one of them would have to script the two probes to reach
+# the behavior it is actually about.
+#
+# Built from the dataclass rather than as a literal dict, so a field added to
+# `GitHistoryReport` breaks *here*, at import, with the type checker naming the
+# one that is missing — instead of yielding JSON the real parser then rejects at
+# runtime. Vary it with `dataclasses.replace` to model a repo that still leaks.
+CLEAN_GIT_REPORT = json.dumps(
+    GitHistoryReport(
+        base_sha="basesha",
+        refs=0,
+        tags=0,
+        heads=0,
+        remote_refs=0,
+        remotes=0,
+        reflog=0,
+        non_ancestor_commits=0,
+        future_commits=0,
+        base_reachable=True,
+        solution_reachable=False,
+        solution_is_future=None,
+    ).to_dict()
+)
+
+
+_GIT_SCRIPTS = frozenset({GIT_REPORT_SCRIPT_NAME, GIT_PURGE_SCRIPT_NAME})
 
 
 @dataclass
@@ -54,6 +93,11 @@ class FakeSandbox(Sandbox):
       constructed directly).
     run_results: Results returned by successive ``run_script`` / ``run_command``
       calls (repeating the last when exhausted); defaults to a single success.
+    git_report: What the git-integrity probe reports, answered without
+      consuming ``run_results`` — a clean repo by default, so a composition
+      test need not know the purge runs two probes ahead of its own script.
+      Set it to model a repo that still leaks, or ``None`` to stop intercepting
+      entirely and drive the purge from ``run_results`` directly.
     up_error: Raised by ``up`` when set.
     run_error: Raised by ``run_script`` / ``run_command`` when set.
     down_error: Raised by ``down`` when set (to test that the manager swallows
@@ -69,6 +113,7 @@ class FakeSandbox(Sandbox):
   workspace: epath.Path
   config: SandboxConfig | None = None
   run_results: list[ExecResult] = field(default_factory=list)
+  git_report: str | None = CLEAN_GIT_REPORT
   up_error: Exception | None = None
   run_error: Exception | None = None
   down_error: Exception | None = None
@@ -155,11 +200,23 @@ class FakeSandbox(Sandbox):
       timeout: float,
       env: Mapping[str, str] | None = None,
   ) -> ExecResult:
-    """Record the script name + env and return the next scripted result."""
+    """Record the script name + env and return the next scripted result.
+
+    The git-integrity probe answers from ``git_report`` instead, so a test
+    exercising a composition does not have to script the purge's two probes
+    just to reach the behavior it cares about. Set ``run_results`` to override,
+    or ``git_report`` to model a repo that is *not* clean.
+    """
     del timeout
     self.calls.append(("run_script", name))
     self.scripts.append(name)
     self.script_envs.append(env)
+    if self.git_report is not None and name in _GIT_SCRIPTS:
+      # Answered WITHOUT consuming `run_results`: those belong to the task's
+      # own actions, and a composition test should not have to know that the
+      # integrity purge runs two probes before them.
+      output = self.git_report if name == GIT_REPORT_SCRIPT_NAME else ""
+      return ExecResult(0, output, "")
     return self._next_result()
 
   @override

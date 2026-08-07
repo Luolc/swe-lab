@@ -15,6 +15,7 @@ imports their own.
 from __future__ import annotations
 
 from swe_lab.evaluation.unit_test import gold_patch, UnitTestTask
+from swe_lab.git.audit import GitIntegrityAuditTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
@@ -30,12 +31,16 @@ from .workflow import WorkflowEntry
 # these workflows persists (ADR-0007 §6). Stable: resume trusts them.
 ROLLOUT_KEY = "rollout"
 UNIT_TEST_KEY = "unit_test"
+GIT_INTEGRITY_KEY = "git_integrity"
 
 _AGENT_TIMEOUT_S = 1800.0
 _UNIT_TEST_TIMEOUT_S = 1800.0
 # Two extra grading attempts absorb a flaky suite without hiding a real
 # failure: the patch is identical on every attempt (ADR-0008).
 _UNIT_TEST_RETRIES = 2
+# Bounded by `git gc` on the largest repos (~51s observed under emulation),
+# plus the image pull. No agent runs, so this needs no agent budget.
+_GIT_INTEGRITY_TIMEOUT_S = 900.0
 
 ROLLOUT: WorkflowDef = (
     WorkflowEntry(
@@ -96,6 +101,18 @@ GOLD_UNIT_TEST: WorkflowDef = (
     ),
 )
 
+GIT_INTEGRITY_AUDIT: WorkflowDef = (
+    WorkflowEntry(
+        GIT_INTEGRITY_KEY,
+        GitIntegrityAuditTask(),
+        timeout=_GIT_INTEGRITY_TIMEOUT_S,
+        # Offline on purpose. Nothing here needs egress, and running the audit
+        # exactly as constrained as the rollout should be keeps it honest.
+        sandbox=DockerHostSandboxConfig(network=False),
+    ),
+)
+
+register_workflow("git_integrity_audit", GIT_INTEGRITY_AUDIT)
 register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)

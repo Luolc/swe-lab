@@ -2,8 +2,8 @@
 
 Runs in ``before_destroy`` against the still-live container, so it works for
 **any** harness that edits the repo — extraction is not baked into the agent
-script. Reuses ``swe_lab.patch``'s extraction contract (ADR-0001: worktree diff
-vs ``base_commit``, ``git add -N``, no ``--binary``, residual
+script. Reuses ``swe_lab.git.patch``'s extraction contract (ADR-0001: worktree
+diff vs ``base_commit``, ``git add -N``, no ``--binary``, residual
 ``Binary files … differ`` stripped host-side) byte-for-byte.
 """
 
@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import override
 
-from swe_lab.patch import (
+from swe_lab.git.patch import (
     build_extraction_script,
     is_effectively_empty,
     strip_binary_hunks,

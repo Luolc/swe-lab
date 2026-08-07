@@ -181,7 +181,8 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `src/swe_lab/evaluation/` | The **evaluation axis**: the `verdict` contract + one module per method (`unit_test`). |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
 | `src/swe_lab/cli/` + `__main__.py` | The CLI entry point (`eval`/`rollout`/`promote`); `rollout.py` is the rollout composition. (`verify` — golden QA — moved into `datasets/swebench_pro/`, it is dataset-specific.) |
-| `src/swe_lab/repo/`, `paths.py`, `patch.py` | Repo checkout providers (W1) + repo-root/cache path helpers + the git-patch extraction/apply utility (extraction script, binary-hunk strip, emptiness — [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)). |
+| `src/swe_lab/git/` | Everything about the task repo's **git state**, one module per concern: `patch.py` gets the agent's work *out* as a clean diff vs `base_commit` ([ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)); `history.py` keeps the answer *out* by stripping future commits and proving it ([ADR-0010](decisions/ADR-0010-benchmark-integrity.md) §3b); `audit.py` is the agent-free task that sweeps a dataset for purge failures. `patch`/`history` are **pure** script builders — the observers that run them live in `sandbox/observers/`. |
+| `src/swe_lab/repo/`, `paths.py` | Repo checkout providers (W1) + repo-root/cache path helpers. |
 | `src/swe_lab/pipelines/related_files/` | **W1** — the annotation task (pipeline, prompts, aggregator, storage, combine). Keeps its own module entrypoint; not yet on the engine. |
 | `experiments/` | Exploratory experiments + investigations. Each has a `README` (design/how-to-run) and, when it reaches conclusions, a `REPORT`; raw run artifacts under `runs/<variant>/`. Exempt from code hooks. See the [experiment playbook](experiments/playbook.md). |
 | `outputs/` | **Committed deliverables** (annotation parquet + per-instance JSON). Large trace records are *not* here — they live off-repo on HF. |
@@ -200,7 +201,7 @@ with the following repo-wide choices and deviations (full plan + rationale:
   [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted);
   [`docs/patch-extraction.md`](patch-extraction.md) is non-authoritative
   background research. For how patch
-  extraction / diffing / grading actually behave, read `patch.py`, the
+  extraction / diffing / grading actually behave, read `git/patch.py`, the
   diff-extract observer in `sandbox/observers/`, and
   `datasets/swebench_pro/unit_test.py`.
 - [`README.md`](README.md) is the map (roadmap + status); the
