@@ -6,6 +6,7 @@ from .git_history_purge import (
     GitHistoryPurgeObserver,
     INTEGRITY_ARTIFACT,
 )
+from .result_verify import ResultVerifyObserver, VERIFIER_ARTIFACT
 
 __all__ = [
     "DiffExtractObserver",
@@ -13,4 +14,6 @@ __all__ = [
     "GitHistoryPurgeObserver",
     "INTEGRITY_ARTIFACT",
     "PATCH_NAME",
+    "ResultVerifyObserver",
+    "VERIFIER_ARTIFACT",
 ]

@@ -35,6 +35,7 @@ from swe_lab.sandbox.observers import (
     DiffExtractObserver,
     GitHistoryLeakError,
     GitHistoryPurgeObserver,
+    ResultVerifyObserver,
 )
 from swe_lab.workflow import AttemptResult, InputsBuilder, Task
 
@@ -96,6 +97,10 @@ class CodingAgentTask(Task):
       the images ship the whole upstream history, so without it the reference
       fix is one ``git show`` away. Set it ``False`` only to characterize an
       unpurged image deliberately.
+    verify_result: Run the integrity rules over the finished run and record
+      what they saw (ADR-0010 §3c). **Detection, never a gate** — findings are
+      reported, the run's status is untouched, and the verifier cannot fail a
+      run even on its own bug.
     env: Extra environment for this task's own action — the agent process,
       handed to the harness. Distinct from the sandbox's ``env``, which every
       exec of the run gets; this is the agent's alone. For a secret, use the
@@ -122,6 +127,7 @@ class CodingAgentTask(Task):
   extra_inputs: tuple[ArtifactSchema, ...] = ()
   exclude_globs: tuple[str, ...] = ()
   purge_git_history: bool = True
+  verify_result: bool = True
   env: Mapping[str, str] | None = None
   proxy_factory: ProxyFactory | None = None
 
@@ -159,17 +165,33 @@ class CodingAgentTask(Task):
       The purge, then the harness's pair (or whatever it chooses), then a fresh
       ``DiffExtractObserver`` — the patch belongs to the *task* (ADR-0007 §3),
       or the same harness could never run a task producing something other
-      than a diff.
+      than a diff — and the verifier **last**, because it reads what all of
+      them just produced.
     """
     purge = (
-        (GitHistoryPurgeObserver(solution_sha=instance.solution_sha()),)
+        GitHistoryPurgeObserver(solution_sha=instance.solution_sha())
         if self.purge_git_history
-        else ()
+        else None
     )
-    return (
-        *purge,
-        *self.harness.observers(),
-        DiffExtractObserver(exclude_globs=self.exclude_globs),
+    # Called once: the verifier must point at the *same* observer objects that
+    # run, since it reads what they leave on themselves.
+    from_harness = tuple(self.harness.observers())
+    diff = DiffExtractObserver(exclude_globs=self.exclude_globs)
+    verify = (
+        ResultVerifyObserver(
+            patch_source=diff,
+            conversation_source=next(
+                (o for o in from_harness if hasattr(o, "conversation")), None
+            ),
+            integrity_source=purge,
+            required_tests=tuple(instance.required_tests()),
+            workdir=instance.sandbox_spec().workdir,
+        )
+        if self.verify_result
+        else None
+    )
+    return tuple(
+        o for o in (purge, *from_harness, diff, verify) if o is not None
     )
 
   @override

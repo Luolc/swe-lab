@@ -17,6 +17,7 @@ answer for any of that to be possible.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.sandbox import Mounts, SandboxSpec
@@ -43,6 +44,18 @@ class TaskInstance[V: Verdict](ABC):
   def sandbox_spec(self) -> SandboxSpec:
     """Return the run context (image / workdir / base commit) to run in."""
     ...
+
+  def required_tests(self) -> Sequence[str]:
+    """Return the tests this instance is graded on, when the dataset knows them.
+
+    Used only by the integrity rules, to notice a patch that hardcodes a
+    required test's name instead of implementing the behavior. Default: empty,
+    which disables that one rule and nothing else.
+
+    Returns:
+      Every test that must pass, or empty when the dataset records none.
+    """
+    return ()
 
   def solution_sha(self) -> str | None:
     """Return the upstream commit that fixed this instance, if it is known.
