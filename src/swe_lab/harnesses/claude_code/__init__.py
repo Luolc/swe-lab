@@ -6,7 +6,7 @@ both capture strategies (``Capture.STREAM`` / ``Capture.PROXY``).
 
 from swe_lab.harnesses import register_harness
 
-from .capture import Capture
+from .capture import Capture, Effort
 from .convert import (
     event_stream_complete,
     event_stream_to_conversation,
@@ -21,6 +21,7 @@ register_harness("claude_code", ClaudeCodeHarness)
 
 __all__ = [
     "Capture",
+    "Effort",
     "ClaudeCodeHarness",
     "event_stream_complete",
     "event_stream_to_conversation",

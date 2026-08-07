@@ -37,7 +37,7 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
-from .capture import Capture
+from .capture import Capture, Effort
 from .constants import (
     AGENT_ENV_NAME,
     AGENT_EXIT_CODE_NAME,
@@ -211,6 +211,13 @@ class ClaudeCodeHarness(Harness):
       CLAUDE.md, hooks or MCP config. A composition that authenticates by OAuth
       sets it back to ``False`` explicitly — the shipped ``rollout`` definition
       does exactly that. See the script's guard.
+    effort: Reasoning effort for the run, passed as ``--effort``. Defaults to
+      ``HIGH``: an unattended solve is the case worth spending on, and the
+      agent's own default is not stated in ``--help``, so pinning it makes a
+      sweep reproducible rather than dependent on whatever the build prefers.
+      Typed, because the agent treats an unknown value as a *warning* and
+      quietly runs at its default — a typo would otherwise mis-run a whole
+      batch silently.
     max_turns: Agent-loop runaway guard, passed as ``--max-turns``. The flag is
       undocumented in ``--help`` on 2.1.220 but accepted (a bogus flag is
       rejected with "unknown option" in the same position, so this is
@@ -229,6 +236,7 @@ class ClaudeCodeHarness(Harness):
   proxy_port: int = DEFAULT_BASE_PORT
   proxy_base_url: str | None = None
   bare: bool = True
+  effort: Effort = Effort.HIGH
   max_turns: int = 500
   max_budget_usd: float | None = None
   subagent_wait_ceiling_ms: int | None = None
@@ -401,6 +409,8 @@ class ClaudeCodeHarness(Harness):
       ``ExitPlanMode`` is worse than denying neither — the agent enters plan
       mode, cannot leave, and burns the budget read-only.
     - **Turns are bounded** (``--max-turns``), so an agent loop cannot run away.
+    - **Reasoning effort is pinned** (``--effort``) rather than left to the
+      build's default, which ``--help`` does not state.
     - **The exit status is reported out-of-band.** The script itself always
       exits 0 so teardown is unchanged; the real code lands in
       ``claude.exit_code`` (143 = SIGTERM, i.e. someone killed the turn).
@@ -456,6 +466,7 @@ class ClaudeCodeHarness(Harness):
         f"--output-format {output_format}",
         "--dangerously-skip-permissions",
         f"--disallowedTools {shlex.quote(denied)}",
+        f"--effort {self.effort.value}",
         # Undocumented in --help on 2.1.220, but accepted — verified against a
         # bogus flag in the same position, which is rejected outright.
         f"--max-turns {int(self.max_turns)}",

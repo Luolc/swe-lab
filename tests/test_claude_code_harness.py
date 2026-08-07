@@ -17,6 +17,7 @@ from swe_lab.conversation import (
 from swe_lab.harnesses.claude_code import (
     Capture,
     ClaudeCodeHarness,
+    Effort,
     event_stream_complete,
     event_stream_to_conversation,
 )
@@ -436,3 +437,33 @@ def test_agent_info_output_is_declared_but_not_required(tmp_path: Path):
   (schema,) = AgentInfoObserver().output_schema()
   assert schema.name == INFO_ARTIFACT
   assert schema.required is False  # a run without it is still a valid run
+
+
+def test_the_effort_is_pinned_and_defaults_to_high():
+  # `--help` on 2.1.220 does not state the agent's own default, so leaving it
+  # unset makes a sweep depend on whatever the build prefers.
+  assert "--effort high" in _script("/app", ClaudeCodeHarness())
+  assert "--effort xhigh" in _script(
+      "/app", ClaudeCodeHarness(effort=Effort.XHIGH)
+  )
+
+
+def test_effort_carries_exactly_the_values_the_pinned_agent_accepts():
+  # Read off the binary, not a doc: 2.1.220 answers an unknown value with
+  # "Valid values: low, medium, high, xhigh, max." Probed all five as accepted
+  # and a sixth as rejected.
+  assert [e.value for e in Effort] == [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+  ]
+
+
+def test_an_unknown_effort_cannot_be_constructed():
+  # THE reason this is typed. The agent treats an unknown value as a WARNING
+  # and silently runs at its default, so a typo would mis-run a whole sweep
+  # with nothing in the logs. Python refuses it before a container is paid for.
+  with pytest.raises(ValueError):
+    _ = Effort("ultra")
