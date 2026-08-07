@@ -60,7 +60,7 @@ jobs:
             "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro/resolve/main/data/test-00000-of-00001.parquet?download=true"
 
       - name: Upload dataset parquet
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dataset-parquet
           path: parquet/test-00000-of-00001.parquet
@@ -75,7 +75,7 @@ jobs:
       matrix:
         shard: ${{ fromJSON(needs.setup.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free disk space
         run: |
@@ -84,13 +84,13 @@ jobs:
           df -h /
 
       - name: Set up uv (+ Python)
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v9
 
       - name: Install deps
         run: uv sync
 
       - name: Fetch dataset parquet (setup artifact — no HF hit)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dataset-parquet
           path: datasets/swebench_pro/data
@@ -106,7 +106,7 @@ jobs:
 
       - name: Upload shard results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verify-${{ matrix.shard }}
           path: .cache/store/runs/golden-verify
@@ -119,22 +119,22 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up uv (+ Python)
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v9
 
       - name: Install deps
         run: uv sync
 
       - name: Fetch dataset parquet (setup artifact — no HF hit)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dataset-parquet
           path: datasets/swebench_pro/data
 
       - name: Merge shard artifacts into the store
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: .cache/store/runs/golden-verify
           pattern: verify-*
@@ -144,7 +144,7 @@ jobs:
         run: uv run python -m swe_lab.datasets.swebench_pro.verify --aggregate
 
       - name: Upload summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verification-summary
           path: |

@@ -43,10 +43,10 @@ jobs:
     env:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up uv (brings its own Python)
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v9
 
       - name: Install deps
         run: uv sync
@@ -115,7 +115,7 @@ jobs:
 
       - name: Upload rollout workspace
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ghjob-rollout-workspace
           path: .cache/runs/**
