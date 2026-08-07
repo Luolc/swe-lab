@@ -32,8 +32,12 @@ from .backends import register_sandbox, SandboxConfig
 from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
-from .observers.git_history import PURGE_SCRIPT_NAME as GIT_PURGE_SCRIPT_NAME
-from .observers.git_history import REPORT_SCRIPT_NAME as GIT_REPORT_SCRIPT_NAME
+from .observers.git_history_purge import (
+    PURGE_SCRIPT_NAME as GIT_PURGE_SCRIPT_NAME,
+)
+from .observers.git_history_purge import (
+    REPORT_SCRIPT_NAME as GIT_REPORT_SCRIPT_NAME,
+)
 from .persist import AttemptRecord
 from .result import Contribution
 from .sandbox import ExecResult, Sandbox, SandboxFs

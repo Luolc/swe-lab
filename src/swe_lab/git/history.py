@@ -8,7 +8,8 @@ the task-25 plan for the numbers.
 
 This module is the pure half, mirroring its sibling :mod:`~swe_lab.git.patch`:
 it *builds* the in-container shell and *parses* what that shell reports. The
-observer that runs it lives in :mod:`swe_lab.sandbox.observers.git_history`.
+observer that runs it is ``GitHistoryPurgeObserver``, in
+:mod:`swe_lab.sandbox.observers`.
 
 Two functions, matching the two halves of ADR-0010 §3b/§4:
 

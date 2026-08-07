@@ -23,7 +23,7 @@ from swe_lab.git.history import (
     GitHistoryReport,
 )
 from swe_lab.sandbox import ExecResult, SandboxSpec
-from swe_lab.sandbox.observers.git_history import (
+from swe_lab.sandbox.observers.git_history_purge import (
     CLEAN_METRIC,
     FUTURE_BEFORE_METRIC,
     GitHistoryLeakError,
