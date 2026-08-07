@@ -69,7 +69,6 @@ CLEAN_GIT_REPORT = json.dumps(
         remote_refs=0,
         remotes=0,
         reflog=0,
-        non_ancestor_commits=0,
         future_commits=0,
         base_reachable=True,
         solution_reachable=False,

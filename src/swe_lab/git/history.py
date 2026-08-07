@@ -102,7 +102,6 @@ def build_purge_script(*, workdir: str) -> str:
   lines = [
       *_preamble(workdir),
       'BASE="$(git rev-parse HEAD)"',
-      'BASE_TS="$(git show -s --format=%ct "$BASE")"',
       # HEAD must not be a branch ref we are about to delete.
       'git checkout --detach --quiet "$BASE"',
       # Symbolic refs FIRST, individually. `refs/remotes/origin/HEAD` is a
@@ -118,13 +117,22 @@ def build_purge_script(*, workdir: str) -> str:
       # Every remaining branch and remote-tracking ref, atomically.
       "git for-each-ref --format='delete %(refname)' refs/heads refs/remotes"
       " | git update-ref --stdin",
-      # Tags: only those whose commit postdates the base. `^{}` dereferences an
-      # annotated tag to its commit, so tag-object indirection is not a hiding
+      # Tags: keep one only if its commit is an ANCESTOR of the base — that is
+      # the property "nothing reachable outside the base's history", stated
+      # directly instead of proxied by a timestamp. `^{}` dereferences an
+      # annotated tag to its commit, so tag-object indirection is no hiding
       # place (`git show-ref --dereference` would resolve it otherwise).
+      #
+      # This used to compare committer timestamps, which leaked: a fix commit
+      # whose timestamp *equalled* the base's survived a `-gt` test, and four
+      # tags still reached it (tutanota, measured). Timestamps are not a partial
+      # order over the graph — rebases, cherry-picks, imported history and clock
+      # skew all break the correspondence — so a tag on a parallel branch
+      # committed before the base leaks under any threshold.
       "git for-each-ref --format='%(refname) %(objectname)' refs/tags |"
       " while read -r ref obj; do"
-      ' ctime="$(git show -s --format=%ct "${obj}^{}" 2>/dev/null || echo 0)";'
-      ' [ "$ctime" -gt "$BASE_TS" ] && printf \'delete %s\\n\' "$ref";'
+      ' git merge-base --is-ancestor "${obj}^{}" "$BASE" 2>/dev/null ||'
+      " printf 'delete %s\\n' \"$ref\";"
       " done | git update-ref --stdin",
       # Remotes (the config URL leaks where to look), and the stray HEAD files.
       'for r in $(git remote); do git remote remove "$r"; done',
@@ -153,10 +161,15 @@ def build_report_script(
   exits 0 and the caller decides. A shell that exits non-zero mid-observer would
   turn a policy decision into a stack trace.
 
-  ``base_reachable`` and ``no_future_commits`` are always computed;
+  ``base_reachable`` and ``future_commits`` are always computed;
   ``solution_reachable`` is ``null`` when no ``solution_sha`` is known, which is
-  why ``no_future_commits`` is the load-bearing check — it catches leaks whose
-  sha we never knew.
+  why ``future_commits`` is the load-bearing check — it catches leaks whose sha
+  we never knew.
+
+  That claim only holds because the count is **graph-based**. While it compared
+  timestamps it was not true: an instance whose fix commit was dated exactly at
+  the base reported ``future_commits == 0`` while the fix was plainly reachable,
+  and only ``solution_reachable`` — which already used ancestry — caught it.
 
   Args:
     workdir: In-container path of the instance's repo.
@@ -178,15 +191,15 @@ def build_report_script(
       "REMOTE_REFS=$(git for-each-ref refs/remotes 2>/dev/null | wc -l)",
       "REMOTES=$(git remote 2>/dev/null | wc -l)",
       "REFLOG=$(git reflog 2>/dev/null | wc -l)",
-      # Not an ancestor of HEAD. Reported for context only — it is NOT the
-      # assertion: a correct purge that keeps past tags legitimately leaves
-      # thousands of these (ansible: 9630), all past-dated.
-      "AHEAD=$(git log --oneline --all ^HEAD 2>/dev/null | wc -l)",
-      # THE assertion: reachable commits that postdate the base. Integer
-      # comparison of committer timestamps — no `date -d`, which is GNU-only
-      # and absent from the Alpine images this dataset ships.
-      "FUTURE=$(git log --all --format=%ct 2>/dev/null"
-      " | awk -v b=\"$BASE_TS\" '$1>b' | wc -l)",
+      # THE assertion: commits reachable from some ref but NOT from the base —
+      # graph reachability, which is the property itself rather than a proxy
+      # for it. It replaced a committer-timestamp comparison that missed a fix
+      # commit dated exactly at the base (tutanota, measured): timestamps are
+      # not a partial order over the graph, so no threshold makes them one.
+      # Also needs no `date`, which matters on the Alpine images this dataset
+      # ships with only busybox.
+      'FUTURE=$(git rev-list --all --not "$BASE" --count 2>/dev/null'
+      " || echo 0)",
       'if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null;'
       " then BASE_OK=true; else BASE_OK=false; fi",
   ]
@@ -222,7 +235,6 @@ _SHELL_VARS: tuple[tuple[str, str], ...] = (
     ("remote_refs", "REMOTE_REFS"),
     ("remotes", "REMOTES"),
     ("reflog", "REFLOG"),
-    ("non_ancestor_commits", "AHEAD"),
     ("future_commits", "FUTURE"),
     ("base_reachable", "BASE_OK"),
     ("solution_reachable", "SOL"),
@@ -267,11 +279,10 @@ class GitHistoryReport:
     remote_refs: Refs under ``refs/remotes``.
     remotes: Configured remotes.
     reflog: Reflog entries.
-    non_ancestor_commits: Reachable commits that are not ancestors of ``HEAD``.
-      **Context, not a verdict** — a correct purge keeps past side-history, so
-      this is legitimately non-zero (ansible: 9630, all past-dated).
-    future_commits: Reachable commits whose committer date postdates the base.
-      This is the load-bearing measurement: it should be ``0`` after a purge.
+    future_commits: Commits reachable from some ref but **not from the base**.
+      The load-bearing measurement, and the one the purge is defined against:
+      it is ``0`` after a correct purge, by construction rather than by
+      coincidence of dates.
     base_reachable: Whether the base commit still exists (ADR-0001 needs it).
     solution_reachable: Whether the fix commit still exists; ``None`` when no
       solution sha was supplied.
@@ -289,7 +300,6 @@ class GitHistoryReport:
   remote_refs: int
   remotes: int
   reflog: int
-  non_ancestor_commits: int
   future_commits: int
   base_reachable: bool
   solution_reachable: bool | None
