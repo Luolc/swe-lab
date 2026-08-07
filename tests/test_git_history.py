@@ -95,7 +95,6 @@ _CLEAN_REPORT = GitHistoryReport(
     remote_refs=0,
     remotes=0,
     reflog=0,
-    non_ancestor_commits=0,
     future_commits=0,
     base_reachable=True,
     solution_reachable=False,
@@ -188,13 +187,17 @@ def test_a_failed_cd_aborts_before_anything_destructive():
     assert "--show-toplevel" in script
 
 
-def test_tags_are_filtered_by_date_not_deleted_wholesale():
-  # Past tags are legitimate research and some regression tasks need them;
-  # SWE-bench Verified preserves them deliberately and we match it.
+def test_tags_are_kept_by_reachability_not_by_date():
+  # A tag survives only if its commit is an ANCESTOR of the base. That is the
+  # property itself; the timestamp comparison it replaced was a proxy, and it
+  # leaked — a fix commit dated exactly at the base passed a `-gt` test while
+  # four tags still reached it (tutanota, measured). Never a blanket delete
+  # either: the past that IS in the base's history stays.
   script = build_purge_script(workdir="/app")
   assert "refs/tags" in script
-  assert '-gt "$BASE_TS"' in script  # only tags NEWER than the base go
-  assert "git tag -d" not in script  # never a blanket delete
+  assert 'git merge-base --is-ancestor "${obj}^{}" "$BASE"' in script
+  assert "BASE_TS" not in script  # no timestamp proxy anywhere
+  assert "git tag -d" not in script
 
 
 def test_annotated_tags_are_dereferenced_to_their_commit():
@@ -289,7 +292,6 @@ def test_the_reports_json_round_trips_over_every_field():
       remote_refs=22,
       remotes=1,
       reflog=4,
-      non_ancestor_commits=3444,
       future_commits=3426,
       base_reachable=True,
       solution_reachable=True,
@@ -336,14 +338,16 @@ def test_future_commits_are_a_violation_even_with_no_solution_sha():
   )
 
 
-def test_non_ancestor_commits_are_context_not_a_violation():
-  # A correct purge that keeps past tags legitimately leaves thousands of
-  # commits outside HEAD's ancestry (ansible: 9630, all past-dated). Asserting
-  # on ancestry would fail every clean run; only the DATE separates a leak.
+def test_a_fix_dated_exactly_at_the_base_is_still_a_leak():
+  # The regression this rule change exists for. `future_commits` counted
+  # commits whose timestamp was strictly greater than the base's, so a fix
+  # committed at the SAME second reported 0 while remaining reachable — and
+  # only solution_reachable noticed. Counting by graph reachability makes the
+  # two agree.
   report = GitHistoryReport.from_json(
-      _report_json(non_ancestor_commits=9630, future_commits=0)
+      _report_json(future_commits=4, solution_reachable=True)
   )
-  assert report.violations() == ()
+  assert len(report.violations()) == 2
 
 
 def test_the_report_survives_noise_around_the_json():
@@ -371,7 +375,7 @@ def test_the_purge_runs_before_the_agent_and_reports_both_sides(
           solution_is_future=True,
       ),
       "",  # the purge itself
-      _report_json(refs=68, non_ancestor_commits=18, future_commits=0),
+      _report_json(refs=68, future_commits=0),
   )
   observer = GitHistoryPurgeObserver(solution_sha=_FIX)
   observer.after_create(sb)

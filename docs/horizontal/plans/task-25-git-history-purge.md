@@ -359,12 +359,59 @@ fails the attempt with the named reason rather than scoring it; extraction and
 grading are byte-unchanged on a known instance; and `git_integrity_audit` runs
 standalone on an instance and writes its report.
 
-## 11. Known limits
+## 11. Amendment (2026-08-07): tags are kept by reachability, not by date
 
-- **A past-dated commit is kept even if it is topologically future work.**
-  Committer date (`%ct`) is the filter, and a rebase or cherry-pick can carry an
-  older date. SWE-bench Verified accepts the same risk with the same rule; A2
-  catches the actual solution commit regardless.
+A full-dataset audit downstream ran `git_integrity_audit` over all 731
+instances on v0.2.6 and found **730 clean, 1 leaking**
+([#200](https://github.com/Luolc/swe-lab/issues/200)). The gate worked — the
+run failed rather than producing a contaminated result — but the purge was
+incomplete.
+
+`instance_tutao__tutanota-f373ac3808...` has a fix commit whose **committer
+timestamp equals the base commit's exactly** (both `1692368962`, reproduced in
+the image). §4's tag filter compared with a strict `-gt`, so four tags at that
+timestamp survived and still reached the fix — and `future_commits`, which
+compared the same way, reported `0`. Only `solution_reachable`, already using
+`git merge-base --is-ancestor`, noticed.
+
+**`>=` is not the fix.** Timestamps are not a partial order over the commit
+graph: rebases, cherry-picks, imported history and clock skew all decouple date
+from ancestry, so a tag on a parallel branch committed *before* the base leaks
+under any threshold. Both the filter and the metric now use reachability:
+
+```sh
+# keep a tag only if its commit is an ancestor of the base
+git merge-base --is-ancestor "${obj}^{}" "$BASE" || printf 'delete %s\n' "$ref"
+# and count the leak the same way
+FUTURE=$(git rev-list --all --not "$BASE" --count)
+```
+
+This states the property §1 always claimed instead of proxying it, and it drops
+`BASE_TS` from the script entirely. `non_ancestor_commits` retires with it: it
+measured the same thing the new `future_commits` does.
+
+**The cost, measured** — reachability also deletes past-dated tags on branches
+that diverged before the base:
+
+| Repo | tags | kept by date | kept by reachability | reached the fix, by date |
+|---|---|---|---|---|
+| tutanota | 1504 | 1044 | 988 | **4** |
+| ansible | 636 | 304 | **23** | 0 |
+| flipt | 214 | 68 | 62 | 0 |
+
+Ansible loses the most, and those parallel-branch tags are exactly the risk
+surface the tutanota leak came through. §5's rationale for keeping the past —
+`git log` / `blame` on the base's own ancestry — is untouched, and ADR-0010 §4
+settles the rest: a contaminated result is worse than a thinner one.
+
+Verified on the reported instance: `solution_reachable` goes `true → false`,
+`future_commits` `5101 → 0`, tags `1504 → 988`, no violations.
+
+## 12. Known limits
+
+- ~~A past-dated commit is kept even if it is topologically future work.~~
+  **Closed by §11** — the filter is reachability now, so date carries no weight.
+  This limit was not hypothetical: it is exactly the leak #200 found.
 - **Nothing here defends the network.** A purged repo is one `git clone` from
   being restored, and the network is the larger vector (study §1.2: 57% vs 9%).
   Per ADR-0010's 2026-08-06 amendment that is handled by configuration —
