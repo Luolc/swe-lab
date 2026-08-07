@@ -1,6 +1,6 @@
 [project]
 name = "swe-lab"
-version = "0.2.5"
+version = "0.2.6"
 description = "Tooling to enrich and audit SWE-Bench evaluation data (related-files annotation, and more)"
 readme = "README.md"
 authors = [{ name = "Liangchen Luo", email = "luolc.witty@gmail.com" }]
