@@ -4,6 +4,7 @@ from .diff_extract import DiffExtractObserver, PATCH_NAME
 from .git_history_purge import (
     GitHistoryLeakError,
     GitHistoryPurgeObserver,
+    GitHistoryPurgeTimeoutError,
     INTEGRITY_ARTIFACT,
 )
 from .result_verify import ResultVerifyObserver, VERIFIER_ARTIFACT
@@ -11,6 +12,7 @@ from .result_verify import ResultVerifyObserver, VERIFIER_ARTIFACT
 __all__ = [
     "DiffExtractObserver",
     "GitHistoryLeakError",
+    "GitHistoryPurgeTimeoutError",
     "GitHistoryPurgeObserver",
     "INTEGRITY_ARTIFACT",
     "PATCH_NAME",

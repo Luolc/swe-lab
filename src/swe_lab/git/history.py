@@ -117,23 +117,24 @@ def build_purge_script(*, workdir: str) -> str:
       # Every remaining branch and remote-tracking ref, atomically.
       "git for-each-ref --format='delete %(refname)' refs/heads refs/remotes"
       " | git update-ref --stdin",
-      # Tags: keep one only if its commit is an ANCESTOR of the base — that is
-      # the property "nothing reachable outside the base's history", stated
-      # directly instead of proxied by a timestamp. `^{}` dereferences an
-      # annotated tag to its commit, so tag-object indirection is no hiding
-      # place (`git show-ref --dereference` would resolve it otherwise).
+      # Tags: keep one only if its commit is an ANCESTOR of the base — the
+      # property "nothing reachable outside the base's history", stated
+      # directly rather than proxied by a timestamp. A timestamp proxy leaked:
+      # a fix commit dated *equal* to the base survived a `-gt` test and four
+      # tags still reached it (tutanota, measured). Rebases, cherry-picks,
+      # imported history and clock skew all decouple date from ancestry, so no
+      # threshold makes timestamps a partial order over the graph.
       #
-      # This used to compare committer timestamps, which leaked: a fix commit
-      # whose timestamp *equalled* the base's survived a `-gt` test, and four
-      # tags still reached it (tutanota, measured). Timestamps are not a partial
-      # order over the graph — rebases, cherry-picks, imported history and clock
-      # skew all break the correspondence — so a tag on a parallel branch
-      # committed before the base leaks under any threshold.
-      "git for-each-ref --format='%(refname) %(objectname)' refs/tags |"
-      " while read -r ref obj; do"
-      ' git merge-base --is-ancestor "${obj}^{}" "$BASE" 2>/dev/null ||'
-      " printf 'delete %s\\n' \"$ref\";"
-      " done | git update-ref --stdin",
+      # `--no-merged` is that test, done by git in ONE traversal. Spelling it
+      # as a shell loop calling `merge-base` per tag was correct and far too
+      # slow: teleport carries 5240 tags, which measured at ~366s and blew the
+      # purge timeout on 76 of 731 instances. This runs in ~1s and was verified
+      # to select the identical set on 400-tag samples across three repos.
+      # `--no-merged` peels annotated tags itself, so the `^{}` indirection the
+      # loop needed is still covered.
+      'git for-each-ref --no-merged "$BASE"'
+      " --format='delete %(refname)' refs/tags"
+      " | git update-ref --stdin",
       # Remotes (the config URL leaks where to look), and the stray HEAD files.
       'for r in $(git remote); do git remote remove "$r"; done',
       "rm -f .git/FETCH_HEAD .git/ORIG_HEAD",
