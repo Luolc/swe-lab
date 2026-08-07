@@ -190,6 +190,62 @@ def test_the_solution_sha_is_quoted_into_the_script():
   assert "'a b; rm -rf /'" in script
 
 
+def test_the_report_script_emits_exactly_the_dataclass_fields():
+  # The shell is the one place the field list cannot be derived by `asdict`, so
+  # it is derived from `_SHELL_VARS` instead and pinned here. Add a field to
+  # GitHistoryReport without wiring the shell and this fails, rather than the
+  # run failing later on a TypeError from `cls(**...)`.
+  from dataclasses import fields
+
+  from swe_lab.git_history import _SHELL_VARS
+
+  emitted = [name for name, _ in _SHELL_VARS]
+  declared = [f.name for f in fields(GitHistoryReport)]
+  assert emitted == declared
+
+
+def test_the_report_script_quotes_only_its_string_fields():
+  # `from __future__ import annotations` makes `field.type` the annotation's
+  # SOURCE TEXT, so a `is str` check silently fails and base_sha loses its
+  # quotes — emitting invalid JSON. It did, once.
+  printf = next(
+      line
+      for line in build_report_script(workdir="/app").splitlines()
+      if line.startswith("printf")
+  )
+  assert '"base_sha":"%s"' in printf  # a string: quoted
+  assert '"refs":%s' in printf  # a number: bare
+  assert '"base_reachable":%s' in printf  # a bool: bare
+
+
+def test_the_reports_json_round_trips_over_every_field():
+  # The guard the manual mapping used to need: this covers any field added
+  # later without anyone editing a parser or a serializer.
+  report = GitHistoryReport(
+      base_sha="deadbeef",
+      refs=237,
+      tags=214,
+      heads=1,
+      remote_refs=22,
+      remotes=1,
+      reflog=4,
+      non_ancestor_commits=3444,
+      future_commits=3426,
+      base_reachable=True,
+      solution_reachable=True,
+  )
+  assert GitHistoryReport.from_json(json.dumps(report.to_dict())) == report
+
+
+def test_a_report_missing_a_field_fails_loudly():
+  # `cls(**...)` is stricter than hand-mapping: a key that is absent (or one
+  # nobody declared) is a TypeError, not a silently defaulted field.
+  partial = json.loads(_report_json())
+  del partial["future_commits"]
+  with pytest.raises(TypeError):
+    _ = GitHistoryReport.from_json(json.dumps(partial))
+
+
 # ─── the report + assertions ─────────────────────────────────────────────────
 
 

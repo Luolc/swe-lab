@@ -29,7 +29,7 @@ which also keeps our numbers comparable with theirs.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
 import json
 import shlex
 
@@ -196,15 +196,52 @@ def build_report_script(
     ]
   else:
     lines.append("SOL=null")
-  lines += [
-      'printf \'{"base_sha":"%s","refs":%s,"tags":%s,"heads":%s,'
-      '"remote_refs":%s,"remotes":%s,"reflog":%s,"non_ancestor_commits":%s,'
-      '"future_commits":%s,"base_reachable":%s,"solution_reachable":%s}\\n\''
-      ' "$BASE" "$REFS" "$TAGS" "$HEADS" "$REMOTE_REFS" "$REMOTES"'
-      ' "$REFLOG" "$AHEAD" "$FUTURE" "$BASE_OK" "$SOL"',
-      "exit 0",
-  ]
+  lines += [_emit_json(), "exit 0"]
   return "\n".join(lines) + "\n"
+
+
+# Report field → the shell variable holding it, in emission order. The single
+# place the two halves meet: the `printf` format, its arguments and the JSON
+# keys are all derived from this, and ``test_the_report_script_emits_exactly_
+# the_dataclass_fields`` fails if it ever drifts from ``GitHistoryReport``.
+_SHELL_VARS: tuple[tuple[str, str], ...] = (
+    ("base_sha", "BASE"),
+    ("refs", "REFS"),
+    ("tags", "TAGS"),
+    ("heads", "HEADS"),
+    ("remote_refs", "REMOTE_REFS"),
+    ("remotes", "REMOTES"),
+    ("reflog", "REFLOG"),
+    ("non_ancestor_commits", "AHEAD"),
+    ("future_commits", "FUTURE"),
+    ("base_reachable", "BASE_OK"),
+    ("solution_reachable", "SOL"),
+)
+
+
+def _emit_json() -> str:
+  """Build the ``printf`` that prints the report as one JSON object.
+
+  Generated rather than written out, so the key list exists **once**. Whether a
+  value is JSON-quoted is read off the dataclass — ``str`` fields get quotes,
+  numbers and booleans do not — which is why adding a field means touching the
+  dataclass and this table, and nothing else.
+
+  Returns:
+    The ``printf`` command line.
+  """
+  # `from __future__ import annotations` makes `field.type` the *source text*
+  # of the annotation, not the type object — so this compares strings. Getting
+  # that wrong silently drops the quotes around `base_sha` and emits invalid
+  # JSON, which is what `test_the_report_script_quotes_only_its_string_fields`
+  # is there to catch.
+  types = {field.name: str(field.type) for field in fields(GitHistoryReport)}
+  pairs = [
+      f'"{name}":"%s"' if types[name] == "str" else f'"{name}":%s'
+      for name, _ in _SHELL_VARS
+  ]
+  args = " ".join(f'"${var}"' for _, var in _SHELL_VARS)
+  return f"printf '{{{','.join(pairs)}}}\\n' {args}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,19 +278,34 @@ class GitHistoryReport:
   base_reachable: bool
   solution_reachable: bool | None
 
+  def to_dict(self) -> dict[str, object]:
+    """Render for the JSON artifact — field order follows the declaration."""
+    return asdict(self)
+
   @classmethod
   def from_json(cls, text: str) -> GitHistoryReport:
     """Parse the report script's stdout.
 
+    Splats the object straight into the constructor, matching
+    ``AttemptRecord.from_json``: the field list then lives **only** in the
+    dataclass, so adding one never means editing a parser too. It is also
+    stricter than hand-mapping — a missing or unexpected key is a ``TypeError``
+    rather than a silently defaulted field. Types are trusted because the
+    producer is :func:`build_report_script` — our own shell, not outside input.
+
+    A key that is missing, or one nobody declared, therefore surfaces as the
+    constructor's own ``TypeError`` — deliberately, since a report we cannot
+    read is treated exactly like a contaminated repo by the caller.
+
     Args:
-      text: The script's stdout (one JSON object, possibly with stray output
-        around it — only the last JSON line is read).
+      text: The script's stdout — one JSON object, possibly with stray output
+        around it (a git warning, say), so only the last JSON line is read.
 
     Returns:
       The parsed report.
 
     Raises:
-      ValueError: If no JSON object is present, or a field is missing.
+      ValueError: If no JSON object is present, or the line does not parse.
     """
     line = next(
         (
@@ -265,24 +317,7 @@ class GitHistoryReport:
     )
     if line is None:
       raise ValueError(f"no JSON object in report output: {text!r}")
-    raw = json.loads(line)
-    return cls(
-        base_sha=str(raw["base_sha"]),
-        refs=int(raw["refs"]),
-        tags=int(raw["tags"]),
-        heads=int(raw["heads"]),
-        remote_refs=int(raw["remote_refs"]),
-        remotes=int(raw["remotes"]),
-        reflog=int(raw["reflog"]),
-        non_ancestor_commits=int(raw["non_ancestor_commits"]),
-        future_commits=int(raw["future_commits"]),
-        base_reachable=bool(raw["base_reachable"]),
-        solution_reachable=(
-            None
-            if raw["solution_reachable"] is None
-            else bool(raw["solution_reachable"])
-        ),
-    )
+    return cls(**json.loads(line))
 
   def violations(self) -> tuple[str, ...]:
     """Return the assertion failures, empty when the repo is clean.

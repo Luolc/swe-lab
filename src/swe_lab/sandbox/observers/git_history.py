@@ -159,8 +159,8 @@ class GitHistoryPurgeObserver(SandboxObserver):
       return None
     payload = {
         "purged": self.purge,
-        "before": _as_dict(self.before),
-        "after": _as_dict(self.after),
+        "before": self.before.to_dict(),
+        "after": self.after.to_dict(),
         "violations": list(self.after.violations()),
     }
     return Contribution(
@@ -196,25 +196,8 @@ class GitHistoryPurgeObserver(SandboxObserver):
     result = sb.run_script(REPORT_SCRIPT_NAME, timeout=_REPORT_TIMEOUT_S)
     try:
       return GitHistoryReport.from_json(result.stdout)
-    except (ValueError, KeyError) as exc:
+    except (TypeError, ValueError) as exc:
       raise GitHistoryLeakError(
           "could not verify the repo's git history (the report script produced"
           f" no usable output, exit {result.exit_code}): {exc}"
       ) from exc
-
-
-def _as_dict(report: GitHistoryReport) -> dict[str, object]:
-  """Render a report for the JSON artifact (stable key order)."""
-  return {
-      "base_sha": report.base_sha,
-      "refs": report.refs,
-      "heads": report.heads,
-      "tags": report.tags,
-      "remote_refs": report.remote_refs,
-      "remotes": report.remotes,
-      "reflog": report.reflog,
-      "non_ancestor_commits": report.non_ancestor_commits,
-      "future_commits": report.future_commits,
-      "base_reachable": report.base_reachable,
-      "solution_reachable": report.solution_reachable,
-  }
