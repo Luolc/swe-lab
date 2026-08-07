@@ -196,22 +196,65 @@ class CodingAgentTask(Task):
 
   @override
   def should_retry(self, result: AttemptResult) -> bool:
-    """Retry as usual, except after an integrity failure — which never helps.
+    """Retry an infrastructure failure, never one the agent earned (ADR-0011).
 
-    A contaminated repo is deterministic: the same image purges the same way
-    every time, so a retry buys the same verdict one container later. Worse, a
-    retried integrity failure reads like flakiness in the record when it is a
-    property of the image.
+    A rollout retry is the one that can inflate a published number, so the
+    predicate is causal, not severity-based: **re-run only what happened *to*
+    the agent.** Three sources, in order:
+
+    - an **integrity failure** is never retried — a contaminated repo is
+      deterministic, so the same image purges the same way every time and a
+      retry buys the same verdict one container later, while reading like
+      flakiness in the record;
+    - the **engine's** verdict (the base hook): a sandbox that never came up,
+      a run error, a missing declared output. All ours, all retried. The
+      fourth engine failure, a timeout, never reaches here —
+      :meth:`~swe_lab.workflow.Task.should_retry` vetoes it, because
+      wall-clock is a budget the agent spent;
+    - the **agent's own** ending, when the engine is happy: a crash, a
+      truncated trace or an API error is ours and is retried;
+      ``max_turns`` / ``max_budget`` and a clean finish are the agent's and
+      are not (:attr:`~swe_lab.harnesses.AgentOutcome.retryable`).
+
+    What this deliberately does not read is the **patch** and the **grade**.
+    Retrying an empty patch or a failing test would re-roll bad luck until it
+    landed, which inflates pass@1 directly — and is the reason the predicate
+    is a function of the two outcome axes alone.
 
     Args:
       result: The attempt to judge.
 
     Returns:
-      Whether another attempt is worth paying for.
+      Whether another attempt is owed.
     """
     if isinstance(result.run.error, GitHistoryLeakError):
       return False
-    return super().should_retry(result)
+    if super().should_retry(result):
+      return True
+    observer = outcome_of(result)
+    return observer is not None and observer.outcome.retryable
+
+  @override
+  def record_extra(self, result: AttemptResult) -> Mapping[str, object]:
+    """Record how the agent's loop ended, so the retry is auditable later.
+
+    The retry decision above is a function of this value, and a run that
+    exhausted its budget on infrastructure failures still marks *succeeded*
+    (that is ``outputs_valid``'s call, not this one). Without the outcome on
+    the shard, telling those attempts apart from a solved-nothing agent would
+    mean re-parsing the trace artifact of every attempt.
+
+    Args:
+      result: The attempt being recorded.
+
+    Returns:
+      The agent outcome, or nothing when the task composed no harness
+      observer.
+    """
+    observer = outcome_of(result)
+    if observer is None:
+      return {}
+    return {"agent_outcome": observer.outcome.value}
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:

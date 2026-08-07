@@ -5,10 +5,10 @@ cleanly — are the harness's own knowledge, but they have to be read while the
 sandbox is still live and handed to the engine as a ``Contribution``. That is
 this observer's whole job, in ``before_destroy``:
 
-- **completion** — ``Harness.completed(sb)``, kept on the observer for the
-  composition to read back *and* exported as the ``agent_complete`` metric, so a
-  persisted run records "the agent crashed" distinctly from "it finished but did
-  not solve the task";
+- **outcome** — ``Harness.outcome(sb)``, kept on the observer for the
+  composition to read back (the retry decision is a function of it, ADR-0011)
+  *and* exported as the ``agent_complete`` metric, so a persisted run records
+  "the agent crashed" distinctly from "it finished but did not solve the task";
 - **native outputs** — every file the harness declared, *best effort*: only the
   ones that actually landed are registered, so a run that died early yields
   fewer artifacts rather than a broken reference. Each is namespaced
@@ -35,7 +35,7 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
-from .base import Harness
+from .base import AgentOutcome, Harness
 
 # Metric name for the agent's clean-finish signal (1.0 / 0.0 — ``Contribution``
 # carries scalars, and completion has no file of its own to register).
@@ -53,9 +53,9 @@ class HarnessOutcomeObserver(SandboxObserver):
 
   Attributes:
     harness: The harness whose run is being collected.
-    complete: Whether the agent finished cleanly; ``False`` until
-      ``before_destroy`` has run (and on a run whose sandbox never came up, so
-      the hook never fired).
+    outcome: How the agent's own loop ended. ``NO_OUTPUT`` until
+      ``before_destroy`` has run — which is also the honest reading for a run
+      whose sandbox never came up, so the hook never fired and no trace exists.
     collected: The native outputs that actually landed — namespaced artifact
       name → workspace-relative filename. Empty until ``before_destroy``.
     exec_result: The agent execution's own result, set by the composition
@@ -64,10 +64,21 @@ class HarnessOutcomeObserver(SandboxObserver):
   """
 
   harness: Harness
-  complete: bool = False
+  outcome: AgentOutcome = AgentOutcome.NO_OUTPUT
   collected: dict[str, str] = field(default_factory=dict)
   exec_result: ExecResult | None = None
   wall_seconds: float | None = None
+
+  @property
+  def complete(self) -> bool:
+    """Whether the agent finished cleanly — the coarse view of the outcome.
+
+    Derived rather than stored, so the bit and the outcome cannot drift.
+
+    Returns:
+      Whether :attr:`outcome` is ``FINISHED``.
+    """
+    return self.outcome is AgentOutcome.FINISHED
 
   @override
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
@@ -88,7 +99,7 @@ class HarnessOutcomeObserver(SandboxObserver):
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
-    """Ask the harness what it produced, and whether it finished.
+    """Ask the harness what it produced, and how its loop ended.
 
     Args:
       sb: The still-live sandbox, read through rather than a host path.
@@ -98,7 +109,7 @@ class HarnessOutcomeObserver(SandboxObserver):
       harness), the agent's own stderr when it said anything, and metrics for
       how the run ended.
     """
-    self.complete = self.harness.completed(sb)
+    self.outcome = self.harness.outcome(sb)
     self.collected = {
         qualified_name(self.harness.name, role): filename
         for role, filename in self.harness.native_outputs().items()

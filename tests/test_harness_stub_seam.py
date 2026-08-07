@@ -24,6 +24,7 @@ from swe_lab.conversation import (
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.harnesses import (
+    AgentOutcome,
     COMPLETE_METRIC,
     Harness,
     HarnessOutcomeObserver,
@@ -135,10 +136,13 @@ class StubHarness(Harness):
     )
 
   @override
-  def completed(self, sb: SandboxFs) -> bool:
+  def outcome(self, sb: SandboxFs) -> AgentOutcome:
     # This "agent" reads as finished once it wrote its own trace — the signal
-    # is the harness's business, in its own format.
-    return sb.exists(_TRACE_NAME)
+    # is the harness's business, in its own format. It cannot tell a crash from
+    # a budget ending, so an absent trace reads NO_OUTPUT rather than guessing.
+    if sb.exists(_TRACE_NAME):
+      return AgentOutcome.FINISHED
+    return AgentOutcome.NO_OUTPUT
 
 
 def test_stub_harness_composes_over_the_engine(tmp_path: Path):

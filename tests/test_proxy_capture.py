@@ -17,9 +17,10 @@ from swe_lab.conversation import (
     ToolResultBlock,
     ToolUseBlock,
 )
+from swe_lab.harnesses import AgentOutcome
 from swe_lab.harnesses.claude_code import (
     event_stream_to_conversation,
-    proxy_log_complete,
+    proxy_log_outcome,
     proxy_log_to_conversation,
 )
 
@@ -182,10 +183,19 @@ def test_proxy_conversion_empty_text_is_empty():
   assert proxy_log_to_conversation("") == Conversation(messages=[])
 
 
-def test_proxy_complete_reads_last_record():
-  assert proxy_log_complete(_jsonl(_PROXY_RECORDS)) is True
-  # last record's flag wins over the earlier stub's False
-  assert proxy_log_complete(_jsonl([_PROXY_RECORDS[1], _PROXY_RECORDS[0]])) is (
-      False
+def test_proxy_outcome_reads_last_record():
+  assert proxy_log_outcome(_jsonl(_PROXY_RECORDS)) is AgentOutcome.FINISHED
+  # last record's flag wins over the earlier stub's True
+  assert (
+      proxy_log_outcome(_jsonl([_PROXY_RECORDS[1], _PROXY_RECORDS[0]]))
+      is AgentOutcome.TRUNCATED
   )
-  assert proxy_log_complete("") is False
+  assert proxy_log_outcome("") is AgentOutcome.NO_OUTPUT
+
+
+def test_proxy_outcome_resolves_ambiguity_towards_not_retrying():
+  # A proxy log evidences API traffic, not the agent loop: max_turns and a
+  # crash after the last response both end on a complete response. Reading that
+  # as FINISHED (not retryable) can miss a retry; reading it as an error would
+  # hand a budget ending a second budget, which inflates the score.
+  assert proxy_log_outcome(_jsonl(_PROXY_RECORDS)).retryable is False

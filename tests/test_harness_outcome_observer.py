@@ -7,7 +7,12 @@ from typing import final, override
 from etils import epath
 
 from swe_lab.conversation import Conversation
-from swe_lab.harnesses import COMPLETE_METRIC, Harness, HarnessOutcomeObserver
+from swe_lab.harnesses import (
+    AgentOutcome,
+    COMPLETE_METRIC,
+    Harness,
+    HarnessOutcomeObserver,
+)
 from swe_lab.sandbox import (
     Contribution,
     ExecResult,
@@ -26,10 +31,10 @@ STDERR = "agent.stderr.log"
 
 
 class _StubHarness(Harness):
-  """A harness that declares two byproducts and a scripted completion."""
+  """A harness that declares two byproducts and a scripted outcome."""
 
-  def __init__(self, *, complete: bool = True) -> None:
-    self._complete: bool = complete
+  def __init__(self, *, outcome: AgentOutcome = AgentOutcome.FINISHED) -> None:
+    self._outcome: AgentOutcome = outcome
     self.seen: SandboxFs | None = None
 
   @property
@@ -68,9 +73,9 @@ class _StubHarness(Harness):
     return Conversation(messages=[])
 
   @override
-  def completed(self, sb: SandboxFs) -> bool:
+  def outcome(self, sb: SandboxFs) -> AgentOutcome:
     self.seen = sb
-    return self._complete
+    return self._outcome
 
 
 def _sandbox(workspace: Path) -> FakeSandbox:
@@ -112,7 +117,9 @@ def test_absent_byproducts_are_skipped_best_effort(tmp_path: Path):
 
 
 def test_completion_is_kept_and_exported_as_a_metric(tmp_path: Path):
-  observer = HarnessOutcomeObserver(harness=_StubHarness(complete=True))
+  observer = HarnessOutcomeObserver(
+      harness=_StubHarness(outcome=AgentOutcome.FINISHED)
+  )
   contribution = observer.before_destroy(_sandbox(tmp_path))
   assert observer.complete is True  # readable by the composition
   assert contribution is not None
@@ -120,7 +127,9 @@ def test_completion_is_kept_and_exported_as_a_metric(tmp_path: Path):
 
 
 def test_incomplete_run_is_recorded_not_dropped(tmp_path: Path):
-  observer = HarnessOutcomeObserver(harness=_StubHarness(complete=False))
+  observer = HarnessOutcomeObserver(
+      harness=_StubHarness(outcome=AgentOutcome.EXECUTION_ERROR)
+  )
   contribution = observer.before_destroy(_sandbox(tmp_path))
   assert observer.complete is False
   assert contribution is not None
@@ -164,7 +173,9 @@ def test_qualified_name_uses_a_dot_not_a_path_separator():
   assert "/" not in NAME_SEPARATOR
 
 
-def test_complete_defaults_false_before_the_hook_runs():
-  # A run whose sandbox never came up never fires before_destroy; the outcome
-  # must read as incomplete rather than as an optimistic default.
-  assert HarnessOutcomeObserver(harness=_StubHarness()).complete is False
+def test_outcome_defaults_to_no_output_before_the_hook_runs():
+  # A run whose sandbox never came up never fires before_destroy. NO_OUTPUT is
+  # the honest reading — there is no trace — rather than an optimistic default.
+  observer = HarnessOutcomeObserver(harness=_StubHarness())
+  assert observer.outcome is AgentOutcome.NO_OUTPUT
+  assert observer.complete is False

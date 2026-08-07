@@ -6,7 +6,7 @@ and each registering itself by name at import of its own package (see
 ``registry``) so an invocation can select it without swe-lab knowing it exists.
 """
 
-from .base import Harness
+from .base import AgentOutcome, Harness
 from .observer import COMPLETE_METRIC, HarnessOutcomeObserver
 from .registry import (
     build_harness,
@@ -17,6 +17,7 @@ from .registry import (
 
 __all__ = [
     "COMPLETE_METRIC",
+    "AgentOutcome",
     "Harness",
     "HarnessFactory",
     "HarnessOutcomeObserver",

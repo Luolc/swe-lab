@@ -23,7 +23,7 @@ import shlex
 from typing import override
 
 from swe_lab.conversation import Conversation, ConversationObserver
-from swe_lab.harnesses.base import Harness
+from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
     ArtifactSchema,
@@ -56,9 +56,9 @@ from .constants import (
     UNATTENDED_DENIED_TOOLS,
 )
 from .convert import (
-    event_stream_complete,
+    event_stream_outcome,
     event_stream_to_conversation,
-    proxy_log_complete,
+    proxy_log_outcome,
     proxy_log_to_conversation,
 )
 from .proxy import DEFAULT_BASE_PORT
@@ -261,7 +261,7 @@ class ClaudeCodeHarness(Harness):
 
     This harness's own choice (ADR-0007 §3), not an inherited default — the
     pair are generic building blocks that delegate back to
-    ``to_conversation`` / ``completed`` / ``native_outputs``, which is where
+    ``to_conversation`` / ``outcome`` / ``native_outputs``, which is where
     everything Claude-Code-specific lives.
 
     In ``PROXY`` capture the trace *is* a recording this harness has to make,
@@ -385,17 +385,18 @@ class ClaudeCodeHarness(Harness):
     return event_stream_to_conversation(_read_text(sb, EVENT_STREAM_NAME))
 
   @override
-  def completed(self, sb: SandboxFs) -> bool:
-    """Read the clean-finish signal from whichever trace the run captured.
+  def outcome(self, sb: SandboxFs) -> AgentOutcome:
+    """Classify the ending from whichever trace the run captured.
 
-    ``STREAM`` reads the terminal ``result`` event; ``PROXY`` reads the last
-    record's ``complete`` flag. An absent trace reads as ``False``
-    (``_read_text`` is absence-tolerant), so a crashed run reports incomplete
-    rather than raising.
+    ``STREAM`` reads the agent's own terminal ``result`` event, so it can name
+    every ending; ``PROXY`` sees API traffic only and reports the coarse pair
+    it can actually evidence (see :func:`proxy_log_outcome`). An absent trace
+    reads as ``NO_OUTPUT`` (``_read_text`` is absence-tolerant), so a crashed
+    run reports an outcome rather than raising.
     """
     if self.capture == "proxy":
-      return proxy_log_complete(_read_text(sb, PROXY_LOG_NAME))
-    return event_stream_complete(_read_text(sb, EVENT_STREAM_NAME))
+      return proxy_log_outcome(_read_text(sb, PROXY_LOG_NAME))
+    return event_stream_outcome(_read_text(sb, EVENT_STREAM_NAME))
 
   def _invocation_script(self, workdir: str) -> str:
     """Build the run script for an *unattended* run.

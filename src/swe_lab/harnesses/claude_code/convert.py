@@ -36,6 +36,7 @@ from swe_lab.conversation import (
     ToolResultBlock,
     ToolUseBlock,
 )
+from swe_lab.harnesses.base import AgentOutcome
 
 
 def event_stream_to_conversation(raw: str) -> Conversation:
@@ -63,31 +64,63 @@ def event_stream_to_conversation(raw: str) -> Conversation:
   return Conversation(messages=messages)
 
 
-def event_stream_complete(raw: str) -> bool:
-  """Return whether the run finished cleanly.
+# The terminal ``result`` event's error subtypes, mapped onto the taxonomy.
+# Exhaustive as of the vendored source: ``SDKResultErrorSchema`` in
+# ``entrypoints/sdk/coreSchemas.ts`` enumerates exactly these four, and
+# ``SDKResultSuccessSchema`` the one ``success``.
+_ERROR_SUBTYPES: dict[str, AgentOutcome] = {
+    "error_max_turns": AgentOutcome.MAX_TURNS,
+    "error_max_budget_usd": AgentOutcome.MAX_BUDGET,
+    "error_max_structured_output_retries": AgentOutcome.MAX_OUTPUT_RETRIES,
+    "error_during_execution": AgentOutcome.EXECUTION_ERROR,
+}
 
-  The terminal ``result`` event is the reliable signal: ``subtype == "success"``
-  marks a clean finish, and every bounded-exit path emits a *distinct* error
-  subtype instead — ``error_max_turns`` (max turns reached),
-  ``error_max_budget_usd``, ``error_max_structured_output_retries``,
-  ``error_during_execution`` — each with ``is_error`` set. A ``success`` subtype
-  can still carry ``is_error`` (the final assistant turn was an API error), so
-  we require both. Assistant messages may carry a null ``stop_reason``, so we
-  never depend on it. (Verified against the Claude Code source
-  ``QueryEngine.ts``.)
+
+def event_stream_outcome(raw: str) -> AgentOutcome:
+  """Classify how the run ended from its ``stream-json`` trace.
+
+  The terminal ``result`` event is the reliable signal, and it says which of
+  the endings happened: ``subtype == "success"`` marks a clean finish, and
+  every bounded-exit path emits a *distinct* error subtype instead (see
+  :data:`_ERROR_SUBTYPES`). Load-bearing details, all read off the Claude Code
+  source (``QueryEngine.ts``, ``entrypoints/sdk/coreSchemas.ts``):
+
+  - **``is_error`` is independent of the subtype.** A ``success`` result can
+    carry ``is_error: true`` — the loop ended but its final turn was an API
+    error — which is a *different* outcome from a clean finish and, unlike it,
+    worth retrying.
+  - **A result is not guaranteed.** ``print.ts`` synthesizes an
+    ``error_during_execution`` from its top-level ``catch``, but inside its own
+    try/catch that gives up on shutdown; a hard kill emits nothing at all. So
+    "a trace with no result event" is its own outcome (``TRUNCATED``), and
+    "no trace" another (``NO_OUTPUT``).
+  - An unrecognized error subtype maps to ``EXECUTION_ERROR``, the catch-all it
+    would be a flavour of; a *new* budget ending would arrive here as
+    retryable, which is the direction that needs watching (ADR-0011).
+  - Assistant messages may carry a null ``stop_reason``, so we never depend on
+    it.
 
   Args:
-    raw: The event-stream file contents.
+    raw: The event-stream file contents (``""`` when the agent wrote none).
 
   Returns:
-    ``True`` iff a terminal success ``result`` event (not an error) is present.
+    How the agent's loop ended.
   """
-  for event in reversed(_parse_events(raw)):
-    if event.get("type") == "result":
-      return event.get("subtype") == "success" and not event.get(
-          "is_error", False
+  events = _parse_events(raw)
+  if not events:
+    return AgentOutcome.NO_OUTPUT
+  for event in reversed(events):
+    if event.get("type") != "result":
+      continue
+    subtype = event.get("subtype")
+    if subtype == "success":
+      return (
+          AgentOutcome.FINISHED_WITH_API_ERROR
+          if event.get("is_error", False)
+          else AgentOutcome.FINISHED
       )
-  return False
+    return _ERROR_SUBTYPES.get(str(subtype), AgentOutcome.EXECUTION_ERROR)
+  return AgentOutcome.TRUNCATED
 
 
 def proxy_log_to_conversation(raw: str) -> Conversation:
@@ -128,20 +161,36 @@ def proxy_log_to_conversation(raw: str) -> Conversation:
   return Conversation(messages=messages)
 
 
-def proxy_log_complete(raw: str) -> bool:
-  """Return whether the proxied session finished cleanly.
+def proxy_log_outcome(raw: str) -> AgentOutcome:
+  """Classify a proxied session's ending — coarsely, and deliberately so.
 
-  The proxy stamps each record with its own ``complete`` flag (a
-  ``message_delta`` carrying a ``stop_reason`` for a stream, or a fully-read
-  buffered response); the last record's flag is the session's completion signal.
+  A proxy log is a record of **API traffic**, not of the agent loop: the flag
+  it stamps on each record says the last *HTTP response* was fully received (a
+  ``message_delta`` carrying a ``stop_reason`` for a stream, a fully-read body
+  otherwise), which is a strictly weaker claim than "the agent finished". A run
+  that hit ``--max-turns``, and a run that crashed *after* its last response,
+  both end on a perfectly complete response.
+
+  So this maps onto only the two outcomes the evidence supports, and resolves
+  the ambiguity **towards not retrying**: a complete last response reads
+  ``FINISHED`` even though it may hide a budget ending or a late crash, because
+  re-running an ending the agent chose is what inflates a score, while a
+  truncated one reads ``TRUNCATED`` — a response cut mid-flight is ours. A
+  composition that needs the agent's own budget endings distinguished should
+  capture ``STREAM``, where the agent reports them itself.
 
   Args:
-    raw: The proxy log contents.
+    raw: The proxy log contents (``""`` when the run never reached the API).
 
   Returns:
-    ``True`` iff the last record is marked ``complete``.
+    ``NO_OUTPUT`` with no records, else ``FINISHED`` / ``TRUNCATED``.
   """
-  return bool(_last_proxy_record(raw).get("complete", False))
+  record = _last_proxy_record(raw)
+  if not record:
+    return AgentOutcome.NO_OUTPUT
+  if record.get("complete", False):
+    return AgentOutcome.FINISHED
+  return AgentOutcome.TRUNCATED
 
 
 def _last_proxy_record(raw: str) -> dict[str, object]:

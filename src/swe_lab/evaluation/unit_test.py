@@ -340,6 +340,19 @@ class UnitTestTask[V: Verdict](Task):
     marker still reads ``outputs_valid``, so a genuinely failing patch that
     exhausts the budget is a *succeeded* task whose answer is "unresolved".
 
+    Reading the verdict is sound *here* and nowhere else. Grading re-runs a
+    **fixed** candidate against a nondeterministic suite, so what a repeat
+    averages out is the harness's noise; the rollout's predicate must never
+    read a grade, because there a repeat re-rolls the *agent* and the score
+    inflates (ADR-0011). The two look alike and are opposites.
+
+    A **timed-out** suite is not one of these, and never reaches this method:
+    the runner answers it from ``retry_on_timeout``
+    (:func:`~swe_lab.workflow.run_task.retry_permitted`), because a suite that
+    outran its budget usually did so on the patch under test — an infinite
+    loop, a deadlock — and re-running it pays the full timeout again to reach
+    the same place.
+
     Args:
       result: The execution to judge.
 
