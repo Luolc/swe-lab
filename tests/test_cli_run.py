@@ -408,3 +408,34 @@ def test_persisting_writes_the_run_under_its_sweep(
   payload = json.loads(result.output)
   assert payload["record_key"] == f"sw1/{_INSTANCE_ID}/r0/workflow.json"
   assert "artifacts" in payload["entries"][0]
+
+
+def test_effort_is_overridable_and_a_typo_is_refused():
+  # The sweep-facing path. The agent only WARNS on an unknown effort and runs
+  # at its default, so the CLI has to be the thing that refuses one — and it
+  # should say what is allowed rather than just "no".
+  from swe_lab.cli.overrides import (
+      apply_overrides,
+      OverrideError,
+      parse_overrides,
+  )
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+  from swe_lab.rollout import CodingAgentTask
+  import swe_lab.workflow.definitions as definitions
+  from swe_lab.workflow.registry import workflow_definition
+
+  del definitions  # imported for its registration side effect
+  entries = workflow_definition("rollout")
+  applied = apply_overrides(
+      entries, parse_overrides(["--rollout.harness.effort=xhigh"])
+  )
+  task = applied[0].task
+  assert isinstance(task, CodingAgentTask)
+  harness = task.harness
+  assert isinstance(harness, ClaudeCodeHarness)
+  assert harness.effort == "xhigh"
+
+  with pytest.raises(OverrideError, match="low, medium, high, xhigh, max"):
+    _ = apply_overrides(
+        entries, parse_overrides(["--rollout.harness.effort=ultra"])
+    )

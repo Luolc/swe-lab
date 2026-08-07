@@ -9,6 +9,7 @@ Runs N samples + an aggregate and stores every artifact under
 from __future__ import annotations
 
 import argparse
+from typing import get_args
 
 from swe_lab.harnesses.claude_code.capture import Capture
 
@@ -38,12 +39,11 @@ def main() -> int:
   )
   _ = parser.add_argument(
       "--capture",
-      type=Capture,
-      choices=list(Capture),
-      default=Capture.STREAM,
+      choices=get_args(Capture.__value__),
+      default="stream",
       help=(
           "Trace source: 'proxy' (reverse proxy, raw wire record) or 'stream'"
-          f" (claude stream-json, no proxy). Default: {Capture.STREAM.value}."
+          " (claude stream-json, no proxy). Default: stream."
       ),
   )
   args = parser.parse_args()

@@ -69,7 +69,7 @@ def annotate_with_aggregation(
     repo_root: epath.PathLike | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
-    capture: Capture = Capture.STREAM,
+    capture: Capture = "stream",
 ) -> PipelineResult:
   """Sample ``instance`` ``samples`` times (in parallel), then aggregate.
 
@@ -181,7 +181,7 @@ def annotate_by_id_with_aggregation(
     dataset: str = DEFAULT_DATASET,
     samples: int = DEFAULT_SAMPLES,
     model: str = DEFAULT_MODEL,
-    capture: Capture = Capture.STREAM,
+    capture: Capture = "stream",
 ) -> PipelineResult:
   """Look an instance up by id and run the sample-and-aggregate pipeline.
 

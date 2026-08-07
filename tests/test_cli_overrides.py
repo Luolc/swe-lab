@@ -23,7 +23,7 @@ from swe_lab.cli.overrides import (
 )
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.unit_test import UnitTestTask
-from swe_lab.harnesses.claude_code import Capture, ClaudeCodeHarness
+from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import (
     backend_of,
@@ -209,7 +209,7 @@ def test_an_enum_takes_its_value_and_lists_them_when_it_does_not():
       "rollout", CodingAgentTask(harness=ClaudeCodeHarness()), timeout=10.0
   )
   rebuilt = _applied("--rollout.harness.capture=proxy", entry=entry)
-  assert _agent(rebuilt).capture is Capture.PROXY
+  assert _agent(rebuilt).capture == "proxy"
   with pytest.raises(OverrideError, match="expected one of"):
     _ = _applied("--rollout.harness.capture=telepathy", entry=entry)
 
@@ -340,3 +340,34 @@ def test_an_unknown_backend_name_is_refused():
     _ = apply_overrides(
         definitions.ROLLOUT, parse_overrides(["--rollout.sandbox=nope"])
     )
+
+
+def test_a_literal_alias_is_overridable_and_validates_its_members():
+  # The engine grew a Literal branch so a closed value set need not be an enum.
+  # Validating HERE is the point: a Literal is a static type, so the CLI
+  # boundary is the only place a sweep config's text is ever checked.
+  from typing import Literal
+
+  from swe_lab.cli.overrides import _coerce, Override
+
+  plain = Literal["stream", "proxy"]
+  assert (
+      _coerce(plain, Override("r", ("x",), "proxy", "--r.x=proxy")) == "proxy"
+  )
+  with pytest.raises(OverrideError, match="expected one of stream, proxy"):
+    _ = _coerce(plain, Override("r", ("x",), "ftp", "--r.x=ftp"))
+
+
+def test_a_pep695_type_alias_is_unwrapped_before_dispatch():
+  # `type X = Literal[...]` arrives as a TypeAliasType with no origin of its
+  # own; without unwrapping it would read as "not a type this can build from
+  # text" and the field would be silently unoverridable — which is exactly how
+  # Capture and Effort are declared.
+  from swe_lab.cli.overrides import _coerce, Override
+  from swe_lab.harnesses.claude_code import Effort
+
+  assert (
+      _coerce(Effort, Override("r", ("x",), "xhigh", "--r.x=xhigh")) == "xhigh"
+  )
+  with pytest.raises(OverrideError, match="low, medium, high, xhigh, max"):
+    _ = _coerce(Effort, Override("r", ("x",), "ultra", "--r.x=ultra"))

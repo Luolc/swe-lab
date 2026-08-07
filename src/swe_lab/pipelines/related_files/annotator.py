@@ -45,7 +45,7 @@ def annotate_instance(
     variant: str = "",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: Capture = Capture.STREAM,
+    capture: Capture = "stream",
 ) -> RunResult:
   """Annotate one instance; return the result (the caller persists it)."""
   return run_agent(
@@ -71,7 +71,7 @@ def annotate_by_id(
     dataset: Dataset | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_BASE_PORT,
-    capture: Capture = Capture.STREAM,
+    capture: Capture = "stream",
 ) -> RunResult:
   """Look an instance up by id and annotate it (using its dataset index)."""
   dataset = dataset or load_dataset()

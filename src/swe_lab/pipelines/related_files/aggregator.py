@@ -97,7 +97,7 @@ def aggregate_instance(
     variant: str = "agg",
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     claude_timeout: float = DEFAULT_CLAUDE_TIMEOUT_S,
-    capture: Capture = Capture.STREAM,
+    capture: Capture = "stream",
 ) -> RunResult:
   """Reconcile ``candidates`` (each an object with a ``snippets`` array).
 
@@ -131,7 +131,7 @@ def aggregate_by_id(
     dataset: Dataset | None = None,
     model: str = DEFAULT_MODEL,
     base_port: int = DEFAULT_AGG_BASE_PORT,
-    capture: Capture = Capture.STREAM,
+    capture: Capture = "stream",
 ) -> RunResult:
   """Look an instance up by id and aggregate ``candidates`` for it."""
   dataset = dataset or load_dataset()
