@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up uv (brings its own Python)
-        uses: astral-sh/setup-uv@v9
+        uses: astral-sh/setup-uv@v9.0.0
 
       - name: Install deps
         run: uv sync
