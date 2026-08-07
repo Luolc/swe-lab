@@ -332,8 +332,18 @@ weight the sequences above can bear:
 ## 4. What follows
 
 The decisions are in
-[ADR-0010](../decisions/ADR-0010-benchmark-integrity.md). In brief, the ordering
-this study argues for:
+[ADR-0010](../decisions/ADR-0010-benchmark-integrity.md).
+
+> **Note (2026-08-06, same day).** The ADR's dated amendment **reorders 1 and
+> 2 below**, and this snapshot is left as written. The analysis stands — egress
+> really is the 57% vector — but for *this repo* it turned out to be a setting
+> rather than a build: `network=False` on the Docker backend, and a host-side
+> proxy rule already solved in the downstream remote sandbox. So the git purge
+> is P0 ([task 25](../horizontal/plans/task-25-git-history-purge.md), now
+> empirically validated), egress is configuration plus the §5 stamp, and the
+> verifier is a P1 post-rollout entry. Read the amendment, not this ordering.
+
+In brief, the ordering this study argues for:
 
 1. **Egress first.** It is the 57% vector, it is wide open, and the measured
    evidence says closing it costs nothing in legitimate capability.
