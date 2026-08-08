@@ -250,3 +250,105 @@ For Codex the matrix is not a nice-to-have; it is the entire proof, because the
    shared (§6a).
 6. **Scope is design only** for now, and the Claude Code wiring divergence is
    left alone (§9) — both decided with the user on 2026-08-07.
+
+---
+
+## Result — 2026-08-08 (provisioning + `CodexHarness` landed together)
+
+Implemented and exercised end to end on real Docker containers, including a
+real SWE-Bench Pro instance. **Three of the decisions above were wrong**, and
+each was caught by running the thing rather than by reading more source. They
+are corrected here rather than edited in place, so the reasoning that produced
+the error stays visible.
+
+### C1. Two binaries, not one — §2 and decision 2 were wrong
+
+`codex` alone is **not** a working agent. It spawns `codex-code-mode-host` to
+execute commands and apply patches, and derives that helper's path as a
+*sibling* of its own binary. With the helper absent the run still starts,
+authenticates, answers the prompt, and **exits 0** — having been unable to run
+a single command or edit a file ("the workspace execution host is disabled").
+
+That is the worst failure shape there is: a green rollout with an empty patch,
+indistinguishable from an agent that simply failed the task. Provisioning
+therefore places a **directory of two binaries**, and `ensure_codex_binaries`
+is named in the plural for that reason.
+
+What §2 got right is that we still do **not** want the `-bundle` / `-package`
+archives: they add `bwrap`, a Python runtime and a packaged zsh. We fetch the
+two bare per-binary assets instead.
+
+### C2. CA certificates are required, and their absence is not obvious
+
+Measured on `debian:stable-slim` (no `ca-certificates`): every request fails
+with `invalid peer certificate: UnknownIssuer`, and the agent then burns its
+retries reconnecting. Codex uses the system trust store — it does **not**
+bundle roots. Task-24 §10's "documented, not bundled" rule therefore applies
+to Codex unchanged, and a minimal instance image needs a CA bundle mounted and
+`SSL_CERT_FILE` pointed at it.
+
+### C3. There is no safe default model — §4 did not consider this
+
+The set of models a Codex install may use depends on the **account** behind
+it. A ChatGPT login rejects an API-tier model outright (HTTP 400, "The
+'<model>' model is not supported when using Codex with a ChatGPT account") and
+the whole run fails before the first turn. `CodexHarness.model` is therefore
+`None` by default — no `--model` flag — and a sweep that needs reproducibility
+pins one and owns its validity there.
+
+### C4. Credentials are a *file*, so they arrive by mount
+
+A ChatGPT login lives in `auth.json` under `CODEX_HOME`, which `pass_env`
+cannot carry. `CodexAuthObserver` stages it as a mount — not read-only, since
+Codex refreshes the token and writes it back, and the container's copy is
+discarded with the container.
+
+### C5. An item-level error is not a run failure
+
+A live 0.147.0 run emits an `item.completed` of type `error` (a degraded
+optional feature) on a turn that then **completes perfectly**. Classifying the
+outcome from items would report that healthy run as failed and, since
+`EXECUTION_ERROR` is retryable under [ADR-0011](../../decisions/ADR-0011-fair-retry.md),
+spend budget re-running it. `event_stream_outcome` reads turn-level events
+only; the notice still reaches the conversation so it is not silently lost.
+A named test guards this.
+
+### Confirmed as designed
+
+- **Static musl** (§1) held all the way through the production path — no
+  bundle, no launcher, no bundled libraries.
+- **No `bwrap`** (§5, decision 3): `--dangerously-bypass-approvals-and-sandbox`
+  is what an externally-sandboxed container wants, and it avoids the
+  user-namespace dependency.
+- **Pinned in-repo sha256** (§3, decision 4) is the verification, now for both
+  archives.
+
+### §7 (the provisioning seam) is still open, and now has evidence
+
+Not done. `HostCodexBinaryObserver` exists but is **opt-in** — a caller composes
+it through `extra_observers` — because the backend cannot see which agent a run
+uses, and adding it to the default set would make every Claude Code run also
+fetch ~300 MB of Codex. So the repo now has exactly the asymmetry §7 predicts:
+one agent provisioned by default, another by hand, both enumerated inside the
+backend. That is the argument for doing §7 next.
+
+### Verified by running it
+
+| Case | Result |
+|---|---|
+| Trivial prompt, `python:3.12-slim` | `FINISHED`, 1-message trace, empty patch |
+| File edit + verification command | `FINISHED`, 12-message trace with matched `tool_use`/`tool_result` pairs, failed commands flagged `is_error` |
+| **Real SWE-Bench Pro instance** (flipt, real image + `base_commit`, history purge and result verifier on) | `FINISHED`, **non-empty patch extracted** against the real base commit |
+| Model pinned to an account-invalid value | `turn.failed` → `EXECUTION_ERROR`, correctly classified as retryable |
+
+A run whose prompt named a file absent from the checkout produced an empty
+patch and an honest refusal — the harness reporting the truth, not a defect.
+
+### Still not verified
+
+- **GitHub-job backend**: no provisioning path written (out of scope for now).
+- **The portability matrix** (§8) has not been run against the pinned build;
+  §1's three-image check was done on the bare binary before this landed.
+- **arm64**, still unclaimed.
+- No shipped workflow definition registers Codex yet — it is selectable by
+  name (`--rollout.harness=codex`), but no built-in definition uses it.

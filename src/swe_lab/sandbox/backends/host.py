@@ -438,6 +438,52 @@ class HostClaudeCodeBinaryObserver(SandboxObserver):
     return {BINARY_AT: Mount(binary, executable=True, read_only=True)}
 
 
+class HostCodexBinaryObserver(SandboxObserver):
+  """Put the pinned Codex binaries into the container, from the host.
+
+  The sibling of :class:`HostClaudeCodeBinaryObserver`, and different in two
+  ways that matter.
+
+  **It stages two files, not one.** Codex spawns a code-mode host to execute
+  commands and apply patches, and derives that helper's path as a sibling of
+  its own binary — so both are staged, at the paths the harness's constants
+  fix. Staging only ``codex`` yields a run that authenticates, answers, and
+  exits 0 having been unable to touch the repo.
+
+  **It is opt-in**, composed by a caller (``extra_observers``) rather than by
+  the backend's own :meth:`DockerHostSandbox.observers`. The backend cannot see
+  which agent a run uses, so putting this in the default set would make every
+  Claude Code run also fetch ~300 MB of Codex. That asymmetry — one agent
+  provisioned by default, another by hand — is a stopgap, and the real fix is
+  the seam task-28 §7 proposes: a harness *declares* the assets it needs and a
+  backend knows only how to materialize an arbitrary declared asset, so neither
+  side enumerates the other.
+  """
+
+  @override
+  def mounts(self) -> Mounts:
+    """Stage the host-cached binaries as read-only executable assets."""
+    # Imported here, not at module scope, for the cycle reason above.
+    from swe_lab.harnesses.codex.binary import (
+        CODE_MODE_HOST_STEM,
+        CODEX_STEM,
+        ensure_codex_binaries,
+    )
+    from swe_lab.harnesses.codex.constants import BINARY_AT, CODE_MODE_HOST_AT
+
+    cached = ensure_codex_binaries()
+    return {
+        BINARY_AT: Mount(
+            LocalFile(cached / CODEX_STEM), executable=True, read_only=True
+        ),
+        CODE_MODE_HOST_AT: Mount(
+            LocalFile(cached / CODE_MODE_HOST_STEM),
+            executable=True,
+            read_only=True,
+        ),
+    }
+
+
 # The metric namespace for backend-contributed runtime metrics; distinct from
 # the eval method's ``eval.*`` and any harness's by construction.
 _METRIC_NAMESPACE = "sandbox"
