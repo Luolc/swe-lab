@@ -37,6 +37,7 @@ from swe_lab.harnesses.codex.constants import (
     CODE_MODE_HOST_AT,
     EVENT_STREAM_NAME,
 )
+from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import Inline, SandboxError, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 
@@ -337,3 +338,63 @@ def test_a_missing_login_fails_before_a_container_is_paid_for(tmp_path: Path):
 
 def test_the_harness_registers_itself_by_name():
   assert "codex" in registered_harnesses()
+
+
+def test_codex_is_selectable_by_name_through_the_cli(tmp_path: Path):
+  """The whole point of the open registry: a name, then field overrides.
+
+  Guards a gap this nearly shipped with. A harness registers itself at import
+  of its own package, and `claude_code` is imported only because a shipped
+  definition uses it — `codex` has none, so without an explicit import
+  `--rollout.harness=codex` failed as "unknown harness", which reads as *not
+  implemented* rather than *not the default*.
+  """
+  del tmp_path
+
+  from swe_lab.cli.overrides import apply_overrides, parse_overrides
+  from swe_lab.workflow.registry import workflow_definition
+
+  assert "codex" in registered_harnesses()
+
+  definition = workflow_definition("rollout")  # ships claude_code
+  entries = apply_overrides(
+      definition,
+      parse_overrides(
+          [
+              "--rollout.harness=codex",
+              "--rollout.harness.model=gpt-5.6-terra",
+          ]
+      ),
+  )
+  task = entries[0].task
+  assert isinstance(task, CodingAgentTask)
+  # The name selects the agent; the field overrides then apply to what it built.
+  assert isinstance(task.harness, CodexHarness)
+  assert task.harness.model == "gpt-5.6-terra"
+  # ...and the definition itself is untouched — overrides never mutate it.
+  original = definition[0].task
+  assert isinstance(original, CodingAgentTask)
+  assert not isinstance(original.harness, CodexHarness)
+
+
+def test_a_field_of_another_agent_is_refused_with_the_valid_ones(
+    tmp_path: Path,
+):
+  # `capture` is a claude_code field; naming it on codex must say so rather
+  # than silently doing nothing.
+  del tmp_path
+
+  from swe_lab.cli.overrides import (
+      apply_overrides,
+      OverrideError,
+      parse_overrides,
+  )
+  from swe_lab.workflow.registry import workflow_definition
+
+  with pytest.raises(OverrideError, match="not a field of CodexHarness"):
+    _ = apply_overrides(
+        workflow_definition("rollout"),
+        parse_overrides(
+            ["--rollout.harness=codex", "--rollout.harness.capture=proxy"]
+        ),
+    )
