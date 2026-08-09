@@ -62,6 +62,7 @@ from .constants import (
     PROMPT_FILENAME,
 )
 from .convert import event_stream_outcome, event_stream_to_conversation
+from .provider import CodexProvider
 
 _logger = logging.getLogger(__name__)
 
@@ -208,14 +209,21 @@ class CodexHarness(Harness):
     skip_git_repo_check: Pass ``--skip-git-repo-check``. **On by default**: an
       instance workspace is not always a git repo at the path Codex is pointed
       at, and the check aborts the run rather than degrading.
-    extra_config: ``-c key=value`` overrides applied to Codex's own config, in
-      order. The escape hatch for a knob that has no flag.
+    provider: An OpenAI-compatible endpoint to use instead of the built-in
+      one, rendered as ``-c`` overrides. ``None`` keeps Codex's default
+      provider, which is right for a ChatGPT login and for an API key against
+      OpenAI's own API; set it when the run must talk to a gateway or proxy,
+      since a base URL is expressible no other way. The key itself is **not**
+      carried here — see :mod:`swe_lab.harnesses.codex.provider`.
+    extra_config: Further ``-c key=value`` overrides, applied after the
+      provider's. The escape hatch for a knob that has no flag and no field.
   """
 
   model: str | None = DEFAULT_MODEL
   effort: Effort | None = DEFAULT_EFFORT
   agent_home: str = AGENT_HOME
   skip_git_repo_check: bool = True
+  provider: CodexProvider | None = None
   extra_config: tuple[str, ...] = ()
 
   @property
@@ -387,7 +395,10 @@ class CodexHarness(Harness):
       flags.append(f"-c {shlex.quote(f'{EFFORT_CONFIG_KEY}={self.effort}')}")
     if self.skip_git_repo_check:
       flags.append("--skip-git-repo-check")
-    for setting in self.extra_config:
+    provider_overrides = (
+        self.provider.config_overrides() if self.provider is not None else ()
+    )
+    for setting in (*provider_overrides, *self.extra_config):
       flags.append(f"-c {shlex.quote(setting)}")
     flags.append("-")  # read the prompt from stdin
 

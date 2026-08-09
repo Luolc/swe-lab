@@ -130,3 +130,9 @@ API_KEY_ENV = "OPENAI_API_KEY"
 # The credential file Codex reads from `CODEX_HOME`. Named here because the
 # composition that supplies a login has to stage it under exactly this name.
 AUTH_FILENAME = "auth.json"
+
+# Codex's own config file, which it CREATES in `CODEX_HOME` at startup. Named
+# here so nobody stages one on top of it: a custom endpoint is configured
+# through `-c` overrides instead (see `provider.py`), which needs no file and
+# cannot collide with the one the agent writes itself.
+CONFIG_FILENAME = "config.toml"

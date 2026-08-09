@@ -21,6 +21,7 @@ from swe_lab.harnesses import AgentOutcome, registered_harnesses
 from swe_lab.harnesses.codex import (
     CodexAuthObserver,
     CodexHarness,
+    CodexProvider,
     event_stream_outcome,
     event_stream_to_conversation,
 )
@@ -432,3 +433,97 @@ def test_the_agent_home_matches_claude_codes_and_codex_home_nests_under_it():
   # The auth observer must agree with the script about where that dir is.
   harness = CodexHarness()
   assert codex_config_dir(harness.agent_home) == "/agent-home/.codex"
+
+
+# ─── the API-key / custom-endpoint path ──────────────────────────────────────
+
+
+def test_a_provider_declares_the_base_url_and_selects_itself():
+  # A base URL has no flag; it is a config value. Verified live that a provider
+  # declared entirely through `-c` is honoured (the run dialled the custom URL).
+  overrides = CodexProvider(
+      provider_id="internal-gw",
+      base_url="https://gw.example.internal/v1",
+      env_key="MY_API_KEY",
+      name="Internal Gateway",
+  ).config_overrides()
+  assert overrides[0] == 'model_provider="internal-gw"'  # selected first
+  assert (
+      'model_providers.internal-gw.base_url="https://gw.example.internal/v1"'
+      in overrides
+  )
+  assert 'model_providers.internal-gw.env_key="MY_API_KEY"' in overrides
+  assert 'model_providers.internal-gw.wire_api="responses"' in overrides
+
+
+def test_the_api_key_value_never_reaches_argv_or_the_staged_script():
+  """The secret discipline: the override names the variable, never its value.
+
+  Codex does expose a config value that takes a token directly
+  (`experimental_bearer_token`, which its own schema calls discouraged), but a
+  `-c` argument lands in the process's argv *and* in our staged invocation
+  script — both readable. The value travels by `pass_env` instead.
+  """
+  harness = CodexHarness(
+      provider=CodexProvider(
+          provider_id="gw", base_url="https://x/v1", env_key="MY_API_KEY"
+      )
+  )
+  script = _script(harness)
+  assert "MY_API_KEY" in script  # the NAME is what Codex needs...
+  assert "experimental_bearer_token" not in script  # ...and no token, ever
+  assert "sk-" not in script
+
+
+def test_no_config_file_is_staged_for_a_provider():
+  # Codex CREATES its own config.toml in CODEX_HOME at startup, so staging one
+  # would be a file the agent and the harness both claim. `-c` needs no file.
+  harness = CodexHarness(
+      provider=CodexProvider(provider_id="gw", base_url="https://x/v1")
+  )
+  assert set(harness.mounts("/app")) == {AGENT_SCRIPT_NAME, "agent_env.sh"}
+
+
+def test_provider_overrides_come_before_the_callers_own():
+  # extra_config is the escape hatch, so it must be able to correct anything
+  # the typed provider produced — which requires it to come last.
+  script = _script(
+      CodexHarness(
+          provider=CodexProvider(provider_id="gw", base_url="https://x/v1"),
+          extra_config=("model_providers.gw.request_max_retries=5",),
+      )
+  )
+  assert script.index("model_providers.gw.base_url") < script.index(
+      "request_max_retries"
+  )
+
+
+def test_a_provider_id_that_would_need_quoting_is_refused():
+  # The id is interpolated into a dotted config path, so a key needing quotes
+  # would have to be quoted inside the path.
+  with pytest.raises(SandboxError, match="TOML bare key"):
+    _ = CodexProvider(provider_id="not a key", base_url="https://x/v1")
+
+
+def test_an_empty_base_url_is_refused_rather_than_silently_defaulting():
+  # An empty base_url would leave the built-in endpoint in place — the exact
+  # opposite of why a caller reached for a custom provider.
+  with pytest.raises(SandboxError, match="base_url is empty"):
+    _ = CodexProvider(provider_id="gw", base_url="  ")
+
+
+def test_toml_values_are_escaped_and_control_characters_refused():
+  overrides = CodexProvider(
+      provider_id="gw",
+      base_url='https://x/v1?q="a"\\b',
+      name='He said "hi"',
+  ).config_overrides()
+  # `in` on a tuple compares elements, so match the full override strings.
+  assert r'model_providers.gw.base_url="https://x/v1?q=\"a\"\\b"' in overrides
+  assert r'model_providers.gw.name="He said \"hi\""' in overrides
+  # Codex takes an override it cannot parse as TOML as a LITERAL STRING rather
+  # than refusing it, so a malformed one would silently mean something else.
+  with pytest.raises(SandboxError, match="control character"):
+    _ = CodexProvider(
+        provider_id="gw", base_url="https://x\n/v1"
+    ).config_overrides()
