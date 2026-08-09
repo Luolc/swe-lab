@@ -256,11 +256,25 @@ def test_the_script_runs_unattended_and_reports_status_out_of_band():
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script  # prompt on stdin
 
 
-def test_no_model_flag_unless_one_is_pinned():
-  # Measured: pinning an API-tier model fails a ChatGPT login with a 400 before
-  # the first turn, so the default defers to whatever the account allows.
-  assert "--model" not in _script(CodexHarness())
-  assert "--model gpt-5.6-terra" in _script(CodexHarness(model="gpt-5.6-terra"))
+def test_the_model_and_effort_are_pinned_by_default():
+  # A sweep whose model or effort floats is not reproducible, so both are
+  # pinned; the shipped pair was verified against a real run.
+  script = _script(CodexHarness())
+  assert "--model gpt-5.6-sol" in script
+  # Effort is a CONFIG override, not a flag — `codex exec` has no `--effort`.
+  assert "-c model_reasoning_effort=high" in script
+
+
+def test_both_can_be_overridden_or_omitted_entirely():
+  tuned = _script(CodexHarness(model="gpt-5.6-terra", effort="xhigh"))
+  assert "--model gpt-5.6-terra" in tuned
+  assert "-c model_reasoning_effort=xhigh" in tuned
+  # None omits each flag, deferring to whatever the account/build allows —
+  # the escape hatch for an account that does not offer the pinned model,
+  # which fails with a 400 before the first turn rather than degrading.
+  bare = _script(CodexHarness(model=None, effort=None))
+  assert "--model" not in bare
+  assert "model_reasoning_effort" not in bare
 
 
 def test_extra_config_overrides_are_passed_through():
@@ -325,10 +339,12 @@ def test_every_pinned_binary_has_a_pinned_checksum():
 def test_the_auth_observer_stages_the_login_under_codex_home(tmp_path: Path):
   auth = tmp_path / "auth.json"
   _ = auth.write_text("{}")
-  mounts = CodexAuthObserver(auth_file=auth, codex_home="/codex-home").mounts()
-  assert set(mounts) == {"/codex-home/auth.json"}
+  mounts = CodexAuthObserver(auth_file=auth, agent_home="/agent-home").mounts()
+  # Codex's own default layout, `$HOME/.codex` — not the home itself, which
+  # would scatter its state over $HOME and diverge from an ordinary install.
+  assert set(mounts) == {"/agent-home/.codex/auth.json"}
   # Writable on purpose: Codex refreshes its token and writes the file back.
-  assert mounts["/codex-home/auth.json"].read_only is False
+  assert mounts["/agent-home/.codex/auth.json"].read_only is False
 
 
 def test_a_missing_login_fails_before_a_container_is_paid_for(tmp_path: Path):
@@ -398,3 +414,21 @@ def test_a_field_of_another_agent_is_refused_with_the_valid_ones(
             ["--rollout.harness=codex", "--rollout.harness.capture=proxy"]
         ),
     )
+
+
+def test_the_agent_home_matches_claude_codes_and_codex_home_nests_under_it():
+  # One knob, so the two cannot drift: an auth.json staged somewhere Codex does
+  # not read would surface as an auth failure minutes into a run.
+  from swe_lab.harnesses.claude_code.constants import AGENT_HOME as CC_HOME
+  from swe_lab.harnesses.codex.constants import AGENT_HOME, codex_config_dir
+
+  assert AGENT_HOME == CC_HOME == "/agent-home"
+  assert codex_config_dir() == "/agent-home/.codex"
+  assert codex_config_dir("/somewhere") == "/somewhere/.codex"
+
+  script = _script(CodexHarness())
+  assert "export HOME=/agent-home" in script
+  assert "export CODEX_HOME=/agent-home/.codex" in script
+  # The auth observer must agree with the script about where that dir is.
+  harness = CodexHarness()
+  assert codex_config_dir(harness.agent_home) == "/agent-home/.codex"

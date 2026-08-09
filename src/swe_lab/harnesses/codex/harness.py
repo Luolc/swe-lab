@@ -50,8 +50,12 @@ from .constants import (
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
     BINARY_AT,
+    codex_config_dir,
     CODEX_HOME_ENV,
+    DEFAULT_EFFORT,
     DEFAULT_MODEL,
+    Effort,
+    EFFORT_CONFIG_KEY,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
     LAST_MESSAGE_NAME,
@@ -182,16 +186,25 @@ class CodexHarness(Harness):
   """The Codex agent as a sandbox-engine harness plug.
 
   Attributes:
-    model: The ``--model`` alias to run, or ``None`` to let Codex choose what
-      the account allows. ``None`` by default on purpose: the valid set depends
-      on the account, and pinning an API-tier model fails a ChatGPT login with
-      a 400 before the first turn. Pin it for a sweep that must be
-      reproducible.
-    codex_home: In-container ``CODEX_HOME`` — where Codex reads its
-      credentials (``auth.json``) and writes its own state. A composition that
-      authenticates by ChatGPT login stages that file here; one using an API
-      key passes ``OPENAI_API_KEY`` through ``run(env=...)`` instead, and the
-      directory is then just scratch space.
+    model: The ``--model`` alias to run, or ``None`` to omit the flag and let
+      Codex choose what the account allows. Pinned by default so a sweep is
+      reproducible — but the valid set is **account-sensitive**, and pinning
+      one an account does not offer fails with a 400 before the first turn, so
+      a caller on a different account overrides it.
+    effort: Reasoning effort, passed as Codex's ``model_reasoning_effort``
+      config override (it has no flag). ``HIGH`` by default rather than Codex's
+      own ``medium``: an unattended solve is the case worth spending on, and a
+      floating default makes two sweeps incomparable. ``None`` omits it. Typed,
+      because Codex parses an unrecognized override as a literal string instead
+      of refusing it — a typo would otherwise run a whole sweep at the wrong
+      effort, silently.
+    agent_home: In-container ``HOME``. Codex's own config dir is derived from
+      it as ``$HOME/.codex`` (:func:`codex_config_dir`) rather than being a
+      second knob, so the two cannot disagree — a staged ``auth.json`` landing
+      somewhere Codex does not read would surface as an authentication failure
+      minutes into a run. A composition that authenticates by ChatGPT login
+      stages that file into the derived dir; one using an API key passes
+      ``OPENAI_API_KEY`` through ``run(env=...)`` instead.
     skip_git_repo_check: Pass ``--skip-git-repo-check``. **On by default**: an
       instance workspace is not always a git repo at the path Codex is pointed
       at, and the check aborts the run rather than degrading.
@@ -200,7 +213,8 @@ class CodexHarness(Harness):
   """
 
   model: str | None = DEFAULT_MODEL
-  codex_home: str = AGENT_HOME
+  effort: Effort | None = DEFAULT_EFFORT
+  agent_home: str = AGENT_HOME
   skip_git_repo_check: bool = True
   extra_config: tuple[str, ...] = ()
 
@@ -340,7 +354,8 @@ class CodexHarness(Harness):
     Returns:
       The bash script text staged as the invocation mount.
     """
-    home = shlex.quote(self.codex_home)
+    home = shlex.quote(self.agent_home)
+    codex_home = shlex.quote(codex_config_dir(self.agent_home))
     binary = shlex.quote(BINARY_AT)
     prompt = f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
@@ -348,11 +363,13 @@ class CodexHarness(Harness):
     last_message = f'"$SANDBOX_WORKSPACE"/{LAST_MESSAGE_NAME}'
     lines = [
         "set -u",
-        # Codex reads credentials from and writes state to CODEX_HOME. Created
-        # here because instance images run as root with no guaranteed-writable
-        # home; a composition that supplies a login stages auth.json into it.
-        f"export {CODEX_HOME_ENV}={home}",
-        f"mkdir -p {home}",
+        # Instance images run as root with no guaranteed-writable home, so the
+        # agent gets one. CODEX_HOME is its own default `$HOME/.codex` rather
+        # than the home itself, so the sandboxed layout matches an ordinary
+        # install; `mkdir -p` on the nested path creates both.
+        f"export HOME={home}",
+        f"export {CODEX_HOME_ENV}={codex_home}",
+        f"mkdir -p {codex_home}",
         # Caller-injected env (empty unless ``run(env=...)`` filled it in).
         # Sourced after the defaults above so a caller can override them.
         f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
@@ -366,6 +383,8 @@ class CodexHarness(Harness):
     ]
     if self.model is not None:
       flags.append(f"--model {shlex.quote(self.model)}")
+    if self.effort is not None:
+      flags.append(f"-c {shlex.quote(f'{EFFORT_CONFIG_KEY}={self.effort}')}")
     if self.skip_git_repo_check:
       flags.append("--skip-git-repo-check")
     for setting in self.extra_config:

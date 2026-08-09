@@ -28,7 +28,7 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
-from .constants import AGENT_HOME, AUTH_FILENAME
+from .constants import AGENT_HOME, AUTH_FILENAME, codex_config_dir
 
 
 @dataclass(frozen=True)
@@ -43,12 +43,14 @@ class CodexAuthObserver(SandboxObserver):
   Attributes:
     auth_file: Host path of the ``auth.json`` to stage. Resolved eagerly at
       construction so a typo fails before a container is paid for.
-    codex_home: The in-sandbox ``CODEX_HOME`` this lands under; must match the
-      harness's own ``codex_home``.
+    agent_home: The in-sandbox ``HOME``; must match the harness's own
+      ``agent_home``. The credential lands in the config dir derived from it
+      (``$HOME/.codex``), so this observer and the harness cannot disagree
+      about where Codex will look.
   """
 
   auth_file: epath.PathLike
-  codex_home: str = AGENT_HOME
+  agent_home: str = AGENT_HOME
 
   def __post_init__(self) -> None:
     """Refuse a credential path that is not there.
@@ -66,10 +68,10 @@ class CodexAuthObserver(SandboxObserver):
 
   @override
   def mounts(self) -> Mounts:
-    """Stage the credential at ``<codex_home>/auth.json``.
+    """Stage the credential at ``$HOME/.codex/auth.json``.
 
     Returns:
       The single mount, writable so a token refresh can land.
     """
-    target = f"{self.codex_home.rstrip('/')}/{AUTH_FILENAME}"
+    target = f"{codex_config_dir(self.agent_home)}/{AUTH_FILENAME}"
     return {target: Mount(LocalFile(epath.Path(self.auth_file)))}
