@@ -338,9 +338,10 @@ def test_every_pinned_binary_has_a_pinned_checksum():
 
 
 def test_the_auth_observer_stages_the_login_under_codex_home(tmp_path: Path):
-  auth = tmp_path / "auth.json"
-  _ = auth.write_text("{}")
-  mounts = CodexAuthObserver(auth_file=auth, agent_home="/agent-home").mounts()
+  del tmp_path
+  mounts = CodexAuthObserver(
+      auth_json=b'{"tokens": {}}', agent_home="/agent-home"
+  ).mounts()
   # Codex's own default layout, `$HOME/.codex` — not the home itself, which
   # would scatter its state over $HOME and diverge from an ordinary install.
   assert set(mounts) == {"/agent-home/.codex/auth.json"}
@@ -350,7 +351,60 @@ def test_the_auth_observer_stages_the_login_under_codex_home(tmp_path: Path):
 
 def test_a_missing_login_fails_before_a_container_is_paid_for(tmp_path: Path):
   with pytest.raises(SandboxError, match="codex auth file not found"):
-    _ = CodexAuthObserver(auth_file=tmp_path / "nope.json")
+    _ = CodexAuthObserver.from_file(tmp_path / "nope.json")
+
+
+def test_the_login_is_staged_inline_so_a_remote_sandbox_works(tmp_path: Path):
+  # Inline, not a host path: a sandbox sharing no filesystem with this process
+  # cannot resolve a LocalFile, and a caller may hold a credential that never
+  # touches local disk (straight out of a secret manager).
+  observer = CodexAuthObserver(auth_json=b'{"tokens": {}}')
+  mount = next(iter(observer.mounts().values()))
+  assert isinstance(mount.resource, Inline)
+  assert mount.resource.content == b'{"tokens": {}}'
+
+  # ...and from_file is the convenience for a login that already is a file.
+  path = tmp_path / "auth.json"
+  _ = path.write_bytes(b'{"tokens": {"access_token": "x"}}')
+  from_file = CodexAuthObserver.from_file(path)
+  assert from_file.auth_json == b'{"tokens": {"access_token": "x"}}'
+
+
+def test_the_credential_is_never_shown_in_a_repr():
+  # Nothing logs a mount today, but a credential that prints itself in a
+  # traceback or a debugger is one careless log line away from a leak.
+  observer = CodexAuthObserver(
+      auth_json=b'{"tokens": {"access_token": "sEcReT"}}'
+  )
+  assert "sEcReT" not in repr(observer)
+  assert "auth_json" not in repr(observer)
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (b"   ", "is empty"),
+        (b"not json at all", "not valid JSON"),
+        (b'["a list"]', "must be a JSON object"),
+    ],
+)
+def test_an_unusable_credential_is_refused_on_the_host(
+    payload: bytes, message: str
+):
+  # Checked here because the alternative is an authentication failure minutes
+  # into a run, inside a container that is then thrown away.
+  with pytest.raises(SandboxError, match=message):
+    _ = CodexAuthObserver(auth_json=payload)
+
+
+def test_a_rejection_message_never_quotes_the_credential():
+  # The message may be logged; the payload is a secret.
+  try:
+    _ = CodexAuthObserver(auth_json=b"sEcReT-but-not-json")
+  except SandboxError as error:
+    assert "sEcReT" not in str(error)
+  else:
+    raise AssertionError("expected the malformed credential to be refused")
 
 
 def test_the_harness_registers_itself_by_name():
