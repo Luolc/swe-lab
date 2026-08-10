@@ -79,6 +79,19 @@ def _toml_string(value: str) -> str:
   return f'"{escaped}"'
 
 
+def _toml_bool(value: bool) -> str:
+  """Render ``value`` as a TOML boolean (lowercase, unquoted).
+
+  Args:
+    value: The flag to render.
+
+  Returns:
+    ``"true"`` or ``"false"`` — quoting it would make Codex read the *string*,
+    which is truthy either way.
+  """
+  return "true" if value else "false"
+
+
 @dataclass(frozen=True)
 class CodexProvider:
   """An OpenAI-compatible endpoint Codex should use instead of the default.
@@ -93,6 +106,16 @@ class CodexProvider:
       so the secret reaches neither argv nor a staged file.
     name: Friendly display name; defaults to ``provider_id``.
     wire_api: The protocol the endpoint speaks.
+    supports_websockets: Whether the endpoint speaks the Responses API's
+      **WebSocket** transport. **Off**, because the usual reason to set a base
+      URL is a local reverse proxy, and a proxy typically forwards plain HTTP
+      only — a run that tried to upgrade would fail at connect time.
+    requires_openai_auth: Whether Codex should treat this endpoint as needing
+      an OpenAI credential. **Off**, and this one is load-bearing for an
+      unattended run: upstream's own description says a true value presents
+      "login screen on first run", which in a headless container is a prompt
+      nobody answers — the run would hang until the caller's timeout killed
+      it. The endpoint is authenticated by ``env_key`` instead.
   """
 
   provider_id: str
@@ -100,6 +123,8 @@ class CodexProvider:
   env_key: str = API_KEY_ENV
   name: str = ""
   wire_api: WireApi = "responses"
+  supports_websockets: bool = False
+  requires_openai_auth: bool = False
 
   def __post_init__(self) -> None:
     """Refuse a provider that would render as an invalid or inert override.
@@ -126,6 +151,12 @@ class CodexProvider:
     The selector comes first so a reader sees immediately which provider the
     run uses; the table entries follow.
 
+    The two booleans are emitted **even when they match Codex's current
+    defaults**. They are the difference between a run that works against a
+    local proxy and one that hangs on a login prompt or fails a WebSocket
+    upgrade, and a default that flips in a future build must not change that
+    silently — we pin a version, but versions get bumped.
+
     Returns:
       The override strings, ready to be passed one per ``-c``. **No API key** —
       only the name of the variable Codex should read it from.
@@ -137,4 +168,6 @@ class CodexProvider:
         f"{table}.base_url={_toml_string(self.base_url)}",
         f"{table}.env_key={_toml_string(self.env_key)}",
         f"{table}.wire_api={_toml_string(self.wire_api)}",
+        f"{table}.supports_websockets={_toml_bool(self.supports_websockets)}",
+        f"{table}.requires_openai_auth={_toml_bool(self.requires_openai_auth)}",
     )

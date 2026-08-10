@@ -456,6 +456,46 @@ def test_a_provider_declares_the_base_url_and_selects_itself():
   assert 'model_providers.internal-gw.wire_api="responses"' in overrides
 
 
+def test_the_proxy_flags_are_always_emitted_as_real_booleans():
+  """Both matter for a local reverse proxy, which is the usual custom endpoint.
+
+  `supports_websockets=false` because a proxy typically forwards plain HTTP and
+  an upgrade attempt would fail at connect; `requires_openai_auth=false`
+  because upstream presents a *login screen* when it is true, and in a headless
+  container that is a prompt nobody answers — the run hangs until the caller's
+  timeout kills it.
+
+  Emitted even though both currently default to false upstream: we pin a Codex
+  version but versions get bumped, and a flipped default must not silently
+  change either behaviour.
+  """
+  overrides = CodexProvider(
+      provider_id="gw", base_url="http://127.0.0.1:8080/v1"
+  ).config_overrides()
+  assert "model_providers.gw.supports_websockets=false" in overrides
+  assert "model_providers.gw.requires_openai_auth=false" in overrides
+  # Unquoted and lowercase: `"false"` is a non-empty *string*, i.e. truthy.
+  assert '"false"' not in " ".join(overrides)
+
+  on = CodexProvider(
+      provider_id="gw",
+      base_url="http://x/v1",
+      supports_websockets=True,
+      requires_openai_auth=True,
+  ).config_overrides()
+  assert "model_providers.gw.supports_websockets=true" in on
+  assert "model_providers.gw.requires_openai_auth=true" in on
+
+
+def test_a_provider_name_is_always_emitted():
+  # Upstream validates this: a provider with an empty name is refused outright
+  # ("provider name must not be empty"), so the id is the fallback.
+  overrides = CodexProvider(
+      provider_id="gw", base_url="http://x/v1"
+  ).config_overrides()
+  assert 'model_providers.gw.name="gw"' in overrides
+
+
 def test_the_api_key_value_never_reaches_argv_or_the_staged_script():
   """The secret discipline: the override names the variable, never its value.
 
