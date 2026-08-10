@@ -26,6 +26,7 @@ from .ghjob import GitHubJobClaudeCodeBinaryObserver, GitHubJobSandbox
 from .host import (
     DockerHostSandbox,
     HostClaudeCodeBinaryObserver,
+    HostCodexBinaryObserver,
     HostMetricsObserver,
 )
 
@@ -36,6 +37,7 @@ __all__ = [
     "GitHubJobClaudeCodeBinaryObserver",
     "GitHubJobSandbox",
     "HostClaudeCodeBinaryObserver",
+    "HostCodexBinaryObserver",
     "HostMetricsObserver",
     "SandboxConfig",
     "SandboxFactory",
