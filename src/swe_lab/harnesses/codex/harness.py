@@ -391,6 +391,18 @@ class CodexHarness(Harness):
       ``codex.exit_code`` (143 = SIGTERM, i.e. someone killed the turn).
     - **Wall-clock is the caller's**, deliberately not here.
 
+    **No tool denylist, and none is needed.** The ``claude_code`` harness has
+    to deny ``EnterPlanMode`` / ``ExitPlanMode`` / ``AskUserQuestion``, because
+    those are offered as tools and *block* an unattended run waiting for a
+    reply that never comes and never times out. Codex cannot reach that state
+    from ``exec``: its non-interactive entrypoint **rejects** every interactive
+    server request outright rather than leaving it pending — command-execution
+    approval, file-change approval, ``request_user_input``, dynamic tool calls
+    and MCP elicitation each come back as "not supported in exec mode"
+    (``codex-rs/exec/src/lib.rs``). The model gets an error and continues, so
+    the failure mode is a wasted turn rather than a hang. Nothing to deny, and
+    a denylist added here later would be inert.
+
     Args:
       workdir: The repo path (``-C``) the agent works in.
 
