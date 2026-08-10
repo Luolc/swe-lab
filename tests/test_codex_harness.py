@@ -621,3 +621,59 @@ def test_toml_values_are_escaped_and_control_characters_refused():
     _ = CodexProvider(
         provider_id="gw", base_url="https://x\n/v1"
     ).config_overrides()
+
+
+# ─── bare mode: the repo under test must not steer the agent ─────────────────
+
+
+def test_bare_is_on_by_default_and_closes_every_repo_door():
+  """Codex's answer to Claude Code's `--bare`, assembled from three switches.
+
+  On this benchmark this is a correctness requirement, not hygiene: the
+  instance repo is the thing being solved, and a repo that can rewrite the
+  agent's instructions can also tell it the answer (ADR-0010).
+  """
+  assert CodexHarness().bare is True
+  script = _script(CodexHarness())
+  # AGENTS.md, which ships INSIDE the instance repo. Measured: at the default
+  # 32768 a repo saying "begin every reply with BANANA" got exactly that.
+  assert "-c project_doc_max_bytes=0" in script
+  # $CODEX_HOME/config.toml, and with it MCP servers, plugins, skills, hooks.
+  assert "--ignore-user-config" in script
+  # user *and project* execpolicy .rules — the project half ships in the repo.
+  assert "--ignore-rules" in script
+
+
+def test_bare_off_leaves_every_door_open():
+  # The escape hatch for deliberately characterizing an uncontrolled run.
+  script = _script(CodexHarness(bare=False))
+  assert "project_doc_max_bytes" not in script
+  assert "--ignore-user-config" not in script
+  assert "--ignore-rules" not in script
+
+
+def test_bare_does_not_disable_credential_discovery():
+  # Unlike Claude Code's --bare (which stops OAuth/keychain reads and so forces
+  # an API key), --ignore-user-config leaves auth alone by design, so a ChatGPT
+  # login staged into CODEX_HOME keeps working.
+  script = _script(CodexHarness())
+  assert "export CODEX_HOME=/agent-home/.codex" in script
+  assert "--ignore-auth" not in script
+
+
+def test_bare_never_bypasses_hook_trust():
+  # Codex gates hooks behind persisted trust; bypassing it would run hooks the
+  # repo under test could supply — the opposite of what bare is for.
+  assert "--dangerously-bypass-hook-trust" not in _script(CodexHarness())
+
+
+def test_a_provider_still_resolves_under_bare():
+  # Verified live: --ignore-user-config drops the config FILE, not the `-c`
+  # overrides, so the custom endpoint survives bare mode.
+  script = _script(
+      CodexHarness(
+          provider=CodexProvider(provider_id="gw", base_url="https://x/v1")
+      )
+  )
+  assert "--ignore-user-config" in script
+  assert 'model_providers.gw.base_url="https://x/v1"' in script
