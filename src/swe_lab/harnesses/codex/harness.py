@@ -105,10 +105,18 @@ def _env_exports(env: Mapping[str, str]) -> str:
 class AgentInfoObserver(SandboxObserver):
   """Record the agent's own account of itself, for post-hoc debugging.
 
-  Runs ``--version`` against the provisioned binary once the sandbox is up,
-  lands the output in the workspace, and registers it as an artifact. *Which
-  build actually ran* is the first question anyone asks when a run behaves
-  oddly, and once the sandbox is gone the answer is otherwise unrecoverable.
+  Runs ``--version``, ``--help`` and ``exec --help`` against the provisioned
+  binary once the sandbox is up, lands the output in the workspace, and
+  registers it as an artifact. *Which build actually ran* is the first question
+  anyone asks when a run behaves oddly, and once the sandbox is gone the answer
+  is otherwise unrecoverable — the pin says what we asked for, not what the
+  sandbox had.
+
+  The **help** text earns its place beyond the version string: this harness's
+  invocation is assembled from flags and config keys whose availability moves
+  between builds (``--effort`` does not exist here at all, and the effort knob
+  is a config key instead), so a run that behaves oddly is often answered by
+  what its own build accepted. Capturing it costs one exec.
 
   It also records whether the **code-mode host** is present next to the binary,
   because its absence is the failure that looks like success: the run exits 0
@@ -136,7 +144,9 @@ class AgentInfoObserver(SandboxObserver):
         ArtifactSchema(
             self.artifact,
             required=False,
-            description="the agent's own --version output and its layout",
+            description=(
+                "the agent's own --version and --help output, and its layout"
+            ),
         ),
     )
 
@@ -150,7 +160,13 @@ class AgentInfoObserver(SandboxObserver):
     """
     binary = shlex.quote(self.binary)
     sections: list[str] = []
-    for command in (f"{binary} --version", f"ls -l $(dirname {binary})"):
+    commands = (
+        f"{binary} --version",
+        f"{binary} --help",
+        f"{binary} exec --help",  # the subcommand this harness actually runs
+        f"ls -l $(dirname {binary})",  # is the code-mode host there?
+    )
+    for command in commands:
       try:
         # 2>&1 because a binary that cannot run at all says so on stderr, and
         # that is exactly the case this file exists to explain.
