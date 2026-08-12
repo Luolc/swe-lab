@@ -22,17 +22,25 @@ merely in mechanism:
   fetches straight to the final path (:class:`InstalledAssetsObserver`). Both
   need bytes, so both use :attr:`AgentAsset.fetch`.
 - **Resolve at configuration time.** A sandbox backed by its own maintained
-  artifact store does not fetch anything: it looks the asset up **by
-  identity** and names the resulting store path in the sandbox's own
-  parameters — and it must do so **before the sandbox exists**, because that
-  declaration *is* part of how the sandbox gets built. Such a backend never
-  calls ``fetch``; the release and the destination path are all it consumes,
-  and ``Sandbox.asset_observer`` returning ``None`` is the correct run-time
-  answer, because the work already happened.
+  artifact store does not fetch anything: it resolves the release to a path in
+  that store and names it in the sandbox's own construction parameters — and
+  it must do so **before the sandbox exists**, because that declaration *is*
+  part of how the sandbox gets built. It reads
+  ``SandboxConfig.assets``, which the runner fills in from the task ahead of
+  construction, and never calls ``fetch``.
 - Anything else a sandbox can do. The list above is what exists *today*, not a
   closed set. An earlier version of this module asserted there were "exactly
   two ways" and made ``fetch`` mandatory, which was wrong and broke precisely
   the configuration-time case.
+
+**The two moments are complementary, not alternatives.** Bringing the bytes in
+early does not remove the work that can only be done once the sandbox is live:
+an artifact that arrives as an archive still has to be unpacked, moved into
+place and made executable, and ``after_create`` is the only place that can
+happen — whoever brought the bytes in. So a store-backed backend may well
+resolve at configuration time *and* return a run-time observer that finishes
+the job; returning ``None`` is right only when there is genuinely nothing left
+to do.
 
 That is why ``fetch`` is **optional**, and why an asset is small: it names the
 release and the destination and stops there. It does **not** name a platform —

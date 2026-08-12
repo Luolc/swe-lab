@@ -19,6 +19,7 @@ from typing import Any
 
 from etils import epath
 
+from ..assets import AgentAsset
 from ..errors import SandboxError
 from ..sandbox import Sandbox
 from ..spec import SandboxSpec
@@ -66,12 +67,28 @@ class SandboxConfig:
       argv or in a staged file).
     shell: The interpreter each ``run_script`` / ``run_command`` uses —
       every backend execs scripts, so this is a run semantic.
+    assets: The machinery the run's agent needs (task-28 §7), filled in by the
+      runner from the task's own declaration just before construction.
+
+      Here — on the *config* — because some sandboxes must know what they will
+      carry **before they exist**: one backed by its own artifact store
+      resolves each release to a store path and writes that into its own
+      construction parameters, and there is no later moment at which it could.
+      A backend that has nothing to do at construction ignores the field and
+      answers at run time instead (``Sandbox.asset_observer``).
+
+      The two moments are **complementary, not alternatives**. Resolving bytes
+      early does not remove the work that can only happen once the sandbox is
+      live: an artifact that arrives as an archive still has to be unpacked,
+      moved into place and made executable, and that is ``after_create``'s job
+      whoever brought the bytes in.
   """
 
   network: bool = True
   env: Mapping[str, str] = field(default_factory=dict)
   pass_env: Sequence[str] = ()
   shell: str = "/bin/bash"
+  assets: Sequence[AgentAsset] = ()
 
 
 @dataclass(frozen=True, slots=True)

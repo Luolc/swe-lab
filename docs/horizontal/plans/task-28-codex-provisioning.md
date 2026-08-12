@@ -438,8 +438,22 @@ AgentAsset(path="/opt/codex/codex", version="0.147.0", fetch=<optional>)
   decision (`--rollout.harness.version=…`), and an unpinned version fails
   loudly at the checksum rather than downloading unverified bytes.
 
-`Sandbox.asset_observer` documents three strategies and states the list is
-open; a store-backed backend does its work at configuration time and correctly
-returns `None` at run time. A test resolves all three shipped agents with no
-bytes moved and no sandbox in existence.
+**Assets reach the sandbox at two moments, and both are load-bearing.**
+
+- **Configuration time** — the runner fills `SandboxConfig.assets` from the
+  task *before* calling the factory. A sandbox backed by its own artifact
+  store has to know what it will carry in order to be built at all: it
+  resolves each release to a store path and names it in its own construction
+  parameters, and there is no later moment at which it could.
+- **Run time** — `Sandbox.asset_observer` still runs, and resolving early does
+  **not** make it redundant. An artifact that arrives as an archive (the
+  Claude Code bundle is a tarball) still has to be unpacked, moved into place
+  and made executable, and `after_create` is the only place that can happen —
+  whoever brought the bytes in. Returning `None` is correct only when there is
+  genuinely nothing left to do.
+
+Tests cover both: one resolves all three shipped agents with no bytes moved
+and no sandbox in existence; another drives a store-backed sandbox that
+resolves at configuration time *and* returns an unpacking observer, asserting
+the run-time half ran while nothing was fetched.
 

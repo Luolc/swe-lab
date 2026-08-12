@@ -188,11 +188,16 @@ class Sandbox(SandboxFs, ABC):
     - a CI job whose filesystem already *is* the sandbox fetches straight to
       the final path (:class:`~swe_lab.sandbox.assets.InstalledAssetsObserver`);
     - a sandbox backed by its **own maintained artifact store** resolves the
-      asset by :attr:`~swe_lab.sandbox.assets.AgentAsset.key` and names the
-      store path in its own construction parameters — necessarily **before the
-      sandbox exists**. Such a backend does its work at configuration time and
-      correctly returns ``None`` here, having nothing left to do at run time;
-      it never calls ``fetch``.
+      release to a store path and names it in its own construction parameters,
+      necessarily **before the sandbox exists** — it reads
+      ``SandboxConfig.assets`` rather than fetching.
+
+    A backend that resolved at configuration time is **not** thereby finished:
+    an artifact that arrives as an archive still has to be unpacked, moved into
+    place and made executable, and ``after_create`` is the only place that can
+    happen. Such a backend returns an observer that does exactly that.
+    ``None`` is right only when there is genuinely nothing left to do once the
+    sandbox is live.
 
     The default is the mount answer because it is the one that works for a
     sandbox the caller cannot write into directly — not because it is the only

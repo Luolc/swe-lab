@@ -7,7 +7,9 @@ a harness must not care how the bytes travel (task-28 §7).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
+from typing import override
 
 from etils import epath
 import pytest
@@ -329,3 +331,77 @@ def test_the_pinned_version_is_a_field_a_run_can_override():
   assert [a.version for a in moved.assets()] == ["0.146.1"] * 2
   # Two files of one release stay distinguishable by their destination.
   assert len({a.path for a in moved.assets()}) == 2
+
+
+# ─── the two moments, used together ─────────────────────────────────────────
+
+
+def test_the_runner_puts_assets_on_the_config_before_construction():
+  """A store-backed sandbox has to know what it will carry to be built at all.
+
+  So the runner fills `SandboxConfig.assets` from the task *before* calling
+  the factory — there is no later moment at which such a backend could learn
+  it.
+  """
+  import dataclasses
+
+  from swe_lab.harnesses.codex import CodexHarness
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.sandbox import DockerHostSandboxConfig
+
+  seen: list[tuple[str, ...]] = []
+
+  task = CodingAgentTask(harness=CodexHarness())
+  config = dataclasses.replace(
+      DockerHostSandboxConfig(), assets=tuple(task.assets())
+  )
+  seen.append(tuple(a.path for a in config.assets))
+
+  # What a downstream factory reads at construction time: enough to resolve
+  # each release against its own store and name the result in its own params.
+  assert seen == [("/opt/codex/codex", "/opt/codex/codex-code-mode-host")]
+  assert all(a.version == "0.147.0" for a in config.assets)
+
+
+def test_config_time_resolution_does_not_remove_the_run_time_phase(
+    tmp_path: Path,
+):
+  """Bringing bytes in early does not finish the job.
+
+  An artifact that arrives as an archive still has to be unpacked, moved into
+  place and made executable, and `after_create` is the only place that can
+  happen — whoever brought the bytes in. A backend may therefore use *both*
+  moments, which is why resolving at configuration time does not imply
+  returning None here.
+  """
+  from swe_lab.sandbox import SandboxObserver
+  from swe_lab.sandbox.backends.host import DockerHostSandbox
+
+  unpacked: list[str] = []
+
+  class _StoreBackedSandbox(DockerHostSandbox):
+    """Resolves from its own store at build time; still initializes at run."""
+
+    @override
+    def asset_observer(
+        self, assets: Sequence[AgentAsset]
+    ) -> SandboxObserver | None:
+      class _Unpack(SandboxObserver):
+
+        @override
+        def after_create(self, sb: object) -> None:
+          del sb
+          unpacked.extend(a.path for a in assets)
+
+      return _Unpack() if assets else None
+
+  asset, calls = _asset(tmp_path)
+  sandbox = _StoreBackedSandbox(
+      spec=SPEC, workspace=epath.Path(tmp_path / "ws")
+  )
+  observer = sandbox.asset_observer((asset,))
+  assert observer is not None
+  observer.after_create(sandbox)
+
+  assert unpacked == ["/opt/agent/agent"]  # the run-time half still ran...
+  assert calls == []  # ...and it fetched nothing: the store already had it
