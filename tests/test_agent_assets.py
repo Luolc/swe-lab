@@ -207,3 +207,58 @@ def test_the_workspace_reader_is_absence_tolerant(tmp_path: Path):
   assert read_text(sb, "nope.txt") == ""
   sb.write("there.txt", b"hi")
   assert read_text(sb, "there.txt") == "hi"
+
+
+# ─── the agent's exit status (shared tail) ──────────────────────────────────
+
+
+def test_every_harness_propagates_the_agents_own_exit_status():
+  """It used to be flattened to 0, on a rationale that did not hold.
+
+  The stated reason was that a non-zero exec would disturb container
+  teardown. It would not: teardown is a context-manager exit, every backend
+  runs the exec with ``check=False``, and ``RunStatus`` is not derived from
+  the code. So the zero bought nothing and left the recorded
+  ``<agent>.exit_code`` metric permanently 0.0.
+  """
+  from swe_lab.harnesses import build_harness
+  from swe_lab.sandbox import Inline
+  import swe_lab.workflow.definitions as definitions
+
+  assert definitions.ROLLOUT_KEY  # imported for its registrations
+  for name in ("claude_code", "codex", "grok_build"):
+    harness = build_harness(name)
+    mounts = harness.mounts("/app")
+    # Both the invocation script and the sourced env file end in .sh.
+    (script_name,) = [k for k in mounts if k.startswith("run_")]
+    resource = mounts[script_name].resource
+    assert isinstance(resource, Inline)
+    script = resource.content.decode().rstrip()
+
+    assert script.endswith('exit "$status"'), name
+    # Captured on the line right after the agent returns, before anything can
+    # overwrite `$?`...
+    assert "status=$?" in script, name
+    # ...and still written to the workspace, which is NOT redundant: the file
+    # is absent when we killed the run at the deadline, so its absence tells a
+    # kill apart from a non-zero exit.
+    assert "printf '%s\\n' \"$status\" >" in script, name
+
+
+def test_the_exit_status_is_recorded_but_never_gated_on():
+  """ADR-0011's line: an exit code is ambiguous, so it gets no authority.
+
+  Non-zero covers both "the task defeated the agent" and "the API broke".
+  Attribution stays with AgentOutcome, read from the trace — this test pins
+  that no shipped task consults the exec's status.
+  """
+  import inspect
+
+  from swe_lab.evaluation.unit_test import UnitTestTask
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.workflow import Task
+
+  for cls in (Task, CodingAgentTask, UnitTestTask):
+    for name in ("should_retry", "outputs_valid"):
+      source = inspect.getsource(getattr(cls, name))
+      assert "exit_code" not in source, f"{cls.__name__}.{name}"

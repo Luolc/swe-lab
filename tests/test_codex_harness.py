@@ -252,7 +252,10 @@ def test_the_script_runs_unattended_and_reports_status_out_of_band():
   # needs user namespaces that are commonly unavailable inside one.
   assert "--dangerously-bypass-approvals-and-sandbox" in script
   assert "--json" in script  # the trace is the agent's own stdout
-  assert script.rstrip().endswith("exit 0")  # teardown must not change
+  # The agent's own status is PROPAGATED, not flattened to 0. Nothing gates on
+  # it (no backend raises on a non-zero exec; RunStatus is not derived from
+  # it), so this costs no behaviour change and makes the recorded metric real.
+  assert script.rstrip().endswith('exit "$status"')
   assert "codex.exit_code" in script  # ...so the real status goes to a file
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script  # prompt on stdin
 

@@ -126,7 +126,10 @@ def test_invocation_script_shape_and_quoting():
   # the agent's status is reported out-of-band; the script itself exits 0 so
   # container teardown is unchanged
   assert '> "$SANDBOX_WORKSPACE"/claude.exit_code' in script
-  assert script.rstrip().endswith("exit 0")
+  # The agent's own status is PROPAGATED, not flattened to 0. Nothing gates on
+  # it (no backend raises on a non-zero exec; RunStatus is not derived from
+  # it), so this costs no behaviour change and makes the recorded metric real.
+  assert script.rstrip().endswith('exit "$status"')
   assert "|| true" not in script
   # the prompt is piped in on stdin (no shell-quoting hazard)
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script

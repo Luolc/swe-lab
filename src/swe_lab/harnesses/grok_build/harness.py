@@ -29,6 +29,7 @@ from swe_lab.harnesses.common import (
     AgentInfoObserver,
     env_exports,
     read_text,
+    status_tail,
 )
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
@@ -309,11 +310,6 @@ class GrokBuildHarness(Harness):
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
         (f"{binary} {' '.join(flags)} > {event_stream} 2> {stderr}"),
-        # The agent's real status, reported out-of-band. `set -u` is on but
-        # `set -e` is not, so execution continues here; capturing $? on the
-        # very next line and then exiting 0 keeps container teardown unchanged
-        # while still telling a caller success from failure from a kill.
-        f"printf '%s\\n' \"$?\" > {exit_file}",
-        "exit 0",
+        *status_tail(exit_file),
     ]
     return "\n".join(lines) + "\n"

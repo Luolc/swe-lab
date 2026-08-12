@@ -167,3 +167,45 @@ class AgentInfoObserver(SandboxObserver):
     if not self._captured:
       return None
     return Contribution(artifacts={self.artifact: self.artifact})
+
+
+def status_tail(exit_code_file: str) -> list[str]:
+  """Return the script lines that record the agent's status and propagate it.
+
+  Every harness ends its invocation script the same way, and it used to end it
+  ``exit 0`` — throwing the agent's own status away and leaving the recorded
+  ``<agent>.exit_code`` metric permanently ``0.0``. The stated reason was that
+  a non-zero exit would disturb container teardown, and that is not so:
+  teardown is a context-manager exit, no backend raises on a non-zero exec
+  (all three ``check=False``), and nothing derives ``RunStatus`` from the code.
+  So the zero bought nothing and cost a signal.
+
+  The status is now propagated *and* written to the workspace, which are not
+  redundant:
+
+  - the **exec result** carries it to the metric, where a sweep can count
+    non-zero runs from the manifest instead of fetching artifacts;
+  - the **file** is written only if the agent process actually returned, so its
+    *absence* distinguishes "we killed it at the deadline" from "it exited
+    non-zero" — and it survives in the artifacts when the record does not.
+
+  What has not changed, and must not: the code is **recorded, never gated on**.
+  An agent's exit status is ambiguous — non-zero covers both "the task defeated
+  it" and "the API broke" — so attribution stays with ``AgentOutcome``, read
+  from the trace (ADR-0011). Propagating it makes the number honest without
+  giving it authority.
+
+  Args:
+    exit_code_file: The already-quoted workspace path to write the status to.
+
+  Returns:
+    The tail lines, in order.
+  """
+  return [
+      # `set -u` is on but `set -e` is not, so execution reaches here whatever
+      # the agent did. Capture on the very next line, before anything can
+      # overwrite `$?`.
+      "status=$?",
+      f"printf '%s\\n' \"$status\" > {exit_code_file}",
+      'exit "$status"',
+  ]
