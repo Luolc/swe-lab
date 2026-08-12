@@ -177,17 +177,35 @@ class Sandbox(SandboxFs, ABC):
     """Return the observer that materializes ``assets`` for this backend.
 
     The provisioning seam (task-28 §7). A harness *declares* what it needs at
-    which absolute path; this says **how those bytes get there**, which is the
-    one part only the backend can know — a container has to be handed a copy,
-    while a CI job whose filesystem already is the sandbox should fetch
-    straight to the final path and move no bytes at all.
+    which absolute path; this is the backend's answer for how that is
+    satisfied — the one part only the backend can know.
 
-    The default is the mount answer, because it is the one that works for any
-    sandbox the caller cannot write into directly. A backend whose filesystem
-    *is* the run's overrides with :class:`InstalledAssetsObserver`.
+    **The answer is not limited to transferring bytes**, and a backend is not
+    limited to the two shipped observers:
+
+    - a container has to be handed a copy (the default,
+      :class:`~swe_lab.sandbox.assets.MountedAssetsObserver`);
+    - a CI job whose filesystem already *is* the sandbox fetches straight to
+      the final path (:class:`~swe_lab.sandbox.assets.InstalledAssetsObserver`);
+    - a sandbox backed by its **own maintained artifact store** resolves the
+      release to a store path and names it in its own construction parameters,
+      necessarily **before the sandbox exists** — it reads
+      ``SandboxConfig.assets`` rather than fetching.
+
+    A backend that resolved at configuration time is **not** thereby finished:
+    an artifact that arrives as an archive still has to be unpacked, moved into
+    place and made executable, and ``after_create`` is the only place that can
+    happen. Such a backend returns an observer that does exactly that.
+    ``None`` is right only when there is genuinely nothing left to do once the
+    sandbox is live.
+
+    The default is the mount answer because it is the one that works for a
+    sandbox the caller cannot write into directly — not because it is the only
+    kind. A backend that resolves differently overrides this.
 
     Neither side enumerates the other: adding an agent touches no backend, and
-    a downstream backend provisions an agent swe-lab has never heard of.
+    a downstream backend provisions an agent swe-lab has never heard of, by
+    whatever means that backend actually has.
 
     Args:
       assets: What the task's agent declared; empty for a task that runs none.

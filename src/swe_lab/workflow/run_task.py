@@ -357,11 +357,19 @@ def run_task(
   record: AttemptRecord | None = None
   attempt = 0
   for attempt in range(retries + 1):
-    built = sandbox_factory(backend_of(sandbox))(
-        instance.sandbox_spec(),
+    # The task's declared machinery reaches the config **before** the factory
+    # runs, because a sandbox that resolves assets out of its own store has to
+    # know what it will carry in order to be built at all (task-28 §7). A
+    # backend with nothing to do at construction ignores it and answers at run
+    # time instead — the two moments are complementary, not alternatives.
+    attempt_config = replace(
         _over_a_fresh_workspace(
             sandbox, epath.Path(output_dir) / "ws" / f"a{attempt}"
         ),
+        assets=tuple(task.assets()),
+    )
+    built = sandbox_factory(backend_of(attempt_config))(
+        instance.sandbox_spec(), attempt_config
     )
     result = task.execute(
         built,

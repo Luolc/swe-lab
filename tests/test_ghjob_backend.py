@@ -198,7 +198,13 @@ def test_this_backend_answers_assets_by_installing_in_place(
       spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   )
   binary = sandbox.asset_observer(
-      (AgentAsset(path=BINARY_AT, materialize=_fake_materialize),)
+      (
+          AgentAsset(
+              path=BINARY_AT,
+              version="2.1.212",
+              fetch=_fake_materialize,
+          ),
+      )
   )
   assert isinstance(binary, InstalledAssetsObserver)
   sandbox.up()

@@ -42,6 +42,7 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
+from .binary import PINNED_GROK_BUILD_VERSION
 from .constants import (
     AGENT_ENV_NAME,
     AGENT_EXIT_CODE_NAME,
@@ -84,6 +85,11 @@ class GrokBuildHarness(Harness):
     model: The ``--model`` id to run, or ``None`` to omit the flag and defer
       to the build. Pinned by default (the measured default of the pinned
       build) so a sweep is reproducible.
+    version: The pinned agent release. Defaulted to the version this harness
+      was developed and verified against — a sweep whose agent build floats is
+      not reproducible — but overridable, since pinning is a run-level
+      decision. An unpinned version fails loudly: the checksum is
+      pinned in-repo, because the official installer verifies nothing.
     effort: Reasoning effort, passed as ``--reasoning-effort`` — a real flag
       here, unlike Codex. ``high`` by default for the house reason; ``None``
       omits it.
@@ -115,6 +121,7 @@ class GrokBuildHarness(Harness):
   """
 
   model: str | None = DEFAULT_MODEL
+  version: str = PINNED_GROK_BUILD_VERSION
   effort: Effort | None = DEFAULT_EFFORT
   max_turns: int = DEFAULT_MAX_TURNS
   agent_home: str = AGENT_HOME
@@ -152,10 +159,12 @@ class GrokBuildHarness(Harness):
     """
     from .binary import ensure_grok_binary
 
+    version = self.version
     return (
         AgentAsset(
             path=BINARY_AT,
-            materialize=lambda dest: ensure_grok_binary(dest=dest),
+            version=version,
+            fetch=lambda dest: ensure_grok_binary(version=version, dest=dest),
         ),
     )
 

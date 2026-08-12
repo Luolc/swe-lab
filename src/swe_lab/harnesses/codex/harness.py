@@ -45,6 +45,7 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
+from .binary import PINNED_CODEX_VERSION
 from .constants import (
     AGENT_ENV_NAME,
     AGENT_EXIT_CODE_NAME,
@@ -85,6 +86,11 @@ class CodexHarness(Harness):
       reproducible — but the valid set is **account-sensitive**, and pinning
       one an account does not offer fails with a 400 before the first turn, so
       a caller on a different account overrides it.
+    version: The pinned agent release. Defaulted to the version this harness
+      was developed and verified against — a sweep whose agent build floats is
+      not reproducible — but overridable, since pinning is a run-level
+      decision. An unpinned version fails loudly: the checksum is
+      pinned in-repo, because upstream publishes none for these assets.
     effort: Reasoning effort, passed as Codex's ``model_reasoning_effort``
       config override (it has no flag). ``HIGH`` by default rather than Codex's
       own ``medium``: an unattended solve is the case worth spending on, and a
@@ -129,6 +135,7 @@ class CodexHarness(Harness):
   """
 
   model: str | None = DEFAULT_MODEL
+  version: str = PINNED_CODEX_VERSION
   effort: Effort | None = DEFAULT_EFFORT
   agent_home: str = AGENT_HOME
   skip_git_repo_check: bool = True
@@ -172,13 +179,22 @@ class CodexHarness(Harness):
     declared together and the seam places both wherever the backend puts
     assets.
     """
-    from .binary import asset_materializer, CODE_MODE_HOST_STEM, CODEX_STEM
+    from .binary import (
+        asset_materializer,
+        CODE_MODE_HOST_STEM,
+        CODEX_STEM,
+    )
 
     return (
-        AgentAsset(path=BINARY_AT, materialize=asset_materializer(CODEX_STEM)),
+        AgentAsset(
+            path=BINARY_AT,
+            version=self.version,
+            fetch=asset_materializer(CODEX_STEM, self.version),
+        ),
         AgentAsset(
             path=CODE_MODE_HOST_AT,
-            materialize=asset_materializer(CODE_MODE_HOST_STEM),
+            version=self.version,
+            fetch=asset_materializer(CODE_MODE_HOST_STEM, self.version),
         ),
     )
 

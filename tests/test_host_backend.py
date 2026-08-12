@@ -410,7 +410,13 @@ def test_this_backend_answers_assets_by_mounting_a_host_copy(
   # which agent asked.
   sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
   binary = sandbox.asset_observer(
-      (AgentAsset(path=BINARY_AT, materialize=_fake_materialize),)
+      (
+          AgentAsset(
+              path=BINARY_AT,
+              version="2.1.212",
+              fetch=_fake_materialize,
+          ),
+      )
   )
   assert isinstance(binary, MountedAssetsObserver)
   # It takes the HOST copy (no dest asked for) and hands it over as a mount —

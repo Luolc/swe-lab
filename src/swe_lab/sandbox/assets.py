@@ -1,4 +1,4 @@
-"""Declared agent assets, and the two ways a backend can materialize one.
+"""Declared agent assets: what an agent needs, and where — never how.
 
 The seam task-28 §7 asked for. Before it, every backend imported every
 harness's ``ensure_*_binary`` **by name**, so a backend knew which agents
@@ -12,18 +12,40 @@ backend knows only how to materialize an arbitrary one.** Neither side
 enumerates the other, which is the open-registry argument of ADR-0003 §6.5
 applied to provisioning.
 
-There are exactly two ways to materialize an asset, and they are the two the
-backends were already using by hand:
+**Resolution is open-ended, and this module does not enumerate it.** An asset
+says *what it is* and *where it must end up*; how a given sandbox satisfies
+that is the sandbox's business, and the strategies differ in **kind**, not
+merely in mechanism:
 
-- **Mount it** (:class:`MountedAssetsObserver`) — the asset is fetched into a
-  host cache and handed to the sandbox as a read-only file. What a container
-  needs, because a container has no other way to get bytes.
-- **Install it** (:class:`InstalledAssetsObserver`) — the asset is fetched
-  *directly to its final path*, because the sandbox's filesystem already **is**
-  the one doing the fetching (a CI job). No bytes travel; a mount could not
-  express that.
+- **Transfer at run time.** A container is handed a host copy
+  (:class:`MountedAssetsObserver`); a CI job whose filesystem *is* the sandbox
+  fetches straight to the final path (:class:`InstalledAssetsObserver`). Both
+  need bytes, so both use :attr:`AgentAsset.fetch`.
+- **Resolve at configuration time.** A sandbox backed by its own maintained
+  artifact store does not fetch anything: it resolves the release to a path in
+  that store and names it in the sandbox's own construction parameters — and
+  it must do so **before the sandbox exists**, because that declaration *is*
+  part of how the sandbox gets built. It reads
+  ``SandboxConfig.assets``, which the runner fills in from the task ahead of
+  construction, and never calls ``fetch``.
+- Anything else a sandbox can do. The list above is what exists *today*, not a
+  closed set. An earlier version of this module asserted there were "exactly
+  two ways" and made ``fetch`` mandatory, which was wrong and broke precisely
+  the configuration-time case.
 
-A backend answers which one it is by overriding ``Sandbox.asset_observer``.
+**The two moments are complementary, not alternatives.** Bringing the bytes in
+early does not remove the work that can only be done once the sandbox is live:
+an artifact that arrives as an archive still has to be unpacked, moved into
+place and made executable, and ``after_create`` is the only place that can
+happen — whoever brought the bytes in. So a store-backed backend may well
+resolve at configuration time *and* return a run-time observer that finishes
+the job; returning ``None`` is right only when there is genuinely nothing left
+to do.
+
+That is why ``fetch`` is **optional**, and why an asset is small: it names the
+release and the destination and stops there. It does **not** name a platform —
+a sandbox knows what it runs on and a harness does not, so choosing the build
+(and whether to bundle it, and how it travels) belongs to the sandbox.
 """
 
 from __future__ import annotations
@@ -34,6 +56,7 @@ from typing import override, TYPE_CHECKING
 
 from etils import epath
 
+from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
 from .resources import LocalFile
@@ -42,10 +65,11 @@ if TYPE_CHECKING:
   from .sandbox import SandboxFs
 
 type Materializer = Callable[[epath.Path | None], epath.Path]
-"""Puts one asset's bytes somewhere and says where they landed.
+"""Obtains one asset's bytes and says where they landed.
 
-The one contract every ``ensure_*`` function in the harness packages already
-satisfies, which is why this seam needed no new fetching code:
+Used only by the strategies that *transfer* (see the module docstring); a
+store-resolving backend never calls one. The contract is the one every
+``ensure_*`` function in the harness packages already satisfied:
 
 - called with ``None`` — put it in the **host cache** and return that path
   (what a backend handing a container a copy wants);
@@ -66,11 +90,16 @@ class AgentAsset:
   (ADR-0003 §3 — the receiver decides the transfer).
 
   Attributes:
-    path: The absolute in-sandbox path the file must exist at. Absolute
-      because an asset is machinery, not the run's material — it does not
-      live in the workspace.
-    materialize: Puts the bytes somewhere and returns where; see
-      :data:`Materializer`.
+    path: The absolute in-sandbox path the file must exist at — the one thing
+      the harness genuinely fixes, because its invocation script execs exactly
+      this path. Absolute because an asset is machinery, not the run's
+      material: it does not live in the workspace.
+    version: The pinned release, so a sandbox that keeps its own copies knows
+      *which* one is wanted.
+    fetch: How to obtain the bytes, for a backend that must obtain them.
+      **Optional**: a sandbox that resolves the asset out of its own
+      maintained store never needs one, and requiring it would force every
+      harness to hand such a backend a downloader it must not call.
     executable: Whether it is placed with the execute bit. True by default —
       an agent asset is nearly always a binary.
     read_only: Whether the run must not modify it. True by default: an asset
@@ -78,9 +107,31 @@ class AgentAsset:
   """
 
   path: str
-  materialize: Materializer = field(repr=False)
+  version: str
+  fetch: Materializer | None = field(default=None, repr=False)
   executable: bool = True
   read_only: bool = True
+
+  def require_fetch(self) -> Materializer:
+    """Return :attr:`fetch`, or explain why this backend cannot use the asset.
+
+    Called by the strategies that transfer. The failure deserves a real
+    message: it means an asset meant for a store-resolving sandbox is being
+    run on a fetching one.
+
+    Returns:
+      The materializer.
+
+    Raises:
+      SandboxError: If the asset carries no way to obtain bytes.
+    """
+    if self.fetch is None:
+      raise SandboxError(
+          f"asset {self.path!r} (version {self.version}) declares no fetch,"
+          " so this backend cannot transfer it; either the harness should"
+          " supply one, or this sandbox should resolve it from its own store"
+      )
+    return self.fetch
 
 
 @dataclass(frozen=True)
@@ -108,7 +159,7 @@ class MountedAssetsObserver(SandboxObserver):
     """
     return {
         asset.path: Mount(
-            LocalFile(asset.materialize(None)),
+            LocalFile(asset.require_fetch()(None)),
             executable=asset.executable,
             read_only=asset.read_only,
         )
@@ -146,4 +197,4 @@ class InstalledAssetsObserver(SandboxObserver):
     """
     del sb
     for asset in self.assets:
-      _ = asset.materialize(epath.Path(asset.path))
+      _ = asset.require_fetch()(epath.Path(asset.path))

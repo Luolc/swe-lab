@@ -41,6 +41,7 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
+from .binary import PINNED_CLAUDE_CODE_VERSION
 from .capture import Capture, Effort
 from .constants import (
     AGENT_ENV_NAME,
@@ -79,6 +80,12 @@ class ClaudeCodeHarness(Harness):
 
   Attributes:
     model: The ``--model`` alias to run.
+    version: The pinned agent release. Defaulted to the version this harness
+      was developed and verified against — a sweep whose agent build floats is
+      not reproducible — but overridable, since pinning is a run-level
+      decision. The release manifest supplies the checksum, so any published
+      version works.
+
     capture: The output-capture strategy — ``STREAM`` (default) or ``PROXY``.
     proxy_port: The host port ``PROXY`` capture records on. This harness runs
       the recorder itself (see ``observers``), so the port is all it needs;
@@ -120,6 +127,7 @@ class ClaudeCodeHarness(Harness):
   """
 
   model: str = DEFAULT_MODEL
+  version: str = PINNED_CLAUDE_CODE_VERSION
   capture: Capture = "stream"
   proxy_port: int = DEFAULT_BASE_PORT
   proxy_base_url: str | None = None
@@ -181,10 +189,12 @@ class ClaudeCodeHarness(Harness):
     """
     from .binary import ensure_claude_binary
 
+    version = self.version
     return (
         AgentAsset(
             path=BINARY_AT,
-            materialize=lambda dest: ensure_claude_binary(dest=dest),
+            version=version,
+            fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
         ),
     )
 
