@@ -151,3 +151,59 @@ def test_a_grading_task_declares_nothing():
   from swe_lab.evaluation.unit_test import UnitTestTask
 
   assert list(UnitTestTask().assets()) == []
+
+
+# ─── the shared harness helpers (one implementation, three agents) ───────────
+
+
+def test_every_harness_uses_the_shared_info_observer():
+  """Three harnesses had grown their own, near-identical copy.
+
+  What legitimately differs is *what to probe* and *what to call the
+  artifact*, so those are parameters; the capture, the never-fail guarantee
+  and the registration are shared.
+  """
+  from swe_lab.harnesses import build_harness
+  from swe_lab.harnesses.common import AgentInfoObserver
+  import swe_lab.workflow.definitions as definitions
+
+  assert definitions.ROLLOUT_KEY  # imported for its registrations
+  seen: dict[str, tuple[str, ...]] = {}
+  for name in ("claude_code", "codex", "grok"):
+    harness = build_harness(name)
+    (info,) = [
+        o for o in harness.observers() if isinstance(o, AgentInfoObserver)
+    ]
+    assert info.artifact.startswith(name.split("_")[0])
+    seen[name] = tuple(info.probes)
+
+  # Version and help everywhere; Codex adds the subcommand that IS its
+  # surface, since the generic --help does not explain an `exec` run.
+  assert seen["claude_code"] == ("--version", "--help")
+  assert seen["grok"] == ("--version", "--help")
+  assert seen["codex"] == ("--version", "--help", "exec --help")
+
+
+def test_the_env_renderer_is_shared_and_refuses_a_bad_name():
+  from swe_lab.harnesses.common import env_exports
+  from swe_lab.sandbox import SandboxError
+
+  assert env_exports({"A": "1", "B": "x y"}) == "export A=1\nexport B='x y'\n"
+  with pytest.raises(SandboxError, match="invalid environment variable"):
+    _ = env_exports({"not a name": "v"})
+
+
+def test_the_workspace_reader_is_absence_tolerant(tmp_path: Path):
+  # A crashed run leaves no trace file, and the callers must report an outcome
+  # rather than raise.
+  from swe_lab.harnesses.common import read_text
+  from swe_lab.sandbox import SandboxSpec
+  from swe_lab.sandbox.testing import FakeSandbox
+
+  sb = FakeSandbox(
+      spec=SandboxSpec("x", "img", "/app", "base"),
+      workspace=epath.Path(tmp_path),
+  )
+  assert read_text(sb, "nope.txt") == ""
+  sb.write("there.txt", b"hi")
+  assert read_text(sb, "there.txt") == "hi"

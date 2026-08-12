@@ -31,7 +31,7 @@ from swe_lab.harnesses.claude_code.constants import (
     INFO_ARTIFACT,
     PROXY_LOG_NAME,
 )
-from swe_lab.harnesses.claude_code.harness import AgentInfoObserver
+from swe_lab.harnesses.common import AgentInfoObserver
 from swe_lab.sandbox import (
     Contribution,
     ExecResult,
@@ -428,7 +428,7 @@ def _info_run(
   sb = FakeSandbox(
       spec=_SPEC, workspace=epath.Path(tmp_path), run_results=results
   )
-  observer = AgentInfoObserver()
+  observer = AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT)
   observer.after_create(sb)
   return sb, observer.before_destroy(sb)
 
@@ -476,7 +476,7 @@ def test_agent_info_never_fails_the_run(tmp_path: Path):
       workspace=epath.Path(tmp_path),
       run_error=SandboxError("exec is broken"),
   )
-  observer = AgentInfoObserver()
+  observer = AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT)
   observer.after_create(sb)  # must not raise
   contribution = observer.before_destroy(sb)
   # it still recorded that the interrogation itself failed
@@ -486,7 +486,9 @@ def test_agent_info_never_fails_the_run(tmp_path: Path):
 
 def test_agent_info_output_is_declared_but_not_required(tmp_path: Path):
   del tmp_path
-  (schema,) = AgentInfoObserver().output_schema()
+  (schema,) = AgentInfoObserver(
+      binary=BINARY_AT, artifact=INFO_ARTIFACT
+  ).output_schema()
   assert schema.name == INFO_ARTIFACT
   assert schema.required is False  # a run without it is still a valid run
 
