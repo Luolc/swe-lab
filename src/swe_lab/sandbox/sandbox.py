@@ -177,17 +177,30 @@ class Sandbox(SandboxFs, ABC):
     """Return the observer that materializes ``assets`` for this backend.
 
     The provisioning seam (task-28 §7). A harness *declares* what it needs at
-    which absolute path; this says **how those bytes get there**, which is the
-    one part only the backend can know — a container has to be handed a copy,
-    while a CI job whose filesystem already is the sandbox should fetch
-    straight to the final path and move no bytes at all.
+    which absolute path; this is the backend's answer for how that is
+    satisfied — the one part only the backend can know.
 
-    The default is the mount answer, because it is the one that works for any
-    sandbox the caller cannot write into directly. A backend whose filesystem
-    *is* the run's overrides with :class:`InstalledAssetsObserver`.
+    **The answer is not limited to transferring bytes**, and a backend is not
+    limited to the two shipped observers:
+
+    - a container has to be handed a copy (the default,
+      :class:`~swe_lab.sandbox.assets.MountedAssetsObserver`);
+    - a CI job whose filesystem already *is* the sandbox fetches straight to
+      the final path (:class:`~swe_lab.sandbox.assets.InstalledAssetsObserver`);
+    - a sandbox backed by its **own maintained artifact store** resolves the
+      asset by :attr:`~swe_lab.sandbox.assets.AgentAsset.key` and names the
+      store path in its own construction parameters — necessarily **before the
+      sandbox exists**. Such a backend does its work at configuration time and
+      correctly returns ``None`` here, having nothing left to do at run time;
+      it never calls ``fetch``.
+
+    The default is the mount answer because it is the one that works for a
+    sandbox the caller cannot write into directly — not because it is the only
+    kind. A backend that resolves differently overrides this.
 
     Neither side enumerates the other: adding an agent touches no backend, and
-    a downstream backend provisions an agent swe-lab has never heard of.
+    a downstream backend provisions an agent swe-lab has never heard of, by
+    whatever means that backend actually has.
 
     Args:
       assets: What the task's agent declared; empty for a task that runs none.

@@ -393,3 +393,53 @@ Three things this fixed that were not the stated goal:
 
 The negative property — neither side enumerates the other — is pinned by a
 test that places an asset named for an agent swe-lab has never heard of.
+
+### §7 correction — 2026-08-12: resolution is not two-valued
+
+The first cut of the seam asserted, in the module docstring and in the type,
+that **"there are exactly two ways to materialize an asset"** — transfer a
+host copy, or fetch to the final path — and made the fetch closure a
+**required** field of `AgentAsset`.
+
+That was an assumption, not a finding, and it was wrong in a way that had
+already been called out: a downstream **remote sandbox maintains its own
+private artifact store**. It neither downloads nor is handed a host copy. It
+resolves an artifact **by identity**, writes the resulting store path into the
+sandbox's own construction parameters, and does so **before the sandbox
+exists** — that declaration is part of how the sandbox gets built, which is
+the whole reason provisioning was moved to the sandbox layer in the first
+place.
+
+Two concrete breaks followed from the assumption:
+
+1. **An asset carried no identity.** It was a path plus a closure, so there
+   was nothing for a store to look anything up *by*.
+2. **`fetch` was mandatory**, so a harness had to hand a store-resolving
+   backend a downloader it must never call.
+
+Corrected, and the correction went through two rounds because the first one
+over-corrected: an asset now declares **a release and a destination path, and
+nothing else.**
+
+```python
+AgentAsset(path="/opt/codex/codex", version="0.147.0", fetch=<optional>)
+```
+
+- `fetch` is **optional** — a store-resolving backend never calls it, and
+  requiring it forced every harness to hand such a backend a downloader it
+  must not use.
+- There is **no `platform` field**. The first correction added one, which was
+  the same mistake again one level down: a sandbox knows what it runs on, a
+  harness does not, and choosing the build — or bundling it, or how it travels
+  — is the sandbox's call.
+- The pinned version is a **harness field** with a default, not a constant.
+  The default is the release the harness was verified against, because a sweep
+  whose agent build floats is not reproducible; overriding it is a run-level
+  decision (`--rollout.harness.version=…`), and an unpinned version fails
+  loudly at the checksum rather than downloading unverified bytes.
+
+`Sandbox.asset_observer` documents three strategies and states the list is
+open; a store-backed backend does its work at configuration time and correctly
+returns `None` at run time. A test resolves all three shipped agents with no
+bytes moved and no sandbox in existence.
+

@@ -273,7 +273,9 @@ def _get(url: str, *, timeout: float = _DOWNLOAD_TIMEOUT_S) -> bytes:
     return response.read()
 
 
-def asset_materializer(stem: str) -> Callable[[epath.Path | None], epath.Path]:
+def asset_materializer(
+    stem: str, version: str = PINNED_CODEX_VERSION
+) -> Callable[[epath.Path | None], epath.Path]:
   """Return a materializer for one of the two binaries.
 
   The provisioning seam wants a per-*file* materializer, while Codex's fetch
@@ -286,6 +288,7 @@ def asset_materializer(stem: str) -> Callable[[epath.Path | None], epath.Path]:
 
   Args:
     stem: Which binary this materializer produces (see :data:`BINARY_STEMS`).
+    version: The release to fetch.
 
   Returns:
     A materializer honoring the seam's contract (``None`` caches, a path
@@ -293,7 +296,9 @@ def asset_materializer(stem: str) -> Callable[[epath.Path | None], epath.Path]:
   """
 
   def materialize(dest: epath.Path | None) -> epath.Path:
-    directory = ensure_codex_binaries(dest=dest.parent if dest else None)
+    directory = ensure_codex_binaries(
+        version=version, dest=dest.parent if dest else None
+    )
     return directory / stem
 
   return materialize
