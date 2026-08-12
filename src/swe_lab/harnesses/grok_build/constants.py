@@ -13,25 +13,25 @@ from typing import Literal
 # linked musl, so it needs no loader indirection and no bundled libraries
 # (task-29 §1); unlike Codex, there is exactly ONE binary — no companion like
 # `codex-code-mode-host` exists, verified by a live tool-using run (§9.3).
-BINARY_AT = "/opt/grok/grok"
+BINARY_AT = "/opt/grok-build/grok"
 
 # A writable HOME for the agent inside the container — the same path the other
 # harnesses use, for the same reason: instance images run as root with no
 # guaranteed-writable home. Ephemeral, not a workspace file.
 AGENT_HOME = "/agent-home"
 
-# Grok derives its config dir from `$HOME/.grok` (source: `grok_home()`); it
-# has no CODEX_HOME-style relocation variable, so the dir is fixed by HOME and
-# this constant only *names* the derivation for the auth observer.
+# Grok Build derives its config dir from `$HOME/.grok` (source: `grok_home()`);
+# it has no CODEX_HOME-style relocation variable, so the dir is fixed by HOME
+# and this constant only *names* the derivation for the auth observer.
 GROK_DIR_NAME = ".grok"
 
 
 def grok_config_dir(agent_home: str = AGENT_HOME) -> str:
-  """Return grok's config dir for a given agent home — always ``$HOME/.grok``.
+  """Return the config dir for an agent home — always ``$HOME/.grok``.
 
   Derived rather than configured so the harness and the auth observer cannot
-  disagree about where grok will look; a staged ``auth.json`` landing anywhere
-  else surfaces as an authentication failure minutes into a run.
+  disagree about where Grok Build will look; a staged ``auth.json`` landing
+  anywhere else surfaces as an authentication failure minutes into a run.
 
   Args:
     agent_home: The in-container ``HOME``.
@@ -44,7 +44,7 @@ def grok_config_dir(agent_home: str = AGENT_HOME) -> str:
 
 # The invocation script the harness stages and runs by its workspace path; it
 # drives grok in headless (``-p`` / ``--prompt-file``) mode.
-AGENT_SCRIPT_NAME = "run_grok.sh"
+AGENT_SCRIPT_NAME = "run_grok_build.sh"
 
 # Caller-injected environment, sourced by the invocation script. Staged empty
 # and rewritten by ``run(env=...)``, so the exports land inside the script's
@@ -83,8 +83,10 @@ type Effort = Literal["low", "medium", "high"]
 
 Typed rather than a bare ``str`` for the house reason: a typo silently running
 a sweep at the wrong effort is worse than a loud refusal. The three values are
-the ones grok's own TUI model picker exposes; the flag itself is undocumented
-about its domain, so an unknown value fails at grok's argv parsing — loudly,
+the ones Grok Build's own TUI model picker exposes; the flag itself is
+undocumented
+about its domain, so an unknown value fails at Grok Build's argv parsing —
+loudly,
 which is what we want. (Unverified beyond these three; widen with evidence.)
 """
 

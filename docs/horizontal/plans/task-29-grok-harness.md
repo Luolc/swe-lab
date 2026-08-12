@@ -1,4 +1,4 @@
-# Task 29 — Grok Build provisioning + `GrokHarness`
+# Task 29 — Grok Build provisioning + `GrokBuildHarness`
 
 > Design, written before implementation, on the pattern of
 > [task-28](task-28-codex-provisioning.md) (Codex) and
@@ -78,14 +78,14 @@ standing rule it is not claimed until the matrix has run on it.
 
 ## 3. Provisioning
 
-`harnesses/grok/binary.py`, on the codex module's pattern but simpler in one
+`harnesses/grok_build/binary.py`, on the codex module's pattern but simpler in one
 material way: **one binary, no companion**. `binary_cache_path` returns a file
 (as claude_code's does), not a directory — the codex directory shape exists
 only because `codex-code-mode-host` must sit beside `codex`, and grok has no
 analogue. *Unverified until the live e2e*: that a real tool-using run needs no
 second binary; §9 keeps a check for it.
 
-- `BINARY_AT = "/opt/grok/grok"`, backend-provisioned (ADR-0003; the harness
+- `BINARY_AT = "/opt/grok-build/grok"`, backend-provisioned (ADR-0003; the harness
   never stages its own machinery).
 - Version policy: pin + `--pinned`-style refetch, **channel resolution**
   supported (grok has a real `stable` channel, which codex lacks); no version
@@ -96,7 +96,7 @@ second binary; §9 keeps a check for it.
 
 ## 4. The harness — `codex` sibling, `claude_code` converter
 
-`GrokHarness` follows the codex file layout (`constants.py`, `binary.py`,
+`GrokBuildHarness` follows the codex file layout (`constants.py`, `binary.py`,
 `harness.py`, and only if the live capture demands it a `convert.py`):
 
 ```
@@ -143,7 +143,7 @@ Same two-track shape as codex, same machinery:
 - **API key**: `XAI_API_KEY`, an env var → the sandbox's `pass_env`, nothing
   new to build.
 - **OAuth login**: `~/.grok/auth.json` — a *file*, keyed by OIDC scope,
-  carrying `refresh_token`. Staged by a `GrokAuthObserver` on the codex
+  carrying `refresh_token`. Staged by a `GrokBuildAuthObserver` on the codex
   pattern: **inline bytes** (remote-sandbox-safe, secret-manager-friendly),
   `repr=False`, host-side JSON validation, writable so a refresh can land.
   `GROK_HOME`-equivalent: grok derives its dir from `$HOME/.grok` (source:
@@ -209,12 +209,12 @@ apply and a denylist via `--disallowed-tools` does — the flag exists.
 ## 8. File organization
 
 ```
-src/swe_lab/harnesses/grok/
-  __init__.py        # register_harness("grok", GrokHarness)
+src/swe_lab/harnesses/grok_build/
+  __init__.py        # register_harness("grok_build", GrokBuildHarness)
   constants.py       # BINARY_AT=/opt/grok/grok, names, defaults
   binary.py          # channel resolve + pinned sha256 + fetch (one binary)
-  auth.py            # GrokAuthObserver — inline auth.json, codex pattern
-  harness.py         # GrokHarness + AgentInfoObserver (--version/--help)
+  auth.py            # GrokBuildAuthObserver — inline auth.json, codex pattern
+  harness.py         # GrokBuildHarness + AgentInfoObserver (--version/--help)
   convert.py         # thin delegation to claude_code.convert + grok deltas
 tests/test_grok_harness.py
 ```
@@ -240,7 +240,7 @@ registration lands in `workflow/definitions.py` alongside codex's — the same
    execution`), `--max-turns 1` on a multi-step task (pins the MAX_TURNS
    subtype), kill mid-run (TRUNCATED).
 6. **Full chain**: `rollout_and_unit_test` on a real SWE-Bench Pro instance
-   with `--rollout.harness=grok` — the bar codex set: `unit_test.resolved`
+   with `--rollout.harness=grok_build` — the bar codex set: `unit_test.resolved`
    from a real graded verdict, `agent_outcome` on the shard.
 
 ## 10. Out of scope
@@ -267,7 +267,7 @@ registration lands in `workflow/definitions.py` alongside codex's — the same
 
 ---
 
-## Result — 2026-08-11 (`GrokHarness` landed, e2e-verified)
+## Result — 2026-08-11 (`GrokBuildHarness` landed, e2e-verified)
 
 Implemented and exercised end to end on real Docker containers with a live
 `grok 1.0.0` OAuth login. The design held up better than codex's did — most of

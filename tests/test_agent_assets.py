@@ -121,7 +121,7 @@ def test_the_materializer_is_kept_out_of_repr(tmp_path: Path):
   assert "/opt/agent/agent" in repr(asset)
 
 
-@pytest.mark.parametrize("harness_name", ["claude_code", "codex", "grok"])
+@pytest.mark.parametrize("harness_name", ["claude_code", "codex", "grok_build"])
 def test_every_shipped_harness_declares_its_own_binaries(harness_name: str):
   # The declaration is what the backend consumes, so a harness that forgot it
   # would run against a container with no agent in it.
@@ -169,7 +169,7 @@ def test_every_harness_uses_the_shared_info_observer():
 
   assert definitions.ROLLOUT_KEY  # imported for its registrations
   seen: dict[str, tuple[str, ...]] = {}
-  for name in ("claude_code", "codex", "grok"):
+  for name in ("claude_code", "codex", "grok_build"):
     harness = build_harness(name)
     (info,) = [
         o for o in harness.observers() if isinstance(o, AgentInfoObserver)
@@ -180,7 +180,7 @@ def test_every_harness_uses_the_shared_info_observer():
   # Version and help everywhere; Codex adds the subcommand that IS its
   # surface, since the generic --help does not explain an `exec` run.
   assert seen["claude_code"] == ("--version", "--help")
-  assert seen["grok"] == ("--version", "--help")
+  assert seen["grok_build"] == ("--version", "--help")
   assert seen["codex"] == ("--version", "--help", "exec --help")
 
 

@@ -5,7 +5,7 @@ only *gets the bytes*; **where they land is the sandbox's call** (a Docker
 sandbox caches one copy on the host; a CI job downloads to the final path; a
 remote sandbox declares the mount in its config before it comes up).
 
-Grok's distribution is Claude Code's shape, not Codex's (task-29 §2): a
+Grok Build's distribution is Claude Code's shape, not Codex's (task-29 §2): a
 channel pointer resolves to a version, and the versioned artifact is a **bare
 binary** — no tarball, nothing to extract, and exactly **one** binary (no
 ``code-mode-host`` analogue; verified by a live tool-using run).
@@ -37,7 +37,7 @@ DOWNLOAD_BASE_URL = "https://x.ai/cli"
 # with the checksum below, and re-run the portability matrix after: a release
 # that switched Linux off musl would install fine and then fail inside a
 # minimal image.
-PINNED_GROK_VERSION = "1.0.0"
+PINNED_GROK_BUILD_VERSION = "1.0.0"
 
 # The installer's platform key (`<os>-<arch>`); carries no libc triple — Linux
 # ships exactly one artifact, which IS the musl build (task-29 §1). The
@@ -57,15 +57,16 @@ BINARY_SHA256: dict[tuple[str, str], str] = {
 _FETCH_TIMEOUT_S = 60.0
 _DOWNLOAD_TIMEOUT_S = 600.0
 _BIN_SUBDIR = "bin"
-_CACHE_NAMESPACE = "grok"
+_CACHE_NAMESPACE = "grok-build"
 
 
 def latest_version(channel: str = "stable") -> str:
   """Resolve a channel pointer to a version string.
 
-  Grok has a real channel endpoint (Codex does not), so the claude_code-style
-  resolve-then-pin flow works here. Resolution is informational — the fetch
-  below only ever downloads a version whose checksum is pinned.
+  Grok Build has a real channel endpoint (Codex does not), so the
+  claude_code-style resolve-then-pin flow works here. Resolution is
+  informational — the fetch below only ever downloads a version whose checksum
+  is pinned.
 
   Args:
     channel: The channel name (``stable``).
@@ -78,7 +79,7 @@ def latest_version(channel: str = "stable") -> str:
 
 
 def binary_url(
-    *, version: str = PINNED_GROK_VERSION, platform: str = LINUX_X64
+    *, version: str = PINNED_GROK_BUILD_VERSION, platform: str = LINUX_X64
 ) -> str:
   """Return the download URL of the bare binary.
 
@@ -119,7 +120,7 @@ def binary_checksum(version: str, platform: str) -> str:
 
 def binary_cache_path(
     *,
-    version: str = PINNED_GROK_VERSION,
+    version: str = PINNED_GROK_BUILD_VERSION,
     platform: str = LINUX_X64,
     repo_root: epath.PathLike | None = None,
 ) -> epath.Path:
@@ -150,7 +151,7 @@ def binary_cache_path(
 
 def ensure_grok_binary(
     *,
-    version: str = PINNED_GROK_VERSION,
+    version: str = PINNED_GROK_BUILD_VERSION,
     platform: str = LINUX_X64,
     dest: epath.PathLike | None = None,
     repo_root: epath.PathLike | None = None,

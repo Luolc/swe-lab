@@ -1,6 +1,6 @@
 """Supply a Grok OAuth login to the sandbox, as bytes.
 
-The codex auth observer's pattern, applied to grok's credential file. Grok
+The codex auth observer's pattern, applied to Grok Build's credential file. Grok
 authenticates two ways:
 
 - an **API key** in ``XAI_API_KEY`` — an env var, carried by the sandbox's
@@ -10,7 +10,7 @@ authenticates two ways:
   is a *file*, staged here as an **inline** mount: the credential is held as
   bytes and written into the sandbox directly, so a sandbox sharing no
   filesystem with this process works, and a caller can hand over a credential
-  that never touched local disk. :meth:`GrokAuthObserver.from_file` is the
+  that never touched local disk. :meth:`GrokBuildAuthObserver.from_file` is the
   convenience for a login that already is a local file.
 
 Either way the bytes never reach a command line, never land in the workspace
@@ -37,7 +37,7 @@ from .constants import AGENT_HOME, AUTH_FILENAME, grok_config_dir
 
 
 @dataclass(frozen=True)
-class GrokAuthObserver(SandboxObserver):
+class GrokBuildAuthObserver(SandboxObserver):
   """Stage an OAuth login into the sandbox's ``$HOME/.grok``.
 
   Mounted **writable**, deliberately: grok refreshes its access token against
@@ -84,13 +84,13 @@ class GrokAuthObserver(SandboxObserver):
       ) from error
     if not isinstance(parsed, dict):
       raise SandboxError(
-          "grok auth_json must be a JSON object, as grok's auth.json is"
+          "grok auth_json must be a JSON object, as Grok Build's auth.json is"
       )
 
   @classmethod
   def from_file(
       cls, path: epath.PathLike, *, agent_home: str = AGENT_HOME
-  ) -> GrokAuthObserver:
+  ) -> GrokBuildAuthObserver:
     """Build one from a login that is already a file on this host.
 
     Args:

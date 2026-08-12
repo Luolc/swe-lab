@@ -1,4 +1,4 @@
-"""The ``grok`` harness: run Grok Build headless in the sandbox.
+"""The ``grok_build`` harness: run Grok Build headless in the sandbox.
 
 Stages its invocation script, runs the agent, and converts the
 ``streaming-messages-json`` trace — which is Claude Code's stream-json schema,
@@ -8,7 +8,8 @@ a file of this harness's own choosing; grok reads that file natively via
 ``--prompt-file``, so there is no stdin plumbing at all.
 
 The **binary is not this harness's to place**: it invokes grok at the agreed
-absolute path (:data:`~swe_lab.harnesses.grok.constants.BINARY_AT`) and each
+absolute path (:data:`~swe_lab.harnesses.grok_build.constants.BINARY_AT`) and
+each
 backend's own observer puts it there the way that backend can (ADR-0003).
 Like Codex there is no bundle and no launcher — the Linux build is statically
 linked musl (task-29 §1) — and unlike Codex there is exactly **one** binary.
@@ -65,7 +66,7 @@ _INFO_TIMEOUT_S = 60.0
 
 # The doors a repo under test could use to steer the agent, each with a real
 # switch (task-29 §6). The AGENTS.md door has NO switch — it is handled by
-# detection, not prevention (see GrokHarness.bare).
+# detection, not prevention (see GrokBuildHarness.bare).
 _BARE_FLAGS = (
     "--no-plan",
     "--no-subagents",
@@ -75,7 +76,7 @@ _BARE_FLAGS = (
 
 
 @dataclass(frozen=True)
-class GrokHarness(Harness):
+class GrokBuildHarness(Harness):
   """The Grok Build agent as a sandbox-engine harness plug.
 
   Attributes:
@@ -85,11 +86,11 @@ class GrokHarness(Harness):
     effort: Reasoning effort, passed as ``--reasoning-effort`` — a real flag
       here, unlike Codex. ``high`` by default for the house reason; ``None``
       omits it.
-    max_turns: Agent-loop runaway guard (``--max-turns``). Grok has this flag
-      — which is what makes ``AgentOutcome.MAX_TURNS`` reachable for this
-      harness, unlike Codex.
-    agent_home: In-container ``HOME``. Grok derives its config dir from it as
-      ``$HOME/.grok`` (there is no relocation variable), which is where a
+    max_turns: Agent-loop runaway guard (``--max-turns``). Grok Build has
+      this flag — which is what makes ``AgentOutcome.MAX_TURNS`` reachable for
+      this harness, unlike Codex.
+    agent_home: In-container ``HOME``. Grok Build derives its config dir from
+      it as ``$HOME/.grok`` (there is no relocation variable), which is where a
       staged OAuth login lands and where grok writes its own state.
     bare: Close every door the *repo under test* could use to steer the agent
       **that has a switch**: plan mode, subagents, cross-session memory, and
@@ -124,7 +125,7 @@ class GrokHarness(Harness):
   @override
   def name(self) -> str:
     """This harness's identifier; namespaces its artifacts."""
-    return "grok"
+    return "grok_build"
 
   @override
   def observers(self) -> Sequence[SandboxObserver]:
@@ -249,7 +250,7 @@ class GrokHarness(Harness):
 
     - **Approvals are bypassed** (``--permission-mode bypassPermissions``) —
       the container is the sandbox, the same argument as the other harnesses.
-    - **The prompt arrives by file** (``--prompt-file``), grok's native
+    - **The prompt arrives by file** (``--prompt-file``), Grok Build's native
       mechanism; no stdin, no argv quoting.
     - **The trace is the agent's own JSONL stdout**
       (``streaming-messages-json``), redirected to the event-stream file.

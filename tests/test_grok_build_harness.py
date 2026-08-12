@@ -14,20 +14,20 @@ from etils import epath
 import pytest
 
 from swe_lab.harnesses import AgentOutcome, registered_harnesses
-from swe_lab.harnesses.grok import (
+from swe_lab.harnesses.grok_build import (
     event_stream_outcome,
     event_stream_to_conversation,
-    GrokAuthObserver,
-    GrokHarness,
+    GrokBuildAuthObserver,
+    GrokBuildHarness,
 )
-from swe_lab.harnesses.grok.binary import (
+from swe_lab.harnesses.grok_build.binary import (
     binary_checksum,
     BINARY_SHA256,
     binary_url,
     LINUX_X64,
-    PINNED_GROK_VERSION,
+    PINNED_GROK_BUILD_VERSION,
 )
-from swe_lab.harnesses.grok.constants import (
+from swe_lab.harnesses.grok_build.constants import (
     AGENT_SCRIPT_NAME,
     EVENT_STREAM_NAME,
     grok_config_dir,
@@ -84,7 +84,7 @@ def _stream(events: list[dict[str, object]]) -> str:
   return "".join(json.dumps(e) + "\n" for e in events)
 
 
-def _script(harness: GrokHarness, workdir: str = "/app") -> str:
+def _script(harness: GrokBuildHarness, workdir: str = "/app") -> str:
   mount = harness.mounts(workdir)[AGENT_SCRIPT_NAME]
   assert isinstance(mount.resource, Inline)
   return mount.resource.content.decode()
@@ -144,7 +144,7 @@ def test_absent_and_truncated_traces_read_as_such():
 def test_completed_is_derived_from_the_outcome(tmp_path: Path):
   sb = _sandbox(tmp_path)
   sb.write(EVENT_STREAM_NAME, _stream([_INIT_EVENT, _SUCCESS_RESULT]).encode())
-  harness = GrokHarness()
+  harness = GrokBuildHarness()
   assert harness.outcome(sb) is AgentOutcome.FINISHED
   assert harness.completed(sb) is True
 
@@ -153,10 +153,12 @@ def test_completed_is_derived_from_the_outcome(tmp_path: Path):
 
 
 def test_the_script_runs_unattended_and_reports_status_out_of_band():
-  script = _script(GrokHarness())
+  script = _script(GrokBuildHarness())
   assert "--permission-mode bypassPermissions" in script
   assert "--output-format streaming-messages-json" in script
-  assert "--prompt-file" in script  # grok's native prompt delivery — no stdin
+  assert (
+      "--prompt-file" in script
+  )  # Grok Build's native prompt delivery — no stdin
   assert script.rstrip().endswith("exit 0")  # teardown must not change
   assert "grok.exit_code" in script  # ...so the real status goes to a file
 
@@ -164,15 +166,15 @@ def test_the_script_runs_unattended_and_reports_status_out_of_band():
 def test_no_leader_process_survives_the_run():
   # The leader is a shared backend for interactive clients; a one-shot
   # container run must not leave a socket-holding daemon behind the exec.
-  assert "--no-leader" in _script(GrokHarness())
+  assert "--no-leader" in _script(GrokBuildHarness())
 
 
 def test_model_effort_and_turns_are_pinned_by_default():
-  script = _script(GrokHarness())
+  script = _script(GrokBuildHarness())
   assert "--model grok-4.5" in script  # the pinned build's measured default
   assert "--reasoning-effort high" in script  # a real flag, unlike codex
   assert "--max-turns 500" in script
-  bare = _script(GrokHarness(model=None, effort=None))
+  bare = _script(GrokBuildHarness(model=None, effort=None))
   assert "--model" not in bare
   assert "--reasoning-effort" not in bare
 
@@ -181,14 +183,14 @@ def test_the_home_layout_matches_the_other_harnesses():
   # One knob; the config dir derives from it, so the harness and the auth
   # observer cannot disagree about where grok will look.
   assert grok_config_dir() == "/agent-home/.grok"
-  script = _script(GrokHarness())
+  script = _script(GrokBuildHarness())
   assert "export HOME=/agent-home" in script
   assert "mkdir -p /agent-home/.grok" in script
 
 
 def test_the_harness_stages_no_binary():
   # The binary is the backend's to place (ADR-0003).
-  assert set(GrokHarness().mounts("/app")) == {
+  assert set(GrokBuildHarness().mounts("/app")) == {
       AGENT_SCRIPT_NAME,
       "agent_env.sh",
   }
@@ -196,7 +198,7 @@ def test_the_harness_stages_no_binary():
 
 def test_an_invalid_env_name_is_refused_not_silently_dropped(tmp_path: Path):
   with pytest.raises(SandboxError, match="invalid environment variable"):
-    _ = GrokHarness().run(
+    _ = GrokBuildHarness().run(
         _sandbox(tmp_path), prompt="p", timeout=1.0, env={"not a name": "v"}
     )
 
@@ -205,14 +207,14 @@ def test_an_invalid_env_name_is_refused_not_silently_dropped(tmp_path: Path):
 
 
 def test_bare_is_on_by_default_and_closes_every_door_that_has_a_switch():
-  """Grok's bare covers what grok CAN switch off (task-29 §6).
+  """Grok Build's bare covers what grok CAN switch off (task-29 §6).
 
   The repo-injection doors with real switches: plan mode, subagents,
   cross-session memory, and web search/fetch — the last of which is also an
   egress door ADR-0010 wants shut regardless.
   """
-  assert GrokHarness().bare is True
-  script = _script(GrokHarness())
+  assert GrokBuildHarness().bare is True
+  script = _script(GrokBuildHarness())
   for flag in (
       "--no-plan",
       "--no-subagents",
@@ -223,7 +225,7 @@ def test_bare_is_on_by_default_and_closes_every_door_that_has_a_switch():
 
 
 def test_bare_off_leaves_the_doors_open():
-  script = _script(GrokHarness(bare=False))
+  script = _script(GrokBuildHarness(bare=False))
   for flag in ("--no-plan", "--no-subagents", "--no-memory"):
     assert flag not in script, flag
 
@@ -235,7 +237,7 @@ def test_the_agents_md_door_is_documented_as_open():
   # unlike Claude Code's reminders. This test pins the DOCUMENTATION so the
   # gap cannot silently vanish from the docstring while remaining in the
   # binary.
-  doc = GrokHarness.__doc__ or ""
+  doc = GrokBuildHarness.__doc__ or ""
   assert "AGENTS.md" in doc
   assert "detection" in doc
 
@@ -244,15 +246,15 @@ def test_the_agents_md_door_is_documented_as_open():
 
 
 def test_base_url_is_a_flag_and_never_carries_the_key():
-  script = _script(GrokHarness(base_url="https://gw.internal/v1"))
+  script = _script(GrokBuildHarness(base_url="https://gw.internal/v1"))
   assert "--xai-api-base-url https://gw.internal/v1" in script
   # The key travels only by pass_env; nothing key-like belongs in the script.
   assert "XAI_API_KEY=" not in script
-  assert "--xai-api-base-url" not in _script(GrokHarness())
+  assert "--xai-api-base-url" not in _script(GrokBuildHarness())
 
 
 def test_extra_flags_come_last_so_they_can_correct_anything():
-  script = _script(GrokHarness(extra_flags=("--verbatim",)))
+  script = _script(GrokBuildHarness(extra_flags=("--verbatim",)))
   assert script.index("--disable-web-search") < script.index("--verbatim")
 
 
@@ -263,9 +265,9 @@ def test_one_binary_no_companion():
   # Codex's trap does not apply here: grok spawns no code-mode-host analogue
   # (verified by a live tool-using run), so the cache path is a FILE and the
   # pin table needs exactly one entry per (version, platform).
-  assert (PINNED_GROK_VERSION, LINUX_X64) in BINARY_SHA256
+  assert (PINNED_GROK_BUILD_VERSION, LINUX_X64) in BINARY_SHA256
   url = binary_url()
-  assert url.endswith(f"grok-{PINNED_GROK_VERSION}-{LINUX_X64}")
+  assert url.endswith(f"grok-{PINNED_GROK_BUILD_VERSION}-{LINUX_X64}")
   assert ".tar" not in url  # a bare binary, not an archive
 
 
@@ -280,7 +282,7 @@ def test_an_unpinned_version_is_refused_rather_than_fetched_unverified():
 
 
 def test_the_login_is_staged_inline_under_the_derived_grok_dir(tmp_path: Path):
-  observer = GrokAuthObserver(auth_json=b'{"scope": {}}')
+  observer = GrokBuildAuthObserver(auth_json=b'{"scope": {}}')
   target, mount = next(iter(observer.mounts().items()))
   assert target == "/agent-home/.grok/auth.json"
   assert isinstance(mount.resource, Inline)
@@ -289,11 +291,11 @@ def test_the_login_is_staged_inline_under_the_derived_grok_dir(tmp_path: Path):
 
   path = tmp_path / "auth.json"
   _ = path.write_bytes(b'{"scope": {"refresh_token": "x"}}')
-  assert GrokAuthObserver.from_file(path).auth_json == path.read_bytes()
+  assert GrokBuildAuthObserver.from_file(path).auth_json == path.read_bytes()
 
 
 def test_the_credential_is_never_shown_in_a_repr():
-  observer = GrokAuthObserver(auth_json=b'{"scope": {"key": "sEcReT"}}')
+  observer = GrokBuildAuthObserver(auth_json=b'{"scope": {"key": "sEcReT"}}')
   assert "sEcReT" not in repr(observer)
   assert "auth_json" not in repr(observer)
 
@@ -310,33 +312,33 @@ def test_an_unusable_credential_is_refused_on_the_host(
     payload: bytes, message: str
 ):
   with pytest.raises(SandboxError, match=message):
-    _ = GrokAuthObserver(auth_json=payload)
+    _ = GrokBuildAuthObserver(auth_json=payload)
 
 
 def test_a_missing_login_fails_before_a_container_is_paid_for(tmp_path: Path):
   with pytest.raises(SandboxError, match="grok auth file not found"):
-    _ = GrokAuthObserver.from_file(tmp_path / "nope.json")
+    _ = GrokBuildAuthObserver.from_file(tmp_path / "nope.json")
 
 
 # ─── registration ────────────────────────────────────────────────────────────
 
 
-def test_grok_is_selectable_by_name_through_the_cli():
+def test_grok_build_is_selectable_by_name_through_the_cli():
 
   from swe_lab.cli.overrides import apply_overrides, parse_overrides
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.workflow.registry import workflow_definition
 
-  assert "grok" in registered_harnesses()
+  assert "grok_build" in registered_harnesses()
   entries = apply_overrides(
       workflow_definition("rollout"),
       parse_overrides(
-          ["--rollout.harness=grok", "--rollout.harness.effort=low"]
+          ["--rollout.harness=grok_build", "--rollout.harness.effort=low"]
       ),
   )
   task = entries[0].task
   assert isinstance(task, CodingAgentTask)
-  assert isinstance(task.harness, GrokHarness)
+  assert isinstance(task.harness, GrokBuildHarness)
   assert task.harness.effort == "low"
 
 
@@ -349,10 +351,10 @@ def test_a_field_of_another_agent_is_refused_with_the_valid_ones():
   )
   from swe_lab.workflow.registry import workflow_definition
 
-  with pytest.raises(OverrideError, match="not a field of GrokHarness"):
+  with pytest.raises(OverrideError, match="not a field of GrokBuildHarness"):
     _ = apply_overrides(
         workflow_definition("rollout"),
         parse_overrides(
-            ["--rollout.harness=grok", "--rollout.harness.capture=proxy"]
+            ["--rollout.harness=grok_build", "--rollout.harness.capture=proxy"]
         ),
     )
