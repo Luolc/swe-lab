@@ -159,7 +159,10 @@ def test_the_script_runs_unattended_and_reports_status_out_of_band():
   assert (
       "--prompt-file" in script
   )  # Grok Build's native prompt delivery — no stdin
-  assert script.rstrip().endswith("exit 0")  # teardown must not change
+  # The agent's own status is PROPAGATED, not flattened to 0. Nothing gates on
+  # it (no backend raises on a non-zero exec; RunStatus is not derived from
+  # it), so this costs no behaviour change and makes the recorded metric real.
+  assert script.rstrip().endswith('exit "$status"')
   assert "grok.exit_code" in script  # ...so the real status goes to a file
 
 
