@@ -17,24 +17,25 @@ linked musl (task-29 §1) — and unlike Codex there is exactly **one** binary.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
-import re
 import shlex
 from typing import override
 
 from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import AgentOutcome, Harness
+from swe_lab.harnesses.common import (
+    AgentInfoObserver,
+    env_exports,
+    read_text,
+)
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
     AgentAsset,
-    ArtifactSchema,
-    Contribution,
     ExecResult,
     Inline,
     Mount,
     Mounts,
-    SandboxError,
     SandboxFs,
     SandboxObserver,
 )
@@ -43,7 +44,6 @@ from .constants import (
     AGENT_ENV_NAME,
     AGENT_EXIT_CODE_NAME,
     AGENT_HOME,
-    AGENT_INFO_NAME,
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
     BINARY_AT,
@@ -72,114 +72,6 @@ _BARE_FLAGS = (
     "--no-memory",
     "--disable-web-search",
 )
-
-
-def _read_text(sb: SandboxFs, name: str) -> str:
-  """Read a workspace file as text, tolerant of odd bytes and absence."""
-  if not sb.exists(name):
-    return ""
-  return sb.read(name).decode("utf-8", "backslashreplace")
-
-
-# A shell variable name; anything else would make the sourced file a syntax
-# error, which `set -u` would turn into "the agent never ran" with no clue why.
-_ENV_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
-
-
-def _env_exports(env: Mapping[str, str]) -> str:
-  """Render caller env as ``export K=V`` lines, values shell-quoted.
-
-  Args:
-    env: Variable name → value.
-
-  Returns:
-    The sourceable script text, in the given order.
-
-  Raises:
-    SandboxError: If a name is not a valid shell identifier.
-  """
-  bad = sorted(name for name in env if not _ENV_NAME_RE.match(name))
-  if bad:
-    raise SandboxError(f"invalid environment variable name(s): {bad}")
-  lines = [f"export {name}={shlex.quote(value)}" for name, value in env.items()]
-  return "\n".join(lines) + "\n"
-
-
-@dataclass
-class AgentInfoObserver(SandboxObserver):
-  """Record the agent's own account of itself, for post-hoc debugging.
-
-  Runs ``--version`` and ``--help`` against the provisioned binary once the
-  sandbox is up, lands the output in the workspace, and registers it as an
-  artifact. *Which build actually ran* is the first question anyone asks when
-  a run behaves oddly, and once the sandbox is gone the answer is otherwise
-  unrecoverable — the pin says what we asked for, not what the sandbox had.
-
-  **Never fails a run.** Every step is caught: a diagnostic that can abort the
-  thing it documents is worse than no diagnostic.
-
-  Attributes:
-    binary: The in-sandbox path to interrogate.
-    filename: The workspace file the output lands in.
-    artifact: The name it is registered under.
-  """
-
-  binary: str = BINARY_AT
-  filename: str = AGENT_INFO_NAME
-  artifact: str = INFO_ARTIFACT
-  _captured: bool = field(default=False, init=False, repr=False)
-
-  @override
-  def output_schema(self) -> Sequence[ArtifactSchema]:
-    """Declare the info file — advisory, since a run is valid without it."""
-    return (
-        ArtifactSchema(
-            self.artifact,
-            required=False,
-            description="the agent's own --version and --help output",
-        ),
-    )
-
-  @override
-  def after_create(self, sb: SandboxFs) -> None:
-    """Interrogate the binary and land the output in the workspace.
-
-    Args:
-      sb: The live sandbox, with the binary already provisioned (the backend's
-        own observer runs first).
-    """
-    binary = shlex.quote(self.binary)
-    sections: list[str] = []
-    for command in (f"{binary} --version", f"{binary} --help"):
-      try:
-        # 2>&1 because a binary that cannot run at all says so on stderr, and
-        # that is exactly the case this file exists to explain.
-        result = sb.run_command(f"{command} 2>&1", timeout=_INFO_TIMEOUT_S)
-        body = (result.stdout + result.stderr).strip()
-        sections.append(f"$ {command}\n[exit {result.exit_code}]\n{body}")
-      except Exception:  # noqa: BLE001 — a diagnostic must never fail the run
-        _logger.exception("%s failed; recording that instead", command)
-        sections.append(f"$ {command}\n[did not run]")
-    try:
-      sb.write(self.filename, ("\n\n".join(sections) + "\n").encode())
-      self._captured = True
-    except Exception:  # noqa: BLE001 — as above
-      _logger.exception("could not write %s; skipping it", self.filename)
-
-  @override
-  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
-    """Register the captured file, if there is one.
-
-    Args:
-      sb: Unused — the file is already in the workspace.
-
-    Returns:
-      The artifact registration, or ``None`` when nothing was captured.
-    """
-    del sb
-    if not self._captured:
-      return None
-    return Contribution(artifacts={self.artifact: self.filename})
 
 
 @dataclass(frozen=True)
@@ -245,7 +137,7 @@ class GrokHarness(Harness):
     return (
         # First: record which build the sandbox actually got, before anything
         # can go wrong with the run it describes.
-        AgentInfoObserver(),
+        AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
     )
@@ -319,7 +211,7 @@ class GrokHarness(Harness):
     """
     sb.write(PROMPT_FILENAME, prompt.encode())
     if env:
-      sb.write(AGENT_ENV_NAME, _env_exports(env).encode())
+      sb.write(AGENT_ENV_NAME, env_exports(env).encode())
     return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
 
   @override
@@ -338,7 +230,7 @@ class GrokHarness(Harness):
   @override
   def to_conversation(self, sb: SandboxFs) -> Conversation:
     """Convert the run's captured event stream into a ``Conversation``."""
-    return event_stream_to_conversation(_read_text(sb, EVENT_STREAM_NAME))
+    return event_stream_to_conversation(read_text(sb, EVENT_STREAM_NAME))
 
   @override
   def outcome(self, sb: SandboxFs) -> AgentOutcome:
@@ -348,7 +240,7 @@ class GrokHarness(Harness):
     absence-tolerant), so a crashed run reports an outcome rather than
     raising.
     """
-    return event_stream_outcome(_read_text(sb, EVENT_STREAM_NAME))
+    return event_stream_outcome(read_text(sb, EVENT_STREAM_NAME))
 
   def _invocation_script(self, workdir: str) -> str:
     """Build the run script for an *unattended* run.
