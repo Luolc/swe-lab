@@ -12,9 +12,10 @@ import pytest
 
 from swe_lab.harnesses.claude_code.constants import BINARY_AT
 from swe_lab.sandbox import (
-    GitHubJobClaudeCodeBinaryObserver,
+    AgentAsset,
     GitHubJobSandbox,
     Inline,
+    InstalledAssetsObserver,
     LocalFile,
     Mount,
     RunStatus,
@@ -170,25 +171,36 @@ def test_manager_composition_runs_end_to_end(tmp_path: Path):
 # ─── the backend's own observer (ADR-0007 §3, backend source) ────────────────
 
 
-def test_backend_contributes_only_the_agent_binary(tmp_path: Path):
-  # No metrics observer here: the job IS the container, so there is no
-  # container lifecycle of ours to measure — only the agent to install.
+def _fake_materialize(dest: epath.Path | None) -> epath.Path:
+  """Stand in for a harness's ``ensure_*``: honors the seam's contract."""
+  from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
+
+  return ensure_claude_binary(dest=dest)
+
+
+def test_backend_contributes_nothing_of_its_own(tmp_path: Path):
+  # No metrics observer (the job IS the container, so there is no lifecycle of
+  # ours to measure), and no agent binary either — that now arrives through
+  # the provisioning seam, which is what stopped every backend from having to
+  # know which agents exist.
   sandbox = GitHubJobSandbox(
       spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   )
-  assert [type(o).__name__ for o in sandbox.observers()] == [
-      "GitHubJobClaudeCodeBinaryObserver"
-  ]
+  assert list(sandbox.observers()) == []
 
 
-def test_binary_observer_downloads_in_the_job_to_the_final_path(
+def test_this_backend_answers_assets_by_installing_in_place(
     tmp_path: Path, fake_claude_binary: FakeClaudeBinary
 ):
+  # The case a mount cannot express: the job's filesystem IS the sandbox, so
+  # the asset is fetched straight to its final path and no bytes travel.
   sandbox = GitHubJobSandbox(
       spec=SPEC, workspace=epath.Path(_workspace(tmp_path))
   )
-  (binary,) = sandbox.observers()
-  assert isinstance(binary, GitHubJobClaudeCodeBinaryObserver)
+  binary = sandbox.asset_observer(
+      (AgentAsset(path=BINARY_AT, materialize=_fake_materialize),)
+  )
+  assert isinstance(binary, InstalledAssetsObserver)
   sandbox.up()
   binary.after_create(sandbox)
 

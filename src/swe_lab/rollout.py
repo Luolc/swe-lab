@@ -24,6 +24,7 @@ from swe_lab.conversation import ConversationObserver
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.harnesses import Harness, HarnessOutcomeObserver
 from swe_lab.sandbox import (
+    AgentAsset,
     ArtifactSchema,
     ExecResult,
     merge_mounts,
@@ -145,6 +146,19 @@ class CodingAgentTask(Task):
         super().mounts(instance),
         self.harness.mounts(instance.sandbox_spec().workdir),
     )
+
+  @override
+  def assets(self) -> Sequence[AgentAsset]:
+    """Declare whatever the composed agent says it needs.
+
+    The task knows the harness; the backend knows how to place bytes. This is
+    the one line that joins them, and it is why neither has to enumerate the
+    other (task-28 §7).
+
+    Returns:
+      The harness's declared assets.
+    """
+    return self.harness.assets()
 
   @override
   def observers(self, instance: TaskInstance[Any]) -> Sequence[SandboxObserver]:

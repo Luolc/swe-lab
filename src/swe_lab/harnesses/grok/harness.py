@@ -27,6 +27,7 @@ from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
+    AgentAsset,
     ArtifactSchema,
     Contribution,
     ExecResult,
@@ -247,6 +248,21 @@ class GrokHarness(Harness):
         AgentInfoObserver(),
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
+    )
+
+  @override
+  def assets(self) -> Sequence[AgentAsset]:
+    """Declare the pinned binary at ``BINARY_AT``.
+
+    One file, no companion — the Codex trap has no analogue here (task-29 §3).
+    """
+    from .binary import ensure_grok_binary
+
+    return (
+        AgentAsset(
+            path=BINARY_AT,
+            materialize=lambda dest: ensure_grok_binary(dest=dest),
+        ),
     )
 
   @override

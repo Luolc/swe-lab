@@ -352,3 +352,44 @@ patch and an honest refusal — the harness reporting the truth, not a defect.
 - **arm64**, still unclaimed.
 - No shipped workflow definition registers Codex yet — it is selectable by
   name (`--rollout.harness=codex`), but no built-in definition uses it.
+
+---
+
+## §7 Result — 2026-08-12 (the seam landed)
+
+Built as described, and the shape held: **a harness declares the assets it
+needs; a backend knows only how to materialize an arbitrary one.**
+
+- `AgentAsset` — an absolute in-sandbox path plus a *materializer*. The
+  materializer contract (`dest=None` caches and returns the host path; a path
+  installs there) is the one **every** `ensure_*` function already satisfied,
+  which is why the seam needed no new fetching code.
+- `Sandbox.asset_observer(assets)` is where a backend answers *how*: the
+  Docker backend inherits the mount answer (a container cannot fetch its own
+  bytes), the GH-job backend overrides with the install answer (its filesystem
+  *is* the sandbox, so nothing should travel).
+- `Harness.assets()` / `Task.assets()` / `CodingAgentTask.assets()` — the
+  declaration, and the one line that joins the halves.
+
+**Deleted**: `HostClaudeCodeBinaryObserver`, `HostCodexBinaryObserver`,
+`HostGrokBinaryObserver`, `GitHubJobClaudeCodeBinaryObserver`. No backend
+imports a harness by name any more.
+
+Three things this fixed that were not the stated goal:
+
+1. **codex and grok became usable on the plain path.** They were opt-in
+   because the backend could not see which agent a run used, so
+   `--rollout.harness=codex` selected an agent whose binary never arrived —
+   every e2e in tasks 28 and 29 had to register a throwaway backend to get
+   around it. Verified: all three agents now provision through
+   `Task.execute` with **no `extra_observers` at all**, each reporting its own
+   version from inside the container.
+2. **A grading container stops carrying an agent.** The Docker backend used to
+   mount the Claude Code binary unconditionally, so every `unit_test` and
+   `git_integrity` container was handed ~100 MB it never execed.
+   `UnitTestTask.assets()` is empty, so now it gets nothing.
+3. **The missing combinations stopped being missing.** It was 2 backends × 3
+   agents with 4 of 6 written by hand; there is now nothing to write.
+
+The negative property — neither side enumerates the other — is pinned by a
+test that places an asset named for an agent swe-lab has never heard of.

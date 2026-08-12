@@ -26,6 +26,7 @@ from etils import epath
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.sandbox import (
+    AgentAsset,
     ArtifactSchema,
     ExecResult,
     merge_mounts,
@@ -161,6 +162,25 @@ class Task(ABC):
       The observers, in composition order after the backend's own.
     """
     del instance
+    return ()
+
+  def assets(self) -> Sequence[AgentAsset]:
+    """Declare the machinery this task needs placed in the sandbox.
+
+    Distinct from :meth:`mounts`, which stages the run's *material* (the
+    instance's files, a harness's script) into the workspace. An asset is
+    **machinery** at a fixed absolute path — an agent binary — and the task
+    only says what and where; the backend decides how the bytes travel
+    (``Sandbox.asset_observer``, task-28 §7).
+
+    Default: none, which is what a task that runs no agent declares — a
+    grading run and an integrity audit both get a container with nothing
+    extra in it, where before they were handed an agent binary they never
+    used.
+
+    Returns:
+      The assets, empty for a task that needs no machinery.
+    """
     return ()
 
   def input_schema(self) -> Sequence[ArtifactSchema]:
@@ -324,8 +344,14 @@ class Task(ABC):
             f"required input(s) not mounted: {missing}; supply them via"
             " extra_mounts (a workflow edge, or the caller's own bytes)"
         )
+    # The backend's own first (they measure the whole run), then the assets it
+    # was asked to place — before the task's observers, since one of those may
+    # exec against a binary this puts there — then the task's, then the
+    # caller's.
+    provisioning = sandbox.asset_observer(self.assets())
     observers = [
         *sandbox.observers(),
+        *([provisioning] if provisioning is not None else []),
         *self.observers(instance),
         *extra_observers,
     ]

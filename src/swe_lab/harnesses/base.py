@@ -23,7 +23,13 @@ from enum import StrEnum
 from typing import final
 
 from swe_lab.conversation import ConversationProducer
-from swe_lab.sandbox import ExecResult, Mounts, SandboxFs, SandboxObserver
+from swe_lab.sandbox import (
+    AgentAsset,
+    ExecResult,
+    Mounts,
+    SandboxFs,
+    SandboxObserver,
+)
 
 
 class AgentOutcome(StrEnum):
@@ -111,6 +117,24 @@ class Harness(ConversationProducer, ABC):
   while the run's own side effects (``native_outputs``, ``outcome``) are the
   harness's, collected by ``HarnessOutcomeObserver``.
   """
+
+  def assets(self) -> Sequence[AgentAsset]:
+    """Declare the files this agent needs at fixed absolute paths.
+
+    The provisioning seam (task-28 §7). A harness says **what** it needs and
+    **where**, never how the bytes travel — that is the backend's call, since
+    a container has to be handed a copy while a CI job should fetch straight
+    to the final path (ADR-0003 §3, and ``Sandbox.asset_observer``).
+
+    Declaring rather than mounting is what keeps the two sides from
+    enumerating each other: adding an agent touches no backend, and a
+    downstream backend can provision an agent swe-lab has never heard of.
+
+    Returns:
+      The assets, empty by default — a harness whose agent is already present
+      in every image needs none.
+    """
+    return ()
 
   @abstractmethod
   def mounts(self, workdir: str) -> Mounts:

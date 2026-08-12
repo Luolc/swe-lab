@@ -27,6 +27,7 @@ launcher to invoke it through (task-28 §1).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import hashlib
 import io
 import os
@@ -270,3 +271,29 @@ def _get(url: str, *, timeout: float = _DOWNLOAD_TIMEOUT_S) -> bytes:
   """Fetch ``url`` and return its bytes."""
   with urllib.request.urlopen(url, timeout=timeout) as response:
     return response.read()
+
+
+def asset_materializer(stem: str) -> Callable[[epath.Path | None], epath.Path]:
+  """Return a materializer for one of the two binaries.
+
+  The provisioning seam wants a per-*file* materializer, while Codex's fetch
+  is per-*directory* — the two binaries must land together, since the host is
+  spawned from a path derived as a sibling. So a destination is read as "put
+  the pair in this file's directory", and the requested one is returned.
+
+  Calling this for both stems runs the fetch twice, which costs nothing:
+  ``ensure_codex_binaries`` reuses files already present.
+
+  Args:
+    stem: Which binary this materializer produces (see :data:`BINARY_STEMS`).
+
+  Returns:
+    A materializer honoring the seam's contract (``None`` caches, a path
+    installs).
+  """
+
+  def materialize(dest: epath.Path | None) -> epath.Path:
+    directory = ensure_codex_binaries(dest=dest.parent if dest else None)
+    return directory / stem
+
+  return materialize
