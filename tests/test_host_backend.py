@@ -9,12 +9,13 @@ import pytest
 
 from swe_lab.harnesses.claude_code.constants import BINARY_AT
 from swe_lab.sandbox import (
+    AgentAsset,
     DockerHostSandbox,
-    HostClaudeCodeBinaryObserver,
     HostMetricsObserver,
     Inline,
     LocalFile,
     Mount,
+    MountedAssetsObserver,
     RunStatus,
     SandboxError,
     SandboxManager,
@@ -384,26 +385,34 @@ def test_no_orphan_containers_left(tmp_path: Path):
 # ─── the backend's own observers (ADR-0007 §3, backend source) ───────────────
 
 
-def test_backend_contributes_metrics_and_the_agent_binary(tmp_path: Path):
-  # This backend drives a *container*, which starts with nothing installed, so
-  # it contributes both of the things only it can: its container's runtime
-  # metrics, and a copy of the agent binary to run.
+def _fake_materialize(dest: epath.Path | None) -> epath.Path:
+  """Stand in for a harness's ``ensure_*``: honors the seam's contract."""
+  from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
+
+  return ensure_claude_binary(dest=dest)
+
+
+def test_backend_contributes_only_what_only_it_can_measure(tmp_path: Path):
+  # The agent binary used to be here, hardcoded to one harness. It now arrives
+  # through the provisioning seam, so a container that runs no agent (a
+  # grading run, an audit) carries nothing extra.
   sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
   assert [type(o).__name__ for o in sandbox.observers()] == [
-      "HostMetricsObserver",
-      "HostClaudeCodeBinaryObserver",
+      "HostMetricsObserver"
   ]
 
 
-def test_binary_observer_mounts_the_host_cached_copy_read_only(
+def test_this_backend_answers_assets_by_mounting_a_host_copy(
     tmp_path: Path, fake_claude_binary: FakeClaudeBinary
 ):
+  # A container cannot fetch its own bytes, so this backend's answer to ANY
+  # declared asset is a host copy handed over as a mount — it never learns
+  # which agent asked.
   sandbox = DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path))
-  binary = next(
-      o
-      for o in sandbox.observers()
-      if isinstance(o, HostClaudeCodeBinaryObserver)
+  binary = sandbox.asset_observer(
+      (AgentAsset(path=BINARY_AT, materialize=_fake_materialize),)
   )
+  assert isinstance(binary, MountedAssetsObserver)
   # It takes the HOST copy (no dest asked for) and hands it over as a mount —
   # a container cannot fetch its own, so the bytes have to travel here.
   assert binary.mounts() == {

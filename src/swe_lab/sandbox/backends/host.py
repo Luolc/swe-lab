@@ -29,9 +29,8 @@ from typing import override
 from etils import epath
 
 from ..errors import SandboxError
-from ..mounts import Mount, Mounts
+from ..mounts import Mount
 from ..observer import SandboxObserver
-from ..resources import LocalFile
 from ..result import Contribution, qualified_name
 from ..sandbox import ExecResult, Sandbox, SandboxFs, WORKSPACE_ENV
 from ..spec import SandboxSpec
@@ -185,14 +184,13 @@ class DockerHostSandbox(Sandbox):
   def observers(self) -> Sequence[SandboxObserver]:
     """Contribute this backend's own observers (ADR-0007 §3, backend source).
 
-    Runtime metrics (only the backend can measure its container), and the
-    agent binary — a fresh container starts with nothing in it, so this
-    backend's answer is to hand one over from the host cache.
+    Runtime metrics only. The agent binary used to be here too, hardcoded to
+    one harness; it now arrives through the provisioning seam instead — the
+    task declares what it needs and ``asset_observer`` (inherited: the mount
+    answer, which is what a container requires) places it. So a grading
+    container no longer carries an agent binary it never execs.
     """
-    return (
-        HostMetricsObserver(sandbox=self),
-        HostClaudeCodeBinaryObserver(),
-    )
+    return (HostMetricsObserver(sandbox=self),)
 
   @override
   def fetch(self, name: str, dest: epath.PathLike) -> None:
@@ -407,103 +405,6 @@ class DockerHostSandbox(Sandbox):
       raise SandboxError(
           f"docker {args[0]} timed out after {timeout}s"
       ) from exc
-
-
-class HostClaudeCodeBinaryObserver(SandboxObserver):
-  """Put the pinned Claude Code binary into the container, from the host.
-
-  A fresh container starts with nothing installed and has no repo checkout of
-  its own, so this backend's answer is the one a mount already expresses well:
-  fetch the binary **once** into the host cache (``ensure_claude_binary`` is
-  idempotent and checksum-verified, so later runs only re-hash it) and let the
-  ``docker cp`` machinery place it read-only at the agreed path.
-
-  Contributed by the backend rather than the harness on purpose: the harness
-  only needs the agent to be *runnable at* ``BINARY_AT``, and each backend is
-  in a different position to make it so — compare
-  :class:`~swe_lab.sandbox.backends.ghjob.GitHubJobClaudeCodeBinaryObserver`,
-  which downloads in the job rather than being handed a copy.
-  """
-
-  @override
-  def mounts(self) -> Mounts:
-    """Stage the host-cached binary as a read-only executable asset."""
-    # Imported here, not at module scope: the harness package imports this one
-    # (a harness is written against the sandbox engine), so a top-level import
-    # would close the cycle. This one reach upward is the point of the class.
-    from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
-    from swe_lab.harnesses.claude_code.constants import BINARY_AT
-
-    binary = LocalFile(ensure_claude_binary())
-    return {BINARY_AT: Mount(binary, executable=True, read_only=True)}
-
-
-class HostCodexBinaryObserver(SandboxObserver):
-  """Put the pinned Codex binaries into the container, from the host.
-
-  The sibling of :class:`HostClaudeCodeBinaryObserver`, and different in two
-  ways that matter.
-
-  **It stages two files, not one.** Codex spawns a code-mode host to execute
-  commands and apply patches, and derives that helper's path as a sibling of
-  its own binary — so both are staged, at the paths the harness's constants
-  fix. Staging only ``codex`` yields a run that authenticates, answers, and
-  exits 0 having been unable to touch the repo.
-
-  **It is opt-in**, composed by a caller (``extra_observers``) rather than by
-  the backend's own :meth:`DockerHostSandbox.observers`. The backend cannot see
-  which agent a run uses, so putting this in the default set would make every
-  Claude Code run also fetch ~300 MB of Codex. That asymmetry — one agent
-  provisioned by default, another by hand — is a stopgap, and the real fix is
-  the seam task-28 §7 proposes: a harness *declares* the assets it needs and a
-  backend knows only how to materialize an arbitrary declared asset, so neither
-  side enumerates the other.
-  """
-
-  @override
-  def mounts(self) -> Mounts:
-    """Stage the host-cached binaries as read-only executable assets."""
-    # Imported here, not at module scope, for the cycle reason above.
-    from swe_lab.harnesses.codex.binary import (
-        CODE_MODE_HOST_STEM,
-        CODEX_STEM,
-        ensure_codex_binaries,
-    )
-    from swe_lab.harnesses.codex.constants import BINARY_AT, CODE_MODE_HOST_AT
-
-    cached = ensure_codex_binaries()
-    return {
-        BINARY_AT: Mount(
-            LocalFile(cached / CODEX_STEM), executable=True, read_only=True
-        ),
-        CODE_MODE_HOST_AT: Mount(
-            LocalFile(cached / CODE_MODE_HOST_STEM),
-            executable=True,
-            read_only=True,
-        ),
-    }
-
-
-class HostGrokBinaryObserver(SandboxObserver):
-  """Put the pinned Grok Build binary into the container, from the host.
-
-  The third sibling, and the simplest: one statically linked binary, no
-  companion (task-29 §3 — unlike Codex, whose code-mode host must sit beside
-  it). **Opt-in** like the codex observer, for the same reason: the backend
-  cannot see which agent a run uses, and each agent binary is a nine-figure
-  byte count nobody else's run should pay for. A third hardcoded observer is
-  also a third data point for task-28 §7's generalization.
-  """
-
-  @override
-  def mounts(self) -> Mounts:
-    """Stage the host-cached binary as a read-only executable asset."""
-    # Imported here, not at module scope, for the cycle reason above.
-    from swe_lab.harnesses.grok.binary import ensure_grok_binary
-    from swe_lab.harnesses.grok.constants import BINARY_AT
-
-    binary = LocalFile(ensure_grok_binary())
-    return {BINARY_AT: Mount(binary, executable=True, read_only=True)}
 
 
 # The metric namespace for backend-contributed runtime metrics; distinct from

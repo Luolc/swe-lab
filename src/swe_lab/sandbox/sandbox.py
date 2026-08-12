@@ -24,6 +24,7 @@ from .resources import Inline, LocalFile
 from .spec import SandboxSpec
 
 if TYPE_CHECKING:
+  from .assets import AgentAsset
   from .observer import SandboxObserver
 
 # The env var every sandbox sets on each exec: the workspace path as seen from
@@ -169,6 +170,38 @@ class Sandbox(SandboxFs, ABC):
       metrics needs nothing.
     """
     return ()
+
+  def asset_observer(
+      self, assets: Sequence[AgentAsset]
+  ) -> SandboxObserver | None:
+    """Return the observer that materializes ``assets`` for this backend.
+
+    The provisioning seam (task-28 §7). A harness *declares* what it needs at
+    which absolute path; this says **how those bytes get there**, which is the
+    one part only the backend can know — a container has to be handed a copy,
+    while a CI job whose filesystem already is the sandbox should fetch
+    straight to the final path and move no bytes at all.
+
+    The default is the mount answer, because it is the one that works for any
+    sandbox the caller cannot write into directly. A backend whose filesystem
+    *is* the run's overrides with :class:`InstalledAssetsObserver`.
+
+    Neither side enumerates the other: adding an agent touches no backend, and
+    a downstream backend provisions an agent swe-lab has never heard of.
+
+    Args:
+      assets: What the task's agent declared; empty for a task that runs none.
+
+    Returns:
+      The observer to compose, or ``None`` when there is nothing to place.
+    """
+    # Imported here, not at module scope: `assets` imports this module for
+    # the SandboxFs type, so a top-level import would close the cycle.
+    from .assets import MountedAssetsObserver
+
+    if not assets:
+      return None
+    return MountedAssetsObserver(assets=tuple(assets))
 
   def mount(self, mounts: Mounts) -> None:
     """Stage the declared mounts into the live sandbox (after ``up``).

@@ -31,6 +31,7 @@ from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
+    AgentAsset,
     ArtifactSchema,
     Contribution,
     ExecResult,
@@ -50,6 +51,7 @@ from .constants import (
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
     BINARY_AT,
+    CODE_MODE_HOST_AT,
     codex_config_dir,
     CODEX_HOME_ENV,
     DEFAULT_EFFORT,
@@ -282,6 +284,25 @@ class CodexHarness(Harness):
         AgentInfoObserver(),
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
+    )
+
+  @override
+  def assets(self) -> Sequence[AgentAsset]:
+    """Declare **both** binaries — the code-mode host is not optional.
+
+    Staging only ``codex`` yields a run that authenticates, answers, and exits
+    0 having been unable to run a command or edit a file, so the pair is
+    declared together and the seam places both wherever the backend puts
+    assets.
+    """
+    from .binary import asset_materializer, CODE_MODE_HOST_STEM, CODEX_STEM
+
+    return (
+        AgentAsset(path=BINARY_AT, materialize=asset_materializer(CODEX_STEM)),
+        AgentAsset(
+            path=CODE_MODE_HOST_AT,
+            materialize=asset_materializer(CODE_MODE_HOST_STEM),
+        ),
     )
 
   @override

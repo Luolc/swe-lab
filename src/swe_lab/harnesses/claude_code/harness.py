@@ -26,6 +26,7 @@ from swe_lab.conversation import Conversation, ConversationObserver
 from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.observer import HarnessOutcomeObserver
 from swe_lab.sandbox import (
+    AgentAsset,
     ArtifactSchema,
     Contribution,
     ExecResult,
@@ -281,6 +282,23 @@ class ClaudeCodeHarness(Harness):
         *recorder,
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
+    )
+
+  @override
+  def assets(self) -> Sequence[AgentAsset]:
+    """Declare the pinned binary at ``BINARY_AT``.
+
+    One file. ``ensure_claude_binary`` already has the materializer contract
+    (``dest=None`` caches, a path installs), so the seam needed no new
+    fetching code.
+    """
+    from .binary import ensure_claude_binary
+
+    return (
+        AgentAsset(
+            path=BINARY_AT,
+            materialize=lambda dest: ensure_claude_binary(dest=dest),
+        ),
     )
 
   @override

@@ -22,10 +22,11 @@ from typing import override
 
 from etils import epath
 
+from ..assets import AgentAsset, InstalledAssetsObserver
 from ..errors import SandboxError
 from ..mounts import Mount
 from ..observer import SandboxObserver
-from ..sandbox import ExecResult, Sandbox, SandboxFs, WORKSPACE_ENV
+from ..sandbox import ExecResult, Sandbox, WORKSPACE_ENV
 from ..spec import SandboxSpec
 
 _logger = logging.getLogger(__name__)
@@ -85,7 +86,29 @@ class GitHubJobSandbox(Sandbox):
     Just the agent binary: there is no container lifecycle to measure here (the
     job *is* the container, and whoever started it owns its metrics).
     """
-    return (GitHubJobClaudeCodeBinaryObserver(),)
+    return ()
+
+  @override
+  def asset_observer(
+      self, assets: Sequence[AgentAsset]
+  ) -> SandboxObserver | None:
+    """Install declared assets straight to their final paths.
+
+    The case a mount cannot express: here the sandbox filesystem **is** the
+    job's own, so there is nobody to be handed a copy by. The job has the
+    network, and the shortest path to a runnable agent is to fetch to the
+    final path — no bytes travel at all, where the container backend has no
+    choice but to hand a copy over.
+
+    Args:
+      assets: What the task's agent declared.
+
+    Returns:
+      The installing observer, or ``None`` when there is nothing to place.
+    """
+    if not assets:
+      return None
+    return InstalledAssetsObserver(assets=tuple(assets))
 
   @override
   def fetch(self, name: str, dest: epath.PathLike) -> None:
@@ -225,41 +248,3 @@ class GitHubJobSandbox(Sandbox):
     run_env.update(extra or {})
     run_env[WORKSPACE_ENV] = str(self.workspace)
     return run_env
-
-
-class GitHubJobClaudeCodeBinaryObserver(SandboxObserver):
-  """Download the pinned Claude Code binary in the job, to its final path.
-
-  Here the sandbox filesystem *is* the job's own, so there is nobody to be
-  handed a copy by: the job has the network, and the shortest path to a
-  runnable agent is to fetch it straight to ``BINARY_AT``. That is the case a
-  mount cannot express — a mount hands bytes over, and the whole point here is
-  that no bytes should travel (compare
-  :class:`~swe_lab.sandbox.backends.host.HostClaudeCodeBinaryObserver`, which
-  does hand a container a copy, because a container has no other way).
-
-  The download is in-process rather than a shelled-out ``curl``: the job runs
-  inside an arbitrary instance image and plenty of them ship no ``curl``, while
-  the interpreter running this is guaranteed to be there.
-
-  Idempotent, because ``ensure_claude_binary`` is: a job that already installed
-  the pinned binary — a workflow step, a warmed image — only re-verifies it
-  against the release checksum instead of downloading it again.
-  """
-
-  @override
-  def after_create(self, sb: SandboxFs) -> None:
-    """Fetch the binary to ``BINARY_AT`` before anything runs against it.
-
-    Args:
-      sb: Unused — this writes to the job's own filesystem, which *is* the
-        filesystem the sandbox reads and execs in.
-    """
-    del sb
-    # Imported here, not at module scope: the harness package imports this one
-    # (a harness is written against the sandbox engine), so a top-level import
-    # would close the cycle. This one reach upward is the point of the class.
-    from swe_lab.harnesses.claude_code.binary import ensure_claude_binary
-    from swe_lab.harnesses.claude_code.constants import BINARY_AT
-
-    _ = ensure_claude_binary(dest=BINARY_AT)

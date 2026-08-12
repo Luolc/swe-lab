@@ -22,12 +22,9 @@ from etils import epath
 from ..errors import SandboxError
 from ..sandbox import Sandbox
 from ..spec import SandboxSpec
-from .ghjob import GitHubJobClaudeCodeBinaryObserver, GitHubJobSandbox
+from .ghjob import GitHubJobSandbox
 from .host import (
     DockerHostSandbox,
-    HostClaudeCodeBinaryObserver,
-    HostCodexBinaryObserver,
-    HostGrokBinaryObserver,
     HostMetricsObserver,
 )
 
@@ -35,11 +32,7 @@ __all__ = [
     "DockerHostSandbox",
     "DockerHostSandboxConfig",
     "GhjobSandboxConfig",
-    "GitHubJobClaudeCodeBinaryObserver",
     "GitHubJobSandbox",
-    "HostClaudeCodeBinaryObserver",
-    "HostCodexBinaryObserver",
-    "HostGrokBinaryObserver",
     "HostMetricsObserver",
     "SandboxConfig",
     "SandboxFactory",

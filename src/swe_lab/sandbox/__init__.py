@@ -7,6 +7,11 @@ and drives composed ``SandboxObserver``s around one main action; *solving*
 doubles live in :mod:`swe_lab.sandbox.testing`.
 """
 
+from .assets import (
+    AgentAsset,
+    InstalledAssetsObserver,
+    MountedAssetsObserver,
+)
 from .backends import (
     backend_of,
     build_sandbox,
@@ -14,11 +19,7 @@ from .backends import (
     DockerHostSandbox,
     DockerHostSandboxConfig,
     GhjobSandboxConfig,
-    GitHubJobClaudeCodeBinaryObserver,
     GitHubJobSandbox,
-    HostClaudeCodeBinaryObserver,
-    HostCodexBinaryObserver,
-    HostGrokBinaryObserver,
     HostMetricsObserver,
     register_sandbox,
     registered_backends,
@@ -55,6 +56,9 @@ from .store import (
 )
 
 __all__ = [
+    "MountedAssetsObserver",
+    "InstalledAssetsObserver",
+    "AgentAsset",
     "ArtifactSchema",
     "CompositeObserver",
     "Contribution",
@@ -62,10 +66,6 @@ __all__ = [
     "DockerHostSandbox",
     "DockerHostSandboxConfig",
     "GhjobSandboxConfig",
-    "GitHubJobClaudeCodeBinaryObserver",
-    "HostClaudeCodeBinaryObserver",
-    "HostCodexBinaryObserver",
-    "HostGrokBinaryObserver",
     "HostMetricsObserver",
     "ExecResult",
     "FilesystemStore",
