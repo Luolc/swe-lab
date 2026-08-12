@@ -1,6 +1,6 @@
-"""Grok's headless trace → ``Conversation`` and outcome, by delegation.
+"""Grok Build's headless trace → ``Conversation`` and outcome, by delegation.
 
-Grok's ``--output-format streaming-messages-json`` emits **Claude Code's
+Grok Build's ``--output-format streaming-messages-json`` emits **Claude Code's
 stream-json schema** — measured on live 1.0.0 output, not inferred: the
 ``{"type":"system","subtype":"init",…}`` opener and the terminal
 ``{"type":"result","subtype":…,"is_error":…,"errors":[…]}`` are
