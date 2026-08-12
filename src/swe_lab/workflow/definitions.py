@@ -29,13 +29,15 @@ from swe_lab.harnesses.claude_code.constants import (
 # "not implemented" rather than "not the default". Selecting an agent by name
 # must not depend on whether some definition happens to mention it.
 import swe_lab.harnesses.codex as _codex
+import swe_lab.harnesses.grok as _grok
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import DockerHostSandboxConfig
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
 
-assert _codex.CodexHarness  # the import above is for its side effect
+assert _codex.CodexHarness  # the imports above are for their side effects
+assert _grok.GrokHarness
 
 # The entry keys, which are also the task segment of every record a run of
 # these workflows persists (ADR-0007 §6). Stable: resume trusts them.
