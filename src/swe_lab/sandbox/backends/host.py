@@ -484,6 +484,28 @@ class HostCodexBinaryObserver(SandboxObserver):
     }
 
 
+class HostGrokBinaryObserver(SandboxObserver):
+  """Put the pinned Grok Build binary into the container, from the host.
+
+  The third sibling, and the simplest: one statically linked binary, no
+  companion (task-29 §3 — unlike Codex, whose code-mode host must sit beside
+  it). **Opt-in** like the codex observer, for the same reason: the backend
+  cannot see which agent a run uses, and each agent binary is a nine-figure
+  byte count nobody else's run should pay for. A third hardcoded observer is
+  also a third data point for task-28 §7's generalization.
+  """
+
+  @override
+  def mounts(self) -> Mounts:
+    """Stage the host-cached binary as a read-only executable asset."""
+    # Imported here, not at module scope, for the cycle reason above.
+    from swe_lab.harnesses.grok.binary import ensure_grok_binary
+    from swe_lab.harnesses.grok.constants import BINARY_AT
+
+    binary = LocalFile(ensure_grok_binary())
+    return {BINARY_AT: Mount(binary, executable=True, read_only=True)}
+
+
 # The metric namespace for backend-contributed runtime metrics; distinct from
 # the eval method's ``eval.*`` and any harness's by construction.
 _METRIC_NAMESPACE = "sandbox"

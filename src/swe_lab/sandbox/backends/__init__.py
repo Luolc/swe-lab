@@ -27,6 +27,7 @@ from .host import (
     DockerHostSandbox,
     HostClaudeCodeBinaryObserver,
     HostCodexBinaryObserver,
+    HostGrokBinaryObserver,
     HostMetricsObserver,
 )
 
@@ -38,6 +39,7 @@ __all__ = [
     "GitHubJobSandbox",
     "HostClaudeCodeBinaryObserver",
     "HostCodexBinaryObserver",
+    "HostGrokBinaryObserver",
     "HostMetricsObserver",
     "SandboxConfig",
     "SandboxFactory",
