@@ -13,7 +13,7 @@ these files **link** to it and never restate it.
 
 | Version | Date | Breaking | What it is |
 |---|---|---|---|
-| [v0.2.11](v0.2.11.md) | *unreleased* | **yes** — provisioning seam | Agents are provisioned through a declared seam instead of per-backend observers; Grok Build harness; the agent's real exit status is recorded. |
+| [v0.2.11](v0.2.11.md) | 2026-08-22 | **yes** — provisioning seam | Agents are provisioned through a declared seam instead of per-backend observers; Grok Build harness; the agent's real exit status is recorded. |
 
 Versions before v0.2.11 have no file here: this folder starts with the release
 that first needed one. Their change lists are the GitHub Releases' own
