@@ -281,6 +281,48 @@ def test_both_can_be_overridden_or_omitted_entirely():
   assert "model_reasoning_effort" not in bare
 
 
+def test_the_context_window_is_raised_off_the_shipped_default():
+  # `codex debug models` on the pinned build reports context_window=272000 for
+  # every catalogued model — tuned for cost, not capacity. A solve that
+  # compacts has already discarded tool output it may still need, so a rollout
+  # takes the model's documented window instead (gpt-5.6-sol: 1,050,000).
+  script = _script(CodexHarness())
+  assert "-c model_context_window=1000000" in script
+  # Never the window alone: left at Codex's own limit, compaction would fire
+  # at a point computed for the much smaller default.
+  assert "-c model_auto_compact_token_limit=900000" in script
+
+
+def test_the_compaction_point_follows_the_window_it_is_a_fraction_of():
+  # A fraction, not a second absolute number: the invariant that must hold is
+  # "compact before the budget is spent", and an absolute limit stops honoring
+  # it the moment the window changes underneath it.
+  smaller = CodexHarness(context_window=400_000)
+  assert smaller.auto_compact_token_limit == 360_000
+  assert "-c model_auto_compact_token_limit=360000" in _script(smaller)
+  tighter = CodexHarness(auto_compact_fraction=0.95)
+  assert tighter.auto_compact_token_limit == 950_000
+
+
+def test_a_compaction_point_that_could_never_fire_in_time_is_refused():
+  # At or above 1.0 the limit sits at or past the whole budget, so Codex never
+  # compacts before the context is spent: the run dies on
+  # context_window_exceeded while the setting reads as if it were guarding it.
+  for fraction in (1.0, 1.5, 0.0, -0.1):
+    with pytest.raises(ValueError, match="strictly between 0 and 1"):
+      _ = CodexHarness(auto_compact_fraction=fraction)
+
+
+def test_no_window_is_pinned_when_the_caller_asks_for_none():
+  # The escape hatch: defer to whatever the build ships, as `model=None` and
+  # `effort=None` already do.
+  harness = CodexHarness(context_window=None)
+  assert harness.auto_compact_token_limit is None
+  script = _script(harness)
+  assert "model_context_window" not in script
+  assert "model_auto_compact_token_limit" not in script
+
+
 def test_extra_config_overrides_are_passed_through():
   script = _script(CodexHarness(extra_config=("features.code_mode_host=true",)))
   assert "-c features.code_mode_host=true" in script

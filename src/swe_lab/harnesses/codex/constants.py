@@ -117,6 +117,30 @@ quietly run a whole sweep at the wrong effort instead of failing loudly.
 # --help` has no `--effort`), so the harness passes it through `-c`.
 EFFORT_CONFIG_KEY = "model_reasoning_effort"
 
+# The context budget Codex works to, and the point it starts compacting history
+# — both config keys, neither with a flag.
+CONTEXT_WINDOW_KEY = "model_context_window"
+AUTO_COMPACT_LIMIT_KEY = "model_auto_compact_token_limit"
+
+# Codex ships a context window well below what the model accepts, deliberately:
+# `codex debug models` on the pinned build reports `context_window = 272000` for
+# every catalogued model (and `max_context_window = 872000` for `gpt-5.6-sol`),
+# while the model's documented window is 1,050,000. OpenAI's own guidance for
+# raising it is exactly the two keys above, at exactly these values, and says
+# the shipped default is tuned for performance and cost rather than capacity.
+#
+# A rollout wants the capacity: a solve that compacts has already thrown away
+# tool output it may need, and re-reading a file it summarized away is the
+# expensive failure mode. `None` keeps whatever the build ships.
+DEFAULT_CONTEXT_WINDOW: int | None = 1_000_000
+
+# Where auto-compaction starts, as a fraction of the window above rather than a
+# second absolute number: the only thing that must stay true is that compaction
+# begins *before* the budget is spent, and an absolute limit silently stops
+# honoring that the moment someone changes the window. 0.9 leaves the same
+# ~100k of headroom OpenAI's guidance does at a 1M window.
+DEFAULT_AUTO_COMPACT_FRACTION = 0.9
+
 # How much of a repo's own AGENTS.md Codex folds into the prompt. Zero disables
 # it — measured 2026-08-10: with the default (32768) an `AGENTS.md` reading
 # "begin every reply with BANANA" produced "BANANA hello"; at 0 the same repo
