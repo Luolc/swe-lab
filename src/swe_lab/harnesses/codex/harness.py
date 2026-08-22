@@ -52,10 +52,14 @@ from .constants import (
     AGENT_HOME,
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
+    AUTO_COMPACT_LIMIT_KEY,
     BINARY_AT,
     CODE_MODE_HOST_AT,
     codex_config_dir,
     CODEX_HOME_ENV,
+    CONTEXT_WINDOW_KEY,
+    DEFAULT_AUTO_COMPACT_FRACTION,
+    DEFAULT_CONTEXT_WINDOW,
     DEFAULT_EFFORT,
     DEFAULT_MODEL,
     Effort,
@@ -98,6 +102,18 @@ class CodexHarness(Harness):
       because Codex parses an unrecognized override as a literal string instead
       of refusing it — a typo would otherwise run a whole sweep at the wrong
       effort, silently.
+    context_window: The token budget Codex works to, passed as
+      ``model_context_window``. Defaults to 1,000,000 rather than the 272,000
+      the build ships: that default is tuned for cost, and a solve that
+      compacts has already discarded tool output it may still need. ``None``
+      keeps whatever the build ships. Raising it is only meaningful up to what
+      the *model* accepts — ``gpt-5.6-sol``'s documented window is 1,050,000 —
+      so a caller pinning a different model should set this to match it.
+    auto_compact_fraction: Where history compaction starts, as a fraction of
+      :attr:`context_window` (rendered as ``model_auto_compact_token_limit``).
+      A fraction rather than a second absolute number so that changing the
+      window cannot leave a limit above it, which would mean never compacting
+      before the budget is spent. Unused when ``context_window`` is ``None``.
     agent_home: In-container ``HOME``. Codex's own config dir is derived from
       it as ``$HOME/.codex`` (:func:`codex_config_dir`) rather than being a
       second knob, so the two cannot disagree — a staged ``auth.json`` landing
@@ -137,11 +153,43 @@ class CodexHarness(Harness):
   model: str | None = DEFAULT_MODEL
   version: str = PINNED_CODEX_VERSION
   effort: Effort | None = DEFAULT_EFFORT
+  context_window: int | None = DEFAULT_CONTEXT_WINDOW
+  auto_compact_fraction: float = DEFAULT_AUTO_COMPACT_FRACTION
   agent_home: str = AGENT_HOME
   skip_git_repo_check: bool = True
   bare: bool = True
   provider: CodexProvider | None = None
   extra_config: tuple[str, ...] = ()
+
+  def __post_init__(self) -> None:
+    """Refuse a compaction point that cannot do its job.
+
+    Raises:
+      ValueError: If :attr:`auto_compact_fraction` is not strictly between 0
+        and 1. At or above 1 the limit sits at or past the whole budget, so
+        Codex would never compact before the context is spent — the run then
+        dies on ``context_window_exceeded`` rather than degrading, and the
+        setting reads as if it were protecting the run. At or below 0 it would
+        compact from the first token.
+    """
+    if not 0.0 < self.auto_compact_fraction < 1.0:
+      raise ValueError(
+          "auto_compact_fraction must be strictly between 0 and 1, got"
+          f" {self.auto_compact_fraction!r}: compaction has to start before"
+          " the context budget is spent to be worth anything"
+      )
+
+  @property
+  def auto_compact_token_limit(self) -> int | None:
+    """The absolute token count compaction starts at.
+
+    Returns:
+      :attr:`context_window` scaled by :attr:`auto_compact_fraction`, or
+      ``None`` when no window is pinned and Codex's own pair applies.
+    """
+    if self.context_window is None:
+      return None
+    return int(self.context_window * self.auto_compact_fraction)
 
   @property
   @override
@@ -354,6 +402,13 @@ class CodexHarness(Harness):
       flags.append(f"--model {shlex.quote(self.model)}")
     if self.effort is not None:
       flags.append(f"-c {shlex.quote(f'{EFFORT_CONFIG_KEY}={self.effort}')}")
+    if self.context_window is not None:
+      # Always as a pair: the window without the compaction point would leave
+      # Codex compacting at a limit computed for its own, much smaller default.
+      flags.append(f"-c {CONTEXT_WINDOW_KEY}={self.context_window}")
+      flags.append(
+          f"-c {AUTO_COMPACT_LIMIT_KEY}={self.auto_compact_token_limit}"
+      )
     if self.skip_git_repo_check:
       flags.append("--skip-git-repo-check")
     if self.bare:
