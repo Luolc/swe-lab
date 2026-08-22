@@ -50,11 +50,17 @@ already set up). The tag's version **must** match `project.version` in
 
 Steps (the agent drives all of it):
 
-1. Bump `project.version` in `pyproject.toml`; land it on `main` via the normal
-   PR flow (CI green).
-2. `gh release create vX.Y.Z --generate-notes` on the merged commit — this makes
-   the tag **and** the Release, which triggers `publish.yml`.
-3. Watch the run (`gh run watch`) and confirm the new version appears at
+1. Finish [`docs/releases/vX.Y.Z.md`](releases/) — what a consumer has to react
+   to, and the migration for it. **Before** the bump lands, not after tagging:
+   written from memory afterwards, the migration steps are the part that goes
+   wrong. A release with nothing to react to still gets a note saying so.
+2. Bump `project.version` in `pyproject.toml`; land it on `main` via the normal
+   PR flow (CI green) — the note can ride the same PR.
+3. `gh release create vX.Y.Z --generate-notes` on the merged commit — this makes
+   the tag **and** the Release, which triggers `publish.yml`. The generated
+   notes are the exhaustive PR list; the in-repo note is the curated one, so
+   link to it from the Release body rather than restating either.
+4. Watch the run (`gh run watch`) and confirm the new version appears at
    <https://pypi.org/p/swe-lab>.
 
 A PyPI version is **immutable** — never reuse a number; a bad publish needs a new
