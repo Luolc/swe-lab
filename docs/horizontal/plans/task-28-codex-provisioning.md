@@ -54,6 +54,26 @@ Sizes: `codex-x86_64-unknown-linux-musl.tar.gz` is **99 MB** (258 MB extracted),
 against 90 MB for the Claude Code bundle tarball. Comparable cost, none of the
 construction.
 
+### Re-verified on each pin bump
+
+The conclusion above is a property of *a release*, not of Codex, so a bump
+re-runs the matrix rather than inheriting the verdict — a release that moved
+Linux off musl would install fine and then fail inside a minimal image.
+
+| Pin | Date | `alpine:3.19` | `distroless/static-debian12` | `debian:10` |
+|---|---|---|---|---|
+| `rust-v0.147.0` | 2026-08-07 | ✅ | ✅ | ✅ |
+| `rust-v0.149.0` | 2026-08-22 | `codex-cli 0.149.0` | `codex-cli 0.149.0` | `codex-cli 0.149.0` |
+
+Distroless is the load-bearing column: it has no libc and no interpreter, so a
+dynamically linked binary cannot start there at all.
+
+**No repackaging, and nothing to publish.** Codex is *not* the Claude Code
+case: the bundle exists because Claude Code links glibc ≥ 2.34 and cannot run
+on these images unaided, and it is hosted privately for that reason. A static
+musl binary needs neither, so a Codex bump is a pin plus its checksums —
+`Luolc/agent-assets-private` holds no Codex release and needs none.
+
 ## 2. What upstream ships, and which asset we want
 
 `rust-v0.147.0` publishes several shapes. Naming them because picking the wrong

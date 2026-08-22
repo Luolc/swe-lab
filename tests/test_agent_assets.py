@@ -325,8 +325,15 @@ def test_the_pinned_version_is_a_field_a_run_can_override():
   # Pinning is a run-level decision: defaulted to the verified release so a
   # sweep is reproducible, overridable because the default is ours, not law.
   from swe_lab.harnesses.codex import CodexHarness
+  from swe_lab.harnesses.codex.binary import PINNED_CODEX_VERSION
 
-  assert [a.version for a in CodexHarness().assets()] == ["0.147.0"] * 2
+  # Against the constant, not a literal: what this asserts is that `assets()`
+  # carries *the harness's* version, so a pin bump stays a one-line change.
+  # That the pin itself is checksum-covered is a separate guard
+  # (`test_every_pinned_binary_has_a_pinned_checksum`).
+  assert [a.version for a in CodexHarness().assets()] == [
+      PINNED_CODEX_VERSION
+  ] * 2
   moved = CodexHarness(version="0.146.1")
   assert [a.version for a in moved.assets()] == ["0.146.1"] * 2
   # Two files of one release stay distinguishable by their destination.
@@ -346,6 +353,7 @@ def test_the_runner_puts_assets_on_the_config_before_construction():
   import dataclasses
 
   from swe_lab.harnesses.codex import CodexHarness
+  from swe_lab.harnesses.codex.binary import PINNED_CODEX_VERSION
   from swe_lab.rollout import CodingAgentTask
   from swe_lab.sandbox import DockerHostSandboxConfig
 
@@ -360,7 +368,7 @@ def test_the_runner_puts_assets_on_the_config_before_construction():
   # What a downstream factory reads at construction time: enough to resolve
   # each release against its own store and name the result in its own params.
   assert seen == [("/opt/codex/codex", "/opt/codex/codex-code-mode-host")]
-  assert all(a.version == "0.147.0" for a in config.assets)
+  assert all(a.version == PINNED_CODEX_VERSION for a in config.assets)
 
 
 def test_config_time_resolution_does_not_remove_the_run_time_phase(
