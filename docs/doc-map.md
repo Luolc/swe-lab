@@ -26,6 +26,8 @@ elsewhere.
 | `<component>/plans/README.md` | The ordered task index — **the one live status home** for that component | design detail |
 | `<component>/plans/task-NN-*.md` | The deep design of one task (point-in-time record) + an optional dated `## Result` | live status |
 | `docs/workstreams/<w>/` | A vertical's design / history (`spec`/`plan`/`todo` when active, `README` when dormant) | horizontal / shared design |
+| `docs/releases/vX.Y.Z.md` | I depend on swe-lab and am upgrading to this version — what broke, and what do I change? | design (link to the ADR/plan); the exhaustive commit list (the Release's generated notes own that) |
+| `docs/releases/README.md` | The release-note index + what belongs in one | the note bodies |
 | `docs/reviews/` | A dated engineering audit (a snapshot, not a spec) | design; status |
 | `docs/experiments/` | An empirical question → logged run → `REPORT.md` | production design |
 
@@ -46,6 +48,7 @@ into three files (they drift):
 | **workstream-level status** | `docs/README.md` snapshot (the ONE place) | the snapshot row |
 | a naming / interface-style rule | `docs/conventions.md` (or an ADR — e.g. ADR-0002) | a convention |
 | an empirical / ML finding | an experiment `REPORT.md` | hypothesis → result |
+| a change a **consumer** must react to (removed name, changed default, shifted results) | `docs/releases/vX.Y.Z.md` for the version shipping it | what changed / why / what you must do |
 
 ## The single-source-of-truth guards
 
@@ -59,6 +62,9 @@ where noted — this list only points):
 - **ADR-first, same PR** for a decision change; minor delta → a dated
   `## Amendment` in the ADR, large delta → a new superseding ADR (see
   [`decisions/README.md`](decisions/README.md)).
+- **A release note is written before the version bump lands**, not after
+  tagging — step 1 of [releasing](conventions.md#releasing). Written from
+  memory afterwards, the migration steps are exactly the part that goes wrong.
 - **Every doc needs a re-read trigger, or it rots** — including reconciling a
   component's `spec.md` at each checkpoint / workstream-status change (see
   `AGENTS.md` → Boundaries).

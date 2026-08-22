@@ -45,6 +45,7 @@ current focus** → [w2](workstreams/w2-solve-eval/). Patch extraction is settle
 | [conventions.md](conventions.md) | Codebase map, build/test/lint commands, directory meanings, hazards, source-of-truth rule. |
 | [doc-map.md](doc-map.md) | Which doc answers which question, where a new learning belongs, and the single-source-of-truth guards. |
 | [decisions/](decisions/) | Architectural decisions (ADRs). ADR-0001 = patch extraction + grading (Accepted). |
+| [releases/](releases/) | **What each published version means for a consumer** — breaking changes and the migration for them, one file per version. |
 | [reviews/](reviews/) | Point-in-time engineering audits of the codebase (dated snapshots, not specs). |
 | [experiments/playbook.md](experiments/playbook.md) | How we run experiments + investigations in this ML/eval repo. |
 | [patch-extraction.md](patch-extraction.md) | Corner-case survey (background research, non-authoritative — decisions are in ADR-0001). |
