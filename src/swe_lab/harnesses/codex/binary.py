@@ -53,12 +53,13 @@ CODE_MODE_HOST_STEM = "codex-code-mode-host"
 BINARY_STEMS = (CODEX_STEM, CODE_MODE_HOST_STEM)
 
 # Pinned so the agent build is reproducible across a rollout batch. The latest
-# *stable* release as of 2026-08-07 (the newer `0.148.0-alpha.*` tags are
-# prereleases and deliberately not used). Bump deliberately, together with the
-# checksum below, and re-run the portability matrix after: a release that
-# switched Linux off musl would still install fine and then fail inside a
-# minimal image.
-PINNED_CODEX_VERSION = "0.147.0"
+# *stable* release as of 2026-08-22 (the newer `0.149.0-alpha.*` and
+# `0.150.0-alpha.*` tags are prereleases and deliberately not used). Bump
+# deliberately, together with the checksum below, and re-run the portability
+# matrix after: a release that switched Linux off musl would still install fine
+# and then fail inside a minimal image. Re-run for this pin on 2026-08-22 —
+# still static musl, see the checksums below.
+PINNED_CODEX_VERSION = "0.149.0"
 
 # The Rust target triple, which is also the release asset's platform key. The
 # rollout container is linux/amd64; `aarch64-unknown-linux-musl` is published
@@ -66,8 +67,28 @@ PINNED_CODEX_VERSION = "0.147.0"
 LINUX_X64 = "x86_64-unknown-linux-musl"
 
 # sha256 of each release *tarball* (not the extracted binary), keyed by
-# (stem, version, target). Measured 2026-08-08 for the pin above.
+# (stem, version, target). Measured on the date each entry names.
+#
+# Superseded versions are **kept**, not deleted: `version` is a harness field,
+# so a run may deliberately pin an older build, and an unpinned version is
+# refused rather than fetched unverified. Dropping the old rows would turn a
+# verified downgrade into an error.
 ARCHIVE_SHA256: dict[tuple[str, str, str], str] = {
+    # 0.149.0 — measured 2026-08-22. Portability re-verified the same day:
+    # `codex --version` reports 0.149.0 on `alpine:3.19` (musl),
+    # `gcr.io/distroless/static-debian12` (no libc at all, which is what
+    # proves the link is static) and `debian:10` (glibc 2.28).
+    (
+        "codex",
+        "0.149.0",
+        "x86_64-unknown-linux-musl",
+    ): "7368b2055ed02157fea2695bb9f5af3ee7b0e40c5a3bebc81dfc596704244cfd",
+    (
+        "codex-code-mode-host",
+        "0.149.0",
+        "x86_64-unknown-linux-musl",
+    ): "3600a45ac2b09fe3c995f4f49860131fea388b46c409c82a0266fc4d0342a04c",
+    # 0.147.0 — measured 2026-08-08, the previous pin.
     (
         "codex",
         "0.147.0",
