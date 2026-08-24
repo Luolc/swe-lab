@@ -13,6 +13,7 @@ these files **link** to it and never restate it.
 
 | Version | Date | Breaking | What it is |
 |---|---|---|---|
+| [v0.2.12](v0.2.12.md) | 2026-08-23 | no | A bigger retry budget on a declared `CodexProvider`; nothing to react to. |
 | [v0.2.11](v0.2.11.md) | 2026-08-22 | **yes** — provisioning seam | Agents are provisioned through a declared seam instead of per-backend observers; Grok Build harness; the agent's real exit status is recorded. |
 
 Versions before v0.2.11 have no file here: this folder starts with the release
