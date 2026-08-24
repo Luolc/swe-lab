@@ -586,6 +586,46 @@ def test_the_proxy_flags_are_always_emitted_as_real_booleans():
   assert "model_providers.gw.requires_openai_auth=true" in on
 
 
+def test_the_retry_budget_is_raised_for_an_unattended_run():
+  """Both counts, above Codex's default of 5.
+
+  A rollout is a long unattended solve: a transient 5xx or a stream that dies
+  late costs the whole attempt, retrying is cheap next to re-running, and
+  nobody is watching to restart it.
+
+  The two cover different failures — a request that never established, versus
+  a stream that died mid-answer — so both are set rather than one standing in
+  for the other. Emitted as bare integers; quoted, Codex would read a string.
+  """
+  overrides = CodexProvider(
+      provider_id="gw", base_url="http://x/v1"
+  ).config_overrides()
+  assert "model_providers.gw.stream_max_retries=10" in overrides
+  assert "model_providers.gw.request_max_retries=10" in overrides
+
+  tuned = CodexProvider(
+      provider_id="gw",
+      base_url="http://x/v1",
+      stream_max_retries=3,
+      request_max_retries=0,
+  ).config_overrides()
+  assert "model_providers.gw.stream_max_retries=3" in tuned
+  assert "model_providers.gw.request_max_retries=0" in tuned  # 0 is legal
+
+
+def test_a_negative_retry_budget_is_refused():
+  # TOML renders a negative happily, which would leave the run's resilience to
+  # however Codex reads a nonsense number.
+  with pytest.raises(SandboxError, match="must not be negative"):
+    _ = CodexProvider(
+        provider_id="gw", base_url="http://x/v1", stream_max_retries=-1
+    )
+  with pytest.raises(SandboxError, match="must not be negative"):
+    _ = CodexProvider(
+        provider_id="gw", base_url="http://x/v1", request_max_retries=-5
+    )
+
+
 def test_a_provider_name_is_always_emitted():
   # Upstream validates this: a provider with an empty name is refused outright
   # ("provider name must not be empty"), so the id is the fallback.

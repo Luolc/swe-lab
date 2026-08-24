@@ -46,6 +46,17 @@ One value today: Codex 0.147.0's schema admits only ``responses`` (the API at
 deliberate edit here rather than a string that silently means nothing.
 """
 
+# Codex's own default for both retry counts is 5. Ten because of what a rollout
+# is: a long unattended solve, where a transient 5xx or a dropped stream late in
+# the run costs the whole attempt, and where retrying is cheap next to
+# re-running. There is nobody watching to restart it, so the budget should be
+# generous rather than tuned for an interactive session.
+#
+# Raising these is only possible on a **custom** provider (see the class note):
+# measured on 0.149.0, `-c model_providers.openai.*` is refused outright with
+# "Built-in providers cannot be overridden".
+DEFAULT_MAX_RETRIES = 10
+
 # A TOML bare key. The id is interpolated into a dotted config path
 # (`model_providers.<id>.base_url`), so anything needing quotes would have to
 # be quoted *inside* the path — far more likely a mistake than an intention.
@@ -116,6 +127,23 @@ class CodexProvider:
       "login screen on first run", which in a headless container is a prompt
       nobody answers — the run would hang until the caller's timeout killed
       it. The endpoint is authenticated by ``env_key`` instead.
+    stream_max_retries: How many times a dropped response *stream* is retried.
+      Raised from Codex's default of 5 — see :data:`DEFAULT_MAX_RETRIES` for
+      why an unattended rollout wants a bigger budget than an interactive
+      session.
+    request_max_retries: How many times a failed *request* is retried. Same
+      default and the same reasoning; the two cover different failures (a
+      request that never established versus a stream that died mid-answer), so
+      both are set rather than one standing in for the other.
+
+  **These are provider-scoped, and that is a real limit.** Codex keeps the
+  retry counts inside the provider table, and it **refuses to let a built-in
+  provider be overridden** — measured on 0.149.0, ``-c
+  model_providers.openai.stream_max_retries=10`` fails config loading with
+  "Built-in providers cannot be overridden". So a run on the default provider
+  (a ChatGPT login, ``CodexHarness.provider=None``) keeps Codex's 5 and there
+  is no override that changes it; only a run that declares a provider here —
+  the proxy/gateway case this type exists for — gets the raised budget.
   """
 
   provider_id: str
@@ -125,14 +153,18 @@ class CodexProvider:
   wire_api: WireApi = "responses"
   supports_websockets: bool = False
   requires_openai_auth: bool = False
+  stream_max_retries: int = DEFAULT_MAX_RETRIES
+  request_max_retries: int = DEFAULT_MAX_RETRIES
 
   def __post_init__(self) -> None:
     """Refuse a provider that would render as an invalid or inert override.
 
     Raises:
-      SandboxError: If the id is not a TOML bare key, or the base URL is empty
-        — an empty one would silently leave the built-in endpoint in place,
-        which is the opposite of why a caller reached for this.
+      SandboxError: If the id is not a TOML bare key, the base URL is empty —
+        an empty one would silently leave the built-in endpoint in place, which
+        is the opposite of why a caller reached for this — or a retry count is
+        negative, which TOML renders happily and which would leave the run's
+        resilience to however Codex reads a nonsense number.
     """
     if not _BARE_KEY_RE.match(self.provider_id):
       raise SandboxError(
@@ -143,6 +175,18 @@ class CodexProvider:
       raise SandboxError(
           "codex provider base_url is empty; omit the provider entirely to use"
           " the built-in endpoint rather than declaring one that does nothing"
+      )
+    negative = {
+        name: value
+        for name, value in (
+            ("stream_max_retries", self.stream_max_retries),
+            ("request_max_retries", self.request_max_retries),
+        )
+        if value < 0
+    }
+    if negative:
+      raise SandboxError(
+          f"codex provider retry count(s) must not be negative: {negative}"
       )
 
   def config_overrides(self) -> tuple[str, ...]:
@@ -170,4 +214,6 @@ class CodexProvider:
         f"{table}.wire_api={_toml_string(self.wire_api)}",
         f"{table}.supports_websockets={_toml_bool(self.supports_websockets)}",
         f"{table}.requires_openai_auth={_toml_bool(self.requires_openai_auth)}",
+        f"{table}.stream_max_retries={self.stream_max_retries}",
+        f"{table}.request_max_retries={self.request_max_retries}",
     )
