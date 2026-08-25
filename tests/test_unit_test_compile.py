@@ -22,7 +22,11 @@ from swe_lab.datasets.swebench_pro.unit_test import (
     compile_unit_test,
     REQUIRED_TESTS_NAME,
 )
-from swe_lab.git.patch import baseline_commit_lines, build_baseline_script
+from swe_lab.git.patch import (
+    baseline_commit_lines,
+    build_baseline_script,
+    build_baseline_verify_script,
+)
 from swe_lab.sandbox import Inline, Mount
 
 _BASE = {
@@ -281,15 +285,14 @@ def test_a_previous_attempts_outputs_are_removed_before_anything_else():
 # ─── baseline grading (ADR-0001, 2026-08-25 amendment) ──────────────────────
 
 
-def test_baseline_grading_recomputes_verifies_and_resets_to_the_baseline():
-  """The grading half of the pre-agent baseline.
+def test_baseline_grading_drops_the_reset_and_owns_nothing_else():
+  """In baseline mode the script must not touch the tree's position.
 
-  The base ref is a contract between extraction and the grader: a patch is
-  only applicable against a tree matching the base it was taken from. In
-  baseline mode that tree is NOT `base_commit` — it is the image's shipped
-  tree — so the reset must target the recomputed baseline, and sha equality
-  against the run's recorded base ref is what proves the two containers saw
-  the same tree.
+  The verify-and-reset lives in ``BaselineVerifyObserver`` (after_create),
+  NOT in the script: an in-script abort is graded as an unresolved verdict —
+  right for a patch that does not apply, wrong for a tree mismatch, which is
+  an environment fault. The script's only baseline-mode change is that the
+  reset trio is gone; apply and the golden checkout stay.
   """
   script = _script(
       _instance(),
@@ -299,41 +302,33 @@ def test_baseline_grading_recomputes_verifies_and_resets_to_the_baseline():
   )
   # The reset to base_commit is GONE — it would wipe exactly the image
   # mutations the baseline captured.
-  assert "git reset --hard abc123" not in script
+  assert "git reset --hard" not in script
   assert "git checkout abc123" not in script
-  # Recompute with the SAME pinned commands the rollout side ran — one
-  # source (`baseline_commit_lines`), asserted verbatim so a drifted copy
-  # cannot silently change the sha and fail every verify.
+  # And no in-script verify either — its failure would be graded.
   for line in baseline_commit_lines(WORKDIR):
-    assert line in script
-  # The verify, with both shas named in the failure.
-  assert 'baseline="$(git rev-parse HEAD)"' in script
-  assert f'"$(cat "$SANDBOX_WORKSPACE"/{BASE_REF_NAME})"' in script
-  assert "grading tree differs from the patch base" in script
-  # The reset discipline, pointed at the right target.
-  assert "git reset --hard HEAD" in script
-  # Ordering: verify BEFORE apply — a mismatch must abort with its own
-  # message, not surface later as a cryptic apply error.
-  assert script.index("grading tree differs") < script.index("git apply -v")
+    assert line not in script
+  assert 'git apply -v "$SANDBOX_WORKSPACE"/patch.diff' in script
+  assert "git checkout Y -- test/foo.py" in script  # golden restore stays
 
 
-def test_baseline_shares_its_commit_lines_with_the_rollout_side():
+def test_the_verify_script_shares_its_commit_lines_with_the_rollout_side():
   # The sha is a hash over identity, dates and message. Two copies that
   # drifted by one character would make every baseline run fail its verify —
-  # so the eval script embeds the rollout side's lines verbatim, and this
-  # pins that both builders draw from the one source.
+  # so both builders draw from the one source, asserted verbatim.
   rollout_script = build_baseline_script(
-      workdir=WORKDIR, output_path=BASE_REF_NAME
+      workdir=WORKDIR, output_path="patch.base_ref.txt"
   )
-  eval_script = _script(
-      _instance(),
-      apply_patch=True,
-      checkout_golden_tests=True,
-      patch_baseline=True,
+  verify_script = build_baseline_verify_script(
+      workdir=WORKDIR, base_ref_path="patch.base_ref.txt"
   )
   for line in baseline_commit_lines(WORKDIR):
     assert line in rollout_script
-    assert line in eval_script
+    assert line in verify_script
+  # The verify half: compare first, reset only after, both shas in the error.
+  assert "grading tree differs from the patch base" in verify_script
+  assert verify_script.index("grading tree differs") < verify_script.index(
+      "reset --hard HEAD"
+  )
 
 
 def test_default_grading_script_is_untouched_by_the_new_parameter():

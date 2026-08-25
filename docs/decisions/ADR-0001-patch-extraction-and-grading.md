@@ -185,13 +185,24 @@ replaces the reset trio with:
    function of the image's tree, so equality *proves* this container is about
    to grade the tree the patch was taken from — the round-trip guarantee that
    made `base_commit` the default, restored as a checked precondition. A
-   mismatch aborts with both shas named, rather than surfacing minutes later
-   as a cryptic apply error. (This also fires if the image mutates its own
-   tree at container start — not a false positive: a tree that differs between
-   two containers of one image is precisely where apply is unsafe.)
+   mismatch names both shas. (It also fires if the image mutates its own tree
+   at container start — not a false positive: a tree that differs between two
+   containers of one image is precisely where apply is unsafe.)
 3. **Reset to the baseline** (`reset --hard HEAD` + `clean -fd`) — the reset
    discipline pointed at the right target. The baseline has everything
    tracked, so `clean` cannot eat a shipped-untracked file.
+
+Steps 1–3 run in `BaselineVerifyObserver.after_create`, **not** in the
+entryscript, and the placement is the attribution. The grader deliberately
+grades an absent `output.json` as an unresolved verdict — correct for a patch
+that fails to `git apply` (the patch's fault, Scale-aligned). Measured: an
+in-script verify that aborted was therefore graded `resolved = 0.0`,
+*succeeded* — the agent scored zero for an environment fault, which is the
+mis-grade this whole mode exists to prevent. An `after_create` raise instead
+fails the run with the error on the record and **no verdict**, exactly as the
+rollout side's baseline *creation* fails closed in its own `after_create`. In
+baseline mode the entryscript simply has no reset at all; apply failures stay
+in-script and stay graded.
 
 How the base travels: the rollout side emits it as an artifact
 (`patch.base_ref.txt`, inline **from memory** — the workspace copy sat

@@ -185,6 +185,50 @@ def build_baseline_script(*, workdir: str, output_path: str) -> str:
   )
 
 
+def build_baseline_verify_script(*, workdir: str, base_ref_path: str) -> str:
+  """Build the bash that proves the tree is the one the patch was taken from.
+
+  Recomputes the pre-agent baseline with :func:`baseline_commit_lines` — the
+  sha is a pure function of the tree, so equality with the recorded base ref
+  is the proof — then resets to it, giving the reset discipline its correct
+  target (everything is tracked in the baseline, so ``clean -fd`` cannot eat a
+  shipped-untracked file).
+
+  On mismatch the script prints both shas and exits non-zero. The caller
+  (``BaselineVerifyObserver``) turns that into a **failed run, not a graded
+  one**: a tree that is not the patch's base is an environment fault, and
+  grading it would score the agent zero for the operator's error.
+
+  Args:
+    workdir: In-container path of the instance's repo.
+    base_ref_path: Where the recorded base ref was staged (read via ``cat``).
+
+  Returns:
+    The bash script text, newline-terminated.
+  """
+  wd = shlex.quote(workdir)
+  ref = shlex.quote(base_ref_path)
+  return (
+      "\n".join(
+          [
+              "set -eu",
+              *baseline_commit_lines(workdir),
+              f'baseline="$(git -C {wd} rev-parse HEAD)"',
+              f'expected="$(cat {ref})"',
+              'if [ "$baseline" != "$expected" ]; then'
+              ' echo "grading tree differs from the patch base:'
+              ' recomputed $baseline, patch taken against $expected" >&2;'
+              " exit 1; fi",
+              # -c autocrlf: the reset is a checkout, and the line-ending
+              # discipline (symmetric with extraction) must hold for it too.
+              f"git -C {wd} -c core.autocrlf=false reset --hard HEAD",
+              f"git -C {wd} clean -fd",
+          ]
+      )
+      + "\n"
+  )
+
+
 def build_extraction_script(
     *,
     workdir: str,

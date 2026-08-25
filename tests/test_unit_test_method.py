@@ -399,6 +399,66 @@ def test_baseline_grading_declares_the_base_ref_as_a_second_input():
   assert list(no_apply.input_schema()) == []
 
 
+def test_baseline_mode_composes_the_verify_observer_first():
+  """The verify must run before anything can grade a mispositioned tree.
+
+  And its placement IS the attribution: an `after_create` raise fails the run
+  with the error on the record and no verdict — where the in-script variant
+  this replaced was graded `resolved = 0.0`, *succeeded* (measured), scoring
+  the agent zero for an environment fault.
+  """
+  from swe_lab.evaluation.unit_test import BaselineVerifyObserver
+
+  instance = _Instance(spec=_unit_test_spec(["a"], ["a"]))
+  baseline: UnitTestTask[SweBenchProVerdict] = UnitTestTask(patch_baseline=True)
+  observers = baseline.observers(instance)
+  assert isinstance(observers[0], BaselineVerifyObserver)
+  assert observers[0].workdir == instance.sandbox_spec().workdir
+  # Default mode composes no verifier; nor does a no-apply baseline run —
+  # with no patch there is no base to hold anyone to.
+  plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
+  assert not any(
+      isinstance(o, BaselineVerifyObserver) for o in plain.observers(instance)
+  )
+  no_apply: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
+      apply_patch=False, patch_baseline=True
+  )
+  assert not any(
+      isinstance(o, BaselineVerifyObserver)
+      for o in no_apply.observers(instance)
+  )
+
+
+def test_the_verify_observer_fails_the_run_ungraded_on_a_mismatch(
+    tmp_path: Path,
+):
+  from etils import epath
+
+  from swe_lab.evaluation.unit_test import BaselineVerifyObserver
+  from swe_lab.sandbox import ExecResult, SandboxError, SandboxSpec
+  from swe_lab.sandbox.testing import FakeSandbox
+
+  sb = FakeSandbox(
+      spec=SandboxSpec("x", "img:tag", "/app", "base"),
+      workspace=epath.Path(tmp_path),
+  )
+  sb.run_results = [
+      ExecResult(1, "", "grading tree differs from the patch base: ...")
+  ]
+  with pytest.raises(SandboxError, match="baseline verification failed"):
+    BaselineVerifyObserver(workdir="/app").after_create(sb)
+  # And on a healthy tree it verifies quietly.
+  clean = FakeSandbox(
+      spec=SandboxSpec("x", "img:tag", "/app", "base"),
+      workspace=epath.Path(tmp_path / "ok"),
+  )
+  BaselineVerifyObserver(workdir="/app").after_create(clean)
+  assert clean.scripts == ["baseline_verify.sh"]
+  staged = (tmp_path / "ok" / "baseline_verify.sh").read_text()
+  assert staged.startswith('cd "$SANDBOX_WORKSPACE"\n')  # the cwd lesson
+  assert "grading tree differs from the patch base" in staged
+
+
 # ─── flake absorption, one level up (ADR-0008) ───────────────────────────────
 
 
