@@ -503,6 +503,40 @@ def test_the_coding_agent_task_purges_first_and_by_default(tmp_path: Path):
   assert observers[0].solution_sha == _FIX
 
 
+def test_the_purge_runs_before_the_baseline_it_would_otherwise_prune():
+  """Pins an ordering the pre-agent baseline silently depends on.
+
+  The purge runs `git gc --prune=now` and deletes non-ancestor refs. A
+  baseline commit made before it would be at its mercy, and the failure would
+  be a patch taken against a base that no longer exists — reported as a
+  confusing extraction error, nowhere near the cause.
+
+  The order is already right, and already deliberate: the purge is documented
+  as an environment precondition every later hook must see (ADR-0010 §3b). But
+  that reason says nothing about baselines, so nothing was stopping the two
+  from being reordered. This test is what stops it.
+  """
+  from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.sandbox.observers.diff_extract import DiffExtractObserver
+
+  observers = CodingAgentTask(
+      harness=ClaudeCodeHarness(), patch_baseline=True
+  ).observers(_PurgeInstance())
+  purge = next(
+      i
+      for i, o in enumerate(observers)
+      if isinstance(o, GitHistoryPurgeObserver)
+  )
+  diff = next(
+      i for i, o in enumerate(observers) if isinstance(o, DiffExtractObserver)
+  )
+  assert purge < diff, "the baseline must be committed after the purge"
+  extractor = observers[diff]
+  assert isinstance(extractor, DiffExtractObserver)
+  assert extractor.baseline is True  # the flag reaches the observer
+
+
 def test_the_purge_can_be_turned_off_deliberately():
   from swe_lab.harnesses.claude_code import ClaudeCodeHarness
   from swe_lab.rollout import CodingAgentTask

@@ -93,6 +93,19 @@ class CodingAgentTask(Task):
     extra_inputs: Further inputs this task declares — files the harness or the
       prompt refers to, supplied by an edge or by the caller.
     exclude_globs: Build-noise denylist for the diff extraction.
+    patch_baseline: Take the patch against the tree **as the agent found it**
+      rather than against ``base_commit``, by committing that tree before the
+      agent starts (ADR-0001, 2026-08-25 amendment). For images whose worktree
+      ships already different from ``base_commit``, where the default folds
+      those build-time edits into every agent's patch.
+
+      **Off by default, and not free to turn on**: the base ref is a contract
+      with the grader, which has to grade a tree matching it. The shipped
+      ``swebench_pro`` grader resets hard to ``base_commit``, so a
+      baseline-relative patch applies there *unless* the agent touched a path
+      the image had mutated — then it fails closed rather than mis-grading.
+      Turn it on for a dataset whose grader grades the image's tree as
+      shipped.
     purge_git_history: Strip future git history before the agent starts, and
       refuse to run if it is still reachable (ADR-0010 §3b). **On by default**:
       the images ship the whole upstream history, so without it the reference
@@ -127,6 +140,7 @@ class CodingAgentTask(Task):
   )
   extra_inputs: tuple[ArtifactSchema, ...] = ()
   exclude_globs: tuple[str, ...] = ()
+  patch_baseline: bool = False
   purge_git_history: bool = True
   verify_result: bool = True
   env: Mapping[str, str] | None = None
@@ -190,7 +204,9 @@ class CodingAgentTask(Task):
     # Called once: the verifier must point at the *same* observer objects that
     # run, since it reads what they leave on themselves.
     from_harness = tuple(self.harness.observers())
-    diff = DiffExtractObserver(exclude_globs=self.exclude_globs)
+    diff = DiffExtractObserver(
+        exclude_globs=self.exclude_globs, baseline=self.patch_baseline
+    )
     verify = (
         ResultVerifyObserver(
             patch_source=diff,
@@ -265,10 +281,18 @@ class CodingAgentTask(Task):
       The agent outcome, or nothing when the task composed no harness
       observer.
     """
+    extra: dict[str, object] = {}
+    patch = patch_of(result)
+    if patch is not None and patch.base_ref:
+      # Which base the patch was taken against. Constant in the default mode
+      # and therefore mildly redundant there — but in baseline mode it is a
+      # per-attempt sha that exists nowhere else, and a reader should not have
+      # to know which mode a run used to know how to read its patch.
+      extra["patch_base_ref"] = patch.base_ref
     observer = outcome_of(result)
-    if observer is None:
-      return {}
-    return {"agent_outcome": observer.outcome.value}
+    if observer is not None:
+      extra["agent_outcome"] = observer.outcome.value
+    return extra
 
   @override
   def input_schema(self) -> Sequence[ArtifactSchema]:
