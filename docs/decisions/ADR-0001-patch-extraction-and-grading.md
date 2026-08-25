@@ -122,3 +122,91 @@ a real instance, add detection + a log line at that point.
 - **Backlog:** P1 — post-setup base (1), denylist (2), faithful binary (3),
   facet-7 detection (7); P2 — eval-side empty guard (8), fuller test-file reset
   (5). Adding any is an extension, not a rewrite (the seams/parameters exist).
+
+## Amendment — 2026-08-25: Facet 1 lands, opt-in and default off
+
+Facet 1 above (a post-setup base instead of `base_commit`) was deferred with a
+named revisit condition: *"revisit only if setup noise becomes a real problem."*
+It became one — [#231](https://github.com/Luolc/swe-lab/issues/231) reports
+task images, in the Harbor format this repo does not ship but downstream uses,
+whose worktree already differs from `base_commit` when the agent starts: files
+deleted or modified during the image build and never committed. Nothing in that
+format forbids it, and it is invisible until you diff. The extracted patch then
+carries those pre-existing changes as well as the agent's, so an agent that
+changed nothing still produces a large patch, and grading fails identically for
+every agent on the affected instances.
+
+**Decision.** `DiffExtractObserver.baseline` (and `CodingAgentTask.patch_baseline`)
+commits the tree as the agent found it and diffs against that. **Default off**,
+so the accepted decision above remains this repo's behavior and nothing that
+works today changes.
+
+Diffing the *worktree* against the baseline — not `baseline..HEAD` — is
+deliberate and is what makes this strictly more robust than the benchmark
+format's own answer: it captures the agent's uncommitted edits *and* its
+commits, where a commit-to-commit diff silently yields an empty patch if the
+agent never commits. A harness that runs arbitrary agent binaries cannot rely
+on one honoring a "commit when you are done" instruction.
+
+**The base ref is a contract between extraction and the grader, not a property
+of extraction alone.** This is the same reasoning that made `base_commit` the
+default: a patch is only applicable against a tree that matches the base it was
+taken from. Concretely, `swebench_pro`'s grading script runs
+
+```sh
+git reset --hard <base_commit>
+git clean -fd
+git checkout <base_commit>
+git apply -v <patch>
+```
+
+which wipes exactly the image mutations a baseline commit captures. Measured in
+a real instance container, the interaction is **conditional**, not a flat
+incompatibility:
+
+- The agent touches only paths the image did **not** mutate → the patch applies
+  cleanly, and is *better* than the default (which would have carried the
+  image's own edits too).
+- The agent touches a path the image **did** mutate → apply fails. Recreating a
+  file the image deleted produces a `new file` hunk, and against a tree reset to
+  `base_commit` that file is already there: `error: README.md: already exists in
+  working directory`.
+
+So the mode is **end-to-end or not at all**: `UnitTestTask.patch_baseline` is
+the grading half, and the two flags must be set together — each side alone
+moves the patch and the tree apart. In baseline mode the compiled eval script
+replaces the reset trio with:
+
+1. **Recompute the baseline** with the *same* pinned commands the rollout side
+   ran (`baseline_commit_lines` in `git/patch.py` is the one source — identity,
+   dates and message all enter the commit hash, so a drifted copy would fail
+   every verify).
+2. **Verify the sha** against the run's recorded base. The sha is a pure
+   function of the image's tree, so equality *proves* this container is about
+   to grade the tree the patch was taken from — the round-trip guarantee that
+   made `base_commit` the default, restored as a checked precondition. A
+   mismatch aborts with both shas named, rather than surfacing minutes later
+   as a cryptic apply error. (This also fires if the image mutates its own
+   tree at container start — not a false positive: a tree that differs between
+   two containers of one image is precisely where apply is unsafe.)
+3. **Reset to the baseline** (`reset --hard HEAD` + `clean -fd`) — the reset
+   discipline pointed at the right target. The baseline has everything
+   tracked, so `clean` cannot eat a shipped-untracked file.
+
+How the base travels: the rollout side emits it as an artifact
+(`patch.base_ref.txt`, inline **from memory** — the workspace copy sat
+agent-writable for the whole run), the grading side declares it as an input,
+and the workflow wires it along the same edge as the patch. Running a baseline
+grading entry without a baseline rollout is therefore a loud missing-input
+failure, not a wrong grade.
+
+Two further guards:
+
+- **The resolved base is recorded** on the attempt's shard as
+  `patch_base_ref`, so "which base produced this patch" is answerable from the
+  manifest alone, without re-opening artifacts.
+- **Baseline creation fails closed.** If the commit cannot be made, the run
+  aborts rather than falling back to `base_commit` — the fallback would
+  silently produce exactly the contaminated patch this exists to prevent.
+
+**Backlog:** Facet 1 moves from P1 to done-as-opt-in. The rest stands.

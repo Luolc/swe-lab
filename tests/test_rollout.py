@@ -65,6 +65,7 @@ class _Instance(TaskInstance[Verdict]):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[Verdict]:
     raise NotImplementedError("this instance is only solved, never graded")
 

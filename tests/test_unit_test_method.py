@@ -100,6 +100,7 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     del apply_patch, checkout_golden_tests
     return replace(self.spec, patch_name=patch_name)
@@ -372,6 +373,30 @@ def test_a_custom_patch_name_reaches_the_schema_and_the_spec():
       ).patch_name
       == "candidate.diff"
   )
+
+
+def test_baseline_grading_declares_the_base_ref_as_a_second_input():
+  """A patch is only interpretable with its base, so they travel together.
+
+  In baseline mode the base is a per-run sha that exists nowhere but the
+  rollout's record — declaring it as an input is what lets the workflow wire
+  it along the same edge as the patch, and what makes running the entry
+  without it a loud missing-input failure instead of a cryptic apply error.
+  """
+  from swe_lab.sandbox.observers import BASE_REF_NAME
+
+  baseline: UnitTestTask[SweBenchProVerdict] = UnitTestTask(patch_baseline=True)
+  assert [s.name for s in baseline.input_schema()] == [
+      "patch.diff",
+      BASE_REF_NAME,
+  ]
+  # Default mode is untouched; and no-apply mode has no inputs to gain.
+  plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
+  assert [s.name for s in plain.input_schema()] == ["patch.diff"]
+  no_apply: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
+      apply_patch=False, patch_baseline=True
+  )
+  assert list(no_apply.input_schema()) == []
 
 
 # ─── flake absorption, one level up (ADR-0008) ───────────────────────────────
