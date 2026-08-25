@@ -7,6 +7,7 @@ import pytest
 
 from swe_lab.sandbox import ExecResult, SandboxError, SandboxSpec
 from swe_lab.sandbox.observers.diff_extract import (
+    BASE_REF_NAME,
     BASELINE_SCRIPT_NAME,
     DiffExtractObserver,
     EXTRACT_SCRIPT_NAME,
@@ -81,9 +82,14 @@ def test_the_default_base_is_still_the_instances_base_commit(tmp_path: Path):
   assert sb.scripts == []
   assert not (tmp_path / BASELINE_SCRIPT_NAME).exists()
 
-  _ = obs.before_destroy(sb)
+  contribution = obs.before_destroy(sb)
   assert obs.base_ref == "base"  # the spec's base_commit
   assert " base > " in (tmp_path / EXTRACT_SCRIPT_NAME).read_text()
+  # No base-ref artifact in default mode: the base is the instance's own
+  # base_commit, which every consumer already has.
+  assert contribution is not None
+  assert BASE_REF_NAME not in contribution.inline_artifacts
+  assert BASE_REF_NAME not in [s.name for s in obs.output_schema()]
 
 
 def test_the_baseline_commits_the_tree_the_agent_found_and_diffs_that(
@@ -96,7 +102,7 @@ def test_the_baseline_commits_the_tree_the_agent_found_and_diffs_that(
   """
   sb = _sandbox(tmp_path)
   # What the in-container script would leave behind.
-  _ = (tmp_path / "patch.base.txt").write_text("cafe1234\n")
+  _ = (tmp_path / BASE_REF_NAME).write_text("cafe1234\n")
   _ = (tmp_path / RAW_PATCH_NAME).write_text("diff --git a/x b/x\n")
   obs = DiffExtractObserver(baseline=True)
 
@@ -104,6 +110,10 @@ def test_the_baseline_commits_the_tree_the_agent_found_and_diffs_that(
   assert obs.base_ref == "cafe1234"
 
   script = (tmp_path / BASELINE_SCRIPT_NAME).read_text()
+  # The sha is written by a relative redirect, and run_script's cwd is not the
+  # workspace — the cd is what lands it where the observer reads it back.
+  # (The first live run failed exactly here.)
+  assert script.startswith('cd "$SANDBOX_WORKSPACE"\n')
   # Everything present, so the base matches the tree the agent starts from —
   # a file left out would later look like the agent created it.
   assert "add -A -- :/" in script
@@ -115,10 +125,16 @@ def test_the_baseline_commits_the_tree_the_agent_found_and_diffs_that(
   # Pinned dates, so one instance's baseline sha is comparable across attempts.
   assert "GIT_AUTHOR_DATE=" in script and "GIT_COMMITTER_DATE=" in script
 
-  _ = obs.before_destroy(sb)
+  contribution = obs.before_destroy(sb)
   # The diff is taken against the baseline, not the spec's base_commit.
   assert obs.base_ref == "cafe1234"
   assert " cafe1234 > " in (tmp_path / EXTRACT_SCRIPT_NAME).read_text()
+  # The base travels WITH the patch, and from memory — the workspace copy sat
+  # agent-writable for the whole run; the one captured before the agent
+  # started is the one that cannot have been tampered with.
+  assert contribution is not None
+  assert contribution.inline_artifacts[BASE_REF_NAME] == b"cafe1234\n"
+  assert BASE_REF_NAME in [s.name for s in obs.output_schema()]
 
 
 def test_a_baseline_that_cannot_be_made_aborts_rather_than_falling_back(

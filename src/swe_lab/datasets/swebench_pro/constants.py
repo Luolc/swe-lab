@@ -7,6 +7,7 @@ both ``execution`` (which fetches it) and ``unit_test`` (which stages it).
 
 from __future__ import annotations
 
+from swe_lab.sandbox.observers import BASE_REF_NAME as _BASE_REF_NAME
 from swe_lab.sandbox.observers import PATCH_NAME as _PATCH_NAME
 
 # --- Docker images -----------------------------------------------------------
@@ -43,6 +44,7 @@ PARSER_NAME = "parser.py"
 # cross-dataset store name the extraction side produces, so the default is
 # re-exported from there and the rollout → eval edge matches by construction.
 PATCH_NAME = _PATCH_NAME
+BASE_REF_NAME = _BASE_REF_NAME
 ENTRYSCRIPT_NAME = "entryscript.sh"
 OUTPUT_JSON_NAME = "output.json"
 STDOUT_LOG_NAME = "stdout.log"

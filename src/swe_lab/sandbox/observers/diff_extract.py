@@ -10,10 +10,10 @@ diff vs ``base_commit``, ``git add -N``, no ``--binary``, residual
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import shlex
 from typing import override
 
 from swe_lab.git.patch import (
+    build_baseline_script,
     build_extraction_script,
     is_effectively_empty,
     strip_binary_hunks,
@@ -27,62 +27,17 @@ RAW_PATCH_NAME = "patch.raw.diff"  # raw git-diff bytes (audit)
 PATCH_NAME = "patch.diff"  # clean, text-only patch that gets graded
 EXTRACT_SCRIPT_NAME = "extract.sh"  # persisted for audit
 BASELINE_SCRIPT_NAME = "baseline.sh"  # persisted for audit (baseline mode only)
+# The base the patch was taken against, as an artifact — emitted only in
+# baseline mode, where the base is a per-run sha that exists nowhere else. A
+# patch is only interpretable together with its base, so they travel the same
+# way: the grading side declares this name as an input and the workflow wires
+# it along the same edge as the patch.
+BASE_REF_NAME = "patch.base_ref.txt"
 # What the extraction found, on the run's metrics (and so on its record).
 EMPTY_METRIC = "patch_is_empty"
 BINARY_STRIPPED_METRIC = "patch_binary_stripped"
 _EXTRACT_TIMEOUT_S = 120.0
 _BASELINE_TIMEOUT_S = 120.0
-
-# A task container often carries no git identity, and `git commit` refuses
-# without one. Set per-invocation (`-c`), not in the repo's config, so the
-# baseline leaves no trace the agent could read as a hint.
-_BASELINE_IDENTITY = (
-    "-c user.email=baseline@swe-lab.invalid",
-    "-c user.name=swe-lab",
-)
-# Pinned so the baseline sha is reproducible across attempts of one instance:
-# an unpinned date makes every attempt's base different, and "which base
-# produced this patch" stops being a comparable answer.
-_BASELINE_DATE = "1970-01-01T00:00:00+00:00"
-
-
-def build_baseline_script(*, workdir: str, output_path: str) -> str:
-  """Build the bash that commits the tree as the agent found it.
-
-  Everything present is committed — tracked modifications, deletions and
-  untracked files alike (``add -A``) — because the point is a base that
-  *matches the tree the agent starts from*, and a file left out would show up
-  later as if the agent had created it.
-
-  ``--allow-empty`` so a clean worktree still yields a baseline: the caller
-  asked for one, and returning ``base_commit`` instead would make the base
-  depend on whether the image happened to be dirty.
-
-  Args:
-    workdir: In-container path of the instance's repo.
-    output_path: Where the resolved sha is written, one line, no newline fuss.
-
-  Returns:
-    The bash script text, newline-terminated.
-  """
-  wd = shlex.quote(workdir)
-  out = shlex.quote(output_path)
-  identity = " ".join(_BASELINE_IDENTITY)
-  dates = (
-      f"GIT_AUTHOR_DATE={_BASELINE_DATE} GIT_COMMITTER_DATE={_BASELINE_DATE}"
-  )
-  return (
-      "\n".join(
-          [
-              "set -eu",
-              f"git -C {wd} {identity} add -A -- :/",
-              f"{dates} git -C {wd} {identity} commit --allow-empty -q"
-              " -m 'swe-lab: pre-agent baseline'",
-              f"git -C {wd} rev-parse HEAD > {out}",
-          ]
-      )
-      + "\n"
-  )
 
 
 def _read_patch(sb: SandboxFs, name: str) -> str:
@@ -117,15 +72,16 @@ class DiffExtractObserver(SandboxObserver):
       already different from ``base_commit`` — build-time edits that were never
       committed — where the default would fold those into every agent's patch.
 
-      **Off by default, and not free to turn on**: the base ref is a contract
-      with the grader, which has to grade a tree matching it. The shipped
-      ``swebench_pro`` grader resets hard to ``base_commit``, which wipes the
-      very mutations a baseline captures — measured, a baseline-relative patch
-      then applies *unless* the agent touched a path the image had mutated, at
-      which point it fails (a file recreated after an image-time delete is a
-      ``new file`` hunk against a tree that already has it). Fails closed, not
-      wrong, but only sometimes. Turn this on for a dataset whose grader grades
-      the image's tree as shipped.
+      **Half of a pair**: the base ref is a contract with the grader, which
+      has to grade a tree matching it, so the composing task sets this
+      together with the grading side's ``patch_baseline`` (see
+      ``UnitTestTask``) — that side recomputes the baseline with the same
+      pinned commands, verifies the sha against :attr:`base_ref`, and resets
+      to it. Against a plain ``base_commit``-resetting grader, a baseline
+      patch fails to apply exactly when the agent touched a path the image had
+      mutated (measured: a file recreated after an image-time delete is a
+      ``new file`` hunk against a tree that already has it) — closed, not
+      wrong, but confusingly.
     patch: The clean, text-only diff vs :attr:`base_ref` (may be ``""``).
     is_empty: Whether the clean patch is effectively empty.
     binary_stripped: Whether a residual binary hunk was stripped host-side.
@@ -162,10 +118,15 @@ class DiffExtractObserver(SandboxObserver):
     """
     if not self.baseline:
       return
-    sha_file = "patch.base.txt"
-    script = build_baseline_script(
-        workdir=sb.spec.workdir, output_path=sha_file
+    body = build_baseline_script(
+        workdir=sb.spec.workdir, output_path=BASE_REF_NAME
     )
+    # `> patch.base_ref.txt` is relative to the shell cwd, which run_script
+    # does NOT put in the workspace — cd there first, exactly as the
+    # extraction script below does. Caught by the first live run: without it
+    # the sha lands in the container's own cwd, the workspace read comes back
+    # empty, and the fail-closed path aborts a perfectly healthy run.
+    script = f'cd "$SANDBOX_WORKSPACE"\n{body}'
     sb.write(BASELINE_SCRIPT_NAME, script.encode("utf-8"))
     result = sb.run_script(BASELINE_SCRIPT_NAME, timeout=_BASELINE_TIMEOUT_S)
     if result.exit_code != 0:
@@ -174,7 +135,7 @@ class DiffExtractObserver(SandboxObserver):
           "could not commit the pre-agent baseline (exit"
           f" {result.exit_code}): {detail}"
       )
-    sha = _read_patch(sb, sha_file).strip()
+    sha = _read_patch(sb, BASE_REF_NAME).strip()
     if not sha:
       raise SandboxError(
           "the pre-agent baseline commit produced no sha; refusing to fall"
@@ -186,6 +147,16 @@ class DiffExtractObserver(SandboxObserver):
   @override
   def output_schema(self) -> tuple[ArtifactSchema, ...]:
     """Declare the clean patch (the deliverable) and the raw diff (audit)."""
+    base = (
+        (
+            ArtifactSchema(
+                BASE_REF_NAME,
+                description="the sha the patch was diffed against",
+            ),
+        )
+        if self.baseline
+        else ()
+    )
     return (
         ArtifactSchema(PATCH_NAME, description="the extracted clean patch"),
         ArtifactSchema(
@@ -193,6 +164,7 @@ class DiffExtractObserver(SandboxObserver):
             required=False,
             description="the raw in-sandbox git diff, kept for audit",
         ),
+        *base,
     )
 
   @override
@@ -228,9 +200,19 @@ class DiffExtractObserver(SandboxObserver):
     artifacts = (
         {RAW_PATCH_NAME: RAW_PATCH_NAME} if sb.exists(RAW_PATCH_NAME) else {}
     )
+    # The base ref is handed over from memory, not fetched from the workspace:
+    # the file has sat in a directory the agent can write to for the whole
+    # run, and the copy captured in `after_create` — before the agent started —
+    # is the one that cannot have been tampered with.
+    base_ref = (
+        {BASE_REF_NAME: f"{self.base_ref}\n".encode()} if self.baseline else {}
+    )
     return Contribution(
         artifacts=artifacts,
-        inline_artifacts={PATCH_NAME: self.patch.encode("utf-8")},
+        inline_artifacts={
+            PATCH_NAME: self.patch.encode("utf-8"),
+            **base_ref,
+        },
         # What the extraction *found*, as metrics: a persisted attempt has to
         # be readable on its own, and "the patch is empty" is the difference
         # between an agent that failed and one that changed nothing.

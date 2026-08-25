@@ -89,6 +89,7 @@ class _BareInstance(TaskInstance[SweBenchProVerdict]):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError("this instance compiles no eval")
 
@@ -552,6 +553,7 @@ class _EvalInstance(TaskInstance[SweBenchProVerdict]):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     del apply_patch, checkout_golden_tests
     output = json.dumps({"tests": [{"name": "a", "status": "PASSED"}]})
@@ -769,6 +771,7 @@ class _FailingEvalInstance(TaskInstance[SweBenchProVerdict]):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     del apply_patch, checkout_golden_tests
     return UnitTestSpec(

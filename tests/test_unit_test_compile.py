@@ -10,6 +10,7 @@ test_swebench_pro.py.
 import json
 
 from swe_lab.datasets.swebench_pro.constants import (
+    BASE_REF_NAME,
     PARSER_NAME,
     PATCH_NAME,
     RUN_SCRIPT_NAME,
@@ -21,6 +22,7 @@ from swe_lab.datasets.swebench_pro.unit_test import (
     compile_unit_test,
     REQUIRED_TESTS_NAME,
 )
+from swe_lab.git.patch import baseline_commit_lines, build_baseline_script
 from swe_lab.sandbox import Inline, Mount
 
 _BASE = {
@@ -57,6 +59,7 @@ def _script(
     *,
     apply_patch: bool,
     checkout_golden_tests: bool,
+    patch_baseline: bool = False,
 ) -> str:
   # Feed the builder the instance's fields, the way SweBenchProInstance does.
   return _build_eval_script(
@@ -66,6 +69,7 @@ def _script(
       apply_patch=apply_patch,
       patch_name=PATCH_NAME,
       checkout_golden_tests=checkout_golden_tests,
+      patch_baseline=patch_baseline,
   )
 
 
@@ -272,3 +276,77 @@ def test_a_previous_attempts_outputs_are_removed_before_anything_else():
   reset = next(i for i, line in enumerate(lines) if "reset --hard" in line)
   assert removal < reset
   assert lines[0] == "set -e"  # and a failed removal still aborts
+
+
+# ─── baseline grading (ADR-0001, 2026-08-25 amendment) ──────────────────────
+
+
+def test_baseline_grading_recomputes_verifies_and_resets_to_the_baseline():
+  """The grading half of the pre-agent baseline.
+
+  The base ref is a contract between extraction and the grader: a patch is
+  only applicable against a tree matching the base it was taken from. In
+  baseline mode that tree is NOT `base_commit` — it is the image's shipped
+  tree — so the reset must target the recomputed baseline, and sha equality
+  against the run's recorded base ref is what proves the two containers saw
+  the same tree.
+  """
+  script = _script(
+      _instance(),
+      apply_patch=True,
+      checkout_golden_tests=True,
+      patch_baseline=True,
+  )
+  # The reset to base_commit is GONE — it would wipe exactly the image
+  # mutations the baseline captured.
+  assert "git reset --hard abc123" not in script
+  assert "git checkout abc123" not in script
+  # Recompute with the SAME pinned commands the rollout side ran — one
+  # source (`baseline_commit_lines`), asserted verbatim so a drifted copy
+  # cannot silently change the sha and fail every verify.
+  for line in baseline_commit_lines(WORKDIR):
+    assert line in script
+  # The verify, with both shas named in the failure.
+  assert 'baseline="$(git rev-parse HEAD)"' in script
+  assert f'"$(cat "$SANDBOX_WORKSPACE"/{BASE_REF_NAME})"' in script
+  assert "grading tree differs from the patch base" in script
+  # The reset discipline, pointed at the right target.
+  assert "git reset --hard HEAD" in script
+  # Ordering: verify BEFORE apply — a mismatch must abort with its own
+  # message, not surface later as a cryptic apply error.
+  assert script.index("grading tree differs") < script.index("git apply -v")
+
+
+def test_baseline_shares_its_commit_lines_with_the_rollout_side():
+  # The sha is a hash over identity, dates and message. Two copies that
+  # drifted by one character would make every baseline run fail its verify —
+  # so the eval script embeds the rollout side's lines verbatim, and this
+  # pins that both builders draw from the one source.
+  rollout_script = build_baseline_script(
+      workdir=WORKDIR, output_path=BASE_REF_NAME
+  )
+  eval_script = _script(
+      _instance(),
+      apply_patch=True,
+      checkout_golden_tests=True,
+      patch_baseline=True,
+  )
+  for line in baseline_commit_lines(WORKDIR):
+    assert line in rollout_script
+    assert line in eval_script
+
+
+def test_default_grading_script_is_untouched_by_the_new_parameter():
+  # Byte-identical with the flag off — the amendment's compatibility promise.
+  with_default = _script(
+      _instance(), apply_patch=True, checkout_golden_tests=True
+  )
+  explicit_off = _script(
+      _instance(),
+      apply_patch=True,
+      checkout_golden_tests=True,
+      patch_baseline=False,
+  )
+  assert with_default == explicit_off
+  assert "git reset --hard abc123" in with_default
+  assert BASE_REF_NAME not in with_default

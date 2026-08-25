@@ -295,6 +295,7 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     """Compile this instance's unit-test evaluation spec.
 
@@ -310,6 +311,7 @@ class SweBenchProInstance(TaskInstance[SweBenchProVerdict]):
         apply_patch=apply_patch,
         patch_name=patch_name,
         checkout_golden_tests=checkout_golden_tests,
+        patch_baseline=patch_baseline,
         base_commit=self.base_commit,
         selected_test_files_to_run=self.selected_test_files_to_run,
         golden_test_checkout_cmd=self.golden_test_checkout_cmd,

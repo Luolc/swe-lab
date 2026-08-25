@@ -70,6 +70,7 @@ class _Instance(TaskInstance[SweBenchProVerdict]):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[SweBenchProVerdict]:
     raise NotImplementedError
 

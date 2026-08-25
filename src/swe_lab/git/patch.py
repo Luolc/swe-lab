@@ -118,6 +118,73 @@ _DIFF_FLAGS = (
 )
 
 
+# The pre-agent baseline commit (ADR-0001, 2026-08-25 amendment). Everything
+# here is pinned because the baseline sha must be a pure function of the tree:
+# identity and dates enter the commit hash, so an unpinned value would make the
+# rollout container and the grading container compute different shas for the
+# same image — and sha equality is exactly how the grading side proves it is
+# about to grade the tree the patch was taken against.
+_BASELINE_IDENTITY = (
+    "-c user.email=baseline@swe-lab.invalid -c user.name=swe-lab"
+)
+_BASELINE_DATE = "1970-01-01T00:00:00+00:00"
+_BASELINE_MESSAGE = "swe-lab: pre-agent baseline"
+
+
+def baseline_commit_lines(workdir: str) -> list[str]:
+  """Return the commands that commit the tree exactly as it stands.
+
+  **The one source of these lines.** Both sides run them — the rollout side to
+  create the diff base, the grading side to *recompute* it and compare shas —
+  and the sha is a hash over everything pinned here, so two copies that
+  drifted by a character would make every baseline run fail its verify.
+
+  ``add -A`` because the point is a base matching the tree the agent starts
+  from — a file left out would later read as if the agent created it.
+  ``--allow-empty`` so a clean worktree still yields a baseline rather than
+  one whose existence depends on whether the image happened to be dirty.
+
+  Args:
+    workdir: In-container path of the instance's repo.
+
+  Returns:
+    The command lines, in order.
+  """
+  wd = shlex.quote(workdir)
+  dates = (
+      f"GIT_AUTHOR_DATE={_BASELINE_DATE} GIT_COMMITTER_DATE={_BASELINE_DATE}"
+  )
+  return [
+      f"git -C {wd} {_BASELINE_IDENTITY} add -A -- :/",
+      f"{dates} git -C {wd} {_BASELINE_IDENTITY} commit --allow-empty -q"
+      f" -m {shlex.quote(_BASELINE_MESSAGE)}",
+  ]
+
+
+def build_baseline_script(*, workdir: str, output_path: str) -> str:
+  """Build the bash that commits the pre-agent baseline and reports its sha.
+
+  Args:
+    workdir: In-container path of the instance's repo.
+    output_path: Where the resolved sha is written.
+
+  Returns:
+    The bash script text, newline-terminated.
+  """
+  out = shlex.quote(output_path)
+  wd = shlex.quote(workdir)
+  return (
+      "\n".join(
+          [
+              "set -eu",
+              *baseline_commit_lines(workdir),
+              f"git -C {wd} rev-parse HEAD > {out}",
+          ]
+      )
+      + "\n"
+  )
+
+
 def build_extraction_script(
     *,
     workdir: str,

@@ -32,7 +32,7 @@ from swe_lab.sandbox import (
     SandboxFs,
     SandboxObserver,
 )
-from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers import BASE_REF_NAME, PATCH_NAME
 from swe_lab.workflow import AttemptResult, Task
 
 ENTRYSCRIPT_NAME = "entryscript.sh"
@@ -225,6 +225,17 @@ class UnitTestTask[V: Verdict](Task):
       reads it, so the declaration and the script cannot drift apart. The
       default is the store name the rollout side produces, which is what makes
       the rollout → unit-test edge match by name.
+    patch_baseline: Grade against the **pre-agent baseline** instead of
+      resetting to ``base_commit`` — the grading half of
+      ``CodingAgentTask.patch_baseline`` (ADR-0001, 2026-08-25 amendment), and
+      the two must be set together: each side alone moves the patch and the
+      tree apart. The compiled script recomputes the baseline with the same
+      pinned commands the rollout side used, **verifies the sha against the
+      run's recorded** ``patch.base_ref.txt`` (declared here as an input, so
+      the workflow wires it along the same edge as the patch), and only then
+      resets and applies. The verify is the point: sha equality *proves* the
+      tree being graded is the tree the patch was taken from, where the
+      default mode's reset guarantees it by construction.
     env: Extra environment for this task's own action — the compiled script.
       Distinct from the sandbox's ``env``, which every exec of the run gets;
       this is the grading script's alone. For a secret, use the sandbox's
@@ -234,6 +245,7 @@ class UnitTestTask[V: Verdict](Task):
 
   apply_patch: bool = True
   patch_name: str = PATCH_NAME
+  patch_baseline: bool = False
   env: Mapping[str, str] | None = None
 
   def _compile(self, instance: TaskInstance[Any]) -> UnitTestSpec[V]:
@@ -251,6 +263,16 @@ class UnitTestTask[V: Verdict](Task):
     Returns:
       The compiled spec.
     """
+    # The kwarg is passed only when set: a downstream ``TaskInstance`` written
+    # before it existed keeps working untouched until its dataset actually
+    # opts into baseline grading — at which point implementing the parameter
+    # is the work anyway.
+    if self.patch_baseline:
+      return instance.unit_test_spec(
+          apply_patch=self.apply_patch,
+          patch_name=self.patch_name,
+          patch_baseline=True,
+      )
     spec: UnitTestSpec[V] = instance.unit_test_spec(
         apply_patch=self.apply_patch, patch_name=self.patch_name
     )
@@ -305,10 +327,21 @@ class UnitTestTask[V: Verdict](Task):
       The patch input in apply mode, else nothing.
     """
     if self.apply_patch:
+      base = (
+          (
+              ArtifactSchema(
+                  BASE_REF_NAME,
+                  description="the sha the patch was diffed against",
+              ),
+          )
+          if self.patch_baseline
+          else ()
+      )
       return (
           ArtifactSchema(
               self.patch_name, description="the candidate patch to grade"
           ),
+          *base,
       )
     return ()
 

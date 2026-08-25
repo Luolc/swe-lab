@@ -99,13 +99,14 @@ class CodingAgentTask(Task):
       ships already different from ``base_commit``, where the default folds
       those build-time edits into every agent's patch.
 
-      **Off by default, and not free to turn on**: the base ref is a contract
-      with the grader, which has to grade a tree matching it. The shipped
-      ``swebench_pro`` grader resets hard to ``base_commit``, so a
-      baseline-relative patch applies there *unless* the agent touched a path
-      the image had mutated — then it fails closed rather than mis-grading.
-      Turn it on for a dataset whose grader grades the image's tree as
-      shipped.
+      **Half of a pair**: the base ref is a contract with the grader, which
+      has to grade a tree matching it, so set this together with
+      ``UnitTestTask.patch_baseline`` — the grading side then recomputes the
+      baseline, verifies its sha against this run's recorded base, and resets
+      to *it* instead of ``base_commit``. Either flag alone moves the patch
+      and the tree apart (a default-graded baseline patch fails to apply
+      exactly when the agent touched a path the image had mutated — closed,
+      not wrong, but confusingly).
     purge_git_history: Strip future git history before the agent starts, and
       refuse to run if it is still reachable (ADR-0010 §3b). **On by default**:
       the images ship the whole upstream history, so without it the reference

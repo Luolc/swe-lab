@@ -116,6 +116,7 @@ class TaskInstance[V: Verdict](ABC):
       apply_patch: bool,
       patch_name: str = PATCH_NAME,
       checkout_golden_tests: bool = True,
+      patch_baseline: bool = False,
   ) -> UnitTestSpec[V]:
     """Compile this instance's unit-test evaluation spec.
 
@@ -135,6 +136,14 @@ class TaskInstance[V: Verdict](ABC):
         store name the extraction side produces.
       checkout_golden_tests: Restore the held-out golden test files after the
         reset (so a candidate patch cannot game them).
+      patch_baseline: Grade against the recomputed **pre-agent baseline**
+        instead of resetting to the base commit — the grading half of
+        ``patch_baseline`` on the rollout side (ADR-0001, 2026-08-25
+        amendment). The compiled script must recompute the baseline with the
+        shared pinned commands, verify its sha against the run's recorded
+        ``patch.base_ref.txt``, and reset to *it* before applying. A dataset
+        that has not implemented this mode should refuse it loudly rather
+        than accept-and-ignore it.
 
     Returns:
       The compiled unit-test spec.

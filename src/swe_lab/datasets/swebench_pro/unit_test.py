@@ -18,9 +18,11 @@ import shlex
 from typing import override
 
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
+from swe_lab.git.patch import baseline_commit_lines
 from swe_lab.sandbox import Inline, Mount, Mounts, SandboxFs
 
 from .constants import (
+    BASE_REF_NAME,
     BASH,
     EVAL_HOME,
     OUTPUT_JSON_NAME,
@@ -170,6 +172,7 @@ def _build_eval_script(
     apply_patch: bool,
     patch_name: str,
     checkout_golden_tests: bool,
+    patch_baseline: bool = False,
 ) -> str:
   """Build the in-container eval script (ports Scale's create_entryscript).
 
@@ -192,6 +195,13 @@ def _build_eval_script(
       bytes baked into the script, so the same compiled script grades whatever
       the run's declared input turns out to be.
     checkout_golden_tests: Restore the golden test files after the reset.
+    patch_baseline: Reset to the recomputed **pre-agent baseline** instead of
+      ``base_commit`` (ADR-0001, 2026-08-25 amendment). The script reruns the
+      same pinned commit commands the rollout side used — the sha is a pure
+      function of the tree, so equality against the run's recorded
+      ``patch.base_ref.txt`` *proves* this container is about to grade the
+      tree the patch was taken from, and a mismatch aborts with a message
+      naming both shas rather than surfacing later as a cryptic apply error.
 
   Returns:
     The entryscript text, newline-terminated.
@@ -245,10 +255,36 @@ def _build_eval_script(
           f"rm -f {_WS}/{OUTPUT_JSON_NAME} {_WS}/{STDOUT_LOG_NAME}"
           f" {_WS}/{STDERR_LOG_NAME}"
       ),
-      f"git reset --hard {base_commit}",
-      "git clean -fd",
-      f"git checkout {base_commit}",
   ]
+  if patch_baseline:
+    lines += [
+        # Recompute the pre-agent baseline with the SAME pinned commands the
+        # rollout side ran (one source: `baseline_commit_lines`). Identity,
+        # dates and message all enter the commit hash, so the sha is a pure
+        # function of the image's tree — equality with the recorded base ref
+        # proves this container grades the tree the patch was taken from.
+        *baseline_commit_lines(WORKDIR),
+        'baseline="$(git rev-parse HEAD)"',
+        f'expected="$(cat {_WS}/{shlex.quote(BASE_REF_NAME)})"',
+        # Named shas in the failure: without them a mismatch would surface
+        # minutes later as an unexplained `git apply` error in a tree nobody
+        # can inspect anymore.
+        'if [ "$baseline" != "$expected" ]; then'
+        ' echo "grading tree differs from the patch base:'
+        ' recomputed $baseline, patch taken against $expected" >&2;'
+        " exit 1; fi",
+        # The reset discipline, pointed at the right target: the baseline has
+        # everything tracked, so `clean -fd` cannot eat a shipped-untracked
+        # file, and anything the container start dirtied is swept.
+        "git reset --hard HEAD",
+        "git clean -fd",
+    ]
+  else:
+    lines += [
+        f"git reset --hard {base_commit}",
+        "git clean -fd",
+        f"git checkout {base_commit}",
+    ]
   if apply_patch:
     lines.append(f"git apply -v {_WS}/{shlex.quote(patch_name)}")
   if checkout_golden_tests and golden_test_checkout_cmd:
@@ -276,6 +312,7 @@ def compile_unit_test(
     apply_patch: bool,
     patch_name: str = PATCH_NAME,
     checkout_golden_tests: bool = True,
+    patch_baseline: bool = False,
     base_commit: str,
     selected_test_files_to_run: Sequence[str],
     golden_test_checkout_cmd: str,
@@ -301,6 +338,9 @@ def compile_unit_test(
     patch_name: The workspace file the script applies.
     checkout_golden_tests: Forwarded to the eval script (see its self-check
       modes).
+    patch_baseline: Forwarded to the eval script — grade against the
+      recomputed pre-agent baseline rather than a reset to ``base_commit``
+      (see the script builder for the verify this implies).
     base_commit: The commit the working tree is reset to before grading.
     selected_test_files_to_run: The test files passed to the run script.
     golden_test_checkout_cmd: The command restoring the held-out golden tests
@@ -326,6 +366,7 @@ def compile_unit_test(
       apply_patch=apply_patch,
       patch_name=patch_name,
       checkout_golden_tests=checkout_golden_tests,
+      patch_baseline=patch_baseline,
   )
   return UnitTestSpec(
       eval_script=eval_script,

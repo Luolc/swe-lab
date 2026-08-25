@@ -172,14 +172,35 @@ incompatibility:
   `base_commit` that file is already there: `error: README.md: already exists in
   working directory`.
 
-So `baseline=True` is for a dataset whose grader grades the image's tree as
-shipped (as the Harbor format's own collect hook does). Paired with a resetting
-grader it does not corrupt a grade — it fails closed, since `git apply` fails,
-`set -e` aborts, and no verdict is produced — but it fails *sometimes*, on
-exactly the instances where the agent's work overlaps the image's, and the
-message reads like infrastructure.
+So the mode is **end-to-end or not at all**: `UnitTestTask.patch_baseline` is
+the grading half, and the two flags must be set together — each side alone
+moves the patch and the tree apart. In baseline mode the compiled eval script
+replaces the reset trio with:
 
-Two guards make that recoverable rather than mysterious:
+1. **Recompute the baseline** with the *same* pinned commands the rollout side
+   ran (`baseline_commit_lines` in `git/patch.py` is the one source — identity,
+   dates and message all enter the commit hash, so a drifted copy would fail
+   every verify).
+2. **Verify the sha** against the run's recorded base. The sha is a pure
+   function of the image's tree, so equality *proves* this container is about
+   to grade the tree the patch was taken from — the round-trip guarantee that
+   made `base_commit` the default, restored as a checked precondition. A
+   mismatch aborts with both shas named, rather than surfacing minutes later
+   as a cryptic apply error. (This also fires if the image mutates its own
+   tree at container start — not a false positive: a tree that differs between
+   two containers of one image is precisely where apply is unsafe.)
+3. **Reset to the baseline** (`reset --hard HEAD` + `clean -fd`) — the reset
+   discipline pointed at the right target. The baseline has everything
+   tracked, so `clean` cannot eat a shipped-untracked file.
+
+How the base travels: the rollout side emits it as an artifact
+(`patch.base_ref.txt`, inline **from memory** — the workspace copy sat
+agent-writable for the whole run), the grading side declares it as an input,
+and the workflow wires it along the same edge as the patch. Running a baseline
+grading entry without a baseline rollout is therefore a loud missing-input
+failure, not a wrong grade.
+
+Two further guards:
 
 - **The resolved base is recorded** on the attempt's shard as
   `patch_base_ref`, so "which base produced this patch" is answerable from the
@@ -187,10 +208,5 @@ Two guards make that recoverable rather than mysterious:
 - **Baseline creation fails closed.** If the commit cannot be made, the run
   aborts rather than falling back to `base_commit` — the fallback would
   silently produce exactly the contaminated patch this exists to prevent.
-
-**Not adopted:** a cross-task guard that refuses the combination outright. It
-would have to travel the base ref from the rollout entry to the grading entry
-as a declared workflow input, which changes the task input contract; worth
-doing on its own terms, not as a rider here.
 
 **Backlog:** Facet 1 moves from P1 to done-as-opt-in. The rest stands.
