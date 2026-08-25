@@ -1,0 +1,196 @@
+# Task 30 — DeepSWE 1.1 as a second dataset
+
+**Goal.** Port [DeepSWE](https://deepswe.datacurve.ai/) (Datacurve's benchmark,
+v1.1) into swe-lab as a second dataset behind the existing seams — a
+`deepswe` loader, a `TaskInstance`, and an eval spec that runs Datacurve's own
+verifier **verbatim** — so every shipped harness and workflow runs against it
+unchanged.
+
+Status: **design, evidence-gathered 2026-08-25**. Nothing implemented.
+
+---
+
+## 0. What DeepSWE is
+
+- **113 original tasks** across 91 repos, 5 languages (ts 35 / go 34 / py 34 /
+  js 5 / rust 5), in the [Harbor task format](https://www.harborframework.com/docs/tasks);
+  repo [`datacurve-ai/deep-swe`](https://github.com/datacurve-ai/deep-swe)
+  (Apache-2.0 for Datacurve's contributions; upstream projects keep their own
+  permissive licenses — `PROVENANCE.md` lists all 91, none copyleft).
+- Tasks are **written from scratch** — the reference solution is not adapted
+  from any existing commit/PR, so there is **no upstream fix commit to leak**.
+  Verifiers are hand-written and behavioral ("accepts any solution whose
+  observable behavior is correct").
+- The leaderboard runs **mini-swe-agent** only, pass@1 with CIs; the blog
+  explicitly invites what swe-lab does: *"A natural next step is running the
+  same models under multiple harnesses, so a score can be decomposed into the
+  model itself versus the scaffolding around it."*
+- **v1.1** (repo `main`; git tag `v1.0.0` marks the old corpus) switched to
+  Harbor's *separate verifier environment*: the agent never sees the tests,
+  and grading happens in a pristine container.
+
+## 1. Evidence — measured 2026-08-25
+
+### Task anatomy (uniform across all 113)
+
+```
+task.toml         schema 1.3; task_id, language, repository_url,
+                  base_commit_hash, per-task docker_image, limits
+instruction.md    the prompt (all 113 end with "work on a new branch …
+                  and commit everything when you are done")
+environment/      Dockerfile reproducing the image (not needed by us)
+tests/            test.sh (shared frame) + grader.py (shared, synced) +
+                  config.json (f2p/p2p node ids + grade config) + test.patch
+                  (the held-out tests) + Dockerfile (task image + COPY tests)
+solution/         solution.patch (gold, base_commit-relative) + solve.sh
+```
+
+Uniform, verified by grep over all 113 `task.toml`: `schema_version 1.3`,
+`network_mode = "no-network"` for agent **and** verifier, agent
+`timeout_sec = 5400`, verifier `timeout_sec = 1800`, image
+`public.ecr.aws/d3j8x8q7/swe-bench-202605:<ext_id>-v1.1`, cpus 2 / 8 GB.
+`tasks/dataset.toml` names the corpus `datacurve/deep-swe-1-1` and pins a
+sha256 digest per task. Grade formats: 78 ctrf, 35 junit — **internal to their
+grader**, we never parse them.
+
+### The image (pulled `abs-module-cache-flags`, anonymous ECR pull works)
+
+- linux/amd64, ~840 MB; root; `bash`, `git`, toolchain present; cwd `/app`.
+- `HEAD == base_commit_hash` exactly; branch `master`; **worktree clean in
+  this image** — dirtiness is per-task, not universal (their grader's own
+  comment: *"image build steps may have modified tracked files in-tree, so
+  resets are per-file, never repo-wide"*).
+- 652 commits of history, all ancestors of base, **no remote configured**.
+  (The blog's "shallow clone with only the base commit" is imprecise; the
+  property that matters — nothing after base to find — holds.)
+- `/tests` and `/logs` **absent** — hidden tests exist only in the verifier
+  build context.
+
+### Their grading contract (read from the shared `grader.py` + `test.sh`)
+
+1. `prepare`: reset **only the files `model.patch` touches** to
+   `base_commit`, apply it; a patch that does not apply → `reward.json` with
+   `apply_failed=1`, reward 0, suites never run (**graded**, the patch's
+   fault). Then reset `test.patch`'s files and apply it loudly (a failure
+   here → no `reward.json`, trap writes `reward.txt=-1` — **infra crash
+   sentinel**, ungraded).
+2. Run the suites (language-specific), emit ctrf/junit reports.
+3. `grade`: whitelisted node ids → `reward.json`:
+   `reward` binary (1 iff every f2p passes and no p2p fails), plus
+   `f2p/p2p/partial` fractions. Absence == failure; worst-status-wins.
+
+Their attribution maps 1:1 onto ours: `apply_failed` ⇒ graded unresolved;
+`reward.txt=-1` ⇒ no verdict ⇒ failed attempt, retryable.
+
+### The verifier runs verbatim under swe-lab's paradigm — proven
+
+Their `tests/Dockerfile` is `FROM <task image>` + `COPY` four files — so
+**mounting is equivalent to baking**, and swe-lab's eval sandbox needs no
+image build. Measured, gold round trip:
+
+```
+docker run --network none \
+  -v tasks/<id>/tests:/tests:ro \
+  -v <staging>/artifacts:/logs/artifacts \   # model.patch = solution.patch
+  -v <staging>/verifier:/logs/verifier \
+  <task image> bash /tests/test.sh
+→ reward.json: {"reward": 1, "f2p": 20/20, "p2p": 3/3, "partial": 1.0}
+```
+
+No network, no verifier image, byte-identical scripts. This is the whole eval
+side of the port.
+
+## 2. Design — mapping onto the existing seams
+
+New package `datasets/deepswe/`, registered as `deepswe`; instance ids are the
+task ids (`abs-module-cache-flags`).
+
+| swe-lab seam | DeepSWE source |
+|---|---|
+| `sandbox_spec()` | `task.toml` image / `/app` / `base_commit_hash` |
+| `prompt()` | `instruction.md`, verbatim (§4.3) |
+| `gold_patch()` | `solution/solution.patch` |
+| `required_tests()` | `f2p ∪ p2p` node ids from `tests/config.json` |
+| `solution_sha()` | `None` — original tasks, no upstream fix commit; the purge stays on and its weakened assertion is the designed behavior |
+| `unit_test_spec()` | mount `tests/*` at `/tests`, stage the candidate patch at the path their grader reads, run `bash /tests/test.sh`, read `reward.json` |
+| verdict | `DeepSweVerdict`: `resolved = (reward == 1)`, `score = reward`; `f2p/p2p/partial/apply_failed` as metrics; `ctrf.json` + `run.log` as artifacts; absent `reward.json` (their `-1` sentinel) ⇒ no verdict ⇒ failed attempt |
+| dataset acquisition | shallow-clone `datacurve-ai/deep-swe` at a **pinned commit sha** into the cache (the same pin-and-verify posture as every other artifact; `dataset.toml`'s per-task digests are available for deeper verification later) |
+
+`tomllib` is stdlib — no new runtime dependency.
+
+## 3. The extraction-style decision: **default mode, not baseline**
+
+The pairing rule from ADR-0001's amendment decides this, and the answer is
+the opposite of what "Harbor images can ship dirty" suggests:
+
+- Their grader resets touched files to **`base_commit`** and applies —
+  so the patch it accepts must be `base_commit`-relative. swe-lab's **default
+  extraction produces exactly that**, and their per-file reset is precisely
+  what makes a `base_commit`-relative patch self-consistent even on a dirty
+  image (contaminated hunks reproduce the image's own state; the score is
+  unaffected).
+- A **baseline-relative** patch would *break* their grader: for a file the
+  image mutated, the per-file reset to `base_commit` restores a preimage the
+  baseline hunk does not match → `apply_failed` → **mis-grade**.
+
+So the shipped `deepswe` flow keeps `patch_baseline=False` on both sides.
+`patch_baseline` remains what it is: for a grader that grades the image's
+tree as shipped — which DeepSWE's v1.1 verifier deliberately is not.
+
+One residue to accept (or fix cheaply): on a dirty-image task, default
+extraction folds image edits into the patch, so `patch_is_empty` and the
+result-verifier's signals read a did-nothing agent as having a patch. Their
+own collect hook has the same property. Candidate mitigation, deferred to
+implementation: record `git status --porcelain | wc -l` at rollout start as a
+metric, so a contaminated-patch record is identifiable from the manifest.
+
+## 4. Fidelity deviations — each a decision, not an accident
+
+1. **Agent network.** Upstream agents run air-gapped (Pier grants only an LLM
+   API allowlist). Our harnesses dial their APIs directly, so the shipped
+   flow runs the agent sandbox with network — **and the hidden tests are in
+   the public GitHub repo**, which makes "fetch the tests" the top integrity
+   hazard of this port (worse than AGENTS.md injection; there is no upstream
+   fix to find, but there are literal answers). Mitigations, in order:
+   downstream proxy allowlists (the paradigm already in use there); a
+   result-verifier rule flagging any trace reference to `datacurve` /
+   `deep-swe` URLs (detection-not-gate, ADR-0010); documented deviation.
+   **The verifier sandbox, by contrast, runs `network=False` faithfully** —
+   proven above.
+2. **Worktree diff vs commit diff.** Their collect hook diffs
+   `base..HEAD` — an agent that never commits scores 0 upstream. We diff the
+   worktree, which grades such an agent on its actual edits. Deliberate
+   (harness-agnostic robustness, same argument as ADR-0001's amendment), and
+   generous relative to the leaderboard — noted for comparability.
+3. **The "commit everything" prompt line stays.** Prompt fidelity beats
+   removing a now-unnecessary instruction; an agent that follows it loses
+   nothing under a worktree diff.
+4. **`--binary`.** Their collect uses it; we strip binary (ADR-0001 Facet 3).
+   Behavioral tasks make a binary-only solution unlikely; recorded, not
+   solved.
+5. **Timeouts/resources.** Upstream: agent 5400 s, verifier 1800 s, 2 cpus /
+   8 GB. Our defaults: 1800/1800, no cgroup limits. The `deepswe` definition
+   (or overrides) should set the agent entry to 5400 s; resource caps are a
+   Docker-backend gap, noted and deferred.
+6. **Leaderboard comparability is limited by design** — they hold
+   mini-swe-agent constant; we vary the harness. That is the point (their
+   blog says so), not a defect.
+
+## 5. Implementation order (when picked up)
+
+1. `datasets/deepswe/` fetch + loader + record (pin the repo sha), unit tests
+   over one vendored task fixture.
+2. `unit_test_spec` compile + `DeepSweVerdict` (+ the `-1`-sentinel → no
+   verdict path), golden self-check on 3–5 tasks across languages.
+3. A `deepswe` workflow definition (agent 5400 s, eval `network=False`), full
+   `rollout_and_unit_test` e2e on one task per language.
+4. Gold sweep over all 113 (the W2 playbook), then the integrity rule from
+   §4.1.
+
+## 6. Open questions
+
+- Whether to verify `dataset.toml`'s per-task digests (what exactly Harbor
+  hashes needs a look at Pier) or rely on the pinned clone sha alone.
+- Whether image pulls should be cached-and-pinned by digest rather than tag
+  (`<ext_id>-v1.1` tags are mutable in principle; 113 × ~0.8 GB ≈ 95 GB if
+  ever pulled wholesale).
