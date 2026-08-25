@@ -19,6 +19,7 @@ from typing import Any, override
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
+from swe_lab.git.patch import build_baseline_verify_script
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
@@ -200,6 +201,64 @@ def gold_patch(
   return {PATCH_NAME: patch.encode("utf-8")}
 
 
+_BASELINE_VERIFY_SCRIPT_NAME = "baseline_verify.sh"  # persisted for audit
+_BASELINE_VERIFY_TIMEOUT_S = 120.0
+
+
+@dataclass
+class BaselineVerifyObserver(SandboxObserver):
+  """Prove the grading tree is the patch's base, or fail the run — ungraded.
+
+  The eval half of the pre-agent baseline (ADR-0001, 2026-08-25 amendment),
+  and deliberately an ``after_create`` observer rather than lines in the
+  entryscript, because the two failures it separates deserve different fates:
+
+  - a patch that does not **apply** is the patch's fault, and the entryscript
+    grading it unresolved (Scale-aligned) is correct;
+  - a tree that is not the patch's **base** is an environment fault, and
+    grading it would score the agent zero for the operator's error — measured
+    before this observer existed: an in-script mismatch aborted the run and
+    the absent ``output.json`` was graded as ``resolved = 0.0``, *succeeded*.
+
+  A raise here fails the run with the error on the record and **no verdict**,
+  exactly as the rollout side's baseline *creation* fails closed in its own
+  ``after_create``. Runs before the entryscript, and after mounts — the staged
+  base ref is a mount, and the manager stages mounts first.
+
+  Attributes:
+    workdir: In-container path of the instance's repo.
+    base_ref_name: The workspace file the recorded base ref arrives as.
+  """
+
+  workdir: str
+  base_ref_name: str = BASE_REF_NAME
+
+  @override
+  def after_create(self, sb: SandboxFs) -> None:
+    """Recompute the baseline, compare shas, and reset to it.
+
+    Args:
+      sb: The live sandbox, base ref already staged.
+
+    Raises:
+      SandboxError: On a sha mismatch (both shas named, from the script's own
+        stderr) or any other failure to verify — never graded, by design.
+    """
+    body = build_baseline_verify_script(
+        workdir=self.workdir, base_ref_path=self.base_ref_name
+    )
+    script = f'cd "$SANDBOX_WORKSPACE"\n{body}'
+    sb.write(_BASELINE_VERIFY_SCRIPT_NAME, script.encode("utf-8"))
+    result = sb.run_script(
+        _BASELINE_VERIFY_SCRIPT_NAME, timeout=_BASELINE_VERIFY_TIMEOUT_S
+    )
+    if result.exit_code != 0:
+      detail = (result.stderr or result.stdout).strip()[-500:]
+      raise SandboxError(
+          f"baseline verification failed (exit {result.exit_code}): {detail}"
+      )
+
+
 @dataclass
 class UnitTestTask[V: Verdict](Task):
   """Grade a patch against an instance's unit tests (ADR-0007).
@@ -315,7 +374,13 @@ class UnitTestTask[V: Verdict](Task):
       The one-element observer set.
     """
     spec = self._compile(instance)  # same spec, by the purity contract
+    verify = (
+        (BaselineVerifyObserver(workdir=instance.sandbox_spec().workdir),)
+        if self.apply_patch and self.patch_baseline
+        else ()
+    )
     return (
+        *verify,
         UnitTestParseObserver(spec.grader, native_outputs=spec.native_outputs),
     )
 
