@@ -100,6 +100,39 @@ docker run --network none \
 No network, no verifier image, byte-identical scripts. This is the whole eval
 side of the port.
 
+### Dirty-worktree census — measured 2026-08-25, all 113 images
+
+Every task image was pulled, probed (`git status --porcelain` + diff capture),
+and removed. Result: **112 of 113 ship a clean worktree; exactly one is
+dirty** — `numba-stencil-boundary-modes`, a single uncommitted line in tracked
+`numba/__init__.py` (`_min_llvmlite_version (0,47,0) → (0,46,0)`, the image's
+llvmlite-compatibility shim, applied by a bare `sed -i` with no cleanliness
+assertion after it).
+
+Cleanliness is **engineered, not accidental**: 37 Dockerfiles end with a
+porcelain-clean assertion (`RUN test -z "$(git status --porcelain)"`, comments
+citing model.patch hygiene), 5 route lockfile drift through
+`.git/info/exclude`, and v1.0→v1.1 fix notes in the Dockerfiles record exactly
+this class of bug being repaired (unquoted `>=` specifiers that had littered
+`/app`). The grader's per-file reset is defense in depth, not an
+accommodation of widespread dirt.
+
+Consequences for this port:
+
+- **The contamination concern is near-dead**: worst case today is a one-line
+  phantom hunk on one task. The scoped-extraction idea (§3's residue) is not
+  worth building; `patch_is_empty` pollution is bounded to `numba-*`.
+- **The unprotected-dirt hazard is real but tiny**: on `numba-*`, an agent
+  that runs `git checkout -- .` reverts the version pin and breaks its own
+  environment (llvmlite 0.46 installed, floor restored to 0.47). Upstream's
+  pipeline shares this; record, don't fix.
+- **`base_commit_hash` is not always 40-hex**: 110 tasks carry full shas, two
+  carry 7-char short shas (`eicrud-*`, `langchain-*`) and one a 39-char
+  truncation (`koota-entity-snapshot-rollback`) — all resolve as git ref
+  prefixes (HEAD matches by prefix, verified), but the loader must not assume
+  40-hex, and should normalize to the full sha (`rev-parse`) before it lands
+  on records.
+
 ## 2. Design — mapping onto the existing seams
 
 New package `datasets/deepswe/`, registered as `deepswe`; instance ids are the
