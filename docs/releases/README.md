@@ -13,6 +13,7 @@ these files **link** to it and never restate it.
 
 | Version | Date | Breaking | What it is |
 |---|---|---|---|
+| [v0.2.14](v0.2.14.md) | 2026-08-26 | **small** — one moved module | DeepSWE 1.1 as a second fully-runnable dataset (113-task sweep clean); HOME defers to the image with per-agent pinned config; scoped `safe.directory` on every engine git command. |
 | [v0.2.13](v0.2.13.md) | 2026-08-25 | no | Two diff-extraction styles end to end: the classic `base_commit` round trip, plus an opt-in pre-agent baseline whose tree mismatch fails ungraded. |
 | [v0.2.12](v0.2.12.md) | 2026-08-23 | no | A bigger retry budget on a declared `CodexProvider`; nothing to react to. |
 | [v0.2.11](v0.2.11.md) | 2026-08-22 | **yes** — provisioning seam | Agents are provisioned through a declared seam instead of per-backend observers; Grok Build harness; the agent's real exit status is recorded. |
