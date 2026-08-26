@@ -147,9 +147,54 @@ task ids (`abs-module-cache-flags`).
 | `solution_sha()` | `None` — original tasks, no upstream fix commit; the purge stays on and its weakened assertion is the designed behavior |
 | `unit_test_spec()` | mount `tests/*` at `/tests`, stage the candidate patch at the path their grader reads, run `bash /tests/test.sh`, read `reward.json` |
 | verdict | `DeepSweVerdict`: `resolved = (reward == 1)`, `score = reward`; `f2p/p2p/partial/apply_failed` as metrics; `ctrf.json` + `run.log` as artifacts; absent `reward.json` (their `-1` sentinel) ⇒ no verdict ⇒ failed attempt |
-| dataset acquisition | shallow-clone `datacurve-ai/deep-swe` at a **pinned commit sha** into the cache (the same pin-and-verify posture as every other artifact; `dataset.toml`'s per-task digests are available for deeper verification later) |
+| dataset acquisition | a **parquet we build and host ourselves** on a public HF dataset repo (§2b); the pinned-sha git checkout is the *builder's* source, not the loader's |
 
-`tomllib` is stdlib — no new runtime dependency.
+`tomllib` is stdlib — no new runtime dependency (`polars` and
+`huggingface-hub` are already dependencies).
+
+### 2b. Parquet distribution — decided 2026-08-25
+
+Instead of every consumer cloning the upstream repo, we **materialize the
+dataset once into a parquet** and host it on a public Hugging Face dataset
+repo (name pending), so the loader follows the exact `swebench_pro` path:
+`datasets/deepswe/data/*.parquet` + `load_parquet` + a `COLUMNS` contract.
+
+**Builder**: `python -m swe_lab.datasets.deepswe.build_parquet` — lives next
+to the loader that consumes its schema, so the two cannot drift. Steps:
+
+1. Shallow-fetch `datacurve-ai/deep-swe` at `PINNED_DEEPSWE_COMMIT`
+   (self-verifying — a commit sha is a content hash).
+2. One row per task: identity/metadata from `task.toml` (`task_id`, `ext_id`,
+   `display_title`, `category`, `language`, `repository_url`,
+   `base_commit_hash` **verbatim**, `docker_image`, timeouts, resources);
+   file contents as columns (`instruction`, `test_sh`, `grader_py`,
+   `config_json`, `test_patch`, `solution_patch`, `solve_sh`); per-row
+   provenance (`upstream_repo`, `upstream_license`, parsed from
+   `PROVENANCE.md`).
+3. **Fixes as separate columns, never overwrites**: `base_commit` = the full
+   40-hex sha, filled from a small in-builder table for the three tasks whose
+   `task.toml` carries an abbreviated/truncated value (§1 census: two 7-char,
+   one 39-char), values taken from the measured container `HEAD`s; identical
+   to `base_commit_hash` elsewhere. The verbatim column stays, so the
+   transformation is auditable per row. Same pattern as `swebench_pro`'s
+   in-loader `patches.py`, but baked and visible.
+4. Dataset-level metadata: `source_commit`, build-tool version, task count
+   (assert 113).
+5. Round-trip verification before upload: re-read the parquet and compare
+   every embedded file byte-for-byte against the checkout.
+6. Upload with `huggingface-hub` (`HF_TOKEN`): the parquet **plus** the
+   compliance set — upstream `LICENSE` (Apache-2.0), `PROVENANCE.md`
+   verbatim, and a README carrying attribution, the source commit, and the
+   transformation statement ("repackaged unmodified into columns; fixes
+   listed below"), per the licensing analysis (Apache-2.0 for Datacurve's
+   contributions; all 91 upstream licenses permissive; attribution must
+   travel with the data).
+
+**Loader**: reads the parquet exactly as `swebench_pro` does; `DeepSweInstance
+.from_raw(row)` uses the normalized `base_commit` and never re-parses the
+upstream repo. The hidden tests are already public upstream, so a public
+parquet leaks nothing new — recorded, with the contamination-stewardship note,
+in the licensing discussion.
 
 ## 3. The extraction-style decision: **default mode, not baseline**
 
@@ -211,8 +256,8 @@ metric, so a contaminated-patch record is identifiable from the manifest.
 
 ## 5. Implementation order (when picked up)
 
-1. `datasets/deepswe/` fetch + loader + record (pin the repo sha), unit tests
-   over one vendored task fixture.
+1. `build_parquet` + the HF repo (name pending) + `datasets/deepswe/`
+   loader + record, unit tests over a synthetic task fixture.
 2. `unit_test_spec` compile + `DeepSweVerdict` (+ the `-1`-sentinel → no
    verdict path), golden self-check on 3–5 tasks across languages.
 3. A `deepswe` workflow definition (agent 5400 s, eval `network=False`), full
