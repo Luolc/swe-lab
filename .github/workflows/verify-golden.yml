@@ -13,6 +13,11 @@ name: verify-golden
 on:
   workflow_dispatch:
     inputs:
+      dataset:
+        description: Dataset to verify
+        type: choice
+        options: [swebench_pro, deepswe]
+        default: swebench_pro
       shards:
         description: Number of stride shards (matrix size, max 256)
         required: true
@@ -31,7 +36,7 @@ on:
         default: false
 
 concurrency:
-  group: verify-golden
+  group: verify-golden-${{ inputs.dataset }}
   cancel-in-progress: false
 
 jobs:
@@ -51,19 +56,29 @@ jobs:
       # anonymous request burst got throttled and (without retry) took down whole
       # shard jobs on the download step. Downloading once and distributing via a
       # GitHub-internal artifact means exactly one HF request per run.
+      # Per-dataset source. deepswe's loader verifies the file against the
+      # sha256 pinned in-repo on every load, so a drifted download fails the
+      # shard loudly rather than verifying the wrong corpus.
       - name: Download dataset parquet once (public HF)
         run: |
           mkdir -p parquet
+          case "${{ inputs.dataset }}" in
+            swebench_pro)
+              url="https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro/resolve/main/data/test-00000-of-00001.parquet?download=true"
+              out="test-00000-of-00001.parquet" ;;
+            deepswe)
+              url="https://huggingface.co/datasets/luolc/deep-swe-1-1-materialized/resolve/main/deep-swe-1-1.parquet?download=true"
+              out="deep-swe-1-1.parquet" ;;
+            *) echo "unknown dataset"; exit 1 ;;
+          esac
           curl -fL --retry 8 --retry-all-errors --retry-delay 15 \
-            --connect-timeout 30 \
-            -o parquet/test-00000-of-00001.parquet \
-            "https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro/resolve/main/data/test-00000-of-00001.parquet?download=true"
+            --connect-timeout 30 -o "parquet/$out" "$url"
 
       - name: Upload dataset parquet
         uses: actions/upload-artifact@v7
         with:
           name: dataset-parquet
-          path: parquet/test-00000-of-00001.parquet
+          path: parquet/*.parquet
           if-no-files-found: error
 
   verify:
@@ -93,15 +108,19 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: dataset-parquet
-          path: datasets/swebench_pro/data
+          path: datasets/${{ inputs.dataset }}/data
 
+      # deepswe adds --no-network: its verifier is offline by design upstream
+      # (images bake every dependency), where SWE-Bench Pro suites fetch.
       - name: Verify shard ${{ matrix.shard }}/${{ inputs.shards }}
         run: |
-          uv run python -m swe_lab.datasets.swebench_pro.verify \
+          uv run python -m swe_lab.datasets.verify \
+            --dataset ${{ inputs.dataset }} \
             --shard ${{ matrix.shard }}/${{ inputs.shards }} \
             --jobs ${{ inputs.jobs }} \
             --limit ${{ inputs.limit }} \
             --prune-images \
+            ${{ inputs.dataset == 'deepswe' && '--no-network' || '' }} \
             ${{ inputs.refresh && '--refresh' || '' }}
 
       - name: Upload shard results
@@ -131,7 +150,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: dataset-parquet
-          path: datasets/swebench_pro/data
+          path: datasets/${{ inputs.dataset }}/data
 
       - name: Merge shard artifacts into the store
         uses: actions/download-artifact@v8
@@ -141,7 +160,9 @@ jobs:
           merge-multiple: true
 
       - name: Aggregate into summary.json + report.md
-        run: uv run python -m swe_lab.datasets.swebench_pro.verify --aggregate
+        run: |
+          uv run python -m swe_lab.datasets.verify \
+            --dataset ${{ inputs.dataset }} --aggregate
 
       - name: Upload summary
         uses: actions/upload-artifact@v7

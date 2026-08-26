@@ -8,12 +8,16 @@ consumes now.
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from swe_lab.datasets.deepswe.unit_test import DeepSweVerdict
+from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.record import SweBenchProInstance
 from swe_lab.datasets.swebench_pro.unit_test import (
     OutputState,
     SweBenchProVerdict,
 )
-from swe_lab.datasets.swebench_pro.verify import (
+from swe_lab.datasets.verify import (
     _base_json,
     BASE_UNEXPECTED_PASS,
     classify,
@@ -138,3 +142,75 @@ def test_base_json_diagnostics() -> None:
   assert data["resolved"] is False
   assert data["output_state"] == OutputState.OK.value
   assert data["status"] == RunStatus.SUCCESS.value
+
+
+# ─── the same classification over DeepSWE's count-shaped verdicts ────────────
+
+
+def _dsw_run(
+    *,
+    reward: int,
+    f2p_passed: int = 0,
+    status: RunStatus = RunStatus.SUCCESS,
+) -> tuple[RunResult, DeepSweVerdict | None]:
+  verdict = DeepSweVerdict(
+      reward=reward,
+      f2p_total=5,
+      f2p_passed=f2p_passed,
+      p2p_total=2,
+      p2p_passed=2,
+      partial=0.0,
+  )
+  return _result(status), verdict
+
+
+def _dsw_instance(tmp_path: Path) -> TaskInstance[DeepSweVerdict]:
+  from swe_lab.datasets.deepswe.build_parquet import (
+      build_row,
+      parse_provenance,
+  )
+  from swe_lab.datasets.deepswe.record import DeepSweInstance
+
+  from .test_deepswe_build import _PROVENANCE, _write_task
+
+  d = _write_task(tmp_path, "demo-task")
+  return DeepSweInstance.from_raw(build_row(d, parse_provenance(_PROVENANCE)))
+
+
+def test_deepswe_ok(tmp_path: Path) -> None:
+  inst = _dsw_instance(tmp_path)
+  base = _dsw_run(reward=0)
+  golden = _dsw_run(reward=1, f2p_passed=5)
+  assert classify(inst, base, golden) == OK
+
+
+def test_deepswe_golden_fail(tmp_path: Path) -> None:
+  inst = _dsw_instance(tmp_path)
+  assert classify(inst, _dsw_run(reward=0), _dsw_run(reward=0)) == GOLDEN_FAIL
+
+
+def test_deepswe_base_sneak_via_counts(tmp_path: Path) -> None:
+  # DeepSWE verdicts carry no test NAMES, only counts — the same "a bug test
+  # already passes at base" signal must come from f2p_passed > 0.
+  inst = _dsw_instance(tmp_path)
+  base = _dsw_run(reward=0, f2p_passed=1)
+  golden = _dsw_run(reward=1, f2p_passed=5)
+  assert classify(inst, base, golden) == BASE_UNEXPECTED_PASS
+
+
+def test_deepswe_missing_verdict_is_error_not_a_finding(tmp_path: Path) -> None:
+  # DeepSWE's grader RAISES on a missing reward.json, so verification sees a
+  # None verdict — inconclusive infra, never a dataset finding.
+  inst = _dsw_instance(tmp_path)
+  golden = _dsw_run(reward=1, f2p_passed=5)
+  assert classify(inst, (_result(), None), golden) == ERROR
+
+
+def test_deepswe_run_json_uses_the_verdicts_own_summary(tmp_path: Path) -> None:
+  del tmp_path
+  from swe_lab.datasets.verify import _run_json
+
+  data = _run_json(_dsw_run(reward=1, f2p_passed=5))
+  assert data["resolved"] is True
+  assert data["f2p"] == "5/5"  # the verdict's summary(), not sbp's fields
+  assert "output_state" not in data
