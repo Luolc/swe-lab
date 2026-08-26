@@ -38,6 +38,7 @@ from swe_lab.harnesses.codex.constants import (
     CODE_MODE_HOST_AT,
     EVENT_STREAM_NAME,
 )
+from swe_lab.harnesses.common import home_fallback_lines
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import Inline, SandboxError, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
@@ -527,7 +528,12 @@ def test_the_agent_home_matches_claude_codes_and_codex_home_nests_under_it():
   assert codex_config_dir("/somewhere") == "/somewhere/.codex"
 
   script = _script(CodexHarness())
-  assert "export HOME=/agent-home" in script
+  # HOME is TIERED, not overridden (#240): the image's value wins, warm
+  # toolchain caches with it; config isolation rides the pinned dir below,
+  # not HOME.
+  for line in home_fallback_lines():
+    assert line in script
+  assert "export HOME=/agent-home" not in script
   assert "export CODEX_HOME=/agent-home/.codex" in script
   # The auth observer must agree with the script about where that dir is.
   harness = CodexHarness()

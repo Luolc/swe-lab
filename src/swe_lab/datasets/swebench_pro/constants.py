@@ -57,19 +57,13 @@ WORKSPACES_SUBDIR = "eval_workspaces"  # per-instance grading workspace
 
 # --- In-container execution --------------------------------------------------
 
-# Last-resort HOME for the eval script — used only when the image sets none
-# *and* the passwd database has no entry for the running UID. Plenty of
-# toolchains refuse to run without one (Go's build cache lives in
-# `$HOME/.cache/go-build`), so on such an image every Go test fails.
-# Deliberately the *last* tier, not the harness's unconditional override: an
-# instance image often pre-warms its dependency caches under the real HOME (Go
-# modules, npm, pip), and replacing it would force a re-download — under
-# `--no-network` a failure, not a slowdown.
-#
-# Under /tmp on purpose: this tier is reached when the UID has no passwd entry,
-# which in practice means a non-root user (`docker run -u`, OpenShift's random
-# UIDs) — and such a user cannot create a directory at the filesystem root, so
-# a `/eval-home` would fail the very case it exists for. /tmp is world-writable.
+# DECIDED (#242): the pair of last-resort homes stays under /tmp — this one
+# and the harnesses' HOME_LAST_RESORT (/tmp/agent-home) — rather than moving
+# to a /eval-home for name symmetry with the config root. This tier fires only
+# for a UID with no passwd entry, in practice a non-root user, and such a user
+# cannot mkdir at the filesystem root (measured: DeepSWE images ship / at 755,
+# not world-writable). /tmp is world-writable; symmetry is achieved in the
+# /tmp direction instead.
 EVAL_HOME = "/tmp/eval-home"
 # Interpreters invoked in the container (both on PATH in the instance images).
 BASH = "bash"

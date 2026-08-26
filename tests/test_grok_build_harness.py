@@ -14,6 +14,7 @@ from etils import epath
 import pytest
 
 from swe_lab.harnesses import AgentOutcome, registered_harnesses
+from swe_lab.harnesses.common import home_fallback_lines
 from swe_lab.harnesses.grok_build import (
     event_stream_outcome,
     event_stream_to_conversation,
@@ -187,7 +188,14 @@ def test_the_home_layout_matches_the_other_harnesses():
   # observer cannot disagree about where grok will look.
   assert grok_config_dir() == "/agent-home/.grok"
   script = _script(GrokBuildHarness())
-  assert "export HOME=/agent-home" in script
+  # HOME is TIERED, not overridden (#240): the image's value wins, warm
+  # toolchain caches with it; config isolation rides the pinned dir below,
+  # not HOME.
+  for line in home_fallback_lines():
+    assert line in script
+  assert "export HOME=/agent-home" not in script
+  # GROK_HOME pins the config dir grok would otherwise derive from HOME.
+  assert "export GROK_HOME=/agent-home/.grok" in script
   assert "mkdir -p /agent-home/.grok" in script
 
 

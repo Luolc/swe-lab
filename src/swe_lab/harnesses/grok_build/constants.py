@@ -15,7 +15,10 @@ from typing import Literal
 # `codex-code-mode-host` exists, verified by a live tool-using run (§9.3).
 BINARY_AT = "/opt/grok-build/grok"
 
-# A writable HOME for the agent inside the container — the same path the other
+# The agent's CONFIG root inside the container — no longer exported as
+# HOME (#240): HOME defers to the image, and the config dir is pinned via
+# GROK_HOME instead (measured: it replaces the $HOME-derived path outright).
+# Originally: a writable HOME for the agent — the same path the other
 # harnesses use, for the same reason: instance images run as root with no
 # guaranteed-writable home. Ephemeral, not a workspace file.
 AGENT_HOME = "/agent-home"
