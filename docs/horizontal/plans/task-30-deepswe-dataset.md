@@ -155,8 +155,10 @@ task ids (`abs-module-cache-flags`).
 ### 2b. Parquet distribution — decided 2026-08-25
 
 Instead of every consumer cloning the upstream repo, we **materialize the
-dataset once into a parquet** and host it on a public Hugging Face dataset
-repo (name pending), so the loader follows the exact `swebench_pro` path:
+dataset once into a parquet** and host it on the public Hugging Face dataset
+repo **`luolc/deep-swe-1-1-materialized`** (finalized 2026-08-25; the slug
+matches upstream's own `datacurve/deep-swe-1-1`, and `materialized` names the
+transformation), so the loader follows the exact `swebench_pro` path:
 `datasets/deepswe/data/*.parquet` + `load_parquet` + a `COLUMNS` contract.
 
 **Builder**: `python -m swe_lab.datasets.deepswe.build_parquet` — lives next
@@ -189,6 +191,23 @@ to the loader that consumes its schema, so the two cannot drift. Steps:
    listed below"), per the licensing analysis (Apache-2.0 for Datacurve's
    contributions; all 91 upstream licenses permissive; attribution must
    travel with the data).
+
+**Integrity — the pin is the anchor, the manifest is the record** (decided
+2026-08-25). An HF repo is mutable, like a docker tag, so silent regeneration
+is the drift to defend against — the same lesson the binary pins encode:
+
+- **In swe-lab**: `PINNED_DEEPSWE_PARQUET_SHA256` beside the commit pin; the
+  loader verifies the local parquet against it and refuses a mismatch with an
+  actionable message. The trust anchor lives in the consumer — a checksum
+  fetched from the same repo it checks proves only internal consistency.
+- **On HF**: `manifest.json` beside the parquet (readable without pulling it,
+  the claude-code-bundle precedent): source commit, parquet sha256, row
+  count, the fixes applied, and a **per-task content hash** (sha256 over the
+  row's canonical JSON). Parquet bytes are not deterministic across
+  arrow/polars versions, so the file sha pins the *published artifact*; the
+  per-task hashes are encoding-independent and answer "*which task* changed"
+  on a bump — and they retire the open question about Harbor's opaque
+  digests, since we now have our own with defined semantics.
 
 **Loader**: reads the parquet exactly as `swebench_pro` does; `DeepSweInstance
 .from_raw(row)` uses the normalized `base_commit` and never re-parses the
@@ -267,8 +286,8 @@ metric, so a contaminated-patch record is identifiable from the manifest.
 
 ## 6. Open questions
 
-- Whether to verify `dataset.toml`'s per-task digests (what exactly Harbor
-  hashes needs a look at Pier) or rely on the pinned clone sha alone.
+- ~~Whether to verify `dataset.toml`'s per-task digests~~ — superseded by our
+  own per-task content hashes in the manifest (§2b).
 - Whether image pulls should be cached-and-pinned by digest rather than tag
   (`<ext_id>-v1.1` tags are mutable in principle; 113 × ~0.8 GB ≈ 95 GB if
   ever pulled wholesale).
