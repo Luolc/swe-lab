@@ -225,3 +225,69 @@ def test_extraction_roundtrips_through_git_apply(tmp_path: Path) -> None:
 
 if __name__ == "__main__":
   raise SystemExit(pytest.main([__file__, "-v"]))
+
+
+# ─── safe.directory travels with every engine git command (#244) ─────────────
+
+
+def test_every_engine_git_command_carries_the_scoped_ownership_grant():
+  """The grant must ride the invocation itself, or nothing can grant it.
+
+  Isolation disables `git config --global` — the documented safe.directory
+  channel — so without this, extraction, the purge and the baseline all fail
+  on an image whose repo is owned by a different UID, none of them naming
+  ownership as the cause.
+  """
+  from swe_lab.git.history import build_purge_script
+  from swe_lab.git.patch import (
+      build_baseline_script,
+      build_baseline_verify_script,
+      build_extraction_script,
+      isolated_git_env,
+  )
+
+  env = isolated_git_env("/app")
+  assert "GIT_CONFIG_KEY_0=safe.directory" in env
+  assert "GIT_CONFIG_VALUE_0=/app" in env
+  # Scoped to the instance's checkout, never the wildcard — `*` would also
+  # disarm the check for any repo the agent happened to clone.
+  assert not any("*" in a for a in env)
+  # The isolation that made the grant necessary is still on.
+  assert "GIT_CONFIG_GLOBAL=/dev/null" in env
+
+  scripts = {
+      "extract": build_extraction_script(
+          workdir="/app", base_ref="base", output_path="out.diff"
+      ),
+      "baseline": build_baseline_script(workdir="/app", output_path="sha.txt"),
+      "verify": build_baseline_verify_script(
+          workdir="/app", base_ref_path="sha.txt"
+      ),
+      "purge": build_purge_script(workdir="/app"),
+  }
+  # The purge exports the env once in its preamble; every later git inherits
+  # it from the shell. The other three prefix each invocation instead, so for
+  # them the assertion is PER LINE — the first version of this test checked
+  # mere presence and let a bare `git rev-parse` through, which then failed
+  # live on an ownership-affected repo while the lines around it succeeded.
+  assert "export GIT_CONFIG_KEY_0=safe.directory" in scripts.pop("purge")
+  for name, script in scripts.items():
+    git_lines = [
+        line
+        for line in script.splitlines()
+        if " git " in f" {line} " and "echo" not in line
+    ]
+    assert git_lines, name
+    for line in git_lines:
+      assert "GIT_CONFIG_VALUE_0=/app" in line, (name, line)
+
+
+def test_the_baseline_commands_are_isolated_like_every_other():
+  # They previously ran bare: an image ~/.gitconfig could skew the baseline
+  # (autocrlf on add) while extraction was isolated — the two would then
+  # disagree about the same tree.
+  from swe_lab.git.patch import baseline_commit_lines
+
+  for line in baseline_commit_lines("/app"):
+    assert "GIT_CONFIG_GLOBAL=/dev/null" in line
+    assert "GIT_CONFIG_VALUE_0=/app" in line

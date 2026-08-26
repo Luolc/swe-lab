@@ -86,7 +86,43 @@ _ISOLATED_ENV = (
     "GIT_CONFIG_NOSYSTEM=1",  # belt-and-suspenders: no system config at all
     "GIT_PAGER=cat",  # never open a pager (would hang a headless run)
     "GIT_EXTERNAL_DIFF=",  # no external diff program — use git's own
+    "GIT_TERMINAL_PROMPT=0",  # never block asking for credentials
 )
+
+
+def isolated_git_env(workdir: str) -> tuple[str, ...]:
+  """Return the env assignments every engine git command runs under.
+
+  The isolation set (:data:`_ISOLATED_ENV`) plus a ``safe.directory`` grant
+  **scoped to the instance's own checkout**, delivered as git's env-config
+  triple because that channel — like ``-c`` — survives the isolation, where
+  the documented ``git config --global`` workaround is exactly what
+  ``GIT_CONFIG_GLOBAL=/dev/null`` disables (#244). Some task images ship the
+  repo owned by a different UID than the process running git; without the
+  grant, extraction, the history purge and the pre-agent baseline all fail
+  with "dubious ownership", none of them naming ownership as the cause.
+
+  Scoped, never ``*``: the wildcard would also disarm the check for any other
+  repository the agent happened to clone; the guarantee wanted here covers
+  only the instance's checkout. Per-invocation env, so nothing persists into
+  the container for the agent to observe. Measured: the env-config form
+  passes both reads and writes under the full isolation set, and it does not
+  enter the commit object, so baseline shas are unaffected.
+
+  Args:
+    workdir: In-container path of the instance's repo.
+
+  Returns:
+    The assignments, ready to prefix a command or be exported.
+  """
+  return (
+      *_ISOLATED_ENV,
+      "GIT_CONFIG_COUNT=1",
+      "GIT_CONFIG_KEY_0=safe.directory",
+      f"GIT_CONFIG_VALUE_0={shlex.quote(workdir)}",
+  )
+
+
 _ADD_CONFIG = (
     "-c",
     "core.quotepath=false",  # non-ASCII paths literal (UTF-8), not octal \NNN
@@ -151,13 +187,19 @@ def baseline_commit_lines(workdir: str) -> list[str]:
     The command lines, in order.
   """
   wd = shlex.quote(workdir)
+  env = " ".join(isolated_git_env(workdir))
   dates = (
       f"GIT_AUTHOR_DATE={_BASELINE_DATE} GIT_COMMITTER_DATE={_BASELINE_DATE}"
   )
+  # Isolated like every other engine git command — this set previously ran
+  # bare, so an image ~/.gitconfig could skew the baseline while extraction
+  # was isolated; and the safe.directory grant is what lets it run at all on
+  # an image whose repo is owned by another UID (#244). Neither enters the
+  # commit object, so the sha stays a pure function of the tree.
   return [
-      f"git -C {wd} {_BASELINE_IDENTITY} add -A -- :/",
-      f"{dates} git -C {wd} {_BASELINE_IDENTITY} commit --allow-empty -q"
-      f" -m {shlex.quote(_BASELINE_MESSAGE)}",
+      f"{env} git -C {wd} {_BASELINE_IDENTITY} add -A -- :/",
+      f"{dates} {env} git -C {wd} {_BASELINE_IDENTITY} commit --allow-empty"
+      f" -q -m {shlex.quote(_BASELINE_MESSAGE)}",
   ]
 
 
@@ -173,12 +215,13 @@ def build_baseline_script(*, workdir: str, output_path: str) -> str:
   """
   out = shlex.quote(output_path)
   wd = shlex.quote(workdir)
+  env = " ".join(isolated_git_env(workdir))
   return (
       "\n".join(
           [
               "set -eu",
               *baseline_commit_lines(workdir),
-              f"git -C {wd} rev-parse HEAD > {out}",
+              f"{env} git -C {wd} rev-parse HEAD > {out}",
           ]
       )
       + "\n"
@@ -208,12 +251,13 @@ def build_baseline_verify_script(*, workdir: str, base_ref_path: str) -> str:
   """
   wd = shlex.quote(workdir)
   ref = shlex.quote(base_ref_path)
+  env = " ".join(isolated_git_env(workdir))
   return (
       "\n".join(
           [
               "set -eu",
               *baseline_commit_lines(workdir),
-              f'baseline="$(git -C {wd} rev-parse HEAD)"',
+              f'baseline="$({env} git -C {wd} rev-parse HEAD)"',
               f'expected="$(cat {ref})"',
               'if [ "$baseline" != "$expected" ]; then'
               ' echo "grading tree differs from the patch base:'
@@ -221,8 +265,8 @@ def build_baseline_verify_script(*, workdir: str, base_ref_path: str) -> str:
               " exit 1; fi",
               # -c autocrlf: the reset is a checkout, and the line-ending
               # discipline (symmetric with extraction) must hold for it too.
-              f"git -C {wd} -c core.autocrlf=false reset --hard HEAD",
-              f"git -C {wd} clean -fd",
+              f"{env} git -C {wd} -c core.autocrlf=false reset --hard HEAD",
+              f"{env} git -C {wd} clean -fd",
           ]
       )
       + "\n"
@@ -268,7 +312,7 @@ def build_extraction_script(
   wd = shlex.quote(workdir)
   out = shlex.quote(output_path)
   ref = shlex.quote(base_ref)
-  env = " ".join(_ISOLATED_ENV)
+  env = " ".join(isolated_git_env(workdir))
   add_cfg = " ".join(_ADD_CONFIG)
   diff_cfg = " ".join(_DIFF_CONFIG)
   diff_flags = " ".join(_DIFF_FLAGS)
