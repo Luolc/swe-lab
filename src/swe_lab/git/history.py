@@ -34,16 +34,7 @@ from dataclasses import asdict, dataclass, fields
 import json
 import shlex
 
-# Ambient-config isolation, same rationale as the extraction side: a run must
-# not inherit a ~/.gitconfig, a pager (which would hang a headless run), or an
-# external diff helper.
-_ISOLATED_ENV = (
-    "GIT_CONFIG_GLOBAL=/dev/null",  # ignore the user's ~/.gitconfig
-    "GIT_CONFIG_SYSTEM=/dev/null",  # ignore /etc/gitconfig (system-wide)
-    "GIT_CONFIG_NOSYSTEM=1",  # belt-and-suspenders: no system config at all
-    "GIT_PAGER=cat",  # never open a pager (would hang a headless run)
-    "GIT_TERMINAL_PROMPT=0",  # never block asking for credentials
-)
+from .patch import isolated_git_env
 
 
 def _preamble(workdir: str) -> list[str]:
@@ -71,7 +62,12 @@ def _preamble(workdir: str) -> list[str]:
   quoted = shlex.quote(workdir)
   return [
       "set -eu",
-      *(f"export {assignment}" for assignment in _ISOLATED_ENV),
+      # The shared engine-git env: isolation + the workdir-scoped
+      # safe.directory grant (#244) — exported once, covering every git in
+      # this script, including the repo-root check just below (which would
+      # otherwise report "not a git repository root" on an ownership-affected
+      # image, hiding the real cause).
+      *(f"export {assignment}" for assignment in isolated_git_env(workdir)),
       f'cd {quoted} || {{ echo "FATAL: no such directory: {workdir}" >&2;'
       " exit 78; }",
       # Refuse to touch anything unless *this* directory is itself a repo: with
