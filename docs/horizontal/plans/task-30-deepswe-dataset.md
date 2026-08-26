@@ -275,10 +275,15 @@ metric, so a contaminated-patch record is identifiable from the manifest.
 
 ## 5. Implementation order (when picked up)
 
-1. `build_parquet` + the HF repo (name pending) + `datasets/deepswe/`
-   loader + record, unit tests over a synthetic task fixture.
-2. `unit_test_spec` compile + `DeepSweVerdict` (+ the `-1`-sentinel → no
-   verdict path), golden self-check on 3–5 tasks across languages.
+1. ~~`build_parquet` + the HF repo + `datasets/deepswe/` loader + record~~ —
+   **done** (parquet published + pinned; loader registered as `deepswe`,
+   verifying the pin on every load; producer→consumer round-trip tested).
+2. ~~`unit_test_spec` compile + `DeepSweVerdict` + golden self-check~~ —
+   **done**: their verifier verbatim (tests mounted, no resets of ours), the
+   `-1` sentinel raises ungraded, `apply_failed` grades zero; golden
+   self-checks green across all five languages via the real CLI
+   (`gold_unit_test --dataset deepswe`, eval `network=false`), including
+   `koota-entity-snapshot-rollback`, which proves the short-sha fix live.
 3. A `deepswe` workflow definition (agent 5400 s, eval `network=False`), full
    `rollout_and_unit_test` e2e on one task per language.
 4. Gold sweep over all 113 (the W2 playbook), then the integrity rule from

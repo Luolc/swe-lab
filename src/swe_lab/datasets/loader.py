@@ -22,6 +22,8 @@ from etils import epath
 import polars as pl
 
 from ..paths import datasets_root
+from .deepswe.fetch import ensure_deepswe_parquet
+from .deepswe.record import DeepSweInstance
 from .swebench_pro import SweBenchProInstance
 
 
@@ -45,7 +47,16 @@ class DatasetRecord(Protocol):
 # Registry of known datasets: name -> record type. Add a dataset by writing its
 # record type (see ``swebench_pro``) and registering it here.
 _DATASET_RECORDS: dict[str, type[DatasetRecord]] = {
+    "deepswe": DeepSweInstance,
     "swebench_pro": SweBenchProInstance,
+}
+
+# Datasets that can materialize (and must verify) their own parquet before the
+# generic lookup runs. Called on every load, not only on a missing file — for
+# a pinned dataset the verification IS the point (the pin is the trust
+# anchor; see ``deepswe.fetch``).
+_DATASET_PREPARERS: dict[str, Callable[[epath.Path], object]] = {
+    "deepswe": ensure_deepswe_parquet,
 }
 
 
@@ -162,6 +173,9 @@ def load_dataset(
     name: str = "swebench_pro", *, root: epath.PathLike | None = None
 ) -> Dataset:
   """Load a registered dataset by name from the ``datasets/<name>`` layout."""
+  preparer = _DATASET_PREPARERS.get(name)
+  if preparer is not None:
+    _ = preparer(epath.Path(root or datasets_root()) / name / "data")
   record_type = _DATASET_RECORDS.get(name)
   if record_type is None:
     known = ", ".join(sorted(_DATASET_RECORDS)) or "(none)"
