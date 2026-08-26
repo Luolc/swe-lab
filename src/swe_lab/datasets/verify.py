@@ -1,10 +1,10 @@
-"""Full-dataset golden verification — a SWE-Bench-Pro dataset QA tool.
+"""Full-dataset golden verification — dataset QA over base + golden runs.
 
 Lives inside ``datasets/swebench_pro/`` (not the generic ``cli/``): its
 classification is SWE-Bench-Pro semantics (``fail_to_pass`` must fail at base,
 the golden patch must resolve), so it is dataset-specific by design. When more
 SWE-like datasets are ported, the shared parts can be lifted to a dataset-
-agnostic seam. Run it as ``python -m swe_lab.datasets.swebench_pro.verify``.
+agnostic seam. Run it as ``python -m swe_lab.datasets.verify``.
 
 For each instance we do two graded runs in its image and check the pair:
 
@@ -37,7 +37,7 @@ from datetime import datetime, UTC
 import json
 import os
 import subprocess
-from typing import Annotated
+from typing import Annotated, Any
 
 from etils import epath
 import typer
@@ -48,6 +48,7 @@ from swe_lab.evaluation.unit_test import (
     UnitTestTask,
     verdict_of,
 )
+from swe_lab.evaluation.verdict import Verdict
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.sandbox import (
     AttemptRecord,
@@ -59,8 +60,10 @@ from swe_lab.sandbox import (
     Store,
 )
 
-from .record import SweBenchProInstance
-from .unit_test import OutputState, SweBenchProVerdict
+from .deepswe.unit_test import DeepSweVerdict
+from .instance import TaskInstance
+from .swebench_pro.record import SweBenchProInstance
+from .swebench_pro.unit_test import OutputState, SweBenchProVerdict
 
 # Verdicts.
 OK = "OK"
@@ -82,7 +85,7 @@ _WS_SUBDIR = "golden_verify"  # scratch workspaces under cache_root
 
 # One graded run: the engine outcome paired with the verdict it produced
 # (``None`` when grading never ran because the run failed to come up).
-_Run = tuple[RunResult, SweBenchProVerdict | None]
+_Run = tuple[RunResult, Verdict | None]
 
 
 def _store_root(root: epath.PathLike) -> epath.Path:
@@ -99,19 +102,61 @@ def _store(root: epath.PathLike) -> Store:
   return build_store("filesystem", root=_store_root(root))
 
 
-def classify(instance: SweBenchProInstance, base: _Run, golden: _Run) -> str:
+def _base_sneak(instance: TaskInstance[Any], verdict: Verdict) -> bool:
+  """Return whether any bug test already passes at base — a corpus defect.
+
+  The one classification signal whose *evidence* is dataset-shaped: SWE-Bench
+  Pro verdicts name their passed tests, DeepSWE's carry only counts. Both
+  express the same fact.
+
+  Args:
+    instance: The instance under verification.
+    verdict: The base run's verdict.
+
+  Returns:
+    True if a fail-to-pass test passed at base.
+  """
+  if isinstance(verdict, SweBenchProVerdict):
+    assert isinstance(instance, SweBenchProInstance)
+    return bool(frozenset(instance.fail_to_pass) & verdict.passed)
+  if isinstance(verdict, DeepSweVerdict):
+    return verdict.f2p_passed > 0
+  return False
+
+
+def _graded_ok(verdict: Verdict) -> bool:
+  """Return whether the verdict rests on parsed output, not absence.
+
+  SWE-Bench Pro's grader turns an absent/unparseable ``output.json`` into a
+  verdict with a non-``OK`` ``output_state`` — gradeable for the eval flow,
+  inconclusive for verification. DeepSWE's grader raises instead (its verdict
+  never exists without a readable ``reward.json``), so any present verdict
+  qualifies.
+
+  Args:
+    verdict: The run's verdict.
+
+  Returns:
+    True when the verdict is conclusive evidence for classification.
+  """
+  if isinstance(verdict, SweBenchProVerdict):
+    return verdict.output_state is OutputState.OK
+  return True
+
+
+def classify(instance: TaskInstance[Any], base: _Run, golden: _Run) -> str:
   """Return the verdict for one instance from its base + golden runs.
 
   ``ERROR`` (either run failed to come up, or produced no gradeable output) is
   kept distinct from real dataset findings so infra flakes don't masquerade as
   them. A non-``SUCCESS`` ``RunStatus`` replaces the old timeout/infra check,
-  and an ``output_state`` other than ``OK`` replaces the old ``output_found``.
+  and :func:`_graded_ok` replaces the old ``output_found``.
   """
   for run_result, verdict in (base, golden):
     if (
         run_result.status is not RunStatus.SUCCESS
         or verdict is None
-        or verdict.output_state is not OutputState.OK
+        or not _graded_ok(verdict)
     ):
       return ERROR
   _, base_verdict = base
@@ -120,43 +165,54 @@ def classify(instance: SweBenchProInstance, base: _Run, golden: _Run) -> str:
   assert base_verdict is not None and golden_verdict is not None
   if not golden_verdict.resolved:
     return GOLDEN_FAIL
-  if base_verdict.resolved or (
-      frozenset(instance.fail_to_pass) & base_verdict.passed
-  ):
+  if base_verdict.resolved or _base_sneak(instance, base_verdict):
     return BASE_UNEXPECTED_PASS
   return OK
 
 
 def _run_json(run: _Run) -> dict[str, object]:
   run_result, verdict = run
-  return {
+  data: dict[str, object] = {
       "status": run_result.status.value,
       "resolved": bool(verdict and verdict.resolved),
-      "output_state": verdict.output_state.value if verdict else None,
-      "n_passed": len(verdict.passed) if verdict else 0,
-      "missing": sorted(verdict.missing) if verdict else [],
   }
+  if isinstance(verdict, SweBenchProVerdict):
+    # Kept byte-compatible with the fields every earlier sweep report used.
+    data["output_state"] = verdict.output_state.value
+    data["n_passed"] = len(verdict.passed)
+    data["missing"] = sorted(verdict.missing)
+  elif verdict is not None:
+    # Any other dataset: the verdict's own report surface.
+    data |= verdict.summary()
+  else:
+    data["output_state"] = None
+    data["n_passed"] = 0
+    data["missing"] = []
+  return data
 
 
-def _base_json(instance: SweBenchProInstance, base: _Run) -> dict[str, object]:
+def _base_json(instance: TaskInstance[Any], base: _Run) -> dict[str, object]:
   _, verdict = base
-  passed = verdict.passed if verdict else frozenset()
   data = _run_json(base)
-  # Diagnostics: the bug tests should NOT pass at base; the pre-existing tests
-  # should. A non-empty ``pass_to_pass_missing`` means the harness is shaky.
-  data["fail_to_pass_passed"] = sorted(
-      frozenset(instance.fail_to_pass) & passed
-  )
-  data["pass_to_pass_missing"] = sorted(
-      frozenset(instance.pass_to_pass) - passed
-  )
+  if isinstance(verdict, SweBenchProVerdict):
+    assert isinstance(instance, SweBenchProInstance)
+    passed = verdict.passed
+    # Diagnostics: the bug tests should NOT pass at base; the pre-existing
+    # tests should. A non-empty ``pass_to_pass_missing`` means the harness is
+    # shaky.
+    data["fail_to_pass_passed"] = sorted(
+        frozenset(instance.fail_to_pass) & passed
+    )
+    data["pass_to_pass_missing"] = sorted(
+        frozenset(instance.pass_to_pass) - passed
+    )
   return data
 
 
 def _graded_run(
-    instance: SweBenchProInstance,
+    instance: TaskInstance[Any],
     *,
-    task: UnitTestTask[SweBenchProVerdict],
+    task: UnitTestTask[Any],
     workspace: epath.PathLike,
     timeout: float,
     no_network: bool,
@@ -184,7 +240,7 @@ def _graded_run(
   Returns:
     The engine ``RunResult`` and the verdict (``None`` if grading never ran).
   """
-  verdict: SweBenchProVerdict | None = None
+  verdict: Verdict | None = None
   result = None
   for _ in range(retries + 1):
     # The sandbox refuses a non-empty workspace; start each attempt clean.
@@ -199,10 +255,8 @@ def _graded_run(
     result = task.execute(
         sandbox, instance, output_dir=workspace, timeout=timeout
     )
-    graded = verdict_of(result)
     # This instance's grader is the dataset's own, so its verdict is ours.
-    assert graded is None or isinstance(graded, SweBenchProVerdict)
-    verdict = graded
+    verdict = verdict_of(result)
     if verdict is not None and verdict.resolved:
       break
   assert result is not None  # range(retries + 1) always runs at least once
@@ -227,7 +281,7 @@ def _prune_image(image_ref: str) -> None:
 
 
 def verify_instance(
-    instance: SweBenchProInstance,
+    instance: TaskInstance[Any],
     *,
     store: Store,
     sweep: str,
@@ -385,7 +439,7 @@ def run(
   records = [
       rec
       for rec in load_dataset(dataset).records
-      if isinstance(rec, SweBenchProInstance)
+      if isinstance(rec, TaskInstance)
   ]
   shard_i, shard_n = shard
   todo = records[shard_i::shard_n]
@@ -403,7 +457,7 @@ def run(
       flush=True,
   )
 
-  def _task(rec: SweBenchProInstance) -> dict[str, object]:
+  def _task(rec: TaskInstance[Any]) -> dict[str, object]:
     return verify_instance(
         rec,
         store=store,
@@ -585,7 +639,7 @@ def verify_cmd(
 
 
 def main() -> None:
-  """Entry point for ``python -m swe_lab.datasets.swebench_pro.verify``."""
+  """Entry point for ``python -m swe_lab.datasets.verify``."""
   typer.run(verify_cmd)
 
 

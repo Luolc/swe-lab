@@ -420,7 +420,7 @@ is refactored *into* this model.
 python -m swe_lab run <workflow> <instance_id> [--persist]
 #   where it runs is per-entry: --<entry>.sandbox=<backend>
 python -m swe_lab run --list                                # registered workflows
-python -m swe_lab.datasets.swebench_pro.verify  --shard i/N [--aggregate]   # golden sweep
+python -m swe_lab.datasets.verify --dataset <name> --shard i/N [--aggregate]  # golden sweep
 ```
 
 A workflow is a **registered definition** (`rollout`, `unit_test`,
