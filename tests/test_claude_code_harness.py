@@ -31,7 +31,7 @@ from swe_lab.harnesses.claude_code.constants import (
     INFO_ARTIFACT,
     PROXY_LOG_NAME,
 )
-from swe_lab.harnesses.common import AgentInfoObserver
+from swe_lab.harnesses.common import AgentInfoObserver, home_fallback_lines
 from swe_lab.sandbox import (
     Contribution,
     ExecResult,
@@ -110,7 +110,13 @@ def test_mounts_stage_agent_script_and_env_only():
 
 def test_invocation_script_shape_and_quoting():
   script = _script("/weird dir")
-  assert "export HOME=/agent-home" in script
+  # HOME is TIERED, not overridden (#240): the image's value wins, warm
+  # toolchain caches with it; config isolation rides the pinned dir below,
+  # not HOME.
+  for line in home_fallback_lines():
+    assert line in script
+  assert "export HOME=/agent-home" not in script
+  assert "export CLAUDE_CONFIG_DIR=/agent-home/.claude" in script
   assert "export IS_SANDBOX=1" in script
   assert "cd '/weird dir'" in script  # shlex.quote'd workdir with a space
   assert f"{BINARY_AT} -p " in script  # no inline prompt in the argv

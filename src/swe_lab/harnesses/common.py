@@ -169,6 +169,47 @@ class AgentInfoObserver(SandboxObserver):
     return Contribution(artifacts={self.artifact: self.artifact})
 
 
+# The last-resort HOME when neither the image nor passwd supplies one. Under
+# /tmp deliberately, matching the eval side's EVAL_HOME reasoning: this tier
+# is reached only for a UID with no passwd entry — in practice a non-root
+# user, which cannot mkdir at the filesystem root. (#242 settled the pair
+# consistently: both last resorts live under /tmp.)
+HOME_LAST_RESORT = "/tmp/agent-home"
+
+
+def home_fallback_lines() -> list[str]:
+  """Return the script lines that resolve ``HOME`` without hijacking it.
+
+  The image's own value wins, then the passwd entry, then
+  :data:`HOME_LAST_RESORT` — the same three tiers, in the same order, as the
+  eval script's, and for the same reason (#240): task images pre-warm
+  toolchain caches under the user's home (measured on DeepSWE: 55 MB of
+  go-build + 73 MB of module cache on one image), and an unconditional
+  ``HOME=/agent-home`` hands the agent a cold cache that an offline run
+  cannot refill.
+
+  What this deliberately does NOT carry: the agent's **config directory**.
+  That stays pinned per-agent (``CLAUDE_CONFIG_DIR`` / ``CODEX_HOME`` /
+  ``GROK_HOME``) to a fresh per-run path, because deferring config discovery
+  to the image's HOME would let the image inject agent instructions — the
+  ADR-0010 door, reopened through ``~/.claude.json`` instead of AGENTS.md.
+  Splitting the two concerns is the whole shape: warm caches from the image,
+  clean config from us.
+
+  Returns:
+    The lines, in order.
+  """
+  return [
+      # Each tier tests a non-empty VALUE, not an exit code: `getent | cut`
+      # reports cut's status, which succeeds on empty input.
+      '[ -n "${HOME:-}" ] || HOME="$(getent passwd "$(id -u)" 2>/dev/null'
+      ' | cut -d: -f6)"',
+      f'[ -n "${{HOME:-}}" ] || HOME={HOME_LAST_RESORT}',
+      "export HOME",
+      'mkdir -p "$HOME"',
+  ]
+
+
 def status_tail(exit_code_file: str) -> list[str]:
   """Return the script lines that record the agent's status and propagate it.
 

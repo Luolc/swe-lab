@@ -23,7 +23,10 @@ BINARY_AT = "/opt/codex/codex"
 # edit a file, and it exits 0 anyway (measured on 0.147.0, 2026-08-08).
 CODE_MODE_HOST_AT = "/opt/codex/codex-code-mode-host"
 
-# A writable HOME for the agent inside the container — deliberately the same
+# The agent's CONFIG root inside the container — no longer exported as
+# HOME (#240): HOME defers to the image, and the config dir is pinned via
+# CODEX_HOME instead (measured: it replaces the $HOME-derived path outright).
+# Originally: a writable HOME for the agent — deliberately the same
 # path the ``claude_code`` harness uses, for the same reason: instance images
 # run as root with no guaranteed-writable home. Ephemeral, not a workspace file.
 AGENT_HOME = "/agent-home"

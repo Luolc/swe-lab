@@ -26,6 +26,7 @@ from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.common import (
     AgentInfoObserver,
     env_exports,
+    home_fallback_lines,
     read_text,
     status_tail,
 )
@@ -344,14 +345,19 @@ class ClaudeCodeHarness(Harness):
       The bash script text staged as the invocation mount.
 
     """
-    home = shlex.quote(AGENT_HOME)
+    config_dir = shlex.quote(f"{AGENT_HOME}/.claude")
     binary = shlex.quote(BINARY_AT)
     prompt = f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
     stderr = f'"$SANDBOX_WORKSPACE"/{AGENT_STDERR_NAME}'
     lines = [
         "set -u",
-        f"export HOME={home}",
-        f"mkdir -p {home}",
+        # The image's HOME wins (warm toolchain caches live under it, #240);
+        # the CONFIG stays ours — pinned below, so an image cannot inject
+        # agent instructions through ~/.claude.json / $HOME/.claude (the
+        # ADR-0010 door, which deferring config discovery would reopen).
+        *home_fallback_lines(),
+        f"export CLAUDE_CONFIG_DIR={config_dir}",
+        f"mkdir -p {config_dir}",
         # Some builds refuse --dangerously-skip-permissions as root unless a
         # sandbox is signalled; the throwaway container is our sandbox.
         "export IS_SANDBOX=1",

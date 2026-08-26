@@ -31,6 +31,7 @@ from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.common import (
     AgentInfoObserver,
     env_exports,
+    home_fallback_lines,
     read_text,
     status_tail,
 )
@@ -371,7 +372,6 @@ class CodexHarness(Harness):
     Returns:
       The bash script text staged as the invocation mount.
     """
-    home = shlex.quote(self.agent_home)
     codex_home = shlex.quote(codex_config_dir(self.agent_home))
     binary = shlex.quote(BINARY_AT)
     prompt = f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
@@ -380,11 +380,10 @@ class CodexHarness(Harness):
     last_message = f'"$SANDBOX_WORKSPACE"/{LAST_MESSAGE_NAME}'
     lines = [
         "set -u",
-        # Instance images run as root with no guaranteed-writable home, so the
-        # agent gets one. CODEX_HOME is its own default `$HOME/.codex` rather
-        # than the home itself, so the sandboxed layout matches an ordinary
-        # install; `mkdir -p` on the nested path creates both.
-        f"export HOME={home}",
+        # The image's HOME wins (warm toolchain caches live under it, #240).
+        # CODEX_HOME stays pinned to our own clean directory: config isolation
+        # does not ride on HOME, so the split costs nothing here.
+        *home_fallback_lines(),
         f"export {CODEX_HOME_ENV}={codex_home}",
         f"mkdir -p {codex_home}",
         # Caller-injected env (empty unless ``run(env=...)`` filled it in).

@@ -28,6 +28,7 @@ from swe_lab.harnesses.base import AgentOutcome, Harness
 from swe_lab.harnesses.common import (
     AgentInfoObserver,
     env_exports,
+    home_fallback_lines,
     read_text,
     status_tail,
 )
@@ -280,7 +281,6 @@ class GrokBuildHarness(Harness):
     Returns:
       The bash script text staged as the invocation mount.
     """
-    home = shlex.quote(self.agent_home)
     grok_dir = shlex.quote(grok_config_dir(self.agent_home))
     binary = shlex.quote(BINARY_AT)
     prompt = f'"$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}'
@@ -288,11 +288,13 @@ class GrokBuildHarness(Harness):
     event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
     lines = [
         "set -u",
-        # Instance images run as root with no guaranteed-writable home, so the
-        # agent gets one; grok derives its config dir from it ($HOME/.grok),
-        # which is also where a staged OAuth login lands. `mkdir -p` on the
-        # nested path creates both.
-        f"export HOME={home}",
+        # The image's HOME wins (warm toolchain caches live under it, #240).
+        # GROK_HOME pins the config dir grok would otherwise derive from HOME
+        # ($HOME/.grok) — same split as the other two harnesses: warm caches
+        # from the image, clean config from us. The staged OAuth login lands
+        # in this pinned dir.
+        *home_fallback_lines(),
+        f"export GROK_HOME={grok_dir}",
         f"mkdir -p {grok_dir}",
         # Caller-injected env (empty unless ``run(env=...)`` filled it in).
         # Sourced after the defaults above so a caller can override them.
