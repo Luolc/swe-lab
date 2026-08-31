@@ -12,8 +12,9 @@ this one won't outlive its own pickup).
 
 ## 1. Where you are
 
-`main` is merged through PR #252 (`8915acd`); see `git log --oneline` for
-anything landed since. Orient with:
+`main` is merged through
+[PR #252](https://github.com/Luolc/swe-lab/pull/252) (`8915acd`); see
+`git log --oneline` for anything landed since. Orient with:
 
 - Repo map + status snapshot: [`docs/README.md`](README.md)
 - Working rules: [`AGENTS.md`](../AGENTS.md) (aligned with the cross-repo
@@ -22,11 +23,12 @@ anything landed since. Orient with:
 
 ## 2. The one in-flight item — PR #253 (vault rename staging)
 
-PR #253 renames 1Password vault references `op://workstation` →
-`op://dev-shared` (6 refs). It carries `Verdict: LGTM`, approved SHA
-`03027d92e394390ed570ebf4c6e80ee8159f04de`, and is **deliberately not
-merged** — `butler-orchestra` issues the flip order once the 1Password vault
-is actually renamed (machine-setup ADR-0016).
+[PR #253](https://github.com/Luolc/swe-lab/pull/253) renames 1Password vault
+references `op://workstation` → `op://dev-shared` (6 refs). It carries
+`Verdict: LGTM`, approved SHA `03027d92e394390ed570ebf4c6e80ee8159f04de`, and
+is **deliberately not merged** — `butler-orchestra` issues the flip order
+once the 1Password vault is actually renamed
+([machine-setup ADR-0016](https://github.com/Luolc/machine-setup/blob/main/docs/adr/0016-vaults-by-sensitivity.md)).
 
 On the flip order:
 
@@ -54,7 +56,8 @@ for the full picture:
   references only — vault name per whether the §2 flip has happened yet).
   Requires the machine-setup-provisioned `OP_SERVICE_ACCOUNT_TOKEN`. See
   [`docs/conventions.md`](conventions.md#secrets) and machine-setup
-  ADR-0013 / ADR-0016.
+  [ADR-0013](https://github.com/Luolc/machine-setup/blob/main/docs/adr/0013-workstation-secrets-via-service-account.md) /
+  [ADR-0016](https://github.com/Luolc/machine-setup/blob/main/docs/adr/0016-vaults-by-sensitivity.md).
 
 ## 4. Review standard
 
@@ -65,14 +68,14 @@ is **no longer** the standard.
 
 ## 5. What was decided recently and where it's recorded
 
-- Plugin enable removed — PR #249
-- Secrets via 1Password `op read` + guard — PR #250, #251
+- Plugin enable removed — [PR #249](https://github.com/Luolc/swe-lab/pull/249)
+- Secrets via 1Password `op read` + guard —
+  [PR #250](https://github.com/Luolc/swe-lab/pull/250),
+  [PR #251](https://github.com/Luolc/swe-lab/pull/251)
 - `AGENTS.md` alignment + repo review skills (`swelab-pr-review` /
-  `swelab-python-review`) — PR #252
-- Vault rename staged (not yet flipped) — PR #253, see §2 above
-
-No `SLK*` checklist by decision — the user-level K1–K8 checks suffice.
-Skills-lock local entries use raw-file sha256.
+  `swelab-python-review`) — [PR #252](https://github.com/Luolc/swe-lab/pull/252)
+- Vault rename staged (not yet flipped) —
+  [PR #253](https://github.com/Luolc/swe-lab/pull/253), see §2 above
 
 ## 6. Next work, in priority order
 
