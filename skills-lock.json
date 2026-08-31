@@ -121,6 +121,18 @@
       "skillPath": "skills/spec-driven-development/SKILL.md",
       "computedHash": "2dee9aa940633b7b5e0f45be34839ab31c0de98d482e16772c5cd350f4b91b4b"
     },
+    "swelab-pr-review": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/swelab-pr-review/SKILL.md",
+      "computedHash": "f073d99fcfef2901e97b71013153eb5d1a767d3cf69daf2ed9acdc1d6af1dd3b"
+    },
+    "swelab-python-review": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/swelab-python-review/SKILL.md",
+      "computedHash": "e7f2566213a8c603cb5e6099ae76d7125200d52afa069342467777494d271d92"
+    },
     "test-driven-development": {
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
