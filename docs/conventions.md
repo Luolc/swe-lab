@@ -38,6 +38,42 @@ python -m swe_lab.datasets.swebench_pro.verify --shard i/N                      
 python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
 ```
 
+## Secrets
+
+Local secrets live in `.envrc.local` (gitignored; sourced by `.envrc` under
+direnv), which holds **only `op://` references read at load time via
+`op read`** — never a plaintext value. Copy
+[`.envrc.local.example`](../.envrc.local.example) to `.envrc.local` and
+`direnv allow`; the example is the complete file, one line per vault item:
+
+| Variable | 1Password item | Consumer |
+|---|---|---|
+| `HF_TOKEN` | `op://workstation/hf-token/credential` | HF pushes (`pipelines/related_files/traces.py`, `datasets/deepswe/build_parquet.py --upload`) |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `op://workstation/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth; rollout workflows pass it through to the sandbox) |
+| `OPENROUTER_API_KEYS` | `op://workstation/openrouter-api-keys/credential` | comma-separated OpenRouter keys; no code consumer yet |
+
+`op read` needs `OP_SERVICE_ACCOUNT_TOKEN` in the environment. On the
+workstation an interactive zsh (so every herdr pane) gets it from `~/.zshrc`; a
+`bash -lc` or non-interactive `ssh` shell does **not**, so there source the
+token file first (`set -a; . /etc/machine-setup/op-workstation.env; set +a`) or
+direnv's `op read` fails. swe-lab itself spawns no such shell: sandboxes receive
+the already-resolved values by name through `pass_env`. The vault, the
+read-only service account, the on-disk token file, and the item conventions are
+**owned by machine-setup** — read, don't restate:
+[ADR-0013](https://github.com/Luolc/machine-setup/blob/main/docs/adr/0013-workstation-secrets-via-service-account.md)
+(the decision) and the
+[workstation secrets handbook](https://github.com/Luolc/machine-setup/blob/main/docs/knowledge/workstation-secrets-setup.md)
+(setup, acceptance, rotation).
+
+Not configured (no vault item yet; set them yourself if you need them):
+`OPENAI_API_KEY` (the `codex` harness), `XAI_API_KEY` (the `grok_build`
+harness), and `ANTHROPIC_API_KEY` (only the `claude_code` harness's `--bare`
+mode reads it).
+
+GitHub Actions is unchanged: the rollout workflows
+([`.github/workflows/rollout*.yml`](../.github/workflows/)) read the repository
+secret `secrets.CLAUDE_CODE_OAUTH_TOKEN`, not 1Password.
+
 ## Releasing
 
 **"Release" means both** (a) a **GitHub tag + Release** and (b) a **PyPI
@@ -223,10 +259,10 @@ with the following repo-wide choices and deviations (full plan + rationale:
 - **amd64 emulation is slow locally.** The prebuilt instance images are amd64;
   on Apple Silicon they run emulated. Real execution happens on **GitHub
   Actions** (native amd64, free minutes) — see [W2](workstreams/w2-solve-eval/).
-- **Secrets never land in git.** `.envrc.local` holds the subscription
-  `CLAUDE_CODE_OAUTH_TOKEN` and is **gitignored** — rotate after use. Git history
-  was once scrubbed (force-pushed) of a leaked OAuth token + operator PII; don't
-  reintroduce either. Trace records redact operator PII at write time.
+- **Secrets never land in git.** Git history was once scrubbed (force-pushed)
+  of a leaked OAuth token + operator PII; don't reintroduce either. Local secrets
+  are `op://` references only — see [Secrets](#secrets). Trace records redact
+  operator PII at write time.
 - **`patches.py` is a stopgap.** The loader corrects 3 upstream dataset rows
   (truncated `fail_to_pass` names) **in memory**; it's a no-op on every other
   row. Retire it once the fixed parquet is published to HF. See

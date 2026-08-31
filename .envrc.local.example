@@ -1,0 +1,10 @@
+# Local secrets for direnv. Copy to `.envrc.local` (gitignored; `.envrc` sources
+# it), then `direnv allow`. Values are never written here: each line reads one
+# item from the 1Password `workstation` vault via `op read`, which needs
+# OP_SERVICE_ACCOUNT_TOKEN in the environment. The vault, the service account,
+# and the token setup are owned by machine-setup ADR-0013:
+# https://github.com/Luolc/machine-setup/blob/main/docs/adr/0013-workstation-secrets-via-service-account.md
+# The three variables and what consumes them: docs/conventions.md → Secrets.
+export HF_TOKEN=$(op read op://workstation/hf-token/credential)
+export CLAUDE_CODE_OAUTH_TOKEN=$(op read op://workstation/claude-code-oauth-token/credential)
+export OPENROUTER_API_KEYS=$(op read op://workstation/openrouter-api-keys/credential)
