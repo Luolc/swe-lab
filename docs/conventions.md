@@ -55,7 +55,7 @@ direnv), which holds **only `op://` references read at load time via
 `op read` needs `OP_SERVICE_ACCOUNT_TOKEN` in the environment. On the
 workstation an interactive zsh (so every herdr pane) gets it from `~/.zshrc`; a
 `bash -lc` or non-interactive `ssh` shell does **not**, so there source the
-token file first (`set -a; . /etc/machine-setup/op-workstation.env; set +a`) or
+token file first (`set -a; . /etc/machine-setup/op-machine.env; set +a`) or
 direnv's `op read` fails. The example guards on `OP_SERVICE_ACCOUNT_TOKEN` and
 `return`s (with a stderr hint) before any `op read` when it's absent, so a
 token-less shell gets no variables instead of `op` hanging on an interactive
