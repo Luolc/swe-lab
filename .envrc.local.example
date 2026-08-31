@@ -1,6 +1,6 @@
 # Local secrets for direnv. Copy to `.envrc.local` (gitignored; `.envrc` sources
 # it), then `direnv allow`. Values are never written here: each line reads one
-# item from the 1Password `workstation` vault via `op read`, which needs
+# item from the 1Password `dev-shared` vault via `op read`, which needs
 # OP_SERVICE_ACCOUNT_TOKEN in the environment. The vault, the service account,
 # and the token setup are owned by machine-setup ADR-0013:
 # https://github.com/Luolc/machine-setup/blob/main/docs/adr/0013-workstation-secrets-via-service-account.md
