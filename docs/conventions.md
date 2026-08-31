@@ -56,8 +56,12 @@ direnv), which holds **only `op://` references read at load time via
 workstation an interactive zsh (so every herdr pane) gets it from `~/.zshrc`; a
 `bash -lc` or non-interactive `ssh` shell does **not**, so there source the
 token file first (`set -a; . /etc/machine-setup/op-workstation.env; set +a`) or
-direnv's `op read` fails. swe-lab itself spawns no such shell: sandboxes receive
-the already-resolved values by name through `pass_env`. The vault, the
+direnv's `op read` fails. The example guards on `OP_SERVICE_ACCOUNT_TOKEN` and
+`return`s (with a stderr hint) before any `op read` when it's absent, so a
+token-less shell gets no variables instead of `op` hanging on an interactive
+"add an account?" prompt; each `op read --no-newline --force …` is a second,
+non-interactive line of defense. swe-lab itself spawns no such shell: sandboxes
+receive the already-resolved values by name through `pass_env`. The vault, the
 read-only service account, the on-disk token file, and the item conventions are
 **owned by machine-setup** — read, don't restate:
 [ADR-0013](https://github.com/Luolc/machine-setup/blob/main/docs/adr/0013-workstation-secrets-via-service-account.md)
