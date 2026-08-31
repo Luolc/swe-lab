@@ -26,15 +26,22 @@ workstream's folder, not here.
 | # | Workstream | Status | Detail |
 | --- | --- | --- | --- |
 | **W1** | Related-files annotation | ✅ **Complete** — 731/731 annotated, QA'd, pushed | [w1](workstreams/w1-related-files/) |
-| **W2** | Solve + evaluate pipeline | 🚧 **Active** — eval built + validated (gold sweep 731/731); **`rollout` is the focus** | [w2](workstreams/w2-solve-eval/) |
+| **W2** | Solve + evaluate pipeline | 🚧 **Active** — eval + rollout validated end-to-end (multi-harness, multi-dataset); matrix eval over the full SWE-Bench-Pro set is the focus | [w2](workstreams/w2-solve-eval/) |
 | **W3** | Quality auditing / skew | 📋 **Planned** — first tool (gold self-test sweep) falls out of W2 | [w3](workstreams/w3-quality-audit/) |
 
-**Latest (2026-07-17).** W1 annotation is done (7083 snippets; traces off-repo on
-HF). W2's evaluation subsystem is validated and the full gold self-test sweep
-passed (731/731; 3 dataset-side false negatives fixed in-loader via a `patches.py`
-stopgap pending a published fixed parquet); **`rollout` (agent sampling) is the
-current focus** → [w2](workstreams/w2-solve-eval/). Patch extraction is settled in
-[ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted).
+**Latest (2026-08-31).** W1 annotation is done (7083 snippets; traces off-repo on
+HF). Rollout is proven end-to-end: the `claude_code`, `codex`, and `grok_build`
+harnesses are all done (horizontal tasks 06/28/29), and horizontal task 30
+(DeepSWE 1.1 as a second dataset) landed 2026-08-26 with a live rollout e2e run
+and a green 113-task gold sweep on Actions (0 GOLDEN_FAIL / 0
+BASE_UNEXPECTED_PASS). W2's own mainline — matrix eval across the full
+SWE-Bench-Pro 731 set ([w2 todo](workstreams/w2-solve-eval/todo.md) tasks 2–4) —
+is still open. On the horizontal side, tasks 25 (git-history purge, P0) and 15
+(extensibility seam proof, P0) remain open, task 13 (R2 store) is blocked on
+CP4 (ask-first), and human checkpoints CP1–CP5 are all still unchecked →
+[horizontal task index](horizontal/plans/README.md). Patch extraction is
+settled in [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)
+(Accepted).
 
 ## Where everything lives
 
