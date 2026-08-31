@@ -14,13 +14,16 @@ Two modes, and the mode picks the method:
 
 - **Building** (a feature or change): follow the lifecycle **spec → plan →
   build → review → ship**, guided by the skills in
-  [`.claude/skills/`](.claude/skills/) (`spec-driven-development`,
+  [`.agents/skills/`](.agents/skills/) (`spec-driven-development`,
   `planning-and-task-breakdown`, `incremental-implementation`,
-  `test-driven-development`, `code-review-and-quality`, `shipping-and-launch`),
-  with test-driven development and small atomic commits as the default. **An
-  active component owns its planning docs in
-  its own folder** — a workstream (`docs/workstreams/<w>/`) or the horizontal
-  `docs/horizontal/` for cross-cutting / foundational work:
+  `test-driven-development`, `shipping-and-launch`; the canonical copies live
+  there and `.claude/skills/<name>` are per-skill directory symlinks into it),
+  with test-driven development and small atomic commits as the default.
+  **Review** = user-level `pr-review` (`~/.agents/skills/pr-review`) + this
+  repo's `swelab-pr-review`; Python changes additionally load user-level
+  `python-review` + `swelab-python-review`. **An active component owns its
+  planning docs in its own folder** — a workstream (`docs/workstreams/<w>/`) or
+  the horizontal `docs/horizontal/` for cross-cutting / foundational work:
   - `spec.md` — the target design (what we're building and why).
   - `plan.md` — the **strategy** (phases, dependency graph, risks, DoD,
     checkpoints); it does **not** enumerate tasks.
@@ -51,36 +54,31 @@ decisions worth remembering in [`docs/decisions/`](docs/decisions/) — and **do
 re-litigate an accepted ADR; if a decision must change, write a new ADR that
 supersedes it.**
 
-## Git & GitHub workflow (agents drive this — no manual clicking)
+## Git & GitHub workflow
 
-This is a solo, automation-first project: **you** (the agent) own the full
-git/GitHub flow via the `gh` CLI. Don't ask the user to push, merge, or click in
-the GitHub UI — do it, and report the PR link.
+The flow itself is a **cross-repo rule** — see the Git-workflow and multi-agent
+sections of `~/.agents/AGENTS.md`, and don't restate it here: branch off
+`origin/main`, open a PR (`gh pr create`) with a real title and body describing
+what changed and *why*, have the paired reviewer review it, and merge only on a
+`Verdict: LGTM`, pinning the approved SHA
+(`gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`). No
+auto-merge, no self-merge, no direct push of non-trivial work to `main`. Delete
+the merged local branch by name; fast-forward local `main` only with
+`git fetch origin && git merge --ff-only origin/main`.
 
-- **Branch for non-trivial work:** `type/short-desc` (`docs/…`, `feat/…`,
-  `fix/…`, `chore/…`, `exp/…`). Never commit non-trivial changes straight onto
-  `main`.
-- **Open a PR** (`gh pr create`) with a real title and body — what changed and
-  *why*.
-- **Merge:** `gh pr merge <n> --squash --auto --delete-branch` — it lands
-  automatically once CI goes green (branch protection on `main` requires the
-  `check` status). Keep `main` linear and always-green; fast-forward local `main`
-  after (`git checkout main && git pull`).
-- **Tidy local branches after merging.** `--delete-branch` deletes only the
-  *remote* branch; the local one lingers, and because we **squash**-merge it isn't
-  an ancestor of `main`, so `git branch -d` refuses it. Prune stale tracking refs
-  and force-delete the gone ones:
-  `git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs -r git branch -D`.
-  Keep the local branch list ≈ just `main`.
-- **The pre-merge gate is CI** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
-  runs `pytest` + `pre-commit` on every PR, enforced as a **required check** by
-  branch protection on `main` (no required reviewers, so the agent can self-merge;
-  admins may bypass for urgent fixes). Still run the [quality bar](#quality-bar)
-  locally before pushing to fail fast. The heavy `eval`/`rollout`/`verify-golden`
-  workflows stay manual (`workflow_dispatch`).
+Agents drive this via the `gh` CLI: don't ask the user to push, merge, or click
+in the GitHub UI — do it, and report the PR link. What is specific to this repo:
+
+- **Branch types:** `type/short-desc` with `docs/…`, `feat/…`, `fix/…`,
+  `chore/…`, and `exp/…` for experiment work.
+- **CI is the required check.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+  runs `pytest` + `pre-commit` on every PR, enforced as the required `check`
+  status by branch protection on `main`. Green CI is necessary but not
+  sufficient — run the [quality bar](#quality-bar) locally before pushing to
+  fail fast, and the LGTM is what authorizes the merge. The heavy
+  `eval`/`rollout`/`verify-golden` workflows stay manual (`workflow_dispatch`).
 - **Commit messages:** imperative mood, explain the *why*; end with a
   `Co-Authored-By:` trailer for the model that wrote the change.
-- **Escape hatch:** direct-to-`main` is reserved for trivial or urgent fixes.
 - **Releasing.** When the user says "release", it means **both** a GitHub
   tag/Release **and** a PyPI publish — they go together. Bump `project.version`
   to match the tag, land it, then `gh release create vX.Y.Z --generate-notes`
@@ -126,55 +124,12 @@ test for is a wish, and it silently decays into a lie.
   non-trivial work straight to `main`; present the provisional patch-extraction
   docs as authoritative.
 
-## Communicating with the user
-
-- **Voice input.** The user often interacts via voice, so their messages are
-  produced by speech-to-text and may contain transcription errors: wrong
-  homophones, dropped or merged words, mis-split phrases, and mistranscribed
-  proper nouns. Read for intent rather than literal text. For example, "cloud"
-  can mean "Claude". When a word looks out of place, infer the intended meaning
-  from context instead of taking it at face value.
-
-- **Identifiers are especially fragile.** Speech-to-text often cannot reproduce
-  the exact spelling of file paths, variable names, and function names,
-  particularly special characters and separators such as dots, hyphens, dashes,
-  slashes, underscores, and camelCase boundaries (e.g. "doc" may be "dot",
-  "dash" and "hyphen" may be dropped or swapped). Do your best to reconstruct
-  the most plausible intended identifier — cross-check it against names that
-  actually exist in the codebase when possible.
-
-- **Flag and confirm your guesses.** Whenever you infer an identifier or resolve
-  an ambiguous term, call it out **explicitly** in your summary — list only the
-  specific guesses you made — and ask the user to confirm each one. Be ready to
-  update if a guess is wrong.
-
-- **Latest instruction wins.** The user's thinking may not be fully formed when
-  they first describe something, and they refine it as they go. Always follow
-  the most recent instruction over earlier ones. If a request seems to
-  contradict something said before, the latest wording takes precedence — the
-  user will clarify if there is a genuine conflict.
-
-- **Reply in the user's language — this is important and often missed.** Look at
-  the language of the user's **most recent message** and write your chat reply in
-  **that same language**. If they wrote in Chinese, reply in Chinese; if in
-  English, reply in English. Check this on **every** turn, because the user
-  switches languages mid-conversation — do not default to English out of habit
-  just because the code, this file, or the earlier conversation is in English.
-  The language of the repository does **not** determine the language of your
-  reply. This applies to the whole chat reply, including summaries and follow-up
-  questions.
-
 ## Language of the codebase
 
-- The two rules below are independent: **what you write into the repo** is always
-  English, but **how you talk to the user** follows their language (see above).
-  A Chinese message still gets a Chinese reply even though any code or docs you
-  produce in that same turn are written in English.
-- All code, comments, documentation, commit messages, and README content must
-  be written in **English**, regardless of the language the user is speaking or
-  typing in.
-- Accept user input in any language, but keep everything that lands in the
-  repository in English.
+Repository language: English (case B in the cross-repo rules,
+`~/.agents/AGENTS.md`) — all code, comments, documentation, commit messages, and
+README content are written in English, regardless of the language of the
+conversation.
 
 ## Naming conventions
 
