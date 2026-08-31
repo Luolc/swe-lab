@@ -91,7 +91,8 @@ The commands below make that rule enforceable and the divergences detectable.
 
 ## 4. Commands
 
-Run from the repo root with `HF_TOKEN` set (e.g. `source ./.envrc.local`):
+Run from the repo root with `HF_TOKEN` set (direnv loads it from
+`.envrc.local` — see [conventions → Secrets](conventions.md#secrets)):
 
 ```
 python -m swe_lab.pipelines.related_files.traces <action> [flags]
