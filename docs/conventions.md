@@ -48,9 +48,9 @@ direnv), which holds **only `op://` references read at load time via
 
 | Variable | 1Password item | Consumer |
 |---|---|---|
-| `HF_TOKEN` | `op://workstation/hf-token/credential` | HF pushes (`pipelines/related_files/traces.py`, `datasets/deepswe/build_parquet.py --upload`) |
-| `CLAUDE_CODE_OAUTH_TOKEN` | `op://workstation/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth; rollout workflows pass it through to the sandbox) |
-| `OPENROUTER_API_KEYS` | `op://workstation/openrouter-api-keys/credential` | comma-separated OpenRouter keys; no code consumer yet |
+| `HF_TOKEN` | `op://dev-shared/hf-token/credential` | HF pushes (`pipelines/related_files/traces.py`, `datasets/deepswe/build_parquet.py --upload`) |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `op://dev-shared/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth; rollout workflows pass it through to the sandbox) |
+| `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys; no code consumer yet |
 
 `op read` needs `OP_SERVICE_ACCOUNT_TOKEN` in the environment. On the
 workstation an interactive zsh (so every herdr pane) gets it from `~/.zshrc`; a
