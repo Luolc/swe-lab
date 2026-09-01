@@ -342,7 +342,9 @@ retroactively (owner's calibration, 2026-09-01).
   (b) the port must be **free**, because `ReverseProxy._wait_until_listening`
   accepts *any* listener and an unrelated process squatting on it reads as "the
   proxy is up" — a stray `python3 -m http.server` cost one rollout that failed
-  with an empty proxy log, empty stderr and exit 1; and (c) the proxy's
+  with an empty proxy log, empty stderr and exit 1, and the commonest squatter
+  is **the previous run's own proxy**, which is reparented to `init` and keeps
+  listening when its driver is killed; and (c) the proxy's
   `--target` must match where the credential is actually valid. That last one is
   a real gap for non-Anthropic upstreams: `ReverseProxy.target` defaults to
   `https://api.anthropic.com` and `ProxyRecorder` does not expose it, while
@@ -351,6 +353,19 @@ retroactively (owner's calibration, 2026-09-01).
   target *also* silently drops the `X-Anthropic-Beta` mirroring and `provider`
   injection that OpenRouter needs for interleaved thinking. Verify a proxied run
   by its log, never by its exit code.
+- **An unresolved workflow verdict has three causes, not two.** Exit 2 means the
+  grading suite did not resolve the instance; whether the *actor* erred is a
+  separate question, and neither the workflow's exit code nor
+  `claude_code.timed_out` answers it. A run can come back unresolved with
+  `timed_out == 0` and the actor never having started — measured 2026-09-01, a
+  `protonmail/webclients` image that cannot execute the mounted `linux-x64`
+  binary (`cannot execute: required file not found`, `claude_code.exit_code`
+  127 after 0.69 s, `agent_complete` 0) still produced an ordinary unresolved
+  verdict. Before treating an unresolved run as evidence about reasoning,
+  require **all three**: `claude_code.timed_out == 0`, `agent_complete == 1`,
+  `claude_code.exit_code == 0`. Whether an image can host the actor at all is a
+  property of the repo family and is probed for free on every run —
+  `rollout/a0/claude.info` opens with `claude --version` and its exit code.
 - **`patches.py` is a stopgap.** The loader corrects 3 upstream dataset rows
   (truncated `fail_to_pass` names) **in memory**; it's a no-op on every other
   row. Retire it once a fixed parquet is published to HF and the loader can

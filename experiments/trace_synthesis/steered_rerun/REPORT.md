@@ -55,6 +55,7 @@ this one. Each is attributable to a specific run or probe.
 - [6. The screens are complementary](#6-the-screens-are-complementary-and-neither-is-redundant)
 - [7. A correction to the previous round](#7-a-correction-to-the-previous-round)
 - [8. The failure sample is the workflow's input contract](#8-the-failure-sample-is-the-workflows-input-contract)
+- [9. An unresolved verdict does not mean the actor erred](#9-an-unresolved-verdict-does-not-mean-the-actor-erred--three-ways-not-two)
 - [Settings, and what is comparable to what](#settings-and-what-is-comparable-to-what)
 - [Cost](#cost)
 - [Open questions](#open-questions)
@@ -190,6 +191,51 @@ Supervisor, and the Supervisor carries an unreachable intervention forward to
 the next boundary that can take one. What that costs is timeliness — the hint
 arrives after the edit rather than before it — and this round has not measured
 whether a late hint still steers.
+
+### A second way to lose a hint, found by losing thirteen boundaries
+
+The `Edit` blindness is a property of the channel. The steered run made against
+the new setting hit an unrelated one that is a property of *this rig*, and it is
+worth recording because its signature from the actor's side is identical to no
+hint being warranted.
+
+The Supervisor's poller is one thread. A model reply came back with
+`"content": null` — the key present, the value not a string, which the response
+*shape* check accepts — `json.loads(None)` raised `TypeError` out of `judge()`,
+and the thread died at boundary 13. The run continued for its full length with
+no Supervisor at all. Every boundary after that point: the hook wrote its
+request, waited out its 100 s deadline, failed open, and the actor saw an
+ordinary tool result.
+
+| | |
+|---|---|
+| boundaries the hook asked about | 16 |
+| judged | 13 |
+| **unjudged, poller dead** | **3 and counting when the run was stopped** |
+| hook turnaround when answered | 4.0–18.5 s (n=13) |
+| hook turnaround when not | 100 s, then fail-open |
+
+Three properties of the design held and one did not. **Fail-open held**: no
+tool call broke, and the actor's work was never corrupted by a Supervisor
+failure. **The in-sandbox hook log held**: it names all three timeouts, with
+their request ids. **The host-side log did not** — the crash happened *before*
+the judgement was written, so the host's own account of the run simply stops,
+and the host log is the thing the spec relies on to make a loss detectable. A
+loss that stops the log cannot be found in the log.
+
+Fixed three ways, since one of them alone would leave the hole: the reply parser
+treats a non-string `content` as a model error like any other; the poller cannot
+die, because a raising judgement is caught per request; and a request the judge
+could not answer is **still answered**, so a broken judgement never becomes a
+stalled tool call. The gap is now recorded host-side as `boundaries_unjudged`
+rather than being absent — [`analyze.py`](analyze.py) counts it separately from
+judgements, because counting it as one would report a hole in the belief state
+as coverage. The crashed run's logs are kept at
+`runs/steered-qutebrowser/r10-crashed/` as the evidence for all of this.
+
+**The general lesson is the one this report keeps re-learning**: silence is not
+a measurement. A supervisor that has stopped judging and a supervisor that sees
+nothing worth saying produce the same trace.
 
 ## 3. The sandbox cannot reach the host on this box
 
@@ -494,6 +540,56 @@ The qutebrowser sample reports `stable_across_attempts: true` with the same two
 tests failing in all three — which is what makes it worth steering. A sample
 whose verdict is not stable is not a reasoning failure, and the field says so
 before anyone builds a guidebook on it.
+
+## 9. An unresolved verdict does not mean the actor erred — three ways, not two
+
+The standing rule was: exit 2 is a reasoning failure, exit 1 is infrastructure,
+never conflate them, and check `claude_code.timed_out` first because contention
+turns the former into the latter. Harvesting `protonmail/webclients` produced a
+run that satisfies every part of that rule and is still not a reasoning failure:
+
+| | value |
+|---|---|
+| workflow exit | **2** — unresolved |
+| `claude_code.timed_out` | **0** |
+| `claude_code.exit_code` | **127** |
+| `claude_code.wall_seconds` | **0.69** |
+| `agent_complete` | **0** |
+| stderr | `/opt/claude-code/claude: cannot execute: required file not found` |
+| the submitted patch | 2248 lines of `yarn.lock` and **no source change** |
+
+The actor never started. `cannot execute: required file not found` is what bash
+says when an ELF file's interpreter is missing, so that image cannot run the
+mounted `linux-x64` binary at all. The grading suite then failed for the honest
+reason that the function it imports was never written, and the workflow reported
+the instance unresolved — which is true, and says nothing about any agent's
+reasoning.
+
+**So the gate is three checks, not two**, and both `harvest_one.sh` and
+[`freeze_sample.py`](freeze_sample.py) now apply all three before a run is
+written out as a failure sample:
+
+```
+claude_code.timed_out == 0    the run was not killed at its budget
+agent_complete        == 1    the actor finished its work
+claude_code.exit_code == 0    the actor ran at all
+```
+
+`freeze_sample.py` **refuses** rather than warns. A warning on a path that ends
+in training data is a note nobody reads.
+
+Two things follow that outlive this instance:
+
+- **Image executability is a property of the repo family, not the instance**,
+  and it is cheaper to establish than task quality: the harness already probes
+  it on every run — `rollout/a0/claude.info` opens with
+  `$ /opt/claude-code/claude --version` and its exit code — so *one* completed
+  rollout settles the whole family. `qutebrowser`, `openlibrary`, `vuls`,
+  `navidrome` and `NodeBB` are proven runnable here; `protonmail/webclients` is
+  proven not.
+- **A screen that runs before task quality saves the expensive screen.**
+  Determinacy analysis on a family whose image cannot host the actor is work
+  spent on a task that can never be sampled.
 
 ## Settings, and what is comparable to what
 
