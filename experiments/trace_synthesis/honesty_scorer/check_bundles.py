@@ -31,11 +31,12 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 
-# Values that must never be recoverable from a bundle's text. `resolved` and
-# `arm` are included because a bundle carrying either hands the judge the label
-# directly; `screening_verdict` is the label's source.
+# Values that must never be recoverable from a bundle. Every one of these is
+# required in each ground-truth row: a row that omits one cannot be checked for
+# it, and a check that cannot run must not report success.
 _FORBIDDEN_FIELDS = (
     "instance_id",
     "base_commit",
@@ -44,9 +45,50 @@ _FORBIDDEN_FIELDS = (
     "arm",
 )
 
+# A long identifier leaks by appearing at all. A short or boolean one does not:
+# `resolved` is an ordinary English word and `B` is a letter, so scanning for
+# the bare value would fire on prose the operator cannot remove -- and a gate
+# that alarms on the unfixable gets switched off. What is detectable, and is
+# what a serialised label actually looks like, is the *field paired with its
+# value*: `"resolved": true`, `arm = B`, `screening_verdict: good`.
+_MIN_STANDALONE_LEN = 8
+
+
+def _labelled_pattern(field: str, value: object) -> re.Pattern[str]:
+  """Build the regex for ``field`` carrying ``value`` as a key/value pair.
+
+  Args:
+    field: The forbidden field's name.
+    value: Its ground-truth value.
+
+  Returns:
+    A compiled, case-insensitive pattern.
+  """
+  rendered = "true|false" if isinstance(value, bool) else re.escape(str(value))
+  return re.compile(
+      rf'["\']?\b{re.escape(field)}\b["\']?\s*[:=]\s*["\']?(?:{rendered})',
+      re.IGNORECASE,
+  )
+
+
+def missing_truth_fields(truth: dict[str, object]) -> list[str]:
+  """Return the required fields this ground-truth row does not carry.
+
+  Args:
+    truth: One ground-truth row.
+
+  Returns:
+    Missing field names, in declaration order.
+  """
+  return [f for f in _FORBIDDEN_FIELDS if truth.get(f) is None]
+
 
 def offending_values(text: str, truth: dict[str, object]) -> list[str]:
-  """Return the forbidden fields whose value appears verbatim in ``text``.
+  """Return the forbidden fields this bundle leaks.
+
+  Two ways a field can leak, and both are checked for every field: a long
+  identifier appearing verbatim, and any value at all appearing beside its own
+  field name.
 
   Args:
     text: The bundle as the judge will read it.
@@ -58,33 +100,50 @@ def offending_values(text: str, truth: dict[str, object]) -> list[str]:
   found: list[str] = []
   for field in _FORBIDDEN_FIELDS:
     value = truth.get(field)
-    # A short or boolean value would match everywhere; only substantial
-    # identifiers are checkable this way, and the rest are excluded by
-    # construction (they are never written into the bundle at all).
-    if isinstance(value, str) and len(value) >= 8 and value in text:
+    if value is None:
+      continue  # absence is caught by `missing_truth_fields`, not excused here
+    standalone = (
+        isinstance(value, str)
+        and len(value) >= _MIN_STANDALONE_LEN
+        and value in text
+    )
+    if standalone or _labelled_pattern(field, value).search(text):
       found.append(field)
   return found
 
 
 def main() -> int:
-  """Check every bundle against its ground truth.
+  """Parse arguments and run the check.
 
   Returns:
-    Process exit code: 0 only if bundles were found and none leaked.
+    Process exit code.
   """
   parser = argparse.ArgumentParser(description=__doc__)
   _ = parser.add_argument("--bundles", required=True)
   _ = parser.add_argument("--truth", required=True)
   args = parser.parse_args()
+  return main_with(args.bundles, args.truth)
 
+
+def main_with(bundles_dir: str, truth_path: str) -> int:
+  """Check every bundle against its ground truth.
+
+  Args:
+    bundles_dir: Directory holding ``*.bundle.txt``.
+    truth_path: JSON file of ground-truth rows.
+
+  Returns:
+    Process exit code: 0 only if bundles were found and none leaked.
+  """
+  args_bundles, args_truth = bundles_dir, truth_path
   truth_by_bundle = {
       str(row["bundle"]): row
-      for row in json.loads(pathlib.Path(args.truth).read_text())
+      for row in json.loads(pathlib.Path(args_truth).read_text())
   }
-  bundles = sorted(pathlib.Path(args.bundles).glob("*.bundle.txt"))
+  bundles = sorted(pathlib.Path(args_bundles).glob("*.bundle.txt"))
 
   if not bundles:
-    print(f"FAIL: no bundles found under {args.bundles}", file=sys.stderr)
+    print(f"FAIL: no bundles found under {args_bundles}", file=sys.stderr)
     return 2
 
   failures = 0
@@ -93,6 +152,12 @@ def main() -> int:
     if truth is None:
       print(f"FAIL {bundle.name}: no ground-truth entry; cannot be checked",
             file=sys.stderr)
+      failures += 1
+      continue
+    incomplete = missing_truth_fields(truth)
+    if incomplete:
+      print(f"FAIL {bundle.name}: ground truth lacks {', '.join(incomplete)};"
+            " those fields cannot be checked", file=sys.stderr)
       failures += 1
       continue
     text = bundle.read_text()

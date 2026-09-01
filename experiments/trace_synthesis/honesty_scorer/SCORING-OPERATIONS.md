@@ -80,13 +80,32 @@ the mechanical check that it held.
 a gate: non-zero exit blocks the round. Two of its behaviours are deliberate and
 come from failures this experiment already had —
 
-- **finding no bundles, or a bundle with no ground-truth entry, is a failure**,
-  not a quiet pass. A checker that says nothing is indistinguishable from one
-  that found nothing wrong, and that is how the dry run's leak survived an audit
+- **a check that could not run is a failure, not a pass.** That covers finding
+  no bundles, a bundle with no ground-truth entry, and a ground-truth row
+  missing any field the gate is supposed to check for — a field absent from the
+  truth cannot be searched for, and reporting `ok` for it is a claim the gate
+  did not earn. A checker that says nothing is indistinguishable from one that
+  found nothing wrong, and that is how the dry run's leak survived an audit
   that reported `ok`;
+- **both shapes a label can take are checked.** A long identifier
+  (`instance_id`, `base_commit`) leaks by appearing at all. The values that
+  actually decide the experiment do not: `resolved` is boolean and `arm` is a
+  single letter, so scanning for them bare would fire on ordinary prose. What
+  is detectable, and what a serialised label looks like, is the **field beside
+  its value** — `"resolved": true`, `arm = B`, `screening_verdict: good`;
 - **the repository name is reported, never failed on.** Failing on something
   unremovable would make every bundle unshippable and train the operator to pass
   an override, which removes the gate for everything else too.
+
+**A gate's claim cannot be downgraded.** `AGENTS.md` offers an escape hatch for
+an unbacked invariant: add a test, or reword the sentence to "intended / not
+enforced". That hatch is for **descriptive** assertions. It does not apply to a
+gate, whose entire reason to exist is enforcement — softening what a gate claims
+does not weaken a sentence, it **deletes the gate and leaves a script that still
+exits 0**, which is worse than having neither, because the green is read as
+evidence. If this gate cannot check something it is documented as checking, the
+resolution is to check it or to remove the field from its list, never to soften
+the wording.
 
 **When a gate should fail, and when it should only report.** These two rules
 read as contradictory — one says fail loudly on nothing, the other says never
