@@ -117,5 +117,11 @@ python3 extract_steps.py baseline-qutebrowser-rollout-0 steered-qutebrowser-roll
 OPENROUTER_API_KEY=... python3 judge_steps.py
 ```
 
+The key was read from the credential manager into the environment only — never
+to disk, never echoed — and **the first key it yields was the one used**; check
+that a chosen key authenticates (`GET /api/v1/key`) before a run, because a
+reference resolving successfully does not mean the value it returns is usable
+as-is.
+
 Raw judgements, run log and merged verdicts are off-repo at
 `swe-lab-artifacts/process_supervision/guidebook_step_criterion/`.
