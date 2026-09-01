@@ -25,6 +25,14 @@ Every row below is one of three: **measured** (a run in `runs/`),
 raw-byte `grep -a`, per [§10](../../../docs/trace-synthesis/spec.md#10-what-is-measured-about-hooks)'s
 rule), or **未核 / not measured**. Nothing here is inferred from documentation.
 
+> **Amended 2026-09-01, after the measurements below were taken.** The verdict
+> stands, but **one of the reasons given for it was wrong** and a channel this
+> report listed as unmeasured has since been measured. Read
+> [Amendment](#amendment--what-changed-after-this-report-was-written) before
+> quoting any rejection reason from the body. Nothing in the body has been
+> rewritten — the corrections are stated there instead, so that what was
+> measured and what was concluded from it stay separable.
+
 ---
 
 ## Verdict
@@ -69,6 +77,90 @@ Three findings carry the verdict:
 So: A is buildable in a week of plumbing, and what it produces is a trace with
 a fabricated assistant turn in it at every intervention point. That is the
 finding, and it is a negative one.
+
+---
+
+## Amendment — what changed after this report was written
+
+Two things changed on the day this was written, and neither touches a
+measurement. **The original text below is deliberately unedited**: it is the
+record of what was run and what was concluded at the time, and rewriting it in
+place would destroy the ability to tell a measurement from a later judgement.
+This section is the correction.
+
+### 1. The acceptance criterion was wrong, and the correction is the deeper one
+
+This report repeatedly reasons about whether an intervention is **a real
+`user`-role turn**. That is not the criterion. The owner's correction
+(2026-09-01) is that two questions decide it:
+
+- **(a) Do we take loss on tokens the actor did not generate?** SFT takes loss
+  on assistant tokens; anything that only enters the *context* is conditioning
+  and is never a target.
+- **(b) Does this context shape occur at inference time?** A trace that
+  conditions on something the deployed agent will never see teaches a
+  dependence on it.
+
+The wire-level role is a proxy for those, and a poor one in both directions —
+which is exactly the mistake [§5](../../../docs/trace-synthesis/spec.md#5-the-mechanism-decisions)
+had already warned against and this report reintroduced.
+
+**What that does to the three artifacts** the [Verdict](#verdict) and
+[§6 answer](#6-is-this-what-6-bans) treat as jointly disqualifying. They are not
+alike, and only one of them decides anything:
+
+| Artifact | Original stated reason | Under (a) / (b) |
+|---|---|---|
+| `"No response requested."` — a synthetic **assistant** turn | "a turn nobody produced" | **Violates (a).** Loss would be taken on tokens the actor never wrote. **This one is sufficient on its own, and the verdict rests on it.** |
+| `"Continue from where you left off."` — a synthetic **user** turn | "a turn nobody produced" | **Passes (a)** — context, not loss. Plausibly passes (b) too: Claude Code emits it whenever an interrupted session is resumed, with no hook involved (`runs/rB.*`, `runs/rC.*`; and #304's SIGKILL positive control), so the shape does occur in ordinary use. **Not a disqualifier.** |
+| The `<system-reminder>` announcing the hook stop | "delivered on the channel §5 rules out by name" | **Passes (a)** — context, not loss. Its real problem is **(b)**: a reminder that a `PostToolUse` hook stopped the run appears only in a supervised rig, not in ordinary use. A ban-by-channel-name was the wrong way to say that. |
+
+**So the verdict is unchanged and its basis is narrower and better**: plan A is
+disqualified because a mid-run stop→resume necessarily writes a synthetic
+*assistant* turn into the trace, not because it "adds turns nobody produced".
+
+**Two passages whose stated reason is superseded**, without their conclusions
+changing:
+
+- [Verdict](#verdict) item 3 — the three artifacts are listed as jointly
+  disqualifying. Only the assistant turn is, per the table above.
+- [§6 answer](#6-is-this-what-6-bans), part **(a)** — "injecting a `user` turn
+  is not banned" reaches the right answer by the wrong route. What makes an
+  injected message acceptable is that it enters context and not loss, **not**
+  that its role field says `user`. The same error, opposite sign.
+
+One consequence worth flagging rather than burying, because the next reader
+will otherwise mis-apply the new criterion: **(a) and (b) alone do not
+disqualify deleting a turn** — a deletion adds no tokens, and the resulting
+context shape does occur at inference. Deletion is still ruled out, by
+[§6](../../../docs/trace-synthesis/spec.md#6-the-trace-is-the-conversation-unedited)
+and by the honesty objective argued in [§6 answer](#6-is-this-what-6-bans) part
+(b), and that reasoning stands as written. The new criterion **narrows** what it
+is allowed to do, and does not replace the spec.
+
+### 2. `--input-format stream-json` is no longer unmeasured
+
+This report lists it under [Unknowns](#unknowns--未核) as "not measured; out of
+this brief's scope". It has since been measured by a separate experiment —
+`experiments/trace_synthesis/streamjson_input/`, [PR #304](https://github.com/Luolc/swe-lab/pull/304)
+— and that measurement is **theirs, not a re-run here**. Recorded because it
+changes what this report's negative result means:
+
+- **At a turn boundary the channel is clean**: none of the three artifacts
+  appears in the transcript or the stdout stream of 21 driver runs, and the
+  wire-level `<system-reminder>` count under proxy capture equals the
+  no-injection control (3 vs 3). The detector is known to fire — a positive
+  control (SIGKILL mid-tool-call, then `--resume`) does produce the repair pair.
+- **Mid-turn it is not clean**: a line written during an in-flight tool call is
+  absorbed into the running turn and reaches the model as a `role: system`
+  `<system-reminder>` (wire count 4 vs 3).
+
+**What this does to plan A's verdict: nothing.** A is dead on its own
+measurements, by (a). What it changes is the *scope* of that death — this
+report must not be read as "delivering a correction as a user message is
+dead". It is the **stop → resume** delivery that is dead, for the specific
+reason in the table above. Another channel exists, and at a turn boundary it
+produces none of what killed this one.
 
 ---
 
