@@ -103,8 +103,11 @@ deadline. The second condition is untested here, so outcome 3 must be reported a
 ### Additional obligation on outcome 3
 
 Every attempt records `X-Provider-Name`, `X-Generation-Id`, `request-id` and
-`Cf-Ray`. If outcome 3 occurs, the report **must** state whether the accepted
-attempt and the rejected attempts hit the **same provider**. If they differ, the
+`Cf-Ray`. `provider.require_parameters: true` in the body already narrows routing to
+providers supporting every parameter sent — but **narrowing is not elimination**,
+so the header is recorded regardless. If outcome 3 occurs, the report **must**
+state whether the accepted attempt and the rejected attempts hit the **same
+provider**. If they differ, the
 mechanism behind "B exists" is **routing variation, not sampling variation**, and
 it may not hold under a pinned-provider deployment. Reporting only "k = 3" would
 hide that.
