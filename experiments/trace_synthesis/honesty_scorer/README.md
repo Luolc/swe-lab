@@ -70,6 +70,40 @@ Mapping every surviving run to its instance id and screening verdict:
 the same shape as the `b-evidence.py` result the verdict already recorded, where
 mechanical rules were measured only on negatives.
 
+## Scope: this document registers the pilot, not the build decision
+
+**What is authorized here:** the protocol dry run, and the first batch — 4
+purchased positives, `k = 2` per repository, scored against 2 negatives per
+repository. Its declared output is the **yield factor**.
+
+**What is not authorized here: the Build decision.** The gate below requires at
+least 24 scored traces with equal class counts inside each contributing
+repository — 6 positives and 6 negatives per repository across two repositories.
+This document registers 5 existing negatives and 4 purchased positives. It
+registers **no acquisition, allocation or stopping rule for the remaining 15**,
+and it must not pretend otherwise: leaving that to be settled after the pilot
+would put the Build outcome behind decisions taken with results already in
+hand — the same unreachability defect as the first version of the decision
+table, in a new place.
+
+So the Build decision is **deferred to a second pre-registration**, written
+after the pilot and reviewed the same way, which must fix at minimum:
+
+- how many further positives and negatives are bought, per repository, to reach
+  6 and 6 — today that is 4 more positives and 3 more negatives for `navidrome`,
+  4 more positives and 4 more negatives for `NodeBB`, and **the negatives cost
+  rollouts too**, which the current price table does not include;
+- the stopping rule when a repository cannot reach 6 of each;
+- whether a third repository is opened, which requires buying its negatives
+  first;
+- the total price, computed with the **measured** yield factor.
+
+**Why defer rather than register it now:** the cohort's size and cost both
+depend on the yield factor, and the pilot exists to measure it. Registering an
+expansion today would mean fixing numbers by guessing the one quantity the
+experiment is about to supply. The decision table below therefore describes the
+**target** design, and is not a decision this document can reach.
+
 ## Pre-registration
 
 ### The dry run (read-only, on the 5 resolved traces)
@@ -351,7 +385,11 @@ exactly what calibration tests. The rule is fixed here so it cannot be adjusted
 after seeing results, and it is listed as a **known candidate bias** to be
 re-examined against the first batch.
 
-### Decision rules, fixed now
+### Decision rules — the target design, not reachable from this document
+
+These are fixed so that a later cohort cannot choose them after seeing results.
+None of them is reachable from the pilot registered here: see
+[Scope](#scope-this-document-registers-the-pilot-not-the-build-decision).
 
 | Outcome | Decision |
 | --- | --- |
@@ -486,6 +524,7 @@ dry-run corpus contains one class, so there is no result here to tune toward.
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
+| 6 | The Build gate required 24 scored traces while the document registered only 5 negatives and 4 positives | **Scope split:** this document registers the pilot and its yield factor; the Build decision is deferred to a **second pre-registration**, whose required contents are listed | Reaching 24 would have depended on acquisition and allocation rules chosen *after* the pilot, with results in hand — the same unreachable-Build defect as the original decision table, relocated. Registering the expansion now is impossible honestly, because its size and price depend on the yield factor the pilot measures. |
 | 5 | Balance was "each repository appears in both classes", and the 4-trace margin was the only size rule | **Equal class counts inside each repository** (`k` positives, `k` negatives, with a fixed rule for dropping the third `navidrome` negative), plus a **minimum cohort of 24 scored traces for any Build decision** — the first batch of 8 is declared a yield-measuring pilot | Appearing in both classes removes certainty, not correlation: 2/5 versus 2/4 still shifts a judge's prior on recovering the repository. And the 4-trace margin was derived for `n ≈ 30`; applying it to an 8-trace batch would have let an unreadable difference be read. |
 | 4 | The constraint fixed *which* instances are eligible, said nothing about how the four positives are split, and kept a replacement rule naming `vuls` | **2 positives from each** eligible instance; every repository in the scored set must appear in **both** classes or its traces are dropped; and the replacement rule becomes a **stop rule** | Buying all four positives from one instance leaves the other repository in the negative class only — the same leak from the other side. And the surviving `vuls` replacement would have violated the repository constraint outright, undoing it precisely when nobody was re-reading the blinding rule. |
 
