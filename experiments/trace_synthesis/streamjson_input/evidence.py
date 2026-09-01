@@ -167,10 +167,15 @@ def _text(value: str, limit: int = TEXT_KEEP_CHARS) -> str:
   message content at large.
   """
   clean = redact(value)
+  cited = any(phrase in clean for phrase in CITED)
   if "<system-reminder>" in clean and len(clean) > REMINDER_KEEP_BYTES:
     return f"<system-reminder elided: {len(clean)} chars of startup context>"
-  if not any(phrase in clean for phrase in CITED):
+  if not cited:
     return f"<uncited: {len(clean)} chars>"
+  # A cited `<system-reminder>` is kept whole — §14's byte-identical claim is
+  # about this string, and a truncated copy cannot witness it.
+  if "<system-reminder>" in clean:
+    return clean
   if len(clean) > limit:
     return clean[:limit] + f"… (+{len(clean) - limit} chars)"
   return clean
@@ -301,29 +306,109 @@ def _transcript_records(raw: str) -> list[dict[str, object]]:
   return out
 
 
+# The TUI issues requests that are not the agent's task loop and must not be the
+# one the report compares: a startup `quota` probe (no `tools`) and, after the
+# turn, a prompt-suggestion request whose body is the whole conversation plus a
+# synthetic trailing user message. Taking `records[-1]` picked the suggestion
+# exchange and made the committed evidence disagree with REPORT.md §14.
+SUGGESTION_MARKER = "SUGGESTION MODE"
+
+
+def _is_agent_loop(record: dict[str, object]) -> bool:
+  """True when a record is the agent's own loop rather than a side call."""
+  body = record.get("request", {}).get("body", {})
+  if not body.get("tools"):
+    return False
+  messages = body.get("messages") or []
+  if not messages:
+    return False
+  return SUGGESTION_MARKER not in json.dumps(messages[-1])
+
+
+def select_wire_record(
+    records: list[dict[str, object]],
+) -> tuple[int | None, dict[str, int]]:
+  """Return the index of the request §14 compares, plus what was skipped.
+
+  The comparison is over the **last agent-loop request**: the last exchange
+  whose body carries `tools` and whose trailing message is not the TUI's
+  prompt-suggestion prompt.
+
+  Args:
+    records: Every record in the proxy log, in order.
+
+  Returns:
+    `(index, counts)` — the selected record's index (`None` when there is no
+    agent-loop request at all), and a breakdown of `api_calls`,
+    `agent_loop_calls` and `excluded_side_calls`.
+  """
+  loop = [i for i, record in enumerate(records) if _is_agent_loop(record)]
+  counts = {
+      "api_calls": len(records),
+      "agent_loop_calls": len(loop),
+      "excluded_side_calls": len(records) - len(loop),
+  }
+  return (loop[-1] if loop else None), counts
+
+
 def _wire(raw: str) -> dict[str, object]:
   records = [json.loads(l) for l in raw.splitlines() if l.strip()]
   if not records:
     return {}
-  messages = records[-1].get("request", {}).get("body", {}).get("messages", [])
+  index, counts = select_wire_record(records)
+  if index is None:
+    return dict(counts) | {"selected_record_index": None, "messages": []}
+  messages = (
+      records[index].get("request", {}).get("body", {}).get("messages", [])
+  )
   rows = []
   total = 0
-  for index, message in enumerate(messages):
+  for position, message in enumerate(messages):
     count = _reminder_count(message.get("content"))
     total += count
-    labels, texts = _blocks(message.get("content"), tool_limit=TOOL_RESULT_KEEP_CHARS)
+    labels, texts = _blocks(
+        message.get("content"), tool_limit=TOOL_RESULT_KEEP_CHARS
+    )
     rows.append({
-        "i": index,
+        "i": position,
         "role": message.get("role"),
         "blocks": labels,
         "texts": texts,
+        # Equality witnesses, over the **raw** text: two runs' messages can be
+        # compared byte-for-byte from the committed artifacts, without the
+        # committed artifacts carrying the bytes.
+        "text_digests": _digests(message.get("content")),
         "system_reminder_blocks": count,
     })
-  return {
-      "api_calls": len(records),
+  return dict(counts) | {
+      "selected_record_index": index,
+      "selection": (
+          "last agent-loop request: has `tools`, trailing message is not the"
+          " TUI prompt-suggestion prompt"
+      ),
       "messages": rows,
       "system_reminder_blocks": total,
   }
+
+
+def _digests(content: object) -> list[dict[str, object]]:
+  """Return `{len, sha256}` per text block, computed on the raw text."""
+  blocks = [content] if isinstance(content, str) else content
+  if not isinstance(blocks, list):
+    return []
+  out = []
+  for block in blocks:
+    if isinstance(block, str):
+      text = block
+    elif isinstance(block, dict) and block.get("type") == "text":
+      text = str(block.get("text", ""))
+    else:
+      continue
+    out.append({
+        "len": len(text),
+        "sha256": hashlib.sha256(text.encode()).hexdigest(),
+    })
+  return out
 
 
 def build(run_dir: pathlib.Path) -> dict[str, object]:

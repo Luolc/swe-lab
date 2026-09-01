@@ -468,6 +468,10 @@
  ],
  "wire": {
   "api_calls": 6,
+  "agent_loop_calls": 5,
+  "excluded_side_calls": 1,
+  "selected_record_index": 5,
+  "selection": "last agent-loop request: has `tools`, trailing message is not the TUI prompt-suggestion prompt",
   "messages": [
    {
     "i": 0,
@@ -480,6 +484,16 @@
      "<system-reminder elided: 15435 chars of startup context>",
      "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
     ],
+    "text_digests": [
+     {
+      "len": 15452,
+      "sha256": "e088842254decb57b97f8856c1cae4c67a2327060e2d7721c04be82ad7ede16b"
+     },
+     {
+      "len": 231,
+      "sha256": "0a772d5ecfc8c6e8042d173c0f1ba82008c941dba0ac2794e4709c0b4c18aa32"
+     }
+    ],
     "system_reminder_blocks": 1
    },
    {
@@ -491,6 +505,12 @@
     "texts": [
      "<system-reminder elided: 8122 chars of startup context>"
     ],
+    "text_digests": [
+     {
+      "len": 8122,
+      "sha256": "97f9b0622fa1beec06c7f4fc90bf25dfa0e7f576a5491367c54eb021390f4ab4"
+     }
+    ],
     "system_reminder_blocks": 2
    },
    {
@@ -501,6 +521,7 @@
      "tool_use:Read"
     ],
     "texts": [],
+    "text_digests": [],
     "system_reminder_blocks": 0
    },
    {
@@ -510,6 +531,7 @@
      "tool_result"
     ],
     "texts": [],
+    "text_digests": [],
     "system_reminder_blocks": 0
    },
    {
@@ -523,6 +545,12 @@
      "<uncited: 50 chars>",
      "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print confirmation\", \"timeout\": 40000}"
     ],
+    "text_digests": [
+     {
+      "len": 50,
+      "sha256": "c0afb638284f3f7df26e495448fbec0a01ce5bf274fd295a3f5c41bf1a2f99cf"
+     }
+    ],
     "system_reminder_blocks": 0
    },
    {
@@ -534,6 +562,7 @@
     "texts": [
      "\"slept\""
     ],
+    "text_digests": [],
     "system_reminder_blocks": 0
    },
    {
@@ -543,6 +572,12 @@
      "text"
     ],
     "texts": [],
+    "text_digests": [
+     {
+      "len": 43,
+      "sha256": "4cf89e2d68a3cefdd480a18d478e49aa882097090816ee86eabbc0b1e9e06ff9"
+     }
+    ],
     "system_reminder_blocks": 0
    },
    {
@@ -553,6 +588,12 @@
     ],
     "texts": [
      "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+    ],
+    "text_digests": [
+     {
+      "len": 121,
+      "sha256": "05cb874dfb9d99027b0fed4a70176649a3e08368b9a059eaa9c1259712cbec7f"
+     }
     ],
     "system_reminder_blocks": 0
    },
@@ -566,6 +607,12 @@
     "texts": [
      "BANANA"
     ],
+    "text_digests": [
+     {
+      "len": 6,
+      "sha256": "82379da710fc913d545b2d3ea7c6b7a48e5cc9f3c8c7f63a7927be3153325109"
+     }
+    ],
     "system_reminder_blocks": 0
    },
    {
@@ -576,6 +623,12 @@
     ],
     "texts": [
      "One more thing: also append the word MANGO after it."
+    ],
+    "text_digests": [
+     {
+      "len": 52,
+      "sha256": "bf4a0585d6874de5052a6bb99dc671c1efbdee6a31ef0cb68f81cea737e9e48e"
+     }
     ],
     "system_reminder_blocks": 0
    }

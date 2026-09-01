@@ -194,6 +194,10 @@
  ],
  "wire": {
   "api_calls": 6,
+  "agent_loop_calls": 3,
+  "excluded_side_calls": 3,
+  "selected_record_index": 4,
+  "selection": "last agent-loop request: has `tools`, trailing message is not the TUI prompt-suggestion prompt",
   "messages": [
    {
     "i": 0,
@@ -206,6 +210,16 @@
      "<system-reminder elided: 16083 chars of startup context>",
      "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
     ],
+    "text_digests": [
+     {
+      "len": 16106,
+      "sha256": "15fd0a50193ee3d0aa761d1994609b9aa425a3e81a3c6efe34c6343417754d75"
+     },
+     {
+      "len": 231,
+      "sha256": "0a772d5ecfc8c6e8042d173c0f1ba82008c941dba0ac2794e4709c0b4c18aa32"
+     }
+    ],
     "system_reminder_blocks": 1
    },
    {
@@ -217,6 +231,12 @@
     "texts": [
      "<system-reminder elided: 11863 chars of startup context>"
     ],
+    "text_digests": [
+     {
+      "len": 11863,
+      "sha256": "5274561d7615b495d17a6c02dfbf4d869d6e079bd61ab8e55d2db2880b8e0b92"
+     }
+    ],
     "system_reminder_blocks": 2
    },
    {
@@ -227,6 +247,7 @@
      "tool_use:Read"
     ],
     "texts": [],
+    "text_digests": [],
     "system_reminder_blocks": 0
    },
    {
@@ -236,6 +257,7 @@
      "tool_result"
     ],
     "texts": [],
+    "text_digests": [],
     "system_reminder_blocks": 0
    },
    {
@@ -248,6 +270,7 @@
     "texts": [
      "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep for 30 seconds then print\", \"timeout\": 40000}"
     ],
+    "text_digests": [],
     "system_reminder_blocks": 0
    },
    {
@@ -259,26 +282,7 @@
     "texts": [
      "\"slept\""
     ],
-    "system_reminder_blocks": 0
-   },
-   {
-    "i": 6,
-    "role": "assistant",
-    "blocks": [
-     "text"
-    ],
-    "texts": [],
-    "system_reminder_blocks": 0
-   },
-   {
-    "i": 7,
-    "role": "user",
-    "blocks": [
-     "text"
-    ],
-    "texts": [
-     "<uncited: 1363 chars>"
-    ],
+    "text_digests": [],
     "system_reminder_blocks": 0
    }
   ],

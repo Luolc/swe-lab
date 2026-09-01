@@ -690,8 +690,14 @@ Two things had to be got right, and both were wrong on the first attempt
   the string "esc to interrupt" — which this build does not render — and
   recorded a run that had completed as one that never started.
 
-The comparison is over the **last agent-loop request**, excluding the TUI's
-prompt-suggestion request (§14.4).
+The comparison is over the **last agent-loop request** — the last exchange
+whose body carries `tools` and whose trailing message is not the TUI's
+prompt-suggestion prompt (§14.4). That selection is made by
+`evidence.select_wire_record`, recorded in each artifact
+(`selected_record_index`, `agent_loop_calls`, `excluded_side_calls`), and
+guarded by `tests/test_streamjson_input_evidence.py` — because taking the last
+record instead silently compared the *suggestion* exchange and rendered the TUI
+arms as 8 and 9 messages against this table's 6 and 7.
 
 ## 14.3 The measurement
 
@@ -714,9 +720,14 @@ This is how Claude Code surfaces messages the user sends mid-turn — within the
 </system-reminder>
 ```
 
-**Byte-identical** (`==` over the two strings). The delta a mid-turn
-interjection makes to the wire is the same delta in both front ends: one
-trailing `system` message, one extra `<system-reminder>`.
+**Byte-identical.** Each committed artifact carries, per wire text block, the
+`len` and `sha256` of the **raw** text, so the equality is checkable from the
+two `evidence.json` files rather than asserted here: both are
+`len 440, sha256 3ba88726…fb90c8`. `tests/test_streamjson_input_evidence.py`
+asserts it, and every count in the table above, on every run of the suite.
+
+The delta a mid-turn interjection makes to the wire is the same delta in both
+front ends: one trailing `system` message, one extra `<system-reminder>`.
 
 In the TUI arm the actor also complied (`BANANA`), where the headless mid-turn
 arms refused twice of three — a compliance observation, N=1, and §10's caveats
@@ -733,7 +744,11 @@ message. `api_calls` is 6 for each TUI arm against 4 for each headless arm.
 That is a cost and a capture-surface difference, not a conversation difference:
 the suggestion request is a separate exchange, its extra user message does not
 appear in the task's own request, and it is excluded from the comparison above.
-A collector reading proxy captures from TUI sessions would need to drop it.
+**A collector reading proxy captures from TUI sessions must drop it** — its body
+is the whole conversation plus a user message nobody sent, so treating the last
+record as the conversation puts a fabricated user turn into the corpus. This
+experiment made exactly that mistake in its own evidence builder before the
+selection above was written.
 
 ## 14.5 What this changes
 
