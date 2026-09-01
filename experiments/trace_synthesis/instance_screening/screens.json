@@ -962,7 +962,9 @@
     "unpinned_tokens": [
       "RemoteAddr"
     ],
-    "unpinned_but_present_in_repo": [],
+    "unpinned_but_present_in_repo": [
+      "RemoteAddr"
+    ],
     "diagonal_conflicts": [],
     "diagonal_units_compared": 0,
     "uncovered_symbols": [],
@@ -1008,7 +1010,12 @@
       "dis",
       "dispatch"
     ],
-    "unpinned_but_present_in_repo": [],
+    "unpinned_but_present_in_repo": [
+      "Action",
+      "ViewUserDeviceSettings",
+      "dis",
+      "dispatch"
+    ],
     "diagonal_conflicts": [],
     "diagonal_units_compared": 0,
     "uncovered_symbols": [],
@@ -1052,7 +1059,9 @@
       "colour",
       "validBackgrounds"
     ],
-    "unpinned_but_present_in_repo": [],
+    "unpinned_but_present_in_repo": [
+      "colour"
+    ],
     "diagonal_conflicts": [
       {
         "name": "User.getIconBackgrounds",
@@ -1102,7 +1111,33 @@
       "runtime",
       "select"
     ],
-    "unpinned_but_present_in_repo": [],
+    "unpinned_but_present_in_repo": [
+      "30",
+      "AS IS",
+      "Background",
+      "Done",
+      "Err",
+      "License",
+      "Load",
+      "RLock",
+      "RUnlock",
+      "Second",
+      "append",
+      "buf",
+      "case",
+      "chan",
+      "close",
+      "com",
+      "defer",
+      "github",
+      "github.com/jonboulle/clockwork",
+      "jonboulle",
+      "make",
+      "panic",
+      "ring",
+      "runtime",
+      "select"
+    ],
     "diagonal_conflicts": [],
     "diagonal_units_compared": 0,
     "uncovered_symbols": [],

@@ -231,56 +231,53 @@ a second:
 | 3 | **a miss:** one character class for all three quote delimiters cannot capture a literal containing a *different* quote | `ansible-de5858f4`'s graded test asserts `actual_cache == '{"version": 1}'`; the inner `"` truncated the match to `version`, a word `requirements` does contain | one pattern per delimiter — pure recall gain, but **not sufficient here**, see below |
 | 4 | **a poisoned cache:** a truncated tarball was cached as if complete | one `codeload` stream ended early mid-run | retry, and never write a partial token set |
 
-### The fix that was rejected
+### The fix that was rejected, and a correction to why
 
 The token screen read only the files the patches touch, so a symbol defined
 anywhere else in the repository read as un-derivable — `flipt-3b2c25ee` alarmed
 on `storage.ListWithOptions` and `storage.NewNamespace`, ordinary existing API.
 The obvious fix is to tokenize the whole repository at `base_commit` and treat
-everything in it as *given*.
+everything in it as *given*. That fix was **rejected**, and the reason first
+given here was wrong.
 
-**That fix is wrong, and it silences a true positive.** Existing somewhere in
-the checkout makes a symbol *available*; it does not make it *pinned*, and the
-gap between those two is precisely what the screen is for. The counter-example
-is in this very set: `navidrome-b3980532`'s graded test asserts
-`...apiKey == lastFMAPIKey`, comparing against a constant by symbol. That
-constant of course exists in the repository — and the prompt still never names
-it, which is why that instance is judged broken. Whole-repo suppression would
-have marked it clean.
+**The correction.** This report originally justified the rejection with a
+counter-example: `navidrome-b3980532`'s graded test asserts
+`...apiKey == lastFMAPIKey`, and suppressing on repository presence would have
+silenced that true positive. **`lastFMAPIKey` is not in the repository at
+`base_commit`** — the gold patch introduces it, in `core/agents/lastfm.go`:
 
-So the repository token set is kept, and used as **annotation instead of
-suppression**: `unpinned_but_present_in_repo` lists which alarms a reader can
-dismiss quickly, and the alarm itself still fires. `flipt-3b2c25ee`'s four
-alarms are still reported, and are still resolved by hand — in that case
-correctly, because the interface field gives `Storer.ListFlags`'s parameter type
-as `*storage.ListRequest[storage.NamespaceRequest]`, and that package's
-constructors are the only way to build one.
-
-### A miss that survived the fix, and why
-
-Fix 3 makes the tokenizer see `{"version": 1}`, and it still does not make
-`ansible-de5858f4` alarm. The reason is a second conjunct in the screen: it
-reports a token only when the graded tests **require** it *and* the gold patch
-**introduces** it. Gold writes the cache with
-
-```python
-cache_version = 1
-cache = {'version': cache_version}
+```go
++	lastFMAPIKey    = "c2918986bf01b6ba353c0bc1bdd27bea"
 ```
 
-so the literal string `{"version": 1}` exists only in the *test*; the gold
-produces it at run time, through `json.dumps`, and never as text. The
-intersection is therefore empty and the screen stays quiet, even though the
-graded assertion is byte-exact and the prompt gives neither the value `1` nor
-the serialization.
+So suppression would *not* have silenced it, and the example proved nothing.
+It was caught by the repository-token annotation itself, which this report had
+described as unable to change any conclusion — true of every verdict and every
+hit set, and not true of the prose justifying a design choice.
 
-That conjunct is there to suppress false alarms — and by the asymmetry rule
-above it is itself sitting on the dangerous side, because it can only ever
-*remove* alarms. Dropping it would surface every test literal absent from the
-prompt, which is a much noisier screen and a larger change than this round
-should make. It is recorded here as a **known, mechanism-level miss** rather
-than fixed, so that nobody reads a quiet token screen as a clean bill:
-`ansible-de5858f4` is judged broken on the assertion itself, read by hand.
+**What the measurement actually shows.** Of the 13 instances judged broken that
+trip the token screen, whole-repo suppression would silence that screen on
+exactly **one**: `element-web-aec454dd`, whose three alarms are all pre-existing
+symbols. Even there no *instance* goes dark, because it independently trips the
+symbol screen. So the empirical cost of suppression in this set is one screen on
+one instance, not a lost verdict — much smaller than claimed.
+
+**Why annotation is still the right call, on a better argument.** Not the
+counter-example, which is withdrawn, but a property of the two designs:
+**annotation strictly dominates suppression.** A reader given the annotation can
+reproduce suppression exactly, by ignoring the annotated alarms; a reader given
+suppression cannot recover what was never printed. Suppression is irreversible
+and, worse, *invisible* — nobody audits an alarm that did not fire. Since the
+noise reduction is what suppression was wanted for, and the annotation delivers
+it in full (`ansible-c1f2df47` 27 alarms → 2 worth reading, `flipt-e50808c0`
+19 → 9, `element-web-880428ab` 5 → 1), suppression buys nothing that annotation
+does not, at the cost of an irreversible edit in the optimistic direction.
+
+`flipt-3b2c25ee`'s four alarms are still reported, and are still resolved by
+hand — in that case correctly, because the interface field gives
+`Storer.ListFlags`'s parameter type as
+`*storage.ListRequest[storage.NamespaceRequest]`, and that package's
+constructors are the only way to build one.
 
 ### What this says about the token screen
 

@@ -318,12 +318,11 @@ def elsewhere_in_repo(
 
   Triage, **not** suppression. Existing somewhere in the checkout makes a
   symbol *available*; it does not make it *pinned*, and the screen exists to
-  find things that are available but not pinned. The counter-example is
-  concrete: ``navidrome-b3980532``'s graded test compares against the
-  ``lastFMAPIKey`` constant, which of course exists in the repository, and the
-  prompt still never names it — suppressing on repository presence would have
-  silenced a true positive. So the alarm stands and this list only tells the
-  reader which alarms are cheaper to dismiss.
+  find things that are available but not pinned. Annotating instead of
+  suppressing also strictly dominates: a reader holding this list can reproduce
+  suppression exactly by ignoring the alarms in it, whereas a reader holding a
+  suppressed screen cannot recover an alarm that was never printed. So the
+  alarm stands, and this list only says which alarms are cheaper to dismiss.
   """
   if not alarms:
     return []
