@@ -443,15 +443,39 @@ pilot's twelve amendments.
   caveat as the signal that a structural fix was available and skipped.
 
   Instances for all five: [PR #305](https://github.com/Luolc/swe-lab/pull/305).
-- **A URL is an assertion, not formatting.** It claims *this exists, and it is
-  there*. Writing a link you have not resolved is writing a number you have not
-  measured — worse, because a link **looks like a citation**, so a reader assumes
-  it was already checked. A fabricated one is the most credible bad value of all:
-  not an empty result but one shaped exactly like a verified result, and an
-  anchor guessed from a plausible pattern reads identically to one that was
-  copied. **Never write a link you have not opened**; when you lack it, name the
-  thing in words — "the review comment on PR #305" — rather than inventing an
-  anchor.
+- **A sentence saying you checked is itself a claim — and the most trusted kind,
+  because it looks like diligence.** "Every link resolves", "each row carries
+  its domain", "I searched for a sibling implementation": each asserts the
+  *completeness of your own work*, and a reader cannot tell one that was earned
+  from one that was assumed. So **either carry the trace that makes it
+  checkable** — the search terms and the scope they ran over, the script, the
+  enumerated list — **or do not write the sentence**. The damage is not that
+  such a claim can be wrong; it is that **it discourages the one action that
+  would find it wrong**, which is exactly what it shares with a sentence
+  asserting that something does not exist
+  ([task 37](../horizontal/plans/task-37-stale-mechanism-descriptions.md)). Both
+  work by making the reader stop looking.
+
+  **A URL is the sharpest instance**: it claims *this exists, and it is there*,
+  and a fabricated one is the most credible bad value of all — not an empty
+  result but one shaped exactly like a verified result, since an anchor guessed
+  from a plausible pattern reads identically to one that was copied. **Never
+  write a link you have not opened**; when you lack it, name the thing in words
+  — "the review comment on PR #305" — rather than inventing an anchor.
+
+  Three instances, 2026-09-01, one line each:
+
+  - A comment link written into an agent-to-agent message before it was
+    resolved — the text of the message correct, the address invented; caught by
+    its author and corrected within the minute. Not recorded outside this
+    entry, which is why the entry exists.
+  - [#312](https://github.com/Luolc/swe-lab/pull/312)'s own description promised
+    that every measurement row carried its N and design; **three did not**
+    ([review](https://github.com/Luolc/swe-lab/pull/312#issuecomment-5500618289))
+    — in the section that exists to stop a narrow measurement being read as a
+    general property.
+  - "I searched for a sibling implementation" with no search terms given —
+    **reported by machine-setup, not reproduced here.**
 - **Label an amendment for what it is.** "Post-hoc but prospective, with an
   empty prior action set" is a real and useful category — a rule changed after
   the run began but before it had ever fired changes nothing that already
