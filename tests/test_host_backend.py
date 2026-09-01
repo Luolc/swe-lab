@@ -1,8 +1,10 @@
 """Tests for DockerHostSandbox: argv construction (mocked) + live Docker."""
 
 from dataclasses import dataclass, field
+import os
 from pathlib import Path
 import subprocess
+import sys
 
 from etils import epath
 import pytest
@@ -21,6 +23,7 @@ from swe_lab.sandbox import (
     SandboxManager,
     SandboxSpec,
 )
+from swe_lab.sandbox.backends import host
 
 from .conftest import FakeClaudeBinary
 
@@ -203,6 +206,58 @@ def test_up_start_failure_removes_partial_container(
         spec=SPEC, workspace=epath.Path(tmp_path), pull=False
     ).up()
   assert fake.last_matching("rm") == ["docker", "rm", "-f", "cid"]
+
+
+def test_up_start_raising_still_removes_the_created_container(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """A container exists once ``create`` returns, however ``start`` fails."""
+  fake = _FakeDocker(results=[_ok("cid\n"), _ok()])  # create ok, then rm
+  original = fake.__call__
+
+  def run(
+      argv: list[str], **kwargs: object
+  ) -> subprocess.CompletedProcess[str]:
+    if argv[:2] == ["docker", "start"]:
+      fake.calls.append(list(argv))
+      raise subprocess.TimeoutExpired(argv, 120.0)
+    return original(argv, **kwargs)
+
+  monkeypatch.setattr(subprocess, "run", run)
+  with pytest.raises(SandboxError):
+    DockerHostSandbox(
+        spec=SPEC, workspace=epath.Path(tmp_path), pull=False
+    ).up()
+  assert fake.last_matching("rm") == ["docker", "rm", "-f", "cid"]
+
+
+def test_up_labels_name_the_owning_process_and_session(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """A survivor can be attributed: both owner labels ride on ``create``."""
+  fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
+  _install(monkeypatch, fake)
+  DockerHostSandbox(spec=SPEC, workspace=epath.Path(tmp_path), pull=False).up()
+  create = fake.last_matching("create")
+  assert f"swe-lab-owner-pid={os.getpid()}" in create
+  assert f"swe-lab-owner-session={host._OWNER_SESSION}" in create  # noqa: SLF001
+
+
+def test_the_session_id_is_stable_in_process_and_differs_across_processes():
+  """The pid cannot stand alone: it is reused, and it is not per session."""
+  assert host._OWNER_SESSION == host._OWNER_SESSION  # noqa: SLF001
+  other = subprocess.run(
+      [
+          sys.executable,
+          "-c",
+          "from swe_lab.sandbox.backends import host;"
+          " print(host._OWNER_SESSION)",
+      ],
+      capture_output=True,
+      text=True,
+      check=True,
+  ).stdout.strip()
+  assert other and other != host._OWNER_SESSION  # noqa: SLF001
 
 
 def test_missing_docker_cli_raises(

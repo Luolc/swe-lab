@@ -25,6 +25,7 @@ import subprocess
 import tempfile
 import time
 from typing import override
+import uuid
 
 from etils import epath
 
@@ -48,6 +49,19 @@ _DOCKER_TIMEOUT_S = 120.0
 #   docker rm -f $(docker ps -aq --filter label=swe-lab)
 _OWNER_LABEL = "swe-lab"
 _INSTANCE_LABEL = "swe-lab-instance"
+
+# Who created it. A survivor is only reclaimable if it says whose it is, and
+# **the pid alone cannot say that**: pids are reused, so a dead owner's number
+# may name a live stranger, and a pytest session does not share a pid with the
+# subprocesses it spawns — both cases read as "the owner is alive" and stop a
+# reclaim that should happen. The session id is what makes the pair decidable:
+# it is unique per process and never recycled, so it distinguishes *this* run
+# from whatever now holds that pid. Neither label is read by anything here;
+# they exist so that something else can attribute what escaped
+# (docs/horizontal/plans/task-35-lifecycle-ownership.md).
+_OWNER_PID_LABEL = "swe-lab-owner-pid"
+_OWNER_SESSION_LABEL = "swe-lab-owner-session"
+_OWNER_SESSION = str(uuid.uuid4())
 
 
 @dataclass
@@ -102,8 +116,9 @@ class DockerHostSandbox(Sandbox):
   def up(self) -> None:
     """Prepare the workspace, then pull, create, and start the container.
 
-    Cleans up its own partial state: if ``start`` fails after ``create``
-    succeeded, the created container is removed before raising.
+    Cleans up its own partial state: the handle is recorded the instant
+    ``create`` returns, so any failure after it — a non-zero ``start`` or a
+    raising one — removes the created container before the error propagates.
 
     Raises:
       SandboxError: On a non-empty workspace (without ``reuse``), a missing
@@ -132,6 +147,10 @@ class DockerHostSandbox(Sandbox):
         f"{_OWNER_LABEL}=1",
         "--label",
         f"{_INSTANCE_LABEL}={self.spec.instance_id}",
+        "--label",
+        f"{_OWNER_PID_LABEL}={os.getpid()}",
+        "--label",
+        f"{_OWNER_SESSION_LABEL}={_OWNER_SESSION}",
         "--entrypoint",
         self.shell,
         self.spec.image_ref,
@@ -144,16 +163,25 @@ class DockerHostSandbox(Sandbox):
           f"docker create for {self.spec.image_ref} failed:\n"
           f"{created.stderr[-2000:]}"
       )
-    handle = created.stdout.strip()
-    started = self._docker(["start", handle], timeout=_DOCKER_TIMEOUT_S)
-    if started.returncode != 0:
-      self._container = handle
-      self.down()  # remove our own partial state before surfacing
-      raise SandboxError(
-          f"docker start for {self.spec.image_ref} failed:\n"
-          f"{started.stderr[-2000:]}"
+    # The container exists from the moment `create` returns, so ownership of
+    # it starts here rather than after `start`. Registering the handle later
+    # left a window in which a `start` that *raised* — a timeout, a CLI that
+    # vanished — leaked a created container that nothing could name.
+    self._container = created.stdout.strip()
+    running = False
+    try:
+      started = self._docker(
+          ["start", self._container], timeout=_DOCKER_TIMEOUT_S
       )
-    self._container = handle
+      if started.returncode != 0:
+        raise SandboxError(
+            f"docker start for {self.spec.image_ref} failed:\n"
+            f"{started.stderr[-2000:]}"
+        )
+      running = True
+    finally:
+      if not running:
+        self.down()  # remove our own partial state before surfacing
 
   @override
   def down(self) -> None:
