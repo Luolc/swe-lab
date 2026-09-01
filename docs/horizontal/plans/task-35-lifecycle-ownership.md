@@ -492,6 +492,26 @@ the scope contains. What is obsolete is the scope, not necessarily the
 contents.** This is the dual of deleting a cut point — that one is about
 removing what should not stay; this one is about not removing what should.
 
+### When an argument rests on an absence, look for the exclusive branch
+
+A third rule, and it settled a question this handoff was about to leave open.
+*Does the proxy converter's thread-loss defect touch the honesty-scorer pilot's
+records?* Both the answer and the way it was first argued are worth keeping:
+
+- **The weak form (argument from absence):** "the frozen trees contain no proxy
+  log, therefore the run was not proxy-captured." It needs the premise *I looked
+  everywhere*, which never fully holds — a missing file is also what a rename, a
+  different directory or an interrupted copy looks like.
+- **The strong form (argument from presence):** `native_outputs()` picks the
+  proxy files **or** the event-stream file — one `if`, two branches, mutually
+  exclusive and jointly exhaustive. So observing that `event_stream.jsonl` **is
+  there** settles it in one look, with no exhaustive search behind it.
+
+The rule: **when an argument rests on something being absent, look for an
+exclusive branch that turns it into something being present.** Where the code
+already forces a choice between two shapes, seeing one *is* proof of the other's
+absence — and that is an observation, not a survey.
+
 ### What is left to build
 
 Everything in D: the spawn records, the reaper, the `swe-lab reap` command

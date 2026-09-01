@@ -571,13 +571,17 @@ Reason to record: task 03 is *entirely* the injection arm — a log of hints tha
 are no longer emitted, and a guard that a hint reached a trace that no longer
 carries hints.
 
-**One fact inside it outlives it**, and needs a home before the row is closed:
+**One fact inside it outlives it, and it now has a home.**
 `proxy_log_to_conversation` keeps only the last proxy record's thread, so a
-subagent's conversation is silently dropped. That is a **real conversion defect
-independent of hints** — it was found by task 02 and is currently recorded only
-as part of task 03's rationale. It should become its own row (or a spec §10
-hazard). Closing task 03 without rehoming it would delete the finding along with
-the task.
+thread that is not the last request's is silently dropped. That is a **real
+conversion defect independent of hints** — found by task 02, and recorded until
+now only inside task 03's rationale, where closing the row would have deleted it
+along with the task. It is rehomed as
+[horizontal task 36](../../horizontal/plans/README.md), together with the open
+question next to it: whether a subagent's turns appear in the event stream at
+all, which `--disallowedTools …,Task` sidesteps rather than answers.
+
+With that migration done, closing this row costs nothing that is still true.
 
 ### The completion criterion
 
