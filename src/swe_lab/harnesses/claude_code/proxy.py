@@ -29,6 +29,7 @@ explicit ``reverse_proxy.go`` path to override.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import os
 import subprocess
@@ -172,12 +173,39 @@ def _clear_legacy_cache_entry(repo_root: epath.PathLike) -> None:
 
   A directory at this path is the current layout and is left alone.
 
+  Two first proxied runs can race here, so what this asserts is a *state*, not
+  a sequence of steps: on return, nothing but a directory stands at that path.
+  The condition is written that way on purpose. Enumerating the ways a removal
+  can fail — missing, already a directory, and whatever a future filesystem
+  adds — is a list that is wrong as soon as it is incomplete, whereas the
+  target state is a single fact that can be checked. A peer that removed the
+  file, or that already replaced it with the real directory, has produced
+  exactly the state this wanted; losing that race is success.
+
+  Removal goes through :func:`os.remove` rather than ``Path.unlink`` because
+  ``epath``'s ``unlink`` deletes an *empty directory* instead of refusing —
+  which, in the losing interleaving, would destroy the cache directory the
+  peer had just created.
+
   Args:
     repo_root: Repo root whose cache to check.
+
+  Raises:
+    RuntimeError: If a non-directory still stands at the path afterwards. That
+      is no longer a race — it is an entry we could not clear and must not
+      silently build on top of.
   """
   namespace = cache_root(repo_root) / _BIN_SUBDIR / _CACHE_NAMESPACE
+  if namespace.is_dir():
+    return
+  # A peer may win any part of this; the state check below is what decides.
+  with contextlib.suppress(OSError):
+    os.remove(namespace)
   if namespace.exists() and not namespace.is_dir():
-    namespace.unlink()
+    raise RuntimeError(
+        f"{namespace} is not a directory and could not be cleared; the proxy"
+        " binary cache cannot be created under it"
+    )
 
 
 def _build(source: epath.Path, binary: epath.Path) -> None:
