@@ -15,40 +15,45 @@ independent verticals**:
   [`datasets/`](../src/swe_lab/datasets/),
   [`evaluation/`](../src/swe_lab/evaluation/).
 - **Verticals** — [`workstreams/`](workstreams/) → each an independent unit of
-  work over the eval data. A workstream is a folder; the active one carries its
-  own `spec` / `plan` / `todo`, a dormant one is just a `README`.
+  work over the eval data. All three are dormant today (see the snapshot below),
+  so each is just a `README`; an active one would take the component layout
+  described in [`doc-map.md`](doc-map.md).
 
 ## Status snapshot
 
-Update this when a workstream's state changes; keep the detail in each
-workstream's folder, not here.
+**The centre of gravity is the [horizontal foundation](horizontal/)** — this
+repo's job is maintaining the harness itself. The three workstreams are the
+project's original framing and are all dormant: they record what was delivered,
+not what is being worked on. Live, task-level status has exactly one home, the
+[horizontal task index](horizontal/plans/README.md); update the table below only
+when a workstream's state changes.
 
 | # | Workstream | Status | Detail |
 | --- | --- | --- | --- |
-| **W1** | Related-files annotation | ✅ **Complete** — 731/731 annotated, QA'd, pushed | [w1](workstreams/w1-related-files/) |
-| **W2** | Solve + evaluate pipeline | 🚧 **Active** — eval + rollout validated end-to-end (multi-harness, multi-dataset); matrix eval over the full SWE-Bench-Pro set is the focus | [w2](workstreams/w2-solve-eval/) |
-| **W3** | Quality auditing / skew | 📋 **Planned** — first tool (gold self-test sweep) falls out of W2 | [w3](workstreams/w3-quality-audit/) |
+| **W1** | Related-files annotation | ✅ **Complete** — 731/731 annotated, QA'd, pushed; the folder is now an archive | [w1](workstreams/w1-related-files/) |
+| **W2** | Solve + evaluate pipeline | 📦 **Folded into the horizontal foundation** — the solve + eval loop it planned is shipped; its two surviving to-dos moved to the horizontal index as tasks 31–32 | [w2](workstreams/w2-solve-eval/) |
+| **W3** | Quality auditing / skew | 📋 **Never started** — an intent, not a plan. The nearest shipped work is benchmark integrity, which landed horizontally (`src/swe_lab/integrity/`, tasks 25–26), not under `pipelines/` as that README guesses | [w3](workstreams/w3-quality-audit/) |
 
-**Latest (2026-08-31).** W1 annotation is done (7083 snippets; traces off-repo on
-HF). Rollout is proven end-to-end: the `claude_code`, `codex`, and `grok_build`
-harnesses are all done (horizontal tasks 06/28/29), and horizontal task 30
-(DeepSWE 1.1 as a second dataset) landed 2026-08-26 with a live rollout e2e run
-and a green 113-task gold sweep on Actions (0 GOLDEN_FAIL / 0
-BASE_UNEXPECTED_PASS). W2's own mainline — matrix eval across the full
-SWE-Bench-Pro 731 set ([w2 todo](workstreams/w2-solve-eval/todo.md) tasks 2–4) —
-is still open. On the horizontal side, tasks 25 (git-history purge, P0) and 15
-(extensibility seam proof, P0) remain open, task 13 (R2 store) is blocked on
-CP4 (ask-first), and human checkpoints CP1–CP5 are all still unchecked →
-[horizontal task index](horizontal/plans/README.md). Patch extraction is
-settled in [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)
-(Accepted).
+**Latest (2026-08-31).** The horizontal foundation is the live surface: one
+SandboxRun engine driven by `swe-lab run <workflow>`, three harnesses
+(`claude_code`, `codex`, `grok_build` — tasks 06/28/29) and two datasets
+(SWE-Bench Pro, plus DeepSWE 1.1 at task 30, landed 2026-08-26 with a live
+rollout e2e run and a green 113-task gold sweep on Actions: 0 GOLDEN_FAIL / 0
+BASE_UNEXPECTED_PASS). Rollout is proven end-to-end on all three harnesses, and
+a downstream consumer has run it. One P0 is open: task 15, proving the sandbox
+extensibility seam from the outside plus its author guide — ADR-0003 phase 2 is
+waiting on it. Tasks 13 (R2 store) and 24 (the portable-bundle wiring) are
+**deferred by choice**, and tasks 31–33 are newly queued → [horizontal task index](horizontal/plans/README.md). The CP1–CP5 human
+checkpoints are **retired**: review happens at PR granularity instead. Patch
+extraction is settled in
+[ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted).
 
 ## Where everything lives
 
 | Path | What's in it |
 | --- | --- |
 | [horizontal/](horizontal/) | The **horizontal** shared foundation — design of the shared execution core and any cross-cutting shared-code work. |
-| [workstreams/](workstreams/) | The **verticals** — one folder per workstream (design/history, plus `spec`/`plan`/`todo` when active). |
+| [workstreams/](workstreams/) | The **verticals** — one folder per workstream. All three are dormant: each is a design/history `README`. |
 | [conventions.md](conventions.md) | Codebase map, build/test/lint commands, directory meanings, hazards, source-of-truth rule. |
 | [doc-map.md](doc-map.md) | Which doc answers which question, where a new learning belongs, and the single-source-of-truth guards. |
 | [decisions/](decisions/) | Architectural decisions (ADRs). ADR-0001 = patch extraction + grading (Accepted). |
@@ -63,8 +68,8 @@ settled in [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)
 
 See [`../AGENTS.md`](../AGENTS.md). In brief: **building** a feature runs the
 **spec → plan → build → review → ship** lifecycle (a non-trivial effort starts
-from a `spec.md`; the active component — a workstream or the horizontal
-foundation — owns its `plan.md` strategy + `plans/` per-task designs indexed by
-`plans/README.md`); **experimenting** follows the
+from a `spec.md`; the active component — today, the horizontal foundation —
+owns its `plans/` per-task designs indexed by `plans/README.md`, which is also
+its only status home); **experimenting** follows the
 [experiment playbook](experiments/playbook.md).
 Each fact has one canonical home — link to it, don't restate a fact that drifts.

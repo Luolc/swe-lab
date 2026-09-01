@@ -1,9 +1,9 @@
 # Horizontal — task index
 
 Ordered task index + status for the horizontal component (per the repo's
-planning convention: [`spec.md`](../spec.md) = target design,
-[`plan.md`](../plan.md) = strategy, `plans/` = one deep design per task,
-indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8 (break down if larger).
+planning convention: [`spec.md`](../spec.md) = target design, `plans/` = one
+deep design per task, indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8
+(break down if larger).
 
 **Single source of truth for status:** this table is the *only* live status for
 the horizontal tasks. The `plans/task-*.md` docs are point-in-time **design
@@ -18,52 +18,46 @@ read status from them. A task that shipped with notable deltas gets a dated
 | 03 | [A-host backend (`DockerHostBackend`)](task-03-a-host-backend.md) | ✅ Done (+ amendments landed: `Resource`, `assets`, materialize seam — PR #46) |
 | 04 | [`unit_test` eval method + SBP compile](task-04-unit-test-method.md) | ✅ Done |
 | 05 | [Eval CLI on the engine + parity](task-05-eval-cli.md) | ✅ Done (CLI + parity workflow; parity run green — flipt + truncated-golden ansible match legacy) |
-| — | **CP1 — eval parity** (human gate) | ⬜ |
 | 06a | [`Conversation` protocol + output converters](task-06a-conversation-protocol.md) | ✅ Done (PR #37) |
 | 06 | [`claude_code` harness (event-stream capture)](task-06-claude-code-harness.md) | ✅ Done (PR #47) |
-| 07 | [Diff-extract observer + rollout CLI](task-07-diff-extract-rollout-cli.md) | ✅ Done (PR #48; live flipt rollout = CP2, manual) |
-| — | **CP2 — rollout regression bar** (human gate) | ⬜ |
+| 07 | [Diff-extract observer + rollout CLI](task-07-diff-extract-rollout-cli.md) | ✅ Done (PR #48; live flipt rollout verified manually) |
 | 08 | [Proxy capture mode](task-08-proxy-capture.md) | ✅ Done (converter + harness/backend seam; live path = manual) |
 | 09 | [A-ghjob backend](task-09-a-ghjob-backend.md) | ✅ Done (`GitHubJobBackend` + `--backend` seam; container-job workflow = manual) |
 | 10a | [Moves: `datasets/`, `paths`, `repo/` → top level](task-10a-moves.md) | ✅ Done (pure rename; 190 green, W1 CLI runs) |
 | 10b | [Cutover + deletion (old packages, `core/`, workflows)](task-10b-cutover.md) | ✅ Done (`core/` gone; verify on engine; stub-seam test; 184 green) |
 | 11 | Docs sync | ✅ Done (maps + commands match the post-cutover tree; spec noted Implemented) |
-| — | **CP3 — cutover: 731 sweep + stub seam test** (human gate) | ⬜ |
 | 12 | [`Store` seam + post-run persist + manifest](task-12-persistence.md) | ✅ Done (FilesystemStore; `--persist`/`--sweep` on rollout+eval; `promote` subcommand. S3/R2 = task 13) |
-| — | **CP4 — R2 provisioning** (ask-first) | ⬜ |
-| 13 | R2 store + CI wiring | ⬜ |
+| 13 | R2 store + CI wiring | ⏸ **Deferred** — not planned for now; we stay on `FilesystemStore` until we have our own need for cloud persistence. Still wanted eventually, so the design below stays. |
 | 14 | [**Merged lifecycle-bearing `Sandbox` + up-first + transfer seam**](task-14-sandbox-lifecycle-refactor.md) ([ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ✅ Done (merged `Sandbox`/`SandboxBackend`; up-first + collect; `Resource` = data; `Mount.read_only` drops `Assets`; open backend registry) |
 | 15 | **Extensibility seam proof + author guide** (no shipped remote backend — [ADR-0003](../../decisions/ADR-0003-remote-sandbox-lifecycle.md)) | ⬜ **P0** |
 | 16 | **Multi-rollout run-record layout** (`rollout_id` + `attempt`; split manifest read — [ADR-0004](../../decisions/ADR-0004-multi-rollout-run-record-layout.md)) | ✅ Done (key `<sweep>/<instance>/r<rollout>/a<attempt>`; `runs/` → store root; `run_ts` recorded only; `read_manifests` + targeted `read_manifest`). K-rollouts **sampling** in eval/rollout is the W2 follow-on |
-| 17 | [**Flaky-eval retry + `flaky` verdict flag**](task-17-flaky-eval-retry.md) ([ADR-0005](../../decisions/ADR-0005-flaky-eval-retry.md)) | ✅ Done (ADR-0005; `retries` default 1; validated downstream — nearly all flakes recover in one retry, see the plan's Result note) |
-| 18 | [Sandbox observability + interface reshape](task-18-observability-and-interface-reshape.md) ([ADR-0007](../../decisions/ADR-0007-task-and-workflow-layer.md) §2/§3/§8) | ✅ Done (PR #152; `sandbox.*` runtime metrics incl. live OOM coverage; `Harness.observers()` + `run(prompt=...)` breaking pair; live-rollout CP pending) |
+| 17 | [**Flaky-eval retry + `flaky` verdict flag**](task-17-flaky-eval-retry.md) ([ADR-0005](../../decisions/ADR-0005-flaky-eval-retry.md)) | ✅ Done (ADR-0005; `retries` default 1; the design's deltas and the classes retry cannot absorb are in the plan's Result note) |
+| 18 | [Sandbox observability + interface reshape](task-18-observability-and-interface-reshape.md) ([ADR-0007](../../decisions/ADR-0007-task-and-workflow-layer.md) §2/§3/§8) | ✅ Done (PR #152; `sandbox.*` runtime metrics incl. live OOM coverage; `Harness.observers()` + `run(prompt=...)` breaking pair) |
 | 19 | [**`Task` layer + both compositions rewritten on it**](task-19-task-layer.md) (ADR-0007 §§1–5) | ✅ Done (`workflow/` + `ArtifactSchema` seam; `CodingAgentTask` / `UnitTestEvalTask`; wrappers frozen, zero test edits; §2.6 instance-mounts migration deferred to Task 21 — see the plan's Result note) |
-| — | **CP5 — Task falsification gate** (human gate: wrappers thin, live byte-equivalence) | ⬜ |
 | 20 | [**Task-keyed persistence: records, validation, retry, resume**](task-20-task-persistence.md) (ADR-0007 §§6–7; amends ADR-0004 — the key gains a `<task>` segment). **Direction:** task-level retry is meant to *replace* the in-run eval retry — but the loop stays until the wrappers die (they receive one sandbox, not a factory); a new ADR supersedes ADR-0005 at removal | ✅ Done (`run_task` + `TaskAddress`/`TerminalMarker`; `Task.outputs_valid`/`should_retry` hooks; `Store.put_bytes`/`get_bytes`; CLIs stamp `task=`; no compat — old debug shards discarded) |
 | 21 | [**Workflow: declared list, edges from the store**](task-21-workflow.md) (ADR-0007 §§5, 9–10) | ✅ Core done (PR #160: static edge resolution + caller `inputs` producer + per-entry timeout + `resume=False`; attempt errors persisted; two-container live e2e). CLI rewire folded into task 22 |
 | 22 | [**Late-bound instances: static workflow definitions, registry, one CLI**](task-22-late-binding-workflows.md) — instance becomes a hook/execute argument; `WorkflowEntry.sandbox: SandboxConfig` replaces factories; `register_workflow`; **in-run eval retry retires** ([ADR-0008](../../decisions/ADR-0008-retry-moves-to-the-task.md) supersedes ADR-0005); wrappers deleted | ✅ Done (late-bound hooks + `InputsBuilder`; sandbox config split + per-attempt synthesis; `apply_patch`/`patch_name` contract; registry + built-in definitions; both CLIs re-plumbed, flags unchanged — see the plan's Result note. **`swe-lab run <workflow>` is *not* here**: the command surface is task 23) |
 | 23 | [**The general CLI**](task-23-general-cli.md) — statically registered workflows invoked by name, adjusted per invocation through a generic dotted-path override grammar (`--<entry>.<field-path>=value`) over tasks, harnesses, and sandbox configs alike; `rollout` / `eval` retire into it | ✅ Done (`swe-lab run <workflow> <instance>`; override engine + harness registry; `--input` with the single-unbound shorthand; three exit codes; the proxy recorder became an observer. See the plan's Result note) |
-| 24 | [**Portable Claude Code bundle**](task-24-claude-code-portable-bundle.md) — glibc-old-baseline runtime so the agent runs on musl/Alpine, ancient glibc and distroless alike; one complete tarball; **internal-use only — private channels, never publish** | 🔨 Build green (`packaging/claude-code-bundle/`; smoke matrix 21/21 on debian 10/12, ubuntu 20.04/22.04, alpine 3.19, distroless — live-agent checks still SKIP without a token). swe-lab wiring (§9) not started |
-
-| 25 | [**Purge future git history before the agent runs**](task-25-git-history-purge.md) ([ADR-0010](../../decisions/ADR-0010-benchmark-integrity.md) §3b + its 2026-08-06 amendment; [#191](https://github.com/Luolc/swe-lab/issues/191)) — a rollout-only observer purging in `after_create`: branches, remote refs, **date-filtered** tags (past kept), remotes, reflog, `gc --prune=now`; three assertions, any failure = a recorded failed attempt | ⬜ **P0** — design done and **empirically validated** on 5 real images / 4 languages / incl. Alpine; found 2 defects in the reference implementations (symref abort, GNU-only `date -d`) |
+| 24 | [**Portable Claude Code bundle**](task-24-claude-code-portable-bundle.md) — glibc-old-baseline runtime so the agent runs on musl/Alpine, ancient glibc and distroless alike; one complete tarball; **internal-use only — private channels, never publish** | ⏸ **Build done, wiring deferred** — bundle builds green (`packaging/claude-code-bundle/`; smoke matrix 21/21 on debian 10/12, ubuntu 20.04/22.04, alpine 3.19, distroless — live-agent checks SKIP without a token). The swe-lab wiring (§9) is **not planned for now**: tasks 28/29 measured Codex and Grok as static musl binaries that run bare on Alpine / debian:10 / distroless, so the bundle's apparatus is needed by at most one of the three harnesses. |
+| 25 | [**Purge future git history before the agent runs**](task-25-git-history-purge.md) ([ADR-0010](../../decisions/ADR-0010-benchmark-integrity.md) §3b + its 2026-08-06 amendment; [#191](https://github.com/Luolc/swe-lab/issues/191)) — a rollout-only observer purging in `after_create`: branches, remote refs, **date-filtered** tags (past kept), remotes, reflog, `gc --prune=now`; three assertions, any failure = a recorded failed attempt | ✅ Done (PRs #194/#201/#207/#247) — `git/history.py` + `GitHistoryPurgeObserver`, on by default in the rollout (`rollout.py`, `purge_git_history=True`), the `git_integrity_audit` workflow registered, and the three post-purge assertions pinned by tests |
 | 26 | [**Result verifier — detect what the environment cannot prevent**](task-26-result-verifier.md) ([ADR-0010](../../decisions/ADR-0010-benchmark-integrity.md) §3c/§6 as amended) — a pure rule core (replayable) + an observer last in the rollout's `before_destroy`; audits the purge, flags planted auto-load hooks and retrieval traces. **Detection only, never a gate**; the model judge is a later, separate entry | ✅ Done (v1: rule core + replay + observer; 0/731 FP on the primary rule pinned as a test, 5/5 sensitivity, and 10/10 correct on a live Docker matrix of 5 instances × clean/cheat. **Layer 2 model judge deliberately deferred** — see the plan's Result note) |
 | 27 | **Fair retry — only what is not the agent's own doing** ([ADR-0011](../../decisions/ADR-0011-fair-retry.md), implementing the [2026-07-29 outcome-states review](../../reviews/2026-07-29-rollout-outcome-states.md) §§5–6) — `AgentOutcome` + `Harness.outcome` replace the completion bit; `Task.retry_on_timeout` (default off), enforced by the runner's `retry_permitted` gate rather than a second hook; the rollout predicate reads `AgentOutcome` + `RunStatus` and never the patch or the grade; `record_extra` puts the outcome on the shard | ✅ Done (a timeout is no longer retried, an API/execution error now is; fairness invariants pinned by named tests) |
 | 28 | [**Codex provisioning + `CodexHarness`**](task-28-codex-provisioning.md) — measured: the Codex Linux binary is **static musl** and runs bare on Alpine / debian:10 / distroless, so task-24's loader+glibc apparatus does not apply. Fetch-verify-pin **two** binaries (`codex` + `codex-code-mode-host`), no `bwrap`; `CodexHarness` over `codex exec --json` with an ADR-0011 outcome classifier | ✅ Done — verified end to end on a real SWE-Bench Pro instance (patch extracted). **The design's §2/§4 decisions were corrected by building it — see the dated Result note.** §7 (generalize the provisioning seam) still open |
 | 29 | [**Grok Build provisioning + `GrokBuildHarness`**](task-29-grok-harness.md) — measured: `grok` is **static musl** (Alpine / debian:10 / distroless all pass bare), one binary, no bundle; distribution is Claude-Code-shaped (channel → bare binary) but the installer verifies nothing, so sha256 pins in-repo. Headless `streaming-messages-json` is **Claude Code's stream-json schema** (measured), so the converter delegates to `claude_code.convert`; `--max-turns` makes `MAX_TURNS` reachable. One open door: repo `AGENTS.md` injects as a prepended user message with **no off switch** — detection-not-prevention pending the BANANA probe | ✅ Done — `GrokBuildHarness` verified end to end (live tool-using solve; converter is pure delegation; `MAX_TURNS` reachable, subtype pinned live). **BANANA probe confirmed the AGENTS.md door is open with no CLI off switch** (the `agents_md` builder field is SDK-only — tried and refuted); detection-not-prevention, evidence visible in the trace. See the dated Result note |
 | 30 | [**DeepSWE 1.1 as a second dataset**](task-30-deepswe-dataset.md) — Datacurve's 113-task Harbor-format benchmark behind the existing dataset seams; their verifier runs **verbatim** (tests mounted, no verifier image — gold round trip measured `reward: 1`, `--network none`); extraction stays **default mode** (their per-file-reset grader wants `base_commit`-relative patches — baseline mode would mis-grade); top hazard: the hidden tests are public on GitHub, so an online agent can fetch them | ✅ Done (2026-08-26): parquet published + pinned (`luolc/deep-swe-1-1-materialized`); loader + verbatim-verifier eval; golden self-checks green in all 5 languages; rollout e2e green (claude_code solved `abs-stepped-slices` 1.0; cattrs 67/69; codex chain complete); **full 113-task gold sweep on Actions: 0 GOLDEN_FAIL / 0 BASE_UNEXPECTED_PASS** (4 base-run infra flakes re-verified locally as expected-fail). HOME-tier fix (#245) keeps image caches warm for the offline-faithful phase |
+| 31 | **Self-hosted SWE-Bench Pro parquet; retire `patches.py`** — republish the upstream parquet under our own HF dataset repo the way [task 30](task-30-deepswe-dataset.md) did for DeepSWE, with the truncated-`fail_to_pass` corrections for the three affected instances baked into the data, and delete the in-memory `patch_fail_to_pass` stopgap. **Only that correction goes into the parquet**: the per-example fixes under `datasets/swebench_pro/fixes/` stay in code, because they patch scripts, files and environment rather than dataset columns | ⬜ (migrated from the retired W2 todo) |
+| 32 | **Patch-extraction hardening backlog** ([ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md) D-items, pull one in when it bites) — P1: post-setup diff base (D1) · per-ecosystem `:(exclude)` denylist with drop-logging (D2) · faithful binary extract+apply (D3) · deferred silent-failure guards with logging for gitignored-new-source, submodules and LFS (D7). P2: eval-side empty-patch guard (D8) · fuller all-test-file reset (D5) | ⬜ (migrated from the retired W2 todo) |
+| 33 | **Relative-link existence check as a pre-commit hook** — the one doc guard narrow enough not to fire on legitimate point-in-time records: resolve every relative Markdown link in the repo and fail on a target that does not exist. Nothing mechanical guards docs today (see [`doc-map.md`](../../doc-map.md) → single-source-of-truth guards), and dead links are the one class a script can judge without judgment. **Blocked**: the repo currently has ~14 dead links (ADR-0001's four "where the code is" pointers, two at a `src/swe_lab/patch.py` that moved to `git/patch.py`, and one in `datasets/deepswe/HF_README.md` that ships to Hugging Face as the public dataset card) — fix those first or the hook lands red | ⬜ |
+| 34 | **Customer-attribution sweep** — a number of passages across the repo describe how a downstream run was configured or how its environment was handled, which the customer-information redline does not allow. They need one consistent pass rather than one-off edits, which would leave a false impression that the repo is clean. **Blocked** on the owner calibrating the threshold: a plain acknowledgement that a downstream consumer has run something is permitted; describing their practices or quoting figures is not. Note that this repository is public, so this is remediation, not leak prevention | ⬜ |
 
 **P0 — remote sandbox (ADR-0003).** swe-lab ships host + ghjob only; a remote /
-internal sandbox is a consuming company's **own** `Sandbox` subclass (import-only).
-Task 14 (the enabling refactor: up-first lifecycle, merged lifecycle-bearing
-`Sandbox`, `Resource` → extensible data, a receiver-decides transfer seam)
-**precedes Task 12** — building the persistence observer on the host-`Path`
-assumption would weld it deeper.
-Order: **14 → 15 → (12 rebased onto the transfer seam)**.
-
-Write a `task-NN-*.md` deep design before starting any task marked non-trivial
-(02, 03, 04, 06 at minimum — engine interface details, docker lifecycle, the
-`Grader` compile path, and the harness invocation deserve source-grounded
-designs).
+internal sandbox is a consuming project's **own** `Sandbox` subclass
+(import-only). Task 14 landed the enabling refactor (up-first lifecycle, merged
+lifecycle-bearing `Sandbox`, `Resource` → extensible data, a receiver-decides
+transfer seam); **task 15 — proving that seam from the outside and writing the
+author guide — is the remaining P0**: it is what ADR-0003 phase 2 is waiting
+on, and the seam is unproven until something outside this repo compiles against
+it.
 
 ---
 
@@ -125,8 +119,6 @@ eval-parse observer. The SBP adapter compiles its record into
 - **Verification:** CI run links + a parity table in the PR body.
 - **Dependencies:** 03, 04. **Scope:** M
 
-### Checkpoint CP1 — eval parity *(human review before the rollout slice)*
-
 ## Task 06a: `Conversation` protocol + output converters
 
 **Description:** `swe_lab/conversation/` — one provider-neutral, well-typed
@@ -176,8 +168,6 @@ capture as a conversation observer producing a task-06a `Conversation`.
 - **Verification:** CI flipt rollout run link with conversation + patch + verdict.
 - **Dependencies:** 04, 06. **Scope:** M
 
-### Checkpoint CP2 — rollout regression bar *(human review before the moves)*
-
 ## Task 08: Proxy capture mode
 
 **Description:** `ReverseProxy` (from `core/agent/proxy.py`) wired as the
@@ -210,7 +200,7 @@ instance's eval (or rollout) as a GH container job.
   (`python -m swe_lab.pipelines.related_files --help`).
 - **Verification:** full quality bar; grep shows no `swe_lab.core.datasets` /
   `core.paths` imports left.
-- **Dependencies:** CP1 + CP2 passed. **Scope:** M (mechanical)
+- **Dependencies:** 05, 07. **Scope:** M (mechanical)
 
 ## Task 10b: Cutover + deletion
 
@@ -236,9 +226,6 @@ Implemented.
   across docs.
 - **Dependencies:** 10b. **Scope:** S
 
-### Checkpoint CP3 — cutover *(user triggers the full 731 sweep,*
-*`max-parallel` ≤15, ~2.2 h; reviews 731/731 + a flipt rollout re-run)*
-
 ## Task 12: `Store` seam + post-run persist + manifest
 
 Deep design: [`task-12-persistence.md`](task-12-persistence.md).
@@ -256,9 +243,6 @@ stamped at launch via entry-point defaults + `--persist`; `promote` against
   quality bar.
 - **Dependencies:** 14 (the `fetch`/collect seam). **Scope:** M
 
-### Checkpoint CP4 — R2 provisioning *(ask-first: user creates the R2 bucket*
-*+ scoped API token before task 13 wires secrets into CI)*
-
 ## Task 13: R2 store + CI wiring
 
 **Description:** `S3Store` over the S3 API (boto3 — a runtime dep behind the
@@ -267,4 +251,5 @@ CI secrets, `promote` against R2; retention = keep-all per the spec.
 - **Acceptance:** a CI rollout run lands its artifacts in R2 under
   `runs/<sweep>/<instance>/<ts>/…` with a manifest entry; laptop fetch works.
 - **Verification:** a dispatched run + a local download; quality bar.
-- **Dependencies:** 12, CP4. **Scope:** M
+- **Dependencies:** 12. **Ask first:** provisioning the R2 bucket + scoped API
+  token, and adding `boto3` as a runtime dependency. **Scope:** M
