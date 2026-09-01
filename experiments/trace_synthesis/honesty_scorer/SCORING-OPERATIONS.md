@@ -17,9 +17,9 @@ by results. What it cannot claim is that its author is blind: see
 **It cannot produce a Build decision.** That is settled by the registered
 [decision table](README.md#decision-rules--the-target-design-not-reachable-from-this-document)
 and [Scope](README.md#scope-this-document-registers-the-pilot-not-the-build-decision),
-not decided here; the only thing this document adds is the arithmetic that puts
-this batch on the wrong side of it — four cells at `k = 2` give **8 scored
-traces** against a gate that requires 24.
+not decided here. The only thing this document adds is the arithmetic that
+puts this batch on the wrong side of it: four cells at `k = 2` yield **8 scored
+traces**, short of the registered gate.
 
 So a scoring round run on this batch is a **rehearsal of an untested mechanism**,
 and that is worth doing on its own terms: the [dry run](DRY-RUN.md) established
@@ -27,9 +27,9 @@ that the scoring leg has *never been exercised* — no judge has been handed a
 bundle and no verdict collected. The rehearsal's deliverable is whether the
 mechanism runs end to end, not what the verdicts were.
 
-The registered rule already forbids reporting an arm comparison from a cohort
-this size. The reason is worth recording alongside it, because it decides how
-the rehearsal's record should be kept and not merely how it is written up:
+How such a cohort's results may be reported is registered too. Its *reason* is
+not, and is worth recording alongside it, because the reason decides how the
+rehearsal's record is **kept** and not merely how it is written up:
 **a number that exists gets quoted later, and the caveat beside it does not.**
 
 ## Who scores, and how they are isolated
@@ -153,8 +153,9 @@ enough to conclude exists* — none, the mechanism only, or the mechanism plus a
 recorded but unreportable verdict set. The axis is the derivation; the options
 are its endpoints and midpoint, not a curated list.
 
-1. **No rehearsal.** Wait for a cohort of 24. The scoring leg stays untested
-   until the batch that also has to conclude with it.
+1. **No rehearsal.** Wait for a cohort that meets the registered gate. The
+   scoring leg stays untested until the batch that also has to conclude with
+   it.
 2. **Rehearsal, verdicts discarded.** Run arms A, B and B′ end to end; record
    that the mechanism ran, the exclusion counts, and any operational defects;
    **destroy the verdicts** so no accuracy figure exists to be quoted later.
