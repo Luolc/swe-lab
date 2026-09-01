@@ -11,27 +11,30 @@ leader of its own process group, and then signal that **group**.
 
 **The invariant that makes the group id safe to signal**, measured on Linux
 6.17 / CPython 3.13 (2026-09-01) and stated here because the code cannot say
-it: a process group exists while **any** of its members is unreaped, and a
-reaped member releases its pid. So:
+it. A group id is a *number*, and it stops naming this tree once nothing
+references it:
 
-===============================  ==================  ========================
-state                            ``killpg(pgid,0)``  what holds the number
-===============================  ==================  ========================
-leader exited, not reaped        ok                  the zombie leader
+===============================  ======================  ====================
+state                            ``killpg(pgid, 0)``     what still holds it
+===============================  ======================  ====================
+leader exited, not reaped        ok                      the zombie leader
 leader reaped, no member left    ``ProcessLookupError``  nothing — it is free
-leader reaped, grandchild alive  ok                  **a grandchild**
-===============================  ==================  ========================
+leader reaped, grandchild alive  ok                      **a grandchild**
+===============================  ======================  ====================
 
-The third row is the counter-intuitive one, and it is why the rule is written
-over *members* rather than over the leader: the group is not held up by the
-leader, it is held up by whichever member happens to be unreaped. In that row
-the signal still lands, but its correctness now rests on something the code
-does not control — a grandchild that happens to still be running — while the
-leader's pid is already reusable. *Working* and *working for the reason you
-think* are different states, and only the first is visible from the outside.
+The third row is the counter-intuitive one and it needs stating precisely,
+because the loose version of it is wrong. The kernel backs a pid and a group id
+with the same ``struct pid``, so a surviving ``PIDTYPE_PGID`` member keeps that
+number allocated — which is *why* the signal still resolves there, and it does
+**not** mean the reaped leader's number has been handed out again. What is lost
+in that row is not correctness but *control*: the guarantee has moved from the
+child this code holds to a member it does not track, and it evaporates the
+moment that member exits, unobserved.
 
-Hence the invariant, which applies to every member and not just the one held:
-**no member is reaped until the last group-directed signal is complete.**
+So the operative rule is the one this code can actually keep:
+**the leader is not reaped until the last group-directed signal is complete** —
+and, correspondingly, **no group-directed signal is sent once the leader is no
+longer held**, because then nothing here can say what that number names.
 
 **This covers the deaths the parent is alive for** — a normal exit, an
 exception, a timeout. It does not cover the parent being killed: the signal
@@ -93,13 +96,22 @@ def end_process_group(
   except (ProcessLookupError, PermissionError):
     _reap(process, grace_s)  # already gone, or not ours to signal
     return
-  _await_exit(process, grace_s)
+  if not _await_exit(process, grace_s):
+    # Somebody else reaped the leader, so this parent no longer holds the
+    # reservation and cannot say what `group` names now. Ownership unknown is
+    # not permission: report it and signal nothing further.
+    _logger.warning(
+        "process %d was reaped elsewhere; not signalling group %d again",
+        process.pid,
+        group,
+    )
+    return
   with contextlib.suppress(ProcessLookupError, PermissionError):
     os.killpg(group, signal.SIGKILL)
   _reap(process, grace_s)
 
 
-def _await_exit(process: subprocess.Popen[Any], timeout_s: float) -> None:
+def _await_exit(process: subprocess.Popen[Any], timeout_s: float) -> bool:
   """Wait for the leader to exit **without reaping it**.
 
   ``waitid(WNOWAIT)`` is the primitive for exactly this: it reports the exit
@@ -113,31 +125,37 @@ def _await_exit(process: subprocess.Popen[Any], timeout_s: float) -> None:
   the group number is free, and a later ``killpg`` on it is a lookup of a name
   that may since have been reissued.
 
-  ``WNOHANG`` returns immediately, so this is necessarily a polling loop. Every
-  way out of it — the exit arrives, the deadline passes, the child turns out to
-  be already reaped, or no ``waitid`` exists — leads to the same next step, the
-  unconditional ``SIGKILL``. There is deliberately no path that skips it.
+  ``WNOHANG`` returns immediately, so this is necessarily a polling loop. Two
+  of its exits mean "still ours" — the exit was observed, or the deadline
+  passed with the child still unreaped — and both lead to the final
+  ``SIGKILL``. The third does not: if the child has already been reaped by
+  something else, the reservation is gone with it.
 
   Args:
     process: The group leader.
     timeout_s: How long to wait before giving up and letting ``SIGKILL`` run.
+
+  Returns:
+    Whether this parent still holds the unreaped leader, and may therefore
+    still send a signal to its group id.
   """
   deadline = time.monotonic() + timeout_s
   if not hasattr(os, "waitid"):
     # No non-reaping wait available: sleep out the grace period instead.
     # Slower than polling, and safe for the same reason — nothing reaps.
     time.sleep(timeout_s)
-    return
+    return True
   while time.monotonic() < deadline:
     try:
       exited = os.waitid(
           os.P_PID, process.pid, os.WEXITED | os.WNOWAIT | os.WNOHANG
       )
     except ChildProcessError:
-      return  # somebody else already reaped it; nothing left to wait for
+      return False  # reaped elsewhere: the identity is no longer ours to use
     if exited is not None:
-      return
+      return True
     time.sleep(_POLL_INTERVAL_S)
+  return True
 
 
 def _reap(process: subprocess.Popen[Any], grace_s: float) -> None:

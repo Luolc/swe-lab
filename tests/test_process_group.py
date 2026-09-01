@@ -143,6 +143,34 @@ def test_reaping_is_what_releases_the_group_number():
     os.killpg(process.pid, 0)
 
 
+def test_a_leader_reaped_elsewhere_stops_the_group_signal(
+    tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
+):
+  """Ownership unknown is not permission.
+
+  If something else reaped the leader, this parent no longer holds the pid
+  that the group id *is*, so it can no longer say what that number names. The
+  conservative move is to stop signalling, not to send one more.
+  """
+  signalled: list[str] = []
+  real_killpg = os.killpg
+
+  def killpg(pid: int, sig: int) -> None:
+    signalled.append(signal.Signals(sig).name)
+    real_killpg(pid, sig)
+
+  def reaped_elsewhere(*args: object, **kwargs: object) -> None:
+    del args, kwargs
+    raise ChildProcessError(10, "No child processes")
+
+  monkeypatch.setattr(os, "killpg", killpg)
+  monkeypatch.setattr(os, "waitid", reaped_elsewhere)
+
+  end_process_group(tree, grace_s=1.0)
+
+  assert signalled == ["SIGTERM"], signalled
+
+
 def test_ending_an_already_dead_group_is_silent(tree: subprocess.Popen[str]):
   """Teardown runs on paths where the child is already gone."""
   os.killpg(tree.pid, signal.SIGKILL)
