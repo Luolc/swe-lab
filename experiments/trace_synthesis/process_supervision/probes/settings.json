@@ -1,0 +1,1 @@
+{"hooks": {"PostToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "python3 /tmp/claude-1000/-home-ubuntu-dev-swe-lab-resume/92e53fd3-60e9-42d8-98df-043436fbe005/scratchpad/psA/hooks/stop_hook.py", "timeout": 30}]}]}}

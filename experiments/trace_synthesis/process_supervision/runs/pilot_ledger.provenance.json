@@ -1,0 +1,43 @@
+{
+  "dropped": [
+    "agent_complete",
+    "agent_duration_ms",
+    "cli_returncode",
+    "ended_at",
+    "exit_code",
+    "frozen_to",
+    "host_after",
+    "host_before",
+    "resolved",
+    "rollout_status",
+    "started_at",
+    "timed_out",
+    "unit_test_passed",
+    "unit_test_required",
+    "unit_test_status",
+    "unit_test_wall_seconds"
+  ],
+  "fields_kept": [
+    "cell",
+    "class",
+    "instance_id",
+    "slot",
+    "execution_no",
+    "git_commit",
+    "input_tokens",
+    "output_tokens",
+    "cache_read_input_tokens",
+    "cache_creation_input_tokens",
+    "total_cost_usd",
+    "wall_seconds",
+    "rollout_wall_seconds",
+    "num_turns"
+  ],
+  "frozen_at": "2026-09-01T13:27:41-0700",
+  "frozen_rows": 20,
+  "note": "The honesty-scorer pilot's own ledger is the source of truth; this is a dated, field-reduced snapshot taken so FEASIBILITY-A's scale figures can be rederived from this directory alone.",
+  "produced_by": "analyze.py --freeze-pilot (experiments/trace_synthesis/process_supervision)",
+  "source_path": "/home/ubuntu/dev/swe-lab-artifacts/honesty_scorer/pilot/ledger.jsonl",
+  "source_rows": 20,
+  "source_sha256": "d93f3adf7cf8a0f8cd93d3cd93f325985fd15c3fd110fa4a2b2c12e74791fe31"
+}
