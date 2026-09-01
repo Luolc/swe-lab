@@ -206,21 +206,23 @@ pilot's twelve amendments.
   first clause confirms it, and a reader almost never splits a sentence to check
   each half. **Verify the clause asserting that nothing else can be here, not
   the one you can already see is true.**
-- **When a check is structurally blind to what you care about, a better check is
-  the wrong default.** A verbatim n-gram overlap here returned zero and was
-  reported as evidence that a document did not duplicate a registered rule. The
+- **A blind check's green is not an absence proof, and a better check does not
+  make it one.** A verbatim n-gram overlap here returned zero and was reported
+  as evidence that a document did not duplicate a registered rule. The
   duplication was **paraphrase**, which that check cannot represent at all, so
   its zero was uninformative by construction rather than by bad luck — the
   executable question (*if the problem existed, how would it appear in this
-  check's output?*) has no answer for it. The tempting repair is a smarter
-  detector, and it is the wrong move twice over: it **relocates the same false
-  confidence one level up**, and the replacement's blind spot is harder to
-  characterize than the one it replaces, so the next reader defers to a greener
-  light with less idea of what it misses. The three sites were found by reading
-  the document. **"A person read it, and that does not scale" is a finished
-  state; "the new check is green" is an unfinished one wearing better
-  clothes** — and only the first tells a later reader what the assurance
-  actually rests on.
+  check's output?*) has no answer for it. What was wrong was the **role, not the
+  tool**: a detector's hits **rank what to read next**, and no detector's miss
+  establishes that there is nothing to find. So build the sharper detector when
+  it earns its keep as triage — but it stays evidence for inspection, never a
+  substitute for the absence claim, and an improved one makes that substitution
+  *more* tempting precisely because its blind spot is harder to characterize
+  than the crude one it replaced. The three sites here were found by reading.
+  Reading has its own blind spots and does not scale, which is why the finished
+  state is not "a person read it" but **the assurance described as what it
+  is** — here: one reading, at one revision, by someone who knew what to look
+  for.
 - **Finding one defect ends the search for the others.** Once a number has a
   named problem it reads as *examined*, and the examination stops there. A
   wall-clock estimate here was correctly found to be missing its machine-state
