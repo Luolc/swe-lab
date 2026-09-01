@@ -234,7 +234,7 @@ def preceding(steps: list[dict], position: int) -> str:
   ) or "  (none -- this is the first step)"
 
 
-def _judge_prompt(message: dict, before: str, total: int) -> str:
+def judge_prompt(message: dict, before: str, total: int) -> str:
   """Render the judge's user message.
 
   Args:
@@ -264,7 +264,7 @@ def _judge_completion(message: dict, before: str, total: int) -> dict:
   Returns:
     The judge's raw answer and usage.
   """
-  user = _judge_prompt(message, before, total)
+  user = judge_prompt(message, before, total)
   payload = {
       "model": _judge.MODEL,
       "max_tokens": 2000,
@@ -328,7 +328,7 @@ def main() -> None:
 
   attempt_zero_input = hashlib.sha256(json.dumps(
       {"system": _judge.INSTRUCTIONS,
-       "user": _judge_prompt(original, before, len(steps))},
+       "user": judge_prompt(original, before, len(steps))},
       sort_keys=True, separators=(",", ":")).encode()).hexdigest()
   if attempt_zero_input != _JUDGE_INPUT_SHA256:
     raise SystemExit(

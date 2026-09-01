@@ -184,7 +184,7 @@ def _arrange(
 
   # The gate binds the whole judge input, so the fake material pins its own.
   steps = witness._extract.extract(witness._ROLLOUT)
-  prompt = witness._judge_prompt(
+  prompt = witness.judge_prompt(
       original, witness.preceding(steps, witness._POSITION), len(steps)
   )
   monkeypatch.setattr(

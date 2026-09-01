@@ -74,3 +74,64 @@ def test_the_pinned_judge_input_digest_matches_the_pre_registration():
     source = (witness_dir / script).read_text()
     digest = source.split('_JUDGE_INPUT_SHA256 = (\n    "')[1].split('"')[0]
     assert digest in document, script
+
+
+_VARIANCE = (
+    Path(__file__).resolve().parents[1]
+    / "experiments/trace_synthesis/process_supervision"
+    / "reject_then_accept_witness/judge_variance.py"
+)
+
+
+def test_the_variance_runner_voids_before_any_judge_call(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """A judge input that does not match the pinned digest spends nothing."""
+  import json
+
+  spec = importlib.util.spec_from_file_location("variance_runner", _VARIANCE)
+  assert spec is not None and spec.loader is not None
+  variance = importlib.util.module_from_spec(spec)
+  sys.modules[spec.name] = variance
+  try:
+    spec.loader.exec_module(variance)
+  finally:
+    del sys.modules[spec.name]
+
+  # Synthetic material, so the judge input cannot match the pinned digest.
+  capture = tmp_path / "capture.jsonl"
+  row = {
+      "request": {"body": {"model": "m", "tools": [{"name": "t"}]}},
+      "response": {
+          "message": {"content": [{"type": "text", "text": "x"}]},
+          "headers": {},
+      },
+  }
+  _ = capture.write_text(
+      "".join(json.dumps(row) + "\n" for _ in range(variance._STEP_INDEX + 1))
+  )
+  monkeypatch.setattr(variance, "_CAPTURE", capture)
+
+  def _steps(_rollout: str) -> list[dict[str, object]]:
+    return [
+        {"content": "c", "step_index": i, "tool_names": []} for i in range(37)
+    ]
+
+  def _forbidden(*_args: object, **_kwargs: object) -> object:
+    raise AssertionError("a judge call was issued")
+
+  monkeypatch.setattr(variance._extract, "extract", _steps)
+  monkeypatch.setattr(variance._judge, "call", _forbidden)
+  out = tmp_path / "out"
+  monkeypatch.setattr(sys, "argv", ["judge_variance.py", "--out-dir", str(out)])
+
+  with pytest.raises(SystemExit) as raised:
+    variance.main()
+  assert "void" in str(raised.value)
+  recorded = json.loads((out / "judge_input.json").read_text())
+  assert recorded["classification"] == "void"
+  assert (
+      recorded["judge_input_sha256_observed"]
+      != recorded["judge_input_sha256_expected"]
+  )
+  assert not (out / "judgements.jsonl").exists()

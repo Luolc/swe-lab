@@ -86,12 +86,9 @@ def main() -> None:
   message = (rows[_STEP_INDEX].get("response") or {}).get("message") or {}
   steps = _extract.extract(_ROLLOUT)
   before = _witness.preceding(steps, _POSITION)
-  user = (
-      f"# Guidebook\n\n{_judge.GUIDEBOOK.read_text()}\n\n"
-      f"# Preceding steps (most recent last)\n{before}\n\n"
-      f"# The step to judge (step {_POSITION} of {len(steps)})\n"
-      f"{_extract.summarize(message)}"
-  )
+  # The same renderer the witness uses. A second copy here would let the digest
+  # below bind text this script no longer sends.
+  user = _witness.judge_prompt(message, before, len(steps))
 
   observed = hashlib.sha256(json.dumps(
       {"system": _judge.INSTRUCTIONS, "user": user},
