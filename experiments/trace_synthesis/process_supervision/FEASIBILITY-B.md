@@ -14,6 +14,19 @@ from the stopped honesty-scorer pilot (20 attempts,
 [`PILOT-DATA.md`](../honesty_scorer/PILOT-DATA.md)) and from wire logs captured
 by the proxy on earlier baseline runs.
 
+> ### Read this first: the budget is already two-thirds spent
+>
+> **Every one of the 20 pilot attempts emitted a `rate_limit_event`.** 22 of
+> them report `rateLimitType: seven_day` with `status: allowed_warning` and
+> utilization **0.61–0.65**; 7 report `five_hour` at `allowed`.
+>
+> So a batch of 20 rollouts consumed roughly **two thirds of the seven-day
+> window** — and it was spent on a line that has since been stopped. This is a
+> hard constraint on **any** candidate mechanism, not a property of plan B, and
+> it may be the quantity that decides whether *any* mechanism can be validated
+> this week. Every design in this space multiplies request count against that
+> same window.
+
 ---
 
 ## 1. The proxy as it stands
@@ -99,12 +112,11 @@ delivered.
   request refused *before any output is generated*. A rejected sample is a
   completed generation by construction — the proxy must read it to the end to
   judge it. This is structural rather than measured: I did not test billing.
-- **The binding limit is the subscription window, not a per-minute quota.**
-  Every one of the 20 pilot attempts emitted `rate_limit_event`: 22 events of
-  `rateLimitType: seven_day` with `status: allowed_warning` and utilization
-  **0.61–0.65**, plus 7 of `five_hour` with `status: allowed`. A design that
-  multiplies request count consumes that same seven-day budget proportionally,
-  and the batch was already at ~⅔ of it.
+- **The binding limit is the subscription window, not a per-minute quota** —
+  `seven_day` is the type that reached `allowed_warning`, while `five_hour`
+  stayed at `allowed`. The readings are in the callout at the top of this
+  document; a resampling design consumes that same window in proportion to how
+  many extra requests it issues.
 
 ## 4. Where the oracle runs — the two placements differ in more than latency
 
@@ -202,22 +214,53 @@ technicality.**
    paragraph draws the current proxy's line in exactly those terms: it modifies
    *requests* and "still does not touch assistant turns".
 
-**And one consequence that is neither a violation nor free.** What resampling
-changes is the **distribution**: the trace is no longer a sample from the
-model's own policy but from that policy *conditioned on the oracle accepting*.
-Every token remains the model's, so this is not an edit — but §14's policy stamp
-exists to make contamination legible, and today's stamps describe oracle-guided
-*injection*. A resampled run is contaminated by a different mechanism and would
-need its own stamp, or aggregation would silently pool two different things.
+**Plan B is therefore not a purely engineering question.** Item 1 is an
+owner decision of record, and superseding it takes **a new ADR**, not an
+implementation. That belongs in the premises of any comparison between
+candidate mechanisms — otherwise the comparison happens at the wrong level,
+weighing engineering cost against engineering cost while one side also carries a
+decision that has to be reopened.
 
-## 7. What remains unverified
+## 7. A question every process-supervision mechanism has to answer
+
+**This section is not about plan B.** It states a consequence that follows from
+intervening in the process at all, and any candidate mechanism has to answer it.
+
+An uninterfered rollout is a sample from the model's own policy. **Any mechanism
+that intervenes during the process produces a sample from a different
+distribution** — the policy *conditioned on whatever the mechanism accepted,
+stopped, or steered*. Every token can still be the model's own, and the
+delivered conversation can still be unedited (spec §6), so this is **neither a
+violation nor free**.
+
+What it costs is legibility. §14's **policy stamp** exists precisely so that
+contamination is recorded rather than inferred, and today's stamps describe
+oracle-guided **injection** — the mechanism that was terminated. A run produced
+under any new mechanism is contaminated by a *different* mechanism, so:
+
+- each mechanism needs its **own stamp**, naming what conditioned the sample;
+- runs under different mechanisms are **not poolable**, by the same rule that
+  already makes aggregation across differing stamps an error rather than a
+  warning (§14.1);
+- and the stamp has to distinguish mechanisms, not merely mark
+  "not-uninterfered" — otherwise the two are pooled by the very field meant to
+  keep them apart.
+
+Whichever mechanism is chosen, this work exists and is not part of its
+implementation cost as usually estimated.
+
+## 8. What remains unverified
 
 - Claude Code's client-side timeout and its behaviour when a turn arrives all at
   once (§2).
 - The sandbox's egress rules, which decide whether an external oracle is
   reachable at all (§4).
-- The step-level accept rate — the single largest driver of the cost model, and
-  the one quantity no run of any kind has produced (§5).
+- **The step-level accept rate** — the single largest driver of the cost model,
+  and the one quantity no run of any kind has produced (§5). It is **not
+  specific to plan B**: any mechanism that acts at process granularity is priced
+  by how often it has to act, so this is a **shared unknown** of the candidates.
+  What to do about that is a question for the comparison, not a recommendation
+  of this document.
 - Prompt-cache behaviour on an immediate identical re-send (§5).
 - Billing for a completed stream the proxy never forwards; reasoned from the
   documented refusal-only exemption, not tested (§3).
