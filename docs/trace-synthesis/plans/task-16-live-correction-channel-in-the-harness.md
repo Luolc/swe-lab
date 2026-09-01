@@ -13,6 +13,14 @@ Every claim below carries its status: **[M]** measured (with N and design) ·
 **[C]** read out of this repo's code at `origin/main`, with the file and line ·
 **[I]** inferred from one of those · **[U]** unmeasured.
 
+**Which tree a fact holds on is part of the fact.** Two constraints in §5 reach
+[`spec.md`](../spec.md) only through
+[#312](https://github.com/Luolc/swe-lab/pull/312), and this document's own PR
+**merges after it**. Their *evidence* is on `main` either way — it landed with
+[#304](https://github.com/Luolc/swe-lab/pull/304)'s report, which is what §5
+cites — so nothing here depends on the merge order; the spec references say
+which PR puts them there.
+
 ## 1. What the harness does today
 
 **[C]** `ClaudeCodeHarness.run` (`src/swe_lab/harnesses/claude_code/harness.py`)
@@ -62,22 +70,52 @@ difficulty:
    until a writer opens the other end, so the agent cannot be started before its
    writer exists. The proxy's readiness wait is the precedent: start the writer
    first, prove it is alive, then exec the agent.
-2. **The run no longer ends by itself.** Today EOF arrives with the prompt and
-   the agent finishes the task and exits. With a writer holding the FIFO open,
-   **nothing terminates the run** except the writer closing or `run_script`'s
-   timeout killing it. **Who closes the write end, and on what signal, is the
-   central design decision of this task** — not a detail of it. A design that
-   forgets this converts every rollout into a timeout, and a timeout is promoted
-   to `RunStatus.TIMEOUT` (`src/swe_lab/workflow/task.py`) **[C]**, which
-   discards the distinction between an agent that finished and one we killed.
-3. **A dead writer is not obviously a dead run.** If the supervisor dies but the
-   writer's file descriptor stays open, the agent waits, produces nothing, and
-   burns the wall clock to the timeout. If instead the descriptor closes, the
-   agent sees EOF and **ends the rollout early** — the same failure wearing the
-   opposite mask. Neither is acceptable as an accident, so the close must be an
-   explicit decision by a component that knows the task is over.
+2. **The run no longer ends by itself — the existing termination condition is
+   *deleted*, not complicated.** Today a run ends because stdin is a file that
+   reaches EOF; that is the whole mechanism. A FIFO removes it and puts nothing
+   in its place, so **who holds the write end and on what signal it closes is
+   the central design decision of this task**, not one of its edge cases. A
+   design that forgets it converts every rollout into a timeout, and a timeout
+   is promoted to `RunStatus.TIMEOUT` (`src/swe_lab/workflow/task.py`) **[C]**,
+   which discards the distinction between an agent that finished and one we
+   killed. §2.3 is that decision.
+3. **A dead writer is not obviously a dead run, and the two ways it fails are
+   one bug.** If the supervisor dies with the write descriptor still open, the
+   agent waits, produces nothing, and burns the wall clock to the timeout. If
+   the descriptor closes instead, the agent sees EOF and **ends the rollout
+   early**. These are not two failure modes to handle separately — they are the
+   same missing decision seen from two sides, and the decision is §2.3's.
 
-### 2.2 Who acts while `run()` blocks
+### 2.2 Termination is the same problem as [task 12](README.md), and they cannot be split
+
+Once stdin stops delivering EOF, **"the task is finished" has no corresponding
+process event.** The supervisor has to infer it, and the only thing it can read
+is the agent's own `result` events — which is exactly the object
+[task 12](README.md) is about: `event_stream_outcome` reduces a run to its
+**last** `result`. So whoever decides *which `result` is the last one* has
+thereby decided *when the run ends*. **These are one design question and must be
+answered in one place**; splitting them across two tasks would leave the
+termination rule depending on a collector decision nobody wrote down.
+
+**And the number of `result` events is not ours to choose.** **[M]** A
+correction that lands mid-turn is absorbed into the running turn and produces
+**no** new `result` (N=3); one that lands at a turn boundary produces its own
+turn and therefore its own `result` (N=25). **[I]** Which of the two happens
+depends on when the supervisor writes relative to what the actor is doing at
+that instant — **a race**, and one neither side arbitrates. Two consequences the
+design must carry:
+
+- **Termination cannot assume, and cannot count, `result` events.** A rule of
+  the form "end after the *n*-th result" is unimplementable, because *n* is a
+  function of timing that nothing controls.
+- **The only shape left is "no further activity after the last `result`", and
+  that needs a clock.** Which means **the timeout stops being a safety net and
+  becomes part of the normal path.** It has to be written that way — named,
+  chosen with a reason, and reported as an ordinary ending rather than as an
+  anomaly. A later reader who finds it filed under error handling will treat the
+  common case as a failure, and the run records will say so too.
+
+### 2.3 Who acts while `run()` blocks
 
 Two shapes were on the table. **The blast radius of the first is the argument
 against it, and it is bigger than it looks.**
@@ -144,11 +182,17 @@ The honest statement of the trade:
 the contract argument: **the two runs must stay byte-comparable.** The whole
 value of this channel rests on a supervised rollout differing from an
 unsupervised one *only* by the corrections; a fork is a standing invitation for
-the two to drift in flags, denied tools or capture wiring, and that drift would
-be invisible in the traces it produces. **The criterion for revisiting:** if the
-supervised path ever needs a *different* invocation rather than an *extended*
-one — different flags, a different output format, a different termination rule —
-the classes have genuinely separated and should be separated in code.
+the two to drift in flags, denied tools or capture wiring, and **that drift
+would be invisible in the traces it produces**. The recommendation is decided by
+*what breaks and whether the breakage can be seen*, not by which shape reads
+more cleanly.
+
+**This recommendation has an expiry date, and it is the same sentence.** It
+holds until the supervised path genuinely needs a *different* invocation rather
+than an *extended* one — different flags, a different output format, a different
+termination rule. At that point byte-comparability has already stopped holding,
+the argument above no longer applies, and the split should be re-decided rather
+than inherited.
 
 ## 4. Failure modes to design for, not to meet
 
@@ -171,14 +215,17 @@ today, not what the design will claim.
   injected message unless `--replay-user-messages` is passed, and *with* it
   renders as a `user` message what the wire carries as `system`; **the wire is
   the truth** ([report §14.5](../../../experiments/trace_synthesis/streamjson_input/REPORT.md),
-  pinned into [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks) by
-  [#312](https://github.com/Luolc/swe-lab/pull/312)).
+  on `main`; [#312](https://github.com/Luolc/swe-lab/pull/312) is what pins it
+  into [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks)).
   A stream-derived trace would assert a user turn the model never saw.
 - **The collector must exclude non-agent-loop requests.** **[M]** A TUI capture
   carries a prompt-suggestion exchange whose body is the whole conversation plus
   a user message nobody sent; taking the last proxy record picks exactly that
-  one. Now an invariant in
-  [`spec.md` §12](../spec.md#12-invariants-intended-enforced-where-marked).
+  one ([report §14.4](../../../experiments/trace_synthesis/streamjson_input/REPORT.md),
+  on `main`). [#312](https://github.com/Luolc/swe-lab/pull/312) is what makes it
+  an intended invariant in
+  [`spec.md` §12](../spec.md#12-invariants-intended-enforced-where-marked);
+  until that lands it is a measurement with no rule attached to it.
 - **[C] The `event_stream_outcome` defect ([task 12](README.md)) is not retired
   by this design, and its status changes.** That collector reduces a run to its
   *last* `result` event. This channel produces **several `result` events in one
