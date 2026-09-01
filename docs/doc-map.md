@@ -62,6 +62,16 @@ into three files (they drift):
 Each fact has one home; these guards keep it that way (authoritative text lives
 where noted — this list only points):
 
+- **One home holds *within* a document, too.** A **normative** statement — a
+  rule, a threshold, a criterion, a definition — has a single home inside one
+  doc as well as across docs; every other mention refers to it. Explanatory
+  restatement (a summary, a lead-in, an example) is **not** a second home,
+  provided it does not carry the authoritative value itself: "there is a minimum
+  cohort gate" is fine, writing the number again in the summary is not. The
+  discriminant is **"if this sentence were edited wrong, would a reader act on
+  it?"** — if yes, it is a second home. Drift only happens where the values are:
+  the hook list below went stale not because several docs mentioned hooks, but
+  because three of them each carried a copy of the list.
 - **One status home.** Task status → the component's `plans/README.md`;
   workstream status → `docs/README.md`. Plan / task docs are point-in-time
   records and **never carry live status** (see the note atop
