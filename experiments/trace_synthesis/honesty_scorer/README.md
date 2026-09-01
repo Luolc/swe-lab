@@ -77,9 +77,12 @@ cells of **exactly six attempts each, 24 rollouts**, yielding at most 2 positive
 and 2 negatives per repository. Its declared output is the **yield factor**, and
 the fixed attempt count is what makes that figure unbiased rather than an
 artifact of when we stopped. At ~458 s per rollout that is roughly **3 hours
-serial**, with a hard ceiling of **28 executions / ~3.6 h** once the single
-timeout re-run per cell is counted. The cost is in wall time and token usage,
-not OpenRouter credits.
+serial**, with a hard ceiling of **exactly 24 executions**: amendment 12
+removed the timeout re-run, so the count is a constant rather than a worst case.
+Wall time is an **estimate, not a constraint**, and it carries the machine state
+it assumes — see
+[the wall clock is an estimate](#the-wall-clock-is-an-estimate-and-the-count-is-the-constraint).
+The cost is in wall time and token usage, not OpenRouter credits.
 
 **What is not authorized here: the Build decision.** The gate below requires at
 least 24 scored traces with equal class counts inside each contributing
@@ -514,7 +517,9 @@ posterior is `Beta(2 + c, 2 + N − c)` and
 > **`yield = E[1/θ] = (N + 3) / (1 + c)`**
 
 which reduces to `15/(1+c)` at the planned `N = 12` and to `9/(1+c)` when only
-one cell survives. Per-cell figures are reported beside the headline. **No other
+one cell survives. **If any pooled attempt timed out, no headline number is
+reported at all**: the pool reports the bounds `[c, c + t]`, per
+[the timeout rule](#the-yield-factor-defined-as-a-statistic-before-any-data-exists). Per-cell figures are reported beside the headline. **No other
 aggregation is permitted** — in particular per-cell yields are never averaged,
 because the mean of reciprocals is not the reciprocal of a pooled rate, and
 choosing between them after seeing the numbers is the freedom this section
@@ -530,32 +535,89 @@ OpenRouter arm, so no p90 exists for the shipping path until this batch creates
 one. A wall-based rule may be added later, but only with its comparator and
 threshold written down before it is used.
 
-A timed-out attempt is **not an attempt**: it is re-run, both records are
-reported, and the denominator stays at six *valid* attempts. That decision uses
-one boolean the harness already emits, so it cannot depend on whether the
-attempt would have resolved.
+**A timed-out attempt counts as one of the six, is recorded as
+`unresolved (timeout)`, and is never re-run.** The earlier rule re-ran it
+against a one-per-cell budget; amendment 12 removed re-running entirely, and the
+reason is not the machine but the rule:
 
-**The retry budget is one per cell, and exhausting it ends the cell.** "Re-run
-on timeout" with no ceiling would let a run of timeouts walk past the approved
-24 rollouts, and would hand the operator the decision of when to stop — the
-discretion this section exists to remove. So:
+> Re-running on timeout makes **the number of executions depend on the
+> outcome**. It was written for a timeout that is a random environment failure,
+> and under that reading the dependence is negligible. But a timeout is a
+> function of how long an instance takes, and instance duration is precisely the
+> dimension that separates the two repositories in this batch — so the retry
+> budget is consumed disproportionately by the slower repository, which is also
+> the one carrying the positive class. That is **optional stopping wearing an
+> environment-failure costume**, and its channel was always open; sustained CPU
+> throttling on the host merely made it visible.
 
-- **one timeout re-run per cell**, a single budget shared across all six slots,
-  not one budget per slot;
-- **a timeout with no re-run left in the budget abandons its slot and
-  invalidates the cell** — one rule covering every case, whether the budget was
-  spent by this slot's own first timeout or by a different slot earlier. There
-  is no state in which an operator must decide whether a given timeout still
-  "deserves" a re-run;
-- an invalid cell is treated exactly like a preflight-failed one — **no yield
-  estimate, excluded from per-cell and pooled figures**, reported with its
-  counts, and its repository leaves the scored set;
-- **worst case is 28 executions**, four cells at six attempts plus one re-run
-  each, about 3.6 h serial against the 3.05 h nominal. That ceiling is what the
-  budget covers, and no run may exceed it for any reason.
+That much is **operational, and it is labelled for what it is: post-hoc but
+prospective, with an empty prior action set.** It was written after the batch
+began, but no attempt had yet timed out, so it changes nothing that has already
+happened; it fixes what the machine does from here on, and it removes discretion
+rather than adding it — the execution count becomes the constant 24, decoupled
+from outcomes. **That claim is about the execution layer and reaches no
+further**; it says nothing about what this pilot may conclude.
 
-The budget is deliberately generous relative to the observed rate: **0 of 12
-historical rollouts timed out**. If timeouts turn out to be common on the
+**How a timed-out attempt is then reported was not this author's to fix**, and
+the rule below is settled, not pending. `c` becomes censored, and something must
+be said about that; but a rule for *reporting* censored counts decides
+conclusions, and this amendment's author already knows one cell's partial
+outcomes. A first draft of it — report `c` as
+the interval `[c, c + t]`, call a cell inconclusive at `t ≥ 2`, declare the
+pilot unanswered if the interval straddles a decision threshold — is recorded
+here as **withdrawn, not registered**, for two reasons a review found and this
+author had missed:
+
+- the `t ≥ 2` cut and the interval-straddling test are **free parameters**
+  chosen by someone who is no longer blind, and no argument about the direction
+  of the fix makes a free parameter safe;
+- **"decision threshold" is undefined in this document.** The Build gate is
+  deferred to a second pre-registration, so there is no threshold here for an
+  interval to straddle. A criterion citing a quantity that does not exist is not
+  false — it is **undefined, and an undefined criterion is indistinguishable
+  from a satisfied one at the point of use.**
+
+So the reporting rule was **handed to a blind party**, and what stands below is
+**fixed by `swelab-screen-review`, not by this author**:
+
+> **If any attempt in a cell timed out, that cell reports the full bounds
+> `[c, c + t]` and no point-estimate headline. There is no threshold-triggered
+> decision to repeat the pilot, and no cut at which a cell is declared
+> inconclusive.**
+
+The form matters as much as the content: it has **no free parameter at all**.
+`t ≥ 2` and the undefined "decision threshold" do not get re-tuned to safer
+values — they **disappear**, which is the only way a non-blind author's
+discretion is actually removed rather than relocated. A reader who wants a
+single number from a cell containing timeouts does not get one, and that refusal
+is the rule.
+
+The argument that motivated a rule of this shape, recorded as an argument
+rather than as a constraint: **a wide interval is an honest statement that the
+quantity could not be measured under these conditions, while a point estimate
+carrying a hidden downward bias in the slower class is the invisible version of
+the same failure.**
+
+Every attempt additionally records **the host's CPU steal and load average at
+its start and end** alongside its measured wall. Without that field a timeout
+cannot be attributed, and the bounds above would have no input. That field is
+operational and is required either way.
+
+`_AGENT_TIMEOUT_S` is **fixed at 3600 s for the whole pilot and must not be
+changed mid-run.** Raising it looks like it would remove the bias, but it would
+put different cells under different thresholds: a uniformly tight threshold
+moves both classes the same direction (by different amounts — which is exactly
+what a reporting rule has to account for), while a threshold that changed
+between cell 1 and
+cell 3 makes the arms incomparable outright, and nothing repairs that
+afterwards. The cost of holding it fixed is stated rather than hidden: **a fixed
+wall-clock timeout is not a fixed compute budget when CPU steal varies — it is a
+variable disguised as a constant.** These attempts are therefore not
+compute-comparable to the 12 frozen baselines, and any comparison to them must
+say so.
+
+The observed rate remains the reason the old budget looked generous: **0 of 12
+historical rollouts timed out.** If timeouts turn out to be common on the
 shipping path, that is itself a finding about the arm and is reported as one —
 not absorbed by re-running until the numbers look normal.
 
@@ -563,11 +625,14 @@ not absorbed by re-running until the numbers look normal.
 ran all six attempts; it is *preflight-failed* if attempt 1 missed
 `agent_complete == 1` or `exit_code == 0`, which stops it at one attempt.
 
-**A cell is valid if and only if it produced six valid attempts** — six
-executions that neither timed out nor failed the preflight. Every other cell is
-invalid, whether it stopped at attempt 1 on a preflight failure or lost a slot
-to a timeout with no re-run left. There is one valid state and one invalid
-state; a cell with five attempts is not a smaller valid cell.
+**A cell is valid if and only if it executed all six attempts.** A timed-out
+attempt is one of the six, so it does not invalidate the cell; a cell
+containing one reports bounds instead of a headline, per
+[the timeout rule](#the-yield-factor-defined-as-a-statistic-before-any-data-exists).
+The only way to be invalid is to stop short: a preflight failure ends the cell
+at one attempt.
+There is one valid state and one invalid state; a cell with five attempts is not
+a smaller valid cell.
 
 | Valid positive cells | Headline yield | Consequences |
 | :---: | --- | --- |
@@ -587,6 +652,154 @@ the purchase while contributing nothing to the comparison.
 
 **`c = 0` in a cell that ran all six** is a real measurement — yield 9.0 — and
 not a failure to measure. The cell contributes no traces.
+
+### The wall clock is an estimate, and the count is the constraint
+
+The pilot's hard constraint is **exactly 24 executions**. The wall-clock figure
+beside it is an estimate *derived from* that count, and the two were originally
+typeset side by side as though they had the same standing. They do not, and the
+formatting itself was the defect: **presenting an estimate and a hard constraint
+in the same visual form leaves a reader unable to tell their epistemic status
+apart.**
+
+The distinction is not cosmetic, because truncating the run on the clock is not
+a neutral way to save time:
+
+- A clock-based stop **removes the last cell entirely**, and equal class counts
+  inside each repository — the balance amendment 2 and amendment 5 exist to buy
+  — is what makes repository statistically independent of label. Drop a cell and
+  that balance is gone, so **the repository↔label correlation those amendments
+  killed comes straight back.**
+- It is also **directional**: the slower repository is truncated first, and the
+  slower repository is the one carrying the positive class. A time-based cut
+  therefore thins one class more than the other.
+- Generally: **stopping on the clock is an outcome-correlated stopping rule**,
+  and eliminating outcome-correlated stopping rules is the entire reason the
+  design fixes its counts in advance.
+
+**The estimate carries its machine state.** A wall time is not a property of the
+workload; it is workload × available CPU. The earlier figures were extrapolated
+from frozen baselines whose host state was never recorded, so they silently
+assumed a condition that need not hold — the same error as measuring on A and
+stating about B. So the estimate is written with its predicate:
+
+| machine state | estimate |
+| --- | --- |
+| CPU credit available | ~3.6 h serial for 24 executions |
+| credit exhausted, steal ≈ 60% (≈ 40% of nominal capacity), measured 2026-09-01 08:59 PDT | ≈ 9.5 h |
+
+**Pausing stops at an attempt boundary, never at a cell boundary.** The
+intuition runs the other way, and it is wrong here: there are only four cells,
+and a cell *is* the (repository × label) unit. Finishing the current cell before
+pausing would make the machine state `{throttled: one cell, unthrottled: the
+other three}` — perfectly collinear with that cell, and therefore with both
+repository and label, leaving any throttling effect indistinguishable from that
+cell's effect forever. Recording the steal field does not rescue that: it
+records a variable the analysis cannot separate. Stopping mid-cell instead puts
+attempts run under different machine states **inside one cell, with everything
+else held fixed**. The general form: **when a stratifying variable is perfectly
+aligned with the experimental unit, "record it" is not a remedy —
+diagnosability requires the variable to vary *within* some unit.**
+
+**One correction to that argument, because the first version of it overstated
+the asset.** The steal / load field was added to the driver *after* the pause,
+so the first cell's early attempts carry **no host-state reading at all** — we
+know only that they preceded credit exhaustion, and that is an inference, not a
+measurement. The cell will therefore hold *unrecorded* attempts beside
+*recorded* ones, and **an unmeasured endpoint cannot serve as the control arm of
+a measured one**. The honest statement is: **machine-state heterogeneity inside
+the first cell exists and is not quantifiable; from the resumption slot onward
+it is quantifiable.** No estimated value is back-filled into the missing
+attempts. The collinearity argument survives this — a cell boundary is still the
+worse place to stop — but it survives as "avoid making it worse", not as
+"gain a control".
+
+**What the pause waits for, and what it explicitly does not.** An earlier
+resumption criterion — wait for CPU credit to recover — was withdrawn, and the
+reason belongs in the record because it determines the conditions this batch
+ran under. A burstable host accrues credit only while consumption is *below*
+baseline; this box was running 11 Claude and 5 Codex agents across 5 workspaces,
+continuously above baseline, with steal steady near 60% and load average rising
+9.93 → 19.41 → 21.74 → 23.12. (A suspected hidden consumer was measured and
+ruled out rather than assumed: 21 `gitstatusd` processes came to 0.0% CPU and
+61 MB.) So "steal below 10%" was not a demanding condition but **an
+unsatisfiable one at the current fleet size**, short of idling every other agent
+for hours. A criterion whose author cannot create the conditions for it to hold
+is not a criterion. It was **self-referential** on top of that: only a stopped
+pilot could satisfy it, and satisfying it existed to restart the pilot — while
+readings taken during the stoppage cannot predict the state after resumption.
+
+The pause therefore waits for **this amendment to land** — a bounded event — and
+the batch then resumes **under whatever machine state exists at that moment**.
+That is defensible only because the interval rule above converts throttling from
+a hidden bias into explicitly reported information loss, and because the risk
+sits in the tail rather than the middle: `timed_out` is 0 so far, and at 40% of
+nominal capacity the slower repository's median run of ~689 s becomes ~1720 s
+against a 3600 s threshold, so a timeout needs a run about 2.1× its own median.
+**These attempts were executed under CPU throttling, and that is part of the
+report's terms, not a footnote.**
+
+**Throttling on resumption is an expected condition, not an accident.** An
+independent measurement on the same box put steal at mean 57 / max 61 with 11
+agents running, agreeing across two instruments (`vmstat`, and differencing
+`/proc/stat`, 59.3%), at load 20 / 13 / 11 — and a near-zero reading taken
+earlier was a trough during a mass shutdown of agents, not the baseline. **The
+agent fleet alone is enough to throttle this host, independent of the pilot's
+container.** So the batch is registered as running under throttling, rather than
+resuming in hope of a quieter machine.
+
+### Who may rule on an amendment, and why this one names it
+
+Amendments to a pre-registration are only worth anything if whoever writes them
+is blind to the results. That condition is now partly broken, and hiding it
+would defeat its purpose:
+
+- **The action set of the timeout rule was empty when it was written** — no
+  attempt had timed out — so no timeout has ever been handled under either the
+  old rule or the new one.
+- **But one cell's partial outcomes were known** to the executing agent and,
+  after it reported them honestly on request, to the author of this amendment.
+  The values are deliberately **not reproduced here**, so that the reviewer
+  assigned below stays blind.
+- The direction of the fix limits what that knowledge could do **for the
+  operational clauses, and for those only**: replacing "re-run on timeout" with
+  "count it and never re-run" reduces the remaining degrees of freedom to zero —
+  the execution count becomes the constant 24, decoupled from outcomes. That
+  argument does **not** extend to any clause deciding what may be concluded, and
+  it is not one its author may certify.
+- **Disclosure is not a remedy for a free parameter.** Saying "this was written
+  after outcomes were partly visible" makes the fact *visible*; it does not make
+  the choice any less a choice made by someone who knew. The distinction the
+  review drew, and the most load-bearing sentence here: **for a measurement,
+  visibility is a sufficient remedy — for a degree of freedom it is not, and the
+  freedom has to be deleted instead.** That is why the analytical rule was not
+  disclosed-and-kept but handed away.
+- Therefore: **this amendment is reviewed by `swelab-screen-review`**, which has
+  seen no outcome, and **not by the executing agent**, which has. The assignment
+  is written down with its reason rather than as a bare instruction, because
+  *who is disqualified from reviewing* is part of the design and a later reader
+  has to be able to see that it was.
+- Durable consequence: **the author of this document is no longer an
+  outcome-blind designer for this pilot.** Any further protocol revision must be
+  ruled by someone who has seen no results.
+
+**The review drew the line in a different place than the author did, and the
+review was right.** The author's argument — that removing re-running reduces the
+remaining degrees of freedom to zero, so the choice cannot exploit the knowledge
+— holds for the **operational** half and only for it. It does not extend to
+rules about *reporting*, and the first draft of this amendment quietly bundled
+both under one justification:
+
+| half | what it fixes | who may fix it |
+| --- | --- | --- |
+| operational | how many executions happen, whether a timeout is re-run, what the machine records | this amendment — prospective, removes discretion, and its action set was empty |
+| analytical | how a censored `c` is reported, what a cell containing timeouts may conclude | **a blind party only** — it decides conclusions, and free parameters in it (`t ≥ 2`, a straddled threshold) are exactly what a non-blind author must not choose |
+
+The general form, which is why this is written down rather than merely fixed:
+**"my choice cannot exploit my knowledge" is an argument about a specific
+mechanism, not a property of the author — so it has to be re-checked for every
+clause it is applied to, and it fails first on the clauses that decide what
+gets concluded.**
 
 ### The minimum cohort, and what the first batch can decide
 
@@ -717,17 +930,28 @@ that argument too far:
 Amendments are listed here rather than edited in silently, and each names the
 observation that forced it.
 
-**Every amendment below was made after the [protocol dry run](DRY-RUN.md) and
-before any purchase — no positive-class data exists yet, and no scoring of any
-kind has been run.** That ordering is the whole basis for treating these as
-corrections rather than as criteria tuned to results, and it is checkable: the
-dry-run corpus contains one class, so there is no result here to tune toward.
+**Amendments 1–11 were made after the [protocol dry run](DRY-RUN.md) and before
+any purchase — no positive-class data existed, and no scoring of any kind had
+been run.** That ordering is the whole basis for treating them as corrections
+rather than as criteria tuned to results, and it is checkable: the dry-run
+corpus contains one class, so there was no result to tune toward.
+
+**Amendment 12 is different, and the difference is stated rather than
+smoothed over.** It was written while the pilot was running: no attempt had
+timed out, so the rule it changes had an **empty action set**, but one cell's
+partial outcomes were already known to the executing agent and, on request, to
+this document's author. What that permits and what it forbids — including why
+the reviewer is named and the executing agent is disqualified — is set out in
+[Who may rule on an amendment](#who-may-rule-on-an-amendment-and-why-this-one-names-it).
+Every amendment after this one must be ruled by someone who has seen no
+results.
 
 | # | Clause before | Clause now | Observation that forced it |
 | :---: | --- | --- | --- |
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
+| 12 | A timed-out attempt was "not an attempt": re-run against a one-per-cell budget, with an exhausted budget invalidating the cell; the ceiling read **28 executions / ~3.6 h**, typeset beside the fixed count as though both were constraints | **Operational only.** A timed-out attempt counts as one of the six, is recorded `unresolved (timeout)`, and is **never re-run**; the count is **exactly 24 executions**; the wall clock becomes an **estimate carrying its machine state**; pausing stops at an **attempt** boundary, never a cell boundary; every attempt records host steal and load. **The reporting of a censored `c` is fixed by the blind reviewer, not by this author**: a cell containing timeouts reports the full bounds `[c, c+t]` and **no point-estimate headline**, with **no threshold-triggered repeat and no inconclusive cut** — zero free parameters. The withdrawn draft (`t ≥ 2` inconclusive, straddled threshold) is recorded as withdrawn rather than re-tuned, since its parameters would have been chosen by a non-blind author and "decision threshold" is undefined anywhere in the registered protocol | Re-running on timeout makes the execution count depend on the outcome. A timeout is a function of instance duration, and instance duration is the dimension separating this batch's two repositories — so the retry budget is spent disproportionately on the slower one, which carries the positive class. The channel was always open; sustained CPU throttling (steal ≈ 60%, ≈ 40% of nominal capacity) merely made it visible. The clock half is the same defect from the other side: truncating on time deletes a whole cell, destroying the per-repository class balance amendments 2 and 5 bought, and it deletes the slower — positive-carrying — cell first. |
 | 11 | Timed-out attempts were re-run with no ceiling, and the terminal state was written for only one of the ways the budget runs out | **One re-run per cell as a shared budget**, and **any timeout with no re-run left invalidates the cell** — one rule for every case; a cell is valid iff it produced six valid attempts; worst case fixed at **28 executions, ~3.6 h** | Unbounded re-running could walk past the approved 24 rollouts and left "when do we stop" to whoever was running it — the discretion this section removes everywhere else. |
 | 10 | The pooled formula assumed 12 attempts, and "environment failure" included an undefined wall-time clause | **`(N + 3)/(1 + c)` parameterized by valid attempts**, with a censoring table covering 2, 1 and 0 valid positive cells; **environment failure is `timed_out == 1` alone** | A preflight failure leaves 6 attempts pooled, not 12, so the fixed formula would have been wrong in exactly the case it was written to survive. And "wall far past the p90 of comparable runs" named no comparator and no threshold while deciding the denominator — and is inapplicable regardless, since every wall time we hold is from the OpenRouter arm. |
 | 9 | "Yield factor" was named as the deliverable but never defined as a statistic | **`c` (qualifying, not merely resolved) as numerator; `E[1/θ] = 9/(1+c)` under a `Beta(2,2)` prior fixed now; pooled over the two positive cells as `15/(1+c_pooled)`; per-cell yields never averaged; preflight-failed cells excluded, environment failures re-run, `c = 0` a real measurement** | `resolved / 6` is a rate, not rollouts-per-trace, and the reciprocal of a mean is not the mean of a reciprocal. Left open, the choice between pooled rate, reciprocal, and a model — and the handling of a zero — would have been made with the counts already visible. A uniform prior would have given `7/c`, undefined at exactly the plausible outcome `c = 0`. |
