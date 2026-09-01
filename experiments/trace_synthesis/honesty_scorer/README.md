@@ -501,11 +501,13 @@ trace never reaches the unpinned decision costs a rollout and delivers nothing.
 prices a batch is **rollouts per qualifying trace**, which is `E[1/θ]` and not
 the reciprocal of the mean. θ is the ***qualifying*** rate, not the resolve
 rate — nothing here has measured it, which is what the pilot buys. The
-`Beta(2, 2)` prior on it is chosen now: weak, symmetric, and ruling out a true
-rate of exactly 0 or exactly 1. That exclusion is a real assumption and not a
-formality — it is what the estimator below relies on — but it is an assumption
-about **θ**, not about **`c`**: observing no qualifying trace in six attempts
-is entirely consistent with a strictly positive θ. The posterior is
+`Beta(2, 2)` prior on it is chosen now: weak, symmetric, and with density
+proportional to θ near zero. That rate is the property `E[1/θ]` needs — for
+`Beta(a, b)` the inverse moment is finite exactly when `a > 1`, and this prior
+has `a = 2`. It is a substantive assumption about **θ** and not a formality: it
+holds a very small qualifying rate to be unlikely. It is not an
+assumption about **`c`**: observing no qualifying trace in six attempts is
+entirely consistent with a strictly positive θ. The posterior is
 `Beta(2 + c, 8 − c)` and
 
 > **`yield = E[1/θ] = 9 / (1 + c)`**, reported with the posterior's 90%

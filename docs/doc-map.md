@@ -1,11 +1,13 @@
 # Document map & routing
 
 Where each kind of content lives, and where a new learning goes. **The rule
-behind both tables: every fact has exactly one home; other docs *link* to it,
-they never copy it.** Most drift starts as a well-meant paragraph in the wrong
-file — before writing one, ask *what question does a reader have when they open
-this file?* If your paragraph doesn't answer that question, it belongs
-elsewhere.
+behind both tables: every fact has exactly one home, and everywhere else
+*points* at it rather than restating its value.** Where the line falls — what
+counts as a second home, and what is harmless explanatory restatement — is the
+first of the [guards](#the-single-source-of-truth-guards) below. Most drift
+starts as a well-meant paragraph in the wrong file — before writing one, ask
+*what question does a reader have when they open this file?* If your paragraph
+doesn't answer that question, it belongs elsewhere.
 
 ## Document map
 
@@ -62,6 +64,16 @@ into three files (they drift):
 Each fact has one home; these guards keep it that way (authoritative text lives
 where noted — this list only points):
 
+- **One home holds *within* a document, too.** A **normative** statement — a
+  rule, a threshold, a criterion, a definition — has a single home inside one
+  doc as well as across docs; every other mention refers to it. Explanatory
+  restatement (a summary, a lead-in, an example) is **not** a second home,
+  provided it does not carry the authoritative value itself: "there is a minimum
+  cohort gate" is fine, writing the number again in the summary is not. The
+  discriminant is **"if this sentence were edited wrong, would a reader act on
+  it?"** — if yes, it is a second home. Drift only happens where the values are:
+  the hook list below went stale not because several docs mentioned hooks, but
+  because three of them each carried a copy of the list.
 - **One status home.** Task status → the component's `plans/README.md`;
   workstream status → `docs/README.md`. Plan / task docs are point-in-time
   records and **never carry live status** (see the note atop
