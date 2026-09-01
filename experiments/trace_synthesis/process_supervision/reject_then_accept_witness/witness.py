@@ -195,10 +195,11 @@ def _without_cache_control(body: dict) -> dict:
 def verdict_of(raw: str) -> str | None:
   """Read a verdict out of a judge answer.
 
-  #305 measured 2 of 69 judgements coming back unparseable, so this is an
-  ordinary path, not an exceptional one: an answer that cannot be read is
-  absence of a verdict, never a raised exception that would end the run with
-  paid calls behind it and no terminal state written.
+  The judge is asked for JSON and does not always return it, so an unreadable
+  answer is an ordinary path rather than an exceptional one: it is the *absence
+  of a verdict*, never a raised exception, which would end the run with paid
+  calls behind it and no terminal state written. Each caller decides what that
+  absence means where it stands.
 
   Args:
     raw: The judge's answer text.
@@ -450,9 +451,9 @@ def main() -> None:
 
   (args.out_dir / "attempts.jsonl").write_text(
       "".join(json.dumps(r) + "\n" for r in records))
-  # Derived from the ledger's final state, not from a flag set earlier: the
-  # cache-off call above is billable too, and a run that crossed the ceiling
-  # there is inconclusive however it got there.
+  # Derived from the ledger's final state, because the cache-off call above is
+  # billable too: a run that crossed the ceiling is inconclusive however it got
+  # there.
   inconclusive = inconclusive or ledger.exhausted
   accepted_at = next(
       (r["attempt"] for r in records if r.get("accepted")), None)
