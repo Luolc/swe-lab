@@ -1,0 +1,1167 @@
+[
+  {
+    "instance_id": "instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+    "repo": "internetarchive/openlibrary",
+    "language": "python",
+    "base_commit": "5f7d8d190e2f0d837545e582fd5db99aae51a979",
+    "files_found": 4,
+    "files_touched": 4,
+    "source_chars": 98610,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [
+      {
+        "name": "get_isbn_or_asin",
+        "interface_type": "function",
+        "requirements_noun": "method"
+      },
+      {
+        "name": "is_valid_identifier",
+        "interface_type": "function",
+        "requirements_noun": "method"
+      },
+      {
+        "name": "get_identifier_forms",
+        "interface_type": "function",
+        "requirements_noun": "method"
+      }
+    ],
+    "diagonal_units_compared": 3,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 4,
+    "required_tests": 16
+  },
+  {
+    "instance_id": "instance_ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repo": "ansible/ansible",
+    "language": "python",
+    "base_commit": "57596edcca0ef3bc4d0d90a55d33ac433b407abb",
+    "files_found": 0,
+    "files_touched": 3,
+    "source_chars": 2,
+    "unpinned_tokens": [
+      "ImportError",
+      "__future__",
+      "__metaclass__",
+      "absolute_import",
+      "admin",
+      "annoying_user",
+      "basic",
+      "blackhole",
+      "destinationAddress",
+      "division",
+      "except",
+      "foobar",
+      "https",
+      "json",
+      "library",
+      "localhost",
+      "ltm",
+      "module_utils",
+      "pass",
+      "password",
+      "peerSelectionMode",
+      "print_function",
+      "provider",
+      "server",
+      "sourceAddress",
+      "try",
+      "user"
+    ],
+    "unpinned_but_present_in_repo": [
+      "ImportError",
+      "__future__",
+      "__metaclass__",
+      "absolute_import",
+      "admin",
+      "basic",
+      "blackhole",
+      "destinationAddress",
+      "division",
+      "except",
+      "foobar",
+      "https",
+      "json",
+      "library",
+      "localhost",
+      "ltm",
+      "module_utils",
+      "pass",
+      "password",
+      "print_function",
+      "provider",
+      "server",
+      "sourceAddress",
+      "try",
+      "user"
+    ],
+    "diagonal_conflicts": [
+      {
+        "name": "ModuleParameters",
+        "interface_type": "class",
+        "requirements_noun": "module"
+      },
+      {
+        "name": "description",
+        "interface_type": "method",
+        "requirements_noun": "module"
+      },
+      {
+        "name": "src_address",
+        "interface_type": "method",
+        "requirements_noun": "module"
+      }
+    ],
+    "diagonal_units_compared": 3,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 37,
+    "required_tests": 4
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "base_commit": "265f33ed9da106cd2c926a243d564ad93c04df0e",
+    "files_found": 7,
+    "files_touched": 12,
+    "source_chars": 31547,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [
+      {
+        "name": "DataStore.UserProps",
+        "interface_type": "method",
+        "requirements_noun": "interface"
+      },
+      {
+        "name": "SQLStore.UserProps",
+        "interface_type": "method",
+        "requirements_noun": "interface"
+      }
+    ],
+    "diagonal_units_compared": 2,
+    "uncovered_symbols": [
+      "DefaultGet",
+      "Delete",
+      "Get",
+      "Put",
+      "UserProps",
+      "delete"
+    ],
+    "signature_changes": [
+      {
+        "symbol": "delete",
+        "base": "func (sk *sessionKeys) delete(ctx context.Context, uid string) error {",
+        "gold": "func (sk *sessionKeys) delete(ctx context.Context) error {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 5,
+    "required_tests": 4
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-4c04acbd9ea5b073efe999e33381fa9f399d6f27",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "base_commit": "1c4f2315727ae4370177b9c1a540fc8b0c0a7c91",
+    "files_found": 11,
+    "files_touched": 11,
+    "source_chars": 153302,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "diff"
+    ],
+    "signature_changes": [
+      {
+        "symbol": "diff",
+        "base": "func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {",
+        "gold": "func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diffed models.ScanResults) {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 3
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-fe240cbf7f0fdd6744ef7bef8cb61676bcdbb621-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+    "repo": "tutao/tutanota",
+    "language": "ts",
+    "base_commit": "fe8a8d9396398fa221bac7ac27bb92c44d93c176",
+    "files_found": 10,
+    "files_touched": 10,
+    "source_chars": 511569,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 1,
+    "required_tests": 107
+  },
+  {
+    "instance_id": "instance_protonmail__webclients-a6e6f617026794e7b505d649d2a7a9cdf17658c8",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "base_commit": "808897a3f701f58c9b93efb5bc79112e79fd20f9",
+    "files_found": 1,
+    "files_touched": 3,
+    "source_chars": 2702,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 4,
+    "required_tests": 1
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "base_commit": "db11b6b8f8ab9a8557f5783846cc881cc50b627b",
+    "files_found": 4,
+    "files_touched": 5,
+    "source_chars": 15648,
+    "unpinned_tokens": [
+      "lastFMAPIKey"
+    ],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 1
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-abd80417728b16c6502067914d27989ee575f0ee",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "base_commit": "847c6438e7604bf45a6a4efda0925f41b4f14d7f",
+    "files_found": 4,
+    "files_touched": 4,
+    "source_chars": 94053,
+    "unpinned_tokens": [
+      "parseRpmQfLine"
+    ],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "parseRpmQfLine"
+    ],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 6
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-b4e7cd3a5e246736d3fe8d6886af55030b232277",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "base_commit": "85addfbd36943a4b655e1a4241979789e8b4ff22",
+    "files_found": 7,
+    "files_touched": 7,
+    "source_chars": 153995,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "buildKeyLabel"
+    ],
+    "signature_changes": [
+      {
+        "symbol": "buildKeyLabel",
+        "base": "func buildKeyLabel(key []byte, sensitivePrefixes []string) string {",
+        "gold": "func buildKeyLabel(key string, sensitivePrefixes []string) string {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 2,
+    "required_tests": 1
+  },
+  {
+    "instance_id": "instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+    "repo": "qutebrowser/qutebrowser",
+    "language": "python",
+    "base_commit": "30250d8e680041a15e440aa7441a224d670c3862",
+    "files_found": 2,
+    "files_touched": 2,
+    "source_chars": 136282,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 6
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-3b2c25ee8a3ac247c3fad13ad8d64ace34ec8ee7",
+    "repo": "flipt-io/flipt",
+    "language": "go",
+    "base_commit": "8d72418bf67cec833da7f59beeecb5abfd48cb05",
+    "files_found": 8,
+    "files_touched": 8,
+    "source_chars": 46439,
+    "unpinned_tokens": [
+      "FlagType_VARIANT_FLAG_TYPE",
+      "ListWithOptions",
+      "NewNamespace",
+      "Results"
+    ],
+    "unpinned_but_present_in_repo": [
+      "FlagType_VARIANT_FLAG_TYPE",
+      "ListWithOptions",
+      "NewNamespace",
+      "Results"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [
+      {
+        "symbol": "New",
+        "base": "func New(logger *zap.Logger, cacheCfg config.CacheConfig, bridge Bridge) *Server {",
+        "gold": "func New(logger *zap.Logger, cacheCfg config.CacheConfig, bridge Bridge, store Storer) *Server {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 3,
+    "required_tests": 4
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-b007ea81b2ccd001b00f332bee65070aa7fc00f9-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "base_commit": "c2ae6c279b8c80ea5bd58f3354e5949a9fa5ee41",
+    "files_found": 3,
+    "files_touched": 3,
+    "source_chars": 25613,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 2,
+    "required_tests": 7
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-e3c27e1817d68248043bd09d63cc31f3344a6f2c",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "base_commit": "aeaf3086799a04924a81b47b031c1c39c949f924",
+    "files_found": 4,
+    "files_touched": 4,
+    "source_chars": 13782,
+    "unpinned_tokens": [
+      "generateFunc",
+      "scanResults"
+    ],
+    "unpinned_but_present_in_repo": [
+      "scanResults"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "ensure"
+    ],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 8
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-f0b3a8b1db98eb1bd32685f1c36c41a99c3452ed",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "base_commit": "0b9ec05181360e3fdb4a314152927f6f3ccb746d",
+    "files_found": 7,
+    "files_touched": 7,
+    "source_chars": 353658,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 2
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-ba6c4a135412c4296dd5551bd94042f0dc024504-v626ec2a48416b10a88641359a169d99e935ff037",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "base_commit": "396812cebff3ebfd075bbed04acefc65e787a537",
+    "files_found": 6,
+    "files_touched": 7,
+    "source_chars": 184011,
+    "unpinned_tokens": [
+      "componentState",
+      "componentStateEnum",
+      "getState"
+    ],
+    "unpinned_but_present_in_repo": [
+      "getState"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "getState"
+    ],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 2,
+    "required_tests": 16
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+    "repo": "flipt-io/flipt",
+    "language": "go",
+    "base_commit": "dc07fbbd64b05a6f14cc16aa5bcbade2863f9d53",
+    "files_found": 11,
+    "files_touched": 13,
+    "source_chars": 417152,
+    "unpinned_tokens": [
+      "nnamespace"
+    ],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "NewImporter",
+      "WithNamespace"
+    ],
+    "signature_changes": [
+      {
+        "symbol": "NewImporter",
+        "base": "func NewImporter(store Creator, namespace string, createNS bool) *Importer {",
+        "gold": "func NewImporter(store Creator, opts ...ImportOpt) *Importer {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 6
+  },
+  {
+    "instance_id": "instance_protonmail__webclients-cb8cc309c6968b0a2a5fe4288d0ae0a969ff31e1",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "base_commit": "3b48b60689a8403f25c6e475106652f299338ed9",
+    "files_found": 3,
+    "files_touched": 5,
+    "source_chars": 31482,
+    "unpinned_tokens": [
+      "proton.local"
+    ],
+    "unpinned_but_present_in_repo": [
+      "proton.local"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "replaceLocalURL"
+    ],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 10
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "base_commit": "3ecbb624d892b9fce078304cf89c0fe94f8ab3be",
+    "files_found": 4,
+    "files_touched": 4,
+    "source_chars": 115316,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 3
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-007235446f85b1cbaef92664c3b3867517250f21",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "base_commit": "2e7b253d55a1b6da5673ea5846503c43fa53cf37",
+    "files_found": 3,
+    "files_touched": 3,
+    "source_chars": 127579,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 1
+  },
+  {
+    "instance_id": "instance_protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "base_commit": "8b68951e795c21134273225efbd64e5999ffba0f",
+    "files_found": 6,
+    "files_touched": 6,
+    "source_chars": 35593,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "subscriptionExpires"
+    ],
+    "signature_changes": [
+      {
+        "symbol": "subscriptionExpires",
+        "base": "export function subscriptionExpires(): FreeSubscriptionResult;",
+        "gold": "export function subscriptionExpires(subscription: undefined | null, cancelled?: boolean): FreeSubscriptionResult;"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 1
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-2b15263e49da5625922581569834eec4838a9257-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "base_commit": "189d41a956ebf5b90b6cf5829d60be46c1df992e",
+    "files_found": 7,
+    "files_touched": 9,
+    "source_chars": 63918,
+    "unpinned_tokens": [
+      "add",
+      "completionStart",
+      "defaultTokenizer",
+      "tokenCount"
+    ],
+    "unpinned_but_present_in_repo": [
+      "add"
+    ],
+    "diagonal_conflicts": [
+      {
+        "name": "TokenCount",
+        "interface_type": "method",
+        "requirements_noun": "type"
+      }
+    ],
+    "diagonal_units_compared": 1,
+    "uncovered_symbols": [
+      "Complete"
+    ],
+    "signature_changes": [
+      {
+        "symbol": "Complete",
+        "base": "func (chat *Chat) Complete(ctx context.Context, userInput string, progressUpdates func(*model.AgentAction)) (any, error) {",
+        "gold": "func (chat *Chat) Complete(ctx context.Context, userInput string, progressUpdates func(*model.AgentAction)) (any, *model.TokenCount, error) {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 17,
+    "required_tests": 14
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-aec454dd6feeb93000380523cbb0b3681c0275fd-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "base_commit": "1c039fcd3880ef4fefa58812d375104d2d70fe6c",
+    "files_found": 6,
+    "files_touched": 10,
+    "source_chars": 123136,
+    "unpinned_tokens": [
+      "Membership",
+      "RoomMemberEvent",
+      "retrieving"
+    ],
+    "unpinned_but_present_in_repo": [
+      "Membership",
+      "RoomMemberEvent",
+      "retrieving"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "LruCache",
+      "UserProfilesStore"
+    ],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 36
+  },
+  {
+    "instance_id": "instance_internetarchive__openlibrary-d40ec88713dc95ea791b252f92d2f7b75e107440-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+    "repo": "internetarchive/openlibrary",
+    "language": "python",
+    "base_commit": "cbfef314d45fe04e8bf7ebb239f1699606378634",
+    "files_found": 5,
+    "files_touched": 5,
+    "source_chars": 156413,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 3,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 4,
+    "required_tests": 28
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "base_commit": "cc3c38d7805e007b25afe751d3690f4e51ba0a0f",
+    "files_found": 3,
+    "files_touched": 4,
+    "source_chars": 31471,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 1
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-f2082d7de85eb62a70819f4f3396dd85626a0c0a-vd59a5728dfc977f44533186ace531248c2917516",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "base_commit": "f0d989e4ba5b0dccff6e56022fc6d378d05ab404",
+    "files_found": 7,
+    "files_touched": 7,
+    "source_chars": 92982,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [
+      {
+        "name": "getSummary",
+        "interface_type": "method",
+        "requirements_noun": "module"
+      }
+    ],
+    "diagonal_units_compared": 1,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 3,
+    "required_tests": 5
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "base_commit": "94cc2b2ac56e2a8295dc258ddf5b8383b0b58e70",
+    "files_found": 15,
+    "files_touched": 21,
+    "source_chars": 87082,
+    "unpinned_tokens": [
+      "300",
+      "ABC123",
+      "Check it out!",
+      "Expires",
+      "LastVisited",
+      "Url",
+      "http://localhost/p/ABC123"
+    ],
+    "unpinned_but_present_in_repo": [
+      "300",
+      "Expires",
+      "Url"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [
+      {
+        "symbol": "Share",
+        "base": "func (db *MockDataStore) Share(context.Context) model.ShareRepository {",
+        "gold": "type Share struct {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 9,
+    "required_tests": 2
+  },
+  {
+    "instance_id": "instance_qutebrowser__qutebrowser-77c3557995704a683cdb67e2a3055f7547fa22c3-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+    "repo": "qutebrowser/qutebrowser",
+    "language": "python",
+    "base_commit": "1799b7926a0202497a88e4ee1fdb232f06ab8e3a",
+    "files_found": 3,
+    "files_touched": 3,
+    "source_chars": 20519,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 2
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+    "repo": "flipt-io/flipt",
+    "language": "go",
+    "base_commit": "5069ba6fa22fbbf208352ff341ea7a85d6eca29f",
+    "files_found": 9,
+    "files_touched": 17,
+    "source_chars": 86057,
+    "unpinned_tokens": [
+      "AddEvent",
+      "AuditUnaryInterceptor",
+      "RegisterSpanProcessor",
+      "SpanProcessor",
+      "WithAttributes",
+      "above",
+      "below",
+      "buffer capacity below 2 or above 10",
+      "file not specified",
+      "flush period below 2 minutes or greater than 5 minutes",
+      "go.flipt.io/flipt/internal/server/audit",
+      "go.flipt.io/flipt/internal/server/auth",
+      "greater",
+      "minutes",
+      "period",
+      "segment",
+      "specified",
+      "sse",
+      "than"
+    ],
+    "unpinned_but_present_in_repo": [
+      "WithAttributes",
+      "above",
+      "below",
+      "go.flipt.io/flipt/internal/server/auth",
+      "greater",
+      "minutes",
+      "period",
+      "segment",
+      "specified",
+      "than"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "AuditUnaryInterceptor",
+      "Close",
+      "DecodeToAttributes",
+      "RegisterSpanProcessor",
+      "SendAudits"
+    ],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 17,
+    "required_tests": 23
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-f63160f38459fb552d00fcc60d4064977a9095a6-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "base_commit": "5a4355059d15053b89eae9d82a2506146c7832c0",
+    "files_found": 4,
+    "files_touched": 4,
+    "source_chars": 295216,
+    "unpinned_tokens": [
+      "Attempting",
+      "MatrixClientContext"
+    ],
+    "unpinned_but_present_in_repo": [
+      "Attempting",
+      "MatrixClientContext"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 4
+  },
+  {
+    "instance_id": "instance_ansible__ansible-de5858f48dc9e1ce9117034e0d7e76806f420ca8-v1055803c3a812189a1133297f7f5468579283f86",
+    "repo": "ansible/ansible",
+    "language": "python",
+    "base_commit": "a1730af91f94552e8aaff4bedfb8dcae00bd284d",
+    "files_found": 8,
+    "files_touched": 9,
+    "source_chars": 249000,
+    "unpinned_tokens": [
+      "Galaxy cache has world writable access (%s), ignoring it as a cache source.",
+      "_cache",
+      "cache_dir",
+      "chmod",
+      "st_mode"
+    ],
+    "unpinned_but_present_in_repo": [
+      "_cache",
+      "chmod",
+      "st_mode"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 17
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-4fec436883b601a3cac2d4a58067e597f737b817-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "base_commit": "b8bb8f163a89cb6f2af0ac1cfc97e89deb938368",
+    "files_found": 15,
+    "files_touched": 19,
+    "source_chars": 405576,
+    "unpinned_tokens": [
+      "Error setting session display name",
+      "aware",
+      "device-detail-heading",
+      "device-heading-rename-cta",
+      "device-rename-cancel-cta",
+      "device-rename-error",
+      "device-rename-input",
+      "device-rename-submit-cta",
+      "labelledby",
+      "mx_DeviceDetailHeading",
+      "mx_DeviceDetailHeading_renameCta",
+      "mx_DeviceDetailHeading_renameForm",
+      "mx_DeviceDetailHeading_renameFormButtons",
+      "mx_DeviceDetailHeading_renameFormHeading",
+      "mx_DeviceDetailHeading_renameFormInput",
+      "setDeviceDetails"
+    ],
+    "unpinned_but_present_in_repo": [
+      "Error setting session display name",
+      "aware",
+      "labelledby",
+      "setDeviceDetails"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [
+      {
+        "snapshot": "test/components/views/settings/devices/__snapshots__/DeviceDetailHeading-test.tsx.snap",
+        "graded_test_file": "DeviceDetailHeading-test.tsx"
+      },
+      {
+        "snapshot": "test/components/views/settings/devices/__snapshots__/DeviceDetails-test.tsx.snap",
+        "graded_test_file": "DeviceDetails-test.tsx"
+      },
+      {
+        "snapshot": "test/components/views/settings/tabs/user/__snapshots__/SessionManagerTab-test.tsx.snap",
+        "graded_test_file": "SessionManagerTab-test.tsx"
+      }
+    ],
+    "interface_declares_names": 2,
+    "required_tests": 16
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-d6ffe82aaf2af1057b69c61bf9df777f5ab5635a-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "base_commit": "69a9dbf3a27c6a6da4eaafb89d69849c34beed1b",
+    "files_found": 5,
+    "files_touched": 6,
+    "source_chars": 350333,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "Interpolate",
+      "Match",
+      "NewExpression",
+      "NewMatcher"
+    ],
+    "signature_changes": [
+      {
+        "symbol": "Interpolate",
+        "base": "func (p *Expression) Interpolate(traits map[string][]string) ([]string, error) {",
+        "gold": "func (e *Expression) Interpolate(varValidation func(namespace, name string) error, traits map[string][]string) ([]string, error) {"
+      },
+      {
+        "symbol": "Match",
+        "base": "func (set RuleSet) Match(whereParser predicate.Parser, actionsParser predicate.Parser, resource string, verb string) (bool, error) {",
+        "gold": "func (e *MatchExpression) Match(in string) bool {"
+      },
+      {
+        "symbol": "NewExpression",
+        "base": "func NewExpression(variable string) (*Expression, error) {",
+        "gold": "func NewExpression(value string) (*Expression, error) {"
+      },
+      {
+        "symbol": "NewMatcher",
+        "base": "func NewMatcher(value string) (m Matcher, err error) {",
+        "gold": "func NewMatcher(value string) (*MatchExpression, error) {"
+      }
+    ],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 71
+  },
+  {
+    "instance_id": "instance_protonmail__webclients-d494a66038112b239a381f49b3914caf8d2ef3b4",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "base_commit": "94dc494bae131e6577f795cb5fa3ca66a09757e3",
+    "files_found": 6,
+    "files_touched": 7,
+    "source_chars": 60560,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 1
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-6bd4c0f6bfa653e9b8b27cfdc2955762d371d6e9",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "base_commit": "b445cdd64166fb679103464c2e7ba7c890f97cb1",
+    "files_found": 8,
+    "files_touched": 8,
+    "source_chars": 34097,
+    "unpinned_tokens": [
+      "RemoteAddr"
+    ],
+    "unpinned_but_present_in_repo": [
+      "RemoteAddr"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 3
+  },
+  {
+    "instance_id": "instance_protonmail__webclients-6e165e106d258a442ae849cdf08260329cb92d39",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "base_commit": "03feb9230522f77f82e6c7860c2aab087624d540",
+    "files_found": 11,
+    "files_touched": 11,
+    "source_chars": 252173,
+    "unpinned_tokens": [
+      "MaximumRedemptionsPerUser"
+    ],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [
+      "getCheckoutRenewNoticeText"
+    ],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 7
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-880428ab94c6ea98d3d18dcaeb17e8767adcb461-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "base_commit": "e6fe7b7ea8aad2672854b96b5eb7fb863e19cf92",
+    "files_found": 4,
+    "files_touched": 9,
+    "source_chars": 354242,
+    "unpinned_tokens": [
+      "Action",
+      "ViewUserDeviceSettings",
+      "Yes, it was me",
+      "dis",
+      "dispatch"
+    ],
+    "unpinned_but_present_in_repo": [
+      "Action",
+      "ViewUserDeviceSettings",
+      "dis",
+      "dispatch"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [
+      {
+        "snapshot": "test/toasts/__snapshots__/UnverifiedSessionToast-test.tsx.snap",
+        "graded_test_file": "UnverifiedSessionToast-test.tsx"
+      }
+    ],
+    "interface_declares_names": 0,
+    "required_tests": 4
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-445b70deda20201b7d9a68f7224da751b3db728c-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "base_commit": "565ca3cc3b78d6e5177b7834d496927b96b6c88c",
+    "files_found": 3,
+    "files_touched": 3,
+    "source_chars": 66528,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 4
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863a912fbff5749c67e860612b91825407c",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "base_commit": "a592ebd1ff1915c72a71b7f738f1dc0ec7ed4f03",
+    "files_found": 8,
+    "files_touched": 8,
+    "source_chars": 158761,
+    "unpinned_tokens": [
+      "colour",
+      "validBackgrounds"
+    ],
+    "unpinned_but_present_in_repo": [
+      "colour"
+    ],
+    "diagonal_conflicts": [
+      {
+        "name": "User.getIconBackgrounds",
+        "interface_type": "function",
+        "requirements_noun": "method"
+      }
+    ],
+    "diagonal_units_compared": 1,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 2,
+    "required_tests": 2
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-bb562408da4adeae16e025be65e170959d1ec492-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "base_commit": "e0c9b35a5567c186760e10b3a51a8f74f0dabea1",
+    "files_found": 0,
+    "files_touched": 2,
+    "source_chars": 1,
+    "unpinned_tokens": [
+      "30",
+      "AS IS",
+      "Background",
+      "Done",
+      "Err",
+      "License",
+      "Load",
+      "RLock",
+      "RUnlock",
+      "Second",
+      "append",
+      "buf",
+      "case",
+      "chan",
+      "close",
+      "com",
+      "defer",
+      "github",
+      "github.com/jonboulle/clockwork",
+      "jonboulle",
+      "make",
+      "panic",
+      "ring",
+      "runtime",
+      "select"
+    ],
+    "unpinned_but_present_in_repo": [
+      "30",
+      "AS IS",
+      "Background",
+      "Done",
+      "Err",
+      "License",
+      "Load",
+      "RLock",
+      "RUnlock",
+      "Second",
+      "append",
+      "buf",
+      "case",
+      "chan",
+      "close",
+      "com",
+      "defer",
+      "github",
+      "github.com/jonboulle/clockwork",
+      "jonboulle",
+      "make",
+      "panic",
+      "ring",
+      "runtime",
+      "select"
+    ],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 3
+  },
+  {
+    "instance_id": "instance_ansible__ansible-e40889e7112ae00a21a2c74312b330e67a766cc0-v1055803c3a812189a1133297f7f5468579283f86",
+    "repo": "ansible/ansible",
+    "language": "python",
+    "base_commit": "225ae65b0fcf0931c9ce58d68a28d1883d5bf451",
+    "files_found": 11,
+    "files_touched": 27,
+    "source_chars": 394081,
+    "unpinned_tokens": [],
+    "unpinned_but_present_in_repo": [],
+    "diagonal_conflicts": [],
+    "diagonal_units_compared": 0,
+    "uncovered_symbols": [],
+    "signature_changes": [],
+    "graded_snapshots": [],
+    "interface_declares_names": 0,
+    "required_tests": 18
+  }
+]
