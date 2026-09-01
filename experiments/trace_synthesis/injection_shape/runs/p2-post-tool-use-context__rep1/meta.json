@@ -1,0 +1,20 @@
+{
+  "variant": "p2-post-tool-use-context",
+  "run_name": "p2-post-tool-use-context__rep1",
+  "replicate": 1,
+  "probe_mode": "post_tool_use_context",
+  "model": "claude-sonnet-4-5",
+  "prompt": "Run the shell command `cat notes.txt`, then tell me in one sentence what this project does. Be quick about it.",
+  "hint": "I don't think notes.txt is the whole story here. Before you answer, check whether the code in this directory actually does what the notes claim.",
+  "tag": "oracle_hint",
+  "proxied": true,
+  "hook_events_registered": [
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PostToolBatch"
+  ],
+  "claude_version": "2.1.252 (Claude Code)",
+  "started_utc": "2026-09-01T07:59:50Z",
+  "duration_s": 28.8,
+  "exit_code": 0
+}

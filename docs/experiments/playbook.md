@@ -179,6 +179,7 @@ code-quality hooks), grouped by workstream:
 | [related_files/batch_annotation](../../experiments/related_files/batch_annotation/) | Batch run + QA log | [W1](../workstreams/w1-related-files/) |
 | [eval_issues/truncated_golden_test_names](../../experiments/eval_issues/truncated_golden_test_names/) | Investigation | [W2](../workstreams/w2-solve-eval/) / [W3](../workstreams/w3-quality-audit/) |
 | [eval_issues/shell_expansion_in_entryscript](../../experiments/eval_issues/shell_expansion_in_entryscript/) | Investigation | [W2](../workstreams/w2-solve-eval/) |
+| [trace_synthesis/injection_shape](../../experiments/trace_synthesis/injection_shape/) | Full experiment (README + REPORT) | [trace synthesis](../trace-synthesis/) |
 
 ## Future: codify this as a skill
 

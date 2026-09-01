@@ -20,8 +20,8 @@ recorded in [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
 | # | Task | Status |
 |---|---|---|
 | 01 | **One hand-made instance, end to end, by hand** — the cheapest test of the core assumption | ⬜ |
-| 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ⬜ |
-| 03 | **Hint materialization + conversion guard** (pure, tested) | ⬜ |
+| 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
+| 03 | **Hint log + conversion guard** (pure, tested) | ⬜ |
 | 04 | **Oracle analysis task + guidebook schema** | ⬜ |
 | 05 | **Supervisor + hook wiring in the sandbox** | ⬜ |
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
@@ -77,25 +77,38 @@ what our typed `Conversation` conversion does with it.
   rule on materialization.
 - **Verification:** an experiment `REPORT.md` with the raw transcripts kept.
 - **Dependencies:** none (runs in parallel with 01). **Scope:** S
+- **Outcome:** [`experiments/trace_synthesis/injection_shape/REPORT.md`](../../../experiments/trace_synthesis/injection_shape/REPORT.md).
+  `PostToolUse` `updatedToolOutput` with a tagged suffix appended to the tool's
+  real output is the recommendation — the only candidate kept by **both**
+  converters. Survival turned out to be a property of the converter rather than
+  the channel, materialization is not needed, and two defects surfaced that the
+  task did not go looking for (`proxy_log_to_conversation` keeps only the last
+  thread; routing the actor through a proxy changes whether it follows a hint).
 
-## Task 03: Hint materialization + conversion guard
+## Task 03: Hint log + conversion guard
 
-**Description:** The small, well-defined
-[phase D](../spec.md#phase-d--collection) step: given the run's
-`stream-json` and the host-side hint log, produce a `Conversation` in which
-every hint the actor received is present as a visible turn. Pure host-side code
-— no Docker, no model calls — which is where the correctness risk belongs.
+**Description:** What is left of the [phase D](../spec.md#phase-d--collection)
+step once [task 02](#task-02-measure-the-injection-shape) removed the
+materialization half: a host-side log of every hint the Supervisor injected, and
+a guard that cross-checks it against the converted `Conversation`. Pure
+host-side code — no Docker, no model calls — which is where the correctness
+risk belongs.
 
-The load-bearing half is the **guard**: a hint that the converter cannot
-represent must fail the conversion loudly. Silently emitting a hint-less trace
-is the one fatal failure mode in the spec.
+The load-bearing half is the **guard**: a hint that is not present in the
+converted trace must fail the conversion loudly. Silently emitting a hint-less
+trace is the one fatal failure mode in the spec, and task 02 found two live
+routes to it — `proxy_log_to_conversation` keeps only the last proxy record's
+thread, so a hint delivered inside a subagent's conversation disappears; and a
+hint injected after the actor's last API call never reaches the model at all,
+which is legitimate but must be recorded rather than assumed.
 
-- **Acceptance:** the guard is pinned by a named test (a run whose hint cannot
-  be represented → conversion errors, no trace produced); round-trip tests over
-  the typed model; `tool_use` ↔ `tool_result` pairing preserved.
+- **Acceptance:** the guard is pinned by a named test (a run whose hint is
+  absent from the converted trace → conversion errors, no trace produced);
+  round-trip tests over the typed model; `tool_use` ↔ `tool_result` pairing
+  preserved.
 - **Verification:** unit tests, no Docker; the full quality bar.
-- **Dependencies:** 02 (its outcome decides what is being materialized).
-  **Scope:** M
+- **Dependencies:** 02 (its outcome decided what is left to build).
+  **Scope:** S–M
 
 ## Task 04: Oracle analysis task + guidebook schema
 
