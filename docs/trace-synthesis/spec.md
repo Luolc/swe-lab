@@ -58,10 +58,11 @@ with on-policy correction**.
   at the states the **student** actually visits, which is what removes the
   distribution shift plain behaviour cloning suffers from.
 
-What is new is the medium of the correction: it is delivered as **a natural
-user turn inside the conversation**, and it must be honest — vague enough that
-the model's own next reasoning is a real derivation rather than the execution
-of an instruction.
+What is new is the medium of the correction: it is delivered **inside the
+conversation, visibly marked as an interjection from outside**
+([§11](#11-open-questions)), and it must be honest — vague enough that the
+model's own next reasoning is a real derivation rather than the execution of an
+instruction.
 
 ## 3. The pipeline
 
@@ -77,7 +78,7 @@ flowchart TD
   C["<b>C.</b> fresh env, same prompt, <b>blind</b> actor"]
   T["tool call runs to completion"]
   S["Supervisor judges the <i>result</i><br/><i>guidebook + belief state, host-side</i>"]
-  H["inject a short <b>user hint</b><br/><i>direction only, never specifics</i>"]
+  H["inject a short <b>tagged hint</b><br/><i>direction only, never specifics</i>"]
   D["<b>D.</b> collect the conversation<br/><i>unedited</i>"]
 
   A --> B
@@ -154,10 +155,11 @@ of what an honest, blind agent would know from the observations so far. The
 Supervisor then takes one of two branches:
 
 - **On track** — do nothing; update the belief state.
-- **Off track or looping** — inject a short **user hint**: the sort of thing a
-  person watching over the agent's shoulder would say ("I don't think that's
+- **Off track or looping** — inject a short **tagged hint**: the sort of thing
+  a person watching over the agent's shoulder would say ("I don't think that's
   the right direction — have you considered how this interacts with X?"),
-  giving **a direction and never a specific**.
+  giving **a direction and never a specific**, and wrapped in a marker that
+  says it came from outside ([§11](#11-open-questions)).
 
 The belief state lives **host-side, outside the sandbox**. If the actor could
 read a file written with oracle knowledge, the construction collapses — which
@@ -175,12 +177,11 @@ just a statement of intent. D converts the harness's
 [`Conversation`](../horizontal/plans/task-06a-conversation-protocol.md) and
 persists it with the run's records.
 
-D is not quite nothing, though. Depending on how the head open question in
-[§11](#11-open-questions) resolves, it may carry **one small, well-defined
-step: materializing each hint as the user turn it semantically is**, from the
-host-side hint log. That is an *insertion* of something the actor really
-received — not the deletion of turns and not the synthesis of reasoning that
-the superseded framing required, and it stays far simpler than either.
+D is a pure conversion: the recommended channel survives it
+([§11](#11-open-questions)), so there is nothing to materialize. What D does owe
+the design is the **guard** — a hint the converter cannot represent must fail
+the conversion rather than produce a hint-less trace
+([task 03](plans/README.md)).
 
 ## 4. Why judging after the fact, and not before
 
@@ -208,17 +209,18 @@ Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 | **Steer from a Claude Code hook** — not the proxy, not our own agent loop | The proxy ([task 08](../horizontal/plans/task-08-proxy-capture.md)) is already complex and folding steering into it couples the two badly. Our own agent loop abandons the point of this infrastructure, which is to hug the harness we actually want traces of. |
 | **Never rewrite the tool call** | Measured: a rewritten call is *not* reflected back in the assistant turn, so the actor finishes the turn believing it did something it did not do, and every later step reasons from a false premise ([§10](#10-what-is-measured-about-hooks)). |
 | **Never deny** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). |
-| **Inject as a user hint** | The natural shape for "a person is course-correcting me", and the only shape in which the intervention is honestly *conditioning* rather than a fabricated observation. |
+| **Inject as an identifiable external hint** | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so would a real user turn. [§11](#11-open-questions) states the three tests a channel has to pass. |
 | **Direction only, never specifics** | The leakage / teaching dial; see [§8](#8-what-hint-specificity-now-trades). |
 | **Not a system-reminder** | Claude Code already uses that channel heavily, so ours would be indistinguishable from machine noise — both to the actor at run time and to anyone reading the trace. |
 
 ## 6. The trace is the conversation, unedited
 
-**The training trace is the phase-C conversation itself, with nothing removed.**
-Not the conversation minus the hints; not a reconstruction assembled offline.
-(The one thing [Phase D](#phase-d--collection) may *add* is the hint rendered
-in the role it already holds — an insertion of text the actor really received,
-which is the opposite of a reconstruction.)
+**The training trace is the phase-C conversation itself, with nothing removed
+and nothing added.** Not the conversation minus the hints; not a reconstruction
+assembled offline. Each hint is already a visible part of the conversation the
+actor had — a tagged segment of a tool result
+([§11](#11-open-questions)) — so [Phase D](#phase-d--collection) is a pure
+conversion.
 
 The reason is a property of the training objective, not a convenience:
 
@@ -240,7 +242,7 @@ Keeping the hints removes most of the machinery an earlier framing needed:
 
 | Was going to be needed | Status under this design |
 |---|---|
-| A trace-surgery pass removing the intervention turns | **Gone** — there is nothing to remove. What may remain is an *insertion* (materializing a hint as a user turn, [Phase D](#phase-d--collection)), which is a much smaller thing |
+| A trace-surgery pass removing the intervention turns | **Gone** — there is nothing to remove, and ([task 02](plans/README.md)) nothing to insert either: the hint arrives inside the tool result and converts as it stands |
 | An inducibility invariant enforced by a checker | **Satisfied by construction** — nothing in the trace is unexplained |
 | A blind judge used as a **leak detector** | **Not needed for that job** — it may still earn its keep as a plain quality filter |
 | Synthesized "thinking" spliced in front of corrected actions | **Gone** — the model writes its own reasoning in response to the hint, and its `thinking` blocks survive capture ([§10](#10-what-is-measured-about-hooks)) |
@@ -293,8 +295,14 @@ measurement is what is recorded.
 | After a rewrite, the assistant turn still shows the model's **original** `tool_use` while the result is the **rewritten** call's; nothing tells the actor | measured (`Edit`: model wrote `MODEL_WROTE`, hook wrote `HOOK_WROTE`, file on disk `HOOK_WROTE`, result said only "updated successfully") | The reason rewriting is banned: it desynchronizes the actor's own world model mid-run |
 | `PostToolUse` observes the **rewritten** input, `PreToolUse` the original | measured | If we ever needed to log a triple, this asymmetry is where |
 | A `PreToolUse` denial lands as a `tool_result` with `is_error: true`, content = `permissionDecisionReason` | measured | The shape we are avoiding |
-| `PostToolUse` `decision: "block"` + `reason` lands in the transcript as a line of `type: "attachment"`, `attachment.type: "hook_blocking_error"` — **not** a message, and not a user turn | measured | **This is the head open question** ([§11](#11-open-questions)). In that run the model's own `thinking` named it "a post-tool hook message", weighed it against the user's actual instruction and declined to follow it. So the channel appears to affect **compliance**, not only trace shape — which strengthens rather than weakens the case for finding a genuine user-role channel. The task was trivial and already complete, so this is *weak* evidence about persuasion and strong evidence about shape |
-| `additionalContext` is delivered wrapped in a system reminder | documented | Ruled out by [§5](#5-the-mechanism-decisions) |
+| `PostToolUse` `decision: "block"` + `reason` lands in the transcript as a line of `type: "attachment"`, `attachment.type: "hook_blocking_error"` — **not** a message, and not a user turn | measured | **This is the head open question** ([§11](#11-open-questions)). In that run the model's own `thinking` named it "a post-tool hook message", weighed it against the user's actual instruction and declined to follow it. So the channel appears to affect **compliance**, not only trace shape — which strengthens rather than weakens the case for finding a channel the actor reads as an external instruction rather than as machine noise. The task was trivial and already complete, so this is *weak* evidence about persuasion and strong evidence about shape |
+| `additionalContext` is delivered wrapped in a system reminder | measured ([task 02](../../experiments/trace_synthesis/injection_shape/REPORT.md)) | The wire shows it inside the tool result as `<system-reminder>\nPostToolUse:Bash hook additional context: …\n</system-reminder>`. Still ruled out by [§5](#5-the-mechanism-decisions), and now also because `event_stream_to_conversation` drops it |
+| `PostToolUse` `updatedToolOutput` reaches the actor **inside the `user` / `tool_result` block, as the tool's own output bytes**, with no wrapper | measured | The recommended channel: a tagged suffix appended there survives **both** converters ([§11](#11-open-questions)) |
+| `updatedToolOutput` is validated against the tool's declared output schema; a mismatch is discarded with *"…does not match `<tool>`'s output shape; using original output"* | measured | The hook must copy the tool's response object and append into its text field — `stdout` for `Bash`, `file.content` for `Read` |
+| `PostToolBatch` and `PostToolUseFailure` accept **only** `additionalContext` — no `decision`, no `updatedToolOutput` | measured (the shipped binary's own schema) | Neither seam can carry a hint that survives a stream capture |
+| `PostToolUse` does not fire on a failed tool call; `PostToolUseFailure` does | measured | A `PostToolUse`-only design is blind exactly when the actor is spinning after an error |
+| Two reminders reach the actor that are in **no** client request body: a token-usage `<system_warning>` and a `PROMPT INJECTION WARNING` naming *"impersonating a user message"* as the pattern | measured (quoted verbatim by the actor; absent from every proxy-captured request) | A proxy capture is ground truth for what the **client sent**, not for what the model saw. Our hint provokes a warning the actor then reasons about in `thinking` while it appears in no visible turn |
+| `proxy_log_to_conversation` keeps only the **last** proxy record's thread | measured (a subagent run: stream conversion kept 3 hints over 18 turns, proxy conversion emitted 7 turns and 0 hints) | A defect in the proxy capture path, and a live way to lose a hint silently — part of why the [conversion guard](plans/README.md) stays required |
 | A built-in `type: "prompt"` / `"agent"` hook can only allow or deny | documented | The Supervisor must be our own `command` / `http` handler calling the API |
 | Spawning `claude` inside a hook is blocked by the `CLAUDECODE=1` nesting guard, and there are recorded recursive cost-explosion incidents on `Stop` / `SessionEnd` | documented + measured (`CLAUDECODE=1` present in the hook environment) | Never nest the CLI; call the API |
 | The hook subprocess does **not** inherit `CLAUDE_CODE_OAUTH_TOKEN` / `ANTHROPIC_API_KEY` | measured | The Supervisor needs its own credential passed in explicitly |
@@ -309,42 +317,74 @@ schema ([task 29](../horizontal/plans/task-29-grok-harness.md)).
 
 ## 11. Open questions
 
-**Head question — what shape can the hint actually take?** The design wants a
-genuine **user-role turn** at a tool boundary, and no hook output is documented
-to produce one. `PostToolUse` `decision: "block"` + `reason` has been measured
-and is **not** it (it lands as an `attachment`, [§10](#10-what-is-measured-about-hooks)).
-The remaining candidates are `updatedToolOutput` (deletable, but it puts our
-words in the tool's mouth), `PostToolBatch`'s `decision` / `additionalContext`
-(fires after a batch and before the next model request — arguably the natural
-seam), and re-confirming what `additionalContext` looks like at this version.
-**This is a measurement, not a discussion**, and it is the first thing the
-build has to settle.
+**Head question — what shape can the hint actually take?** Not "can a hook
+produce a genuine `user`-role turn?": the owner ruled on 2026-09-01 that the
+wire-level role is **not** the criterion. A channel qualifies when three things
+hold, and those three are the whole question:
 
-It has a second half, and it is the more consequential one: even for a shape
-the actor *sees*, our typed `Conversation` conversion must **preserve** it —
-and today's converter demonstrably does not. `harnesses/claude_code/convert.py`
-skips every stream event whose `type` is not `user` or `assistant`, and drops
-content-block kinds it does not model. A `PostToolUse` hook's output reaches
-`stream-json` only as a `system` / `hook_response` event (and only under
-`--include-hook-events` at all), so **as the code stands the hint converts to
-nothing, silently** — which is exactly the unmotivated-pivot trace that
-[§6](#6-the-trace-is-the-conversation-unedited) calls worse than useless. If no
-hook output survives conversion as a visible turn, the alternative is to log the
-hint host-side and **materialize** it as a user turn during conversion.
+1. **The actor sees it** — it is in the context of the next model request.
+2. **It is marked as an external injection** — an explicit tag
+   (`<oracle_hint>` …), so the actor can mistake it neither for its own output
+   nor for the tool's. The tag carries the provenance the role field was being
+   asked to carry.
+3. **Our typed `Conversation` conversion preserves it** — the second half,
+   below.
 
-**Leaning (orchestra's, pending the owner's sign-off — not a decision):
-materializing is acceptable, and probably right.** The argument is that the
-hint *is* user intent already; Claude Code merely happens to deliver it over an
-attachment channel. Rendering it in the role it semantically holds is more
-honest than preserving an implementation detail. What the training trace
-asserts — "having received X, the assistant produced Y" — stays true, because
-the actor really did receive that text. **The only fiction is the channel, not
-the information.**
+**[Task 02](plans/README.md) measured this, and the answer is
+`updatedToolOutput` carrying a tagged suffix appended to the tool's real
+output** ([report](../../experiments/trace_synthesis/injection_shape/REPORT.md)).
+It is the only candidate that passes all three criteria under **both** of this
+repo's converters: the wire shows it inside the `user` / `tool_result` block as
+the tool's own bytes, the actor reads it as injected rather than as the
+command's output, and it survives `event_stream_to_conversation` and
+`proxy_log_to_conversation` alike. `additionalContext` on `PostToolUse` /
+`PostToolBatch` / `PostToolUseFailure` fails (3) on the default capture — it is
+delivered wrapped in a system reminder that `stream-json` does not carry — and
+`decision: "block"` fails it as an `attachment`
+([§10](#10-what-is-measured-about-hooks)). **This is a recommendation from a
+measurement, not yet a [§5](#5-the-mechanism-decisions) decision**; it needs the
+owner's sign-off before it becomes one.
 
-That has to be **declared, never hidden.** If we materialize, the spec's own
-statement is that the live run and the training trace differ at the channel
-layer, and both sides must be retained — the host-side hint log *and* the raw
-transcript — so any trace can be traced back to what actually happened.
+The measurement also says something about the marker, and it is narrower than
+it first looked. An **unmarked** hint is refused as a prompt injection far more
+often than a tagged one; and of the four combinations of tag name and hint body
+that were tried, **only a neutral tag with a body that does not claim to be the
+user drew no objections at all** — the other three drew objections in 2 to 4 of
+4 runs. So the marker is a neutral, acknowledged third party (`<oracle_hint>`)
+whose text does not impersonate the operator. *Why* that combination wins is
+**not** settled: the 2×2 splitting the tag from the body is non-monotone, so
+"never impersonate the user" is the provisional reading rather than a
+demonstrated mechanism.
+
+**Appending a tagged suffix is not rewriting the tool output**, and the
+distinction is exactly where [§5](#5-the-mechanism-decisions)'s *never rewrite*
+draws its line. Replacing a tool's output wholesale is the same disease as
+`updatedInput`: the actor's world model comes apart from what actually
+happened. Keeping the tool's real output verbatim and appending a tagged
+segment after it does not — everything the tool said is still there, and the
+tag says who said the rest.
+
+The second half turned out to be **a property of the converter, not of the
+channel**, which is why the recommendation is worth what it is.
+`event_stream_to_conversation` skips every stream event whose `type` is not
+`user` or `assistant`, so a hint delivered as the hook's **own** output (a
+`system` / `hook_response` event, and only under `--include-hook-events` at
+all) converts to nothing — and so does `additionalContext`, whose system
+reminder the stream does not carry. `proxy_log_to_conversation` keeps both,
+because on the wire they sit inside the tool result. Choosing
+`updatedToolOutput` is what makes the answer stop depending on which capture a
+run used.
+
+**Materialization is therefore not needed**, and the fallback in earlier
+drafts of this section does not fire.
+
+**The hint log and the conversion guard are not cancelled by that**, because
+losing a hint silently is still reachable. Two measured ways:
+`proxy_log_to_conversation` keeps only the last proxy record's thread, so a
+hint delivered inside a subagent's conversation vanishes from a proxy capture
+([§10](#10-what-is-measured-about-hooks)); and a hint injected after the
+actor's last API call never reaches the model at all, which is honest but must
+still be *recorded* rather than assumed.
 
 **The one fatal failure mode is a hint disappearing silently.** That produces
 precisely the unmotivated-pivot trace this whole design exists to avoid, and it
@@ -354,17 +394,30 @@ conversion must fail rather than silently emit a hint-less trace.**
 
 The rest, in no particular order:
 
-- **Which events do we hook?** `PostToolUse` fires only after a tool
-  *succeeds*; a failure goes to `PostToolUseFailure`, and a permission or
-  schema failure triggers neither. "The agent is spinning after an error" is
-  one of the moments a hint is most valuable, so a `PostToolUse`-only design
-  has a hole in it. `PostToolUseFailure` and `PostToolBatch` are measured
-  **together with** the user-turn experiment above, not after it — they change
-  what that experiment is even asking.
-- **One hint per batch, or one per call?** Parallel tool calls fan out to
-  parallel hooks; several hints arriving at once is both expensive and
-  incoherent. `PostToolBatch` fires after a batch and before the next model
-  request, which is the natural seam if it can carry the hint.
+- **Which events do we hook? — answered: both.** `PostToolUse` fires only
+  after a tool *succeeds* and `PostToolUseFailure` on a failure, both measured
+  ([§10](#10-what-is-measured-about-hooks)), so a `PostToolUse`-only design is
+  blind exactly when the actor is spinning after an error. What is *not*
+  settled is a permission or schema failure, which triggers neither.
+- **One hint per batch, or one per call?** Parallel tool calls fan out to one
+  hook each plus a single `PostToolBatch` (measured: three calls → three
+  `PostToolUse` invocations and one batch invocation). `PostToolBatch` remains
+  the natural seam for one decision per batch, but it carries **only**
+  `additionalContext`, which the default capture drops — so a batch-level hint
+  costs the proxy capture and its
+  [thread-loss defect](#10-what-is-measured-about-hooks).
+- **Why does routing the actor through a proxy change whether it follows the
+  hint?** Measured and unexplained: with the identical channel, hint, model and
+  prompt, the actor followed the hint in 4 of 4 proxied runs and 0 of 10
+  unproxied ones (5 of which set `ANTHROPIC_BASE_URL` to the real API, ruling
+  out the variable itself). Until it is chased down, proxied compliance numbers
+  are optimistic and the **unproxied** ones — the default capture — are what
+  the design should plan against.
+- **Does the harness's prompt-injection guard harden over a long rollout?**
+  Every measurement so far is a 1–3 call toy task. The guard tells the actor to
+  check whether an instruction "actually arrived as a user turn"; ours never
+  does. Whether it starts refusing over a 50–200 call rollout is the risk that
+  would kill the design, and only [task 01](plans/README.md) can show it.
 - **What happens when the Supervisor times out?** The default is fail-open —
   the hint is silently dropped and the run continues. Silently is the one
   behaviour that quietly changes the dataset, so the policy must be explicit
@@ -401,8 +454,8 @@ The banned-channel row covers exactly the three of
 response, and claims nothing beyond them. The other three are not
 settings-level facts and are not pinned here: *steer from a hook rather than
 the proxy or our own loop* is an architectural choice visible in what the
-component builds at all, *inject as a user hint* is the positive form of the
-same three bans, and *direction only, never specifics* is a property of
+component builds at all, *inject as an identifiable external hint* is the
+positive form of the same three bans, and *direction only, never specifics* is a property of
 generated prose — the [hint-specificity dial](#8-what-hint-specificity-now-trades)
 is tuned by reading traces, not asserted by a test.
 
@@ -414,6 +467,7 @@ is tuned by reading traces, not asserted by a test.
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
 | A hint lost in conversion is detectable — conversion fails rather than emitting a hint-less trace | a test feeding a run whose hint the converter cannot represent and asserting conversion errors |
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
+| A hint never replaces a tool's output: the tool's own output is a substring of what the actor is shown | a test over the Supervisor's hook-response builder asserting the tool response it returns contains the original response's text verbatim |
 | No banned channel is reachable in a hook response: the Supervisor's output never carries `updatedInput` (a rewrite), a deny decision, or `additionalContext` (the system-reminder channel) | a test over the Supervisor's hook-response builder asserting all three fields are absent from every response it can produce |
 
 ## 13. Where this plugs into swe-lab
@@ -451,8 +505,8 @@ for it. Two consequences, and neither is negotiable:
 
 ## 15. Success criteria
 
-1. A hint reaches the actor as a turn that is **visible in the training trace**
-   and reads as a person speaking — or, if no mechanism can do that, an
+1. A hint reaches the actor **visibly marked as an external injection** and is
+   **preserved in the training trace** — or, if no mechanism can do that, an
    explicit owner decision on the alternative
    ([§11](#11-open-questions)).
 2. On at least one instance, a supervisor holding a good guidebook steers a

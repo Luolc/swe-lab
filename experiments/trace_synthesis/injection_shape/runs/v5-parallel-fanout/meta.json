@@ -1,0 +1,17 @@
+{
+  "variant": "v5-parallel-fanout",
+  "probe_mode": "log_only",
+  "model": "claude-sonnet-4-5",
+  "prompt": "In a single message, issue three tool calls at once: read notes.txt, read widget.py, and run `ls -a`. Then say 'done' and stop.",
+  "hint": "I don't think notes.txt is the whole story here. Before you answer, check whether the code in this directory actually does what the notes claim.",
+  "tag": "oracle_hint",
+  "hook_events_registered": [
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PostToolBatch"
+  ],
+  "claude_version": "2.1.252 (Claude Code)",
+  "started_utc": "2026-09-01T07:46:00Z",
+  "duration_s": 13.3,
+  "exit_code": 0
+}

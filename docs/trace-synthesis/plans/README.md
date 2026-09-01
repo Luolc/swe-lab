@@ -24,13 +24,14 @@ this index is not a task: its results are recorded in
 | # | Task | Status |
 |---|---|---|
 | 01 | **One instance, end to end** — an automated walkthrough producing the pipeline's first real artifacts on one real instance | ⬜ |
-| 02 | **Measure the injection shape** — can a hook put a *user-role* turn at a tool boundary, and does it survive conversion? | ⬜ |
-| 03 | **Hint materialization + conversion guard** (pure, tested) | ⬜ |
+| 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
+| 03 | **Hint log + conversion guard** (pure, tested) | ⬜ |
 | 04 | **Oracle analysis task + guidebook schema** | ⬜ |
 | 05 | **Supervisor + hook wiring in the sandbox** | ⬜ |
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
+| 09 | **Redact the production proxy capture** — gates *publishing* any proxy-captured trace | ⬜ |
 
 ---
 
@@ -63,10 +64,13 @@ a real steered conversation actually look like. The design record is
 
 **Description:** Settle the spec's
 [head open question](../spec.md#11-open-questions) by measurement. What shape
-can a hook actually put into the conversation at a tool boundary, and which of
-them is a genuine **user-role** turn? `PostToolUse` `decision: "block"` is
-already measured and is *not* one (it lands as an `attachment`). The remaining
-candidates — `updatedToolOutput`, `PostToolBatch`'s `decision` /
+can a hook actually put into the conversation at a tool boundary, and which
+shapes pass the three tests the question now asks — the actor sees it, it is
+**marked as an external injection**, and our conversion preserves it? (The
+wire-level `role` field is not the criterion; owner, 2026-09-01.) `PostToolUse`
+`decision: "block"` is already measured and fails the third (it lands as an
+`attachment`). The candidates — `updatedToolOutput` carrying a tagged suffix
+appended to the tool's real output, `PostToolBatch`'s `decision` /
 `additionalContext`, and a re-confirmation of `additionalContext` at this
 version — get measured together with the two event-coverage questions
 (`PostToolUseFailure` for the spinning-after-an-error case, `PostToolBatch` for
@@ -75,31 +79,45 @@ the parallel-batch case), because those change what the experiment is asking.
 Each candidate is measured on **two** things: what the actor does with it, and
 what our typed `Conversation` conversion does with it.
 
-- **Acceptance:** a table of candidate → transcript shape → role as the model
-  sees it → whether the converter preserves it; plus a recommendation for the
-  head question and, if no candidate produces a user turn, the evidence the
-  owner needs to rule on materialization.
+- **Acceptance:** a table of candidate → transcript shape → what the model sees
+  it as → whether the converter preserves it → any observation on whether the
+  actor complies; plus a recommendation for the head question and, if no
+  candidate survives with its marker intact, the evidence the owner needs to
+  rule on materialization.
 - **Verification:** an experiment `REPORT.md` with the raw transcripts kept.
 - **Dependencies:** none (runs in parallel with 01). **Scope:** S
+- **Outcome:** [`experiments/trace_synthesis/injection_shape/REPORT.md`](../../../experiments/trace_synthesis/injection_shape/REPORT.md).
+  `PostToolUse` `updatedToolOutput` with a tagged suffix appended to the tool's
+  real output is the recommendation — the only candidate kept by **both**
+  converters. Survival turned out to be a property of the converter rather than
+  the channel, materialization is not needed, and two defects surfaced that the
+  task did not go looking for (`proxy_log_to_conversation` keeps only the last
+  thread; routing the actor through a proxy changes whether it follows a hint).
 
-## Task 03: Hint materialization + conversion guard
+## Task 03: Hint log + conversion guard
 
-**Description:** The small, well-defined
-[phase D](../spec.md#phase-d--collection) step: given the run's
-`stream-json` and the host-side hint log, produce a `Conversation` in which
-every hint the actor received is present as a visible turn. Pure host-side code
-— no Docker, no model calls — which is where the correctness risk belongs.
+**Description:** What is left of the [phase D](../spec.md#phase-d--collection)
+step once [task 02](#task-02-measure-the-injection-shape) removed the
+materialization half: a host-side log of every hint the Supervisor injected, and
+a guard that cross-checks it against the converted `Conversation`. Pure
+host-side code — no Docker, no model calls — which is where the correctness
+risk belongs.
 
-The load-bearing half is the **guard**: a hint that the converter cannot
-represent must fail the conversion loudly. Silently emitting a hint-less trace
-is the one fatal failure mode in the spec.
+The load-bearing half is the **guard**: a hint that is not present in the
+converted trace must fail the conversion loudly. Silently emitting a hint-less
+trace is the one fatal failure mode in the spec, and task 02 found two live
+routes to it — `proxy_log_to_conversation` keeps only the last proxy record's
+thread, so a hint delivered inside a subagent's conversation disappears; and a
+hint injected after the actor's last API call never reaches the model at all,
+which is legitimate but must be recorded rather than assumed.
 
-- **Acceptance:** the guard is pinned by a named test (a run whose hint cannot
-  be represented → conversion errors, no trace produced); round-trip tests over
-  the typed model; `tool_use` ↔ `tool_result` pairing preserved.
+- **Acceptance:** the guard is pinned by a named test (a run whose hint is
+  absent from the converted trace → conversion errors, no trace produced);
+  round-trip tests over the typed model; `tool_use` ↔ `tool_result` pairing
+  preserved.
 - **Verification:** unit tests, no Docker; the full quality bar.
-- **Dependencies:** 02 (its outcome decides what is being materialized).
-  **Scope:** M
+- **Dependencies:** 02 (its outcome decided what is left to build).
+  **Scope:** S–M
 
 ## Task 04: Oracle analysis task + guidebook schema
 
@@ -186,3 +204,39 @@ versus the cheap "failed once, gold self-test passes" proxy.
   against rejection sampling on the same instances.
 - **Verification:** an experiment `REPORT.md`.
 - **Dependencies:** 07. **Scope:** L
+
+## Task 09: Redact the production proxy capture
+
+**Description:** `ClaudeCodeHarness(capture="proxy")` declares
+`claude.proxy.jsonl` as a native output, so the proxy log is a registered run
+artifact. That log is written by the same `cc-reverse-proxy` binary
+[task 02](#task-02-measure-the-injection-shape) used, and the binary records the
+headers it forwards: its `excludedRequestHeaders` drops only `host` and
+`accept-encoding`, and its response `excludedHeaders` only the hop-by-hop four.
+So **every proxy-captured run stores the run's `Authorization` bearer token and
+the operator's `anthropic-organization-id` / `anthropic-workspace-id`
+verbatim**, and nothing under `harnesses/claude_code/` redacts anything —
+`convert.py`'s "No PII redaction is needed here" reasons about the agent's
+identity *inside the container*, which is a different question from what the
+proxy wrote down.
+
+**This is latent, not live.** Today those artifacts land in `.cache/` and in the
+cache-backed T1 store, and no running path publishes a rollout artifact. But
+[`.gitignore`](../../../.gitignore) states that full-conversation trace records
+live off-repo in a HF dataset repo — publishing traces is the intent — so
+whoever first publishes a proxy-captured trace publishes a credential and the
+operator's account identifiers with it. Task 02 put proxy capture near this
+pipeline's critical path, which is why the task is filed here.
+
+Redaction belongs **at write time**, not as an after-the-fact cleanup, so a raw
+artifact never exists on disk. `redact_record` in
+[`experiments/trace_synthesis/injection_shape/run_experiment.py`](../../../experiments/trace_synthesis/injection_shape/run_experiment.py)
+is the header set and the shape to start from.
+
+- **Acceptance:** a proxy-captured run's stored artifact carries no credential
+  and no operator identifier; a named test covers **both** directions (a request
+  credential header and a response identity header). `convert.py`'s redaction
+  docstring is corrected to say which capture it is talking about.
+- **Verification:** unit tests; one proxy-captured run inspected end to end.
+- **Dependencies:** none. **Gates:** publishing any proxy-captured trace — not
+  local runs. **Scope:** S

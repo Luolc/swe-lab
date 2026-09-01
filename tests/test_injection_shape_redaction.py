@@ -1,0 +1,154 @@
+"""The injection-shape experiment must not commit what its proxy captured.
+
+`cc-reverse-proxy` records the headers it forwards, so a raw `proxy.jsonl`
+carries the run's OAuth bearer token on the request side and the operator's
+organization / workspace identifiers on the response side. The experiment's
+driver redacts both the moment a run ends; these tests pin that, because the
+failure is silent and the artifacts are committed.
+
+The driver lives under `experiments/`, which is exempt from the code-quality
+hooks and is not an importable package, so it is loaded by path.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+from pathlib import Path
+import sys
+from types import ModuleType
+from typing import Any
+
+import pytest
+
+_DRIVER = (
+    Path(__file__).resolve().parents[1]
+    / "experiments/trace_synthesis/injection_shape/run_experiment.py"
+)
+
+
+def _load_driver() -> ModuleType:
+  """Import the experiment driver by path (it runs `main()` on import)."""
+  spec = importlib.util.spec_from_file_location(
+      "injection_shape_driver", _DRIVER
+  )
+  assert spec is not None and spec.loader is not None
+  module = importlib.util.module_from_spec(spec)
+  argv = sys.argv
+  sys.argv = ["run_experiment.py", "--list"]
+  try:
+    spec.loader.exec_module(module)
+  finally:
+    sys.argv = argv
+  return module
+
+
+@pytest.fixture(scope="module")
+def driver() -> ModuleType:
+  return _load_driver()
+
+
+def _record() -> dict[str, Any]:
+  """Build a proxy record shaped like the real capture, secrets and all."""
+  return {
+      "request": {
+          "headers": {
+              "Authorization": "Bearer sk-ant-oat-EXAMPLE",
+              "X-Api-Key": "sk-ant-EXAMPLE",
+              "Anthropic-Beta": "claude-code-20250219",
+          },
+          "body": {
+              "model": "claude-sonnet-4-5",
+              "metadata": {"user_id": "account-and-device-identifiers"},
+              "messages": [{"role": "user", "content": "hello"}],
+          },
+      },
+      "response": {
+          "headers": {
+              "Anthropic-Organization-Id": "0" * 8 + "-0000-0000-0000-000000",
+              "anthropic-workspace-id": "wrkspc_EXAMPLE",
+              "Anthropic-Ratelimit-Unified-Representative-Claim": "claim",
+              "Request-Id": "req_EXAMPLE",
+          },
+          "message": {"role": "assistant", "content": []},
+      },
+  }
+
+
+def test_redacts_request_credentials(driver: ModuleType) -> None:
+  headers = driver.redact_record(_record())["request"]["headers"]
+  assert headers["Authorization"] == driver.REDACTED
+  assert headers["X-Api-Key"] == driver.REDACTED
+
+
+def test_redacts_response_operator_identity(driver: ModuleType) -> None:
+  """The half the first version of the redactor missed."""
+  headers = driver.redact_record(_record())["response"]["headers"]
+  assert headers["Anthropic-Organization-Id"] == driver.REDACTED
+  assert headers["anthropic-workspace-id"] == driver.REDACTED
+  assert (
+      headers["Anthropic-Ratelimit-Unified-Representative-Claim"]
+      == driver.REDACTED
+  )
+
+
+def test_redacts_account_id_in_request_body(driver: ModuleType) -> None:
+  body = driver.redact_record(_record())["request"]["body"]
+  assert body["metadata"]["user_id"] == driver.REDACTED
+
+
+def test_keeps_everything_that_is_not_a_secret(driver: ModuleType) -> None:
+  """Redaction must not cost the evidence the experiment rests on."""
+  record = driver.redact_record(_record())
+  assert (
+      record["request"]["headers"]["Anthropic-Beta"] == "claude-code-20250219"
+  )
+  assert record["response"]["headers"]["Request-Id"] == "req_EXAMPLE"
+  assert record["request"]["body"]["messages"] == [
+      {"role": "user", "content": "hello"}
+  ]
+
+
+def test_redact_proxy_log_rewrites_the_file(
+    driver: ModuleType, tmp_path: Path
+) -> None:
+  path = tmp_path / "proxy.jsonl"
+  path.write_text(json.dumps(_record()) + "\n" + json.dumps(_record()) + "\n")
+  driver.redact_proxy_log(path)
+  lines = path.read_text().splitlines()
+  assert len(lines) == 2
+  for line in lines:
+    record = json.loads(line)
+    assert record["request"]["headers"]["Authorization"] == driver.REDACTED
+    assert (
+        record["response"]["headers"]["Anthropic-Organization-Id"]
+        == driver.REDACTED
+    )
+
+
+def test_committed_captures_carry_no_secret() -> None:
+  """Check the artifacts in the repo, not just the function that cleans them."""
+  runs = _DRIVER.parent / "runs"
+  sensitive = {
+      "authorization",
+      "x-api-key",
+      "cookie",
+      "proxy-authorization",
+      "anthropic-organization-id",
+      "anthropic-workspace-id",
+      "anthropic-ratelimit-unified-representative-claim",
+  }
+  offenders: list[str] = []
+  for path in sorted(runs.rglob("proxy.jsonl")):
+    for number, line in enumerate(path.read_text().splitlines(), start=1):
+      if not line.strip():
+        continue
+      record = json.loads(line)
+      for side in ("request", "response"):
+        for name, value in record.get(side, {}).get("headers", {}).items():
+          if name.lower() in sensitive and value != "<redacted>":
+            offenders.append(f"{path.name}:{number} {side}.{name}")
+      metadata = record.get("request", {}).get("body", {}).get("metadata", {})
+      if metadata.get("user_id", "<redacted>") != "<redacted>":
+        offenders.append(f"{path.name}:{number} request.metadata.user_id")
+  assert not offenders, offenders
