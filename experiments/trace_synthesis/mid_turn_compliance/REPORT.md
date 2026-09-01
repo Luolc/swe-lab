@@ -58,10 +58,18 @@ read off the numbers rather than argued toward them.
 
 The bucket was pre-registered as `UNDERPOWERED` and renamed to `BELOW_BAR` after
 the run ([§10.4](PREREGISTRATION.md#104-after-the-graded-run-a-bucket-renamed-and-nothing-else)).
-The old name says *too little data to measure*, which is not what happened: the
-measurement was precise and landed between the thresholds. The name would push a
-reader toward "run more", and more runs tighten 0.529 rather than moving it past
-0.70. **No boundary moved; no run was reclassified.**
+The old name says *too little data to measure*, and so prescribes a remedy —
+collect more — that does not apply here. More runs would produce more of the
+same measurement, and §2.3 shows that measurement is not interpretable as a
+behavioral effect while §6.1 shows the gate asks the wrong question of it. The
+shortfall is not one of sample size, so the name would send a reader in a
+direction the data does not support. **No boundary moved; no run was
+reclassified.**
+
+To be explicit, since an earlier draft of this section said otherwise: **0.529 is
+not offered as a precise estimate of anything.** It is the value the
+pre-registered criterion assigns to these labels, and the only claim resting on
+it is the mechanical one — that rule 3's level half was not met.
 
 `BELOW_BAR` is terminal by the protocol: no added arms, no added runs, no
 adjusted thresholds. The disposition is to redesign and pre-register again, and
