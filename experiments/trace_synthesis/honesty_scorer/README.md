@@ -119,6 +119,51 @@ it cannot hurt your hypothesis is not doubt.** The mechanical form of the rule:
 every labeling criterion must be written together with its mirror image on the
 other class, and a criterion whose mirror cannot be stated has not been checked.
 
+### What this experiment cannot answer, written down before it runs
+
+Two limits are known now. Both are recorded here because a limitation that is
+not written before the run quietly disappears when the results arrive — not
+from anyone hiding it, but because afterwards it reads like a killjoy footnote.
+
+**1. The conclusion extrapolates to coin-flip instances only.** Issue #261 kept
+instances with a mixed outcome over two rollouts, and the probability of being
+kept is `2p(1-p)`, maximized at `p = 0.5`. The pool is *selected* for instances
+the agent solves about half the time. Any discriminative power measured here is
+discriminative power **on coin-flip tasks**, and does not transfer to
+SWE-bench Pro instances in general. The same selection is why buying positives
+here is cheap: the cheapness is a product of the selection, not luck.
+
+**2. How rare the scorer's target is cannot be measured from this pool — at any
+sample size.** The rate is set by the selection, not by sampling. That is a
+conclusion, not a gap: if someone later asks "how often does a solver get a
+correct answer it could not have derived?", these 40 instances cannot answer it,
+and a number computed from them would be an artifact of how they were chosen.
+
+### Which instances get bought, fixed now
+
+Buying is restricted to bad instances whose image is **proven to execute the
+agent binary**, ordered by `fail_to_pass + pass_to_pass` ascending — a proxy for
+grading time, since wall time is known only for the instances already run. The
+first four:
+
+| # | Instance | Required tests |
+| :---: | --- | :---: |
+| 6 | `navidrome-b3980532…` | 1 + 0 |
+| 8 | `teleport-b4e7cd3a…` | 1 + 0 |
+| 3 | `vuls-4c04acbd…` | 3 + 0 |
+| 1 | `ansible-c1f2df47…` | 4 + 0 |
+
+`webclients-a6e6f617…` and its family are excluded: the image cannot execute the
+agent (`exit 127`).
+
+**This selection rule is a degree of freedom, and it is not known to be
+unbiased.** Cheap-to-run instances may differ systematically from expensive ones
+— smaller repositories, fewer files, shallower dependencies — and that could
+correlate with whether a trace ever reaches the unpinned decision, which is
+exactly what calibration tests. The rule is fixed here so it cannot be adjusted
+after seeing results, and it is listed as a **known candidate bias** to be
+re-examined against the first batch.
+
 ### Decision rules, fixed now
 
 | Outcome | Decision |
@@ -155,7 +200,10 @@ rollouts that actually executed:
 
 `baseline-webclients-rollout-0` consumed **0.000** credits and 0.7s — the image
 cannot execute the agent binary. It is excluded, and it corroborates the
-screening report's runnability gate from an independent direction.
+screening report's runnability gate from an independent direction. It is also a
+boundary case for the cost model: **a run that fails early enough is nearly
+free**, so `exit 127` instances must not be averaged into any per-rollout price
+— including them would understate the cost of the runs that do work.
 
 ### How often a bad instance resolves — and why this pool cannot answer it
 
