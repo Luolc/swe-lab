@@ -54,9 +54,8 @@ def _run(gate: ModuleType, tmp_path: Path, text: str, *truth: object) -> int:
 def test_a_short_or_boolean_label_beside_its_field_name_is_caught(
     gate: ModuleType, tmp_path: Path
 ) -> None:
-  # The values that decide the experiment are short (`B`) or boolean
-  # (`resolved`), so a check that only scans for long identifiers passes a
-  # bundle that states the label outright.
+  # The values that decide the experiment are short or boolean, so they are
+  # detectable only beside their own field name.
   leaked = '{"screening_verdict": "good", "resolved": true, "arm": "B"}\n'
   assert _run(gate, tmp_path, leaked, _TRUTH) == 1
 
@@ -72,8 +71,7 @@ def test_a_long_identifier_appearing_anywhere_is_caught(
 def test_ground_truth_missing_a_field_fails_rather_than_skipping_it(
     gate: ModuleType, tmp_path: Path
 ) -> None:
-  # A field absent from the truth row cannot be checked for, and a check that
-  # could not run must not report success.
+  # A check that could not run must not report success.
   partial = {"bundle": "b.bundle.txt", "repo": "navidrome/navidrome"}
   assert _run(gate, tmp_path, "nothing sensitive here\n", partial) == 1
 
@@ -81,9 +79,8 @@ def test_ground_truth_missing_a_field_fails_rather_than_skipping_it(
 def test_ordinary_prose_using_those_words_is_not_a_leak(
     gate: ModuleType, tmp_path: Path
 ) -> None:
-  # The counter-direction, and it is load-bearing: `resolved`, `arm` and `good`
-  # are ordinary English. Failing on them would alarm on something the operator
-  # cannot remove, which is how a gate gets switched off for everything else.
+  # The counter-direction, and load-bearing: these are ordinary English words,
+  # and a gate that alarms on what the operator cannot change gets switched off.
   prose = (
       "I resolved the failing test. The arm of the navidrome scanner walks\n"
       "the tree. Verdict: this looks good to me.\n"
@@ -104,10 +101,7 @@ def test_finding_no_bundles_is_a_failure_not_an_empty_pass(
 def test_a_bundle_named_twice_in_the_ground_truth_is_a_failure(
     gate: ModuleType, tmp_path: Path
 ) -> None:
-  # Keyed by name, a repeat would discard every row but the last, and the
-  # survivor decides what is checked -- so a leak can pass by being described
-  # twice. A ground truth that names a bundle twice does not know what it
-  # asserts, and cannot be resolved by picking one.
+  # A ground truth naming one bundle twice does not know what it asserts.
   other = dict(_TRUTH)
   other["instance_id"] = "instance_other__other-000000000000000000000000"
   other["base_commit"] = "0000000000000000000000000000000000000000"
@@ -121,8 +115,7 @@ def test_a_bundle_named_twice_in_the_ground_truth_is_a_failure(
 def test_ground_truth_naming_an_absent_bundle_is_a_failure(
     gate: ModuleType, tmp_path: Path
 ) -> None:
-  # The manifest and the directory disagree, and nothing downstream can tell
-  # which is right.
+  # Manifest and directory disagree; nothing downstream can say which is right.
   absent = dict(_TRUTH)
   absent["bundle"] = "not-here.bundle.txt"
   assert _run(gate, tmp_path, "nothing sensitive\n", _TRUTH, absent) == 1

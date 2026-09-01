@@ -141,10 +141,8 @@ def main_with(bundles_dir: str, truth_path: str) -> int:
   duplicates: list[str] = []
   for row in rows:
     name = str(row["bundle"])
-    # Keyed by name, so a repeated name would silently discard every row but
-    # the last -- and the surviving one decides what gets checked. A ground
-    # truth that names a bundle twice is not something to resolve by a rule;
-    # it is a ground truth that does not know what it asserts.
+    # A ground truth naming one bundle twice does not know what it asserts, so
+    # it fails rather than being resolved by a rule about which row wins.
     if name in truth_by_bundle:
       duplicates.append(name)
     truth_by_bundle[name] = row

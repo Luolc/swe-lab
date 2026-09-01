@@ -14,14 +14,12 @@ by results. What it cannot claim is that its author is blind: see
 
 ## What a scoring round on the first batch can and cannot produce
 
-**It cannot produce a Build decision, and this is already registered rather than
-newly decided.** The decision table requires *at least 24 scored traces*, and
-the row for a smaller cohort reads: *no build decision is available; report the
-yield factor and the exclusion counts; do not report an arm comparison.* The
-first batch yields at most `k = 2` positives and 2 negatives per repository —
-**8 traces**. The [Scope](README.md#scope-this-document-registers-the-pilot-not-the-build-decision)
-section says the same thing from the other side: the Build gate needs 6 of each
-class per repository, and no acquisition rule exists for the remaining traces.
+**It cannot produce a Build decision.** That is settled by the registered
+[decision table](README.md#decision-rules--the-target-design-not-reachable-from-this-document)
+and [Scope](README.md#scope-this-document-registers-the-pilot-not-the-build-decision),
+not decided here; the only thing this document adds is the arithmetic that puts
+this batch on the wrong side of it — four cells at `k = 2` give **8 scored
+traces** against a gate that requires 24.
 
 So a scoring round run on this batch is a **rehearsal of an untested mechanism**,
 and that is worth doing on its own terms: the [dry run](DRY-RUN.md) established
@@ -35,10 +33,10 @@ later; the caveat is not.
 
 ## Who scores, and how they are isolated
 
-The protocol fixes that arm A is judged first with no guidebook, and arm B in a
-separate session with no shared context. It does not say who assigns the judge,
-or what that assigner knows. Both matter, because the assigner's knowledge
-reaches the judge through the brief.
+[Arm independence](README.md#the-scoring-protocol-fixed-now) is registered. What
+it leaves undefined is **who assigns the judge and what that assigner knows** —
+which matters because the assigner's knowledge reaches the judge through the
+brief, a channel no session boundary closes.
 
 **Requirements on the judge**, all mechanical rather than dispositional:
 
@@ -59,22 +57,26 @@ about is one the judge cannot rely on.
 
 ## What reaches the judge, item by item
 
-Per the registered blinding rule the bundle is the task statement, the
-conversation, and the final patch. This is the item-by-item justification, and
-the mechanical check that it held.
+The registered [blinding rule](README.md#the-scoring-protocol-fixed-now) fixes
+*what* a bundle contains and what is stripped. This table does not repeat that
+list; it adds the two things the rule leaves out — **the reason each stripped
+item has to go**, which is what an operator needs in order to recognise a
+new field as belonging on the list, and **two fields the registered rule does
+not name**.
 
-| Item | Removed? | Why |
-| --- | --- | --- |
-| `instance_id` | **yes** | Directly keys the screening verdict |
-| `base_commit` | **yes** | Identifies the instance as precisely as its id |
-| `resolved` flag | **yes** | Is the label |
-| Screening verdict | **yes** | Is the label's source |
-| Arm label (A / B / B′) | **yes** | Reveals which condition is being scored, and B′ is only meaningful if it is indistinguishable from B at scoring time |
-| Sweep / rollout id | **yes** | Recovers position in the buying order, which is ordered by class |
-| Repository name | **no — cannot be** | Present in file paths, imports, test names and the diff. This is why the protocol equalises class counts *within* each repository: recovering the repo is expected, and made uninformative rather than prevented |
-| Task statement | no | The judge cannot assess a solution without the problem |
-| Conversation | no | Is the object under assessment |
-| Final patch | no | Is what the conversation claims to have produced |
+| Stripped item | Why it must go |
+| --- | --- |
+| `base_commit` — *not named in the registered rule* | Identifies the instance as precisely as its id |
+| Sweep / rollout id — *not named in the registered rule* | Recovers position in the buying order, which is ordered by class |
+| `instance_id` | Directly keys the screening verdict |
+| `resolved` flag | Is the label |
+| Screening verdict | Is the label's source |
+| Arm label (A / B / B′) | Reveals which condition is being scored, and B′ is only meaningful while indistinguishable from B at scoring time |
+
+**The repository name is the one identifier that cannot be stripped** — it is in
+file paths, imports, test names and the diff. That is why the protocol equalises
+class counts *within* each repository: recovering the repo is expected, and made
+uninformative rather than prevented.
 
 **The check is `check_bundles.py`**, run before any bundle is handed over. It is
 a gate: non-zero exit blocks the round. Two of its behaviours are deliberate and
