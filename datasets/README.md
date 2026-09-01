@@ -13,6 +13,7 @@ instructions in each dataset's README below.
 | --- | --- | --- |
 | SWE-Bench Pro | Enterprise-level SWE benchmark, public test split (731 examples) | [swebench_pro/README.md](swebench_pro/README.md) |
 | DeepSWE 1.1 | Materialized build of [datacurve-ai/deep-swe](https://github.com/datacurve-ai/deep-swe) (113 tasks), one row per task | [dataset card](../src/swe_lab/datasets/deepswe/HF_README.md) |
+| Oracle failures | Cached failed rollouts of instances from another dataset, one row per failure; built locally from finished runs, nothing to download | [oracle_failures/README.md](oracle_failures/README.md) |
 
 DeepSWE has **no download instructions and no folder in git**: nothing is
 fetched by hand. `load_dataset("deepswe")` downloads the pinned parquet from

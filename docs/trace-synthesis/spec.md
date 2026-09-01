@@ -27,7 +27,7 @@ It is a **design target, reached by construction rather than by a checker.**
 The construction argument is [§6](#6-the-trace-is-the-conversation-unedited),
 and it is an argument, not a test: the earlier framing's per-trace inducibility
 checker was dropped *because* of it ([§7](#7-what-that-simplifies)). What
-[§12](#12-invariants-intended-none-enforced-today) can pin is the mechanical
+[§12](#12-invariants-intended-enforced-where-marked) can pin is the mechanical
 half — that no intervention the actor received goes missing from the trace —
 and beyond that the check is a human reading a sample
 ([§15](#15-success-criteria)).
@@ -67,11 +67,15 @@ instruction.
 ## 3. The pipeline
 
 Four phases. A and B are offline and privileged; C is the run that produces the
-trace; D is collection.
+trace; D is collection. **A is skippable**: when the failure already exists —
+a full eval sweep caches one for every instance it failed on — it enters as an
+`oracle_failures` record ([task 10](plans/task-10-oracle-failures-dataset.md))
+and the pipeline starts at B.
 
 ```mermaid
 flowchart TD
   A["<b>A.</b> baseline rollout + eval<br/><i>keep: failed, but the task is solvable</i>"]
+  F[("<b>A′.</b> a cached failure<br/><i>an oracle_failures record:<br/>conversation + verdict + patch</i>")]
   G["golden patch + golden tests<br/>+ repo at base_commit"]
   B["<b>B.</b> Oracle<br/><i>privileged</i>"]
   GB[["guidebook.md<br/><i>private — never enters the actor's context</i>"]]
@@ -82,6 +86,7 @@ flowchart TD
   D["<b>D.</b> collect the conversation<br/><i>unedited</i>"]
 
   A --> B
+  F --> B
   G --> B
   B --> GB
   GB -.privileged, host-side only.-> S
@@ -104,6 +109,19 @@ Measuring the `pass@10 ≈ 3/10` band properly costs ten rollouts per instance.
 price of a fuzzier band; which of the two we use is [an open
 question](#11-open-questions).
 
+**Phase A is skipped when the failure already exists.** A full eval sweep
+caches exactly this pair for every instance it failed on, and re-running a
+rollout to reproduce one is a rollout paid for twice. The
+[`oracle_failures` dataset](plans/task-10-oracle-failures-dataset.md) captures
+a cached failure as a dataset record — the underlying instance's identity plus
+the failed conversation, the grader's verdict and the submitted patch — built
+from the finished run's own output directory
+(`python -m swe_lab.datasets.oracle_failures.build`). The record delegates the
+instance's whole runnable surface to the dataset it came from and adds the
+failure through the instance's own `mounts()`, so every phase after A runs
+against it unchanged. A fresh phase-A rollout is needed only for an instance no
+sweep has failed on yet.
+
 ### Phase B — the Oracle
 
 A fresh agent with **privileged access** to:
@@ -111,6 +129,13 @@ A fresh agent with **privileged access** to:
 - the full conversation of the failed rollout — what went wrong, in detail,
 - the golden patch and the golden test patch,
 - the repository at `base_commit`.
+
+In the shipped form this is `OracleAnalysisTask`
+([task 04](plans/task-04-oracle-analysis-task.md)), registered as the
+one-entry `oracle_analysis` workflow: the failure arrives as the
+`oracle_failures` record's own mounts, the golden patch and the grading
+procedure — compiled to apply the failed patch, so the verdict can be
+reproduced in place — as the task's, and the git history is left unpurged.
 
 It produces one artifact: a **guidebook** — a staged, step-by-step document
 telling a *future, blind* agent how to solve this task. One entry per stage:
@@ -134,13 +159,16 @@ Two rules on the guidebook:
    Supervisor in phase C can only produce an honest nudge toward a step if a
    derivable reason for that step exists. A guidebook that says "open
    `foo/bar.py`" with no reachable *why* leaves the Supervisor nothing to say
-   except the answer. The schema can enforce that the field **exists**
-   ([task 04](plans/README.md)); whether the reason is genuinely derivable is
-   again a reader's judgement, not a test.
+   except the answer. The schema enforces that the field **exists** — a
+   guidebook whose stage lacks it is rejected
+   ([task 04](plans/task-04-oracle-analysis-task.md#the-guidebook-schema)),
+   as bold labels inside `## Stage N` sections, with `edits` / `tests` left
+   optional; whether the reason is genuinely derivable is again a reader's
+   judgement, not a test.
 
 The guidebook is **private**: it is intended never to enter the actor's context
 or the training trace. Nothing enforces that yet — see
-[§12](#12-invariants-intended-none-enforced-today) for the test that must land
+[§12](#12-invariants-intended-enforced-where-marked) for the test that must land
 with the code.
 
 ### Phase C — the guided rollout
@@ -164,14 +192,14 @@ Supervisor then takes one of two branches:
 The belief state lives **host-side, outside the sandbox**. If the actor could
 read a file written with oracle knowledge, the construction collapses — which
 is why that, too, is one of the
-[invariants](#12-invariants-intended-none-enforced-today) a test has to pin.
+[invariants](#12-invariants-intended-enforced-where-marked) a test has to pin.
 
 ### Phase D — collection
 
 The conversation of the phase-C run **is** the training trace. **Nothing is
 removed and nothing is synthesized** — see
 [§6](#6-the-trace-is-the-conversation-unedited); that is an
-[invariant](#12-invariants-intended-none-enforced-today) with a named test, not
+[invariant](#12-invariants-intended-enforced-where-marked) with a named test, not
 just a statement of intent. D converts the harness's
 `stream-json` into the typed
 [`Conversation`](../horizontal/plans/task-06a-conversation-protocol.md) and
@@ -439,11 +467,12 @@ The rest, in no particular order:
   justifies it is the question [the batch measurement](plans/README.md) exists
   to answer.
 
-## 12. Invariants (intended; none enforced today)
+## 12. Invariants (intended; enforced where marked)
 
 Per `AGENTS.md`, an *always / never* claim needs a named test or it must be
-softened. **None of the rows below are enforced today**; each names the test
-that must land in the same change as the code it constrains. Absolute-sounding
+softened. **A row marked ✅ has landed with its test; the rest are not enforced
+today**, and each names the test that must land in the same change as the code
+it constrains. Absolute-sounding
 claims elsewhere in this spec that are *not* in this table have been softened
 where they cannot be tested — the guidebook's tone
 ([Phase B](#phase-b--the-oracle)) and the honesty of a trace's reasoning
@@ -469,6 +498,7 @@ is tuned by reading traces, not asserted by a test.
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
 | A hint never replaces a tool's output: the tool's own output is a substring of what the actor is shown | a test over the Supervisor's hook-response builder asserting the tool response it returns contains the original response's text verbatim |
 | No banned channel is reachable in a hook response: the Supervisor's output never carries `updatedInput` (a rewrite), a deny decision, or `additionalContext` (the system-reminder channel) | a test over the Supervisor's hook-response builder asserting all three fields are absent from every response it can produce |
+| Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
 
 ## 13. Where this plugs into swe-lab
 
@@ -478,8 +508,8 @@ from the store — so this is a workflow, not a new subsystem.
 
 | Phase | Reuses | New |
 |---|---|---|
-| A | `rollout_and_unit_test`, unchanged | — |
-| B | the `Task` layer | a task that mounts the golden patch and tests, with the git-history purge **off**; declared output `guidebook.md` |
+| A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 10](plans/task-10-oracle-failures-dataset.md)) |
+| B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): golden patch and grading procedure staged, git-history purge **off**, declared output `guidebook.md` |
 | C | the rollout composition | hook settings injected into the sandbox (`--settings` + `CLAUDE_CONFIG_DIR`); a host-side Supervisor; declared intervention records |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
@@ -501,7 +531,8 @@ for it. Two consequences, and neither is negotiable:
    will flag these runs as contaminated, and that is correct behaviour.** We
    declare the contamination; we do not suppress the detector. A change that
    makes the verifier quiet about oracle-guided runs is a bug in this design,
-   not a fix.
+   not a fix. (Phase B produces no patch and composes no verifier at all —
+   there is nothing for it to read; the stamp is what marks those records.)
 
 ## 15. Success criteria
 
