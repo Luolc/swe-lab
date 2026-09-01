@@ -72,9 +72,12 @@ mechanical rules were measured only on negatives.
 
 ## Scope: this document registers the pilot, not the build decision
 
-**What is authorized here:** the protocol dry run, and the first batch — 4
-purchased positives, `k = 2` per repository, scored against 2 negatives per
-repository. Its declared output is the **yield factor**.
+**What is authorized here:** the protocol dry run, and the first batch — four
+cells of **exactly six attempts each, 24 rollouts**, yielding at most 2 positives
+and 2 negatives per repository. Its declared output is the **yield factor**, and
+the fixed attempt count is what makes that figure unbiased rather than an
+artifact of when we stopped. At ~458 s per rollout that is roughly **3 hours
+serial**; the cost is in wall time and token usage, not OpenRouter credits.
 
 **What is not authorized here: the Build decision.** The gate below requires at
 least 24 scored traces with equal class counts inside each contributing
@@ -346,8 +349,29 @@ the five surviving traces are not usable, see below):
 | negative | `navidrome-5001518260732e36d9a42fb8d4c054b28afab310` | 2 resolved |
 | negative | `NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd…` | 2 resolved |
 
-The preflight, the stop rule and the per-instance cap of 6 rollouts apply to the
-negative purchases exactly as to the positive ones.
+**Each of the four cells runs exactly six attempts** — not "up to six", and not
+"until two land". Stopping on the second success is still optional stopping: the
+stopping time carries information about the outcome, so attempts-per-trace stays
+biased even though every attempt run is retained. With the count fixed in
+advance, `resolved / 6` is an unbiased estimate of that cell's resolve rate, and
+attempts-per-trace is a constant rather than a statistic contaminated by the
+rule that produced it.
+
+- **The preflight is attempt 1 and counts toward the six.** It is a rollout like
+  any other; the only thing that makes it a preflight is that its failure stops
+  the cell.
+- **All six attempts are retained and reported** regardless of outcome.
+- **Selection is deterministic**: every resolved trace in a cell is calibrated,
+  and the **two lowest-indexed that qualify** enter the scored set. Calibrating
+  all of them, rather than the first two, keeps the choice out of the hands of
+  whoever sees the calibration results.
+- **Fewer than two qualifying traces in a cell is a reported outcome**, not a
+  reason to run a seventh attempt. The balance requirement then applies as
+  written: a repository that cannot supply `k` of each leaves the scored set.
+
+This makes the pilot **24 rollouts**, not the ~12 a stop-on-success rule would
+average — the price of an unbiased yield figure, which is the only thing this
+batch exists to produce.
 
 **Balance is an endpoint condition, not a purchase plan**, because a plan is
 defeated by what the purchase actually yields. If a repository ends the batch
@@ -415,13 +439,15 @@ None of them is reachable from the pilot registered here: see
 
 ### Every attempt is retained and reported, not only the successes
 
-The per-instance cap exists so the sample is **censored rather than
-self-selected**. Running until two positives land would be optional stopping:
-the stopping time carries information about the outcome, so rollouts-per-positive
-would not be an unbiased estimate of `E[1/p]` — the one quantity the pilot
-exists to produce. **This is not a cost measure**, and recording why matters: a
-methodological constraint defended on cost grounds gets deleted the first time
-the budget loosens.
+The fixed count exists so the sample is **complete rather than
+self-selected**. Running until two positives land would be optional stopping,
+and so would running *at most* six and stopping early on the second success:
+in both, the stopping time carries information about the outcome, so
+attempts-per-trace is not an unbiased estimate of `E[1/p]` — the one quantity
+the pilot exists to produce. Only a count fixed before the run removes that.
+**This is not a cost measure**, and recording why matters: a methodological
+constraint defended on cost grounds gets deleted the first time the budget
+loosens.
 
 A censored sample is only usable when the censoring is reported, so:
 
@@ -430,8 +456,9 @@ A censored sample is only usable when the censoring is reported, so:
 - every attempt is reported with `resolved`, `agent_complete`, `exit_code`,
   `timed_out` and `wall_seconds` — **"6 attempts, 1 resolved" is a result, not a
   failure to report**;
-- no attempt is added because an unresolved one "looked like bad luck". That is
-  optional stopping wearing a different hat.
+- no attempt is added because an unresolved one "looked like bad luck", and
+  none is **skipped** because two already succeeded. Both are optional stopping,
+  in opposite directions.
 
 ### The minimum cohort, and what the first batch can decide
 
@@ -522,6 +549,9 @@ draws.
 
 Rollouts alone, before the calibration step rejects any candidate:
 
+These rows priced a stop-on-success rule that amendment 8 replaced, and they
+are OpenRouter credits besides — kept only as the historical arm's figures:
+
 | Positives wanted | Rollouts | Credits | Serial wall time |
 | :---: | :---: | :---: | :---: |
 | 4 | ~12 | ~14 | ~1.5 h |
@@ -570,6 +600,7 @@ dry-run corpus contains one class, so there is no result here to tune toward.
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
+| 8 | The per-cell rule was "at most 6 attempts, stop at 2 resolved" | **Exactly six attempts per cell**, preflight counted as attempt 1, all retained, the two lowest-indexed qualifying traces selected after calibrating every resolved one | Stopping early on the second success is optional stopping just as running unbounded is — the stopping time still carries outcome information, so attempts-per-trace stays biased even with every attempt retained. Only a count fixed in advance makes `resolved / 6` an unbiased rate. The pilot becomes 24 rollouts. |
 | 7 | The negative class was the 5 surviving traces, produced on the **OpenRouter** arm, while positives would be bought on the **shipping path** | **Both classes are bought on the shipping path**; the 5 surviving traces are discarded, and the price table denominated in OpenRouter credits does not apply to this batch | The runner that produced the corpus no longer imports on `main`. Buying positives on the shipping path while keeping OpenRouter negatives would make **the arm perfectly correlated with the label** — any arm-varying artifact (proxy headers, env, harness version) becomes a label proxy, and a judge or arm B could separate the classes on the arm alone while we read it as guidebook power. The actor model is the same on both arms (`claude-sonnet-5`), so what is lost is the cost unit, not comparability of difficulty. |
 | 6 | The Build gate required 24 scored traces while the document registered only 5 negatives and 4 positives | **Scope split:** this document registers the pilot and its yield factor; the Build decision is deferred to a **second pre-registration**, whose required contents are listed | Reaching 24 would have depended on acquisition and allocation rules chosen *after* the pilot, with results in hand — the same unreachable-Build defect as the original decision table, relocated. Registering the expansion now is impossible honestly, because its size and price depend on the yield factor the pilot measures. |
 | 5 | Balance was "each repository appears in both classes", and the 4-trace margin was the only size rule | **Equal class counts inside each repository** (`k` positives, `k` negatives, with a fixed rule for dropping the third `navidrome` negative), plus a **minimum cohort of 24 scored traces for any Build decision** — the first batch of 8 is declared a yield-measuring pilot | Appearing in both classes removes certainty, not correlation: 2/5 versus 2/4 still shifts a judge's prior on recovering the repository. And the 4-trace margin was derived for `n ≈ 30`; applying it to an 8-trace batch would have let an unreadable difference be read. |
