@@ -377,16 +377,13 @@ retroactively (owner's calibration, 2026-09-01).
   eligible, non-empty evidence, validate that premise **separately, and first**.
   Measured 2026-09-01, and it nearly voided a deliverable: `freeze_sample`'s
   stability gate compared the set of failing required tests across a run's
-  grading attempts. A run that **resolved on its first attempt** leaves exactly
-  one such set and it is empty, so agreement holds trivially — and the strictest
-  gate in the program cleared the one input that contradicted the sample's whole
-  claim. (The blind spot is *uniformly empty sets*, not resolution as such: a
-  resolved run with an unresolved prefix carries real failures in that prefix,
-  the sets then disagree, and the same gate refuses it.) Note what did *not* go
-  wrong: the set compared was real, and its self-equality is a correct answer to
-  the question the gate was asked. What was missing is the premise it was
-  silently trusted to carry — that this run failed at all. Stability qualifies a validity established some other way; it never
-  establishes one. (This is not "every agreement predicate must reject
+  grading attempts, and a run that **resolved on its first attempt** leaves one
+  such set, empty. Agreement holds, so the strictest gate in the program cleared
+  the one input that contradicted the sample's whole claim — that the actor had
+  failed here. Note what did *not* go wrong: the set compared was real, and its
+  self-equality is a correct answer to the question the gate was asked. What was
+  missing is the premise the gate was silently trusted to carry. Stability
+  qualifies a validity established some other way; it never establishes one. (This is not "every agreement predicate must reject
   emptiness": `len({...}) == 1` rejects zero observations, and an API may define
   agreement over nothing as a valid neutral answer. The rule is about what you
   are entitled to *conclude* from agreement, not about how the predicate is
