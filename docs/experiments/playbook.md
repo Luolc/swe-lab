@@ -416,8 +416,12 @@ pilot's twelve amendments.
   question and not on another, with the question never written down. It is the
   worst of the family to catch because **nothing errors** — the check runs clean
   and returns a reassuring value. A poller reading a field its workflow never
-  populates is the pure case: it reports *no result yet* forever, which reads as
-  waiting and means blindness. **Review obligation:** when you substitute, name the proposition the original
+  populates is the pure case, and it is not that the instrument broke — it is
+  aimed at a place the answer never arrives: it reports *no result yet* forever,
+  a value **indistinguishable from the true state it would report while
+  waiting**, so watching it longer only deepens the conviction that you are
+  waiting. The field answers *is there a formal record of type X*; the question
+  asked was *has the decision been made*. **Review obligation:** when you substitute, name the proposition the original
   supported and show the substitute still supports it — a green from an
   unnamed proposition is not a result.
 - **Verify a documented procedure by extracting and executing it, not by
