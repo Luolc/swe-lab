@@ -21,12 +21,25 @@ by the proxy on earlier baseline runs.
 > at `allowed`.
 >
 > **Utilization is a level, not a consumption.** Ordered by attempt start time
-> it reads **0.61 at the first attempt (08:43) and 0.65 at the last recorded
-> one (10:57)** — the account was *already* at 0.61 before this batch issued a
-> single request. The batch's own share is therefore at most the **+0.04**
-> delta, and even that is an **upper bound**, because several agents share this
-> account and were working concurrently; nothing here separates their draw from
-> the batch's.
+> it reads **0.61 during the first attempt (08:43) and 0.65 during the last
+> attempt that recorded one (10:57)**.
+>
+> **That +0.04 does not bound this batch's consumption**, for three separate
+> reasons, and an earlier draft of this callout claimed it did:
+>
+> - The first event is **not a pre-request baseline**. It sits at index 1 of
+>   attempt 1's event stream — before the first `assistant` message but after
+>   `system init` — and nothing here establishes that no request preceded it.
+> - The **last** reading is from **exec 17**; attempts 18–20 emitted no
+>   `seven_day` utilization. The interval the delta covers is *inside* the
+>   batch, not the batch.
+> - The account is **shared** with agents working concurrently. Within the
+>   observed interval the delta caps *everyone's* combined draw — so it caps
+>   this batch's share of that interval, attributes nothing, and says nothing
+>   about the parts of the batch outside it.
+>
+> What survives is only this: **the level sat in the 0.61–0.65 band while the
+> batch ran.**
 >
 > Both halves matter, and they point different ways. **The constraint was real:**
 > roughly two thirds of the window was gone, by whatever cause, and every design
@@ -99,11 +112,19 @@ delivered.
 2. **Split `streamSSE` into collect and replay.** Today one loop scans, records
    and writes. Collection already exists; the write has to move behind the
    decision.
-3. **Replay must re-emit the stored wire lines, not re-serialize.** The proxy
-   forwards raw `line + "\n"` verbatim (:537, :560). `sseEventsToMessage` is a
-   lossy summary — it exists to build a record, not to reconstruct a stream — so
-   a replay built from it would not be byte-faithful. Keeping the raw lines is
-   the cheap path, and nothing today stores them (only parsed events are kept).
+3. **Byte-faithful replay is not available at the layer the proxy works in.**
+   Two distinct losses, and an earlier draft named only the second. **The
+   forward path already normalizes:** `bufio.Scanner` plus `line + "\n"`
+   (:537, :560) drops a trailing `\r`, because `ScanLines` strips it — verified
+   by round-tripping `"event: x\r\ndata: {…}\r\n\r\n"` through the same
+   construction, whose output is LF-only and **not** byte-identical to the
+   input. So the proxy does not forward raw bytes verbatim today, and storing
+   the lines it sees would not recover them; byte-faithfulness would require
+   capturing **below** the line-scanning layer. Separately,
+   `sseEventsToMessage` is a lossy summary built for the record, so a replay
+   reconstructed from it is further from the wire still. Whether the upstream
+   actually emits CRLF is **not verified** — the point holds either way, since
+   the design cannot claim byte-faithfulness from this layer.
 4. **Only the SSE path matters.** Every request in the captured wire log sets
    `stream: true` (71 of 71 records, `baseline-navidrome-rollout-0`), so
    `handleBuffered` is not on the hot path for this design.
@@ -173,18 +194,33 @@ delivered.
   labelled it structural. It is not.
 
 **What a check could and could not settle**, without exposing any request
-values. A pinned target and model version, the same body sent twice, and the
-account's usage before and after would show: whether the two completions
-diverge, and whether both were charged.
+values. A pinned target and model version plus the same body sent twice would show
+whether the two completions diverge. **The billing half does not work as
+described:** reading account usage before and after is confounded by the shared
+account — other agents draw on it concurrently, so a usage delta cannot be
+attributed to the two calls. Settling billing needs per-request attribution this
+account does not expose, or a quiet account; neither is assumed here.
 
 Note what that does **not** deliver. **A divergent pair refutes strict
 determinism; it does not establish independent sampling** — the two draws could
 be correlated, or conditioned on state the caller cannot see, and one pair
 cannot distinguish those from independence. The cost model does not actually
 need independence, but it does need the weaker property that **each resample
-carries a non-trivial, roughly stable chance of differing** — a distributional
-claim, and one that needs a stated sample size so the next reader cannot cite a
-single pair for it:
+carries a non-trivial, roughly stable chance of differing**.
+
+**That property is not `p`, and pairs cannot measure `p`.** Two quantities are
+in play and must not be run together:
+
+| quantity | what it governs | what could measure it |
+| --- | --- | --- |
+| **divergence rate** — does a re-send differ at all | whether the mechanism *functions* | same-body pairs |
+| **`p`, the oracle's rejection rate** | the `1/(1-p)` cost multiplier | an oracle judging real steps |
+
+A divergence study involves no oracle and no judgement, so **`1/(1-p)` cannot be
+supported by any number of pairs**. `p` is the step-level accept rate already
+listed among the unknowns, and it stays there. The sample sizes below size the
+**divergence** question only, and are stated so the next reader cannot cite a
+single pair for a distributional claim:
 
 - **1 pair** supports nothing distributional. It refutes strict determinism and
   stops there.
