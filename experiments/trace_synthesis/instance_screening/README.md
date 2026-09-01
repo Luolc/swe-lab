@@ -35,7 +35,7 @@ comes from the parquet plus repository source fetched over HTTP at
 
 ## Method
 
-1. **Screen mechanically.** Four screens, each catching a different disease;
+1. **Screen mechanically.** Five screens, each catching a different disease;
    every hit is an alarm routed to manual review, never a verdict. Two of them
    report their own precondition, so "no signal" is never read as "no evidence".
 2. **Judge each instance by hand** against the determinacy criterion, quoting

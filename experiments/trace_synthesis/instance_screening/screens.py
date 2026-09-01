@@ -625,7 +625,15 @@ def snapshot_grading(instance: object) -> list[dict[str, str]]:
 
 
 def main() -> None:
-  """Run the four screens over a set of instances and write their results."""
+  """Run the five screens over a set of instances and write their results.
+
+  The summary ends with the **containments** between hit sets, computed rather
+  than remembered. A sentence in the report about which screens overlap is a
+  second copy of a fact the data already holds, and nothing keeps two copies in
+  sync: the claim "no hit set is contained in another's" survived review once
+  while the table one line above it said ``snapshot ⊆ token``. Printing it here
+  means the assertion changes when the data does.
+  """
   parser = argparse.ArgumentParser(description="Screen SWE-bench Pro tasks.")
   _ = parser.add_argument(
       "--random",
@@ -707,6 +715,13 @@ def main() -> None:
   union = set.union(*hits.values())
   lines.append(f"all five: {len(every)}")
   lines.append(f"any: {len(union)}   none: {len(rows) - len(union)}")
+  contained = [
+      f"{left} < {right}"
+      for left in names
+      for right in names
+      if left != right and hits[left] and hits[left] <= hits[right]
+  ]
+  lines.append("containments: " + (", ".join(contained) or "none"))
   print("\n" + "\n".join(lines), file=sys.stderr)
 
 

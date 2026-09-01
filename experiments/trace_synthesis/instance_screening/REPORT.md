@@ -347,12 +347,22 @@ Over the 40 candidates, after calibration:
 - **at least one fires:** 27 of 40; **none fires:** 13
 
 
+Which screens contain which is **computed, not remembered** — `screens.py`
+ends its summary with the line, so it changes when the data does:
+
+```
+containments: snapshot < token
+```
+
+That mechanism exists because of this section. An earlier version of the
+sentence below asserted the opposite of what the table above it says, and
+survived until review; a prose summary of a table is a second copy of a fact
+the data already holds, and nothing keeps two copies in sync.
+
 **One containment does hold, and it is the snapshot screen:** both its hits
 (`element-web-4fec4368`, `element-web-880428ab`) are also token hits, so
-snapshot ⊆ token — the overlap table says so directly (snapshot 2,
-token ∩ snapshot 2), and an earlier version of this sentence claimed the
-opposite while that row sat immediately above it. So set-complementarity is
-*not* the argument for keeping screen 5. Its argument is evidentiary, and it is
+snapshot ⊆ token, exactly as the overlap table says (snapshot 2, token ∩
+snapshot 2). So set-complementarity is *not* the argument for keeping screen 5. Its argument is evidentiary, and it is
 the reason it was built as a separate screen: on those two rows the token screen
 produces a **suspicion** a human must resolve, while the snapshot screen
 produces something close to a **proof** — a committed DOM snapshot fixes every
