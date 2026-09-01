@@ -333,17 +333,30 @@ rules appear to forbid each other, that is the signal one of them is being read
 wrong** — here, "large trace records" was being read as "many bytes" when it
 means "the dataset-scale corpus that HF hosts".
 
-**Calibration, not a threshold.** These are the accepted magnitudes on `main`
-(measured 2026-09-01, `git ls-tree -r -l origin/main`), recorded so a future
-argument starts from what the repo already agreed to rather than from a number
-someone picks in the moment:
+**Calibration, not a threshold.** These are the accepted magnitudes at one
+pinned commit, recorded so a future argument starts from what the repo already
+agreed to rather than from a number someone picks in the moment. **`main` moves
+and these numbers move with it** — `process_supervision` gained four files
+between this table being written and being reviewed — so the tree is named,
+not the branch:
 
-| Committed corpus | Size |
+```sh
+git ls-tree -r -l c1fd9e9 | awk '{split($5, a, "/")
+    key = (a[1] == "experiments") ? a[1]"/"a[2]"/"a[3] : a[1]
+    bytes[key] += $4; files[key]++}
+  END {for (k in bytes) printf "%10d %5d  %s\n", bytes[k], files[k], k}' | sort -rn
+```
+
+| Committed corpus, at `c1fd9e9` | Size |
 | --- | --- |
 | `experiments/trace_synthesis/injection_shape/` | 8,336,053 bytes / 379 files — the largest, reviewed and merged |
-| `experiments/trace_synthesis/process_supervision/` | 2.1 MB / 56 files |
-| `experiments/related_files/prompt_variance/` | 443 KB (a playbook exemplar) |
-| `outputs/` (the committed deliverable) | 17.6 MB / 3,662 files |
+| `experiments/trace_synthesis/process_supervision/` | 2,187,200 bytes / 60 files |
+| `experiments/related_files/prompt_variance/` | 443,275 bytes / 88 files (a playbook exemplar) |
+| `outputs/` (the committed deliverable) | 17,559,873 bytes / 3,662 files |
+
+Nothing depends on these being current — they are evidence of what review has
+accepted, not a budget anyone spends against, so a stale row misleads only if
+it is read as a limit. Re-measure at a newer commit and say which.
 
 The directory the argument was *about* is deliberately not in that table:
 `streamjson_input/` measured 329 KB on an unmerged branch, and #304 is still
