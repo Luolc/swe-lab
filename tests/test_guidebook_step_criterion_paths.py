@@ -1,15 +1,13 @@
 """The step judge must find its guidebook from any working directory.
 
-`judge_steps.py` resolved the guidebook through a repo-root-relative literal,
-so it ran only from the repo root — while the `Reproduce` block in its own
-`REPORT.md` was written with bare `python3 judge_steps.py` invocations, which
-imply the directory the script lives in. Copying the documented commands got a
-`FileNotFoundError`, and every test stayed green because nothing imported the
-module: it is a runnable instrument, not a library.
+`judge_steps.py` is a runnable instrument that nothing imports, so a
+working-directory-dependent path inside it fails *silently*: it stays green
+under every check that never runs it from somewhere else, and breaks only for
+whoever follows the commands in its own `REPORT.md`.
 
-So the guidebook is *read*, with the working directory outside the repo: that is
-the only place a repo-root-relative literal is wrong, and anything short of
-reading the file passes against one.
+So the guidebook is *read*, with the working directory outside the repo. That is
+the only place such a path is wrong, and anything short of reading the file
+passes against one.
 
 Loaded by path like `test_steered_rerun_driver.py`: `experiments/` is exempt
 from the code-quality hooks and is not an importable package.
@@ -57,5 +55,5 @@ def test_the_judge_reads_its_guidebook_from_an_unrelated_directory(
   """The guidebook is readable with the working directory outside the repo."""
   monkeypatch.chdir(tmp_path)
   judge = _load("guidebook_step_judge")
-  # read_text, not exists: the old literal also *constructs* a Path fine.
+  # read_text, not exists: a wrong relative path also *constructs* fine.
   assert judge.GUIDEBOOK.read_text().startswith("# Guidebook")
