@@ -14,47 +14,26 @@ from the stopped honesty-scorer pilot (20 attempts,
 [`PILOT-DATA.md`](../honesty_scorer/PILOT-DATA.md)) and from wire logs captured
 by the proxy on earlier baseline runs.
 
-> ### Read this first: the seven-day window read 0.61–0.65 while this batch ran
+> ### Read this first: what the rate-limit readings do and do not say
 >
-> **Every one of the 20 pilot attempts emitted a `rate_limit_event`.** 22 report
-> `rateLimitType: seven_day` at `status: allowed_warning`; 7 report `five_hour`
-> at `allowed`.
+> **The one assertable fact: the first `seven_day` utilization observed during
+> execution 1 was 0.61.**
 >
-> **Utilization is a level, not a consumption.** Ordered by attempt start time
-> it reads **0.61 during the first attempt (08:43) and 0.65 during the last
-> attempt that recorded one (10:57)**.
+> Nothing here attributes consumption to this batch — not a share, not a bound
+> on a share. That reading was taken *during* execution 1, after requests had
+> begun, so no pre-request baseline exists and no starting point was measured.
+> Whatever the batch drew, this document cannot say how much.
 >
-> **That +0.04 does not bound this batch's consumption**, for three separate
-> reasons, and an earlier draft of this callout claimed it did:
+> **Open question, not argued here:** what a batch of this size costs against
+> the weekly window, and how much headroom any mechanism has. Answering it needs
+> a measured starting point, which no artifact in this batch contains.
 >
-> - The first event is **not a pre-request baseline**. It sits at index 1 of
->   attempt 1's event stream — before the first `assistant` message but after
->   `system init` — and nothing here establishes that no request preceded it.
-> - The **last** reading is from **exec 17**; attempts 18–20 emitted no
->   `seven_day` utilization. The interval the delta covers is *inside* the
->   batch, not the batch.
-> - The account is **shared** with agents working concurrently. Within the
->   observed interval the delta caps *everyone's* combined draw — so it caps
->   this batch's share of that interval, attributes nothing, and says nothing
->   about the parts of the batch outside it.
->
-> What survives is only this: **the level sat in the 0.61–0.65 band while the
-> batch ran.**
->
-> Both halves matter, and they point different ways. **The constraint was real:**
-> roughly two thirds of the window was gone, by whatever cause, and every design
-> in this space multiplies request count against that same window — so headroom,
-> not price, may decide what can be validated in a given week. **The
-> attribution is not:** 20 rollouts are cheap against it, and a batch of this
-> size cannot be blamed for the level.
->
-> **Update, 2026-09-01 afternoon: the weekly quota was reset upstream.** Two
-> agents' status lines read `Weekly: 3.0%`, against 61–63% that morning
-> (reading relayed by `swelab-orchestra`; not independently measured here, since
-> the figure is only visible to a running agent and no rollout has run since).
-> The headroom constraint is **lifted for this window**. That is all it says —
-> the window was reset once; it is not a finding that quota is not a
-> consideration.
+> **A later reading, 2026-09-01 afternoon:** two agents' status lines read
+> `Weekly: 3.0%`, against 61–63% that morning — relayed by `swelab-orchestra`
+> and **not independently measured here**, since the figure is visible only to a
+> running agent and no rollout has run since. Recorded as a reading. What it
+> implies about available headroom is part of the open question above, not
+> settled by it.
 
 ### How this number drifted, in three steps
 
@@ -112,7 +91,7 @@ delivered.
 2. **Split `streamSSE` into collect and replay.** Today one loop scans, records
    and writes. Collection already exists; the write has to move behind the
    decision.
-3. **Byte-faithful replay is not available at the layer the proxy works in.**
+3. **Replay can be SSE-semantic, not byte-faithful.**
    Two distinct losses, and an earlier draft named only the second. **The
    forward path already normalizes:** `bufio.Scanner` plus `line + "\n"`
    (:537, :560) drops a trailing `\r`, because `ScanLines` strips it — verified
@@ -186,58 +165,29 @@ delivered.
   Neither reading constrains the upstream: **absence of a documented key is not
   absence of deduplication**, and a grep of this proxy says nothing about a
   server it does not implement.
-- **Billing of a completed but unforwarded stream — not verified.** The
-  documented no-charge case is a request refused before any output is
-  generated. I reasoned from there that a rejected sample is billed in full,
-  since the proxy must read it to the end to judge it. That is an inference
-  about an upstream **policy**, not a structural consequence, and I previously
-  labelled it structural. It is not.
+- **Billing of a completed but unforwarded stream — not verified.** Whether a
+  rejected sample is charged is an upstream **policy**. I previously called it
+  structural and then inferred it from the documented refusal-only exemption;
+  neither stands. **Confirming it needs the provider's billing line items, or a
+  controlled observation on an account nothing else is using** — this account is
+  shared, so a usage delta cannot be attributed to particular calls.
 
-**What a check could and could not settle**, without exposing any request
-values. A pinned target and model version plus the same body sent twice would show
-whether the two completions diverge. **The billing half does not work as
-described:** reading account usage before and after is confounded by the shared
-account — other agents draw on it concurrently, so a usage delta cannot be
-attributed to the two calls. Settling billing needs per-request attribution this
-account does not expose, or a quiet account; neither is assumed here.
+**What a same-body pair check answers, and the only thing it answers:** whether
+the upstream returns the same output again. That is the question of whether the
+mechanism can function at all. A divergent pair refutes strict determinism and
+stops there — it does not establish independent sampling, and **it bears on the
+cost model not at all**, because no oracle and no judgement are involved in it.
 
-Note what that does **not** deliver. **A divergent pair refutes strict
-determinism; it does not establish independent sampling** — the two draws could
-be correlated, or conditioned on state the caller cannot see, and one pair
-cannot distinguish those from independence. The cost model does not actually
-need independence, but it does need the weaker property that **each resample
-carries a non-trivial, roughly stable chance of differing**.
+`p`, the oracle's rejection rate, is a different quantity and is measured only
+by an oracle judging real steps. It remains among the unknowns. **No pair study
+of any size may be cited in support of the cost model.**
 
-**That property is not `p`, and pairs cannot measure `p`.** Two quantities are
-in play and must not be run together:
-
-| quantity | what it governs | what could measure it |
-| --- | --- | --- |
-| **divergence rate** — does a re-send differ at all | whether the mechanism *functions* | same-body pairs |
-| **`p`, the oracle's rejection rate** | the `1/(1-p)` cost multiplier | an oracle judging real steps |
-
-A divergence study involves no oracle and no judgement, so **`1/(1-p)` cannot be
-supported by any number of pairs**. `p` is the step-level accept rate already
-listed among the unknowns, and it stays there. The sample sizes below size the
-**divergence** question only, and are stated so the next reader cannot cite a
-single pair for a distributional claim:
-
-- **1 pair** supports nothing distributional. It refutes strict determinism and
-  stops there.
-- **~30 pairs, all diverging**, put a 95% lower bound of about **0.90** on the
-  divergence probability (rule of three: 0 non-divergences in 30 trials bounds
-  the non-divergence rate at roughly 3/30).
-- **~30 pairs at a middling rate** estimate it to only about **±0.18** at 95%,
-  so if divergence turns out to be occasional rather than near-certain, tens of
-  pairs are not enough and the required number grows with how tight a bound the
-  cost model needs.
-
-This document does not propose running any of it.
+This document proposes running nothing.
 - **The binding limit is the subscription window, not a per-minute quota** —
   `seven_day` is the type that reached `allowed_warning`, while `five_hour`
-  stayed at `allowed`. The readings are in the callout at the top of this
-  document; a resampling design consumes that same window in proportion to how
-  many extra requests it issues.
+  stayed at `allowed`. The reading is in the callout at the top of this
+  document; how much window a resampling design would consume is the open
+  question stated there.
 
 ## 4. Where the oracle runs — the two placements differ in more than latency
 
