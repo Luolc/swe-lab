@@ -36,10 +36,19 @@ reclaimer makes the normal death safe; the stamp makes the abnormal death
 recoverable. Neither substitutes for the other: a process that is SIGKILLed runs
 no reclaimer, and a stamp reclaims nothing on its own.
 
-The shape already exists in this repo. `GitHubJobSandbox` starts its child with
-`start_new_session=True` and kills the **process group** on timeout
-([`ghjob.py`](../../../src/swe_lab/sandbox/backends/ghjob.py), ADR-0012 §3), so
-an orphan cannot outlive it. That is the model, generalized rather than repeated.
+Half the shape already exists in this repo. `GitHubJobSandbox` starts its child
+with `start_new_session=True` and kills the **process group** on timeout
+([`ghjob.py`](../../../src/swe_lab/sandbox/backends/ghjob.py), ADR-0012 §3) —
+which reclaims the whole child tree **as long as the parent is alive to send the
+signal**. That is the reclaimer half, and it is the half that does *not* cover
+the death that produced leak ①. The stamp is what covers that one, and it only
+pays off through something that runs later and looks: part D.
+
+Stating which deaths each half covers is not pedantry — an earlier draft of this
+design called C "a reclaimer that survives its parent", which is false for a
+kill executed *by* the parent, and proposed a verification that only exercised
+normal exit. A mechanism claim and a test that cannot fail against it travel
+together.
 
 ## Design
 
@@ -48,34 +57,38 @@ share files; C is independent of both; D depends on B.**
 
 ### A. Ownership starts at creation, not at start
 
-Two guards today are both keyed on *up*, and a container created but not started
-passes neither:
+[`host.py`](../../../src/swe_lab/sandbox/backends/host.py)'s `up()` assigns
+`self._container = handle` **after** `docker start` returns, and `down()`
+early-returns on an empty handle — so a `start` that *raises* (rather than
+returning non-zero, which is already handled) leaves a created container with
+nothing registered to remove it.
 
-- [`host.py`](../../../src/swe_lab/sandbox/backends/host.py) — `up()` assigns
-  `self._container = handle` **after** `docker start` returns, so a `start` that
-  raises (rather than returning non-zero) leaves `down()` with nothing to
-  remove: it early-returns on an empty handle.
-- [`manager.py`](../../../src/swe_lab/sandbox/manager.py) — `live = True` is set
-  after `sb.up()` returns, and `_teardown` early-returns `if not live`. So the
-  same failure skips teardown entirely.
+**Change, and it is local to the backend:** record the handle the instant
+`docker create` returns, then wrap everything after it so any failure removes
+the container before the error propagates. `up()` already owns cleanup of its
+own partial state; this makes that ownership start where the resource does.
 
-**Change:** record the handle the instant `docker create` returns, before
-anything that can fail; and have the manager track *created* rather than *up*,
-so teardown runs whenever a resource may exist. `down()` stays best-effort and
-still never raises.
+**Not changed: the manager.** An earlier draft had
+[`manager.py`](../../../src/swe_lab/sandbox/manager.py) track *created* rather
+than *up*, and that is unimplementable as written — the manager sees only
+whether `sb.up()` returned, so "created" is not observable through the current
+`Sandbox` contract. Making it observable is an **interface change** with
+cross-backend semantics, and setting `live` earlier would be worse than the bug:
+observer collection would run against a sandbox that never came up. The backend
+keeps the responsibility it already has. If a manager-level defense is wanted
+later, it starts with designing that observable state, not with moving a flag.
 
-**Tests:** `docker create` succeeds and `start` raises → the container is
-removed; the manager tears down a sandbox whose `up()` raised after creation.
+**Tests:** `docker create` succeeds and `start` raises → `docker rm` is issued
+for the created handle; the existing non-zero-`start` path keeps its behaviour.
 
 ### B. Every resource names its owner
 
-Add three labels at create time beside the existing `swe-lab` / `swe-lab-instance`:
+Add two labels at create time beside the existing `swe-lab` / `swe-lab-instance`:
 
 | label | value |
 |---|---|
 | `swe-lab-owner-pid` | the creating process's pid |
 | `swe-lab-owner-session` | a uuid4 generated once per process |
-| `swe-lab-created-at` | RFC 3339, UTC |
 
 Nothing behavioural depends on them; they exist so that a survivor can be
 attributed. The pid alone is not enough — pids are reused, and a pytest session
@@ -83,41 +96,77 @@ and its subprocesses do not share one — which is what the session id is for.
 **That reasoning goes in the code beside the label**, or the next reader deletes
 the session id as redundant with the pid.
 
-**Test:** the create argv carries all three, and the session id is stable within
-a process and different across processes.
+No `created-at` label: Docker already records `Created`, and D can read it. A
+repository-defined timestamp would be a second copy of a fact the daemon owns,
+justified only by a requirement that does not exist yet.
 
-### C. A process reclaimer that survives its parent
+**Test:** the create argv carries both labels, and the session id is stable
+within a process and differs across processes.
+
+### C. Kill the whole child tree — and say which deaths that covers
 
 `ReverseProxy.__enter__`
 ([`host_proxy.py`](../../../src/swe_lab/pipelines/related_files/host_proxy.py))
 starts the proxy with `subprocess.Popen` and **no** `start_new_session`, and
-`__exit__` terminates only the direct child. Kill the supervisor and the proxy
-is reparented and keeps its port — leak ①, and the same defect ADR-0012 §3 fixed
-for `ghjob`.
+`__exit__` terminates only the direct child, so a proxy that spawned anything of
+its own outlives the context. Lifting `ghjob`'s session-plus-group-kill into one
+shared helper fixes that, in one implementation with two call sites.
 
-**Change:** lift ghjob's session-plus-group-kill into one shared helper and use
-it from both. One implementation, two call sites, no third copy.
+**What it does not fix, and an earlier draft of this design claimed it did:
+leak ①.** `start_new_session` + `killpg` is executed **by the parent**. When the
+parent is killed — which is exactly how leak ① happened — nothing runs the kill,
+and putting the child in its own session arguably detaches it further. Calling
+this "a reclaimer that survives its parent" was wrong, and the verification I
+first proposed only exercised normal exit, which is how the claim went
+unchallenged.
 
-**Test:** the started child leads its own process group; on exit the group is
-signalled, not just the child.
+So C is scoped to what it actually delivers: **the parent-alive deaths** —
+normal exit, exception, timeout — for the whole child tree rather than one pid.
+**The parent-death case is D's**, via the process half of the reaper below.
+(A child-side `PR_SET_PDEATHSIG` would close it in-process, but the proxy is an
+external binary this repo does not build, and `preexec_fn` is documented as
+unsafe in the presence of threads; if that changes it becomes the better fix.)
+
+**Tests:** the child leads its own process group; exiting the context signals
+the **group**, not just the child. No test here asserts anything about owner
+death — that belongs to D, where the mechanism is.
 
 ### D. Reaping what a dead owner left
 
-B makes the question decidable; D answers it. One code path, two entry points:
+B makes ownership decidable; D acts on it. **This is where leak ① and leak ③ are
+actually closed**, because it is the only part that runs when the owner is gone.
 
-- **`swe-lab containers reap`** — lists every container labelled `swe-lab=1`
-  whose `swe-lab-owner-pid` is not alive, with its age and session id. It
-  **removes nothing by default**; `--force` removes exactly the listed set.
+Two kinds of resource, one principle — *the identity is stamped where the
+resource is created*:
+
+- **containers** carry it in their labels (B);
+- **processes** cannot, so a spawn writes a small **spawn record** — owner
+  session, owner pid, child pid, port, start time — under a known directory, and
+  removes it on clean exit. A record whose owner is dead and whose child still
+  lives is an orphan by construction; a record with no live child is stale and
+  is deleted.
+
+One code path, two entry points:
+
+- **`swe-lab containers reap`** — lists every container labelled `swe-lab=1`,
+  and every spawn record, whose owner is **provably not alive**. It removes
+  nothing by default; `--force` removes exactly what it re-verifies.
 - **A session-scoped pytest fixture** that, at session end, removes containers
   carrying **this session's** id and **fails the session** if it removed any.
 
-Two rules that make this safe and honest:
+Three rules, and the third is a correction the review forced:
 
-1. **Never remove a container whose owner is alive, or whose owner is unknown.**
-   Today's standoff was the correct behaviour and must stay possible.
-2. **A leak that is silently cleaned is a leak that repeats.** The test fixture
-   reports rather than tidies: today's three leaks were visible only because
-   nobody swept them.
+1. **Never touch a resource whose owner is alive, or whose owner is unknown.**
+   An unreadable or malformed owner label is *unknown*, not *dead*. Today's
+   standoff — three agents each refusing to remove a container they could not
+   attribute — was the correct behaviour and must stay possible.
+2. **Report rather than tidy.** A leak that is silently cleaned is a leak that
+   repeats; today's three were visible only because nobody swept them.
+3. **`--force` re-checks immediately before each removal, per resource.** Owner
+   liveness can change between listing and removing — pid reuse alone
+   guarantees it — so a set computed once and deleted later cannot honour rule
+   1. Each removal re-reads the labels and re-tests liveness, and skips and
+   reports anything that is now live or unknown.
 
 **Rule 2 is not new here — it is this project's third independent arrival at the
 same principle**, in three unrelated domains, and it is worth saying so rather
@@ -159,10 +208,12 @@ Each invariant gets a named test; none of them needs Docker except where marked:
 | invariant | test |
 |---|---|
 | a created-but-unstarted container is removed | `create` ok + `start` raises → `rm` issued (fake docker) |
-| the manager tears down after a failed `up` | manager with a backend whose `up` raises post-create |
-| a resource names its owner | create argv carries pid, session, timestamp |
-| the proxy child leads its own group | `start_new_session` asserted; exit signals the group |
+| a resource names its owner | create argv carries the pid and session labels; the session id is stable in-process and differs across processes |
+| the proxy's whole child tree dies with the context | `start_new_session` asserted; exiting signals the **group** |
+| an orphaned proxy is reclaimed after its owner dies | spawn the proxy, `SIGKILL` the owner, run the reaper, assert the port is released — the test that would have caught leak ① |
 | the reaper never touches a live owner | listing with a live pid yields nothing to remove |
+| the reaper never touches an unknown owner | a container whose owner label is missing or malformed is reported, not removed |
+| `--force` re-checks per resource | a resource that becomes live between listing and removal is skipped and reported |
 | a leaked container fails the test session | fixture finds a stamped container and fails |
 
 ## Delivery
@@ -171,4 +222,6 @@ Three PRs, split by dependency and not by category:
 
 1. **A + B** — same two files, no dependency between them, one review.
 2. **C** — the shared process-group helper and its two call sites.
-3. **D** — the reap command and the pytest fixture; needs B's labels.
+3. **D** — the reap command, the spawn records, and the pytest fixture; needs
+   B's labels. **Leaks ① and ③ are closed here, not in C**, so this is the PR
+   that carries the owner-death test.
