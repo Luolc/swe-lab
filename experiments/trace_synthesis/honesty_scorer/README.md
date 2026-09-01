@@ -499,10 +499,12 @@ trace never reaches the unpinned decision costs a rollout and delivers nothing.
 
 **The estimator.** `resolved / 6` estimates a resolve *rate*; the quantity that
 prices a batch is **rollouts per qualifying trace**, which is `E[1/θ]` and not
-the reciprocal of the mean. With a `Beta(2, 2)` prior on θ — chosen now, and
-defensible because these instances are known to resolve *sometimes* and not
-*always*, so θ is strictly inside `(0, 1)` — the posterior is
-`Beta(2 + c, 8 − c)` and
+the reciprocal of the mean. θ is the ***qualifying*** rate, not the resolve
+rate — nothing here has measured it, which is what the pilot buys. The
+`Beta(2, 2)` prior on it is chosen now, and is defensible for what it declines
+to assume: it is weak and symmetric, and commits only to these instances being
+neither incapable of producing a qualifying trace nor certain to produce one.
+It is **not** a claim that θ > 0. The posterior is `Beta(2 + c, 8 − c)` and
 
 > **`yield = E[1/θ] = 9 / (1 + c)`**, reported with the posterior's 90%
 > credible interval on θ.
