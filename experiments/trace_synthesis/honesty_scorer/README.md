@@ -769,10 +769,23 @@ would defeat its purpose:
   > spoken relay. All routes are the same route.**
 
   A rule naming only the place a leak was *noticed* protects the channel that
-  did not leak. Its partner is the after-the-fact clause further down ("further
-  revisions must be ruled by someone who has seen no results"): the first
-  prevents a breach, the second detects one, and only both together are a
-  mechanism. **Acknowledging the lapse is not one of the two** — an
+  did not leak. Its partner is the clause further down ("further revisions must
+  be ruled by someone who has seen no results"), and the two do **not** add up
+  to detection — say what each one actually is:
+
+  | clause | what it does | what it does not do |
+  | --- | --- | --- |
+  | the channel prohibition above | **prevention** — nothing is supposed to cross | cannot notice a crossing that happens anyway |
+  | recusal of anyone who has seen results | **containment of a *disclosed* breach** — once a leak is known, the leaked-to party stops ruling | does not surface an undisclosed one |
+
+  **The residual blind spot is named rather than papered over: an undisclosed
+  leak through an agent message or a spoken relay is not mechanically
+  detectable here.** Those channels leave no audit trail, so nothing in this
+  protocol can observe them. What surfaced the breach that produced this rule
+  was the leaking party volunteering it — **a norm, and norms are not
+  mechanisms.** Writing a third "check" over that gap would produce exactly the
+  shape catalogued elsewhere in this document: a check that cannot fail.
+  **Acknowledging a lapse is likewise not one of the clauses** — an
   acknowledgement is not enforceable, and treating it as the remedy is how the
   same breach recurs.
 - The direction of the fix limits what that knowledge could do **for the

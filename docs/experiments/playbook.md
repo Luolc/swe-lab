@@ -167,11 +167,18 @@ pilot's twelve amendments.
   document" protects a channel that never leaked, when the actual leak was an
   inter-agent message. Quantify: *no outcome value reaches a designated blind
   ruler by any route — document, PR description, agent message, spoken relay —
-  until the rule they must fix is settled.* Pair it with an after-the-fact check
-  ("further revisions must be ruled by someone who has seen no results"): the
-  first prevents a breach, the second detects one, and only both together are a
-  mechanism. **Owning a mistake is not a mechanism** — the acknowledgement is
-  not the remedy.
+  until the rule they must fix is settled.* Its partner clause — anyone who has
+  seen results recuses themselves from ruling — is **containment of a
+  *disclosed* breach, not detection**: it takes effect only once a leak is
+  known. Be exact about that, because "prevention + detection" is a claim of
+  coverage the pair does not have. **The gap is that an undisclosed leak through
+  an unlogged channel — an agent message, a spoken relay — is not mechanically
+  detectable at all**; what surfaces one is the leaking party volunteering it,
+  which is a norm rather than a mechanism. Name the gap instead of writing a
+  third check over it: a check that cannot observe its subject is the
+  cannot-fail shape from the hazards list. And **owning a mistake is not a
+  mechanism either** — an acknowledgement is not enforceable, and treating it as
+  the remedy is how the same breach recurs.
 - **A stopping rule that reads the clock is outcome-correlated.** Truncating a
   fixed design on wall time removes whole units, and the slowest unit goes
   first — which is a property of the workload, not of chance. The same shape

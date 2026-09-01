@@ -44,8 +44,20 @@ against that exact text rather than assumed.
 screening report has a legitimate `## Open questions` section; so do other
 reports. The hook fires there too — and that is correct: **an open question with
 no tracking issue is itself the defect**, and requiring `#NNN` in those sections
-improves them. Note what this buys: no exemption list, therefore no knob, so the
-rule cannot be quietly widened later.
+improves them.
+
+The position is **falsifiable, and held until it is falsified**: if a real
+example turns up of an open question that genuinely should carry no tracking
+issue, that is the moment to reconsider. Until such an example exists, an
+exemption is a real hole bought with a hypothetical cost, and a request for one
+on friction grounds is escalated rather than conceded.
+
+**No exemption list means no knob**, which is the same principle amendment 12
+settled for the honesty-scorer protocol, in its words: *removing the cut ends
+the discretion, re-tuning it only relocates it.* The exemption list **is** that
+cut. Recording the reasoning here matters more than the decision, because the
+next person to hit the friction has to be able to see the hole was left closed
+**on purpose** rather than by oversight.
 
 **What the hook cannot do:** decide whether the referenced issue is still open.
 That needs the network and belongs in CI or a periodic sweep, not in a
@@ -78,6 +90,16 @@ question, and it takes the checklist form:
 > describing it, or state that none exists.** Not "did you update the docs" —
 > the specific, answerable form: *name the prose that describes what you just
 > changed.* An unanswerable question is a finding.
+
+**This is not a new rule; it is the existing one with a wider domain.**
+[`AGENTS.md`](../../../AGENTS.md) already binds the same obligation for one
+case — an ADR that supersedes a section of a spec rewrites that section in the
+same PR, and *if you cannot point at the paragraph you changed, the ADR is not
+finished*. `SL10` extends the domain from "an ADR changing a spec" to "any
+change to a mechanism", and it should be written as a reference to that
+sentence rather than a restatement of it, per the repo's one-home rule. Written
+that way it needs no independent justification in review: **objecting to `SL10`
+is objecting to a rule already in force.**
 
 The distinction from generic "update the docs" advice is that it is
 **mechanically promptable** and has a definite failure state: a PR that changes
