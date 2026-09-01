@@ -86,7 +86,7 @@ _witness = _load(_HERE / "witness.py", "variance_witness")
 
 
 def main() -> None:
-  """Judge the fixed completion `n` times in each arm."""
+  """Judge the fixed completion 20 times under default sampling."""
   parser = argparse.ArgumentParser()
   parser.add_argument("--out-dir", type=pathlib.Path, required=True)
   args = parser.parse_args()
