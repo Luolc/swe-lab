@@ -358,9 +358,22 @@ def run_variant(variant: str, workspace_root: Path, replicate: int = 0) -> None:
 
   started = time.time()
   print(f"[run ] {run_name} (mode={mode})")
+  # A timeout used to raise straight past the `meta.json` write, so the one
+  # signal that says "this run is an environment failure, not a result" was
+  # missing exactly when it mattered. Catch it, keep whatever the process had
+  # already produced, and record it like any other ending.
+  timed_out = False
   try:
     proc = subprocess.run(
         argv, cwd=workspace, env=env, capture_output=True, text=True, timeout=600
+    )
+  except subprocess.TimeoutExpired as expired:
+    timed_out = True
+    proc = subprocess.CompletedProcess(
+        argv,
+        returncode=-1,
+        stdout=expired.stdout or "",
+        stderr=expired.stderr or "",
     )
   finally:
     if proxy_proc is not None:
@@ -386,6 +399,9 @@ def run_variant(variant: str, workspace_root: Path, replicate: int = 0) -> None:
       "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(started)),
       "duration_s": round(time.time() - started, 1),
       "exit_code": proc.returncode,
+      # False on every ending that is not the 600 s cap. The micro-test's
+      # environment-failure rule reads this field and nothing else.
+      "timeout": timed_out,
   }, indent=2) + "\n")
   print(f"[done] {run_name}: exit={proc.returncode} "
         f"{len(proc.stdout.splitlines())} stream lines, "
