@@ -212,7 +212,7 @@ actually being protected:
 > identifier.**
 
 That is checked from this side by
-`swe_lab.harnesses.claude_code.redaction.unredacted_headers`, because the proxy
+`swe_lab.harnesses.claude_code.redaction.unredacted_fields`, because the proxy
 is an external, separately versioned binary and "the build we ran redacts" is
 exactly the assumption that quietly stops holding. `tests/test_proxy_redaction.py`
 covers both directions — a credential on the request and account identity on the
