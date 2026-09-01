@@ -325,25 +325,30 @@ def thinking_replayed(frozen: pathlib.Path) -> int:
   return replays
 
 
-def analyze(label: str) -> dict[str, object]:
-  """Assemble one arm's numbers.
+def analyze(summary_path: pathlib.Path) -> dict[str, object]:
+  """Assemble one rollout's numbers.
 
   Args:
-    label: The arm's label.
+    summary_path: A ``runs/<label>/summary-r<n>.json`` written by
+      ``run_steered.py``.
 
   Returns:
-    The arm's analysis row.
+    The rollout's analysis row.
   """
-  summary_path = _RUNS / label / "summary.json"
-  summary = json.loads(summary_path.read_text()) if summary_path.is_file() else {}
+  summary = json.loads(summary_path.read_text())
+  label = str(summary["label"])
+  session = str(summary["session"])
   frozen = _FROZEN_ROOT / f"{label}-rollout-{summary.get('rollout_id')}"
   conversation = load_conversation(frozen) if frozen.is_dir() else None
-  judgements = hint_records(label)
+  # One hint log per label, several rollouts per label: filter to this one, or
+  # a resampled arm reports its predecessor's hints as its own.
+  judgements = [r for r in hint_records(label) if r.get("session") == session]
   emitted = [str(r["hint"]) for r in judgements if r.get("hint_emitted")]
   hooks = hook_records(frozen) if frozen.is_dir() else []
   rows = survival(conversation, emitted)
   return {
       "label": label,
+      "session": session,
       "summary": summary,
       "frozen": str(frozen),
       "boundaries_judged": len(judgements),
@@ -372,15 +377,15 @@ def analyze(label: str) -> dict[str, object]:
 
 
 def main() -> None:
-  """Analyze every arm that has a summary, and write ``analysis.json``."""
-  labels = sorted(p.name for p in _RUNS.iterdir() if (p / "summary.json").is_file())
-  analysis = {"arms": [analyze(label) for label in labels]}
+  """Analyze every rollout that left a summary, and write ``analysis.json``."""
+  summaries = sorted(_RUNS.glob("*/summary-r*.json"))
+  analysis = {"arms": [analyze(path) for path in summaries]}
   _ = (_HERE / "analysis.json").write_text(
       json.dumps(analysis, indent=2, ensure_ascii=False) + "\n"
   )
   for arm in analysis["arms"]:
     print(
-        f"{arm['label']}: {arm['boundaries_judged']} boundaries,"
+        f"{arm['session']}: {arm['boundaries_judged']} boundaries,"
         f" {arm['hints_emitted']} hints emitted,"
         f" {arm['hints_in_conversation']} in the trace,"
         f" {len(arm['objections'])} objections,"

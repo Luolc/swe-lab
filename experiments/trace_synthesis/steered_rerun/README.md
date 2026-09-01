@@ -129,6 +129,11 @@ capture drops, so it is never injected into.
 
 ### The task-quality gate
 
+**Screening moved out of this experiment** on 2026-09-01: `swelab-screen-impl` /
+`-review` audit all 40 of issue #261's instances and hand confirmed candidates
+over. What follows is the gate as it ran here, kept for the methodological
+result and for one verdict it got wrong.
+
 Applied **before** an instance is used, and it is a gate rather than a caveat:
 OpenAI's 2026-07-08 audit estimates ~30% of SWE-bench Pro public tasks are
 broken and retracts their recommendation to adopt the dataset. The criterion is
@@ -179,7 +184,8 @@ direnv exec . uv run python experiments/trace_synthesis/steered_rerun/validate_t
 direnv exec . uv run python experiments/trace_synthesis/steered_rerun/run_steered.py \
     --label baseline-<repo> --instance <id> --rollout-id 0 --no-steer
 direnv exec . uv run python experiments/trace_synthesis/steered_rerun/run_steered.py \
-    --label steered-<repo> --instance <id> --rollout-id 10
+    --label steered-<repo> --instance <id> --rollout-id 10 \
+    --guidebook guidebook/<instance>.md
 
 # every number in the report
 direnv exec . uv run python experiments/trace_synthesis/steered_rerun/analyze.py
@@ -192,11 +198,22 @@ supervisor.py     host-side judge: guidebook + belief state + hint log
 steer_hook.py     the in-container hook; holds nothing, appends what it is told
 run_steered.py    one run end to end: supervisor up, rollout, grade, freeze
 validate_task.py  the task-quality gate: determinacy evidence + token screen
+freeze_sample.py  a harvested failure -> the workflow's self-contained input
 analyze.py        raw runs -> analysis.json (hint survival is the load-bearing check)
 manifest.sh       regenerates MANIFEST.md over the frozen artifacts
+guidebook/        one Oracle guidebook per instance; `--steer` refuses without one
 runs/<label>/     hint_log.jsonl (host-side, every judgement) + summary.json
 task-validation/  one dossier per screened instance, verdict written by hand
 ```
+
+The **sample directory** `freeze_sample.py` writes is a contract, not a
+convenience: the phase-C workflow starts from an already-cached failure rather
+than re-running a rollout to find one, so its input is a hand-assembled dataset
+row — `instance.json`, `failed_conversation.json` (typed, with the raw trace
+kept beside it), `verdict.json`, `patch.diff`, `PROVENANCE.json`,
+`MANIFEST.sha256` — and the invariant is that a consumer needs that directory
+and nothing else. The guidebook agent is built against it; see
+[`REPORT.md`](REPORT.md#8-the-failure-sample-is-the-workflows-input-contract).
 
 **Large artifacts live outside every git worktree**, at
 `/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/`, with

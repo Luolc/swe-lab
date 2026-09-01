@@ -76,9 +76,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import supervisor as supervisor_module  # noqa: E402 — needs the path above
 
 _HERE = pathlib.Path(__file__).resolve().parent
-_GUIDEBOOK = (
-    _HERE.parent / "handmade_instance" / "guidebook" / "openlibrary-from-isbn.md"
-)
 # The actor is authenticated through OpenRouter, not the subscription OAuth
 # token: one credential for the actor and the Supervisor both, and a model id
 # that names the provider it is served from. `https://openrouter.ai/api` is the
@@ -334,6 +331,23 @@ def main() -> None:
   _ = parser.add_argument("--proxy-port", type=int, default=20099)
   _ = parser.add_argument("--max-hints", type=int, default=8)
   _ = parser.add_argument(
+      "--concurrency",
+      type=int,
+      default=1,
+      help=(
+          "how many rollouts share the box right now. Recorded, not enforced:"
+          " a wall clock is meaningless without it"
+      ),
+  )
+  _ = parser.add_argument(
+      "--guidebook",
+      help=(
+          "the Oracle's guidebook for *this* instance. Required with --steer:"
+          " a guidebook written for another instance is not a weaker"
+          " supervisor, it is a supervisor judging against the wrong task"
+      ),
+  )
+  _ = parser.add_argument(
       "--key-index",
       type=int,
       default=0,
@@ -368,6 +382,13 @@ def main() -> None:
   # agent talks to whatever that is. Cost of learning this the other way: one
   # rollout that failed with an empty proxy log, an empty stderr and exit 1
   # (2026-09-01, a stray `python3 -m http.server` from a firewall probe).
+  if args.steer and not args.guidebook:
+    raise SystemExit(
+        "refusing to run: --steer needs --guidebook. The Supervisor judges"
+        " every boundary against it, so the wrong one silently produces"
+        " confident hints about a different task."
+    )
+
   if args.capture == "proxy":
     with socket.socket() as probe:
       if probe.connect_ex(("127.0.0.1", args.proxy_port)) == 0:
@@ -402,7 +423,7 @@ def main() -> None:
   if args.steer:
     watcher = supervisor_module.Watcher(
         supervisor_module.Supervisor(
-            guidebook=_GUIDEBOOK.read_text(),
+            guidebook=pathlib.Path(args.guidebook).read_text(),
             log_path=hint_log,
             api_key=os.environ[API_KEY_ENV],
             model=args.supervisor_model,
@@ -502,6 +523,8 @@ def main() -> None:
       "credits_after": supervisor_module.key_credits(key),
       "bare": False,
       "supervisor_model": args.supervisor_model if args.steer else None,
+      "guidebook": args.guidebook if args.steer else None,
+      "concurrency": args.concurrency,
       "started": started_at,
       "wall_s": wall,
       "entries": {
@@ -519,7 +542,12 @@ def main() -> None:
           str(path.relative_to(pathlib.Path(output_dir))) for path in redacted
       ],
   }
-  _ = (runs / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+  # One file per rollout, not one per label: a harvest samples the same label
+  # several times, and a single `summary.json` means sample N erases the
+  # evidence for sample N-1 — including which key paid for it.
+  _ = (runs / f"summary-r{args.rollout_id}.json").write_text(
+      json.dumps(summary, indent=2) + "\n"
+  )
 
   freeze(
       output_dir,
