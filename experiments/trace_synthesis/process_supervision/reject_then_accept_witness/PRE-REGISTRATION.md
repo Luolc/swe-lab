@@ -30,6 +30,36 @@ The other three off-track steps are `baseline-…-0` positions 26 and 36, and
 `steered-…-11` position 12. They are not used; naming them here prevents a later
 switch from looking like a choice made after seeing a result.
 
+### The material is bound by digest, not by an address
+
+Naming a line index in an **off-repo, mutable** capture fixes an *address*, not
+*content*: replace that line after this merge and the run still produces equal
+per-attempt hashes on different material, which would defeat the whole
+before-data commitment. Per-attempt hashes show only that one run reused whatever
+it selected.
+
+So the content itself is pinned here, and asserted **before any proxy, judge or
+API work**:
+
+| | canonical sha256 |
+|---|---|
+| request body | `072544ccd33384d33b280bdafed44b159685cebf5af661426654a37b0d41fd45` |
+| original completion (attempt 0's material) | `e12278e8927ef3100498462c19218a8946bda1517bc910103403abf60aad877a` |
+
+Canonical form is `json.dumps(value, sort_keys=True, separators=(",", ":"))`;
+the body is 115,500 bytes in it, with 31 messages, 26 tools, model
+`anthropic/claude-sonnet-5`. A mismatch terminates the run as **`void`** before
+anything is started or spent.
+
+Note what the per-attempt `sent_body_sha256` does **not** do: it shows that one
+run reused whatever body it selected, and nothing about *which* body that was.
+The two questions — *what does this check prove* and *what can it not prove* —
+are separate, and a mechanism added to close one gap is not thereby exempt from
+the second. A digest of a request body carries no credential —
+the captured `metadata.user_id` is already `<redacted>` and headers are not
+hashed. The observed digests are written into the results, so a mismatch is
+visible rather than merely fatal.
+
 **Scope, fixed now: this conclusion is about this upstream only.** No upstream
 migration is in flight — the harness default is `https://api.anthropic.com`, but
 the trace-synthesis driver overrides to OpenRouter and refuses to start otherwise;
@@ -93,12 +123,17 @@ Quoted from `DEBATE-VERDICT.md` §4; fixed before the run:
    Stay with A′.
 3. **First accept at attempt *k* ≤ 10** → **B exists.** *k* is the first cost
    observation (extra actor completions per rejected step, this target, this
-   judge, this step). Reopen the debate under §3.3.
+   judge, this step). *(§4's sentence continues "Reopen the debate under §3.3";
+   that clause is quoted here as source wording only and is **not** operative —
+   see immediately below.)*
 
-**Outcome 3 satisfies only half of §3.3.** That clause requires the witness
-**and** that Claude Code accepts a fully-buffered turn under a redesigned
-deadline. The second condition is untested here, so outcome 3 must be reported as
-*one of two conditions met*, never as "the debate reopens".
+**Operative reading of outcome 3, which governs:** it establishes **only the
+witness half** of §3.3. §3.3 is a conjunction — the witness **and** Claude Code
+accepting a fully-buffered turn under a redesigned deadline — and the second
+condition is **not tested by this run at all**. Outcome 3 therefore **cannot
+reopen the debate** and must be reported as *one of two conditions met*. No
+sentence in this document, quoted or otherwise, may be cited for a stronger
+reading.
 
 ### Additional obligation on outcome 3
 
@@ -151,9 +186,33 @@ asserting anything.
 - **Unmeasured:** the actual resend cost, which depends on cache state at run
   time. Every attempt's real cost is recorded and the cumulative total reported.
 
-**Stop rule, declared now:** if cumulative measured cost exceeds **$2.00** before
-K = 10, stop. A run stopped that way is reported as **inconclusive** — explicitly
-*not* as outcome 2, since "0/K accepted" requires all K attempts.
+**Stop rule, declared now:** if cumulative measured cost exceeds **$2.00**, stop.
+A run stopped that way is reported as **inconclusive** — explicitly *not* as
+outcome 2, since "0/K accepted" requires all K attempts.
+
+### Five terminations, five words, none readable as another
+
+Every way this run can end has its own name, because the failures that matter
+this week all came from two different states sharing one sentence:
+
+| word | trigger | what it means |
+|---|---|---|
+| `outcome-1` / `outcome-2` / `outcome-3` | §4 | the pre-registered readings |
+| `inconclusive` | cumulative cost exceeds the ceiling | the run did not finish; **not** outcome 2, which requires all K attempts |
+| `void` | a pre-registered digest does not match | **the material is not ours; this run did not happen.** Not a result of any kind, and nothing is spent — the check precedes every paid call |
+| `material-retired` | attempt 0's completion is no longer judged off-track | the step is retired and the next named one is used; reported as a result in its own right, since it is an observation about judge stability |
+
+`void` in particular is neither "we ran and got nothing acceptable" nor "we ran
+out of budget". It is *there was no run*.
+
+**One ledger covers every billable call**, not just the K attempts: attempt 0's
+judge call, each attempt's actor and judge calls, both repeat judgements of a
+first accept, and the cache-off confirmation. The ledger is persisted, the
+reported total is derived from it, and **the ceiling is checked before issuing
+each further call** — so an accept arriving at $1.95 cannot buy two more
+judgements and print a witness whose true cost crossed the ceiling. Once the
+observed cumulative cost exceeds the ceiling, no further authorized call is made
+and the run is classified inconclusive.
 
 ## 8. Four additions, fixed before the run
 
@@ -214,8 +273,9 @@ the completion improving** — and outcome 3 is the only outcome that reopens a
 debate.
 
 So: **on the first accept, the same completion is judged twice more**, and the
-report states **"accepted n of 3"**. Cost is two judge calls. An accept that does
-not reproduce is not a witness.
+report states **"accepted n of 3"**. Cost is two judge calls, **counted in the
+ledger of §7**. An accept that does not reproduce is not a witness — and even a
+reproduced one establishes only the witness half of §3.3, per §4.
 
 ### 8.4 Attempt 0 — re-judge the original completion with *this* judge
 
@@ -227,6 +287,7 @@ So the original recorded completion is judged as **attempt 0**, by the same judg
 module and guidebook this run uses:
 
 - still **off_track** → the material holds, continue;
-- now **on_track** → the material is **void**: stop, move to the next step named
-  in §2, and report this as a result in its own right, since it is an
-  observation about judge stability.
+- now **on_track** → the material is **`material-retired`** (not `void`, which
+  is reserved for a digest mismatch): stop, move to the next step named in §2,
+  and report this as a result in its own right, since it is an observation about
+  judge stability.

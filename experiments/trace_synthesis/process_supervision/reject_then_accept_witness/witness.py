@@ -40,6 +40,71 @@ _POSITION = 14
 _ROLLOUT = "baseline-qutebrowser-rollout-0"
 _UPSTREAM = "https://openrouter.ai/api"
 _COST_CEILING_USD = 2.00
+# Pre-registered digests. Canonical form is
+# json.dumps(value, sort_keys=True, separators=(",", ":")).
+_BODY_SHA256 = "072544ccd33384d33b280bdafed44b159685cebf5af661426654a37b0d41fd45"
+_ORIGINAL_COMPLETION_SHA256 = (
+    "e12278e8927ef3100498462c19218a8946bda1517bc910103403abf60aad877a")
+
+
+def canonical(value: object) -> bytes:
+  """Serialize a value the way the pre-registered digests were taken.
+
+  Args:
+    value: Any JSON-serializable value.
+
+  Returns:
+    The canonical bytes.
+  """
+  return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+
+
+class Ledger:
+  """Every billable call, and whether the ceiling has been crossed.
+
+  The stop rule is worthless if it covers only some of the calls it authorizes,
+  so actor calls, judge calls, repeat judgements and the cache-off confirmation
+  all land here, and the ceiling is consulted *before* issuing the next one.
+
+  Attributes:
+    entries: One record per billable call.
+    path: Where the ledger is persisted after each entry.
+  """
+
+  def __init__(self, path: pathlib.Path):
+    self.entries: list[dict] = []
+    self.path = path
+
+  def record(self, kind: str, usage: dict | None) -> None:
+    """Add one call.
+
+    Args:
+      kind: What was paid for.
+      usage: The provider's usage block, if any.
+    """
+    self.entries.append(
+        {"kind": kind, "cost": float((usage or {}).get("cost") or 0),
+         "at": time.strftime("%FT%TZ", time.gmtime())})
+    self.path.write_text(json.dumps(
+        {"total_usd": self.total, "entries": self.entries}, indent=2))
+
+  @property
+  def total(self) -> float:
+    """Cumulative measured cost.
+
+    Returns:
+      The sum over every recorded call.
+    """
+    return sum(e["cost"] for e in self.entries)
+
+  @property
+  def exhausted(self) -> bool:
+    """Whether the ceiling has been crossed.
+
+    Returns:
+      True when no further authorized call may be issued.
+    """
+    return self.total > _COST_CEILING_USD
 
 
 def _load(path: pathlib.Path, name: str) -> types.ModuleType:
@@ -168,6 +233,33 @@ def main() -> None:
 
   rows = [json.loads(l) for l in _CAPTURE.read_text().splitlines()]
   body = rows[_STEP_INDEX]["request"]["body"]
+  original = (rows[_STEP_INDEX].get("response") or {}).get("message") or {}
+
+  # The capture is off-repo and mutable, so an address does not fix content:
+  # checked before any paid call, and both digests are written to the results.
+  observed_body = hashlib.sha256(canonical(body)).hexdigest()
+  observed_original = hashlib.sha256(
+      canonical(original.get("content"))).hexdigest()
+  matches = (observed_body == _BODY_SHA256
+             and observed_original == _ORIGINAL_COMPLETION_SHA256)
+  (args.out_dir / "material.json").write_text(json.dumps({
+      # `void` is its own termination: not outcome 2 (ran, nothing accepted) and
+      # not `inconclusive` (ran out of budget) -- there was no run.
+      "classification": None if matches else "void",
+      "body_sha256_expected": _BODY_SHA256,
+      "body_sha256_observed": observed_body,
+      "original_completion_sha256_expected": _ORIGINAL_COMPLETION_SHA256,
+      "original_completion_sha256_observed": observed_original,
+      "messages": len(body.get("messages") or []),
+      "tools": len(body.get("tools") or []),
+      "model": body.get("model"),
+  }, indent=2))
+  if not matches:
+    raise SystemExit(
+        "void: the material does not match the pre-registered digests, so this "
+        "run did not happen. It is not outcome 2 and not inconclusive; nothing "
+        f"was spent. See {args.out_dir / 'material.json'}")
+
   # Serialized once; every attempt sends this exact string.
   payload = json.dumps(body).encode()
   payload_sha = hashlib.sha256(payload).hexdigest()
@@ -178,10 +270,12 @@ def main() -> None:
       for i, s in enumerate(steps[:_POSITION][-8:])
   ) or "  (none -- this is the first step)"
 
+  ledger = Ledger(args.out_dir / "ledger.json")
+
   # 8.4 -- attempt 0: re-judge the original completion with *this* judge, so
   # the premise is not inherited from #305's run.
-  original = (rows[_STEP_INDEX].get("response") or {}).get("message") or {}
   attempt_zero = _judge_completion(original, before, len(steps))
+  ledger.record("judge:attempt-0", attempt_zero["usage"])
   try:
     still_off = json.loads(attempt_zero["raw"]).get("verdict") == "off_track"
   except json.JSONDecodeError:
@@ -190,14 +284,22 @@ def main() -> None:
       json.dumps({"judge": attempt_zero, "still_off_track": still_off}, indent=2))
   print(f"attempt 0 (original completion) still_off_track={still_off}")
   if not still_off:
-    print("material is VOID: this judge no longer calls the step off-track. "
+    # `material-retired`, not `void`: the material is ours, but this judge no
+    # longer rejects the step -- itself a result about judge stability.
+    (args.out_dir / "classification.json").write_text(json.dumps(
+        {"classification": "material-retired",
+         "next_step": "baseline-qutebrowser-rollout-0 position 26"}, indent=2))
+    print("material-retired: this judge no longer calls the step off-track. "
           "Stopping, per pre-registration 8.4.")
     return
 
   process, port, proxy_log = _start_proxy(args.out_dir)
-  records, spent, seen = [], 0.0, 0
+  records, seen, inconclusive = [], 0, False
   try:
     for attempt in range(args.k):
+      if ledger.exhausted:
+        inconclusive = True
+        break
       started = time.time()
       request = urllib.request.Request(
           f"http://127.0.0.1:{port}/v1/messages", data=payload,
@@ -227,8 +329,8 @@ def main() -> None:
       except json.JSONDecodeError:
         accepted = False
 
-      spent += float(usage.get("cost") or 0) + float(
-          (verdict["usage"] or {}).get("cost") or 0)
+      ledger.record(f"actor:attempt-{attempt + 1}", usage)
+      ledger.record(f"judge:attempt-{attempt + 1}", verdict["usage"])
       records.append({
           "attempt": attempt,
           "sent_body_sha256": payload_sha,
@@ -248,10 +350,17 @@ def main() -> None:
           "at": time.strftime("%FT%TZ", time.gmtime()),
       })
       print(f"attempt {attempt} accepted={accepted} "
-            f"provider={records[-1]['provider_name']} spent=${spent:.4f}")
+            f"provider={records[-1]['provider_name']} spent=${ledger.total:.4f}")
       if accepted:
         # 8.3 -- an accept that does not reproduce is not a witness.
-        repeats = [_judge_completion(message, before, len(steps)) for _ in range(2)]
+        repeats = []
+        for _repeat in range(2):
+          if ledger.exhausted:
+            inconclusive = True
+            break
+          answer = _judge_completion(message, before, len(steps))
+          ledger.record("judge:repeat", answer["usage"])
+          repeats.append(answer)
         agreed = 1 + sum(
             1 for r in repeats
             if (json.loads(r["raw"]).get("verdict") if r["raw"].strip().startswith("{")
@@ -260,8 +369,8 @@ def main() -> None:
         records[-1]["accepted_of_3"] = agreed
         print(f"  re-judged the same completion: accepted {agreed} of 3")
         break
-      if spent > _COST_CEILING_USD:
-        print("cost ceiling reached; run is INCONCLUSIVE, not outcome 2")
+      if ledger.exhausted:
+        inconclusive = True
         break
   finally:
     process.terminate()
@@ -269,7 +378,7 @@ def main() -> None:
   # 8.2 -- outcome 1 has two mechanisms; this separates them. Authorized in the
   # pre-registration, not decided after seeing the result.
   shas = {r["completion_sha256"] for r in records}
-  if len(records) == args.k and len(shas) == 1:
+  if len(records) == args.k and len(shas) == 1 and not ledger.exhausted:
     print("all K identical -- running the authorized cache-off confirmation")
     process, port, proxy_log = _start_proxy(args.out_dir)
     try:
@@ -287,6 +396,7 @@ def main() -> None:
       (args.out_dir / "cache-off.sse").write_bytes(sse)
       logged = [json.loads(l) for l in proxy_log.read_text().splitlines()]
       message = (logged[-1].get("response") or {}).get("message") or {}
+      ledger.record("actor:cache-off", message.get("usage") or {})
       completion = json.dumps(message.get("content"), sort_keys=True).encode()
       (args.out_dir / "cache-off.json").write_text(json.dumps({
           "completion_sha256": hashlib.sha256(completion).hexdigest(),
@@ -298,8 +408,14 @@ def main() -> None:
 
   (args.out_dir / "attempts.jsonl").write_text(
       "".join(json.dumps(r) + "\n" for r in records))
+  (args.out_dir / "classification.json").write_text(json.dumps(
+      {"classification": "inconclusive" if inconclusive else "complete",
+       "attempts": len(records), "total_usd": round(ledger.total, 6)}, indent=2))
+  if inconclusive:
+    print("inconclusive: the cost ceiling was crossed. This is not outcome 2, "
+          "which requires all K attempts.")
   print(f"{len(records)} attempts -> {args.out_dir}/attempts.jsonl  "
-        f"total ${spent:.4f}")
+        f"total ${ledger.total:.4f} over {len(ledger.entries)} billable calls")
 
 
 if __name__ == "__main__":
