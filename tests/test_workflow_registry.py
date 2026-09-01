@@ -179,6 +179,19 @@ def test_the_shipped_chain_grades_what_the_agent_produced():
   assert [s.name for s in rollout.task.input_schema()] == [PROMPT_NAME]
 
 
+def test_the_shipped_timeouts_are_the_budgets_that_were_reasoned_about():
+  # These two numbers were argued from a measurement (a p90 rollout wall clock
+  # of about an hour) and they are per *attempt*, not shared across retries —
+  # so a change to either one moves a CI job's worst case and should be
+  # deliberate rather than incidental.
+  rollout, evaluation = workflow_definition("rollout_and_unit_test")
+  assert rollout.timeout == 3600.0  # an hour for the agent
+  assert evaluation.timeout == 1800.0  # half an hour for the suite
+  # The same suite budget wherever the suite runs, gold patch included.
+  assert workflow_definition("unit_test")[0].timeout == 1800.0
+  assert workflow_definition("gold_unit_test")[0].timeout == 1800.0
+
+
 def test_an_unknown_workflow_is_refused_by_name():
   with pytest.raises(WorkflowError, match="unknown workflow"):
     _ = workflow_definition("does_not_exist")
