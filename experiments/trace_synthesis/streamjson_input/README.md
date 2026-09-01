@@ -54,6 +54,7 @@ built from, so a re-run can be matched to the published numbers.
 | `analyze.py` | events → the report's tables; runs both converters; greps the artifacts |
 | `transcripts.py` | copies a run's session transcript into the run directory (gitignored; input to `evidence.py`) |
 | `evidence.py` | builds and re-scans the committed `runs/*/evidence.json`; `--check` verifies without rebuilding |
+| `tui_driver.py`, `run_tui.sh` | the same scenarios against the **interactive TUI** on a pty, for the §14 comparison |
 | `check_process_group.py` | asserts the runner ends the agent's tool children, not just the agent; no API cost |
 | `workdir/` | the agent's cwd fixture — created on demand, holds the `notes.txt` the task reads |
 | `runs/<variant>/` | raw artifacts, one directory per run, never overwritten |
@@ -77,6 +78,7 @@ uv run python driver.py accept       runs/accept-human-r1 --provenance human
 uv run python driver.py shouldquery  runs/shouldquery-r1
 uv run python resume_control.py      runs/resume-control
 ./run_proxy.sh boundary              runs/proxy-boundary 20112
+./run_tui.sh   midturn              runs/tui-midturn 20118    # interactive TUI
 
 uv run python evidence.py runs/*                 # rebuild the committed evidence
 uv run python evidence.py --check runs/*         # verify it, without raw captures

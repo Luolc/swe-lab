@@ -1,495 +1,424 @@
 {
-  "run": "proxy-midturn",
-  "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
-  "meta": {
-    "scenario": "midturn",
-    "session_id": "e25e163f-3bef-4648-bccc-81055dae008b",
-    "argv": [
-      "claude",
-      "-p",
-      "--input-format",
-      "stream-json",
-      "--output-format",
-      "stream-json",
-      "--verbose",
-      "--model",
-      "sonnet",
-      "--session-id",
-      "e25e163f-3bef-4648-bccc-81055dae008b",
-      "--dangerously-skip-permissions"
-    ],
-    "env": {
-      "ANTHROPIC_BASE_URL": "http://127.0.0.1:20111"
-    },
-    "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
-    "started_at": "2026-09-01T19:42:31.902982+00:00",
-    "claude_version": "2.1.257 (Claude Code)",
-    "exit_code": 0,
-    "ended_at": "2026-09-01T19:45:17.225163+00:00",
-    "timeline": [
-      "0.006s sent task",
-      "5.486s saw sleep tool_use: True",
-      "7.486s sent correction MID tool call",
-      "44.95s saw result 1",
-      "164.988s saw result 2 (or timed out)"
-    ]
-  },
-  "sources": {
-    "events.jsonl": {
-      "sha256": "a8b495480509ba5a895854220c95dec9118e9e153b8b3244bfca138bd85ed109",
-      "bytes": 19501
-    },
-    "transcript.jsonl": {
-      "sha256": "f35d5a839cb4d9154aded3821b74316c0189cab6564e2459061dacee1773283b",
-      "bytes": 24191
-    },
-    "proxy.jsonl": {
-      "sha256": "5c3969c304175fcb19b4b96ea7adabe656eaafe99e7e164560d15add04e42eb5",
-      "bytes": 177575
-    }
-  },
-  "transcript_source": "snapshot",
-  "artifact_greps": {
-    "<system-reminder>": {
-      "transcript": false,
-      "stream": false,
-      "wire": true
-    },
-    "Continue from where you left off.": {
-      "transcript": false,
-      "stream": false,
-      "wire": false
-    },
-    "No response requested.": {
-      "transcript": false,
-      "stream": false,
-      "wire": false
-    }
-  },
-  "stdout_events": [
-    {
-      "dt": 0.006,
-      "dir": "in",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 1.693,
-      "dir": "out",
-      "type": "system",
-      "subtype": "init"
-    },
-    {
-      "dt": 3.248,
-      "dir": "out",
-      "type": "rate_limit_event"
-    },
-    {
-      "dt": 3.686,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 3.687,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 3.694,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "message_id": "msg_011CedHnzJGKR3iw8tn3PY2o"
-    },
-    {
-      "dt": 4.047,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Read"
-      ],
-      "texts": [
-        "{\"file_path\": \"notes.txt\"}"
-      ],
-      "message_id": "msg_011CedHnzJGKR3iw8tn3PY2o"
-    },
-    {
-      "dt": 4.098,
-      "dir": "out",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"1\\tThe secret color is teal.\\n2\\t\""
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 5.439,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Bash"
-      ],
-      "texts": [
-        "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"timeout\": 40000}"
-      ],
-      "message_id": "msg_011CedHo9syZUPMxqUPtP7GF"
-    },
-    {
-      "dt": 7.486,
-      "dir": "in",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 8.79,
-      "dir": "out",
-      "type": "system",
-      "subtype": "task_started"
-    },
-    {
-      "dt": 35.564,
-      "dir": "out",
-      "type": "tool_progress"
-    },
-    {
-      "dt": 35.84,
-      "dir": "out",
-      "type": "system",
-      "subtype": "task_notification"
-    },
-    {
-      "dt": 35.848,
-      "dir": "out",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"slept\""
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 37.684,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 39.315,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 40.952,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 42.589,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 44.245,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 44.898,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 44.898,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "message_id": "msg_011CedHqVRn1sq6weciZEdKE"
-    },
-    {
-      "dt": 44.914,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "BANANA"
-      ],
-      "message_id": "msg_011CedHqVRn1sq6weciZEdKE"
-    },
-    {
-      "dt": 44.931,
-      "dir": "out",
-      "type": "rate_limit_event"
-    },
-    {
-      "dt": 44.938,
-      "dir": "out",
-      "type": "result",
-      "subtype": "success",
-      "num_turns": 3,
-      "result": "BANANA"
-    },
-    {
-      "dt": 164.988,
-      "dir": "in",
-      "type": null
-    }
+ "run": "proxy-midturn",
+ "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+ "meta": {
+  "scenario": "midturn",
+  "session_id": "e25e163f-3bef-4648-bccc-81055dae008b",
+  "argv": [
+   "claude",
+   "-p",
+   "--input-format",
+   "stream-json",
+   "--output-format",
+   "stream-json",
+   "--verbose",
+   "--model",
+   "sonnet",
+   "--session-id",
+   "e25e163f-3bef-4648-bccc-81055dae008b",
+   "--dangerously-skip-permissions"
   ],
-  "transcript_records": [
-    {
-      "type": "queue-operation",
-      "operation": "enqueue"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "dequeue"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
-      ],
-      "promptSource": "sdk",
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "attachment",
-      "attachment": "agent_listing_delta"
-    },
-    {
-      "type": "attachment",
-      "attachment": "skill_listing"
-    },
-    {
-      "type": "ai-title"
-    },
-    {
-      "type": "atis-latch"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Read"
-      ],
-      "texts": [
-        "{\"file_path\": \"notes.txt\"}"
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"1\\tThe secret color is teal.\\n2\\t\""
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Bash"
-      ],
-      "texts": [
-        "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"timeout\": 40000}"
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "enqueue"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"slept\""
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "remove",
-      "reason": "absorbed_mid_turn"
-    },
-    {
-      "type": "attachment",
-      "attachment": "queued_command",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
-      ]
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "BANANA"
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "last-prompt"
-    }
-  ],
-  "wire": {
-    "api_calls": 4,
-    "messages": [
-      {
-        "i": 0,
-        "role": "user",
-        "blocks": [
-          "text",
-          "text"
-        ],
-        "texts": [
-          "<system-reminder elided: 15435 chars of startup context>",
-          "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
-        ],
-        "system_reminder_blocks": 1
-      },
-      {
-        "i": 1,
-        "role": "system",
-        "blocks": [
-          "text"
-        ],
-        "texts": [
-          "<system-reminder elided: 8122 chars of startup context>"
-        ],
-        "system_reminder_blocks": 2
-      },
-      {
-        "i": 2,
-        "role": "assistant",
-        "blocks": [
-          "thinking",
-          "tool_use:Read"
-        ],
-        "texts": [
-          "{\"file_path\": \"notes.txt\"}"
-        ],
-        "system_reminder_blocks": 0
-      },
-      {
-        "i": 3,
-        "role": "user",
-        "blocks": [
-          "tool_result"
-        ],
-        "texts": [
-          "\"1\\tThe secret color is teal.\\n2\\t\""
-        ],
-        "system_reminder_blocks": 0
-      },
-      {
-        "i": 4,
-        "role": "assistant",
-        "blocks": [
-          "tool_use:Bash"
-        ],
-        "texts": [
-          "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"timeout\": 40000}"
-        ],
-        "system_reminder_blocks": 0
-      },
-      {
-        "i": 5,
-        "role": "user",
-        "blocks": [
-          "tool_result"
-        ],
-        "texts": [
-          "\"slept\""
-        ],
-        "system_reminder_blocks": 0
-      },
-      {
-        "i": 6,
-        "role": "system",
-        "blocks": [
-          "text"
-        ],
-        "texts": [
-          "<system-reminder>\nThe user sent a new message while you were working:\nCorrection from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done.\n\nThis is how Claude Code surfaces messages the user sends mid-turn — within the running turn, often alongside the next tool result, rather than as a separate conversation turn. Address the message above as you continue this turn… (+20 chars)"
-        ],
-        "system_reminder_blocks": 1
-      }
-    ],
-    "system_reminder_blocks": 4
+  "env": {
+   "ANTHROPIC_BASE_URL": "http://127.0.0.1:20111"
+  },
+  "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
+  "started_at": "2026-09-01T19:42:31.902982+00:00",
+  "claude_version": "2.1.257 (Claude Code)",
+  "exit_code": 0,
+  "ended_at": "2026-09-01T19:45:17.225163+00:00",
+  "timeline": [
+   "0.006s sent task",
+   "5.486s saw sleep tool_use: True",
+   "7.486s sent correction MID tool call",
+   "44.95s saw result 1",
+   "164.988s saw result 2 (or timed out)"
+  ]
+ },
+ "sources": {
+  "events.jsonl": {
+   "sha256": "a8b495480509ba5a895854220c95dec9118e9e153b8b3244bfca138bd85ed109",
+   "bytes": 19501
+  },
+  "transcript.jsonl": {
+   "sha256": "f35d5a839cb4d9154aded3821b74316c0189cab6564e2459061dacee1773283b",
+   "bytes": 24191
+  },
+  "proxy.jsonl": {
+   "sha256": "5c3969c304175fcb19b4b96ea7adabe656eaafe99e7e164560d15add04e42eb5",
+   "bytes": 177575
   }
+ },
+ "transcript_source": "snapshot",
+ "artifact_greps": {
+  "<system-reminder>": {
+   "transcript": false,
+   "stream": false,
+   "wire": true
+  },
+  "Continue from where you left off.": {
+   "transcript": false,
+   "stream": false,
+   "wire": false
+  },
+  "No response requested.": {
+   "transcript": false,
+   "stream": false,
+   "wire": false
+  }
+ },
+ "stdout_events": [
+  {
+   "dt": 0.006,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 1.693,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 3.694,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHnzJGKR3iw8tn3PY2o"
+  },
+  {
+   "dt": 4.047,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHnzJGKR3iw8tn3PY2o"
+  },
+  {
+   "dt": 4.098,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 5.439,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"timeout\": 40000}"
+   ],
+   "message_id": "msg_011CedHo9syZUPMxqUPtP7GF"
+  },
+  {
+   "dt": 7.486,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 8.79,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_started"
+  },
+  {
+   "dt": 35.84,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_notification"
+  },
+  {
+   "dt": 35.848,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 44.898,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHqVRn1sq6weciZEdKE"
+  },
+  {
+   "dt": 44.914,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA"
+   ],
+   "message_id": "msg_011CedHqVRn1sq6weciZEdKE"
+  },
+  {
+   "dt": 44.938,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 3,
+   "result": "BANANA"
+  },
+  {
+   "dt": 164.988,
+   "dir": "in",
+   "type": null
+  }
+ ],
+ "stdout_events_elided": {
+  "None": 3,
+  "thinking_tokens": 8
+ },
+ "transcript_records": [
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "agent_listing_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "skill_listing"
+  },
+  {
+   "type": "ai-title"
+  },
+  {
+   "type": "atis-latch"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"timeout\": 40000}"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "remove",
+   "reason": "absorbed_mid_turn"
+  },
+  {
+   "type": "attachment",
+   "attachment": "queued_command",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ]
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "last-prompt"
+  }
+ ],
+ "wire": {
+  "api_calls": 4,
+  "messages": [
+   {
+    "i": 0,
+    "role": "user",
+    "blocks": [
+     "text",
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 15435 chars of startup context>",
+     "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+    ],
+    "system_reminder_blocks": 1
+   },
+   {
+    "i": 1,
+    "role": "system",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 8122 chars of startup context>"
+    ],
+    "system_reminder_blocks": 2
+   },
+   {
+    "i": 2,
+    "role": "assistant",
+    "blocks": [
+     "thinking",
+     "tool_use:Read"
+    ],
+    "texts": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 3,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 4,
+    "role": "assistant",
+    "blocks": [
+     "tool_use:Bash"
+    ],
+    "texts": [
+     "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"timeout\": 40000}"
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 5,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [
+     "\"slept\""
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 6,
+    "role": "system",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "<system-reminder>\nThe user sent a new message while you were working:\nCorrection from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done.\n\nThis is how Claude Code surfaces messages the user sends mid-turn — within the running turn, often alongsid… (+140 chars)"
+    ],
+    "system_reminder_blocks": 1
+   }
+  ],
+  "system_reminder_blocks": 4
+ }
 }

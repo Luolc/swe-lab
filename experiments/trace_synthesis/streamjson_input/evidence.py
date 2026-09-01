@@ -38,7 +38,7 @@ import transcripts
 EVIDENCE_NAME = "evidence.json"
 
 # Raw capture file names, in the order the evidence records them.
-RAW_NAMES = ("events.jsonl", "transcript.jsonl", "proxy.jsonl")
+RAW_NAMES = ("events.jsonl", "transcript.jsonl", "proxy.jsonl", "tui.log")
 
 # The three records the stop+resume path adds; grepped on the *raw* text so the
 # published booleans mean what they say even though the raw text is not here.
@@ -52,8 +52,30 @@ ARTIFACTS = (
 # operator's CLAUDE.md, the agent listing) and is elided to its size. The ones
 # the report quotes — the mid-turn interjection wrapper — are far shorter.
 REMINDER_KEEP_BYTES = 900
-TEXT_KEEP_CHARS = 420
+TEXT_KEEP_CHARS = 300
 TOOL_RESULT_KEEP_CHARS = 200
+
+# **Only text the report quotes is kept.** Everything else is reduced to its
+# length: the shapes (which records, which roles, which block types, which
+# provenance fields, how many `<system-reminder>` blocks) are what the tables
+# are built from, and the message bodies are not evidence for anything asserted.
+# This is what keeps the committed artifact the report's evidence rather than a
+# derived trace corpus.
+CITED = (
+    "Correction from the operator",
+    "One more thing: also append",
+    "Now give me your final answer",
+    "BANANA",
+    "MANGO",
+    "Continue from where you left off.",
+    "No response requested.",
+    "[Request interrupted by user for tool use]",
+    "The user doesn't want to proceed",
+    "[MESSAGE FROM NON-USER SOURCE",
+    "The user sent a new message while you were working",
+    "the secret color is teal",
+    "slept",
+)
 
 _HOME = str(pathlib.Path.home())
 # Claude Code names its per-project state directories after the cwd with the
@@ -137,10 +159,18 @@ def blockers(payload: str) -> list[str]:
 
 
 def _text(value: str, limit: int = TEXT_KEEP_CHARS) -> str:
-  """Redact, and elide a startup-context reminder or an over-long block."""
+  """Return the block's text if the report quotes it, else just its size.
+
+  Redacts first, elides a startup-context reminder by size, and keeps a body
+  only when it contains one of the :data:`CITED` phrases — so what lands in the
+  repo is the evidence for a specific sentence in `REPORT.md`, not the run's
+  message content at large.
+  """
   clean = redact(value)
   if "<system-reminder>" in clean and len(clean) > REMINDER_KEEP_BYTES:
     return f"<system-reminder elided: {len(clean)} chars of startup context>"
+  if not any(phrase in clean for phrase in CITED):
+    return f"<uncited: {len(clean)} chars>"
   if len(clean) > limit:
     return clean[:limit] + f"… (+{len(clean) - limit} chars)"
   return clean
@@ -169,6 +199,8 @@ def _blocks(content: object, *, tool_limit: int = TOOL_RESULT_KEEP_CHARS):
       texts.append(_text(str(block.get("text"))))
     else:
       labels.append(str(kind))
+  if all(t.startswith("<uncited:") for t in texts):
+    texts = []
   return labels, texts
 
 
@@ -185,16 +217,32 @@ def _reminder_count(content: object) -> int:
   )
 
 
-def _stdout_events(run_dir: pathlib.Path) -> list[dict[str, object]]:
+# Per-token progress chatter. Counted, not listed: nothing in the report reads
+# an individual one, and they are most of the event rows.
+NOISE_EVENTS = (
+    ("system", "thinking_tokens"),
+    ("tool_progress", None),
+    ("rate_limit_event", None),
+)
+
+
+def _stdout_events(run_dir: pathlib.Path) -> tuple[list[dict[str, object]], dict[str, int]]:
+  """Return the meaningful stdout rows, plus a count of the elided noise."""
   out = []
+  noise: dict[str, int] = {}
   for path in _event_files(run_dir):
     for line in path.read_text().splitlines():
       entry = json.loads(line)
       event = entry["event"]
+      kind = event.get("type") if isinstance(event, dict) else "raw"
+      subtype = event.get("subtype") if isinstance(event, dict) else None
+      if (kind, subtype) in NOISE_EVENTS:
+        noise[str(subtype)] = noise.get(str(subtype), 0) + 1
+        continue
       row: dict[str, object] = {
           "dt": entry["dt"],
           "dir": entry["dir"],
-          "type": event.get("type") if isinstance(event, dict) else "raw",
+          "type": kind,
       }
       if isinstance(event, dict):
         if event.get("subtype"):
@@ -212,7 +260,7 @@ def _stdout_events(run_dir: pathlib.Path) -> list[dict[str, object]]:
         if event.get("type") == "control_response":
           row["control_response"] = event.get("response")
       out.append(row)
-  return out
+  return out, noise
 
 
 def _event_files(run_dir: pathlib.Path) -> list[pathlib.Path]:
@@ -282,7 +330,11 @@ def build(run_dir: pathlib.Path) -> dict[str, object]:
   """Return the evidence artifact for `run_dir` (does not write it)."""
   meta = json.loads((run_dir / "meta.json").read_text())
   transcript_raw, transcript_source = transcripts.load(run_dir)
+  # A TUI arm has no `stream-json` stdout at all — its terminal bytes are not a
+  # trace and are never read for findings — so the stream column is null there
+  # rather than a misleading False.
   stream_raw = "".join(p.read_text() for p in _event_files(run_dir))
+  has_stream = bool(_event_files(run_dir))
   proxy_path = run_dir / "proxy.jsonl"
   proxy_raw = proxy_path.read_text() if proxy_path.is_file() else ""
 
@@ -296,6 +348,7 @@ def build(run_dir: pathlib.Path) -> dict[str, object]:
           "bytes": len(body),
       }
 
+  stdout_rows, stdout_noise = _stdout_events(run_dir)
   evidence: dict[str, object] = {
       "run": run_dir.name,
       "note": (
@@ -311,12 +364,13 @@ def build(run_dir: pathlib.Path) -> dict[str, object]:
       "artifact_greps": {
           artifact: {
               "transcript": artifact in transcript_raw,
-              "stream": artifact in stream_raw,
+              "stream": (artifact in stream_raw) if has_stream else None,
               "wire": artifact in proxy_raw if proxy_raw else None,
           }
           for artifact in ARTIFACTS
       },
-      "stdout_events": _stdout_events(run_dir),
+      "stdout_events": stdout_rows,
+      "stdout_events_elided": stdout_noise,
       "transcript_records": _transcript_records(transcript_raw),
   }
   if proxy_raw:
@@ -326,7 +380,7 @@ def build(run_dir: pathlib.Path) -> dict[str, object]:
 
 def write(run_dir: pathlib.Path) -> list[str]:
   """Build and write `evidence.json`; return blockers (nothing written if any)."""
-  payload = json.dumps(build(run_dir), indent=2, ensure_ascii=False)
+  payload = json.dumps(build(run_dir), indent=1, ensure_ascii=False)
   found = blockers(payload)
   if found:
     return found

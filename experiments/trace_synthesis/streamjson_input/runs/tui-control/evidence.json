@@ -1,0 +1,287 @@
+{
+ "run": "tui-control",
+ "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+ "meta": {
+  "scenario": "tui-control",
+  "interface": "tui",
+  "session_id": "9adc4648-25bb-41a6-b28e-4c3c6b7f47f4",
+  "argv": [
+   "claude",
+   "--model",
+   "sonnet",
+   "--session-id",
+   "9adc4648-25bb-41a6-b28e-4c3c6b7f47f4",
+   "--dangerously-skip-permissions"
+  ],
+  "env": {
+   "ANTHROPIC_BASE_URL": "http://127.0.0.1:20117"
+  },
+  "workdir": "<HOME>/dev/swe-lab-streamjson/experiments/trace_synthesis/streamjson_input/workdir",
+  "started_at": "2026-09-01T20:33:56.945932+00:00",
+  "claude_version": "2.1.257 (Claude Code)",
+  "exit_code": 143,
+  "ended_at": "2026-09-01T20:35:21.890069+00:00",
+  "timeline": [
+   "25.033s startup dialog: None",
+   "34.538s typed the task, turn started: True",
+   "84.673s turn finished and the log settled: True"
+  ],
+  "keystrokes": [
+   {
+    "dt": 28.033,
+    "note": "task (text)",
+    "bytes": 231
+   },
+   {
+    "dt": 30.033,
+    "note": "task (enter)",
+    "bytes": 1
+   }
+  ]
+ },
+ "sources": {
+  "transcript.jsonl": {
+   "sha256": "ddf10a647df810086db9ab67885bf6312cfb5e567ce4ea29f2ab5a11b78d9616",
+   "bytes": 27528
+  },
+  "proxy.jsonl": {
+   "sha256": "48de31996d518fe40ba24a45d82e4ffec275eb97b0b6ece912329c9521629f3d",
+   "bytes": 267389
+  },
+  "tui.log": {
+   "sha256": "d7a48db178cbe6c60f4dc56757c0f47341b99b5e84ed8e99c9ab10c578370e67",
+   "bytes": 42771
+  }
+ },
+ "transcript_source": "snapshot",
+ "artifact_greps": {
+  "<system-reminder>": {
+   "transcript": false,
+   "stream": null,
+   "wire": true
+  },
+  "Continue from where you left off.": {
+   "transcript": false,
+   "stream": null,
+   "wire": false
+  },
+  "No response requested.": {
+   "transcript": false,
+   "stream": null,
+   "wire": false
+  }
+ },
+ "stdout_events": [],
+ "stdout_events_elided": {},
+ "transcript_records": [
+  {
+   "type": "mode"
+  },
+  {
+   "type": "permission-mode"
+  },
+  {
+   "type": "atis-latch"
+  },
+  {
+   "type": "file-history-snapshot"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "promptSource": "typed",
+   "entrypoint": "cli",
+   "origin": {
+    "kind": "human"
+   }
+  },
+  {
+   "type": "attachment",
+   "attachment": "agent_listing_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "skill_listing"
+  },
+  {
+   "type": "ai-title"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep for 30 seconds then print\", \"timeout\": 40000}"
+   ],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "system"
+  },
+  {
+   "type": "cost-state"
+  },
+  {
+   "type": "last-prompt"
+  },
+  {
+   "type": "cost-state"
+  }
+ ],
+ "wire": {
+  "api_calls": 6,
+  "messages": [
+   {
+    "i": 0,
+    "role": "user",
+    "blocks": [
+     "text",
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 16083 chars of startup context>",
+     "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+    ],
+    "system_reminder_blocks": 1
+   },
+   {
+    "i": 1,
+    "role": "system",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 11863 chars of startup context>"
+    ],
+    "system_reminder_blocks": 2
+   },
+   {
+    "i": 2,
+    "role": "assistant",
+    "blocks": [
+     "thinking",
+     "tool_use:Read"
+    ],
+    "texts": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 3,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 4,
+    "role": "assistant",
+    "blocks": [
+     "thinking",
+     "tool_use:Bash"
+    ],
+    "texts": [
+     "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep for 30 seconds then print\", \"timeout\": 40000}"
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 5,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [
+     "\"slept\""
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 6,
+    "role": "assistant",
+    "blocks": [
+     "text"
+    ],
+    "texts": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 7,
+    "role": "user",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "<uncited: 1363 chars>"
+    ],
+    "system_reminder_blocks": 0
+   }
+  ],
+  "system_reminder_blocks": 3
+ }
+}

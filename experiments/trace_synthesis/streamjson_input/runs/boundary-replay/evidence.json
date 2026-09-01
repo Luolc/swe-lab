@@ -1,551 +1,507 @@
 {
-  "run": "boundary-replay",
-  "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
-  "meta": {
-    "scenario": "boundary",
-    "session_id": "25dbfee6-648d-4da0-96ac-4d150cfe9d42",
-    "argv": [
-      "claude",
-      "-p",
-      "--input-format",
-      "stream-json",
-      "--output-format",
-      "stream-json",
-      "--verbose",
-      "--model",
-      "sonnet",
-      "--session-id",
-      "25dbfee6-648d-4da0-96ac-4d150cfe9d42",
-      "--dangerously-skip-permissions",
-      "--replay-user-messages"
-    ],
-    "env": {},
-    "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
-    "started_at": "2026-09-01T19:39:16.803551+00:00",
-    "claude_version": "2.1.257 (Claude Code)",
-    "exit_code": 0,
-    "ended_at": "2026-09-01T19:40:00.523620+00:00",
-    "timeline": [
-      "0.006s sent task",
-      "37.564s saw result 1",
-      "37.564s sent correction at turn boundary",
-      "41.774s saw result 2",
-      "41.774s sent second correction (persistence probe)",
-      "43.378s saw result 3"
-    ]
-  },
-  "sources": {
-    "events.jsonl": {
-      "sha256": "3cc36734d5d73a537e9c800c87698fc4b06668c744f67eb4b3b3eaf298493a3c",
-      "bytes": 30762
-    },
-    "transcript.jsonl": {
-      "sha256": "6cc2e92ec85c716e58c1af3438ac394c9f5704b3726b9e8aaf47677dfadd121d",
-      "bytes": 31648
-    }
-  },
-  "transcript_source": "snapshot",
-  "artifact_greps": {
-    "<system-reminder>": {
-      "transcript": false,
-      "stream": false,
-      "wire": null
-    },
-    "Continue from where you left off.": {
-      "transcript": false,
-      "stream": false,
-      "wire": null
-    },
-    "No response requested.": {
-      "transcript": false,
-      "stream": false,
-      "wire": null
-    }
-  },
-  "stdout_events": [
-    {
-      "dt": 0.006,
-      "dir": "in",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 1.984,
-      "dir": "out",
-      "type": "system",
-      "subtype": "init"
-    },
-    {
-      "dt": 2.815,
-      "dir": "out",
-      "type": "rate_limit_event"
-    },
-    {
-      "dt": 3.261,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 3.964,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 3.965,
-      "dir": "out",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 3.965,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "message_id": "msg_011CedHYcgrrUhxz349iiQtt"
-    },
-    {
-      "dt": 5.444,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Read"
-      ],
-      "texts": [
-        "{\"file_path\": \"/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd/notes.txt\"}"
-      ],
-      "message_id": "msg_011CedHYcgrrUhxz349iiQtt"
-    },
-    {
-      "dt": 5.484,
-      "dir": "out",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"1\\tThe secret color is teal.\\n2\\t\""
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 6.006,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Bash"
-      ],
-      "texts": [
-        "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print\", \"timeout\": 40000}"
-      ],
-      "message_id": "msg_011CedHYcgrrUhxz349iiQtt"
-    },
-    {
-      "dt": 9.489,
-      "dir": "out",
-      "type": "system",
-      "subtype": "task_started"
-    },
-    {
-      "dt": 36.15,
-      "dir": "out",
-      "type": "tool_progress"
-    },
-    {
-      "dt": 36.54,
-      "dir": "out",
-      "type": "system",
-      "subtype": "task_notification"
-    },
-    {
-      "dt": 36.549,
-      "dir": "out",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"slept\""
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 37.507,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "notes.txt says the secret color is teal."
-      ],
-      "message_id": "msg_011CedHbANAZCtZpwdBGXPoK"
-    },
-    {
-      "dt": 37.523,
-      "dir": "out",
-      "type": "result",
-      "subtype": "success",
-      "num_turns": 3,
-      "result": "notes.txt says the secret color is teal."
-    },
-    {
-      "dt": 37.564,
-      "dir": "in",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 37.573,
-      "dir": "out",
-      "type": "system",
-      "subtype": "init"
-    },
-    {
-      "dt": 38.881,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 40.519,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 41.612,
-      "dir": "out",
-      "type": "system",
-      "subtype": "thinking_tokens"
-    },
-    {
-      "dt": 41.613,
-      "dir": "out",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 41.613,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "message_id": "msg_011CedHbEp4C75F9J7sZZVNc"
-    },
-    {
-      "dt": 41.698,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "BANANA"
-      ],
-      "message_id": "msg_011CedHbEp4C75F9J7sZZVNc"
-    },
-    {
-      "dt": 41.724,
-      "dir": "out",
-      "type": "result",
-      "subtype": "success",
-      "num_turns": 1,
-      "result": "BANANA"
-    },
-    {
-      "dt": 41.774,
-      "dir": "in",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "One more thing: also append the word MANGO after it."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 41.784,
-      "dir": "out",
-      "type": "system",
-      "subtype": "init"
-    },
-    {
-      "dt": 43.314,
-      "dir": "out",
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "One more thing: also append the word MANGO after it."
-      ],
-      "message_id": null
-    },
-    {
-      "dt": 43.314,
-      "dir": "out",
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "BANANA MANGO"
-      ],
-      "message_id": "msg_011CedHbYds5FixKBszSfUcW"
-    },
-    {
-      "dt": 43.345,
-      "dir": "out",
-      "type": "result",
-      "subtype": "success",
-      "num_turns": 1,
-      "result": "BANANA MANGO"
-    },
-    {
-      "dt": 43.378,
-      "dir": "in",
-      "type": null
-    }
+ "run": "boundary-replay",
+ "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+ "meta": {
+  "scenario": "boundary",
+  "session_id": "25dbfee6-648d-4da0-96ac-4d150cfe9d42",
+  "argv": [
+   "claude",
+   "-p",
+   "--input-format",
+   "stream-json",
+   "--output-format",
+   "stream-json",
+   "--verbose",
+   "--model",
+   "sonnet",
+   "--session-id",
+   "25dbfee6-648d-4da0-96ac-4d150cfe9d42",
+   "--dangerously-skip-permissions",
+   "--replay-user-messages"
   ],
-  "transcript_records": [
-    {
-      "type": "queue-operation",
-      "operation": "enqueue"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "dequeue"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
-      ],
-      "promptSource": "sdk",
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "attachment",
-      "attachment": "deferred_tools_delta"
-    },
-    {
-      "type": "attachment",
-      "attachment": "agent_listing_delta"
-    },
-    {
-      "type": "attachment",
-      "attachment": "skill_listing"
-    },
-    {
-      "type": "attachment",
-      "attachment": "total_tokens_reminder"
-    },
-    {
-      "type": "ai-title"
-    },
-    {
-      "type": "atis-latch"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Read"
-      ],
-      "texts": [
-        "{\"file_path\": \"/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd/notes.txt\"}"
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"1\\tThe secret color is teal.\\n2\\t\""
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "tool_use:Bash"
-      ],
-      "texts": [
-        "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print\", \"timeout\": 40000}"
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "tool_result"
-      ],
-      "texts": [
-        "\"slept\""
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "attachment",
-      "attachment": "total_tokens_reminder"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "notes.txt says the secret color is teal."
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "enqueue"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "dequeue"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
-      ],
-      "promptSource": "sdk",
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "attachment",
-      "attachment": "total_tokens_reminder"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "thinking"
-      ],
-      "texts": [],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "BANANA"
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "enqueue"
-    },
-    {
-      "type": "queue-operation",
-      "operation": "dequeue"
-    },
-    {
-      "type": "user",
-      "role": "user",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "One more thing: also append the word MANGO after it."
-      ],
-      "promptSource": "sdk",
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "attachment",
-      "attachment": "total_tokens_reminder"
-    },
-    {
-      "type": "assistant",
-      "role": "assistant",
-      "blocks": [
-        "text"
-      ],
-      "texts": [
-        "BANANA MANGO"
-      ],
-      "entrypoint": "sdk-cli"
-    },
-    {
-      "type": "last-prompt"
-    }
+  "env": {},
+  "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
+  "started_at": "2026-09-01T19:39:16.803551+00:00",
+  "claude_version": "2.1.257 (Claude Code)",
+  "exit_code": 0,
+  "ended_at": "2026-09-01T19:40:00.523620+00:00",
+  "timeline": [
+   "0.006s sent task",
+   "37.564s saw result 1",
+   "37.564s sent correction at turn boundary",
+   "41.774s saw result 2",
+   "41.774s sent second correction (persistence probe)",
+   "43.378s saw result 3"
   ]
+ },
+ "sources": {
+  "events.jsonl": {
+   "sha256": "3cc36734d5d73a537e9c800c87698fc4b06668c744f67eb4b3b3eaf298493a3c",
+   "bytes": 30762
+  },
+  "transcript.jsonl": {
+   "sha256": "6cc2e92ec85c716e58c1af3438ac394c9f5704b3726b9e8aaf47677dfadd121d",
+   "bytes": 31648
+  }
+ },
+ "transcript_source": "snapshot",
+ "artifact_greps": {
+  "<system-reminder>": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  },
+  "Continue from where you left off.": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  },
+  "No response requested.": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  }
+ },
+ "stdout_events": [
+  {
+   "dt": 0.006,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 1.984,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 3.965,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 3.965,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHYcgrrUhxz349iiQtt"
+  },
+  {
+   "dt": 5.444,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHYcgrrUhxz349iiQtt"
+  },
+  {
+   "dt": 5.484,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 6.006,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print\", \"timeout\": 40000}"
+   ],
+   "message_id": "msg_011CedHYcgrrUhxz349iiQtt"
+  },
+  {
+   "dt": 9.489,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_started"
+  },
+  {
+   "dt": 36.54,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_notification"
+  },
+  {
+   "dt": 36.549,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 37.507,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "notes.txt says the secret color is teal."
+   ],
+   "message_id": "msg_011CedHbANAZCtZpwdBGXPoK"
+  },
+  {
+   "dt": 37.523,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 3,
+   "result": "notes.txt says the secret color is teal."
+  },
+  {
+   "dt": 37.564,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 37.573,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 41.613,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 41.613,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHbEp4C75F9J7sZZVNc"
+  },
+  {
+   "dt": 41.698,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA"
+   ],
+   "message_id": "msg_011CedHbEp4C75F9J7sZZVNc"
+  },
+  {
+   "dt": 41.724,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 1,
+   "result": "BANANA"
+  },
+  {
+   "dt": 41.774,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "One more thing: also append the word MANGO after it."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 41.784,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 43.314,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "One more thing: also append the word MANGO after it."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 43.314,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA MANGO"
+   ],
+   "message_id": "msg_011CedHbYds5FixKBszSfUcW"
+  },
+  {
+   "dt": 43.345,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 1,
+   "result": "BANANA MANGO"
+  },
+  {
+   "dt": 43.378,
+   "dir": "in",
+   "type": null
+  }
+ ],
+ "stdout_events_elided": {
+  "None": 2,
+  "thinking_tokens": 5
+ },
+ "transcript_records": [
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "deferred_tools_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "agent_listing_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "skill_listing"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "ai-title"
+  },
+  {
+   "type": "atis-latch"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print\", \"timeout\": 40000}"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "notes.txt says the secret color is teal."
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "One more thing: also append the word MANGO after it."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA MANGO"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "last-prompt"
+  }
+ ]
 }

@@ -18,3 +18,4 @@ runs/*/phase*/stderr.log
 # meta.json records the resolved workdir, which is an absolute operator path.
 # Its redacted copy is inside evidence.json.
 runs/*/meta.json
+runs/*/tui.log

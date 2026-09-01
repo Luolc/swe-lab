@@ -21,22 +21,30 @@
 >   neither reaches the wire, and neither survives either converter; the claim
 >   is about conversation content, not about every line of bookkeeping.
 >
-> **Mid-turn is a different channel and it is not clean.** A user line written
-> while a tool call is in flight is **not** delivered as a user turn: it is
-> absorbed into the running turn and reaches the model as a **`system`-role
-> message wrapped in `<system-reminder>`** (wire count 4 vs the control's 3).
-> Measured, N=3.
+> **Mid-turn is a different channel**: a user line written while a tool call is
+> in flight is **not** delivered as a user turn — it is absorbed into the running
+> turn and reaches the model as a **`system`-role message wrapped in
+> `<system-reminder>`** (wire count 4 vs the control's 3). Measured, N=3.
+>
+> > **§1–§13 called that "not clean". That judgement is withdrawn in
+> > [§14](#14-follow-up-is-the-mid-turn-shape-a-production-shape).** It rested on
+> > "it is not a genuine user turn", which is not the criterion; the criteria are
+> > *(a)* no loss on tokens the actor did not write and *(b)* a context shape that
+> > occurs at inference. The mid-turn reminder violates neither, and the
+> > interactive **TUI produces it byte-identically** — so it is the production
+> > shape, not a headless artifact. Read §3 and §13 as measurements, and §14 as
+> > what they mean.
 
 | | |
 | --- | --- |
 | Author | `swelab-streamjson-test` (Claude Opus 5) |
-| Date | 2026-09-01, 12:36–12:55 PDT (§1–§12); 13:00–13:15 PDT (§13, the follow-up questions) |
+| Date | 2026-09-01 PDT — 12:36–12:55 (§1–§12), 13:00–13:15 (§13), 13:25–13:50 (§14, the TUI comparison) |
 | Box | this dev host, Linux 6.17.0-1019-aws |
 | Claude Code under test | **2.1.257** (`claude --version` → `2.1.257 (Claude Code)`; every run's `meta.json` records it) |
 | Model under test | `claude-sonnet-5` (`--model sonnet`) |
 | Repo commit | branch `exp/stream-json-input`, rebased onto `282b500` |
-| Runs | **26 run directories = 26 sessions** — 25 single-process runs plus `resume-control`, which is one session across two processes |
-| Cost | **$2.93** total (sum of `total_cost_usd` over every `result` event) |
+| Runs | **28 run directories = 28 sessions** — 25 headless single-process runs, 2 TUI runs, plus `resume-control`, which is one session across two processes |
+| Cost | **$2.93** over the 26 headless sessions (sum of `total_cost_usd` over every `result` event). The 2 TUI sessions are **not priced** — the TUI emits no `result` event, so this number is not the experiment's total |
 | Evidence | `runs/<name>/evidence.json` — the redacted, committed artifact every table below is read from. **Raw captures are gitignored**: a transcript and a proxy log carry operator-home paths and the operator's global `CLAUDE.md`, which `AGENTS.md` forbids committing. Each evidence file records the sha256 of the raw inputs it was built from |
 | Proxy capture | Go `cc-reverse-proxy` only. Every log passes `redaction.unredacted_fields` → `[]` — **an envelope check**: it classifies headers and `metadata.user_id`, and its own docstring says an empty list is not evidence about what the bodies contain. The bodies here *did* carry operator PII, which is why the raw logs are not committed |
 
@@ -294,8 +302,9 @@ Per-turn, from the `result` events and the proxy's request count:
 | mid-turn injection | **0** (proxy: 4 calls, same as control) | folded into the running turn | none — the turn's own latency |
 | `shouldQuery:false` | **0** | 0 (`input/output/cache = 0`) | **19 ms** |
 
-A boundary-injected turn cost $0.039 and $0.049 in `boundary`. Whole
-experiment: **$2.93 / 26 sessions**.
+A boundary-injected turn cost $0.039 and $0.049 in `boundary`. Headless
+total: **$2.93 / 26 sessions**; the 2 TUI sessions are unpriced (no `result`
+event), so this is a floor on the experiment's cost, not its total.
 
 ---
 
@@ -423,10 +432,13 @@ first prompt). `shouldQuery: false` is the cheaper variant when the goal is *to
 inform* rather than *to be answered*: zero requests, zero tokens, one clean
 transcript record, merged into the next turn's user message.
 
-**Do not use mid-turn delivery for a trace meant for training.** It is not a
-user turn: it arrives as a `system` `<system-reminder>`, the two captures
-disagree about what it was, and it re-introduces artifact #1 — the very thing
-that disqualified the resume path.
+~~**Do not use mid-turn delivery for a trace meant for training.**~~
+**Withdrawn — see [§14](#14-follow-up-is-the-mid-turn-shape-a-production-shape).**
+Mid-turn delivery does arrive as a `system` `<system-reminder>` rather than a
+user turn, and the two captures do disagree about what it was (trust the wire).
+But that reminder takes no loss and the TUI produces it byte-identically, so it
+is a production shape and it is usable — which also removes the need for the
+granularity machinery in §13.
 
 Provenance labelling (`origin` / `isSynthetic`) is a **live, owner-level
 decision**, not a default to be picked here: `isSynthetic` writes
@@ -630,3 +642,131 @@ not discovered later as a data-quality mystery.
 - **Whether folding the per-segment outcomes (§13.5) changes any existing
   collector's reading** of the runs already in `outputs/`.
 - Everything already listed in §11.
+
+---
+
+# 14. Follow-up: is the mid-turn shape a *production* shape?
+
+> **Answer: yes, and it makes §13's framing of "clean" wrong.** The interactive
+> TUI, driven through the same proxy on the same task, folds a mid-turn
+> interjection into the wire **identically** to `-p --input-format stream-json`:
+> same message count, same role sequence, same `<system-reminder>` count, and
+> the wrapper text is **byte-identical**. *(measured, N=1 per arm, 4 arms.)*
+
+## 14.1 Why the earlier verdict was measuring the wrong thing
+
+§3 and §13 called mid-turn delivery "not clean" on the grounds that *it is not a
+genuine user turn*. That criterion was wrong, and the correction is the owner's:
+what disqualifies a trace is
+
+- **(a)** taking loss on tokens the actor did not generate, and
+- **(b)** a context shape that does not occur at inference time.
+
+The `--resume` path's synthetic **assistant** turn violates (a) — the model
+never wrote "No response requested." and would be trained on it. The mid-turn
+`role: system` `<system-reminder>` violates **neither**: it enters the context,
+not the loss, and it fabricates no assistant turn. The wire-level `role` field
+was never the criterion (this is the same ruling `docs/trace-synthesis/spec.md`
+§11 records for `updatedToolOutput`), and I re-imported it without noticing.
+
+That leaves (b) as the whole question, and (b) is an empirical one about the
+**TUI**, which nothing in §1–§13 measured: every arm there is `-p`.
+
+## 14.2 Method
+
+Two TUI arms, `tui-control` (no interjection) and `tui-midturn`, driven by
+`tui_driver.py`: a real `claude` TUI on a pty, same task text, same correction
+text, same `sonnet`, same Go proxy, correction typed while the turn was running.
+Compared against the existing `proxy-control` / `proxy-midturn` headless arms.
+
+Two things had to be got right, and both were wrong on the first attempt
+(recorded because they are the traps in driving a TUI):
+
+- **The TUI inherits `CLAUDE_CODE_CHILD_SESSION` from the session that spawns
+  it** and then refuses to persist a transcript ("Transcript saving is off —
+  inherited CLAUDE_CODE_CHILD_SESSION marker"). The nesting markers are stripped
+  from the child's environment.
+- **Control flow reads the wire, not the screen.** The first version waited for
+  the string "esc to interrupt" — which this build does not render — and
+  recorded a run that had completed as one that never started.
+
+The comparison is over the **last agent-loop request**, excluding the TUI's
+prompt-suggestion request (§14.4).
+
+## 14.3 The measurement
+
+| arm | wire messages | role sequence | `<system-reminder>` blocks |
+| --- | --- | --- | --- |
+| `proxy-control` (headless, no injection) | 6 | `user, system, assistant, user, assistant, user` | **3** |
+| `tui-control` (TUI, no injection) | 6 | `user, system, assistant, user, assistant, user` | **3** |
+| `proxy-midturn` (headless, mid-turn) | 7 | `user, system, assistant, user, assistant, user, **system**` | **4** |
+| `tui-midturn` (TUI, mid-turn) | 7 | `user, system, assistant, user, assistant, user, **system**` | **4** |
+
+And the injected message itself, compared verbatim between `proxy-midturn` and
+`tui-midturn` — the same trailing `system` message in both:
+
+```
+<system-reminder>
+The user sent a new message while you were working:
+Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done.
+
+This is how Claude Code surfaces messages the user sends mid-turn — within the running turn, often alongside the next tool result, rather than as a separate conversation turn. Address the message above as you continue this turn.
+</system-reminder>
+```
+
+**Byte-identical** (`==` over the two strings). The delta a mid-turn
+interjection makes to the wire is the same delta in both front ends: one
+trailing `system` message, one extra `<system-reminder>`.
+
+In the TUI arm the actor also complied (`BANANA`), where the headless mid-turn
+arms refused twice of three — a compliance observation, N=1, and §10's caveats
+apply unchanged.
+
+## 14.4 The one real difference, and it is not in the conversation
+
+The TUI makes **two extra API calls** the headless path does not: a `quota`
+probe at startup, and a **prompt-suggestion** request after the turn, whose body
+is the whole conversation plus a trailing
+`[SUGGESTION MODE: Suggest what the user might naturally type next…]` user
+message. `api_calls` is 6 for each TUI arm against 4 for each headless arm.
+
+That is a cost and a capture-surface difference, not a conversation difference:
+the suggestion request is a separate exchange, its extra user message does not
+appear in the task's own request, and it is excluded from the comparison above.
+A collector reading proxy captures from TUI sessions would need to drop it.
+
+## 14.5 What this changes
+
+**(b) holds, so mid-turn delivery is a production shape and is usable.** A
+supervisor writing on stdin mid-turn produces exactly the context an ordinary
+TUI user produces by typing while the agent works — "the supervisor is just a
+user". Training on it trains on the inference distribution, which is the point.
+
+**And the granularity problem dissolves with it.** §13's whole search — the
+`control_request` interrupt, the `--max-turns` segmenting, the collector bug in
+§13.5 — existed because the clean seam appeared to be task completion (§13.1)
+and mid-turn appeared to be disqualified. If mid-turn is admissible, then
+supervision is available **at any moment**, with no segmenting, no interrupt, no
+per-segment `error_max_turns`, and no extra API request (§8: a mid-turn message
+costs zero extra calls). §13 stands as measurement and its recommendation is
+superseded by this section.
+
+**What still needs saying about mid-turn, now as engineering rather than
+disqualification:** the two captures disagree about its shape (§7 — stream
+capture with `--replay-user-messages` renders it as a `user` message while the
+wire has a `system` one), and **the wire is right**. A stream-derived trace
+would assert a user turn the model never saw. That is a converter question, and
+on this evidence proxy capture is the one to trust for this channel.
+
+## 14.6 What §14 did not test
+
+- **More than one run per arm.** N=1 × 4. The shapes matched exactly, which is
+  a strong signal for a deterministic assembly path and no signal at all about
+  variance under other tasks, models, or interjection timings.
+- **Interjection while the model is mid-*stream*** rather than mid tool call.
+- **Whether the TUI's fold is the same when several messages are queued**, or
+  when the queued message arrives between two tool calls in a parallel batch.
+- **A TUI run with permissions prompts enabled** — both arms ran
+  `--dangerously-skip-permissions`, like every other arm here.
+- **Whether the prompt-suggestion request can be turned off** (`--prompt-suggestions
+  false` exists in `--help`; not exercised).
