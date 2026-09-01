@@ -372,6 +372,19 @@ retroactively (owner's calibration, 2026-09-01).
   target *also* silently drops the `X-Anthropic-Beta` mirroring and `provider`
   injection that OpenRouter needs for interleaved thinking. Verify a proxied run
   by its log, never by its exit code.
+- **A consistency check over an empty set passes, so it is loosest on exactly
+  the input it exists to reject.** "Every attempt agrees", "all of them failed
+  the same tests", "nothing changed between runs" — each is *vacuously true*
+  when there is nothing to compare. Measured 2026-09-01, and it nearly voided a
+  deliverable: `freeze_sample`'s stability gate compares the set of failing
+  required tests across grading attempts, and a run that **resolved** has an
+  empty failing set in every attempt — perfectly stable — so the strictest gate
+  in the program waved through the one input that contradicted the sample's
+  whole claim. So an agreement predicate needs the thing it presupposes checked
+  **first and separately**: that there is something to agree about (a non-empty
+  set) and that the run is the kind of run being claimed (here: unresolved at
+  all). Stability is never the property that makes a sample valid; it only
+  qualifies a validity you established some other way.
 - **An unresolved workflow verdict has four causes, not two.** Exit 2 means the
   grading suite did not resolve the instance; whether the *actor* erred is a
   separate question, and neither the workflow's exit code nor
