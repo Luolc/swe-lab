@@ -379,11 +379,19 @@ retroactively (owner's calibration, 2026-09-01).
   `protonmail/webclients` image that cannot execute the mounted `linux-x64`
   binary (`cannot execute: required file not found`, `claude_code.exit_code`
   127 after 0.69 s, `agent_complete` 0) still produced an ordinary unresolved
-  verdict. A fourth cause sits on the grading side: `_UNIT_TEST_RETRIES = 2`
-  means the suite runs three times and the *last* attempt is not privileged, so
-  a suite that disagrees with itself across attempts produces an unresolved
-  verdict that is a property of the suite rather than of the patch. (That one is
-  a guard, not a measurement — it was identified in review, not observed here.)
+  verdict. A fourth cause sits on the grading side, and its mechanics are the
+  opposite of what you might assume: `_UNIT_TEST_RETRIES = 2` lets the suite run
+  up to three times, `UnitTest.should_retry` retries **while the verdict is
+  unresolved**, and `run_task` builds the terminal outcome and record from
+  whatever the **last executed attempt** left behind. So the last attempt *is*
+  privileged — it alone decides the verdict, and an earlier unresolved attempt
+  followed by a resolved one reports as resolved. An unresolved *run* therefore
+  had every attempt unresolved, but those attempts can still disagree about
+  **which** required tests failed, and that disagreement is a property of the
+  suite rather than of the patch. The conservative gate is to require the same
+  set of failing required tests in every recorded attempt, precisely because it
+  refuses to inherit the last attempt's privilege. (That one is a guard, not a
+  measurement — it was identified in review, not observed here.)
   Before treating an unresolved run as evidence about reasoning, require **all
   four**: `claude_code.timed_out == 0`, `agent_complete == 1`,
   `claude_code.exit_code == 0`, and the same required-test verdict in every
