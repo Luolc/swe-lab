@@ -463,19 +463,16 @@ pilot's twelve amendments.
   write a link you have not opened**; when you lack it, name the thing in words
   — "the review comment on PR #305" — rather than inventing an anchor.
 
-  Three instances, 2026-09-01, one line each:
-
-  - A comment link written into an agent-to-agent message before it was
-    resolved — the text of the message correct, the address invented; caught by
-    its author and corrected within the minute. Not recorded outside this
-    entry, which is why the entry exists.
-  - [#312](https://github.com/Luolc/swe-lab/pull/312)'s own description promised
-    that every measurement row carried its N and design; **three did not**
-    ([review](https://github.com/Luolc/swe-lab/pull/312#issuecomment-5500618289))
-    — in the section that exists to stop a narrow measurement being read as a
-    general property.
-  - "I searched for a sibling implementation" with no search terms given —
-    **reported by machine-setup, not reproduced here.**
+  The instance a reader can check:
+  [#312](https://github.com/Luolc/swe-lab/pull/312)'s own description promised
+  that every measurement row carried its N and design; **three did not**
+  ([review](https://github.com/Luolc/swe-lab/pull/312#issuecomment-5500618289))
+  — in the section that exists to stop a narrow measurement being read as a
+  general property. Two further occurrences the same day are what prompted the
+  generalization, and **neither is recorded anywhere a reader can verify**, so
+  they are not cited here: an entry about unverifiable self-report cannot rest
+  on unverifiable self-report. What carries the rule instead is the linked
+  instance and the mechanism it shares with the absence-claim defect.
 - **Label an amendment for what it is.** "Post-hoc but prospective, with an
   empty prior action set" is a real and useful category — a rule changed after
   the run began but before it had ever fired changes nothing that already
