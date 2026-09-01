@@ -373,9 +373,17 @@ def start_proxy(out_path: Path) -> ReverseProxy:
   `host_proxy` — the same launcher the W1 annotation pipeline uses — is what
   makes "which build" stop being a choice this file gets to make wrongly.
 
-  Entering the returned object builds nothing new (the binary is cached by
-  source hash), starts the process, and blocks until it accepts connections;
-  leaving the context ends its whole process group.
+  What that buys, stated exactly, because an earlier version of this docstring
+  claimed more than it had: the binary is cached under the sha256 of the Go
+  source, so the process started here is a build of **the source in the sibling
+  checkout right now** — never an older binary that happens to sit in the
+  cache. Whether that source redacts is a property of the checkout, which is
+  why :func:`redact_proxy_log` re-reads the capture regardless of who produced
+  it.
+
+  Building is skipped when a build of this exact source is already cached;
+  entering the returned object starts the process and blocks until it accepts
+  connections, and leaving the context ends its whole process group.
 
   Args:
     out_path: File the proxy appends request/response records to.
