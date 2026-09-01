@@ -67,11 +67,15 @@ instruction.
 ## 3. The pipeline
 
 Four phases. A and B are offline and privileged; C is the run that produces the
-trace; D is collection.
+trace; D is collection. **A is skippable**: when the failure already exists —
+a full eval sweep caches one for every instance it failed on — it enters as an
+`oracle_failures` record ([task 11](plans/task-11-oracle-failures-dataset.md))
+and the pipeline starts at B.
 
 ```mermaid
 flowchart TD
   A["<b>A.</b> baseline rollout + eval<br/><i>keep: failed, but the task is solvable</i>"]
+  F[("<b>A′.</b> a cached failure<br/><i>an oracle_failures record:<br/>conversation + verdict + patch</i>")]
   G["golden patch + golden tests<br/>+ repo at base_commit"]
   B["<b>B.</b> Oracle<br/><i>privileged</i>"]
   GB[["guidebook.md<br/><i>private — never enters the actor's context</i>"]]
@@ -82,6 +86,7 @@ flowchart TD
   D["<b>D.</b> collect the conversation<br/><i>unedited</i>"]
 
   A --> B
+  F --> B
   G --> B
   B --> GB
   GB -.privileged, host-side only.-> S
@@ -103,6 +108,19 @@ Measuring the `pass@10 ≈ 3/10` band properly costs ten rollouts per instance.
 "One failed rollout plus a passing gold self-test" is the cheap proxy, at the
 price of a fuzzier band; which of the two we use is [an open
 question](#11-open-questions).
+
+**Phase A is skipped when the failure already exists.** A full eval sweep
+caches exactly this pair for every instance it failed on, and re-running a
+rollout to reproduce one is a rollout paid for twice. The
+[`oracle_failures` dataset](plans/task-11-oracle-failures-dataset.md) captures
+a cached failure as a dataset record — the underlying instance's identity plus
+the failed conversation, the grader's verdict and the submitted patch — built
+from the finished run's own output directory
+(`python -m swe_lab.datasets.oracle_failures.build`). The record delegates the
+instance's whole runnable surface to the dataset it came from and adds the
+failure through the instance's own `mounts()`, so every phase after A runs
+against it unchanged. A fresh phase-A rollout is needed only for an instance no
+sweep has failed on yet.
 
 **Phase A is not re-run by the pipeline** (owner's decision, 2026-09-01). A full
 rollout + eval sweep happens anyway, and its traces are cached, so the pipeline
@@ -606,7 +624,7 @@ from the store — so this is a workflow, not a new subsystem.
 
 | Phase | Reuses | New |
 |---|---|---|
-| A | `rollout_and_unit_test`, unchanged | — |
+| A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
 | B | the `Task` layer | a task that mounts the golden patch and tests, with the git-history purge **off**; declared output `guidebook.md` |
 | C | the rollout composition | hook settings injected into the sandbox (`--settings` + `CLAUDE_CONFIG_DIR`); a host-side Supervisor; declared intervention records |
 | D | the `Conversation` converter + `Store` | — |
