@@ -1,26 +1,38 @@
 # experiments/ holds exploratory reproduction scripts + captured run artifacts,
-# not shipped code — exempt from the code-quality hooks (uv-lock is scoped to
-# pyproject.toml, so it is unaffected).
-exclude: ^experiments/
-
+# not shipped code, so the formatting and typing hooks skip it (uv-lock is
+# scoped to pyproject.toml, so it is unaffected either way). That exemption is
+# declared **per hook** rather than once at the top, because a top-level
+# `exclude` is applied before any hook's `files:` is consulted — so a per-hook
+# `files:` can only narrow what survives it, never widen. Declared globally, it
+# put experiments/ beyond the reach of every hook including the one guard that
+# most needs to see it (`no-stale-module-refs`), and a widened `files:` there
+# would have been inert while still reporting "Passed".
+#
+# The cost is that one line became five; the failure mode is loud rather than
+# silent, which is why it is acceptable: omit one and that hook immediately
+# starts checking experiments/ and goes red, rather than quietly not running.
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.7
     hooks:
       - id: ruff
         args: ["--fix"]
+        exclude: ^experiments/
   - repo: https://github.com/google/pyink
     rev: 25.12.0
     hooks:
       - id: pyink
+        exclude: ^experiments/
   - repo: https://github.com/PyCQA/isort
     rev: 8.0.1
     hooks:
       - id: isort
+        exclude: ^experiments/
   - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
     rev: 1.39.0
     hooks:
       - id: basedpyright
+        exclude: ^experiments/
   # Docstring Args:/Returns:/Raises: must match the actual signature. Types are
   # deliberately NOT checked in docstrings (basedpyright owns types; docstrings
   # never repeat them). "Sections must exist at all" is D417's job (ruff),
@@ -35,6 +47,7 @@ repos:
           - --check-return-types=False
           - --check-yield-types=False
           - --show-filenames-in-every-violation-message=True
+        exclude: ^experiments/
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.11.7
     hooks:
@@ -42,13 +55,35 @@ repos:
         files: ^pyproject.toml$
   # Guard against references to deleted / renamed modules and symbols creeping
   # back into code (the "delete guidance that contradicts the repo" rule). Fails
-  # if any banned token reappears under src/ or tests/. Add a token here whenever
-  # something is removed or renamed; historical docs under docs/ are exempt (they
-  # are point-in-time records, not current guidance).
+  # if any banned token reappears under src/, tests/ or experiments/. Add a
+  # token here whenever something is removed or renamed; historical docs under
+  # docs/ are exempt (they are point-in-time records, not current guidance).
   - repo: local
     hooks:
       - id: no-stale-module-refs
         name: no references to deleted/renamed modules
         language: pygrep
         entry: 'swe_lab\.core\b|core\.agent\.trace|swe_lab\.solve\b|swe_lab\.cli\.verify\b|harnesses\.claude_code\.trace\b|swe_lab\.evaluation\.verify\b|\.execution\b|\b(CAPTURE_MODES|DEFAULT_CAPTURE|CAPTURE_PROXY|CAPTURE_STREAM|with_assets|materialize_to|BackendKind|build_backend|compile_sandbox_spec|compile_solve_prompt|fetch_harness|stream_to|ProxyRecorder|CONTAINER_PROXY_HOST|agent_proxy_url|proxy_base_url)\b|harnesses\.claude_code\.recorder\b'
-        files: '^(src|tests)/.*\.py$'
+        files: '^(src|tests|experiments)/.*\.py$'
+        # Named exemptions, never a directory. The test of an exemption is
+        # whether it can grow while nobody is looking: a directory pattern puts
+        # every future file outside the guard silently, whereas this list
+        # protects a new file the moment it lands and can only shrink — each
+        # addition is a line somebody had to write and a reviewer had to see.
+        #
+        # All five were created between 2026-07-06 and 2026-07-15 (following
+        # renames), last touched 2026-07-17, and broken 2026-07-25 by #53
+        # (`swe_lab.core` dissolves) — not by any later change. Each
+        # experiment's deliverable is its write-up (REPORT.md, qa_log.md, or
+        # the README's own conclusion) and the script is evidence of the method
+        # behind it: keeping them readable has value, keeping
+        # them runnable does not. Each is noted as unrunnable in its own
+        # README. Reviving one means porting it, not deleting its line here.
+        exclude: |
+          (?x)^(
+            experiments/eval_issues/truncated_golden_test_names/investigate\.py|
+            experiments/eval_issues/truncated_golden_test_names/make_fixed_rows\.py|
+            experiments/related_files/batch_annotation/qa_check\.py|
+            experiments/related_files/batch_annotation/recall_audit\.py|
+            experiments/related_files/prompt_variance/run_experiment\.py
+          )$
