@@ -6,7 +6,7 @@ This is the experiment side of trace-synthesis
 [task 01](../../../docs/trace-synthesis/plans/task-01-one-instance-end-to-end.md):
 walk the whole oracle-guided pipeline over **one** real SWE-bench Pro instance
 and keep what it produces. Nothing here is production code — the existing
-`swe-lab` CLI plus the two scratch scripts in this directory.
+`swe-lab` CLI plus the three scratch scripts in this directory.
 
 ## Question
 
@@ -51,33 +51,52 @@ acceptance criterion (`src/swe_lab/cli/run.py`, `ExitCode`):
 start of every non-`--resume` run, where `output_dir` is
 `.cache/runs/<workflow>/<instance_id>`. The next rollout of the same instance
 therefore *deletes* the failure just harvested. `freeze.sh` copies the whole
-directory out of `.cache/` and records the provenance beside it.
+directory out of `.cache/` and records the provenance beside it — and
+`harvest.sh` calls it in-process the moment a sample exits `2`, so the window
+closes mechanically rather than depending on an operator being quick.
 
 ## Run
 
 ```bash
+cd experiments/trace_synthesis/handmade_instance
+
 # Step 1 — the gold gate over all four candidates (sequential; logs + summary).
-experiments/trace_synthesis/handmade_instance/gold_check.sh
+./gold_check.sh
 
-# Step 2 — one rollout sample.
-uv run swe-lab run rollout_and_unit_test <instance_id> \
-    --dataset swebench_pro --rollout-id <n>
-
-# Step 3 — freeze it, immediately, before any further command.
-experiments/trace_synthesis/handmade_instance/freeze.sh <instance_id> <rollout-id>
+# Steps 2 + 3 — one rollout sample, frozen in the same breath if it fails.
+./harvest.sh <instance_id> <rollout-id>
 ```
 
-Both scripts need the direnv environment (`SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN`);
-in a non-direnv shell, prefix with `direnv exec .`.
+**Use `harvest.sh`; do not call `swe-lab run` directly for step 2.** On exit `2`
+it invokes `freeze.sh` itself, before control returns to you — which is the
+whole point. Calling the CLI by hand leaves the harvested failure sitting in
+`.cache/`, and the *next* rollout of that instance deletes it
+(`run_cmd` rmtree's the output directory on any non-`--resume` run,
+`src/swe_lab/cli/run.py`). The freeze window is not something to hit manually.
+
+`freeze.sh <instance_id> <rollout-id>` stays callable on its own, but only for
+rescuing a run that was already made some other way:
+
+```bash
+./freeze.sh <instance_id> <rollout-id> [workflow] [label]
+```
+
+All three scripts need the direnv environment
+(`SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN`); in a non-direnv shell, prefix with
+`direnv exec .`.
 
 ## Layout
 
 ```
 instances.txt          the four candidates, in wall-time order
 gold_check.sh          step 1 driver
+harvest.sh             steps 2+3 — one rollout sample; freezes it on exit 2
 freeze.sh              step 3 — copy a run out of .cache/ with its provenance
+guidebook/             step 4 — the Oracle's guidebook
 runs/gold/             step 1 artifacts: per-instance log + summary.jsonl
+runs/*.log             step 2: full CLI output per rollout sample
 runs/rollouts.jsonl    step 2: one append-only line per rollout sample
+runs/frozen-manifest-*.txt   step 3: sha256 of the frozen tree, before/after
 frozen/                step 3: the harvested failure, out of .cache/'s reach
 ```
 
