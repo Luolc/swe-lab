@@ -262,7 +262,13 @@ The most consequential copy was the one this entry did not know about:
 **W1's `exchange.py` held the narrowest set of all** — four names, missing
 `Proxy-Authorization`, `Anthropic-Workspace-Id`, the representative claim and
 `Set-Cookie` — and it is the copy whose output a publishing path would ship.
-The narrowest list guarded the most exposed artifact.
+**The shortest list guarded the most exposed artifact.**
+
+That is the general lesson, and it is why duplicated facts are worse than they
+look: **the harm is not spread evenly.** Each fork drifts toward whatever is
+locally sufficient for the code around it, and nothing arranges for the most
+exposed path to hold the most complete copy. Expect the worst copy to sit
+where it costs most, because nothing is pushing the other way.
 
 `src` owns the canonical set, the placeholder constant and the body field list;
 everything else imports from it, and `experiments/` never the reverse, since

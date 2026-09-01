@@ -96,5 +96,7 @@ def test_proxy_exchange_redacts_pii_and_secrets() -> None:
   resp_headers = cast(dict[str, object], extra["response_headers"])
   assert resp_headers["Anthropic-Organization-Id"] == REDACTED
 
-  # user_id (device/account ids) dropped from metadata
-  assert extra["metadata"] == {}
+  # user_id (device/account ids) masked, not dropped: a removed key makes
+  # "no account id was sent" indistinguishable from "one was sent and
+  # cleaned", and an absence nobody can see is the costlier failure.
+  assert extra["metadata"] == {"user_id": REDACTED}

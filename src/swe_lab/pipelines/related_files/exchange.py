@@ -12,7 +12,7 @@ downstream audit tooling never branches on the source:
 keeps the canonical per-turn fields below, null-filled when a source lacks them.
 ``system`` / ``tools`` are the API request's values (proxy) or null (stream).
 Source-specific data (wire headers, run summary) goes in ``extra_info``, with
-secrets (the auth header, ``metadata.user_id``) stripped as it is built, and
+secrets (the auth header, ``metadata.user_id``) masked as it is built, and
 operator PII (home path, git name/email) swapped for a stable placeholder.
 
 This is W1 (related-files annotation) infrastructure: the annotator runs
@@ -31,6 +31,7 @@ import subprocess
 from etils import epath
 
 from swe_lab.harnesses.claude_code.redaction import (
+    BODY_IDENTITY_PATH,
     REDACTED,
     SENSITIVE_HEADERS,
 )
@@ -180,18 +181,20 @@ def _scrub_headers(headers: object) -> object:
 
 
 def _scrub_metadata(metadata: object) -> object:
-  """Remove the account id from a recorded request body's ``metadata``.
+  """Mask the account id in a recorded request body's ``metadata``.
 
-  Deliberately **drops** rather than masks, unlike every other field here and
-  unlike the capture-side redactor. That inconsistency is left alone on
-  purpose: the exchange record is a published schema, and putting back a key
-  that has been absent for the whole history of these records changes what
-  downstream audit tooling reads. Changing it is an annotation-schema
-  decision, not a redaction cleanup.
+  Masks rather than drops, like every other field here. Dropping makes "the
+  upstream sent no account id" and "one was sent and removed" the same record,
+  and an invisible absence is the more expensive of the two mistakes: nobody
+  audits a field they cannot see was ever there.
   """
   if not isinstance(metadata, dict):
     return metadata
-  return {key: value for key, value in metadata.items() if key != "user_id"}
+  identity = BODY_IDENTITY_PATH[-1]
+  return {
+      key: (REDACTED if key == identity else value)
+      for key, value in metadata.items()
+  }
 
 
 def _git_config(key: str) -> str:
