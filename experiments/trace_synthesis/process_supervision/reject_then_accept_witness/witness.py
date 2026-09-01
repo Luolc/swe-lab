@@ -427,8 +427,24 @@ def main() -> None:
   # cache-off call above is billable too, and a run that crossed the ceiling
   # there is inconclusive however it got there.
   inconclusive = inconclusive or ledger.exhausted
+  accepted_at = next(
+      (r["attempt"] for r in records if r.get("accepted")), None)
+  if inconclusive:
+    # `void` and `material-retired` return earlier; the ceiling outranks the
+    # readings because an unfinished run is not one of them.
+    classification, first_accept = "inconclusive", None
+  elif accepted_at is not None:
+    classification, first_accept = "outcome-3", accepted_at + 1
+  elif len(records) == args.k and len(shas) == 1:
+    classification, first_accept = "outcome-1", None
+  elif len(records) == args.k:
+    classification, first_accept = "outcome-2", None
+  else:
+    classification, first_accept = "inconclusive", None
   (args.out_dir / "classification.json").write_text(json.dumps(
-      {"classification": "inconclusive" if inconclusive else "complete",
+      {"classification": classification,
+       "first_accept_attempt": first_accept,
+       "distinct_completions": len(shas),
        "attempts": len(records), "total_usd": round(ledger.total, 6),
        "ceiling_usd": _COST_CEILING_USD}, indent=2))
   if inconclusive:

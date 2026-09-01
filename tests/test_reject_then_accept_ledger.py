@@ -134,6 +134,7 @@ def _arrange(
     tmp_path: Path,
     actor_cost: float,
     judge_cost: float,
+    verdict: str = "off_track",
 ) -> Path:
   """Point the runner at fakes so `main` runs with no network.
 
@@ -143,6 +144,7 @@ def _arrange(
     tmp_path: Working directory.
     actor_cost: Cost each actor response reports.
     judge_cost: Cost each judge response reports.
+    verdict: The verdict every judge answer carries.
 
   Returns:
     The output directory `main` was given.
@@ -173,7 +175,7 @@ def _arrange(
 
   def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
     return {
-        "raw": json.dumps({"adjudicable": True, "verdict": "off_track"}),
+        "raw": json.dumps({"adjudicable": True, "verdict": verdict}),
         "usage": {"cost": judge_cost},
     }
 
@@ -283,3 +285,78 @@ def test_a_cache_off_call_crossing_the_ceiling_is_not_complete(
       json.loads((out / "classification.json").read_text())["classification"]
       == "inconclusive"
   )
+
+
+def test_changed_material_stops_before_any_paid_or_started_call(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """A capture altered after the digest was pinned ends the run as `void`."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.01, judge_cost=0.01
+  )
+  # Pinned above against the original bytes; now the off-repo material changes.
+  capture = tmp_path / "capture.jsonl"
+  rows = [json.loads(line) for line in capture.read_text().splitlines()]
+  rows[witness._STEP_INDEX]["request"]["body"]["model"] = "swapped"
+  _ = capture.write_text("".join(json.dumps(r) + "\n" for r in rows))
+
+  def _forbidden(*_args: object, **_kwargs: object) -> object:
+    raise AssertionError("a paid or starting call was reached")
+
+  monkeypatch.setattr(witness, "_judge_completion", _forbidden)
+  monkeypatch.setattr(witness, "_start_proxy", _forbidden)
+  monkeypatch.setattr(witness.urllib.request, "urlopen", _forbidden)
+
+  with pytest.raises(SystemExit) as raised:
+    witness.main()
+  assert "void" in str(raised.value)
+  material = json.loads((out / "material.json").read_text())
+  assert material["classification"] == "void"
+  assert material["body_sha256_observed"] != material["body_sha256_expected"]
+  assert not (out / "ledger.json").exists()
+
+
+def test_a_complete_run_of_identical_completions_records_outcome_1(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """K identical completions with no accept persist as outcome-1."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  witness.main()
+  final = json.loads((out / "classification.json").read_text())
+  assert final["classification"] == "outcome-1"
+  assert final["distinct_completions"] == 1
+  assert final["first_accept_attempt"] is None
+
+
+def test_a_first_accept_records_outcome_3_with_its_attempt_number(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """An accepted completion persists as outcome-3 and names k."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  # Attempt 0 must still reject, or the run stops as `material-retired` before
+  # any resend -- so the judge rejects the original, then accepts.
+  calls = {"n": 0}
+
+  def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
+    calls["n"] += 1
+    verdict = "off_track" if calls["n"] == 1 else "on_track"
+    return {
+        "raw": json.dumps({"adjudicable": True, "verdict": verdict}),
+        "usage": {"cost": 0.001},
+    }
+
+  monkeypatch.setattr(witness, "_judge_completion", _judge)
+  witness.main()
+  final = json.loads((out / "classification.json").read_text())
+  assert final["classification"] == "outcome-3"
+  assert final["first_accept_attempt"] == 1

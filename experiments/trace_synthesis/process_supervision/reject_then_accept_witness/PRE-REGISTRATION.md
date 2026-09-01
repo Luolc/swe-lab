@@ -269,8 +269,8 @@ confirmation attempt was performed.
 ### 8.3 The judge has variance too, and outcome 3 is the expensive one
 
 The judge is an LLM. A first accept at attempt *k* may be **the judge moving, not
-the completion improving** — and outcome 3 is the only outcome that reopens a
-debate.
+the completion improving** — and *k* is the one number this run contributes, so
+undisclosed judge variance would corrupt the only cost observation it produces.
 
 So: **on the first accept, the same completion is judged twice more**, and the
 report states **"accepted n of 3"**. Cost is two judge calls, **counted in the
