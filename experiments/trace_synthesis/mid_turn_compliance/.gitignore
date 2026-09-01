@@ -1,0 +1,4 @@
+# Raw captures stay off-repo (docs/conventions.md, "What may be committed as
+# evidence"): they carry operator paths and identity. The committed witness is
+# derived and redacted.
+runs/
