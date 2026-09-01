@@ -192,6 +192,27 @@ def _without_cache_control(body: dict) -> dict:
   return body
 
 
+def verdict_of(raw: str) -> str | None:
+  """Read a verdict out of a judge answer.
+
+  #305 measured 2 of 69 judgements coming back unparseable, so this is an
+  ordinary path, not an exceptional one: an answer that cannot be read is
+  absence of a verdict, never a raised exception that would end the run with
+  paid calls behind it and no terminal state written.
+
+  Args:
+    raw: The judge's answer text.
+
+  Returns:
+    The verdict, or None when the answer cannot be parsed.
+  """
+  try:
+    parsed = json.loads(raw)
+  except (json.JSONDecodeError, TypeError):
+    return None
+  return parsed.get("verdict") if isinstance(parsed, dict) else None
+
+
 def _judge_completion(message: dict, before: str, total: int) -> dict:
   """Ask the #305 judge whether the guidebook adjudicates this completion.
 
@@ -276,13 +297,20 @@ def main() -> None:
   # the premise is not inherited from #305's run.
   attempt_zero = _judge_completion(original, before, len(steps))
   ledger.record("judge:attempt-0", attempt_zero["usage"])
-  try:
-    still_off = json.loads(attempt_zero["raw"]).get("verdict") == "off_track"
-  except json.JSONDecodeError:
-    still_off = False
+  zero_verdict = verdict_of(attempt_zero["raw"])
+  still_off = zero_verdict == "off_track"
   (args.out_dir / "attempt-0-original.json").write_text(
-      json.dumps({"judge": attempt_zero, "still_off_track": still_off}, indent=2))
+      json.dumps({"judge": attempt_zero, "still_off_track": still_off,
+                  "verdict": zero_verdict}, indent=2))
   print(f"attempt 0 (original completion) still_off_track={still_off}")
+  if zero_verdict is None:
+    # Distinct from `material-retired`, which asserts the judge now accepts the
+    # step. An unreadable answer asserts nothing at all.
+    (args.out_dir / "classification.json").write_text(json.dumps(
+        {"classification": "judge-unparseable", "at": "attempt-0",
+         "total_usd": round(ledger.total, 6)}, indent=2))
+    print("judge-unparseable at attempt 0: the premise cannot be established.")
+    return
   if not still_off:
     # `material-retired`, not `void`: the material is ours, but this judge no
     # longer rejects the step -- itself a result about judge stability.
@@ -342,10 +370,7 @@ def main() -> None:
 
       verdict = _judge_completion(message, before, len(steps))
       ledger.record(f"judge:attempt-{attempt + 1}", verdict["usage"])
-      try:
-        accepted = json.loads(verdict["raw"]).get("verdict") == "on_track"
-      except json.JSONDecodeError:
-        accepted = False
+      accepted = verdict_of(verdict["raw"]) == "on_track"
       records.append({
           "attempt": attempt,
           "sent_body_sha256": payload_sha,
@@ -376,10 +401,10 @@ def main() -> None:
           answer = _judge_completion(message, before, len(steps))
           ledger.record("judge:repeat", answer["usage"])
           repeats.append(answer)
+        # An unreadable repeat is not agreement: it fails unanimity and the run
+        # lands on `unreproduced-accept`, which is the honest reading.
         agreed = 1 + sum(
-            1 for r in repeats
-            if (json.loads(r["raw"]).get("verdict") if r["raw"].strip().startswith("{")
-                else None) == "on_track")
+            1 for r in repeats if verdict_of(r["raw"]) == "on_track")
         records[-1]["judge_repeats"] = repeats
         records[-1]["accepted_of_3"] = agreed
         print(f"  re-judged the same completion: accepted {agreed} of 3")

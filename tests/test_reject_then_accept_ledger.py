@@ -425,3 +425,55 @@ def test_a_changed_original_completion_is_also_void(
       != material["original_completion_sha256_expected"]
   )
   assert not (out / "ledger.json").exists()
+
+
+def test_an_unreadable_repeat_is_not_agreement(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """A malformed re-judgement classifies, rather than ending the run."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  calls = {"n": 0}
+
+  def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
+    calls["n"] += 1
+    if calls["n"] == 1:
+      raw = json.dumps({"adjudicable": True, "verdict": "off_track"})
+    elif calls["n"] == 2:
+      raw = json.dumps({"adjudicable": True, "verdict": "on_track"})
+    else:
+      raw = "{"
+    return {"raw": raw, "usage": {"cost": 0.001}}
+
+  monkeypatch.setattr(witness, "_judge_completion", _judge)
+  witness.main()
+  final = json.loads((out / "classification.json").read_text())
+  assert final["classification"] == "unreproduced-accept"
+  assert final["accepted_of_3"] == 1
+
+
+def test_an_unreadable_attempt_zero_is_not_material_retired(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """An unreadable first answer asserts nothing, so it gets its own ending."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+
+  def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
+    return {"raw": "{", "usage": {"cost": 0.001}}
+
+  def _forbidden(*_args: object, **_kwargs: object) -> object:
+    raise AssertionError("a resend was started")
+
+  monkeypatch.setattr(witness, "_judge_completion", _judge)
+  monkeypatch.setattr(witness, "_start_proxy", _forbidden)
+  witness.main()
+  final = json.loads((out / "classification.json").read_text())
+  assert final["classification"] == "judge-unparseable"
+  assert final["at"] == "attempt-0"
