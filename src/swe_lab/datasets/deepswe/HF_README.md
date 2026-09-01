@@ -10,6 +10,11 @@ tags:
 pretty_name: DeepSWE 1.1 (materialized)
 ---
 
+<!-- This file is the dataset card published to the HF repo
+     (constants.HF_REPO_ID) by `build_parquet.py --upload`, which uploads
+     it as README.md next to LICENSE, PROVENANCE.md and manifest.json.
+     Relative links below resolve THERE, not in this git repo. -->
+
 # DeepSWE 1.1 — materialized
 
 A tabular materialization of [DeepSWE](https://deepswe.datacurve.ai/)

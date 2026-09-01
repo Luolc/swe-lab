@@ -19,8 +19,10 @@ is task-agnostic.
 ## 1. Why traces live off-repo
 
 Each annotation run records the agent's **entire conversation** in a
-`*.last_exchange.json` file (tens to hundreds of KB each — 1600+ of them, ~230
-MB and growing). That is too big and too noisy to keep in git, but we still want
+`*.last_exchange.json` file (tens to hundreds of KB each — 2,900+ of them,
+~410 MB and growing; the committed
+[`traces_manifest.json`](../outputs/related_files/swebench_pro/traces_manifest.json)
+carries the exact count). That is too big and too noisy to keep in git, but we still want
 it: it is the audit trail behind every annotation.
 
 So the repo splits its data into **three planes**:
@@ -42,11 +44,11 @@ bridge between the small committed deliverable and the big off-repo blobs.
 {
   "repo_id": "luolc/swe-lab-traces",
   "repo_type": "dataset",
-  "revision": "2a88ec59bfcf…",        // the exact HF commit this manifest describes
-  "git_commit": "eb83421…",           // the repo commit it was generated at
+  "revision": "80c6320f1e90…",        // the exact HF commit this manifest describes
+  "git_commit": "685e9945…",          // the repo commit it was generated at
   "dataset": "swebench_pro",
-  "num_traces": 1604,
-  "total_bytes": 238…,
+  "num_traces": 2924,
+  "total_bytes": 412590130,
   "traces": {
     "swebench_pro/intermediate/<id>/<label>.last_exchange.json": {
       "sha256": "…", "bytes": 12345
@@ -110,9 +112,9 @@ python -m swe_lab.pipelines.related_files.traces <action> [flags]
 ### `status` output
 
 ```
-local vs manifest : 1604 ok, 0 changed, 0 missing, 0 extra
-manifest revision : 2a88ec59bfcf
-HF head           : 2a88ec59bfcf
+local vs manifest : 2924 ok, 0 changed, 0 missing, 0 extra
+manifest revision : 80c6320f1e90
+HF head           : 80c6320f1e90
 => in sync — local, manifest, and HF all agree.
 ```
 

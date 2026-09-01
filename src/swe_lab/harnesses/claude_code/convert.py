@@ -16,9 +16,9 @@ Both map their Anthropic content blocks through the **same** ``_content_blocks``
 to the same :class:`~swe_lab.conversation.Conversation` by construction.
 
 No PII redaction is needed here: the rollout agent runs **inside** the instance
-container (``HOME`` = ``/agent-home``, git config = the instance's), so the
-operator's identity is never injected into the trace — unlike a host-subprocess
-run (W1), which redacts separately.
+container (its config dir pinned per run by ``CLAUDE_CONFIG_DIR``, git config =
+the instance's), so the operator's identity is never injected into the trace —
+unlike a host-subprocess run (W1), which redacts separately.
 """
 
 from __future__ import annotations
