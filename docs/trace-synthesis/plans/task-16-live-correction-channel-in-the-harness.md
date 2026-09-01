@@ -97,10 +97,14 @@ thereby decided *when the run ends*. **These are one design question and must be
 answered in one place**; splitting them across two tasks would leave the
 termination rule depending on a collector decision nobody wrote down.
 
-**And the number of `result` events is not ours to choose.** **[M]** A
-correction that lands mid-turn is absorbed into the running turn and produces
-**no** new `result` (N=3); one that lands at a turn boundary produces its own
-turn and therefore its own `result` (N=25). **[I]** Which of the two happens
+**And the number of `result` events is not ours to choose.** **[M]** Counted
+directly out of the captured stdout of **N=21 runs**
+([report §13.1](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)):
+a `result` marks the end of the agent's loop for **one triggering user message**,
+so a correction that lands mid-turn is absorbed and produces **no** new `result`
+(`midturn`: 2 stdin messages, one absorbed → 1 `result`), while one that lands at
+a boundary produces its own turn and its own `result` (`boundary`: 3 stdin
+messages → 3 `result`s). **[I]** Which of the two happens
 depends on when the supervisor writes relative to what the actor is doing at
 that instant — **a race**, and one neither side arbitrates. Two consequences the
 design must carry:
@@ -206,7 +210,7 @@ today, not what the design will claim.
 | The relay dies while the supervisor lives | **[U]** | Same question, one layer down; the relay is the only thing holding the write end |
 | Reaping order of relay and proxy | **[C]** the proxy is reaped by an `EXIT` trap in the same script | Both are trapped, and the relay must not be reaped before the agent it feeds; state the order rather than inheriting it |
 | The 10 MiB stdin cap | **[U]** per-line, per-process, or not applicable to `stream-json` | Write it down as an **assumption**, and name the one-line test that would settle it, rather than designing around a number nobody checked |
-| A correction lands mid-tool-call vs between turns | **[M]** N=3 mid-call (queued, folded into a `role: system` `<system-reminder>`, absorbed with no turn of its own) and **[M]** N=25 at a boundary (an independent `user` record) | **Which one the design depends on**, explicitly. They are different context shapes, and only mid-turn was checked against the production TUI |
+| A correction lands mid-tool-call vs between turns | **[M]** N=3 mid-call (queued, folded into a `role: system` `<system-reminder>`, absorbed with no turn of its own); at a boundary it is an independent `user` record, seen in the `boundary` / `boundary-replay` arms and free of the three `--resume` artifacts across the 25-run grep | **Which one the design depends on**, explicitly. They are different context shapes, and only mid-turn was checked against the production TUI |
 | `run_script` times out while the host supervisor is still alive | **[C]** the timeout is inside `run_script`; the supervisor is outside it | Who tears down the supervisor, and how it learns the run is gone |
 
 ## 5. Constraints this design inherits (already measured, not negotiable)
