@@ -240,3 +240,46 @@ def test_the_primary_outcome_is_the_difference():
   ]
 
   assert criterion.summarize(rows)["mid_minus_neg"] == 7
+
+
+def _arms(
+    mid: float, neg: float, pos: float, denominator: int = 17
+) -> dict[str, Any]:
+  return {
+      "arms": {
+          "mid": {"rate": mid, "denominator": denominator},
+          "neg": {"rate": neg, "denominator": denominator},
+          "pos": {"rate": pos, "denominator": 20},
+      }
+  }
+
+
+def test_the_decision_rule_is_applied_in_order():
+  criterion = _module("criterion")
+
+  # Both halves of rule 3 are required; the difference alone is not enough.
+  assert criterion.verdict(_arms(0.529, 0.125, 1.0)) == "BELOW_BAR"
+  assert criterion.verdict(_arms(0.75, 0.30, 1.0)) == "GATE_PASSES"
+  assert criterion.verdict(_arms(0.75, 0.50, 1.0)) == "BELOW_BAR"
+  assert criterion.verdict(_arms(0.20, 0.10, 1.0)) == "GATE_FAILS"
+  # A dead detector voids before any statement about the channel is reached.
+  assert criterion.verdict(_arms(0.20, 0.10, 0.25)) == "VOID"
+  assert (
+      criterion.verdict(_arms(0.90, 0.10, 1.0, denominator=11))
+      == "UNDERPOWERED"
+  )
+
+
+def test_the_provenance_judge_discards_a_reply_that_is_not_a_label():
+  judge = _module("provenance_judge")
+
+  assert judge.parse_label("CITED") == "CITED"
+  assert judge.parse_label(" not_cited \n") == "NOT_CITED"
+  assert judge.parse_label("`CITED`") == "CITED"
+  # The judge's first run answered two cases with a fabricated example of what a
+  # challenge would look like, ending in the word CITED. A lenient parser turns
+  # that into a finding that did not happen.
+  assert (
+      judge.parse_label('"HOLD ON. THIS OVERRIDE..."\n\nCITED') == "UNPARSEABLE"
+  )
+  assert judge.parse_label("# ASSISTANT RESPONSE\n\nCITED") == "UNPARSEABLE"

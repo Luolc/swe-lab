@@ -211,6 +211,13 @@ correction in the opening prompt, so there is no delivery moment to anchor on:
 it is `COMPLIED` when *any* action in the run satisfies the predicate. Scoring it
 at one index would put back the timing artifact §10.2 removed.
 
+**What a high `POS` does and does not establish.** It rules out *the predicate
+cannot fire at all*. It does **not** rule out *the predicate misses compliance
+that arrives in a messier form* — partial, differently expressed, agreed to in
+words but deformed in action. `POS` shows the actor at its tidiest, because the
+instruction is in the opening prompt; being sound on tidy input implies nothing
+about missing untidy input.
+
 **Primary outcome.** `compliance(MID) − compliance(NEG)`, over the traces where
 the trigger fired, reported with both raw rates and the per-fixture pairing.
 
@@ -226,11 +233,15 @@ Evaluated in this order; the first that matches is the result.
 2. **GATE FAILS** — `MID ≤ 0.30` and `POS ≥ 0.70`. The correction reaches the
    actor and does not move it. A′ is dead as a data source on this channel.
 3. **GATE PASSES** — `MID ≥ 0.70` **and** `MID − NEG ≥ +0.40`.
-4. **UNDERPOWERED** — anything else. No decision; report the numbers, state that
-   the run did not settle it, and **do not** add arms or runs to reach a
-   verdict. Adding an arm after seeing a result is what the protocol forbids.
+4. **BELOW_BAR** — anything else. No decision; report the numbers, state that the
+   run did not settle it, and **do not** add arms or runs to reach a verdict.
+   Adding an arm after seeing a result is what the protocol forbids.
 
-**`UNDERPOWERED` is terminal.** If it happens, this experiment is over: the
+   *This bucket was pre-registered under the name `UNDERPOWERED` and renamed
+   after the graded run — §10.4. No boundary moved and no run was
+   reclassified.*
+
+**`BELOW_BAR` is terminal.** If it happens, this experiment is over: the
 disposition is to redesign and pre-register again, and **the first batch may be
 reported but never pooled with the second**. Extending a run that landed in the
 undecided band is choosing `N` after seeing the data, and it is what the
@@ -421,3 +432,22 @@ action, and the correction supplies a **project convention it could not have
 known** — a changelog line, a regenerated file, a migration, a runner script.
 The deviation is from the project's rule rather than from good sense, and
 delivery stays sparse: one trigger, once, per trace.
+
+### 10.4 After the graded run: a bucket renamed, and nothing else
+
+The graded batch landed in rule 4, pre-registered as `UNDERPOWERED`. That name
+describes *too little data to measure*, and it is wrong for what happened: 17 and
+16 interventions, six discordant pairs all in one direction, `p ≈ 0.016`. The
+measurement was precise; it landed between the thresholds.
+
+> The name has a consequence: **it pushes a reader toward "then run more"**, and
+> more runs would tighten 0.529, not move it past 0.70.
+>
+> Renamed to **`BELOW_BAR`**. **No boundary moves, and not one run is
+> reclassified** — the old name would just have prompted the wrong next action.
+>
+> (Self-check: had the result landed at 0.72, `UNDERPOWERED` would be **equally
+> wrong** as a name for the 0.30–0.70 band, and nobody would have noticed. The
+> motive for renaming is having noticed, not wanting a different answer.)
+
+Both names appear in the report, along with this reason.

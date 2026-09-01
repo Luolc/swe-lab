@@ -160,12 +160,35 @@ def scan_tracked() -> int:
 def main() -> int:
   parser = argparse.ArgumentParser()
   _ = parser.add_argument("runs", nargs="*")
+  _ = parser.add_argument(
+      "--bundle",
+      default=None,
+      help="write every witness to one tracked file instead of into runs/",
+  )
   _ = parser.add_argument("--check", action="store_true")
   _ = parser.add_argument("--scan-tracked", action="store_true")
   args = parser.parse_args()
 
   if args.scan_tracked:
     return scan_tracked()
+
+  if args.bundle:
+    path = pathlib.Path(args.bundle)
+    witnesses = [build(pathlib.Path(run)) for run in args.runs]
+    text = json.dumps(witnesses, indent=2, sort_keys=True) + "\n"
+    found = blockers(text)
+    if found:
+      raise SystemExit(f"refusing to write {path}, found {found}")
+    if args.check:
+      if json.loads(path.read_text()) != witnesses:
+        print(f"{path}: committed evidence differs from a rebuild")
+        return 1
+      print(f"{path}: matches a rebuild ({len(witnesses)} runs)")
+      return 0
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _ = path.write_text(text)
+    print(f"{path}: {len(witnesses)} witnesses")
+    return 0
 
   bad = 0
   for run in args.runs:

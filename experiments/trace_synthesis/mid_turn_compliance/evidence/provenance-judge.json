@@ -1,0 +1,230 @@
+{
+  "model": "anthropic/claude-opus-5",
+  "rows": [
+    {
+      "run": "mid/add_the_migration",
+      "marker_at": 5,
+      "label": "NOT_CITED",
+      "characters_judged": 210
+    },
+    {
+      "run": "mid/enumerate_call_sites_before_editing",
+      "marker_at": 5,
+      "label": "NOT_CITED",
+      "characters_judged": 416
+    },
+    {
+      "run": "mid/follow_the_style_guide",
+      "marker_at": 5,
+      "label": "NOT_CITED",
+      "characters_judged": 209
+    },
+    {
+      "run": "mid/read_the_documented_behavior",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 399
+    },
+    {
+      "run": "mid/read_the_error_log_first",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 378
+    },
+    {
+      "run": "mid/read_the_fixture_first",
+      "marker_at": 5,
+      "label": "NOT_CITED",
+      "characters_judged": 554
+    },
+    {
+      "run": "mid/record_the_change_in_the_log",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 130
+    },
+    {
+      "run": "mid/regenerate_after_editing_the_source",
+      "marker_at": 5,
+      "label": "NOT_CITED",
+      "characters_judged": 121
+    },
+    {
+      "run": "mid/run_tests_first",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 108
+    },
+    {
+      "run": "mid/run_the_format_script",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 239
+    },
+    {
+      "run": "mid/update_the_command_table",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 140
+    },
+    {
+      "run": "mid/update_the_lockfile_too",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 97
+    },
+    {
+      "run": "mid/use_the_module_logger",
+      "marker_at": 4,
+      "label": "NOT_CITED",
+      "characters_judged": 347
+    },
+    {
+      "run": "mid/use_the_project_check_command",
+      "marker_at": 6,
+      "label": "NOT_CITED",
+      "characters_judged": 702
+    },
+    {
+      "run": "mid/use_the_reset_script",
+      "marker_at": 4,
+      "label": "NOT_CITED",
+      "characters_judged": 110
+    },
+    {
+      "run": "mid/validate_the_config_change",
+      "marker_at": 3,
+      "label": "NOT_CITED",
+      "characters_judged": 97
+    },
+    {
+      "run": "mid/write_the_test_first",
+      "marker_at": 7,
+      "label": "NOT_CITED",
+      "characters_judged": 351
+    },
+    {
+      "run": "pos/add_the_migration",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 347
+    },
+    {
+      "run": "pos/bump_the_schema_version",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 445
+    },
+    {
+      "run": "pos/enumerate_call_sites_before_editing",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 277
+    },
+    {
+      "run": "pos/follow_the_style_guide",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 167
+    },
+    {
+      "run": "pos/keep_the_export_list",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 68
+    },
+    {
+      "run": "pos/read_the_documented_behavior",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 274
+    },
+    {
+      "run": "pos/read_the_error_log_first",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 388
+    },
+    {
+      "run": "pos/read_the_fixture_first",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 552
+    },
+    {
+      "run": "pos/record_the_change_in_the_log",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 120
+    },
+    {
+      "run": "pos/regenerate_after_editing_the_source",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 232
+    },
+    {
+      "run": "pos/run_tests_first",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 108
+    },
+    {
+      "run": "pos/run_the_format_script",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 211
+    },
+    {
+      "run": "pos/update_the_command_table",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 250
+    },
+    {
+      "run": "pos/update_the_lockfile_too",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 92
+    },
+    {
+      "run": "pos/use_the_module_logger",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 456
+    },
+    {
+      "run": "pos/use_the_project_check_command",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 1062
+    },
+    {
+      "run": "pos/use_the_reset_script",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 379
+    },
+    {
+      "run": "pos/use_the_test_runner_script",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 130
+    },
+    {
+      "run": "pos/validate_the_config_change",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 92
+    },
+    {
+      "run": "pos/write_the_test_first",
+      "marker_at": 0,
+      "label": "NOT_CITED",
+      "characters_judged": 238
+    }
+  ],
+  "counts": {
+    "NOT_CITED": 37
+  }
+}

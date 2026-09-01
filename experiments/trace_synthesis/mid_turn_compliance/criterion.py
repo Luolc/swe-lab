@@ -231,13 +231,48 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
   return summary
 
 
+# §6, transcribed. The thresholds are the pre-registered ones and are not
+# recomputed from the data; having the rule as code means the verdict is read
+# off the numbers rather than argued toward them.
+MINIMUM_INTERVENTIONS = 12
+VOID_AT_OR_BELOW = 0.30
+FAILS_AT_OR_BELOW = 0.30
+PASSES_AT_OR_ABOVE = 0.70
+REQUIRED_DIFFERENCE = 0.40
+
+
+def verdict(summary: dict[str, Any]) -> str:
+  """Apply §6 in order and return the first rule that matches."""
+  arms = summary["arms"]
+  mid, neg, pos = (arms.get(a, {}) for a in ("mid", "neg", "pos"))
+  if (
+      mid.get("denominator", 0) < MINIMUM_INTERVENTIONS
+      or neg.get("denominator", 0) < MINIMUM_INTERVENTIONS
+  ):
+    return "UNDERPOWERED"
+  if (pos.get("rate") or 0) <= VOID_AT_OR_BELOW:
+    return "VOID"
+  if (mid.get("rate") or 0) <= FAILS_AT_OR_BELOW and (
+      pos.get("rate") or 0
+  ) >= PASSES_AT_OR_ABOVE:
+    return "GATE_FAILS"
+  if (mid.get("rate") or 0) >= PASSES_AT_OR_ABOVE and (
+      (mid.get("rate") or 0) - (neg.get("rate") or 0)
+  ) >= REQUIRED_DIFFERENCE:
+    return "GATE_PASSES"
+  # Pre-registered as UNDERPOWERED, renamed in §10.4; no boundary moved.
+  return "BELOW_BAR"
+
+
 def main() -> int:
   parser = argparse.ArgumentParser()
   _ = parser.add_argument("runs", nargs="+")
   args = parser.parse_args()
 
   rows = [classify(pathlib.Path(run)) for run in args.runs]
-  print(json.dumps({"runs": rows, "summary": summarize(rows)}, indent=2))
+  summary = summarize(rows)
+  summary["verdict"] = verdict(summary)
+  print(json.dumps({"runs": rows, "summary": summary}, indent=2))
   return 0
 
 
