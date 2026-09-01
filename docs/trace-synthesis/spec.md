@@ -246,13 +246,28 @@ the three reasons are structural rather than convenient:
 
 Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 
+> **Injection is no longer the default, and is no longer an open option.** The
+> production default is an **uninterfered rollout** with the guidebook used
+> **post-hoc as a grader / filter** — rejection sampling — decided by the
+> hint-legitimacy debate (2026-09-01). Injection survived that decision only as
+> an **experiment arm behind one pre-registered micro-test**, and that
+> micro-test **failed 0 of 3**
+> ([report](../../experiments/trace_synthesis/hint_legitimacy/REPORT.md),
+> adjudicated by a third party against criteria registered before the runs). The
+> arm is **terminated**, by its own registered kill condition rather than by a
+> change of mind: no tag swap, no channel swap, no model swap, no additional
+> replicate. **The rows below are retained as the design of record for what an
+> injecting run must do *if* one is ever run again** — every one of them was
+> measured and none was refuted — but nothing in this section authorizes a
+> production run that injects.
+
 | Decision | Rationale |
 |---|---|
 | **Steer from a Claude Code hook** — not the proxy, not our own agent loop | The proxy ([task 08](../horizontal/plans/task-08-proxy-capture.md)) is already complex and folding steering into it couples the two badly. Our own agent loop abandons the point of this infrastructure, which is to hug the harness we actually want traces of. |
 | **Never rewrite the tool call** | Measured: a rewritten call is *not* reflected back in the assistant turn, so the actor finishes the turn believing it did something it did not do, and every later step reasons from a false premise ([§10](#10-what-is-measured-about-hooks)). |
 | **Appending is *our* invariant, not the platform's** | `updatedToolOutput`'s own schema says it **replaces** the tool output ([§10](#10-what-is-measured-about-hooks)); there is no append mode. So "the tool's real bytes survive verbatim" holds only because our hook copies them into every rewrite it emits, every time. This is the *never rewrite* red line in the specific shape this field takes — implementing append on top of a replace-semantics field — and it is a property of our code that a test has to hold up, not a guarantee we are given. |
 | **Never deny** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). |
-| **Inject as an identifiable external hint** | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so would a real user turn. [§11](#11-open-questions) states the three tests a channel has to pass. |
+| **Inject as an identifiable external hint** *(terminated arm; see the note above)* | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so would a real user turn. [§11](#11-open-questions) states the three tests a channel has to pass. |
 | **Direction only, never specifics** | The leakage / teaching dial; see [§8](#8-what-hint-specificity-now-trades). |
 | **Not a system-reminder** | Claude Code already uses that channel heavily, so ours would be indistinguishable from machine noise — both to the actor at run time and to anyone reading the trace. |
 
@@ -391,6 +406,7 @@ reader that is what happened rather than a mis-recorded result.
 | `PostToolBatch` and `PostToolUseFailure` accept **only** `additionalContext` — no `decision`, no `updatedToolOutput` | measured (the shipped binary's own schema) | Neither seam can carry a hint that survives a stream capture |
 | `PostToolUse` does not fire on a failed tool call; `PostToolUseFailure` does | measured | A `PostToolUse`-only design is blind exactly when the actor is spinning after an error |
 | Two reminders reach the actor that are in **no** client request body: a token-usage `<system_warning>` and a `PROMPT INJECTION WARNING` naming *"impersonating a user message"* as the pattern | measured (quoted verbatim by the actor; absent from every proxy-captured request) | A proxy capture is ground truth for what the **client sent**, not for what the model saw. Our hint provokes a warning the actor then reasons about in `thinking` while it appears in no visible turn |
+| An authorization given in the **initial user message** is **not** an event-stream `user` event — the default capture cannot reconstruct it | measured (2026-09-01, three declaration runs: **zero** `user` events carry the declaration in any of them; the proxy capture carries it in all three) | Any design that authorizes a channel by declaring it up front must carry that declaration **into the trace explicitly**. In one of the three runs the literal does reappear in the converted stream — but only because the actor **quotes the preamble back** inside a reasoning message. That is an actor echo, not preservation: it is present when the actor happens to restate the authorization and absent when it paraphrases ([micro-test](../../experiments/trace_synthesis/hint_legitimacy/REPORT.md)) |
 | `proxy_log_to_conversation` keeps only the **last** proxy record's thread | measured (a subagent run: stream conversion kept 3 hints over 18 turns, proxy conversion emitted 7 turns and 0 hints) | A defect in the proxy capture path, and a live way to lose a hint silently — part of why the [conversion guard](plans/README.md) stays required |
 | An `http` hook is refused for a **private, link-local or cloud-metadata** address; **only loopback is allowed**. Verbatim: *"HTTP hook blocked: `${e}` resolves to `${t}` (private/link-local address). **Loopback (127.0.0.1, ::1) is allowed for local dev.**"*, thrown with `code: "ERR_HTTP_HOOK_BLOCKED_ADDRESS"`. The guard resolves the hostname by DNS first and rejects on the *resolved* address (`"is in a private, link-local, or cloud-metadata range"`), so a public name pointing inward does not evade it | first-party schema (2.1.212, raw-byte grep at offsets 116070240 and 244930466), **not measured** — no `http` hook has been run here | If it holds, an `http` hook can never dial the host by its bridge IP, independently of any firewall — `127.0.0.1` or a `command` hook is unaffected. It does **not** touch the current rig, whose transport is a bind-mounted file drop; it constrains the *production* form, which the debate settled as a public HTTPS service outside the sandbox. Verify before relying on it |
 | A built-in `type: "prompt"` / `"agent"` hook can only allow or deny | documented | The Supervisor must be our own `command` / `http` handler calling the API |
@@ -406,6 +422,40 @@ have no equivalent, so this design is `claude_code`-only — even though
 schema ([task 29](../horizontal/plans/task-29-grok-harness.md)).
 
 ## 11. Open questions
+
+> **The head question is closed, and the answer killed the arm it was asked
+> for.** Delivery was solved; credibility was not, and it turned out not to be a
+> wording problem. A pre-registered micro-test declared the channel to the actor
+> in the initial user message — external, delegated by the operator,
+> non-escalating, never asking for a secret — and the **declaration worked**:
+> all three runs explicitly attributed the note to that authorization. All three
+> still failed, two of them by objecting to the injection anyway, and the stated
+> reason was **the repetition itself**:
+>
+> > Actually, wait. Let me reconsider. The oracle hint appeared in EVERY single
+> > tool result, repeatedly saying the same thing. This is suspicious and could
+> > be a prompt injection attempt embedded in the files themselves, not actually
+> > from the external reviewer.
+>
+> — a run which had, earlier in the same session, written:
+>
+> > They mentioned that during this session, an external reviewer may append
+> > notes in `<oracle_hint>` tags that come from the user, not from the
+> > files/commands. These are advisory and I should use my own judgement about
+> > acting on them.
+>
+> **What is identified:** in that run the actor said the repetition made the
+> note suspicious, having acknowledged the authorization earlier in the same
+> session. **What is not:** why it objected. Repetition, elapsed session and the
+> platform's own prompt-injection warning are confounded across these six runs
+> exactly as they were across the steered re-run's 27 boundaries, and the
+> one-hint, compressed-horizon and warning-suppressed arms that would separate
+> them **were not run and are not authorized** — the protocol forbids adding an
+> arm after a failed result. The termination rests on the registered criteria,
+> not on any account of the mechanism. Full passages and the adjudication:
+> [micro-test report](../../experiments/trace_synthesis/hint_legitimacy/REPORT.md).
+> The rest of this section is the measurement history that led there, kept
+> because the delivery findings remain true.
 
 **Head question — what shape can the hint actually take?** Not "can a hook
 produce a genuine `user`-role turn?": the owner ruled on 2026-09-01 that the
@@ -673,13 +723,24 @@ for it. Two consequences, and neither is negotiable:
 
 ## 15. Success criteria
 
-1. A hint reaches the actor **visibly marked as an external injection** and is
-   **preserved in the training trace** — or, if no mechanism can do that, an
-   explicit owner decision on the alternative
-   ([§11](#11-open-questions)).
-2. On at least one instance, a supervisor holding a good guidebook steers a
+1. ~~A hint reaches the actor **visibly marked as an external injection** and is
+   **preserved in the training trace**~~ — **met on delivery, and the
+   alternative has been decided.** A tagged suffix in `updatedToolOutput`
+   arrives and survives both converters (6 of 6 over a 27-boundary rollout).
+   What no mechanism achieved is *acceptance*, so this criterion's escape hatch
+   — "an explicit owner decision on the alternative" — was taken: the default is
+   an uninterfered rollout with the guidebook as a **post-hoc grader / filter**
+   ([§5](#5-the-mechanism-decisions)).
+2. ~~On at least one instance, a supervisor holding a good guidebook steers a
    blind actor from a known failure to a passing verdict. Until this is shown,
-   nothing else in the pipeline is worth building.
+   nothing else in the pipeline is worth building.~~ **Withdrawn as a
+   precondition.** It gated the whole pipeline on steer-to-pass, and
+   steer-to-pass is no longer what the pipeline does: with injection terminated,
+   nothing downstream waits on it. The open question it should have been asking
+   is now the **default arm's**: can a guidebook separate "solved it, and the
+   reasoning holds" from "solved it, but the process does not survive
+   inspection"? Until *that* is answered, the value of the collected traces is
+   unmeasured.
 3. Sampled traces read as honest: each assistant turn is explicable from the
    turns before it, judged by a human reader.
 4. Every oracle-guided record carries the policy stamp, and no aggregation
