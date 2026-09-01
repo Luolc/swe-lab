@@ -6,9 +6,9 @@
 
 Legend used throughout:
 
-- **[原文]** = a claim the cited source states in so many words.
-- **[推断]** = this report's inference; not in the source.
-- **[未找到]** = searched, not found. Empty is more useful than a near-miss.
+- **[Source claim]** = a claim the cited source states in so many words.
+- **[Inference]** = this report's inference; not in the source.
+- **[Not found]** = searched, not found. Empty is more useful than a near-miss.
 
 ---
 
@@ -17,7 +17,7 @@ Legend used throughout:
 | # | Question | Short answer |
 |---|----------|--------------|
 | 1 | Is there an OpenAI blog/paper that uses **agents** to automatically pick out bad SWE-bench / Pro / Verified tasks? | **Yes, and it is specifically about SWE-Bench Pro.** OpenAI, *Separating signal from noise in coding evaluations*, 2026-07-08. Automated filter + Codex investigator agents + human campaign. Estimate **~30% of Pro public tasks are broken**. Two *other* OpenAI posts exist (Verified 2024 human screen; Verified 2026 hard-subset human audit). Do not mix them. |
-| 2 | SWE-bench Pro–specific known quality issues? | Scale AI published Pro (2025-09). They claim human-verified requirements + interface. Community + OpenAI later report the opposite at scale: ~15–34% broken depending on method; harness bugs; git-history cheating; verifier false negatives. **[未找到]** a Scale official rebuttal of the July 2026 OpenAI audit. |
+| 2 | SWE-bench Pro–specific known quality issues? | Scale AI published Pro (2025-09). They claim human-verified requirements + interface. Community + OpenAI later report the opposite at scale: ~15–34% broken depending on method; harness bugs; git-history cheating; verifier false negatives. **[Not found]** a Scale official rebuttal of the July 2026 OpenAI audit. |
 | 3 | Automatic screening methodology (underspec / contradiction / too-narrow tests / unrelated tests / all-fail rollouts)? | Several independent methods exist. Closest to “agent failed, so the *task* is bad” is OpenAI 2026-07 (filter on attempts + traces) and OpenAI 2026-02 (o3 failed 64× → human audit). Closest to the *contradictory requirements vs interface* case is OpenAI’s **misleading prompt** category plus kimjune01’s Pro **prose-plurality / verbatim-prose-contradicts-test** audit. |
 | 4 | Quantified “what fraction is bad”? | Table in §4. Headline numbers people quote are **not interchangeable**: they cover different datasets, different subsets, and different definitions of “broken”. |
 
@@ -28,7 +28,7 @@ Legend used throughout:
 - OpenAI’s Pro taxonomy has a matching bucket: *misleading prompt* — “points models toward the wrong behavior or contradicts what tests require”.
 - kimjune01’s Pro audit has a matching bucket: “a verbatim prose clause the test contradicts” and “two-expert prose-plurality splits”.
 
-**[推断]** A task like that should not enter “agent erred, a hint can recover it” training data. OpenAI and Faros both say the same thing in different words: a reasonable choice among two internally consistent specs is not a model failure.
+**[Inference]** A task like that should not enter “agent erred, a hint can recover it” training data. OpenAI and Faros both say the same thing in different words: a reasonable choice among two internally consistent specs is not a model failure.
 
 ---
 
@@ -46,13 +46,13 @@ Legend used throughout:
 | Dataset under audit | **SWE-Bench Pro public split (731 tasks)**, Scale AI |
 | Not | Original SWE-bench, SWE-bench Verified, or SWE-bench Multimodal |
 
-**[原文]** Subtitle: “Through a detailed audit, we find widespread task issues in SWE-Bench Pro and estimate that ~30% of the tasks are broken.”
+**[Source claim]** Subtitle: “Through a detailed audit, we find widespread task issues in SWE-Bench Pro and estimate that ~30% of the tasks are broken.”
 
-**[原文]** They retract the February 2026 recommendation to switch from Verified to Pro: “Given the issues uncovered in this analysis, we retract our earlier recommendation to adopt SWE-Bench Pro.”
+**[Source claim]** They retract the February 2026 recommendation to switch from Verified to Pro: “Given the issues uncovered in this analysis, we retract our earlier recommendation to adopt SWE-Bench Pro.”
 
 #### Method (how they used agents)
 
-Three stages, all **[原文]**:
+Three stages, all **[Source claim]**:
 
 1. **Initial automated filter.** “An initial automated filter reviews the instructions given to the model, attempts by the model to solve the task, and the tests used to grade these attempts to flag likely broken or problematic examples. This filter flagged **286** potentially broken tasks.”
 
@@ -64,9 +64,9 @@ Three stages, all **[原文]**:
 
    Result of this path: **249 / 731 = 34.1%** labeled broken.
 
-**[原文]** Agreement: “Of the categories the agent pipeline flagged, reviewers’ judgments overlapped in **74%** of cases.” “in no flagged task was ‘not broken’ the most common human label.” Humans were stricter and more often applied multiple labels. Largest gap: low-coverage tests as most-common issue for **9.4%** of the benchmark (humans) vs **4.1%** (agent pipeline).
+**[Source claim]** Agreement: “Of the categories the agent pipeline flagged, reviewers’ judgments overlapped in **74%** of cases.” “in no flagged task was ‘not broken’ the most common human label.” Humans were stricter and more often applied multiple labels. Largest gap: low-coverage tests as most-common issue for **9.4%** of the benchmark (humans) vs **4.1%** (agent pipeline).
 
-**[原文]** How they decide a task is “broken” — four categories:
+**[Source claim]** How they decide a task is “broken” — four categories:
 
 | Category | OpenAI definition (quote) | Footnote |
 |----------|---------------------------|----------|
@@ -75,18 +75,18 @@ Three stages, all **[原文]**:
 | Low-coverage tests | “under check the requested feature, so incomplete fixes can pass.” | — |
 | Misleading prompt | “points models toward the wrong behavior or **contradicts what tests require**.” | — |
 
-Worked example they publish (**[原文]**): task `OpenLibrary-77c16d5`. Prompt examples have one leading space (`" | Chapter 1 | 1"`); hidden `test_to_markdown` requires two (`"  | Chapter 1 | 1"`). “If a model rightly follows the given prompt, that one-character difference would fail the hidden test cases.”
+Worked example they publish (**[Source claim]**): task `OpenLibrary-77c16d5`. Prompt examples have one leading space (`" | Chapter 1 | 1"`); hidden `test_to_markdown` requires two (`"  | Chapter 1 | 1"`). “If a model rightly follows the given prompt, that one-character difference would fail the hidden test cases.”
 
-**[原文]** Root-cause diagnosis: GitHub issues/PRs were written for human collaboration. “problem descriptions, merged code, and unit tests do not always line up to form clean, isolated tasks.” “tests included in pull requests can be overly strict because they are written to validate a specific change, rather than to define an implementation-agnostic standard for solving the task.”
+**[Source claim]** Root-cause diagnosis: GitHub issues/PRs were written for human collaboration. “problem descriptions, merged code, and unit tests do not always line up to form clean, isolated tasks.” “tests included in pull requests can be overly strict because they are written to validate a specific change, rather than to define an implementation-agnostic standard for solving the task.”
 
-**[原文]** Why agents help now: “As model capabilities improve, we can use those models to inspect prompts, tests, patches, traces, and edge cases with much greater depth and consistency.”
+**[Source claim]** Why agents help now: “As model capabilities improve, we can use those models to inspect prompts, tests, patches, traces, and edge cases with much greater depth and consistency.”
 
 #### What this post does **not** give
 
-- **[未找到]** a public list of the 200 / 249 / 286 instance IDs.
-- **[未找到]** the filter’s source code, prompts, or a paper with more metrics (precision/recall of the automated filter against humans).
-- **[未找到]** a per-category count that sums to 200 or 249 (the page has a figure “Share of Dataset Flagged by Issue Type” that did not render as numbers in the fetched HTML; only the 9.4% vs 4.1% low-coverage split is in the prose).
-- **[未找到]** an official Scale AI written response to this audit (searched 2026-09-01).
+- **[Not found]** a public list of the 200 / 249 / 286 instance IDs.
+- **[Not found]** the filter’s source code, prompts, or a paper with more metrics (precision/recall of the automated filter against humans).
+- **[Not found]** a per-category count that sums to 200 or 249 (the page has a figure “Share of Dataset Flagged by Issue Type” that did not render as numbers in the fetched HTML; only the 9.4% vs 4.1% low-coverage split is in the prose).
+- **[Not found]** an official Scale AI written response to this audit (searched 2026-09-01).
 
 ### 1.2 Related OpenAI posts — do not mix them with §1.1
 
@@ -97,22 +97,22 @@ There are **two earlier OpenAI posts**. The user remembered “OpenAI used agent
 - URL: https://openai.com/index/introducing-swe-bench-verified/
 - Dataset: **original SWE-bench test set**, not Pro.
 - Method: **human only**. 93 professional Python developers; 1,699 random test-set samples; 3 independent labels; keep a sample iff no annotator assigned severity ≥ 2 on underspecification, unfair FAIL_TO_PASS tests, or “other major issues.” Rubric PDF: https://cdn.openai.com/introducing-swe-bench-verified/swe-b-annotation-instructions.pdf
-- **[原文]** 38.3% flagged for underspecified problem statements; 61.1% flagged for unit tests that may unfairly mark valid solutions as incorrect; **68.3% of annotated samples filtered out**.
+- **[Source claim]** 38.3% flagged for underspecified problem statements; 61.1% flagged for unit tests that may unfairly mark valid solutions as incorrect; **68.3% of annotated samples filtered out**.
 - Product: SWE-bench Verified = 500 samples.
 - **No agents.** SPICE (2025) later measured Krippendorff’s α = 0.24 (issue clarity) and 0.41 (test adequacy) on the released annotations — i.e. even the human gold is noisy.
 
-Worked example they publish (**[原文]**): `scikit-learn__scikit-learn-14520`. Issue says `copy` is ignored. Hidden test requires a *specific* `DeprecationWarning` message arrived at in PR discussion the agent never sees. “it would be nearly impossible for an agent to solve this sample.”
+Worked example they publish (**[Source claim]**): `scikit-learn__scikit-learn-14520`. Issue says `copy` is ignored. Hidden test requires a *specific* `DeprecationWarning` message arrived at in PR discussion the agent never sees. “it would be nearly impossible for an agent to solve this sample.”
 
 #### B. *Why SWE-bench Verified no longer measures frontier coding capabilities* — 2026-02-23
 
 - URL: https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/
 - Dataset: **SWE-bench Verified** (the 500), not Pro.
-- Screening signal: **[原文]** “138 SWE-bench Verified problems that OpenAI o3 did not consistently solve over 64 independent runs” = 27.6% of the 500. Then **at least six experienced software engineers** independently, plus a re-verify team. This is “use repeated model failure as a *candidate filter*, then humans decide” — not an investigator-agent audit like §1.1.
-- **[原文]** Of those 138: **59.4%** had material issues in test design and/or problem description. Split: **35.5% narrow** (strict implementation details), **18.8% wide** (tests check extra unspecified functionality), **5.1% miscellaneous**.
-- **[推断, do not quote as OpenAI]** 59.4% × 138/500 ≈ 16.4% of the *full* Verified set is a lower bound *only if* the remaining 362 are clean. OpenAI does **not** claim that. They audited the hard-fail subset, which is biased toward broken tasks.
+- Screening signal: **[Source claim]** “138 SWE-bench Verified problems that OpenAI o3 did not consistently solve over 64 independent runs” = 27.6% of the 500. Then **at least six experienced software engineers** independently, plus a re-verify team. This is “use repeated model failure as a *candidate filter*, then humans decide” — not an investigator-agent audit like §1.1.
+- **[Source claim]** Of those 138: **59.4%** had material issues in test design and/or problem description. Split: **35.5% narrow** (strict implementation details), **18.8% wide** (tests check extra unspecified functionality), **5.1% miscellaneous**.
+- **[Inference, do not quote as OpenAI]** 59.4% × 138/500 ≈ 16.4% of the *full* Verified set is a lower bound *only if* the remaining 362 are clean. OpenAI does **not** claim that. They audited the hard-fail subset, which is biased toward broken tasks.
 - Second finding: contamination. Automated red-team (GPT-5 probing GPT-5.2-Chat / Claude Opus 4.5 / Gemini 3 Flash Preview, 15 turns) recovered gold-patch or verbatim problem details. They then **recommended SWE-bench Pro** — the recommendation they retracted in July.
 
-Worked examples (**[原文]**):
+Worked examples (**[Source claim]**):
 
 - Narrow: `pylint-dev__pylint-4551` — tests `from pylint.pyreverse.utils import get_annotation`; that name is not in the problem statement; valid solutions fail on import.
 - Wide: `sympy__sympy-18199` — PR fixed three issues; Verified problem statement covers only `#18212`; tests cover all three.
@@ -121,7 +121,7 @@ Worked examples (**[原文]**):
 
 Searched for OpenAI papers/blogs that (a) name SWE-bench / Verified / Pro and (b) describe an agent pipeline that *labels tasks as broken*. Hits all resolve to the three posts above, plus press recaps of them.
 
-**[未找到]** an OpenAI *arXiv paper* (as opposed to the blog) on the Pro audit.
+**[Not found]** an OpenAI *arXiv paper* (as opposed to the blog) on the Pro audit.
 
 ---
 
@@ -143,9 +143,9 @@ Keep the datasets distinct:
 - Blog: https://scale.com/blog/swe-bench-pro (2025-09-19)
 - Data: https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro
 - Harness: https://github.com/scaleapi/SWE-bench_Pro-os
-- Splits **[原文]**: public 731 (11 copyleft OSS repos), held-out 858 (12 repos, private), commercial 276 (18 startup repos).
+- Splits **[Source claim]**: public 731 (11 copyleft OSS repos), held-out 858 (12 repos, private), commercial 276 (18 startup repos).
 
-**[原文]** construction, relevant to the motivating bug:
+**[Source claim]** construction, relevant to the motivating bug:
 
 > “Requirements. … we introduce requirements to resolve any potential ambiguity issues. For each problem, we list out a set of requirements that give additional detail on what is needed to solve the task. These requirements are grounded on the unit tests that are used for validation.”
 
@@ -155,12 +155,12 @@ Keep the datasets distinct:
 
 > “we include the problem statement, requirements and interface specification in the agent prompt. Here, models are evaluated on their ability to implement a given repair or patch after being given significant details (rather than their ability to resolve ambiguity).”
 
-Human pipeline they describe **[原文]**:
+Human pipeline they describe **[Source claim]**:
 
 - Rewrite problem statement from commits / PRs / issues; add missing information.
 - Environment: experts build Docker; gold tests run several times, drop flaky; then “a human-verification of all tests in the fail2pass test list” dropping tests that are “irrelevant to the task description” or “too broad”; drop the problem if all tests fail that check.
 
-Ablation **[原文]** Table 3 (public set, 50-turn / $2 cap analysis setting — **not** the main leaderboard numbers):
+Ablation **[Source claim]** Table 3 (public set, 50-turn / $2 cap analysis setting — **not** the main leaderboard numbers):
 
 | Model | Problem statement + requirements + interface | Problem statement only |
 |-------|----------------------------------------------|------------------------|
@@ -169,13 +169,13 @@ Ablation **[原文]** Table 3 (public set, 50-turn / $2 cap analysis setting —
 
 They comment: “Without these augmentations, unit test verifiers are susceptible to false negatives.”
 
-**[推断]** Scale’s own ablation is evidence that the *interface/requirements block is load-bearing for the tests*. If those two blocks contradict each other, the agent is forced to pick a side, and the tests (grounded on one side) will fail the other. That is a *new* failure mode created by the augmentation, not inherited from original SWE-bench.
+**[Inference]** Scale’s own ablation is evidence that the *interface/requirements block is load-bearing for the tests*. If those two blocks contradict each other, the agent is forced to pick a side, and the tests (grounded on one side) will fail the other. That is a *new* failure mode created by the augmentation, not inherited from original SWE-bench.
 
 ### 2.2 Scale’s own errata (harness / tests, not the ~30% taxonomy)
 
 From https://github.com/scaleapi/SWE-bench_Pro-os README News (fetched 2026-09-01):
 
-| Date | Scale note **[原文]** |
+| Date | Scale note **[Source claim]** |
 |------|------------------------|
 | 2026-05-18 | “We have identified some issues with the leaderboard and are currently working on addressing them.” (no further public detail found) |
 | 2026-02-09 | “We have removed some unit tests which were outdated (e.g. required the year 2025) or were previously not intended to be included.” |
@@ -190,19 +190,19 @@ Community GitHub issues (same repo):
 
 ### 2.3 OpenAI’s Pro audit (already §1.1)
 
-Headline **[原文]**: ~30% of Pro public tasks broken (pipeline 27.4%, humans 34.1%). Four categories. Retracted endorsement.
+Headline **[Source claim]**: ~30% of Pro public tasks broken (pipeline 27.4%, humans 34.1%). Four categories. Retracted endorsement.
 
 Press recaps (The Decoder 2026-07-09, GIGAZINE 2026-07-09) add no numbers that are not in the OpenAI post; they sometimes smear “SWE-bench” and “Pro”. Prefer the OpenAI page.
 
 ### 2.4 kimjune01 determinacy audit — closest published match to “contradictory spec”
 
-Source: GitHub issue *Right of reply: an external determinacy audit of the SWE-bench Pro public set*, scaleapi/SWE-bench_Pro-os#108, opened 2026-06-09. The GitHub HTML page failed to fully render in this session; quotes below are from the issue body as returned by search/indexers on 2026-09-01. Treat as **[原文 from indexed issue body]**; I could not re-fetch the live page.
+Source: GitHub issue *Right of reply: an external determinacy audit of the SWE-bench Pro public set*, scaleapi/SWE-bench_Pro-os#108, opened 2026-06-09. The GitHub HTML page failed to fully render in this session; quotes below are from the issue body as returned by search/indexers on 2026-09-01. Treat as **[Source claim from indexed issue body]**; I could not re-fetch the live page.
 
-**[原文]** Criterion: whether “the behavior the hidden test grades is not pinned by what a solver receives (problem statement, requirements, interface, and repo source at the base commit).”
+**[Source claim]** Criterion: whether “the behavior the hidden test grades is not pinned by what a solver receives (problem statement, requirements, interface, and repo source at the base commit).”
 
-**[原文]** Scope: 728 public tasks (note: Scale says 731; the 3-task gap is unexplained here).
+**[Source claim]** Scope: 728 public tasks (note: Scale says 731; the 3-task gap is unexplained here).
 
-**[原文]** Documented **lower bound 109 / 728 = 15.0%**:
+**[Source claim]** Documented **lower bound 109 / 728 = 15.0%**:
 
 - **83 (11.4%) mechanical, grep, no model judgment**: graded constant absent from prose *and* codebase (**airtight**); live codebase convention that gold contradicts (**misdetermined**); codebase has ≥2 live ways and the test pins one (**codebase-plural**); a prose-faithful alternative patch the official grader rejects (**graded-patch**); **or a verbatim prose clause the test contradicts (hand-verified)**.
 - **26 (3.6%) two-expert prose-plurality splits**: “the prose itself licenses two requirement-faithful readings, written from only the prose and the source, that the hidden test splits.” Constructor/refuter with two model families; reported κ = 0.52.
@@ -210,7 +210,7 @@ Source: GitHub issue *Right of reply: an external determinacy audit of the SWE-b
 - **14** cases where a maintainer/reviewer settled the test-pinned choice on the original upstream PR — “The choice was made in review, not stated in the task a solver receives.”
 - 63 screen-flagged candidates still rater-pending at posting time.
 
-**[推断]** The motivating “The method” vs `Type: Function` case sits in *verbatim prose clause the test contradicts* and/or *prose-plurality*. Both sides of the prompt are “requirement-faithful”; the hidden tests pick one.
+**[Inference]** The motivating “The method” vs `Type: Function` case sits in *verbatim prose clause the test contradicts* and/or *prose-plurality*. Both sides of the prompt are “requirement-faithful”; the hidden tests pick one.
 
 This audit is **not** OpenAI’s, **not** Scale’s, and is a lower bound by a stricter (determinacy) definition than OpenAI’s four-way “broken” taxonomy. Do not average 15% with 30%.
 
@@ -221,9 +221,9 @@ This is an audit of **Pro’s grader on rollouts**, not of “is the task solvab
 - Blog: https://deepswe.datacurve.ai/blog/deepswe (page dated in crawls around 2026-05-26 launch)
 - Paper: *DeepSWE: Measuring Frontier Coding Agents on Original, Long-Horizon Engineering Tasks*, arXiv:2607.07946, 2026-07-08. HTML: https://arxiv.org/html/2607.07946v1
 
-**[原文]** Method: 30 tasks at random from Pro and from DeepSWE; 3 rollouts × 10 frontier agent configs; independent LLM judge vs the official verifier. n = 789 reviewed Pro rollouts (API/timeout/harness failures excluded).
+**[Source claim]** Method: 30 tasks at random from Pro and from DeepSWE; 3 rollouts × 10 frontier agent configs; independent LLM judge vs the official verifier. n = 789 reviewed Pro rollouts (API/timeout/harness failures excluded).
 
-**[原文]** SWE-Bench Pro verifier vs judge:
+**[Source claim]** SWE-Bench Pro verifier vs judge:
 
 | | SWE-Bench Pro | DeepSWE |
 |--|---------------|---------|
@@ -231,9 +231,9 @@ This is an audit of **Pro’s grader on rollouts**, not of “is the task solvab
 | False negative (correct impl rejected) | 24.0% | 1.1% |
 | Combined disagreement | **32.4%** (95% CI [29.2, 35.8]) | 1.4% |
 
-**[原文]** “This is a disagreement rate between two independent readers, not a ground-truth error rate.” Qualitative FN shapes they name: tests that import a private maintainer helper the prompt never mentions; gold test fixtures that don’t ride along at checkout; verifier suites that include unrelated tests broken by any legitimate side effect.
+**[Source claim]** “This is a disagreement rate between two independent readers, not a ground-truth error rate.” Qualitative FN shapes they name: tests that import a private maintainer helper the prompt never mentions; gold test fixtures that don’t ride along at checkout; verifier suites that include unrelated tests broken by any legitimate side effect.
 
-**[推断]** 32% “verifier error” is **not** the same statistic as OpenAI’s ~30% “broken tasks.” One is per-rollout grader disagreement; one is per-task design defect. They can both be true.
+**[Inference]** 32% “verifier error” is **not** the same statistic as OpenAI’s ~30% “broken tasks.” One is per-rollout grader disagreement; one is per-task design defect. They can both be true.
 
 ### 2.6 Faros (commercial blog, not a paper)
 
@@ -243,17 +243,17 @@ Two posts, same author (Thierry Donneau-Golencer). Useful as a *second look at P
 
    ~100 Pro tasks, several hundred patches. 152 patches that **failed tests** but scored above the passing-class average on their rubric. Of those 152: **47% near-misses**, **23% divergent designs** (functionally valid, different shape than gold — “the patch-side image of OpenAI's overly strict tests category”), 7% regressions-only, 12% mechanical, 9% incomplete/stub, 1% rubric defects.
 
-   **[原文]** They explicitly **reject** “flag every rubric/harness disagreement as a broken task”: “Disagreement is spread too evenly to isolate broken tasks on its own.”
+   **[Source claim]** They explicitly **reject** “flag every rubric/harness disagreement as a broken task”: “Disagreement is spread too evenly to isolate broken tasks on its own.”
 
 2. *Why AI coding agents actually fail (it's not the model).* ~2026-08. https://www.faros.ai/blog/why-do-ai-coding-agents-fail
 
    Six models × 100 Pro tasks; ~4,000 failed rubric items clustered.
 
    - Largest cluster (247): **instruction conflict**, dominated by harness boilerplate `"DO NOT MODIFY: Tests, configuration files."` vs tasks whose gold PR *requires* adding/updating tests.
-   - **297 requirements failed by all six models.** **[原文]** “If your agent keeps failing a class of tasks, the first question isn't ‘which model is next’; it's ‘would *any* model pass this, or is the task the problem?’”
+   - **297 requirements failed by all six models.** **[Source claim]** “If your agent keeps failing a class of tasks, the first question isn't ‘which model is next’; it's ‘would *any* model pass this, or is the task the problem?’”
    - Repo spread (42.1 pp qutebrowser 77.6% vs tutao/tutanota 35.5%) > model spread (22.7 pp).
 
-**[推断]** Faros finding 1 (instruction conflict) is a *harness+task* contradiction, same *shape* as requirements-vs-interface: two locally consistent instructions, tests implement one.
+**[Inference]** Faros finding 1 (instruction conflict) is a *harness+task* contradiction, same *shape* as requirements-vs-interface: two locally consistent instructions, tests implement one.
 
 ### 2.7 What Scale claimed vs what later audits found
 
@@ -264,7 +264,7 @@ Two posts, same author (Thierry Donneau-Golencer). Useful as a *second look at P
 | Human review drops irrelevant / too-broad tests. | OpenAI still finds low-coverage *and* overly-strict tests; DeepSWE FN 24%. |
 | Copyleft + private commercial set → contamination-resistant. | DeepSWE / issue #93: **git history in the image**, not pretraining, was enough for some agents to recover gold. Different contamination channel. |
 
-**[未找到]** Scale blog or paper addendum answering OpenAI 2026-07-08.
+**[Not found]** Scale blog or paper addendum answering OpenAI 2026-07-08.
 
 ---
 
@@ -295,7 +295,7 @@ Grouped by the failure mode you care about. Each row is a published method, not 
 - SpecValidator / Larbi et al. 2025: contradictory NL descriptions hurt code-gen; SpecValidator itself does **not** have a “contradiction” class (LV / US / SF only).
 - Classical RE (Easterbrook & Nuseibeh 1996, etc.): inconsistency = two requirements that cannot both hold. Tooling in that literature is for formal/spec docs, not SWE-bench instances.
 
-**[未找到]** a published detector that specifically diffs Pro’s `requirements` field against its `interface` field (e.g. “method” vs `Type: Function`). That check is cheap and dataset-specific; nobody appears to have shipped it.
+**[Not found]** a published detector that specifically diffs Pro’s `requirements` field against its `interface` field (e.g. “method” vs `Type: Function`). That check is cheap and dataset-specific; nobody appears to have shipped it.
 
 ### 3.2 Golden tests too narrow (magic strings, names, values not in the prompt)
 
@@ -304,7 +304,7 @@ Grouped by the failure mode you care about. Each row is a published method, not 
 | **OpenAI 2024 TCA rubric** | Humans: “Do the FAIL_TO_PASS tests filter out valid solutions?” 0–3 | 61.1% of original SWE-bench annotated samples flagged |
 | **OpenAI 2026-02 narrow tests** | Human audit of 138 hard Verified tasks | 35.5% of that subset |
 | **OpenAI 2026-07 overly strict tests** | Agent+human on Pro | “single most common” per Faros’s reading of OpenAI; OpenAI does not publish the exact share in prose |
-| **Token/AST heuristic** (anon. ICLR 2026 submission, OpenReview id `aNUVttHlU8`, PDF https://openreview.net/pdf/934f5cd57b6bbcd5c26841bb33757055a839bd62.pdf) | **[原文]** “any novel lexical elements appearing in the original (‘gold’) solution patch, and required by the corresponding test, but not mentioned in the issue description, will render the instance unsolvable.” Intersection of string/number/identifier tokens in gold ∩ test, missing from issue. Semantic (AST declared-vs-used) and Tokens-Only (lexer) modes. | Evaluated against Verified human unfair-test labels; **slightly more accurate than SPICE and SWE-rebench when those do not use a fine-tuned LLM**. Worked example: `astropy-14371` tests `is_rotation` which is not in the issue. |
+| **Token/AST heuristic** (anon. ICLR 2026 submission, OpenReview id `aNUVttHlU8`, PDF https://openreview.net/pdf/934f5cd57b6bbcd5c26841bb33757055a839bd62.pdf) | **[Source claim]** “any novel lexical elements appearing in the original (‘gold’) solution patch, and required by the corresponding test, but not mentioned in the issue description, will render the instance unsolvable.” Intersection of string/number/identifier tokens in gold ∩ test, missing from issue. Semantic (AST declared-vs-used) and Tokens-Only (lexer) modes. | Evaluated against Verified human unfair-test labels; **slightly more accurate than SPICE and SWE-rebench when those do not use a fine-tuned LLM**. Worked example: `astropy-14371` tests `is_rotation` which is not in the issue. |
 | **PaiChecker UL** | Test asserts exact literals (exception messages) introduced by the PR, absent from the issue | 0.2% of Verified (after human curation); 15.9% of SWE-Gym; 3.0% of Multilingual |
 | **DeepSWE qualitative FN** | Tests import private helpers the prompt never names | Part of the 24% FN cluster |
 
@@ -334,9 +334,9 @@ This is the signal closest to “don’t use this as an agent-error training exa
 | **DeepSWE** | 3 rollouts × 10 configs, then LLM judge vs verifier | Measures grader noise, not task solvability |
 | **PaiChecker impact analysis** | Instances **never resolved by any of 131 leaderboard agents** | 41.2% of those never-resolved Verified instances were PR–Issue misaligned |
 
-**[原文, Faros]** “You cannot buy your way out of a contradictory prompt with a bigger model.”
+**[Source claim, Faros]** “You cannot buy your way out of a contradictory prompt with a bigger model.”
 
-**[推断, operational recipe for swe-lab, not a published protocol]:**
+**[Inference, operational recipe for swe-lab, not a published protocol]:**
 
 1. Cheap static: diff `requirements` vs `interface` (and vs `fail_to_pass` / test_patch identifiers). Token-heuristic on gold ∩ test − prompt.
 2. Execution: gold patch must pass the grader (kimjune01 found 3 gold-fails-grader; Scale claims they check this).
@@ -385,13 +385,13 @@ All dates are publication dates. Access date 2026-09-01.
 **How to read this for training-data hygiene:**
 
 - If the question is “what fraction of **Pro public** tasks are unsafe to treat as agent-error supervision?”, the only lab-scale, human-backed number is OpenAI’s **~30% (27.4–34.1%)**. kimjune01’s **15%** is a *stricter, mechanical lower bound* on a *narrower* defect (unpinned hidden behavior). DeepSWE’s **32%** is grader noise on rollouts, which will also poison outcome-based labels but is not a task count.
-- If the question is “is the motivating contradiction rare?”, **[未找到]** a published count of requirements-vs-interface contradictions. The closest published buckets are OpenAI *misleading prompt* (no public %) and kimjune01 *prose-plurality* **3.6%** + *verbatim prose vs test* (inside the 11.4% mechanical pile). **[推断]** the true rate of “two internally consistent halves of the Pro prompt disagree” is at least the prose-plurality 3.6% and possibly a slice of OpenAI’s ~30%. It is not a one-off.
+- If the question is “is the motivating contradiction rare?”, **[Not found]** a published count of requirements-vs-interface contradictions. The closest published buckets are OpenAI *misleading prompt* (no public %) and kimjune01 *prose-plurality* **3.6%** + *verbatim prose vs test* (inside the 11.4% mechanical pile). **[Inference]** the true rate of “two internally consistent halves of the Pro prompt disagree” is at least the prose-plurality 3.6% and possibly a slice of OpenAI’s ~30%. It is not a one-off.
 
 ---
 
 ## 5. Practical implications for “failed rollout → hint training”
 
-Stated as **[推断]** from the sources, not as anyone’s official guidance.
+Stated as **[Inference]** from the sources, not as anyone’s official guidance.
 
 1. **Outcome-only fail is not “the agent was wrong.”** OpenAI’s entire 2026-07 post exists to say that. Their OpenLibrary spacing example is the same structure as method-vs-Function: follow the prompt, fail the hidden test.
 2. **Pro is the wrong dataset to assume “human-augmented ⇒ unambiguous.”** Scale added requirements+interface *because* tests are picky about names; that creates a second spec that can fight the first. Their own ablation (25.9% → 8.4% without those fields) shows the tests are coupled to those fields.
@@ -405,12 +405,12 @@ Stated as **[推断]** from the sources, not as anyone’s official guidance.
 
 ## 6. Explicit “not found”
 
-- **[未找到]** OpenAI paper (arXiv) accompanying the July 2026 Pro audit.
-- **[未找到]** public dump of the 286 / 200 / 249 Pro instance IDs.
-- **[未找到]** Scale AI official written response to the July 2026 audit.
-- **[未找到]** a detector paper whose object is Pro `requirements` ⟂ `interface`.
-- **[未找到]** an OpenAI *agent* pipeline on **original SWE-bench** or **Verified** that *labels* tasks (2024 was humans; 2026-02 used fail@64 only as a *filter* into a human audit).
-- **[未找到]** SWE-bench Multimodal quality census comparable to the Pro ~30% figure. PaiChecker reports 24.3% PR–Issue misalignment on Multilingual, which is a different dataset.
+- **[Not found]** OpenAI paper (arXiv) accompanying the July 2026 Pro audit.
+- **[Not found]** public dump of the 286 / 200 / 249 Pro instance IDs.
+- **[Not found]** Scale AI official written response to the July 2026 audit.
+- **[Not found]** a detector paper whose object is Pro `requirements` ⟂ `interface`.
+- **[Not found]** an OpenAI *agent* pipeline on **original SWE-bench** or **Verified** that *labels* tasks (2024 was humans; 2026-02 used fail@64 only as a *filter* into a human audit).
+- **[Not found]** SWE-bench Multimodal quality census comparable to the Pro ~30% figure. PaiChecker reports 24.3% PR–Issue misalignment on Multilingual, which is a different dataset.
 
 ---
 
