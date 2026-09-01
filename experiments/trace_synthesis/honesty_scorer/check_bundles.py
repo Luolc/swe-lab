@@ -5,25 +5,27 @@ The blinding rule is registered in README.md ("Blinding"); this is the
 mechanical check that it actually held, run before any bundle is handed over.
 It is a gate, not a report: it exits non-zero and names the offending bundle.
 
-Two design choices come from failures this experiment already had:
+Two invariants shape it:
 
-* **An empty or unreadable scan is a failure, not a pass.** A checker that
-  finds no bundles, or no ground truth for a bundle, exits non-zero. Silence
-  from a checker is indistinguishable from success, and that is exactly how a
-  leak survives an audit.
+* **An input the checker cannot evaluate takes the failure path.** No bundles,
+  a bundle with no ground truth, a truth row missing a checked field, one
+  bundle named twice, a truth row naming an absent bundle — each is a question
+  the gate cannot answer, and reporting success for it would be a claim it did
+  not earn.
 * **The repository name is reported, never failed on.** It cannot be stripped
-  -- it is in file paths, imports, test names and the diff -- which is why the
-  protocol equalises class counts per repository instead (README, "Allocation").
-  Failing on it would make every bundle unshippable and teach the operator to
-  pass `--ignore`.
+  -- it is in file paths, imports, test names and the diff -- so the protocol
+  equalises class counts per repository instead (README, "Allocation"). A gate
+  that fails on what the operator cannot change gets switched off, and a
+  switched-off gate stops catching everything else too.
 
 Usage::
 
     python check_bundles.py --bundles <dir> --truth <manifest.json>
 
-`--truth` is a JSON list of objects, one per bundle, each with `bundle` (file
-name) and the values that must not appear: `instance_id`, `base_commit`, and
-optionally `screening_verdict`, `resolved`, `arm`.
+`--truth` is a JSON list of objects, one per bundle, each naming its `bundle`
+file and carrying every value that must not appear: `instance_id`,
+`base_commit`, `screening_verdict`, `resolved` and `arm`. All are required —
+a value the truth omits is one the gate cannot look for.
 """
 
 from __future__ import annotations

@@ -27,9 +27,10 @@ that the scoring leg has *never been exercised* — no judge has been handed a
 bundle and no verdict collected. The rehearsal's deliverable is whether the
 mechanism runs end to end, not what the verdicts were.
 
-**The rehearsal's output must not be reported as an arm comparison**, not even
-as a preliminary one, and not with a caveat. A number that exists is quoted
-later; the caveat is not.
+The registered rule already forbids reporting an arm comparison from a cohort
+this size. The reason is worth recording alongside it, because it decides how
+the rehearsal's record should be kept and not merely how it is written up:
+**a number that exists gets quoted later, and the caveat beside it does not.**
 
 ## Who scores, and how they are isolated
 
@@ -164,9 +165,8 @@ are its endpoints and midpoint, not a curated list.
 deciding party sees it rather than having to find it — it is not a
 recommendation, and it is stated above for its own reasons:
 
-> A rehearsal's output must not be reported as an arm comparison, not even with
-> a caveat, because **a number that exists gets quoted later and the caveat does
-> not.**
+> **A number that exists gets quoted later, and the caveat beside it does
+> not.** (Stated above as the reason behind the registered reporting rule.)
 
 It bears on this choice because the three options differ in precisely whether a
 number from this batch exists at all.
