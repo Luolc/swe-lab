@@ -14,9 +14,11 @@ either backend.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+import contextlib
 from dataclasses import dataclass, field
 import logging
 import os
+import signal
 import subprocess
 from typing import override
 
@@ -30,6 +32,11 @@ from ..sandbox import ExecResult, Sandbox, WORKSPACE_ENV
 from ..spec import SandboxSpec
 
 _logger = logging.getLogger(__name__)
+
+# How long a timed-out process group gets to exit on SIGTERM before SIGKILL.
+# Short on purpose: this path has already blown its deadline, and everything
+# that needs to survive it has been flushed to the workspace long since.
+_TERMINATE_GRACE_S = 5.0
 
 
 @dataclass
@@ -220,20 +227,67 @@ class GitHubJobSandbox(Sandbox):
       timeout: float,
       env: Mapping[str, str] | None,
   ) -> ExecResult:
+    """Run one command in the job, ending its whole process tree on timeout.
+
+    ``start_new_session`` puts the command in a process group of its own so a
+    timeout can end **everything it started**, not just the shell we launched.
+    That distinction is load-bearing on this backend and only on this one:
+    there is no teardown behind us — ``down`` is genuinely a no-op, because the
+    job *is* the container — so a backgrounded grandchild survives the run and
+    keeps whatever it holds. Since the harness's invocation script backgrounds
+    a capture proxy that owns a port and forwards the run's credential, the old
+    behaviour would have leaked exactly that into the rest of the job. (The
+    Docker backend needs none of this: ``docker rm -f`` takes the container and
+    every process in it.)
+
+    Args:
+      argv: The command to run.
+      timeout: Seconds before the process group is killed.
+      env: Extra variables for this execution.
+
+    Returns:
+      The exit status and output; exit code 124 on timeout.
+    """
     run_env = self._exec_env(env)
-    try:
-      done = subprocess.run(
-          list(argv),
-          capture_output=True,
-          text=True,
-          timeout=timeout,
-          env=run_env,
-          check=False,
-      )
-      return ExecResult(done.returncode, done.stdout, done.stderr)
-    except subprocess.TimeoutExpired as exc:
-      err = exc.stderr if isinstance(exc.stderr, str) else ""
-      return ExecResult(124, "", err, timed_out=True)
+    with subprocess.Popen(
+        list(argv),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=run_env,
+        start_new_session=True,
+    ) as process:
+      try:
+        stdout, stderr = process.communicate(timeout=timeout)
+        return ExecResult(process.returncode, stdout, stderr)
+      except subprocess.TimeoutExpired:
+        self._end_process_group(process)
+        # Drain whatever the tree wrote before it died, so a timeout still
+        # reports the diagnostics it managed to emit.
+        _, stderr = process.communicate()
+        return ExecResult(124, "", stderr, timed_out=True)
+
+  @staticmethod
+  def _end_process_group(process: subprocess.Popen[str]) -> None:
+    """End a timed-out command's entire process group; never raises.
+
+    ``SIGTERM`` first so the shell's own ``EXIT`` traps get to run, then
+    ``SIGKILL`` unconditionally: waiting on ``process`` only proves the direct
+    child is gone, and it is the *grandchildren* this exists for.
+
+    Args:
+      process: The timed-out child, which ``start_new_session`` made the leader
+        of its group (so its pid is the group id).
+    """
+    group = process.pid  # start_new_session ⇒ the child leads its own group
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+      try:
+        os.killpg(group, sig)
+      except (ProcessLookupError, PermissionError):
+        return  # already gone, or not ours to signal
+      if sig is signal.SIGTERM:
+        with contextlib.suppress(subprocess.TimeoutExpired):
+          _ = process.wait(timeout=_TERMINATE_GRACE_S)
 
   def _exec_env(self, extra: Mapping[str, str] | None) -> dict[str, str]:
     """Build the exec environment: inherit the job's, then layer our own."""

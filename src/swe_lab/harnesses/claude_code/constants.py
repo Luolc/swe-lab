@@ -77,14 +77,39 @@ AGENT_INFO_NAME = "claude.info"
 INFO_ARTIFACT = "claude.info"
 
 # The proxy-capture trace: the cc-reverse-proxy appends one request/response
-# record per API call here. The proxy is a host process, but the composition
-# points it at the (shared) workspace so the log is a normal workspace artifact.
+# record per API call here. The proxy runs *inside* the sandbox and writes
+# straight to the workspace, so the log is a normal workspace artifact.
+#
+# One record per line, appended and flushed as each exchange completes, which
+# is what makes an interrupted run *partially readable* rather than corrupt: a
+# proxy killed mid-stream truncates the file at a line boundary and every line
+# already written stays a complete record.
 PROXY_LOG_NAME = "claude.proxy.jsonl"
 
-# The host, as seen from inside the container, that the Docker host-gateway
-# resolves to — how a containerized agent reaches a host-side proxy. The host
-# backend maps it via ``--add-host`` on every container.
-CONTAINER_PROXY_HOST = "host.docker.internal"
+# The proxy's own stdout/stderr. Its banner, per-request lines and any upstream
+# error land here — the only account of *why* capture failed when it does, and
+# unrecoverable once the sandbox is gone (a missing CA bundle in the instance
+# image, say, is invisible from the agent's side: it just cannot connect).
+PROXY_STDERR_NAME = "claude.proxy.log"
+
+# The pinned cc-reverse-proxy build, placed like the agent binary: a read-only
+# executable asset at a fixed absolute path, outside the workspace because it
+# is machinery rather than the run's material.
+PROXY_BINARY_AT = "/opt/cc-reverse-proxy/cc-reverse-proxy"
+
+# The port the in-sandbox proxy listens on, and the URL the agent dials to
+# reach it. **A constant, deliberately.** The sandbox has its own network
+# namespace, so this port is private to one run and cannot collide with
+# another run, with the host, or with anything else on the machine — which is
+# the whole reason the proxy moved inside. Its predecessor derived a host port
+# from a dataset index, needed a firewall rule to be reachable from the
+# container, and was exposed to every node on the host's tailnet.
+# (cc-reverse-proxy's own default port, so a manual run matches.)
+PROXY_PORT = 9527
+PROXY_BASE_URL = f"http://127.0.0.1:{PROXY_PORT}"
+
+# The upstream the proxy forwards to unless a run says otherwise.
+ANTHROPIC_API = "https://api.anthropic.com"
 
 DEFAULT_MODEL = "claude-sonnet-5"
 

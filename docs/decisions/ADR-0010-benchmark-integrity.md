@@ -260,3 +260,84 @@ all.
 Unchanged: §1 (environment, not prompt), §2 (declared per entry, refused
 loudly), §4 (every control asserts; a failure is a recorded failed attempt),
 §5 (policy stamp; no pooling across policies), §6 (post-hoc trace audit).
+
+## Amendment (2026-09-01): the egress chokepoint is the sandbox's network, not the capture proxy
+
+§3a named the host-side PROXY recorder as the enforcement point for default-deny
+egress ("that chokepoint becomes the *enforcement* point"). That is no longer
+available, and on reflection was never sound.
+
+[ADR-0012](ADR-0012-in-sandbox-capture-proxy.md) moves the capture proxy
+**inside the sandbox**, because the host-side shape made a now-required
+component depend on a host firewall rule, an unbounded index-derived port, and a
+listener exposed to the whole tailnet — and cannot work at all on a backend
+handed an already-running job. An in-sandbox proxy sits on the same side of the
+boundary as the agent, which can kill it or ignore `ANTHROPIC_BASE_URL`.
+
+So §3a's *goal* stands unchanged and still at P0 — the rollout entry should stop
+running with general network access — while its *mechanism* moves to the
+**backend's container network configuration**, which the agent is genuinely
+outside of and which does not depend on whether the run happens to be recording
+its traffic. A recorder is evidence, not a control; conflating the two was the
+error.
+
+**The new mechanism, concretely**, so this does not become a homeless P0. On
+`DockerHostSandbox` the shape is: the backend creates a **per-run user-defined
+Docker network** and attaches the container to it with **no route off the host**
+(`docker network create --internal`), so the container's default route reaches
+nothing; the one reachable peer on that network is a **host-side forwarding proxy
+that allowlists the model API host**. Enforcement therefore lives in a process
+the agent cannot kill and on a route it cannot go around — nothing else is
+routable — while the *recording* proxy stays inside the sandbox. The two are
+deliberately separate processes with separate jobs, which is the distinction §3a
+originally collapsed. `network=False` (`--network none`) is the degenerate case
+of the same control and is what the offline entries already use.
+
+**This is intended, not enforced. There is no test, and there is no code.**
+What exists today is a boolean: `SandboxConfig.network`, realized as
+`--network none` or nothing at all. `definitions.py` passes `network=True` for
+both `rollout` and `unit_test`, so the shipped solving path runs with **general**
+network access; only `git_integrity_audit` passes `network=False`. Read every
+"default-deny egress" sentence in §3a as a statement of intent about a control
+that does not exist yet.
+
+Enforcement is also **per-backend, and one backend cannot do it at all**:
+`build_sandbox` refuses `network=False` on `ghjob` outright ("backend 'ghjob'
+cannot honor network=False") because the job container is already live when we
+are handed it. So §3a, once built, will be a control the A-host backend asserts
+and the A-ghjob backend cannot — which §2's per-entry declaration must surface
+rather than silently skip.
+
+**The first test that would let this claim be stated as enforced** asserts that a
+rollout entry's container cannot open a connection to a host outside the
+allowlist, from inside the sandbox, and that the attempt is recorded. Until such
+a test exists, §3a stays a plan.
+
+**Nothing implemented changes with this amendment.** §3a was unbuilt before it
+and is unbuilt after it; rollout ran `network=True` before and runs `network=True`
+after. No control is weakened — what changes is *where* the control will be built,
+and that the gap between the plan and the code is now written down instead of
+implied.
+
+**A correction, not a settlement.** An earlier draft of this amendment said
+proxy capture's in-workspace log was "parity with `STREAM` capture" and therefore
+not a new integrity surface. That was wrong on the facts and is corrected in
+[ADR-0012](ADR-0012-in-sandbox-capture-proxy.md) §4: the old `ProxyRecorder`
+kept its log on the *host* until `before_destroy`, so the agent never saw it
+while running, and a proxy record carries HTTP headers that no stream event has.
+A raw capture contains the request's `Authorization` credential and the
+operator's organization / workspace identity.
+
+For **this** ADR's purpose the distinction still holds — the record *bodies* are
+the agent's own conversation, so no §3 control is weakened and no run becomes
+more cheatable — but that is a statement about benchmark integrity only, and it
+must not be read as clearing the change. The credential and operator-identity
+exposure is real, it is **new**, and it is closed by redacting sensitive headers
+**at write time** — in `cc-reverse-proxy` itself, on by default — so an
+unredacted capture never reaches a collected artifact. ADR-0012 §4 carries the
+mechanism and the acceptance criterion, which is stated at the artifact ("no
+record contains a credential value or an operator identifier") rather than at
+the agent, because the agent runs as root in the container and "the agent cannot
+read it" is not a testable claim here.
+
+Unchanged: §1, §2, §3b, §3c, §4, §5, §6, and the 2026-08-06 amendment.

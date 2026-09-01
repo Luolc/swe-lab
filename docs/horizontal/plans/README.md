@@ -21,7 +21,7 @@ read status from them. A task that shipped with notable deltas gets a dated
 | 06a | [`Conversation` protocol + output converters](task-06a-conversation-protocol.md) | ✅ Done (PR #37) |
 | 06 | [`claude_code` harness (event-stream capture)](task-06-claude-code-harness.md) | ✅ Done (PR #47) |
 | 07 | [Diff-extract observer + rollout CLI](task-07-diff-extract-rollout-cli.md) | ✅ Done (PR #48; live flipt rollout verified manually) |
-| 08 | [Proxy capture mode](task-08-proxy-capture.md) | ✅ Done (converter + harness/backend seam; live path = manual) |
+| 08 | [Proxy capture mode](task-08-proxy-capture.md) | ✅ Done (converter + harness/backend seam. The plan's host-side proxy is superseded: it now runs *in* the sandbox and the live path is automated — [ADR-0012](../../decisions/ADR-0012-in-sandbox-capture-proxy.md)) |
 | 09 | [A-ghjob backend](task-09-a-ghjob-backend.md) | ✅ Done (`GitHubJobBackend` + `--backend` seam; container-job workflow = manual) |
 | 10a | [Moves: `datasets/`, `paths`, `repo/` → top level](task-10a-moves.md) | ✅ Done (pure rename; 190 green, W1 CLI runs) |
 | 10b | [Cutover + deletion (old packages, `core/`, workflows)](task-10b-cutover.md) | ✅ Done (`core/` gone; verify on engine; stub-seam test; 184 green) |

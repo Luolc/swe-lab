@@ -49,11 +49,6 @@ _DOCKER_TIMEOUT_S = 120.0
 _OWNER_LABEL = "swe-lab"
 _INSTANCE_LABEL = "swe-lab-instance"
 
-# Mapped on every container via ``--add-host`` so an in-container process can
-# always reach a host-side service (the optional proxy-capture recorder) at
-# ``host.docker.internal``. Harmless when nothing on the host is listening.
-_HOST_GATEWAY = "host.docker.internal:host-gateway"
-
 
 @dataclass
 class DockerHostSandbox(Sandbox):
@@ -128,7 +123,6 @@ class DockerHostSandbox(Sandbox):
     if not self.network:
       create_args += ["--network", "none"]
     create_args += ["-v", f"{self.workspace}:{self.mount_at}"]
-    create_args += ["--add-host", _HOST_GATEWAY]
     for key, value in self.env.items():
       create_args += ["-e", f"{key}={value}"]
     for key in self.pass_env:

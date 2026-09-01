@@ -29,8 +29,13 @@ from swe_lab.harnesses.claude_code.constants import (
     AGENT_SCRIPT_NAME,
     BINARY_AT,
     INFO_ARTIFACT,
+    PROXY_BASE_URL,
+    PROXY_BINARY_AT,
     PROXY_LOG_NAME,
+    PROXY_PORT,
+    PROXY_STDERR_NAME,
 )
+from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 from swe_lab.harnesses.common import AgentInfoObserver, home_fallback_lines
 from swe_lab.sandbox import (
     Contribution,
@@ -159,9 +164,16 @@ def test_bare_guards_the_only_credential_it_can_use():
   assert "exit 78" in script
 
 
-def test_proxy_capture_also_guards_its_base_url():
+def test_proxy_capture_refuses_to_run_the_agent_without_a_live_proxy():
+  # The base-URL guard this replaces was inert — the script exports the URL
+  # itself, so it could never be empty. What can actually go wrong now is the
+  # proxy: it exits (a bad target, no CA bundle in the image) or never starts
+  # listening. Either way the run must stop, loudly, rather than let the agent
+  # burn a budget against a refused connection.
   script = _script("/app", _proxy_harness())
-  assert 'if [ -z "${ANTHROPIC_BASE_URL:-}" ]; then' in script
+  assert 'if ! kill -0 "$proxy_pid" 2>/dev/null; then' in script
+  assert f"the capture proxy never listened on port {PROXY_PORT}" in script
+  assert script.count("exit 78") == 3  # no key, proxy died, proxy never came up
 
 
 def test_optional_bounds_are_omitted_unless_asked_for():
@@ -214,34 +226,53 @@ def test_native_outputs():
 
 
 def _proxy_harness() -> ClaudeCodeHarness:
-  return ClaudeCodeHarness(
-      capture="proxy", proxy_base_url="http://host.docker.internal:20001"
-  )
+  return ClaudeCodeHarness(capture="proxy")
 
 
-def test_proxy_invocation_routes_through_base_url_and_discards_stdout():
+def test_proxy_invocation_routes_through_loopback_and_discards_stdout():
   script = _script("/app", _proxy_harness())
-  assert "export ANTHROPIC_BASE_URL=http://host.docker.internal:20001" in script
+  assert f"export ANTHROPIC_BASE_URL={PROXY_BASE_URL}" in script
   assert "--output-format json" in script  # not stream-json in proxy mode
   assert "> /dev/null" in script  # agent stdout is not the trace
   assert "claude.event_stream.jsonl" not in script  # no stream redirect
   assert '< "$SANDBOX_WORKSPACE"/prompt.txt' in script  # prompt still on stdin
 
 
-def test_proxy_capture_needs_no_url_and_composes_its_own_recorder():
-  # The harness runs the recorder itself, so a port is all it needs: the URL
-  # the agent dials defaults to the container→host gateway on that port, and
-  # the recorder is composed FIRST, before the converter that reads its log.
-  harness = ClaudeCodeHarness(capture="proxy", proxy_port=20005)
-  assert harness.agent_proxy_url == "http://host.docker.internal:20005"
-  assert [type(o).__name__ for o in harness.observers()] == [
-      "AgentInfoObserver",
-      "ProxyRecorder",
-      "ConversationObserver",
-      "HarnessOutcomeObserver",
+def test_the_script_starts_the_proxy_in_the_sandbox_and_reaps_it():
+  # The whole lifecycle lives in the script: start in the background, poll
+  # until the port answers (never a fixed sleep), and kill it on every exit
+  # path. Nothing is bound on the host and no port is allocated anywhere.
+  script = _script("/app", _proxy_harness())
+  assert f"{PROXY_BINARY_AT} --port {PROXY_PORT}" in script
+  assert f'--output "$SANDBOX_WORKSPACE"/{PROXY_LOG_NAME}' in script
+  assert f'> "$SANDBOX_WORKSPACE"/{PROXY_STDERR_NAME} 2>&1 &' in script
+  assert f"until (exec 3<>/dev/tcp/127.0.0.1/{PROXY_PORT})" in script
+  assert 'trap \'kill "$proxy_pid"' in script
+  # The proxy is started before the agent is invoked, not after.
+  assert script.index("proxy_pid=$!") < script.index(BINARY_AT + " -p")
+  # A stream run starts nothing and mentions no proxy at all.
+  assert "proxy_pid" not in _script("/app")
+
+
+def test_the_proxy_target_is_the_run_s_upstream():
+  # Not cosmetic: the proxy injects OpenRouter provider preferences and mirrors
+  # Anthropic-Beta into X-Anthropic-Beta only when the target is OpenRouter.
+  assert "--target https://api.anthropic.com" in _script(
+      "/app", _proxy_harness()
+  )
+  openrouter = ClaudeCodeHarness(
+      capture="proxy", proxy_target="https://openrouter.ai/api"
+  )
+  assert "--target https://openrouter.ai/api" in _script("/app", openrouter)
+
+
+def test_proxy_capture_composes_no_extra_observer():
+  # The recorder observer existed only to order a host process against the
+  # sandbox lifecycle. With the proxy inside the sandbox there is nothing to
+  # order: the script has already reaped it when `run` returns.
+  assert [type(o).__name__ for o in _proxy_harness().observers()] == [
+      type(o).__name__ for o in ClaudeCodeHarness().observers()
   ]
-  # …and STREAM composes none of the proxy machinery (the info observer is
-  # unconditional — which build ran is worth recording either way).
   assert [type(o).__name__ for o in ClaudeCodeHarness().observers()] == [
       "AgentInfoObserver",
       "ConversationObserver",
@@ -249,9 +280,30 @@ def test_proxy_capture_needs_no_url_and_composes_its_own_recorder():
   ]
 
 
-def test_proxy_native_outputs_registers_proxy_log():
+def test_proxy_capture_declares_the_proxy_binary_as_an_asset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  # The proxy travels the same seam as the agent binary — declared here,
+  # placed by whichever backend is running — and only when it is used.
+  #
+  # A synthetic source, because declaring the asset reads the real one to
+  # version it: cc-reverse-proxy is a sibling checkout this repo does not
+  # vendor, and CI has no such sibling. (That the *absence* is reported with a
+  # usable message is `test_proxy.py`'s job, not this one's.)
+  source = tmp_path / "reverse_proxy.go"
+  _ = source.write_text("package main\n")
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
+
+  paths = [a.path for a in _proxy_harness().assets()]
+  assert paths == [BINARY_AT, PROXY_BINARY_AT]
+  # …and a stream run declares no proxy at all, so it is never transferred.
+  assert [a.path for a in ClaudeCodeHarness().assets()] == [BINARY_AT]
+
+
+def test_proxy_native_outputs_registers_the_log_and_the_proxy_s_own_output():
   assert _proxy_harness().native_outputs() == {
       "proxy_log.jsonl": PROXY_LOG_NAME,
+      "proxy_stderr.log": PROXY_STDERR_NAME,
       "stderr.log": "claude.stderr.log",
       "exit_code.txt": "claude.exit_code",
   }

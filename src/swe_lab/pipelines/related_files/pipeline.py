@@ -21,12 +21,12 @@ from swe_lab.harnesses.claude_code.errors import (
     AnnotationError,
     UsageLimitError,
 )
-from swe_lab.harnesses.claude_code.proxy import DEFAULT_BASE_PORT
 from swe_lab.paths import find_repo_root
 
 from .agent_run import DEFAULT_MODEL, RunResult
 from .aggregator import aggregate_instance
 from .annotator import annotate_instance
+from .host_proxy import DEFAULT_BASE_PORT
 from .storage import (
     AGGREGATE_LABEL,
     candidate_label,

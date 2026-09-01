@@ -13,7 +13,6 @@ from etils import epath
 from swe_lab.datasets.loader import Dataset, load_dataset
 from swe_lab.datasets.swebench_pro import SweBenchProInstance
 from swe_lab.harnesses.claude_code.capture import Capture
-from swe_lab.harnesses.claude_code.proxy import DEFAULT_BASE_PORT
 from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_run import (
@@ -24,6 +23,7 @@ from .agent_run import (
     RunResult,
 )
 from .annotation_prompt import build_annotation_prompt
+from .host_proxy import DEFAULT_BASE_PORT
 
 __all__ = [
     "DEFAULT_MODEL",
