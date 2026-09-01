@@ -1,0 +1,67 @@
+{
+  "label": "baseline-vuls",
+  "session": "baseline-vuls-r0",
+  "instance_id": "instance_future-architect__vuls-4c04acbd9ea5b073efe999e33381fa9f399d6f27",
+  "rollout_id": 0,
+  "capture": "proxy",
+  "steered": false,
+  "actor_model": "anthropic/claude-sonnet-5",
+  "actor_base_url": "https://openrouter.ai/api",
+  "auth": "openrouter api key",
+  "bare": false,
+  "supervisor_model": null,
+  "started": "2026-09-01T03:44:42-0700",
+  "wall_s": 1663.8,
+  "entries": {
+    "rollout": {
+      "status": "succeeded",
+      "attempts": 1,
+      "metrics": {
+        "sandbox.setup_seconds": 3.001190957998915,
+        "sandbox.pull_seconds": 0.8455582919996232,
+        "sandbox.peak_memory_bytes": 1728573440.0,
+        "sandbox.oom_kills": 0.0,
+        "git_history_clean": 1.0,
+        "git_future_commits_before": 599.0,
+        "agent_complete": 1.0,
+        "claude_code.wall_seconds": 820.3320428119987,
+        "claude_code.exit_code": 0.0,
+        "claude_code.timed_out": 0.0,
+        "patch_is_empty": 0.0,
+        "patch_binary_stripped": 0.0,
+        "verifier.flagged": 2.0,
+        "verifier.high_confidence": 0.0,
+        "verifier.ok": 1.0
+      }
+    },
+    "unit_test": {
+      "status": "succeeded",
+      "attempts": 3,
+      "metrics": {
+        "sandbox.setup_seconds": 1.170532040996477,
+        "sandbox.pull_seconds": 0.8738159690037719,
+        "sandbox.peak_memory_bytes": 1306632192.0,
+        "sandbox.oom_kills": 0.0,
+        "unit_test.score": 0.0,
+        "unit_test.resolved": 0.0,
+        "unit_test.passed": 0.0,
+        "unit_test.missing": 3.0,
+        "unit_test.required": 3.0,
+        "unit_test.wall_seconds": 234.17922156499844,
+        "unit_test.exit_code": 0.0,
+        "unit_test.timed_out": 0.0
+      }
+    }
+  },
+  "resolved": false,
+  "hints_emitted": 0,
+  "reasoning": {
+    "total": 36,
+    "signed": 36
+  },
+  "proxy_logs_redacted": [
+    "rollout/a0/claude_code.proxy_log.jsonl",
+    "rollout/ws/a0/claude.proxy.jsonl",
+    "store/adhoc/instance_future-architect__vuls-4c04acbd9ea5b073efe999e33381fa9f399d6f27/r0/rollout/a0/claude_code.proxy_log.jsonl"
+  ]
+}

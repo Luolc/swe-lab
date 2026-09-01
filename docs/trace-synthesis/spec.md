@@ -104,6 +104,16 @@ Measuring the `pass@10 ≈ 3/10` band properly costs ten rollouts per instance.
 price of a fuzzier band; which of the two we use is [an open
 question](#11-open-questions).
 
+**Phase A is not re-run by the pipeline** (owner's decision, 2026-09-01). A full
+rollout + eval sweep happens anyway, and its traces are cached, so the pipeline
+paying to reproduce a failure it already owns is waste. The pipeline's entry
+point is therefore **Phase B**, over a hand-assembled dataset row that carries
+the instance's fields *and* the failing run's typed conversation — a
+self-contained directory mounted into the sandbox, not a pointer into a run
+store. The layout, and the reasoning for each file in it, is
+[REPORT §8 of the steered re-run](../../experiments/trace_synthesis/steered_rerun/REPORT.md#8-the-failure-sample-is-the-workflows-input-contract);
+it is a contract, and the workflow that mounts it is built against it.
+
 ### Phase B — the Oracle
 
 A fresh agent with **privileged access** to:

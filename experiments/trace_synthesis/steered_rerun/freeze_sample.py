@@ -145,6 +145,29 @@ def main() -> None:
       json.dumps(instance_fields(instance), indent=2, ensure_ascii=False) + "\n"
   )
 
+  # Three gates before a run is written out as a reasoning failure, because the
+  # workflow's own exit code distinguishes none of them: an unresolved verdict
+  # is reported the same way whether the actor reasoned badly, was killed at
+  # its timeout, or never started. Measured 2026-09-01 — the
+  # protonmail/webclients image cannot execute the mounted linux-x64 binary
+  # (`cannot execute: required file not found`, exit 127 after 0.7 s), and the
+  # run still came back unresolved with `timed_out == 0`.
+  metrics = {
+      name: value
+      for name, value in (summary["entries"]["rollout"]["metrics"] or {}).items()
+  }
+  for name, want in (
+      ("claude_code.timed_out", 0.0),
+      ("agent_complete", 1.0),
+      ("claude_code.exit_code", 0.0),
+  ):
+    if metrics.get(name) != want:
+      raise SystemExit(
+          f"refusing to freeze: {name} is {metrics.get(name)!r}, not {want!r}."
+          " The rollout did not end in the actor finishing its work, so its"
+          " unresolved verdict is not evidence the actor erred."
+      )
+
   conversations = sorted(frozen.glob("rollout/a*/conversation.json"))
   if not conversations:
     raise SystemExit(

@@ -1,0 +1,105 @@
+{
+  "arms": [
+    {
+      "label": "baseline-navidrome",
+      "session": "baseline-navidrome-r0",
+      "summary": {
+        "label": "baseline-navidrome",
+        "session": "baseline-navidrome-r0",
+        "instance_id": "instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310",
+        "rollout_id": 0,
+        "capture": "proxy",
+        "steered": false,
+        "actor_model": "anthropic/claude-sonnet-5",
+        "actor_base_url": "https://openrouter.ai/api",
+        "auth": "openrouter api key",
+        "bare": false,
+        "supervisor_model": null,
+        "started": "2026-09-01T03:44:42-0700",
+        "wall_s": 707.9,
+        "entries": {
+          "rollout": {
+            "status": "succeeded",
+            "attempts": 1,
+            "metrics": {
+              "sandbox.setup_seconds": 2.7424049960027332,
+              "sandbox.pull_seconds": 0.6746306610002648,
+              "sandbox.peak_memory_bytes": 1212649472.0,
+              "sandbox.oom_kills": 0.0,
+              "git_history_clean": 1.0,
+              "git_future_commits_before": 1917.0,
+              "agent_complete": 1.0,
+              "claude_code.wall_seconds": 601.5766791290007,
+              "claude_code.exit_code": 0.0,
+              "claude_code.timed_out": 0.0,
+              "patch_is_empty": 0.0,
+              "patch_binary_stripped": 0.0,
+              "verifier.flagged": 1.0,
+              "verifier.high_confidence": 0.0,
+              "verifier.ok": 1.0
+            }
+          },
+          "unit_test": {
+            "status": "succeeded",
+            "attempts": 1,
+            "metrics": {
+              "sandbox.setup_seconds": 2.8020465599984163,
+              "sandbox.pull_seconds": 1.1751849709980888,
+              "sandbox.peak_memory_bytes": 809885696.0,
+              "sandbox.oom_kills": 0.0,
+              "unit_test.score": 1.0,
+              "unit_test.resolved": 1.0,
+              "unit_test.passed": 14.0,
+              "unit_test.missing": 0.0,
+              "unit_test.required": 4.0,
+              "unit_test.wall_seconds": 87.96671595500084,
+              "unit_test.exit_code": 0.0,
+              "unit_test.timed_out": 0.0
+            }
+          }
+        },
+        "resolved": true,
+        "hints_emitted": 0,
+        "reasoning": {
+          "total": 30,
+          "signed": 30
+        },
+        "proxy_logs_redacted": [
+          "rollout/a0/claude_code.proxy_log.jsonl",
+          "rollout/ws/a0/claude.proxy.jsonl",
+          "store/adhoc/instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310/r0/rollout/a0/claude_code.proxy_log.jsonl"
+        ]
+      },
+      "frozen": "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis/baseline-navidrome-rollout-0",
+      "boundaries_judged": 0,
+      "supervisor_errors": 0,
+      "off_track_verdicts": 0,
+      "hints_emitted": 0,
+      "hints_suppressed": 0,
+      "suppression_reasons": [],
+      "deferral": {
+        "interventions_deferred": 0,
+        "delivered_late": 0,
+        "lost_permanently": [],
+        "latency_boundaries": [],
+        "max_latency": 0
+      },
+      "hook_invocations": 0,
+      "hook_applied": 0,
+      "hook_errors": [],
+      "messages_in_conversation": 152,
+      "reasoning": {
+        "total": 30,
+        "signed": 30
+      },
+      "thinking_replayed": 69,
+      "hints_in_conversation": 0,
+      "hints_lost": [],
+      "appended_not_replaced": 0,
+      "objections": [],
+      "survival": [],
+      "reactions": [],
+      "judgements": []
+    }
+  ]
+}

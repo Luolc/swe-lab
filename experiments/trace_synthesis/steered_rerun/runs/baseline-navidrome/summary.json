@@ -1,0 +1,79 @@
+{
+  "label": "baseline-navidrome",
+  "session": "baseline-navidrome-r1",
+  "instance_id": "instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310",
+  "rollout_id": 1,
+  "capture": "proxy",
+  "steered": false,
+  "actor_model": "anthropic/claude-sonnet-5",
+  "actor_base_url": "https://openrouter.ai/api",
+  "auth": "openrouter api key",
+  "key_index": 0,
+  "key": "6a9c1430",
+  "credits_before": {
+    "total": 26800.0,
+    "used": 26683.939103874,
+    "remaining": 116.06089612600044
+  },
+  "credits_after": {
+    "total": 26800.0,
+    "used": 26685.971148774,
+    "remaining": 114.02885122600128
+  },
+  "bare": false,
+  "supervisor_model": null,
+  "started": "2026-09-01T03:56:58-0700",
+  "wall_s": 780.1,
+  "entries": {
+    "rollout": {
+      "status": "succeeded",
+      "attempts": 1,
+      "metrics": {
+        "sandbox.setup_seconds": 14.559144332008145,
+        "sandbox.pull_seconds": 1.095197015994927,
+        "sandbox.peak_memory_bytes": 1303293952.0,
+        "sandbox.oom_kills": 0.0,
+        "git_history_clean": 1.0,
+        "git_future_commits_before": 1917.0,
+        "agent_complete": 1.0,
+        "claude_code.wall_seconds": 656.0562899579963,
+        "claude_code.exit_code": 0.0,
+        "claude_code.timed_out": 0.0,
+        "patch_is_empty": 0.0,
+        "patch_binary_stripped": 0.0,
+        "verifier.flagged": 1.0,
+        "verifier.high_confidence": 0.0,
+        "verifier.ok": 1.0
+      }
+    },
+    "unit_test": {
+      "status": "succeeded",
+      "attempts": 1,
+      "metrics": {
+        "sandbox.setup_seconds": 1.2281683520050137,
+        "sandbox.pull_seconds": 0.9471704759998829,
+        "sandbox.peak_memory_bytes": 835674112.0,
+        "sandbox.oom_kills": 0.0,
+        "unit_test.score": 1.0,
+        "unit_test.resolved": 1.0,
+        "unit_test.passed": 14.0,
+        "unit_test.missing": 0.0,
+        "unit_test.required": 4.0,
+        "unit_test.wall_seconds": 75.87338687900046,
+        "unit_test.exit_code": 0.0,
+        "unit_test.timed_out": 0.0
+      }
+    }
+  },
+  "resolved": true,
+  "hints_emitted": 0,
+  "reasoning": {
+    "total": 20,
+    "signed": 20
+  },
+  "proxy_logs_redacted": [
+    "rollout/a0/claude_code.proxy_log.jsonl",
+    "rollout/ws/a0/claude.proxy.jsonl",
+    "store/adhoc/instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310/r1/rollout/a0/claude_code.proxy_log.jsonl"
+  ]
+}

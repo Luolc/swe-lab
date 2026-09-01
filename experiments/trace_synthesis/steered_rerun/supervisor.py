@@ -337,10 +337,37 @@ class Supervisor:
       text = payload["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError):
       return {}, f"unexpected response shape: {_one_line(json.dumps(payload), 300)}", None
+    # `content` is present and **null** when the model spent its budget on
+    # reasoning without emitting a message — measured 2026-09-01, three
+    # boundaries in one run. The key exists, so the shape check above passes;
+    # only the type catches it.
+    if not isinstance(text, str):
+      return (
+          {},
+          f"null message content: {_one_line(json.dumps(payload), 300)}",
+          payload.get("usage"),
+      )
     verdict = _parse_json_object(text)
     if verdict is None:
       return {}, f"unparseable verdict: {_one_line(text, 300)}", payload.get("usage")
     return verdict, None, payload.get("usage")
+
+  def log_error(self, error: str, request_file: str) -> None:
+    """Record a boundary the judge could not judge.
+
+    It belongs in the same log as the judgements: the log is the host's
+    independent account of what happened at every boundary, and a boundary that
+    was skipped is exactly the kind of gap that is invisible from the trace.
+
+    Args:
+      error: What went wrong.
+      request_file: The request this concerns.
+    """
+    self._log({
+        "ts": time.time(),
+        "watcher_error": error,
+        "request_file": request_file,
+    })
 
   def _log(self, record: dict[str, object]) -> None:
     """Append one judgement to the host-side hint log."""
@@ -415,7 +442,16 @@ class Watcher:
   def _loop(self) -> None:
     while not self._stop.is_set():
       for path in sorted(self.root.rglob(f"{IO_DIR}/*.req.json")):
-        self._answer(path)
+        # Nothing this thread does may kill it. A judgement that raises costs
+        # one boundary; a dead poller costs **every boundary after it**, and it
+        # costs them invisibly from the actor's side — the hook just waits out
+        # its deadline and fails open. Measured 2026-09-01: a `null` message
+        # content raised out of `judge`, the thread died at boundary 13, and the
+        # remaining boundaries of that rollout were never judged at all.
+        try:
+          self._answer(path)
+        except Exception as error:  # noqa: BLE001 — a dead poller is worse
+          self._refuse(path, f"{type(error).__name__}: {error}")
       self._stop.wait(_POLL_S)
 
   def _answer(self, path: pathlib.Path) -> None:
@@ -432,7 +468,33 @@ class Watcher:
       path.unlink()
     except OSError:
       pass
-    decision = self.supervisor.judge(request)
+    self._reply(path, self.supervisor.judge(request))
+
+  def _refuse(self, path: pathlib.Path, error: str) -> None:
+    """Answer a request the judge could not, and say so host-side.
+
+    The hook is waiting on a file. Leaving it to time out turns one broken
+    judgement into a stalled tool call, so the answer is always written; what
+    changes is that it carries no hint and the log carries the reason.
+
+    Args:
+      path: The request file.
+      error: What went wrong.
+    """
+    self.supervisor.log_error(error, path.name)
+    try:
+      path.unlink()
+    except OSError:
+      pass
+    self._reply(path, {"hint": None})
+
+  def _reply(self, path: pathlib.Path, decision: dict[str, object]) -> None:
+    """Land one answer beside its request, atomically.
+
+    Args:
+      path: The request file the answer belongs to.
+      decision: What to tell the hook.
+    """
     answer = path.with_name(path.name.removesuffix(".req.json") + ".resp.json")
     temporary = answer.with_suffix(".tmp")
     _ = temporary.write_text(json.dumps(decision))

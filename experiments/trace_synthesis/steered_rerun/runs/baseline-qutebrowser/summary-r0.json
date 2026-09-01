@@ -1,0 +1,79 @@
+{
+  "label": "baseline-qutebrowser",
+  "session": "baseline-qutebrowser-r0",
+  "instance_id": "instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+  "rollout_id": 0,
+  "capture": "proxy",
+  "steered": false,
+  "actor_model": "anthropic/claude-sonnet-5",
+  "actor_base_url": "https://openrouter.ai/api",
+  "auth": "openrouter api key",
+  "key_index": 2,
+  "key": "1369dca9",
+  "credits_before": {
+    "total": 6800.0,
+    "used": 6652.23602093,
+    "remaining": 147.76397906999955
+  },
+  "credits_after": {
+    "total": 6800.0,
+    "used": 6653.11989023,
+    "remaining": 146.88010976999976
+  },
+  "bare": false,
+  "supervisor_model": null,
+  "started": "2026-09-01T03:57:49-0700",
+  "wall_s": 639.7,
+  "entries": {
+    "rollout": {
+      "status": "succeeded",
+      "attempts": 1,
+      "metrics": {
+        "sandbox.setup_seconds": 3.6462853210032335,
+        "sandbox.pull_seconds": 1.1940854909989866,
+        "sandbox.peak_memory_bytes": 592011264.0,
+        "sandbox.oom_kills": 0.0,
+        "git_history_clean": 1.0,
+        "git_future_commits_before": 9422.0,
+        "agent_complete": 1.0,
+        "claude_code.wall_seconds": 416.4359232889983,
+        "claude_code.exit_code": 0.0,
+        "claude_code.timed_out": 0.0,
+        "patch_is_empty": 0.0,
+        "patch_binary_stripped": 0.0,
+        "verifier.flagged": 3.0,
+        "verifier.high_confidence": 0.0,
+        "verifier.ok": 1.0
+      }
+    },
+    "unit_test": {
+      "status": "succeeded",
+      "attempts": 3,
+      "metrics": {
+        "sandbox.setup_seconds": 2.9824963479986764,
+        "sandbox.pull_seconds": 1.5335615310032154,
+        "sandbox.peak_memory_bytes": 150544384.0,
+        "sandbox.oom_kills": 0.0,
+        "unit_test.score": 0.0,
+        "unit_test.resolved": 0.0,
+        "unit_test.passed": 985.0,
+        "unit_test.missing": 2.0,
+        "unit_test.required": 985.0,
+        "unit_test.wall_seconds": 57.63463413499994,
+        "unit_test.exit_code": 0.0,
+        "unit_test.timed_out": 0.0
+      }
+    }
+  },
+  "resolved": false,
+  "hints_emitted": 0,
+  "reasoning": {
+    "total": 17,
+    "signed": 17
+  },
+  "proxy_logs_redacted": [
+    "rollout/a0/claude_code.proxy_log.jsonl",
+    "rollout/ws/a0/claude.proxy.jsonl",
+    "store/adhoc/instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d/r0/rollout/a0/claude_code.proxy_log.jsonl"
+  ]
+}

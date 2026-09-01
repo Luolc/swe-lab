@@ -342,7 +342,13 @@ def analyze(summary_path: pathlib.Path) -> dict[str, object]:
   conversation = load_conversation(frozen) if frozen.is_dir() else None
   # One hint log per label, several rollouts per label: filter to this one, or
   # a resampled arm reports its predecessor's hints as its own.
-  judgements = [r for r in hint_records(label) if r.get("session") == session]
+  records = hint_records(label)
+  judgements = [r for r in records if r.get("session") == session]
+  # A boundary the poller could not judge is not a judgement, and counting it
+  # as one would report a gap in the belief state as coverage. It has no
+  # session field — the request never reached the judge — so it is counted
+  # separately and only when this is the only arm in the log.
+  watcher_errors = [str(r["watcher_error"]) for r in records if r.get("watcher_error")]
   emitted = [str(r["hint"]) for r in judgements if r.get("hint_emitted")]
   hooks = hook_records(frozen) if frozen.is_dir() else []
   rows = survival(conversation, emitted)
@@ -353,6 +359,8 @@ def analyze(summary_path: pathlib.Path) -> dict[str, object]:
       "frozen": str(frozen),
       "boundaries_judged": len(judgements),
       "supervisor_errors": sum(1 for r in judgements if r.get("model_error")),
+      "boundaries_unjudged": len(watcher_errors),
+      "watcher_errors": sorted(set(watcher_errors)),
       "off_track_verdicts": sum(1 for r in judgements if r.get("on_track") is False),
       "hints_emitted": len(emitted),
       "hints_suppressed": sum(1 for r in judgements if r.get("suppressed")),
