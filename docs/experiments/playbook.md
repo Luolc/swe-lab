@@ -198,8 +198,13 @@ pilot's twelve amendments.
   wall-clock estimate here was correctly found to be missing its machine-state
   predicate — and that was **not** the main reason it was wrong: it had
   extrapolated from a **different population** (frozen runs on another arm) than
-  the one it predicted, and overshot by 2–4× for that reason, which no predicate
-  about CPU steal would have fixed. **A number having a known problem is not
+  the one it predicted, and overshot by 2–4×. Throttling is excluded by
+  direction — steal can only lengthen an attempt, so it cannot explain an
+  estimate that came out too high — but note what that does *not* license: with
+  eight attempts and no controlled comparison, the gap cannot be apportioned
+  among the ways the populations differ. The structural fault is enough to
+  invalidate the estimate; naming a single cause would trade a wrong number for
+  a wrong explanation. **A number having a known problem is not
   evidence that it has only one**, and repairing the found one is what makes it
   look reviewed. When you fix a defect in an estimate, **re-derive the estimate
   rather than patching the defect** — and the reason that works is mechanical
@@ -208,18 +213,25 @@ pilot's twelve amendments.
   qualifier bolted on outside. **Re-deriving forces you to restate each premise
   aloud**, which is the only step at which a question like "is the reference
   population the same population?" gets asked a second time.
-- **"This is just a natural extension of the accepted X" is a scope expansion
-  arguing itself into a fait accompli.** The form is valid only if the new scope
-  is contained in the old one — and if it were, the new rule would have nothing
-  to add. **So whenever the extension is worth proposing, the argument's premise
-  is false.** It is self-defeating, and it works anyway, because it invites the
-  reader to check the *old* rule's standing instead of the new territory. The
-  question it must trigger: **what is in the new scope that was not in the old
-  one?** That set is necessarily non-empty, it is exactly the part that needs
-  independent defence, and this argument form is precisely what stops anyone
-  looking at it. A new rule stands on its own scope, cost and evidence, or it
-  does not stand; an accepted neighbour is **precedent and motivation, never
-  authority**.
+- **"This is just a natural extension of the accepted X" transfers an accepted
+  rule's standing to a proposal that has not earned it.** The move works because
+  it points the reader at the old rule — whose standing is not in question — and
+  away from whatever the new one adds. And it always adds something: **a rule
+  worth proposing imposes some obligation its neighbour did not.** That
+  obligation is what needs independent defence, and this argument form is
+  precisely what stops anyone looking for it.
+
+  The question it must trigger is therefore **"what does this require that the
+  accepted rule did not?"** — deliberately *not* "is the new scope contained in
+  the old one?" Containment is the wrong test, and an earlier draft of this
+  bullet got it wrong in a way worth keeping: a proposal can sit **entirely
+  inside** an accepted rule's scope and still be a real proposal, by making an
+  implicit obligation explicit, by tightening it, or by making it enforceable
+  where it was only advisory. So the criterion is the **added obligation**, not
+  the added territory; the added obligation is non-empty whenever the proposal
+  is not redundant, and it is the whole of what is being asked for. A new rule
+  stands on its own obligation, cost and evidence, or it does not stand; an
+  accepted neighbour is **precedent and motivation, never authority**.
 - **The strongest form needs no blind party at all.** Protecting a ruler's
   blindness is a remedy for a *timing* defect: it is needed only because some
   decision was still live after results existed. So the target shape for a

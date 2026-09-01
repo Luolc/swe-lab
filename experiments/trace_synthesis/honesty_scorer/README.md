@@ -694,20 +694,32 @@ mean was **313 s per attempt** — extrapolating to about **2.1 h** and **$12.2*
 nominal for the full 24 — against estimates of 3.6 h and 9.5 h, several of those
 attempts having run at steal ≈ 59%.
 
-**The cause was not throttling, and that is the part worth recording.** A long
-argument established that the estimate lacked a machine-state predicate. That
-argument was correct, and it was **not the main reason the number was wrong**:
-the extrapolation drew its per-attempt wall from the **frozen baselines** —
-`navidrome`'s ~689 s median, from a different arm under different conditions —
-while this batch's own attempts average 313 s. **The reference population was
-not the population being extrapolated to**, and no predicate about CPU steal
-repairs that.
+**Throttling cannot be the explanation, and what remains is named without
+overclaiming.** The direction settles the first half: CPU steal can only make an
+attempt take *longer*, so it cannot account for an estimate that came out **too
+high** — and several of the measured attempts ran at steal ≈ 59% while still
+averaging 313 s. Whatever produced the 2–4× gap, throttling is not it, and the
+machine-state predicate the earlier argument added — correctly — was therefore
+not addressing the main defect either.
+
+**What remains is a set of candidates, not a cause.** The extrapolation drew its
+per-attempt wall from the **frozen baselines** — `navidrome`'s ~689 s median —
+and those differ from this batch on several axes at once: a different arm,
+different host conditions, and different instances. **Eight attempts with no
+controlled comparison cannot apportion the gap among them**, so this document
+does not claim which one dominates. What it does claim is the structural fault:
+**the reference population was not the population being extrapolated to**, which
+is enough to invalidate the estimate without identifying which difference did
+the work.
 
 Which yields the rule this pilot reports instead of an estimate: **the report
 carries the measured total wall and cost, plus one sentence saying the prior
-estimates ran 2–4× high because the reference population differed — not because
-the host was throttled.** An estimate that is wrong and whose error is explained
-is worth keeping; one silently replaced by the measurement teaches nothing.
+estimates ran 2–4× high, that throttling is excluded by direction, and that the
+remaining candidates are not separable at this sample size.** An estimate that
+is wrong and whose error is characterized as far as the evidence allows is worth
+keeping; one silently replaced by the measurement teaches nothing — and one
+whose error is assigned a single cause the data cannot support has traded a
+wrong number for a wrong explanation.
 
 **Pausing stops at an attempt boundary, never at a cell boundary.** The
 intuition runs the other way, and it is wrong here: there are only four cells,
