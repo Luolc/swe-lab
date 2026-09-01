@@ -317,6 +317,23 @@ retroactively (owner's calibration, 2026-09-01).
   where. Isolated failure → a real failure, independent of machine state. Never
   skip the isolated re-run because the box is busy: it costs one test, and
   skipping it is what turns "the machine was loaded" into an all-purpose excuse.
+- **`gh pr merge --delete-branch` run from a worktree fails *after* the merge
+  has already succeeded.** The merge lands; `gh` then tries to check the local
+  repo back out onto `main`, which the primary checkout already holds, and exits
+  non-zero with `fatal: 'main' is already used by worktree at …`. Seen
+  2026-09-01 merging #295. **Do not retry it as a failed merge** — the retry
+  fails differently (the PR is already merged, the branch already gone), and
+  that second error reads like confirmation that the first attempt did nothing.
+  Take three readings instead: `gh pr view <n> --json state` is `MERGED`, a
+  `mergeCommit` exists, and the remote branch is gone. Then delete the local
+  branch by name yourself.
+
+  The shape outlives the command: **an error names the step that raised it,
+  which can be later than the step you care about — so it is silent about
+  whether the earlier step succeeded**, while a reader takes a non-zero exit as
+  a verdict on the whole command. It is the mirror of a green light having
+  several possible causes: a red one does too, and this red light was not about
+  merging at all.
 - **A check that guards a committed artifact belongs under `tests/`, even when
   it lives in `experiments/`.** `experiments/` is exempt from the code-quality
   hooks and is not an importable package, so a check written inside an
