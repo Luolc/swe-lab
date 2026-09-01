@@ -498,10 +498,41 @@ being corrected. The general form is worth more than the fix: **a cache can be
 incomplete as well as stale, and incomplete is the harder failure to see.** A
 stale value at least sits there looking like a value, so it can be doubted; a
 missing category looks exactly like a category that does not exist, and offers
-nothing to doubt. The only thing that exposes it is adding the rows up, so
-`verdicts.py` now prints every partition's total against the instance count and
-asserts they match — the table shouts when it stops adding up, instead of
-waiting for a reader to sum it by hand.
+nothing to doubt.
+
+The first attempt at a remedy is worth keeping in the record, because it failed
+in a way that is easy to repeat: `verdicts.py` asserted that a partition of the
+rows summed to the number of rows. That is **true by construction** — it counts
+one collection and compares the count to that collection's length — and it read
+nothing from this file, so deleting a family from the table above left it green.
+Worse than useless: a green assertion is a claim that the table *was* verified,
+which is the condition under which nobody sums it by hand again.
+
+What `table_check.py` checks is this table. It parses the rows, maps each row's
+backticked family names to repositories through an **explicit** name → repo
+table (substring matching would let a renamed or duplicated family resolve by
+accident, and drift in these names is the thing being caught), and asserts three
+properties: every row's stated count equals the data's count for the
+repositories it covers; **every repository is named by exactly one row**; and
+the rows account for all 40 instances. The middle one is not implied by the
+others — naming one family twice while omitting another of the same size keeps
+every row correct and the total correct, and still loses a family. Each failure
+was produced deliberately before being relied on.
+
+The second attempt is in the record for the same reason as the first. That
+check lived inside `verdicts.py`, which needs the dataset, so it ran only when
+somebody ran that script by hand — and the edits that break a table in a
+Markdown file are docs-only edits, which is precisely the case where nobody
+runs it. A check reachable only by the person who already knows to look is a
+check for a problem that has already been noticed. So the pure part moved to
+`table_check.py` and `tests/test_screening_table.py` runs it against the
+**committed** `REPORT.md` and `candidates.json` — no dataset, no container,
+therefore inside the required CI check — alongside a fixture-driven case for
+each of the three ways this check has been wrong. `verdicts.py` calls the same
+function. The general rule this produced is in
+[`docs/conventions.md`](../../../docs/conventions.md#hazards-learned-the-hard-way):
+what decides where a check lives is what it protects, not which directory it
+sits in.
 
 ## Per-instance verdicts
 
