@@ -32,6 +32,7 @@ import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
 from swe_lab.rollout import CodingAgentTask
 from swe_lab.sandbox import DockerHostSandboxConfig
+from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
@@ -44,6 +45,7 @@ assert _grok.GrokBuildHarness
 ROLLOUT_KEY = "rollout"
 UNIT_TEST_KEY = "unit_test"
 GIT_INTEGRITY_KEY = "git_integrity"
+ORACLE_ANALYSIS_KEY = "oracle_analysis"
 
 _AGENT_TIMEOUT_S = 1800.0
 _UNIT_TEST_TIMEOUT_S = 1800.0
@@ -53,6 +55,9 @@ _UNIT_TEST_RETRIES = 2
 # Bounded by `git gc` on the largest repos (~51s observed under emulation),
 # plus the image pull. No agent runs, so this needs no agent budget.
 _GIT_INTEGRITY_TIMEOUT_S = 900.0
+# An agent run like the rollout's, over a smaller job: read a failure, write
+# a document.
+_ORACLE_ANALYSIS_TIMEOUT_S = 1800.0
 
 ROLLOUT: WorkflowDef = (
     WorkflowEntry(
@@ -124,7 +129,27 @@ GIT_INTEGRITY_AUDIT: WorkflowDef = (
     ),
 )
 
+ORACLE_ANALYSIS: WorkflowDef = (
+    WorkflowEntry(
+        ORACLE_ANALYSIS_KEY,
+        # Phase B of trace synthesis, on its own: the instance is an
+        # `oracle_failures` record, which brings the failed conversation,
+        # verdict and patch along as its own mounts, so this one entry runs
+        # from a name alone — `run oracle_analysis <id> --dataset
+        # oracle_failures`. The agent is the same shipped harness, under the
+        # same authentication, as the rollout's.
+        OracleAnalysisTask(
+            harness=ClaudeCodeHarness(model=DEFAULT_MODEL, bare=False)
+        ),
+        timeout=_ORACLE_ANALYSIS_TIMEOUT_S,
+        sandbox=DockerHostSandboxConfig(
+            network=True, pass_env=(OAUTH_TOKEN_ENV,)
+        ),
+    ),
+)
+
 register_workflow("git_integrity_audit", GIT_INTEGRITY_AUDIT)
+register_workflow("oracle_analysis", ORACLE_ANALYSIS)
 register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
