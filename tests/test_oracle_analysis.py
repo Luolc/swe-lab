@@ -210,6 +210,10 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
     assert f"`{name}`" in brief
   assert SPEC.base_commit in brief
   assert "f" * 40 in brief  # the fix commit, reachable because nothing purged
+  # With a reference, the prose says so in both places the no-reference test
+  # checks for silence.
+  assert "the reference solution and" in brief
+  assert "against the reference" in brief
   for field in STAGE_FIELDS:
     assert f"**{field}.**" in brief
 
@@ -265,6 +269,11 @@ def test_a_dataset_without_a_fix_commit_or_a_reference_is_briefed_honestly(
   assert "records no upstream fix commit" in brief
   assert GOLD_PATCH_NAME not in brief
   assert GOLD_PATCH_NAME not in sandbox.mount_targets
+  # …and the prose does not quietly keep promising one: neither the list of
+  # what the Oracle has nor the diagnosis step mentions a reference.
+  assert "reference solution" not in brief
+  assert "against the reference" not in brief
+  assert "the grader's verdict and the grading procedure" in brief
 
 
 # ─── the output: present, valid, or not ──────────────────────────────────────

@@ -656,11 +656,16 @@ for it. Two consequences, and neither is negotiable:
    an error rather than a warning. Oracle-guided runs carry a stamp that says
    so.
 2. **The result verifier ([task 26](../horizontal/plans/task-26-result-verifier.md))
-   will flag these runs as contaminated, and that is correct behaviour.** We
-   declare the contamination; we do not suppress the detector. A change that
-   makes the verifier quiet about oracle-guided runs is a bug in this design,
-   not a fix. (Phase B produces no patch and composes no verifier at all —
-   there is nothing for it to read; the stamp is what marks those records.)
+   flags the patch a guided run produces as contaminated, and that is correct
+   behaviour.** The verifier reads what a run *produced*, so it applies to
+   phase C — the patch-producing phase — whether it runs in the rollout
+   composition or is applied later to a stored record. We declare the
+   contamination; we do not suppress the detector. A change that makes the
+   verifier quiet about oracle-guided patches is a bug in this design, not a
+   fix. **Phase B is stamp-only:** it produces no patch and composes no
+   verifier, because there is nothing for one to read
+   ([§12](#12-invariants-intended-enforced-where-marked), enforced); its
+   records are marked by the policy stamp alone.
 
 ## 15. Success criteria
 

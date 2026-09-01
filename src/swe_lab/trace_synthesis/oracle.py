@@ -3,8 +3,9 @@
 ``OracleAnalysisTask`` runs a harness against an instance whose failure is
 already in hand — an ``oracle_failures`` record, which stages the failed
 conversation, verdict and patch through its own ``mounts`` — with everything
-the actor never had: the reference patch, the exact grading procedure, and
-the repository's **unpurged** git history. Its one output is ``guidebook.md``,
+the actor never had: the reference patch (when the dataset records one), the
+exact grading procedure, and the repository's **unpurged** git history. Its one
+output is ``guidebook.md``,
 a staged tutorial for a future blind actor, checked against the schema in
 :mod:`swe_lab.trace_synthesis.guidebook`.
 
@@ -132,7 +133,11 @@ def build_oracle_prompt(instance: TaskInstance[Any]) -> str:
       ),
       (FAILED_PATCH_NAME, "the patch it submitted"),
   ]
-  if instance.gold_patch() is not None:
+  # A dataset without a reference patch gets a brief that says so — every
+  # sentence below that mentions the reference is conditioned on this, so the
+  # Oracle is never told to read a file it does not have.
+  has_reference = instance.gold_patch() is not None
+  if has_reference:
     files.append((GOLD_PATCH_NAME, "the reference solution"))
   grading = instance.unit_test_spec(
       apply_patch=True, patch_name=FAILED_PATCH_NAME
@@ -153,13 +158,26 @@ def build_oracle_prompt(instance: TaskInstance[Any]) -> str:
   table = "\n".join(f"| `{name}` | {what} |" for name, what in files)
   fields = "\n".join(f"**{name}.** …" for name in STAGE_FIELDS)
   statement = instance.prompt().rstrip("\n")
+  privileges = (
+      "its full conversation, the grader's verdict, the reference solution"
+      " and the grading procedure"
+      if has_reference
+      else "its full conversation, the grader's verdict and the grading"
+      " procedure"
+  )
+  diagnose = (
+      "Read the verdict, then the failed patch\n   against the reference,"
+      " then the conversation."
+      if has_reference
+      else "Read the verdict, then the failed patch,\n   then the"
+      " conversation."
+  )
   title = f"Oracle brief: a guidebook for `{instance.instance_id}`"
   return f"""# {title}
 
 You are the **Oracle** in a training-data pipeline. A coding agent already
 attempted the task below and failed its graded tests. You have what it never
-had — its full conversation, the grader's verdict, the reference solution and
-the grading procedure — and one job: write **`guidebook.md`**, a staged
+had — {privileges} — and one job: write **`guidebook.md`**, a staged
 tutorial that lets a *future, blind* agent (same task statement, no privileged
 information, no memory of this attempt) solve the task correctly.
 
@@ -182,8 +200,7 @@ TASK_STATEMENT>>>
 
 ## Method
 
-1. **Diagnose before you write.** Read the verdict, then the failed patch
-   against the reference, then the conversation. Find the exact decision at
+1. **Diagnose before you write.** {diagnose} Find the exact decision at
    which the attempt went wrong and the evidence in the conversation for why
    the agent made it. Reproduce the failure with the grading procedure when
    that is what it takes to be sure. A guidebook written from a vague sense
