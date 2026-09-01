@@ -46,12 +46,9 @@ import os
 import pathlib
 import shlex
 import shutil
-import socket
 import subprocess
 import sys
-import tempfile
 import time
-from collections.abc import Sequence
 from typing import Any, override
 
 from etils import epath
@@ -59,8 +56,6 @@ from etils import epath
 from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
-from swe_lab.harnesses.claude_code.proxy import build_proxy, ReverseProxy
-from swe_lab.harnesses.claude_code.recorder import ProxyRecorder
 from swe_lab.harnesses.claude_code.constants import (
     AGENT_SCRIPT_NAME,
     BINARY_AT,
@@ -68,7 +63,7 @@ from swe_lab.harnesses.claude_code.constants import (
 )
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.rollout import CodingAgentTask
-from swe_lab.sandbox import Inline, Mount, Mounts, SandboxObserver
+from swe_lab.sandbox import Inline, Mount, Mounts
 from swe_lab.workflow import Workflow, WorkflowEntry
 from swe_lab.workflow.definitions import ROLLOUT, ROLLOUT_KEY, UNIT_TEST
 
@@ -136,43 +131,6 @@ def _redact_proxy_log() -> Any:
   return module.redact_proxy_log
 
 
-@dataclass
-class OpenRouterProxyRecorder(ProxyRecorder):
-  """The shipped recorder, pointed at OpenRouter instead of Anthropic.
-
-  ``ReverseProxy`` defaults its upstream to ``https://api.anthropic.com`` and
-  ``ProxyRecorder`` does not expose the field, so a proxied run of an
-  OpenRouter-served actor forwards to the wrong API with the wrong credential.
-  Worse, ``cc-reverse-proxy`` gates its OpenRouter behaviour on the target
-  string (``isOpenRouter = strings.Contains(targetURL, "openrouter.ai")``), so
-  the wrong target also silently disables the ``X-Anthropic-Beta`` mirroring and
-  the ``provider`` injection this whole capture exists for.
-
-  Scratch, and deliberately a subclass rather than an edit: the shipped
-  recorder is production code this round does not touch. Making the target a
-  field of it belongs with task 05.
-
-  Attributes:
-    target: The upstream API base the proxy forwards to.
-  """
-
-  target: str = ""
-
-  @override
-  def before_create(self, sb: Any) -> None:
-    """Start the proxy against ``target`` before anything can call through it.
-
-    Args:
-      sb: Unused — the proxy is a host-side process, not a sandbox one.
-    """
-    del sb
-    self._log = epath.Path(tempfile.mkdtemp(prefix="swe-lab-proxy-")) / "log"
-    self._proxy = ReverseProxy(
-        self.port, self._log, build_proxy(self.repo_root), target=self.target
-    )
-    _ = self._proxy.__enter__()
-
-
 @dataclass(frozen=True)
 class SteeredClaudeCodeHarness(ClaudeCodeHarness):
   """The shipped harness plus a per-run hook, mounted into the workspace.
@@ -191,26 +149,6 @@ class SteeredClaudeCodeHarness(ClaudeCodeHarness):
 
   hook_source: str = ""
   settings_json: str = ""
-
-  @override
-  def observers(self) -> Sequence[SandboxObserver]:
-    """Return the shipped observers with the recorder retargeted.
-
-    Returns:
-      The shipped set, with any ``ProxyRecorder`` swapped for one pointing at
-      the actor's real upstream.
-    """
-    return tuple(
-        OpenRouterProxyRecorder(
-            port=observer.port,
-            log_name=observer.log_name,
-            repo_root=observer.repo_root,
-            target=ACTOR_BASE_URL,
-        )
-        if isinstance(observer, ProxyRecorder)
-        else observer
-        for observer in super().observers()
-    )
 
   @override
   def mounts(self, workdir: str) -> Mounts:
@@ -328,7 +266,6 @@ def main() -> None:
       help="wire the hook at all; --no-steer is the control arm",
   )
   _ = parser.add_argument("--supervisor-model", default="anthropic/claude-opus-5")
-  _ = parser.add_argument("--proxy-port", type=int, default=20099)
   _ = parser.add_argument("--max-hints", type=int, default=8)
   _ = parser.add_argument(
       "--concurrency",
@@ -377,27 +314,12 @@ def main() -> None:
         " require_parameters, and without them interleaved thinking silently"
         " does not happen. Use --capture proxy."
     )
-  # `ReverseProxy._wait_until_listening` accepts *any* listener on the port, so
-  # an unrelated process squatting on it reads as "the proxy is up" and the
-  # agent talks to whatever that is. Cost of learning this the other way: one
-  # rollout that failed with an empty proxy log, an empty stderr and exit 1
-  # (2026-09-01, a stray `python3 -m http.server` from a firewall probe).
   if args.steer and not args.guidebook:
     raise SystemExit(
         "refusing to run: --steer needs --guidebook. The Supervisor judges"
         " every boundary against it, so the wrong one silently produces"
         " confident hints about a different task."
     )
-
-  if args.capture == "proxy":
-    with socket.socket() as probe:
-      if probe.connect_ex(("127.0.0.1", args.proxy_port)) == 0:
-        raise SystemExit(
-            f"refusing to run: something is already listening on"
-            f" 127.0.0.1:{args.proxy_port}. The recorder would treat it as the"
-            " proxy and the agent would talk to it. Free the port or pass"
-            " --proxy-port."
-        )
 
   # The actor and the Supervisor share one credential and one provider. Set in
   # this process only; `pass_env` hands it to the container by name, so the
@@ -439,11 +361,20 @@ def main() -> None:
   # actor. Hooks *are* the mechanism, so bare mode cannot be used here; the
   # subagent suppression it was wanted for is bought with `--disallowedTools`
   # instead (see the harness above).
+  #
+  # `proxy_target` is where the upstream is chosen now. The proxy runs in the
+  # sandbox, so there is no port to hand out and nothing host-side to order
+  # against the container; what remains is the one thing that was never
+  # cosmetic — `cc-reverse-proxy` gates its OpenRouter behaviour on the target
+  # string (`isOpenRouter = strings.Contains(targetURL, "openrouter.ai")`), so
+  # the Anthropic default would forward this run's OpenRouter key to the wrong
+  # API *and* silently drop the `X-Anthropic-Beta` mirroring and the provider
+  # injection this capture exists for.
   harness_kwargs: dict[str, Any] = {
       "model": ACTOR_MODEL,
       "bare": False,
       "capture": args.capture,
-      "proxy_port": args.proxy_port,
+      "proxy_target": ACTOR_BASE_URL,
   }
   # Both arms run the *same* harness subclass and therefore the same argv: the
   # control's settings file simply declares no hooks. A control that also
@@ -459,13 +390,14 @@ def main() -> None:
   entries = (
       WorkflowEntry(
           ROLLOUT_KEY,
-          # The base URL is ordinary configuration and travels in the task's
-          # own env; the key is a secret and travels by *name* through
-          # `pass_env`, so its value never reaches a command line, a process
-          # list, or a log.
-          CodingAgentTask(
-              harness=harness, env={"ANTHROPIC_BASE_URL": ACTOR_BASE_URL}
-          ),
+          # No `env` here: the invocation script sources the caller's env
+          # *before* it exports the in-sandbox proxy's URL, deliberately, so an
+          # `ANTHROPIC_BASE_URL` passed this way would be overwritten anyway —
+          # and pointing the agent past the proxy is the one thing this run
+          # must not do. The key is a secret and still travels by *name*
+          # through `pass_env`, so its value never reaches a command line, a
+          # process list, or a log.
+          CodingAgentTask(harness=harness),
           timeout=rollout.timeout,
           sandbox=replace(rollout.sandbox, pass_env=(API_KEY_ENV,)),
       ),
@@ -493,11 +425,13 @@ def main() -> None:
       watcher.shutdown()
   wall = round(time.monotonic() - started, 1)
 
-  # The proxy records the headers it forwards on both sides: the request
-  # carries the run's OAuth bearer token, the response the operator's org and
-  # workspace ids. Nothing has redacted the *production* capture path yet
-  # (task 09), so this round redacts what it captured, in place, before the
-  # tree is frozen anywhere or a line of it is quoted.
+  # `cc-reverse-proxy` now masks sensitive headers *as it writes* each
+  # exchange (ADR-0012 §4), so this pass is no longer what makes the capture
+  # safe — it is the second belt, kept because the proxy is an external,
+  # separately versioned binary and "the build we ran redacts" is exactly the
+  # assumption that stops holding without anyone noticing. `redact_record`
+  # masks in place and is idempotent, so re-running it over an
+  # already-redacted log is a no-op.
   redacted = sorted(pathlib.Path(output_dir).rglob("*proxy*.jsonl"))
   if redacted:
     redact = _redact_proxy_log()

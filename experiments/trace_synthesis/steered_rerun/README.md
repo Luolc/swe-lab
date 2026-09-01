@@ -188,8 +188,10 @@ direnv exec . uv run python experiments/trace_synthesis/steered_rerun/validate_t
 
 # the control and the steered run; strictly sequential (each rmtree's the
 # shared cache directory)
-# `--key-index` and `--proxy-port` are what make two of these safe to run at
-# once; both default to a single value, so concurrent runs must pass them
+# `--key-index` is what makes two of these safe to run at once; it defaults to
+# a single value, so concurrent runs must pass it. The capture proxy needs no
+# such flag: it runs inside the sandbox, on a fixed loopback port in the
+# container's own network namespace, so two runs cannot collide (ADR-0012 §2)
 direnv exec . uv run python experiments/trace_synthesis/steered_rerun/run_steered.py \
     --label baseline-<repo> --instance <id> --rollout-id 0 --no-steer
 direnv exec . uv run python experiments/trace_synthesis/steered_rerun/run_steered.py \
@@ -232,29 +234,31 @@ previous round's frozen tree was gitignored *inside* a worktree and
 `git worktree remove` deleted it without a word
 ([hazards](../../../docs/conventions.md#hazards-learned-the-hard-way)).
 
-**The proxy log carries credentials and operator identity until it is
-redacted, and this rig redacts it *after the fact*.** `run_steered.py` rewrites
-every captured proxy log in place before the run is frozen, reusing
-`redact_proxy_log` from
-[`../injection_shape/run_experiment.py`](../injection_shape/run_experiment.py)
-(pinned by [`tests/test_injection_shape_redaction.py`](../../../tests/test_injection_shape_redaction.py)).
+**The proxy log carries credentials and operator identity, and it is now
+redacted at write time.** `cc-reverse-proxy` masks the request's
+`Authorization` / `X-Api-Key` / `Cookie` / `Proxy-Authorization`, the request
+body's `metadata.user_id`, and the response's `Anthropic-Organization-Id` /
+`Anthropic-Workspace-Id` / `Anthropic-Ratelimit-Unified-Representative-Claim` /
+`Set-Cookie` **as it records each exchange**
+([ADR-0012 §4](../../../docs/decisions/ADR-0012-in-sandbox-capture-proxy.md)),
+so an unredacted capture never exists on disk. Verified on this rig rather than
+assumed: a real one-turn run through the migrated harness (2026-09-01) captured
+`x-api-key: [REDACTED]` and `unredacted_fields()` returned empty.
 
-**That is a cleanup, not a fix, and it does not meet the standard.** The rule,
-stated here so this file does not depend on anything to state it: **redaction
-belongs at write time, so that an unredacted capture never exists on disk**, and
-**no unredacted capture may enter a collected artifact.** Post-hoc rewriting
-does not satisfy it — an unredacted file exists for the length of the run, and
-anything reading or copying it in that window (a crash dump, a backup, another
-process, an operator debugging) sees live credentials.
+`run_steered.py` still rewrites every captured log in place before freezing.
+That pass is now the **second belt, not the mechanism**: the proxy is an
+external, separately versioned binary, so "the build we ran redacts" is exactly
+the assumption that stops holding without anyone noticing.
+[`redact_record`](../../../src/swe_lab/harnesses/claude_code/redaction.py) is
+the one home for what counts as sensitive, and it masks idempotently.
 
-This rig does the post-hoc thing, so it is **out of compliance** and the
-captures it makes **must not leave this machine** — not into the repo, not into
-a PR, not quoted in a message. Don't cite this paragraph as precedent that
-post-hoc redaction is sufficient; it is the gap, described honestly. The
-canonical home for the rule and its acceptance is
-[task 10](../../../docs/trace-synthesis/plans/README.md); the production capture
-path is unredacted even after the fact —
-[task 09](../../../docs/trace-synthesis/plans/README.md).
+**The captures from the earlier round are a different matter and the old
+warning still applies to them.** Everything frozen before 2026-09-01 was
+redacted *after the fact*, so an unredacted file existed on disk for the length
+of those runs; those artifacts must not leave this machine — not into the repo,
+not into a PR, not quoted in a message. Don't read this section as precedent
+that post-hoc redaction is sufficient: it never was, which is why the fix went
+to write time.
 
 ## Limits
 
