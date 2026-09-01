@@ -80,16 +80,24 @@ delivered.
 ### Is the interruption observable to the Claude Code client?
 
 - **Verified:** the client always requests streaming (71/71 above), so the
-  change is from incremental delivery to one delivery at end of turn. The server
-  side tolerates the wait — `WriteTimeout` is 10 minutes (:880).
+  change is from incremental delivery to one delivery at end of turn.
+- **`WriteTimeout: 10m` (:880) is a constraint, not evidence of tolerance.** I
+  had it backwards. Per Go's `net/http.Server` documentation the timer is reset
+  when the request header is read and bounds *response writes*, so **one
+  deadline covers the withheld turn and every rejected resample together**. A
+  long generation, or a handful of rejections, can expire it before the first
+  response byte is written — a failure mode that does not exist today, because
+  today the first bytes leave immediately.
 - **Not verified:** whether Claude Code applies its own first-byte or idle
   timeout, and whether anything in it behaves differently when a whole turn
   arrives at once. I found no reading for this and did not run the client.
 - **Weak bound from data:** across the pilot, wall time averages
-  **11.4 s per request** (8436 s / 740 requests), and that figure *includes*
-  tool execution between turns. So the added delay is of the order of one
-  turn's generation time, not minutes. This is an average, not a distribution,
-  and it does not bound the tail.
+  **11.4 s per request** (8436 s / 740 requests), including tool execution
+  between turns. **This is a mean and bounds nothing** — the relevant quantity
+  for a 10-minute deadline is the tail, which was not recorded. It is offered
+  as an order of magnitude and must not be read as headroom.
+- **Not verified:** server and client behaviour under buffered, repeated turns.
+  Nothing here has been exercised; it needs a run, not an argument.
 
 ## 3. Resampling against the upstream
 
@@ -97,21 +105,43 @@ delivered.
   body is what the retry loop already does (:685); what is new is the
   *trigger* — a response that arrived intact and was rejected, rather than a
   transport error.
-- **Sampling is stochastic by default, which is what makes B possible at all.**
-  The observed request bodies carry no `temperature`, no `top_p`, no seed (body
-  keys: `max_tokens`, `messages`, `metadata`, `model`, `output_config`,
-  `provider`, `stream`, `system`, `thinking`, `tools`). A resample of an
-  identical request is therefore a genuinely different sample. `thinking` is
-  `{"type": "disabled"}` in the observed run.
-- **No idempotency mechanism exists to interfere.** `grep -in "idempot"` over
-  `reverse_proxy.go`: 0 hits. Anthropic's public docs, searched 2026-09-01, do
-  not document an idempotency key for `/v1/messages`; the *Message Batches*
-  endpoint is the one described as idempotent. So a resample is simply a second
-  request — nothing deduplicates it, and nothing needs to be defeated.
-- **A rejected sample is billed in full.** The documented no-charge case is a
-  request refused *before any output is generated*. A rejected sample is a
-  completed generation by construction — the proxy must read it to the end to
-  judge it. This is structural rather than measured: I did not test billing.
+> **Plan B's central premise is unverified.** Everything below concerns the
+> *upstream's* behaviour, and I have observed only the **caller's** side of it.
+> If an identical re-send is deterministic, or deduplicated, then a resample
+> returns the rejected response again and **the mechanism does not work at all**
+> — not "costs more", but does not function. This is the single assumption on
+> which the whole design rests, and it is the one with the least evidence
+> behind it.
+
+- **What is observed (caller side):** the request bodies carry no
+  `temperature`, no `top_p`, no seed (body keys: `max_tokens`, `messages`,
+  `metadata`, `model`, `output_config`, `provider`, `stream`, `system`,
+  `thinking`, `tools`); `thinking` is `{"type": "disabled"}`.
+- **What that does *not* establish — not verified.** Absent sampling
+  parameters say what the caller did not request; they say nothing about the
+  target's default decoding, and nothing about whether two identical completed
+  calls are independent draws. A pinned target and version would be needed even
+  to state the property, and the observed run went to
+  `anthropic/claude-sonnet-5` via an OpenRouter-shaped body — a different
+  target from the pilot's.
+- **Deduplication — not verified.** `grep -in "idempot"` over
+  `reverse_proxy.go` returns 0 hits, and Anthropic's public docs (searched
+  2026-09-01) document idempotency for *Message Batches*, not `/v1/messages`.
+  Neither reading constrains the upstream: **absence of a documented key is not
+  absence of deduplication**, and a grep of this proxy says nothing about a
+  server it does not implement.
+- **Billing of a completed but unforwarded stream — not verified.** The
+  documented no-charge case is a request refused before any output is
+  generated. I reasoned from there that a rejected sample is billed in full,
+  since the proxy must read it to the end to judge it. That is an inference
+  about an upstream **policy**, not a structural consequence, and I previously
+  labelled it structural. It is not.
+
+**What would settle all three** without exposing any request values: a pinned
+target and model version, plus one controlled observation — the same body sent
+twice, comparing the two completions for divergence, and the account's usage
+before and after to see whether both were charged. That is a small experiment,
+not an argument, and this document does not propose running it.
 - **The binding limit is the subscription window, not a per-minute quota** —
   `seven_day` is the type that reached `allowed_warning`, while `five_hour`
   stayed at `allowed`. The readings are in the callout at the top of this
@@ -242,17 +272,57 @@ under any new mechanism is contaminated by a *different* mechanism, so:
 - runs under different mechanisms are **not poolable**, by the same rule that
   already makes aggregation across differing stamps an error rather than a
   warning (§14.1);
-- and the stamp has to distinguish mechanisms, not merely mark
+- and the stamp has to distinguish **mechanisms**, not merely mark
   "not-uninterfered" — otherwise the two are pooled by the very field meant to
   keep them apart.
+
+**A label of insufficient granularity is worse than no label**, and the reason
+is not that it carries less information. It **announces that the distinction has
+been made**, so nobody makes it. A missing stamp is an open question that
+someone eventually asks; a stamp reading "intervened" is an answered one. This
+is the same object as a check that cannot fail — an announcement that the work
+was done, whose effect is that the work is not done — with metadata as the
+carrier instead of an assertion.
 
 Whichever mechanism is chosen, this work exists and is not part of its
 implementation cost as usually estimated.
 
+### A note on how the §5 collision was missed, and the rule that catches it
+
+Worth recording because the evidence was **read and then not re-read**, not
+missed. §5's table was read in full while answering a different question — *is
+the production default per-step or whole-trace rejection?* — and the "not the
+proxy" row was in that output. The red-line assertion followed a few lines
+later, by which point the question had become *does B cross a red line?*, under
+which that row is directly on point.
+
+So the accurate description is not that the row was unread, or that the question
+had not yet formed:
+
+> **Change the question and the evidence has to be re-taken.** Readings
+> gathered under question A are **invalid by default** for question B, and must
+> be walked again inside B's frame — most of all when both questions draw on the
+> same material, because that is exactly the case where nothing signals that a
+> re-read is needed.
+
+It is a relative of *measured on A, stated about B*, but harder to see: that
+family misaligns the **object**, this one misaligns the **question**. Same
+evidence, same reader, a few lines apart, with nothing in between to prompt a
+second look.
+
 ## 8. What remains unverified
 
+Ordered by what they would cost if they went the wrong way.
+
+- **That an identical re-send is an independent draw** (§3) — the premise plan B
+  rests on. If it is false the mechanism does not work, at any price. Everything
+  observed about it is caller-side.
+- **Whether the upstream deduplicates identical calls**, and **whether a
+  completed but unforwarded stream is billed** (§3) — both are upstream
+  policies; I have documentation absence and an inference, not observations.
 - Claude Code's client-side timeout and its behaviour when a turn arrives all at
-  once (§2).
+  once, and whether the 10-minute write deadline survives a buffered turn plus
+  several resamples (§2). Nothing here has been exercised.
 - The sandbox's egress rules, which decide whether an external oracle is
   reachable at all (§4).
 - **The step-level accept rate** — the single largest driver of the cost model,
@@ -262,5 +332,3 @@ implementation cost as usually estimated.
   What to do about that is a question for the comparison, not a recommendation
   of this document.
 - Prompt-cache behaviour on an immediate identical re-send (§5).
-- Billing for a completed stream the proxy never forwards; reasoned from the
-  documented refusal-only exemption, not tested (§3).
