@@ -1,0 +1,20 @@
+{"t": 1788261471.688794, "pid": 223, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 4.06, "seq": 1, "applied": false}
+{"t": 1788261478.5061164, "pid": 225, "event": "PostToolUse", "tool": "Read", "appendable": true, "ask_seconds": 4.35, "seq": 2, "applied": false}
+{"t": 1788261485.7621686, "pid": 227, "event": "PostToolUse", "tool": "Read", "appendable": true, "ask_seconds": 4.2, "seq": 3, "applied": false}
+{"t": 1788261567.8779151, "pid": 232, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 4.02, "seq": 4, "applied": false}
+{"t": 1788261578.8378856, "pid": 243, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 4.32, "seq": 5, "applied": false}
+{"t": 1788261586.504825, "pid": 245, "event": "PostToolUse", "tool": "Read", "appendable": true, "ask_seconds": 6.21, "seq": 6, "applied": false}
+{"t": 1788261614.3191817, "pid": 250, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 18.47, "seq": 7, "applied": false}
+{"t": 1788261650.8763647, "pid": 255, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 12.52, "seq": 8, "applied": false}
+{"t": 1788261709.9338048, "pid": 262, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 5.5, "seq": 9, "applied": false}
+{"t": 1788261725.8092062, "pid": 269, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 5.28, "seq": 10, "applied": false}
+{"t": 1788261738.9273229, "pid": 276, "event": "PostToolUse", "tool": "Bash", "appendable": true, "ask_seconds": 9.38, "seq": 11, "hint_sha256": "ea6ff7fe90338066aad70b41d5211948fdfa0d7e78ac40f53445d38948452c8a", "applied": true}
+{"t": 1788261752.9783723, "pid": 278, "event": "PostToolUse", "tool": "Read", "appendable": true, "ask_seconds": 5.31, "seq": 12, "applied": false}
+{"t": 1788261772.612258, "pid": 280, "event": "PostToolUse", "tool": "Edit", "appendable": false, "ask_seconds": 12.5, "seq": 13, "applied": false}
+{"t": 1788261793.6248598, "pid": 282, "event": "PostToolUse", "tool": "Edit", "appendable": false, "error": "TimeoutError: no answer for df26584f568e475b87952aee5d2f5325 within 100.0s", "applied": false}
+{"t": 1788261899.7173522, "pid": 295, "event": "PostToolUse", "tool": "Bash", "appendable": true, "error": "TimeoutError: no answer for dac35003f746485f82cb332ca7187922 within 100.0s", "applied": false}
+{"t": 1788262004.222392, "pid": 302, "event": "PostToolUse", "tool": "Bash", "appendable": true, "error": "TimeoutError: no answer for b85ea360808840d8ab4c853d52f77683 within 100.0s", "applied": false}
+{"t": 1788262120.148505, "pid": 366, "event": "PostToolUse", "tool": "Bash", "appendable": true, "error": "TimeoutError: no answer for e71abe16370144cca5044d556adcab58 within 100.0s", "applied": false}
+{"t": 1788262226.578653, "pid": 371, "event": "PostToolUseFailure", "tool": "Bash", "appendable": false, "error": "TimeoutError: no answer for b57e5301a9d3417aaa4fef9b385791de within 100.0s", "applied": false}
+{"t": 1788262332.8553898, "pid": 376, "event": "PostToolUseFailure", "tool": "Bash", "appendable": false, "error": "TimeoutError: no answer for 089951db04f04a72a525a02457da3c8b within 100.0s", "applied": false}
+{"t": 1788262442.692481, "pid": 404, "event": "PostToolUse", "tool": "Bash", "appendable": true, "error": "TimeoutError: no answer for b39b9e5db49c429088812c1cfb623c4e within 100.0s", "applied": false}

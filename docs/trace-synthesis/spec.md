@@ -104,6 +104,16 @@ Measuring the `pass@10 ≈ 3/10` band properly costs ten rollouts per instance.
 price of a fuzzier band; which of the two we use is [an open
 question](#11-open-questions).
 
+**Phase A is not re-run by the pipeline** (owner's decision, 2026-09-01). A full
+rollout + eval sweep happens anyway, and its traces are cached, so the pipeline
+paying to reproduce a failure it already owns is waste. The pipeline's entry
+point is therefore **Phase B**, over a hand-assembled dataset row that carries
+the instance's fields *and* the failing run's typed conversation — a
+self-contained directory mounted into the sandbox, not a pointer into a run
+store. The layout, and the reasoning for each file in it, is
+[REPORT §8 of the steered re-run](../../experiments/trace_synthesis/steered_rerun/REPORT.md#8-the-failure-sample-is-the-workflows-input-contract);
+it is a contract, and the workflow that mounts it is built against it.
+
 ### Phase B — the Oracle
 
 A fresh agent with **privileged access** to:
@@ -208,6 +218,7 @@ Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 |---|---|
 | **Steer from a Claude Code hook** — not the proxy, not our own agent loop | The proxy ([task 08](../horizontal/plans/task-08-proxy-capture.md)) is already complex and folding steering into it couples the two badly. Our own agent loop abandons the point of this infrastructure, which is to hug the harness we actually want traces of. |
 | **Never rewrite the tool call** | Measured: a rewritten call is *not* reflected back in the assistant turn, so the actor finishes the turn believing it did something it did not do, and every later step reasons from a false premise ([§10](#10-what-is-measured-about-hooks)). |
+| **Appending is *our* invariant, not the platform's** | `updatedToolOutput`'s own schema says it **replaces** the tool output ([§10](#10-what-is-measured-about-hooks)); there is no append mode. So "the tool's real bytes survive verbatim" holds only because our hook copies them into every rewrite it emits, every time. This is the *never rewrite* red line in the specific shape this field takes — implementing append on top of a replace-semantics field — and it is a property of our code that a test has to hold up, not a guarantee we are given. |
 | **Never deny** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). |
 | **Inject as an identifiable external hint** | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so would a real user turn. [§11](#11-open-questions) states the three tests a channel has to pass. |
 | **Direction only, never specifics** | The leakage / teaching dial; see [§8](#8-what-hint-specificity-now-trades). |
@@ -286,6 +297,44 @@ Claude Code `2.1.252`, measured on this machine 2026-08-31 / 2026-09-01 under
 2026-08-31/09-01). Where documentation and measurement disagreed, the
 measurement is what is recorded.
 
+**Three classes of evidence, and they are not interchangeable.** `measured` is
+a run on this machine. `documented` is the public docs page. `first-party
+schema` is a third: the `describe()` strings Claude Code's own Zod schemas
+carry, read out of the **pinned** binary
+(`.cache/bin/claude-code/2.1.212/linux-x64/claude`, 264 MB, byte offsets
+resolved 2026-09-01). A docs page lags a release; the shipped binary cannot.
+
+What that buys and what it does not: a schema string is the **platform's
+promise**, not proof this build honors it. So a row carrying *only* a schema
+string is marked **not measured** and its claim stays a wish — the same rule
+`AGENTS.md` states as *an invariant needs a test, or downgrade the claim*.
+Where a row has both, **the measurement came first and the schema is
+independent corroboration**, never the other way round.
+
+**Use `grep -a` on the raw bytes, never `strings`** — a lesson from getting it
+wrong on 2026-09-01. `ERR_HTTP_HOOK_BLOCKED_ADDRESS` (below) was first recorded
+here as *"reported, not verified — `strings` does not surface it"*. It is in the
+binary. `strings -n 6` misses it and `grep -a` finds it twice, along with the
+full message and the function that raises it; the same is true of
+`Replaces the tool output`, which `strings` also misses and `grep -a` finds four
+times. The bundle's literals sit next to non-printable bytes, so `strings`'s
+run-length heuristic cuts them apart.
+
+The consequence for reading this table: **a negative result is only as good as
+the extraction, and `strings` is not good enough.** A raw-byte miss is
+meaningful; a `strings` miss is nothing. The first attempt at that row asserted
+"unverified" when the evidence was sitting in the file — the wrong tool
+manufactured a false unknown, which is the same error shape as measuring what
+is easy and calling it what you care about.
+
+**Always name the build.** Every row below is read from **2.1.212** unless it
+says otherwise, and one says otherwise: the `--bare` help text *"hooks are
+disabled in this mode"* is from **2.1.220** and is confirmed **absent** from
+2.1.212 by raw-byte grep — 2.1.212 wires `--bare` to `CLAUDE_CODE_SIMPLE` with
+no such help string. Strings move between releases, so an identical grep on
+another build can legitimately disagree; the version is what tells a future
+reader that is what happened rather than a mis-recorded result.
+
 | Fact | Status | Consequence here |
 |---|---|---|
 | A hook can fire on **every** tool call (`"matcher": ""`) | measured | Phase C is expressible |
@@ -297,12 +346,21 @@ measurement is what is recorded.
 | A `PreToolUse` denial lands as a `tool_result` with `is_error: true`, content = `permissionDecisionReason` | measured | The shape we are avoiding |
 | `PostToolUse` `decision: "block"` + `reason` lands in the transcript as a line of `type: "attachment"`, `attachment.type: "hook_blocking_error"` — **not** a message, and not a user turn | measured | **This is the head open question** ([§11](#11-open-questions)). In that run the model's own `thinking` named it "a post-tool hook message", weighed it against the user's actual instruction and declined to follow it. So the channel appears to affect **compliance**, not only trace shape — which strengthens rather than weakens the case for finding a channel the actor reads as an external instruction rather than as machine noise. The task was trivial and already complete, so this is *weak* evidence about persuasion and strong evidence about shape |
 | `additionalContext` is delivered wrapped in a system reminder | measured ([task 02](../../experiments/trace_synthesis/injection_shape/REPORT.md)) | The wire shows it inside the tool result as `<system-reminder>\nPostToolUse:Bash hook additional context: …\n</system-reminder>`. Still ruled out by [§5](#5-the-mechanism-decisions), and now also because `event_stream_to_conversation` drops it |
-| `PostToolUse` `updatedToolOutput` reaches the actor **inside the `user` / `tool_result` block, as the tool's own output bytes**, with no wrapper | measured | The recommended channel: a tagged suffix appended there survives **both** converters ([§11](#11-open-questions)) |
+| `PostToolUse` `updatedToolOutput` reaches the actor **inside the `user` / `tool_result` block, as the tool's own output bytes**, with no wrapper | measured | The channel with verified **delivery**: a tagged suffix appended there survives **both** converters, and reconciles 6-of-6 over a 27-boundary rollout. It is *not* established as the channel the actor will act on — it was refused on provenance in that same run ([§11](#11-open-questions)) |
+| A hint appended at a **`Read`** boundary comes back to the model **numbered as file content** — `Read` renders `file.content` with `<n>\t` prefixes and the hook appends into that field | measured (2026-09-01) | The same injection is rendered differently per tool: trailing text after a `Bash` command, but lines *1286–1288 of a file that does not contain them* after a `Read`. The actor's own objection names this pair. A per-boundary rendering difference is a credibility variable nobody chose |
+| `updatedToolOutput`'s own schema says *"Replaces the tool output before it is sent to the model"* | first-party schema + measured | Corroborates the measurement above from the platform's side — the field is in the model's context, not display-only. **It also says `Replaces`: there is no append semantics to lean on** ([§5](#5-the-mechanism-decisions)) |
+| `updatedMCPToolOutput`'s schema says *"Replaces the output for MCP tools only. **Prefer `updatedToolOutput`, which works for all tools**"* | first-party schema, **not measured** here | The platform names `updatedToolOutput` as the general-purpose field, which is the one we chose. We have not exercised the MCP variant at all, and claim nothing about it |
+| A hook-response field can be **display-only**: `MessageDisplay`'s schema says *"Display-only: the stored message and what the model sees are untouched"* | first-party schema, **not measured** here | Not an event we use. It matters as a *control*: the same binary distinguishes "reaches the model" from "reaches the screen" in so many words, so `updatedToolOutput`'s "before it is sent to the model" is a deliberate distinction rather than loose phrasing |
+| `--bare` **disables hooks outright**, `--settings`-supplied ones included | measured (2026-09-01, the same one-tool probe with and without the flag: with `--bare` the hook never fires and no hint reaches the actor; without it the hook fires and the hint lands) | Bare mode and this design are mutually exclusive — hooks *are* the mechanism. Suppressing subagents, which is what bare mode was wanted for, is bought with `--disallowedTools …,Task` instead |
+| The binary's own help text says *"hooks are disabled in this mode (--bare)"* | first-party schema + measured | Corroborates the row above: the exclusion is the contract, not a version accident |
+| `--setting-sources user` keeps a `--settings` hook firing while dropping the repo's **project** settings and its `CLAUDE.md` | measured (2026-09-01: with the flag the repo's own `.claude/settings.json` hook did **not** fire and its `CLAUDE.md` instruction was not obeyed, 2 runs; without it both took effect) | The **directed** replacement for the half of `--bare` worth keeping — bare mode exists partly so "the repo under test cannot inject instructions into the harness", and this buys that without disabling hooks. Valid sources are `user` / `project` / `local`; `--settings` is always loaded and is not a selectable source. The project-hook half is binary and solid; the `CLAUDE.md` half rests on the actor not obeying a planted instruction, which is model behaviour and therefore the weaker of the two claims |
+| `updatedToolOutput` cannot carry a hint on a tool whose response has **no free-text field** — `Edit` answers with `{filePath, structuredPatch, userModified, …}` | measured (2026-09-01: three hints judged at `Edit` boundaries, all three unappendable, zero reaching the actor) | **The channel is blind at the commit points.** The Supervisor most wants to intervene where the actor is writing code, and that is exactly where there is nowhere to append. A hint judged there has to be carried to the next boundary that can take one |
 | `updatedToolOutput` is validated against the tool's declared output schema; a mismatch is discarded with *"…does not match `<tool>`'s output shape; using original output"* | measured | The hook must copy the tool's response object and append into its text field — `stdout` for `Bash`, `file.content` for `Read` |
 | `PostToolBatch` and `PostToolUseFailure` accept **only** `additionalContext` — no `decision`, no `updatedToolOutput` | measured (the shipped binary's own schema) | Neither seam can carry a hint that survives a stream capture |
 | `PostToolUse` does not fire on a failed tool call; `PostToolUseFailure` does | measured | A `PostToolUse`-only design is blind exactly when the actor is spinning after an error |
 | Two reminders reach the actor that are in **no** client request body: a token-usage `<system_warning>` and a `PROMPT INJECTION WARNING` naming *"impersonating a user message"* as the pattern | measured (quoted verbatim by the actor; absent from every proxy-captured request) | A proxy capture is ground truth for what the **client sent**, not for what the model saw. Our hint provokes a warning the actor then reasons about in `thinking` while it appears in no visible turn |
 | `proxy_log_to_conversation` keeps only the **last** proxy record's thread | measured (a subagent run: stream conversion kept 3 hints over 18 turns, proxy conversion emitted 7 turns and 0 hints) | A defect in the proxy capture path, and a live way to lose a hint silently — part of why the [conversion guard](plans/README.md) stays required |
+| An `http` hook is refused for a **private, link-local or cloud-metadata** address; **only loopback is allowed**. Verbatim: *"HTTP hook blocked: `${e}` resolves to `${t}` (private/link-local address). **Loopback (127.0.0.1, ::1) is allowed for local dev.**"*, thrown with `code: "ERR_HTTP_HOOK_BLOCKED_ADDRESS"`. The guard resolves the hostname by DNS first and rejects on the *resolved* address (`"is in a private, link-local, or cloud-metadata range"`), so a public name pointing inward does not evade it | first-party schema (2.1.212, raw-byte grep at offsets 116070240 and 244930466), **not measured** — no `http` hook has been run here | If it holds, an `http` hook can never dial the host by its bridge IP, independently of any firewall — `127.0.0.1` or a `command` hook is unaffected. It does **not** touch the current rig, whose transport is a bind-mounted file drop; it constrains the *production* form, which the debate settled as a public HTTPS service outside the sandbox. Verify before relying on it |
 | A built-in `type: "prompt"` / `"agent"` hook can only allow or deny | documented | The Supervisor must be our own `command` / `http` handler calling the API |
 | Spawning `claude` inside a hook is blocked by the `CLAUDECODE=1` nesting guard, and there are recorded recursive cost-explosion incidents on `Stop` / `SessionEnd` | documented + measured (`CLAUDECODE=1` present in the hook environment) | Never nest the CLI; call the API |
 | The hook subprocess does **not** inherit `CLAUDE_CODE_OAUTH_TOKEN` / `ANTHROPIC_API_KEY` | measured | The Supervisor needs its own credential passed in explicitly |
@@ -330,9 +388,21 @@ hold, and those three are the whole question:
 3. **Our typed `Conversation` conversion preserves it** — the second half,
    below.
 
-**[Task 02](plans/README.md) measured this, and the answer is
-`updatedToolOutput` carrying a tagged suffix appended to the tool's real
-output** ([report](../../experiments/trace_synthesis/injection_shape/REPORT.md)).
+**[Task 02](plans/README.md) measured this, and the answer *on the delivery
+axis* is `updatedToolOutput` carrying a tagged suffix appended to the tool's
+real output** ([report](../../experiments/trace_synthesis/injection_shape/REPORT.md)).
+
+> **Delivery is verified; credibility is not.** Task 02's three criteria are all
+> about whether the hint *arrives* and *survives conversion* — and it does, now
+> confirmed over a real 27-boundary rollout with a three-way reconciliation and
+> zero loss. They say nothing about whether the actor **acts** on what arrives.
+> Over that same rollout the actor identified the injection and refused all six
+> hints on provenance
+> ([steered re-run](../../experiments/trace_synthesis/steered_rerun/REPORT.md#the-steered-arm--the-hints-arrived-and-the-actor-refused-them-on-provenance)),
+> so the two axes are orthogonal and this channel scores full marks on one and
+> zero on the other. Read every "the answer is `updatedToolOutput`" in this
+> section as settling delivery only. **The channel is an open design question**
+> ([§11](#11-open-questions)); nothing here decides it.
 It is the only candidate that passes all three criteria under **both** of this
 repo's converters: the wire shows it inside the `user` / `tool_result` block as
 the tool's own bytes, the actor reads it as injected rather than as the
@@ -392,6 +462,36 @@ would do so while looking fine. So, as a hard constraint on whatever the
 resolution turns out to be: **a hint lost in conversion must be detectable, and
 conversion must fail rather than silently emit a hint-less trace.**
 
+#### A host-side log is not detectability — **requirement, not assumption**
+
+This section previously treated "the Supervisor logs every judgement host-side"
+as *the* mechanism that makes a loss detectable. That is not sufficient, and the
+counterexample is measured rather than imagined: in the
+[steered re-run](../../experiments/trace_synthesis/steered_rerun/REPORT.md#2-the-channel-is-blind-at-edit-boundaries)
+the Supervisor's polling thread died mid-rollout on a malformed model reply. The
+remaining boundaries were never judged, the in-container hook waited out its
+deadline and failed open, and **the host-side log did not record a gap — it
+simply stopped**. A dead recorder does not record its own death, so the log's
+last line is indistinguishable from a run that ended there.
+
+The correct form of the requirement, which nothing implements yet:
+
+- **The recorder must show it was alive at every boundary.** A per-boundary
+  sequence number from the sandbox side, reconciled against the host log, turns
+  "the log stops" into "boundaries 14–27 have no host record" — a statement, not
+  an absence.
+- **A gap must itself be a record.** Any boundary the judge could not judge —
+  crash, timeout, malformed reply — is written to the same log as a judgement
+  of its own kind, and counted separately from judgements so a hole in the
+  belief state can never be read as coverage.
+- **Detectability is a three-way reconciliation, not a log.** The capture's
+  boundary list, the host's judgement log, and the converted `Conversation`
+  must join per boundary with no unmatched rows on any side. Any one of the
+  three alone can be complete and wrong.
+
+Until those exist, treat "a lost hint is detectable" as **intended and not
+enforced**.
+
 The rest, in no particular order:
 
 - **Which events do we hook? — answered: both.** `PostToolUse` fires only
@@ -413,11 +513,38 @@ The rest, in no particular order:
   out the variable itself). Until it is chased down, proxied compliance numbers
   are optimistic and the **unproxied** ones — the default capture — are what
   the design should plan against.
-- **Does the harness's prompt-injection guard harden over a long rollout?**
-  Every measurement so far is a 1–3 call toy task. The guard tells the actor to
-  check whether an instruction "actually arrived as a user turn"; ours never
-  does. Whether it starts refusing over a 50–200 call rollout is the risk that
-  would kill the design, and only [task 01](plans/README.md) can show it.
+- **~~Does the harness's prompt-injection guard harden over a long rollout?~~
+  Answered, and it fires.** Measured 2026-09-01 in the
+  [steered re-run](../../experiments/trace_synthesis/steered_rerun/REPORT.md#the-steered-arm--the-hints-arrived-and-the-actor-refused-them-on-provenance):
+  over **27 tool boundaries and 6 hints**, the actor identified the
+  `<oracle_hint>` blocks as "a repeated prompt-injection pattern in tool
+  results", stated it did **not** act on any of them *because* they were
+  injected, and closed its final summary with a security note asking the
+  operator to investigate who was tampering with its tool output. The verdict
+  did not move: the run failed on exactly the two tests the unsteered baseline
+  failed on. n=1, one actor model, one tag, one hint style.
+
+  **What that does and does not settle.** Delivery is settled: the same run
+  reconciles across the host log, the in-sandbox hook log and the converted
+  `Conversation` — a per-boundary join, not equal counts — with 6 of 6 hints
+  present and every tool's own output intact. **Credibility is now the open
+  question in its place.**
+
+  The **identified** result is narrow: *repeated in-band hints were rejected by
+  the second observation in this run.* The **mechanism is not identified** —
+  elapsed session and number of repeated injections are perfectly confounded in
+  a single trace, so "the guard hardens over a session" (fix: lower the hint
+  rate) and "repetition makes a textbook injection pattern recognizable" (fix:
+  a different channel) both fit, including the escalating language. Separating
+  them needs a one-hint run and a compressed-horizon run; neither exists. Which
+  channel replaces or repairs this one is a live design decision and is not
+  settled here.
+
+  A second effect is recorded there and matters independently of the channel
+  chosen: the actor's objections are **in the trace**. Three assistant turns
+  reason about the tampering rather than the task, and what they demonstrate is
+  an agent deciding its tool output is untrustworthy — a behavior prior, not a
+  mislabeled row.
 - **What happens when the Supervisor times out?** The default is fail-open —
   the hint is silently dropped and the run continues. Silently is the one
   behaviour that quietly changes the dataset, so the policy must be explicit
@@ -465,6 +592,7 @@ is tuned by reading traces, not asserted by a test.
 | The belief state is host-side only — never written into the sandbox | a test asserting no phase-C mount or write target resolves to the belief-state file |
 | Every phase B / C record carries the oracle-guided policy stamp | a test asserting the stamp is present on the record and that aggregation across differing stamps still errors |
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
+| The Supervisor's account of a run has **no silent gaps**: every boundary the sandbox saw has a host-side record, judgement or explicit gap | a test driving a judge that raises mid-run and asserting the host log carries a gap record for each unjudged boundary, with the sandbox's sequence numbers contiguous across the join |
 | A hint lost in conversion is detectable — conversion fails rather than emitting a hint-less trace | a test feeding a run whose hint the converter cannot represent and asserting conversion errors |
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
 | A hint never replaces a tool's output: the tool's own output is a substring of what the actor is shown | a test over the Supervisor's hook-response builder asserting the tool response it returns contains the original response's text verbatim |

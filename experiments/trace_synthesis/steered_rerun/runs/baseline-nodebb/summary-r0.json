@@ -1,0 +1,81 @@
+{
+  "label": "baseline-nodebb",
+  "session": "baseline-nodebb-r0",
+  "instance_id": "instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "rollout_id": 0,
+  "capture": "proxy",
+  "steered": false,
+  "actor_model": "anthropic/claude-sonnet-5",
+  "actor_base_url": "https://openrouter.ai/api",
+  "auth": "openrouter api key",
+  "key_index": 6,
+  "key": "b6ce00b1",
+  "credits_before": {
+    "total": 7800.0,
+    "used": 7590.151143667,
+    "remaining": 209.84885633300019
+  },
+  "credits_after": {
+    "total": 7800.0,
+    "used": 7590.745933567,
+    "remaining": 209.25406643299993
+  },
+  "bare": false,
+  "supervisor_model": null,
+  "guidebook": null,
+  "concurrency": 1,
+  "started": "2026-09-01T04:30:14-0700",
+  "wall_s": 433.7,
+  "entries": {
+    "rollout": {
+      "status": "succeeded",
+      "attempts": 1,
+      "metrics": {
+        "sandbox.setup_seconds": 30.152408216992626,
+        "sandbox.pull_seconds": 79.46201343000575,
+        "sandbox.peak_memory_bytes": 606560256.0,
+        "sandbox.oom_kills": 0.0,
+        "git_history_clean": 1.0,
+        "git_future_commits_before": 9757.0,
+        "agent_complete": 1.0,
+        "claude_code.wall_seconds": 241.39609328700317,
+        "claude_code.exit_code": 0.0,
+        "claude_code.timed_out": 0.0,
+        "patch_is_empty": 0.0,
+        "patch_binary_stripped": 0.0,
+        "verifier.flagged": 1.0,
+        "verifier.high_confidence": 0.0,
+        "verifier.ok": 1.0
+      }
+    },
+    "unit_test": {
+      "status": "succeeded",
+      "attempts": 1,
+      "metrics": {
+        "sandbox.setup_seconds": 3.0548934300022665,
+        "sandbox.pull_seconds": 1.6313717299999553,
+        "sandbox.peak_memory_bytes": 333455360.0,
+        "sandbox.oom_kills": 0.0,
+        "unit_test.score": 1.0,
+        "unit_test.resolved": 1.0,
+        "unit_test.passed": 172.0,
+        "unit_test.missing": 0.0,
+        "unit_test.required": 172.0,
+        "unit_test.wall_seconds": 19.859943561001273,
+        "unit_test.exit_code": 0.0,
+        "unit_test.timed_out": 0.0
+      }
+    }
+  },
+  "resolved": true,
+  "hints_emitted": 0,
+  "reasoning": {
+    "total": 13,
+    "signed": 13
+  },
+  "proxy_logs_redacted": [
+    "rollout/a0/claude_code.proxy_log.jsonl",
+    "rollout/ws/a0/claude.proxy.jsonl",
+    "store/adhoc/instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/r0/rollout/a0/claude_code.proxy_log.jsonl"
+  ]
+}
