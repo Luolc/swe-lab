@@ -12,6 +12,7 @@ killed sends no signal at all, and nothing here should be read as covering it.
 from __future__ import annotations
 
 from collections.abc import Iterator
+import contextlib
 import os
 import signal
 import subprocess
@@ -24,6 +25,10 @@ from swe_lab.process_group import end_process_group
 # A shell that backgrounds a long sleep, prints its pid, and then waits: the
 # grandchild is what outlives a terminate() aimed at the direct child.
 _SPAWNS_A_GRANDCHILD = "sleep 300 & echo $!; wait"
+
+# Captured before any test can monkeypatch `os.killpg`, so teardown reaches the
+# kernel rather than a recorder.
+_REAL_KILLPG = os.killpg
 
 
 def _alive(pid: int) -> bool:
@@ -66,8 +71,16 @@ def tree() -> Iterator[subprocess.Popen[str]]:
       start_new_session=True,
   )
   yield process
-  if process.poll() is None:  # a failing test must not leak the tree
-    end_process_group(process)
+  # Teardown deliberately does **not** call the code under test: several of
+  # these tests monkeypatch the very calls it makes, and pytest finalizes
+  # `monkeypatch` after this fixture — so a teardown routed through
+  # `end_process_group` met a faked `waitid`, refused to signal (correctly),
+  # and leaked the tree. Signalling the group directly is safe here because
+  # nothing has reaped the leader, so its number is still reserved.
+  with contextlib.suppress(ProcessLookupError, PermissionError):
+    _REAL_KILLPG(process.pid, signal.SIGKILL)
+  with contextlib.suppress(subprocess.TimeoutExpired):
+    _ = process.wait(timeout=5)
 
 
 def test_the_whole_tree_dies_not_just_the_child(tree: subprocess.Popen[str]):
@@ -141,6 +154,34 @@ def test_reaping_is_what_releases_the_group_number():
   _ = process.wait(timeout=5)
   with pytest.raises(ProcessLookupError):
     os.killpg(process.pid, 0)
+
+
+def test_a_leader_reaped_by_someone_else_before_entry_is_never_signalled(
+    tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
+):
+  """The pre-flight's *external* half: a live `Popen`, no child to wait on.
+
+  `returncode` is still None — this parent has not reaped anything — so the
+  only thing that can say the leader is gone is `waitid`, and it must be
+  consulted before the first signal rather than after it.
+  """
+  signalled: list[str] = []
+
+  def killpg(pid: int, sig: int) -> None:
+    del pid
+    signalled.append(signal.Signals(sig).name)
+
+  def reaped_elsewhere(*args: object, **kwargs: object) -> None:
+    del args, kwargs
+    raise ChildProcessError(10, "No child processes")
+
+  monkeypatch.setattr(os, "killpg", killpg)
+  monkeypatch.setattr(os, "waitid", reaped_elsewhere)
+
+  end_process_group(tree, grace_s=1.0)
+
+  assert signalled == [], signalled
+  assert tree.returncode is None  # nothing here reaped it either
 
 
 def test_a_leader_reaped_elsewhere_stops_the_group_signal(
