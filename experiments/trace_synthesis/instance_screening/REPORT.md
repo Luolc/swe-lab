@@ -428,7 +428,7 @@ enrichment. Answering it properly needs a manual verdict layer on the random 40,
 which is not on the critical path.
 
 **Direct cross-checking against OpenAI's own labels is closed off, not skipped.**
-The survey records `[未找到]` for the instance-ID lists behind their 200 / 249 /
+The survey records `[Not found]` for the instance-ID lists behind their 200 / 249 /
 286 counts — they are not published.
 
 ## Runnability comes before task quality
