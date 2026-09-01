@@ -45,18 +45,7 @@ ROLLOUT_KEY = "rollout"
 UNIT_TEST_KEY = "unit_test"
 GIT_INTEGRITY_KEY = "git_integrity"
 
-# One hour for the agent, half an hour for the suite. The agent's number is set
-# against a **p90 rollout wall clock of about one hour** measured by the owner
-# elsewhere, not in this repo (2026-09-01): at the previous 1800 s a real slice
-# of healthy runs was killed mid-solve, and a killed run reports as an
-# infrastructure failure rather than as the reasoning failure it was on its way
-# to being — the one confusion this pipeline can least afford. The grading suite
-# is not an agent and has never approached its budget, so it keeps 1800 s.
-#
-# Note for whoever changes these: the timeout is **per attempt**, not a budget
-# shared across retries (`run_task.run_task` passes the same value into every
-# iteration of `range(retries + 1)`).
-_AGENT_TIMEOUT_S = 3600.0
+_AGENT_TIMEOUT_S = 1800.0
 _UNIT_TEST_TIMEOUT_S = 1800.0
 # Two extra grading attempts absorb a flaky suite without hiding a real
 # failure: the patch is identical on every attempt (ADR-0008).
