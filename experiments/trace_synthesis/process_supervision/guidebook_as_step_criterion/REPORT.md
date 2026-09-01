@@ -89,14 +89,26 @@ normalization. They are checkable, not copy-pasteable.
 
 ## Three instrument defects
 
-**The `max_tokens` cap selects which steps get an answer, and it still does.**
-A judgement needing more room than the cap returns no content at all. At 700, 10
-of 69 came back empty, every one with `completion_tokens == 700` exactly. Those
-10 were re-judged at 2000: **8 returned text and 2 came back empty again, at
-`completion_tokens == 2000`** — those two are the 2 unparseable rows above. So
-the effect was **reduced, not removed**, and it is directional: 4 of the 8
-recovered judgements were adjudicable, above the 30% overall rate, so the
-truncated steps were ones the guidebook engages with more often than average.
+**The output limit selects which steps get an answer, and it still does.** A
+judgement needing more room than the limit returns no content at all.
+
+What the preserved responses show, on their own: **10 of 69 first-pass
+judgements came back empty, every one stopping at `completion_tokens == 700`
+exactly**; those 10 were re-judged, and **8 returned text while 2 came back
+empty again, stopping at `completion_tokens == 2000` exactly** — those two are
+the 2 unparseable rows above. So the effect was **reduced, not removed**, and it
+is directional: 4 of the 8 recovered judgements were adjudicable, above the 30%
+overall rate, so the truncated steps are ones this guidebook engages with more
+often than average.
+
+**The cap values themselves are asserted, not recoverable from these records.**
+These verdict files predate `judge_steps.py` recording `max_tokens` inline, so
+the caps (700, then 2000) live in `attempt_manifest.json` as operator-asserted
+provenance; `aggregate.py` reads it and reports `max_tokens_recorded` and
+`max_tokens_asserted` as **separate fields**, the first empty for this data. The
+stopping points above are measured; the caps that produced them are not. Records
+written by the current script carry the value inline and do not depend on the
+manifest.
 
 **A quote checker reported fabrications that were not fabrications.** The
 guidebook is hard-wrapped and uses backticks, so exact-substring matching fails
@@ -124,7 +136,8 @@ Offline, from the preserved responses — this recomputes every table above:
 A=~/dev/swe-lab-artifacts/process_supervision/guidebook_step_criterion
 python3 aggregate.py \
   --verdicts $A/verdicts.jsonl --verdicts $A/verdicts_retry.jsonl \
-  --guidebook experiments/trace_synthesis/steered_rerun/guidebook/qutebrowser-qtcolor.md
+  --guidebook experiments/trace_synthesis/steered_rerun/guidebook/qutebrowser-qtcolor.md \
+  --manifest $A/attempt_manifest.json
 ```
 
 Later verdict files override earlier ones for the same step, so a re-judged step
@@ -135,16 +148,22 @@ The paid steps, optional and not needed to check any figure:
 ```sh
 python3 extract_steps.py --out $A/steps.json \
   baseline-qutebrowser-rollout-0 steered-qutebrowser-rollout-11
-python3 judge_steps.py --steps $A/steps.json --out $A/verdicts.jsonl --max-tokens 700
-python3 judge_steps.py --steps $A/steps.json --out $A/verdicts_retry.jsonl \
+OPENROUTER_API_KEYS=$(op read <reference>) \
+  python3 judge_steps.py --steps $A/steps.json --out $A/verdicts.jsonl --max-tokens 700
+OPENROUTER_API_KEYS=$(op read <reference>) \
+  python3 judge_steps.py --steps $A/steps.json --out $A/verdicts_retry.jsonl \
   --max-tokens 2000 --only baseline-qutebrowser-rollout-0:11 ...   # the empty ones
 ```
 
-The key was read from the credential manager into the environment only — never
-to disk, never echoed — and **the first key it yields was the one used**; check
-that a chosen key authenticates (`GET /api/v1/key`) before a run, because a
-reference resolving successfully does not mean the value it returns is usable
-as-is.
+**The credential field is passed in whole and divided inside `judge_steps.py`,
+which selects the first key.** The field holds more than one, and splitting it
+in a shell would route the value through argv or parameter expansion — the
+channel that must not carry it. So there is no shell recipe here to copy: the
+environment variable receives the field verbatim and the consuming program does
+the rest.
+
+Check that the selected key authenticates before a run: a reference resolving
+successfully does not mean the value it returns is usable as-is.
 
 Raw responses, run log and the merged summary are off-repo at
 `swe-lab-artifacts/process_supervision/guidebook_step_criterion/`.

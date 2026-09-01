@@ -34,8 +34,14 @@ def main() -> None:
   parser = argparse.ArgumentParser()
   parser.add_argument("--verdicts", type=pathlib.Path, action="append", required=True)
   parser.add_argument("--guidebook", type=pathlib.Path, required=True)
+  parser.add_argument("--manifest", type=pathlib.Path,
+                      help="asserted per-file run config, for records written before "
+                           "judge_steps.py recorded max_tokens inline")
   parser.add_argument("--out", type=pathlib.Path)
   args = parser.parse_args()
+
+  manifest = json.loads(args.manifest.read_text()) if args.manifest else {}
+  asserted = manifest.get("files", {})
 
   guidebook = args.guidebook.read_text()
   normalized_guidebook = NORMALIZE(guidebook)
@@ -45,6 +51,7 @@ def main() -> None:
   for path in args.verdicts:
     for line in path.read_text().splitlines():
       record = json.loads(line)
+      record.setdefault("source_file", path.name)
       key = (record["rollout"], record["position"])
       attempts[key] += 1
       merged[key] = record
@@ -72,8 +79,11 @@ def main() -> None:
       "unparseable": len(unparseable),
       "unparseable_steps": [
           {"rollout": r["key"][0], "position": r["key"][1],
-           "max_tokens": r["record"].get("max_tokens"),
-           "completion_tokens": (r["record"].get("usage") or {}).get("completion_tokens")}
+           "completion_tokens": (r["record"].get("usage") or {}).get("completion_tokens"),
+           "max_tokens_recorded": r["record"].get("max_tokens"),
+           "max_tokens_asserted": (asserted.get(r["record"].get("source_file"), {})
+                                   .get("max_tokens")),
+           "source_file": r["record"].get("source_file")}
           for r in unparseable
       ],
       "adjudicable": len(adjudicable),
@@ -96,6 +106,11 @@ def main() -> None:
       },
       "re_judged_steps": sum(1 for k, n in attempts.items() if n > 1),
       "cost_usd": round(sum((r["record"].get("usage") or {}).get("cost", 0) for r in rows), 6),
+      "run_config": {
+          "recorded_in_responses": sorted(
+              {r["record"].get("max_tokens") for r in rows if r["record"].get("max_tokens")}),
+          "asserted_by_manifest": asserted,
+      },
   }
   text = json.dumps(summary, indent=2)
   print(text)
