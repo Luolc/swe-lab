@@ -370,8 +370,14 @@ The completion fixed in §2 is judged **25 times, all at `max_tokens = 2000`**:
 
 **Why 20 and not 5.** The risk of a small n is not in the noisy case but in the
 **quiet** one: a handful of identical answers reads like a stable gate while
-excluding almost nothing. More trials strictly increase the chance of observing a
-flip if flips occur at all, and the extra calls cost about twenty cents.
+excluding almost nothing. 20 calls yield **20 observations instead of 5**, and
+the extra calls cost about twenty cents. That is the whole rationale.
+
+**It is not a detection claim.** Whether more calls improve the chance of seeing
+a flip depends on *where* the variation lives, and this design does not control
+that: if routing and the served model are effectively fixed **for the duration of
+a run**, 20 calls can carry the same information as 5 — the disagreement would
+then be a between-run property, and this run would be one draw of it either way.
 
 **The zero-disagreement reading, fixed now so it cannot be written after the
 fact:**

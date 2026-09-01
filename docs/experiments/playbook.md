@@ -453,10 +453,11 @@ pilot's twelve amendments.
   fixed — **does not establish that**, and quoting the bound anyway swaps an
   unearned statistical claim for the honest one. Then the reportable result is
   the raw count, `observed 0 in 20`, with the bound quoted only as an explicit
-  conditional if at all. **Still choose n before running, from the bound the
-  quiet outcome would need to carry** — more trials strictly improve the chance
-  of seeing the thing — because afterwards the quiet outcome is the one nobody
-  re-examines. The same asymmetry decides what a one-directional check may be
+  conditional if at all. **Still choose n before running, from what the quiet
+  outcome would need to carry**, because afterwards it is the one nobody
+  re-examines — but note that *more trials help more often* is also a claim
+  about a process: when the varying thing is fixed for the duration of a run,
+  extra calls within that run are extra observations and not extra chances. The same asymmetry decides what a one-directional check may be
   cited for: sharp when it fires, empty when it does not, said where it is
   defined, or its silence gets read as its verdict — and note that the firing
   direction usually needs **no** distributional assumption at all, since one

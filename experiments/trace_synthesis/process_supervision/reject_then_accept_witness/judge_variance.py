@@ -49,10 +49,10 @@ _ROLLOUT = "baseline-qutebrowser-rollout-0"
 _MAX_TOKENS = 2000
 # Fixed here rather than exposed as a flag: n is pre-registered, and a knob that
 # changes it would undo the pre-registration. The default arm is the larger one
-# because more trials strictly increase the chance of seeing a flip if flips
-# happen at all -- not because 20 licenses a confidence bound, which this design
-# cannot claim: routing and served model vary freely and are only recorded, so
-# the calls are not known to be independent or identically distributed.
+# only to collect more observations cheaply. It licenses no confidence bound and
+# no detection claim: routing and served model are recorded but not controlled,
+# so the calls are not known to be independent, and if the serving path is fixed
+# for a run's duration then 20 calls may carry what 5 do.
 _ARMS = (("default", {}, 20), ("temperature-0", {"temperature": 0}, 5))
 # Binds the *entire* judge input, not just the completion: the prompt is built
 # from the guidebook, the preceding-steps rendering and the completion summary,
