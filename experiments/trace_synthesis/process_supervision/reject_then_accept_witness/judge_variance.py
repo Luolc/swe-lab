@@ -9,8 +9,13 @@ there is no such measurement yet.
 
 Two arms, both at `max_tokens = 2000`:
 
-- **default sampling** -- the gate as it actually runs, and as B would ship it;
-- **`temperature = 0`** -- an attribution tool, not a second object of study.
+- **default sampling** -- the gate as it actually runs, and as B would ship it.
+  Any disagreement here is enough to confound the witness, whatever its cause;
+- **`temperature = 0`** -- **descriptive context only.** It is not determinism on
+  a hosted endpoint, routing and served model are recorded but not held fixed,
+  and no convergence statistic is defined at this n. It cannot attribute the
+  variance to sampling or to the guidebook, and nothing here may be read as
+  doing so.
 
 Usage:
   python3 <this file> --out-dir <dir> [--n 5]
@@ -129,6 +134,9 @@ def main() -> None:
           "reason": _field(raw, "reason"),
           "raw": raw,
           "response_model": response.get("model"),
+          # Recorded, not controlled: routing is free to vary between calls, so
+          # an arm's behaviour is not attributable to its temperature.
+          "provider": response.get("provider"),
           "sampling_sent": _judge.sampling_sent(payload),
           "max_tokens": _MAX_TOKENS,
           "usage": usage,
@@ -157,6 +165,13 @@ def main() -> None:
       },
       "response_models": sorted(
           {str(r["response_model"]) for r in records}),
+      "providers": sorted({str(r["provider"]) for r in records}),
+      "n_per_arm": args.n,
+      "_note": (
+          "Counts only. No convergence statistic is defined at this n, and "
+          "temperature-0 is descriptive context, not a cause: routing and "
+          "served model are recorded but not controlled."
+      ),
   }
   (args.out_dir / "summary.json").write_text(json.dumps(summary, indent=2))
   print(json.dumps(summary, indent=2))

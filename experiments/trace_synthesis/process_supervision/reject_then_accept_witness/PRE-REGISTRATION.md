@@ -366,24 +366,51 @@ The completion fixed in §2 is judged **10 times, all at `max_tokens = 2000`**:
 
 - **5 at the provider's default sampling** — the gate as it runs, and as B would
   ship it. **This arm is the object of study.**
-- **5 at `temperature = 0`** — **an attribution tool, not a second object of
-  study**, and to be labelled as such wherever it is reported.
+- **5 at `temperature = 0`** — **descriptive context only**, and to be labelled
+  as such wherever it is reported. It is not an attribution tool: on a hosted
+  endpoint it is not determinism, and routing and served model are recorded but
+  not controlled.
 
 No arm at 700: that cap only serves the #305-versus-today comparison, which is
 already unresolvable for want of a recorded model id.
 
-### Readings, fixed before the run
+### Reading, fixed before the run — one, and it is not causal
 
-1. **`temperature = 0` converges and the default arm diverges** → the variance is
-   from sampling, and **B is rescuable by pinning sampling — one line of
-   configuration.**
-2. **`temperature = 0` also diverges** → the disagreement has a semantic source,
-   and pinning sampling cannot rescue B; the guidebook is what must change.
+**The only claim this measurement supports:**
 
-Under reading 2 the stage-5 clause split — the same stage cited by both verdicts,
-read once as ordering ("run it *before* editing anything") and once as command
-form — is promoted from *a description of where variance concentrates* to an
-independent finding. Under reading 1 it stays a description.
+> **Does the gate disagree with itself on a byte-identical input?** Any
+> disagreement within the **default arm** is sufficient to establish that the
+> witness, as designed, **cannot separate "resampling produced a better
+> completion" from "the judge landed the other way"** — because a reject→accept
+> transition is then available without the completion changing at all.
+
+That is decision-relevant and needs **no attribution**: it does not matter *why*
+the gate disagrees for the witness to be confounded by it.
+
+**What this measurement cannot do, stated so no later reader tries:** it cannot
+decide *pin the sampling* versus *fix the guidebook*.
+
+- `temperature = 0` **is not determinism** on a hosted endpoint. Batching,
+  serving-stack nondeterminism and mixture routing all survive it.
+- **Routing and served model are uncontrolled.** Provider and the model id the
+  response reports are *recorded per judgement* (§9's instrumentation) but are
+  **not held fixed**, so an arm's behaviour is not attributable to its
+  temperature.
+- **No convergence statistic is defined, and none can be at n = 5 per arm.**
+  "Converges" is not an observation this design can make. Agreement counts are
+  reported as counts, with n, and nothing is inferred from them about a rate.
+
+The `temperature = 0` arm is therefore **descriptive only**: it is reported
+beside the default arm, with provider and model id per call, as *context for
+where variance might sit*. Any sentence in the report that turns it into a cause
+is out of bounds.
+
+The stage-5 clause split — the same stage cited by both verdicts, read once as
+ordering ("run it *before* editing anything") and once as command form — remains
+**a description of where the observed disagreement concentrated**. This
+measurement cannot promote it to an independent finding, and the report must not.
+Establishing a semantic source needs a design that controls routing and served
+model, which is a separate pre-registration.
 
 **Not repaired here.** Fixing the guidebook to make the judge steadier and then
 measuring whether the judge is steady is circular. That question is a separate
