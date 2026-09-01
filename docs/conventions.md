@@ -49,7 +49,7 @@ direnv), which holds **only `op://` references read at load time via
 | Variable | 1Password item | Consumer |
 |---|---|---|
 | `HF_TOKEN` | `op://dev-shared/hf-token/credential` | HF pushes (`pipelines/related_files/traces.py`, `datasets/deepswe/build_parquet.py --upload`) |
-| `CLAUDE_CODE_OAUTH_TOKEN` | `op://dev-shared/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth; rollout workflows pass it through to the sandbox) |
+| `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN` | `op://dev-shared/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth). **Deliberately not named `CLAUDE_CODE_OAUTH_TOKEN`** — see [Hazards](#hazards-learned-the-hard-way); the sandbox renames it back on the way in |
 | `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys; no code consumer yet |
 
 `op read` needs `OP_SERVICE_ACCOUNT_TOKEN` in the environment. On the
@@ -74,9 +74,11 @@ Not configured (no vault item yet; set them yourself if you need them):
 harness), and `ANTHROPIC_API_KEY` (only the `claude_code` harness's `--bare`
 mode reads it).
 
-GitHub Actions is unchanged: the rollout workflows
+GitHub Actions does not use 1Password: the rollout workflows
 ([`.github/workflows/rollout*.yml`](../.github/workflows/)) read the repository
-secret `secrets.CLAUDE_CODE_OAUTH_TOKEN`, not 1Password.
+secret `secrets.CLAUDE_CODE_OAUTH_TOKEN` — the **secret** keeps that name — and
+export it into the job as `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN`, the same host-side
+name the rollout definition reads it from locally.
 
 ## Releasing
 
@@ -267,6 +269,18 @@ with the following repo-wide choices and deviations (full plan + rationale:
   of a leaked OAuth token + operator PII; don't reintroduce either. Local secrets
   are `op://` references only — see [Secrets](#secrets). Trace records redact
   operator PII at write time.
+- **Never put `CLAUDE_CODE_OAUTH_TOKEN` in a host environment.** The `claude`
+  CLI logs in with that variable the moment it sees it, and ours is an
+  *inference-only* subscription token — so an interactive Claude Code started
+  anywhere under this directory silently authenticates with it and Remote
+  Control refuses to start ("requires a full-scope login token"). This is not
+  hypothetical: `.envrc.local` used to export exactly that name, direnv put it
+  in **every** shell in the repo, and agent panes had to be restarted under
+  `env -u CLAUDE_CODE_OAUTH_TOKEN` (2026-08-31). The host carries the token as
+  `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN`; only the sandbox — where the *agent under
+  test* reads it — sees `CLAUDE_CODE_OAUTH_TOKEN`, renamed on the way in by the
+  backend's `pass_env` (`{sandbox_name: host_name}`, value never on an argv).
+  Nailed down by `test_the_agent_token_is_host_scoped_and_sandbox_named`.
 - **`patches.py` is a stopgap.** The loader corrects 3 upstream dataset rows
   (truncated `fail_to_pass` names) **in memory**; it's a no-op on every other
   row. Retire it once the fixed parquet is published to HF. See

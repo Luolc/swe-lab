@@ -173,8 +173,9 @@ dropped): a single long job takes one slot; a sweep that saturates all 20 only
 
 **Priority (set 2026-07-14): `rollout` first**, because it takes wall-clock time
 to run; while it runs we build matrix-eval + the gold sweep. A subscription
-`CLAUDE_CODE_OAUTH_TOKEN` is available (read from 1Password by the gitignored
-`.envrc.local` — see [conventions → Secrets](../../conventions.md#secrets)).
+token is available as `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN` (read from 1Password by
+the gitignored `.envrc.local` — see
+[conventions → Secrets](../../conventions.md#secrets)).
 
 1. **`rollout` — the container agent loop.** Run headless Claude Code inside each
    instance's prebuilt image, capture the trajectory + the patch. Sub-tasks:
