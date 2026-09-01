@@ -190,18 +190,26 @@ with the code.
 A fresh sandbox, the same prompt, an actor with **no** privileged information —
 an ordinary rollout, as far as the actor is concerned.
 
-The steering runs **after each tool call completes**. The tool executes
-normally; the hook hands the call and its result to a host-side **Supervisor**
-model together with the guidebook and the **belief state** — a running summary
-of what an honest, blind agent would know from the observations so far. The
-Supervisor then takes one of two branches:
+The steering runs **beside the actor, off its critical path**. A host-side
+**Supervisor** consumes the actor's live output stream — its assistant messages
+and tool results, and nothing else — together with the guidebook and the
+**belief state**, a running summary of what an honest, blind agent would know
+from the observations so far. Nothing is held up waiting for it. At each point
+it considers, the Supervisor takes one of two branches:
 
 - **On track** — do nothing; update the belief state.
-- **Off track or looping** — inject a short **tagged hint**: the sort of thing
-  a person watching over the agent's shoulder would say ("I don't think that's
-  the right direction — have you considered how this interacts with X?"),
-  giving **a direction and never a specific**, and wrapped in a marker that
-  says it came from outside ([§11](#11-open-questions)).
+- **Off track or looping** — write a short **tagged hint** on the actor's
+  stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)):
+  the sort of thing a person watching over the agent's shoulder would say ("I
+  don't think that's the right direction — have you considered how this
+  interacts with X?"), giving **a direction and never a specific**, and wrapped
+  in a marker that says it came from outside ([§11](#11-open-questions)).
+
+**When** it speaks is the open variable, not a settled part of this design: in
+the one graded batch, **8 of 8 non-compliances arrived too late**
+([report §6.2](../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)).
+A correction that lands after the actor has moved on is not a weaker
+intervention; it is a different one.
 
 The belief state lives **host-side, outside the sandbox**. If the actor could
 read a file written with oracle knowledge, the construction collapses — which
@@ -274,36 +282,37 @@ Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 
 | Decision | Rationale |
 |---|---|
-| **Steer from a Claude Code hook** — not the proxy, not our own agent loop | The proxy ([task 08](../horizontal/plans/task-08-proxy-capture.md)) is already complex and folding steering into it couples the two badly. Our own agent loop abandons the point of this infrastructure, which is to hug the harness we actually want traces of. |
-| **Never rewrite the tool call** | Measured: a rewritten call is *not* reflected back in the assistant turn, so the actor finishes the turn believing it did something it did not do, and every later step reasons from a false premise ([§10](#10-what-is-measured-about-hooks)). |
-| **Appending is *our* invariant, not the platform's** | `updatedToolOutput`'s own schema says it **replaces** the tool output ([§10](#10-what-is-measured-about-hooks)); there is no append mode. So "the tool's real bytes survive verbatim" holds only because our hook copies them into every rewrite it emits, every time. This is the *never rewrite* red line in the specific shape this field takes — implementing append on top of a replace-semantics field — and it is a property of our code that a test has to hold up, not a guarantee we are given. |
-| **Never deny** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). |
-| **Inject as an identifiable external hint** *(terminated arm; see the note above)* | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so would a real user turn. What a trace may contain is decided by (a)/(b) in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record); [§11](#11-open-questions) states the three tests a *delivery channel* has to pass. |
+| **Steer on the harness's own input channel** — a user message written to the stdin of the live `claude -p --input-format stream-json` process; not the proxy, not our own agent loop | Moved from *steer from a hook* by [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md), which records that the pre-registered compliance gate **did not pass** and why the attribution moved anyway — read it before citing this row. The two negations are unchanged: the proxy ([task 08](../horizontal/plans/task-08-proxy-capture.md)) is already complex and folding steering into it couples the two badly, and our own agent loop abandons the point of this infrastructure, which is to hug the harness we actually want traces of. What the hook path lost, it lost on evidence: `updatedToolOutput` is **blind at the commit points** — a tool whose response has no free-text field cannot carry a hint at all ([§10](#10-what-is-measured-about-hooks)). |
+| **Never rewrite the tool call** — now **structural** | Measured: a rewritten call is *not* reflected back in the assistant turn, so the actor finishes the turn believing it did something it did not do, and every later step reasons from a false premise ([§10](#10-what-is-measured-about-hooks)). On the stdin channel this stops being a rule we keep and becomes one we cannot break: a message on stdin has no field that reaches a tool call. |
+| **The tool's own bytes are never touched** — was *appending is our invariant* | Under the hook path this was the hardest row to hold: `updatedToolOutput`'s schema **replaces** the tool output ([§10](#10-what-is-measured-about-hooks)), there is no append mode, and "the tool's real bytes survive verbatim" held only because our hook copied them into every rewrite it emitted. The stdin channel removes the hazard rather than managing it — the supervisor emits its own message and never writes a tool result — so what was a property of our code that a test had to hold up is now a property of the channel. The retired form is kept visible because it is the shape the risk takes if steering ever returns to a hook. |
+| **Never deny** — now **structural** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). The stdin channel carries no decision field, so denial is unreachable rather than declined. |
+| **Inject as an identifiable external hint** *(terminated arm; see the note above)* | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so does the message this channel delivers, which is what a real user's mid-turn correction produces on the wire. What a trace may contain is decided by (a)/(b) in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record); [§11](#11-open-questions) states the three tests a *delivery channel* has to pass. |
 | **Direction only, never specifics** | The leakage / teaching dial; see [§8](#8-what-hint-specificity-now-trades). |
-| **Not a system-reminder** | Claude Code already uses that channel heavily, so ours would be indistinguishable from machine noise — both to the actor at run time and to anyone reading the trace. |
+| **Not a *fabricated* system-reminder** — rewritten by [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) against criterion **(b)** | The original ban was aimed at a channel Claude Code uses heavily, where ours would be indistinguishable from machine noise. The mid-turn stdin message is folded into a `role: system` `<system-reminder>` on the wire, and that does **not** revive the ban: what disqualified `additionalContext` was being a **supervision-only artifact**, and this fold is the opposite — measured byte-identical to what an ordinary user's correction produces in the production TUI ([§10](#the-stdin-channel--measured-and-not-a-hook)), so it is a shape that occurs at inference time. The ban that survives is on *manufacturing* a reminder the front end would never produce; see the note in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record) on why the wire-level role is not the criterion. |
 
-> **The attribution row — *steer from a hook, not the proxy* — stands, and a
-> conditional verdict is waiting on an experiment.** A structured debate
-> adjudicated 2026-09-01 ruled **A′ now** — deliver the correction on the stdin
-> of the live `claude -p --input-format stream-json` process — **gated on a
-> registered compliance test that has not been run**, with the proxy-resident
-> alternative gated on a witness that has not been run either
-> ([verdict](../../experiments/trace_synthesis/process_supervision/DEBATE-VERDICT.md)).
-> Neither gate has been attempted, so **nothing in this table changes**: an
-> attribution decision moves only by a new ADR, and writing one now would record
-> an unfinished decision as finished. The row below on *not a system-reminder*
-> is the one the verdict would reopen — see the note in
-> [§6](#6-the-trace-is-the-conversation-unedited) on why the mid-turn
-> `<system-reminder>` is a different object from a hook's `additionalContext`.
+> **The attribution row moved on 2026-09-01, and it moved across a gate that
+> did not pass.** Both gates the debate set have now been attempted. A′'s
+> registered compliance test ran and returned **`BELOW_BAR`** — compliance
+> `0.529` against a bar of `0.70` set before looking, terminal by its own
+> protocol; B's reject-then-accept witness terminated `material-retired` at
+> attempt 0. The attribution nonetheless moved to the stdin channel, on the
+> mechanical evidence plus an **owner ruling that the gate measured the wrong
+> quantity** — a judgement about which question to ask, not a measurement, and
+> not a pass. [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
+> is where that is recorded in full, including what would overturn it; the
+> [debate verdict](../../experiments/trace_synthesis/process_supervision/DEBATE-VERDICT.md)
+> is the ruling it acts on. **Cite the ADR, not this paragraph**, when the
+> question is whether supervision was shown to work — this table says how a
+> correction is delivered, and never that one helps.
 
 ## 6. The trace is the conversation, unedited
 
 **The training trace is the phase-C conversation itself, with nothing removed
 and nothing added.** Not the conversation minus the hints; not a reconstruction
 assembled offline. Each hint is already a visible part of the conversation the
-actor had — a tagged segment of a tool result
-([§11](#11-open-questions)) — so [Phase D](#phase-d--collection) is a pure
-conversion.
+actor had — a tagged message delivered on its stdin
+([§11](#11-open-questions), [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md))
+— so [Phase D](#phase-d--collection) is a pure conversion.
 
 The reason is a property of the training objective, not a convenience:
 
@@ -401,6 +410,16 @@ these agents are actually used, so the data is plausibly in-distribution rather
 than an artifact of the collection method.
 
 ## 10. What is measured about hooks
+
+> **Read the Consequence column as of its date.** Every *fact* below was
+> measured and none is refuted, which is why this section is retained verbatim.
+> But the consequences were written while a hook **was** the steering mechanism,
+> and [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) moved
+> that to the stdin channel. Where a consequence says what *our design* does —
+> "Phase C is expressible", "hooks *are* the mechanism", "the Supervisor must be
+> our own `command` / `http` handler" — it states what the fact meant for a
+> hook-based design, not what we build now. The current mechanism is
+> [§5](#5-the-mechanism-decisions) and [§3](#phase-c--the-guided-rollout).
 
 Claude Code `2.1.252`, measured on this machine 2026-08-31 / 2026-09-01 under
 `claude -p --output-format stream-json --include-hook-events` with an isolated
@@ -540,7 +559,12 @@ machine, 2026-09-01, full design and arm list in
 > not on any account of the mechanism. Full passages and the adjudication:
 > [micro-test report](../../experiments/trace_synthesis/hint_legitimacy/REPORT.md).
 > The rest of this section is the measurement history that led there, kept
-> because the delivery findings remain true.
+> because the delivery findings remain true. **It is also hook-era history in a
+> second sense**: it was written while steering came from a hook, and
+> [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) has since
+> moved delivery to the stdin channel. Read what follows as *what was measured*,
+> not as *what we now build*; the live mechanism is [§5](#5-the-mechanism-decisions)
+> and [§3](#phase-c--the-guided-rollout).
 
 **Head question — what shape can the hint actually take?** Not "can a hook
 produce a genuine `user`-role turn?": the owner ruled on 2026-09-01 that the
@@ -560,9 +584,11 @@ question:
 **A second delivery surface exists outside the hook API**, measured after this
 question was framed: a user message written on the stdin of a live
 `claude -p --input-format stream-json` process, mid-turn or at a boundary
-([§10](#the-stdin-channel--measured-and-not-a-hook)). It is measured, it is not
-a hook, and [§5](#5-the-mechanism-decisions) does not authorize it; the verdict
-that favours it is conditional on a test nobody has run.
+([§10](#the-stdin-channel--measured-and-not-a-hook)). **That surface is now the
+mechanism**: [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
+moved [§5](#5-the-mechanism-decisions)'s attribution row onto it, across a
+compliance gate that returned `BELOW_BAR` — the ADR is where that is recorded,
+and this paragraph is not a substitute for reading it.
 
 **[Task 02](plans/README.md) measured this, and the answer *on the delivery
 axis* is `updatedToolOutput` carrying a tagged suffix appended to the tool's
@@ -587,9 +613,11 @@ command's output, and it survives `event_stream_to_conversation` and
 `PostToolBatch` / `PostToolUseFailure` fails (3) on the default capture — it is
 delivered wrapped in a system reminder that `stream-json` does not carry — and
 `decision: "block"` fails it as an `attachment`
-([§10](#10-what-is-measured-about-hooks)). **This is a recommendation from a
-measurement, not yet a [§5](#5-the-mechanism-decisions) decision**; it needs the
-owner's sign-off before it becomes one.
+([§10](#10-what-is-measured-about-hooks)). **This recommendation was never
+adopted and is now moot**: it ranked the *hook* channels against each other, and
+[ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) moved
+delivery off hooks entirely. It is kept because the measurement behind it — which
+hook channel survives which capture — remains true of hooks.
 
 The measurement also says something about the marker, and it is narrower than
 it first looked. An **unmarked** hint is refused as a prompt injection far more
@@ -668,14 +696,18 @@ The correct form of the requirement, which nothing implements yet:
 Until those exist, treat "a lost hint is detectable" as **intended and not
 enforced**.
 
-The rest, in no particular order:
+The rest, in no particular order. **The first two are retired by
+[ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)** — they
+ask how to arrange hooks, and steering no longer goes through one; their
+measured content is kept, their design question is closed:
 
-- **Which events do we hook? — answered: both.** `PostToolUse` fires only
+- **Which events do we hook? — retired; the measured content stands.** `PostToolUse` fires only
   after a tool *succeeds* and `PostToolUseFailure` on a failure, both measured
   ([§10](#10-what-is-measured-about-hooks)), so a `PostToolUse`-only design is
   blind exactly when the actor is spinning after an error. What is *not*
   settled is a permission or schema failure, which triggers neither.
-- **One hint per batch, or one per call?** Parallel tool calls fan out to one
+- **One hint per batch, or one per call? — retired with the row above.**
+  Parallel tool calls fan out to one
   hook each plus a single `PostToolBatch` (measured: three calls → three
   `PostToolUse` invocations and one batch invocation). `PostToolBatch` remains
   the natural seam for one decision per batch, but it carries **only**
@@ -764,12 +796,16 @@ where they cannot be tested — the guidebook's tone
 ([Phase B](#phase-b--the-oracle)) and the honesty of a trace's reasoning
 ([Objective](#objective)) are read by a human, not asserted by a checker.
 
-The banned-channel row covers exactly the three of
-[§5](#5-the-mechanism-decisions)'s decisions that surface as fields in a hook
-response, and claims nothing beyond them. The other three are not
-settings-level facts and are not pinned here: *steer from a hook rather than
-the proxy or our own loop* is an architectural choice visible in what the
-component builds at all, *inject as an identifiable external hint* is the
+The banned-channel row covered exactly the three of
+[§5](#5-the-mechanism-decisions)'s decisions that surfaced as fields in a hook
+response. Since [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
+those three are **unreachable rather than declined** — the stdin channel has no
+field that rewrites a call, denies one, or carries `additionalContext` — so the
+row now pins the property that is still ours to break: that the Supervisor emits
+its own message and nothing else. The other three are not
+settings-level facts and are not pinned here: *steer on the harness's own input
+channel rather than the proxy or our own loop* is an architectural choice
+visible in what the component builds at all, *inject as an identifiable external hint* is the
 positive form of the same three bans, and *direction only, never specifics* is a property of
 generated prose — the [hint-specificity dial](#8-what-hint-specificity-now-trades)
 is tuned by reading traces, not asserted by a test.
@@ -784,8 +820,8 @@ is tuned by reading traces, not asserted by a test.
 | A hint lost in conversion is detectable — conversion fails rather than emitting a hint-less trace | a test feeding a run whose hint the converter cannot represent and asserting conversion errors |
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
 | Phase D never collects an exchange the actor was not part of: a request whose body carries a `[SUGGESTION MODE: …]` message, or any other side call the front end makes, is excluded from the conversation | a test over a captured TUI session asserting the collected `Conversation` is built from the agent-loop request and that a trailing prompt-suggestion request is not selected |
-| A hint never replaces a tool's output: the tool's own output is a substring of what the actor is shown | a test over the Supervisor's hook-response builder asserting the tool response it returns contains the original response's text verbatim |
-| No banned channel is reachable in a hook response: the Supervisor's output never carries `updatedInput` (a rewrite), a deny decision, or `additionalContext` (the system-reminder channel) | a test over the Supervisor's hook-response builder asserting all three fields are absent from every response it can produce |
+| A hint never alters what the actor observed: the Supervisor emits its own message and never a tool result, an assistant turn, or an edit of either | a test over the Supervisor's emitter asserting every value it can produce is its own tagged message, and that no code path writes into a captured record |
+| The Supervisor's input carries no privileged material: no field of it can hold the gold patch, the reference or test patch, or the hidden tests — the guidebook is the only thing it learns about the intended solution | a test asserting the input type's fields against an **exact allowlist**, so that adding a field fails rather than only adding one of today's forbidden names |
 | Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
 
 ## 13. Where this plugs into swe-lab
@@ -798,7 +834,7 @@ from the store — so this is a workflow, not a new subsystem.
 |---|---|---|
 | A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
 | B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
-| C | the rollout composition | hook settings injected into the sandbox (`--settings` + `CLAUDE_CONFIG_DIR`); a host-side Supervisor; declared intervention records |
+| C | the rollout composition | a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); a host-side Supervisor beside the blocking run; declared intervention records |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
 
@@ -856,8 +892,12 @@ for it. Two consequences, and neither is negotiable:
 
 ## 16. Out of scope
 
-- **Harnesses other than `claude_code`.** No hook equivalent exists for `codex`
-  or `grok_build` ([§10](#10-what-is-measured-about-hooks)).
+- **Harnesses other than `claude_code`.** The measured correction channel is
+  Claude Code's — its stdin under `--input-format stream-json`
+  ([§10](#the-stdin-channel--measured-and-not-a-hook)), and before that its hook
+  API ([§10](#10-what-is-measured-about-hooks)). Nothing equivalent has been
+  measured for `codex` or `grok_build`; whether either offers one is unexamined
+  rather than answered.
 - **Rewriting the actor's tool calls or its assistant turns.** Banned by
   [§5](#5-the-mechanism-decisions); a proxy-based design that could rewrite the
   assistant turn is a different design, not a later phase of this one. The
