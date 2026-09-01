@@ -410,6 +410,14 @@ that rule).
   `datasets/swebench_pro/unit_test.py`.
 - [`README.md`](README.md) is the map (roadmap + status); the
   [workstream docs](workstreams/) carry the detail.
+- **A section whose body is history gets a framing note, not per-sentence
+  edits.** When a new decision outdates a section that records measurements or
+  past reasoning, add **one note at its head** saying how to read the rest, and
+  rewrite only the sentences that make *current* claims. The reason is
+  checkability: a reader can verify a single stated rule, but has no way to see
+  what a string of per-sentence judgements missed. (First applied by
+  [ADR-0013](decisions/ADR-0013-supervision-on-the-stdin-channel.md) over
+  `trace-synthesis/spec.md` §10–§11.)
 
 ## Writing about downstream use
 

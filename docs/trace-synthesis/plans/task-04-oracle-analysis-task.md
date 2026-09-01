@@ -231,7 +231,7 @@ a missing field actually unusable downstream.
 ## Out of scope
 
 - **Consuming the guidebook** — neither the judge that scores unguided
-  rollouts against it nor the Supervisor and hook wiring of a guided re-run
+  rollouts against it nor the supervisor component of a guided re-run
   (task 05). Which of the two is the pipeline's default is decided by the
   spec's [§15.5](../spec.md#15-success-criteria) cost comparison; nothing here
   touches injection code.
