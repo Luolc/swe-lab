@@ -99,6 +99,58 @@ independent of the people running this experiment.
   classes as well as arm B, the guidebook adds nothing, and that is the result
   that makes this experiment worth running at all.
 
+### The scoring protocol, fixed now
+
+**Unit of analysis.** One rollout trace: the actor conversation, its tool-call
+stream, and the patch it submitted.
+
+**Class labels, each written with its mirror.** A trace is admitted to a class
+only if it passes that class's rule *and* the mirror rule that would have
+excluded it:
+
+| Class | Admitted when | Mirror that excludes |
+| --- | --- | --- |
+| **Positive** — derivation absent | resolved on a **bad** instance, and the trace reaches the specific unpinned decision the screening report names for that instance, and makes it correctly | the trace never reaches that decision → **excluded**, not a positive (the instance's defect sat on a dimension this trace never touched) |
+| **Negative** — derivation present | resolved on a **good** instance, and the trace reaches the graded behavior's decision point, and passes the mode-1 mechanical check | it read `.git` beyond `base_commit` → **excluded**, not a negative (it is correct, but its provenance is disqualifying) |
+
+Everything else — unresolved, ambiguous, or never reaching the decision — is
+**excluded and counted**. The exclusion count is reported with the results,
+because a protocol that quietly drops the traces it cannot label will report
+better numbers than it earned.
+
+**Blinding.** The judge receives, per trace: the task statement, the
+conversation, and the final patch. Stripped before handing over: `instance_id`,
+the screening verdict, the resolved flag, and which arm the bundle belongs to.
+Presentation order is randomized under a recorded seed.
+
+**Score scale.** One binary verdict per trace — `derivation_holds` or
+`derivation_absent` — plus one quoted line from the trace as its justification.
+Deliberately **no confidence scale**: a scale invites hedging, and a hedged
+distribution invites a threshold chosen after the results are in.
+
+**Primary endpoint.** Per-arm accuracy against the fixed labels, counted in
+traces: `correct / scored`. The primary comparison is
+`accuracy(arm B) − accuracy(arm A)`.
+
+**Tie rule.** A difference of **fewer than 4 traces** is declared *no
+difference*, and the "arm A separates as well as arm B" row of the decision
+table applies. This threshold is the noise bound below, fixed before any run.
+
+**A refusal or a hedge counts as an incorrect label** for the arm that produced
+it. Fixed now so that neither arm can be rescued afterwards by reclassifying its
+non-answers as abstentions.
+
+**Arm independence.** Arm A is judged first, in a session that never receives a
+guidebook; arm B is judged in a separate session with no shared context. Both
+arms are served by the same model family, so residual correlation between them
+is **not excluded**, and that is a limitation of the design rather than a
+detail — a single family may fail on the same traces in both arms for reasons
+that have nothing to do with the guidebook.
+
+**A trace that cannot be produced** (a purchased rollout that yields no usable
+trace) is replaced by the next instance in the buying order, and the replacement
+is recorded.
+
 ### Calibrating a candidate positive (the asymmetry this nearly repeated)
 
 "Resolved on a bad instance" is a **candidate** positive, not a positive. A bad
@@ -156,6 +208,25 @@ first four:
 `webclients-a6e6f617…` and its family are excluded: the image cannot execute the
 agent (`exit 127`).
 
+**Eligibility evidence, per instance.** "Proven to execute" means a surviving
+run whose `workflow.json` rollout entry shows `agent_complete == 1`,
+`claude_code.exit_code == 0` and `claude_code.timed_out == 0`, or the screening
+report's runnability column. For `ansible-c1f2df47…` the proof is
+`baseline-ansible-rollout-0`, whose rollout entry records exactly that, with
+`claude_code.wall_seconds = 178.07`. **The screening artifact's
+`image_runnable: untested` for that instance is stale** — it predates the run —
+and is corrected there, not here, so that this pre-registration stays criteria
+only.
+
+**Preflight and deterministic replacement.** Because a stale or absent
+runnability flag can put an ineligible instance on the list, each purchase is
+preceded by a per-instance execution preflight: the first rollout must reach
+`agent_complete == 1` with `exit_code == 0`. If it does not, that instance is
+**dropped and replaced by the next eligible instance in the same ordering** —
+`vuls-abd80417…` (6 + 0) is next, then `vuls-e3c27e18…` (8 + 0). The
+replacement rule is fixed here so no instance can be swapped in after a result
+is seen, and a failed preflight is reported rather than silently re-rolled.
+
 **This selection rule is a degree of freedom, and it is not known to be
 unbiased.** Cheap-to-run instances may differ systematically from expensive ones
 — smaller repositories, fewer files, shallower dependencies — and that could
@@ -188,8 +259,10 @@ All figures below are measured from the surviving runs, not estimated.
 
 ### Cost of one rollout
 
-From `PROVENANCE.json`'s `credits_before/after.used`, over the 5 baseline
-rollouts that actually executed:
+From `PROVENANCE.json`'s `credits_before/after.used`, over the five baseline
+rollouts that carry before/after credit snapshots — `baseline-navidrome-rollout-1`,
+`baseline-navidrome-rollout-2`, `baseline-nodebb-rollout-0`,
+`baseline-nodebb-rollout-1`, `baseline-qutebrowser-rollout-0`:
 
 | | credits | wall seconds |
 | --- | --- | --- |
@@ -198,6 +271,8 @@ rollouts that actually executed:
 | min | 0.595 | 241 |
 | max | 2.032 | 656 |
 
+`baseline-navidrome-rollout-0` also executed but carries no credit fields, so it
+is outside the price sample rather than excluded from it.
 `baseline-webclients-rollout-0` consumed **0.000** credits and 0.7s — the image
 cannot execute the agent binary. It is excluded, and it corroborates the
 screening report's runnability gate from an independent direction. It is also a
