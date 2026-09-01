@@ -214,6 +214,35 @@ def test_the_brief_carries_the_task_statement_whole_and_names_the_files(
     assert f"**{field}.**" in brief
 
 
+def test_an_instance_that_stages_no_failure_is_refused_before_the_sandbox(
+    tmp_path: Path,
+):
+  # The generic run CLI defaults to swebench_pro, and an ordinary instance
+  # assembles just as well — with a brief claiming three files that are not
+  # there and the networked agent budget spent finding out. Refuse at
+  # assembly, by the neutral names in `sample.py`, before anything is staged.
+  sandbox = _LocalFakeSandbox(spec=SPEC, workspace=epath.Path(tmp_path / "ws"))
+  with pytest.raises(ValueError, match="stages no failure to analyze"):
+    _ = _task().execute(
+        sandbox, _Underlying(), output_dir=tmp_path / "out", timeout=60.0
+    )
+  assert sandbox.mount_targets == []
+
+
+def test_the_brief_states_the_two_hard_won_rules(tmp_path: Path):
+  # Each rule is a lesson from a hand-written guidebook, and each is stated
+  # as a rule because the spec's phrasing alone did not prevent the mistake:
+  # an excerpt cannot support an absence claim, and a green suite is what the
+  # *failed* actor saw too. Their absence from the brief is a regression.
+  _, _, workspace = _execute(tmp_path)
+  brief = (workspace / PROMPT_NAME).read_text()
+  assert "**Quote the task statement whole, never in excerpt.**" in brief
+  assert (
+      "**The verification stage says what a green suite cannot tell you.**"
+      in brief
+  )
+
+
 def test_a_dataset_without_a_fix_commit_or_a_reference_is_briefed_honestly(
     tmp_path: Path,
 ):

@@ -47,6 +47,7 @@ from .sample import (
     FAILED_CONVERSATION_NAME,
     FAILED_PATCH_NAME,
     FAILED_VERDICT_NAME,
+    FAILURE_NAMES,
 )
 
 _logger = logging.getLogger(__name__)
@@ -370,15 +371,33 @@ class OracleAnalysisTask(Task):
   def mounts(self, instance: TaskInstance[Any]) -> Mounts:
     """Stage the failure, the harness's files, and the privileged material.
 
+    The failure has to come from the instance: an ordinary instance would
+    assemble just as well, with a brief that says three files exist that do
+    not, and the agent budget spent finding out. So the check happens here —
+    at assembly, before anything is staged or started — against the neutral
+    names of the failure-sample contract, not a concrete dataset.
+
     Args:
       instance: The instance under analysis; its own mounts carry the
         failure.
 
     Returns:
       The merged staging set (duplicate targets refused).
+
+    Raises:
+      ValueError: If the instance stages no failure to analyze.
     """
+    own = super().mounts(instance)
+    missing = [name for name in FAILURE_NAMES if name not in own]
+    if missing:
+      raise ValueError(
+          f"instance {instance.instance_id!r} stages no failure to analyze"
+          f" (missing {missing}); oracle_analysis runs over a record that"
+          " carries a cached failure, such as an oracle_failures row"
+          " (--dataset oracle_failures)"
+      )
     return merge_mounts(
-        super().mounts(instance),
+        own,
         self.harness.mounts(instance.sandbox_spec().workdir),
         privileged_mounts(instance),
     )

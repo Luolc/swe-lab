@@ -50,6 +50,7 @@ from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import Verdict
 from swe_lab.paths import datasets_root
 from swe_lab.sandbox import ExecResult, SandboxError, SandboxFs, SandboxSpec
+from swe_lab.sandbox.observers import BASE_REF_NAME
 
 from .record import (
     COLUMNS,
@@ -242,6 +243,17 @@ def _check_gates(
     raise UnusableRunError(
         "the workflow did not succeed; a failed or blocked entry is an"
         " infrastructure outcome, not a reasoning failure"
+    )
+  if BASE_REF_NAME in rollout.get("artifact_keys", {}):
+    # A baseline-patched rollout (`patch_baseline=True`) diffs against a
+    # pre-agent baseline commit and is graded by a procedure that does not
+    # reset to `base_commit`. The row carries neither the base ref nor that
+    # procedure, and the Oracle re-runs the default one — so the patch it
+    # is handed would not be the patch that was graded.
+    raise UnusableRunError(
+        f"the rollout recorded {BASE_REF_NAME}: it was patched against a"
+        " baseline, and the oracle_failures row carries only the default"
+        " (reset to base_commit) grading procedure"
     )
   metrics: Mapping[str, float] = rollout.get("metrics", {})
   if metrics.get(_COMPLETE_METRIC) != 1.0:

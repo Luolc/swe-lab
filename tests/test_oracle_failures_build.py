@@ -21,6 +21,7 @@ from swe_lab.datasets.oracle_failures.build import (
 import swe_lab.datasets.oracle_failures.build as build_module
 import swe_lab.datasets.oracle_failures.record as record_module
 from swe_lab.datasets.swebench_pro.unit_test import REQUIRED_TESTS_NAME
+from swe_lab.sandbox.observers import BASE_REF_NAME
 
 from .test_oracle_failures_record import _Underlying, CONVERSATION
 
@@ -58,6 +59,7 @@ def _run_dir(
     patch: str = "diff --git a/x b/x\n+fix\n",
     passed: tuple[str, ...] = ("t::a",),
     earlier_passed: tuple[str, ...] | None = None,
+    baseline_patched: bool = False,
 ) -> Path:
   """Lay out what `swe-lab run rollout_and_unit_test` leaves behind.
 
@@ -70,6 +72,8 @@ def _run_dir(
     passed: Which required tests the final grading attempt's output passed.
     earlier_passed: Which the earlier attempt's output passed (default: the
       same as the final one — a suite that agreed with itself).
+    baseline_patched: Whether the rollout also recorded a `patch.base_ref.txt`
+      (a `patch_baseline=True` run).
 
   Returns:
     The run directory.
@@ -84,6 +88,13 @@ def _run_dir(
       else CONVERSATION.model_dump_json()
   )
   (rollout_dir / "patch.diff").write_text(patch)
+  artifact_keys = {
+      "conversation.json": f"{ROLLOUT_KEY_PREFIX}/conversation.json",
+      "patch.diff": f"{ROLLOUT_KEY_PREFIX}/patch.diff",
+  }
+  if baseline_patched:
+    (rollout_dir / BASE_REF_NAME).write_text("b" * 40)
+    artifact_keys[BASE_REF_NAME] = f"{ROLLOUT_KEY_PREFIX}/{BASE_REF_NAME}"
   # The grading entry ran twice; every attempt's workspace persists and the
   # grader re-reads each of them.
   for attempt, outcome in enumerate(
@@ -108,12 +119,7 @@ def _run_dir(
               "key": "rollout",
               "status": "succeeded",
               "attempts": 1,
-              "artifact_keys": {
-                  "conversation.json": (
-                      f"{ROLLOUT_KEY_PREFIX}/conversation.json"
-                  ),
-                  "patch.diff": f"{ROLLOUT_KEY_PREFIX}/patch.diff",
-              },
+              "artifact_keys": artifact_keys,
               "metrics": metrics["rollout"],
           },
           {
@@ -187,6 +193,16 @@ def test_the_gates_refuse_a_run_that_is_not_a_reasoning_failure(
   # what it saw, and nothing is written.
   with pytest.raises(UnusableRunError, match=reason):
     _ = build_row(_run_dir(tmp_path, metrics=metrics), dataset="fake")
+
+
+def test_a_baseline_patched_rollout_is_refused(tmp_path: Path):
+  # `patch_baseline=True` diffs against a pre-agent baseline and is graded by
+  # a procedure that does not reset to base_commit. The row carries neither,
+  # and the Oracle re-runs the default procedure — so the patch it would be
+  # handed is not the patch that was graded. Refuse rather than mis-stage.
+  run = _run_dir(tmp_path, baseline_patched=True)
+  with pytest.raises(UnusableRunError, match="patched against a baseline"):
+    _ = build_row(run, dataset="fake")
 
 
 def test_a_workflow_that_did_not_succeed_is_refused(tmp_path: Path):

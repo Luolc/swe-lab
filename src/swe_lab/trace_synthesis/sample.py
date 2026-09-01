@@ -17,3 +17,12 @@ FAILED_CONVERSATION_NAME = "failed_conversation.json"
 FAILED_VERDICT_NAME = "failed_verdict.json"
 # The patch the failed rollout submitted.
 FAILED_PATCH_NAME = "failed_patch.diff"
+
+# The three together: what an instance must stage for a task to have a failure
+# to analyze. A task checks an instance's mounts against this before it
+# stages or starts anything.
+FAILURE_NAMES: tuple[str, ...] = (
+    FAILED_CONVERSATION_NAME,
+    FAILED_VERDICT_NAME,
+    FAILED_PATCH_NAME,
+)
