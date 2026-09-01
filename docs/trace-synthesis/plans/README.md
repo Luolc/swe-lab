@@ -32,6 +32,7 @@ this index is not a task: its results are recorded in
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
 | 09 | **Redact the production proxy capture** — gates *publishing* any proxy-captured trace | ⬜ |
+| 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ⬜ |
 
 ---
 
@@ -240,3 +241,56 @@ is the header set and the shape to start from.
 - **Verification:** unit tests; one proxy-captured run inspected end to end.
 - **Dependencies:** none. **Gates:** publishing any proxy-captured trace — not
   local runs. **Scope:** S
+
+## Task 10: Run the capture proxy inside the sandbox
+
+**Description:** `ProxyRecorder` starts `cc-reverse-proxy` **on the host** and
+the container dials back through the Docker host gateway. That makes a
+**required** component — on the OpenRouter path the proxy's `X-Anthropic-Beta`
+mirroring and `provider` injection are what make interleaved thinking work at
+all — depend on three fragile things:
+
+1. **A host firewall rule.** Landed by `machine-setup` PR #138 on 2026-09-01;
+   before it, `ufw`'s `default deny (incoming)` blocked the Docker bridge
+   outright and this component's experiments were hard-blocked for a round.
+2. **A port derived from a dataset index.** `port_for_index(index) = base_port +
+   index` ([`proxy.py`](../../../src/swe_lab/harnesses/claude_code/proxy.py))
+   with **no upper bound**, and the aggregator holds a second base at 25000. The
+   firewall rule therefore has to open ranges, guessed from how large a sweep
+   anyone expects to run.
+3. **A listener bound to every interface.** `reverse_proxy.go` binds
+   `:%d`, and `machine-setup`'s `base` role already carries
+   `ufw allow in on tailscale0` — so these ports are reachable from any node on
+   the tailnet. That predates PR #138 rather than being introduced by it, which
+   is the point: it is a standing exposure nobody chose.
+
+Moving the proxy **into the sandbox** removes all three at once. Each container
+has its own network namespace, so a **hard-coded** port cannot collide by
+construction; the agent dials container loopback, so **no firewall rule is
+needed**; nothing binds on the host, so the **tailnet exposure disappears**. It
+also makes the design backend-agnostic — `GitHubJobSandbox` is handed a job that
+is already running, where a host-side proxy has nowhere to stand.
+
+**The mechanism already exists.** The proxy is a static, standard-library-only
+Go binary, and `MountedAssetsObserver` + `Mount(executable=True)` is the same
+path that already places the pinned Claude Code binary in the container. Nothing
+new has to be built.
+
+**Two known costs, written down now rather than discovered later:**
+
+- **Lifecycle moves into the invocation script** — start in the background, poll
+  for readiness, flush before teardown. The log is append-only JSONL, so a
+  killed process truncates at a line boundary and every already-written line
+  stays complete.
+- **The log lands inside the sandbox, where the agent can reach it.** That is a
+  trace-integrity question. The honest framing is that it is **level, not new**:
+  `event_stream.jsonl` is already written into the workspace and is already
+  just as reachable. It must be stated rather than left for someone to find.
+
+- **Acceptance:** proxy capture works with **no host firewall rule and no port
+  allocation scheme**; `machine-setup` can then drop both `ufw` ranges together
+  with their `defaults` variables and the bringup-acceptance row.
+- **Verification:** one proxy-captured run on a box with the rules removed.
+- **Dependencies:** none. It gates nothing today (the firewall workaround has
+  landed), but it removes a required component's dependency on machine-level
+  configuration. **Scope:** M
