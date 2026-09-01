@@ -540,12 +540,16 @@ on timeout" with no ceiling would let a run of timeouts walk past the approved
 24 rollouts, and would hand the operator the decision of when to stop — the
 discretion this section exists to remove. So:
 
-- **at most one timeout re-run per cell**, across all six slots, not one per
-  slot;
-- a slot whose re-run also times out is **abandoned**; the cell then has fewer
-  than six valid attempts and is treated exactly like a preflight-failed cell —
-  **no yield estimate, excluded from per-cell and pooled figures**, reported
-  with its counts, and its repository leaves the scored set;
+- **one timeout re-run per cell**, a single budget shared across all six slots,
+  not one budget per slot;
+- **a timeout with no re-run left in the budget abandons its slot and
+  invalidates the cell** — one rule covering every case, whether the budget was
+  spent by this slot's own first timeout or by a different slot earlier. There
+  is no state in which an operator must decide whether a given timeout still
+  "deserves" a re-run;
+- an invalid cell is treated exactly like a preflight-failed one — **no yield
+  estimate, excluded from per-cell and pooled figures**, reported with its
+  counts, and its repository leaves the scored set;
 - **worst case is 28 executions**, four cells at six attempts plus one re-run
   each, about 3.6 h serial against the 3.05 h nominal. That ceiling is what the
   budget covers, and no run may exceed it for any reason.
@@ -559,8 +563,11 @@ not absorbed by re-running until the numbers look normal.
 ran all six attempts; it is *preflight-failed* if attempt 1 missed
 `agent_complete == 1` or `exit_code == 0`, which stops it at one attempt.
 
-A cell is also invalid if its single timeout re-run is exhausted (below), and
-is then treated identically to a preflight-failed cell.
+**A cell is valid if and only if it produced six valid attempts** — six
+executions that neither timed out nor failed the preflight. Every other cell is
+invalid, whether it stopped at attempt 1 on a preflight failure or lost a slot
+to a timeout with no re-run left. There is one valid state and one invalid
+state; a cell with five attempts is not a smaller valid cell.
 
 | Valid positive cells | Headline yield | Consequences |
 | :---: | --- | --- |
@@ -721,7 +728,7 @@ dry-run corpus contains one class, so there is no result here to tune toward.
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
-| 11 | Timed-out attempts were re-run with no ceiling | **One timeout re-run per cell**; a second timeout abandons the cell, which is then treated as preflight-failed; worst case fixed at **28 executions, ~3.6 h** | Unbounded re-running could walk past the approved 24 rollouts and left "when do we stop" to whoever was running it — the discretion this section removes everywhere else. |
+| 11 | Timed-out attempts were re-run with no ceiling, and the terminal state was written for only one of the ways the budget runs out | **One re-run per cell as a shared budget**, and **any timeout with no re-run left invalidates the cell** — one rule for every case; a cell is valid iff it produced six valid attempts; worst case fixed at **28 executions, ~3.6 h** | Unbounded re-running could walk past the approved 24 rollouts and left "when do we stop" to whoever was running it — the discretion this section removes everywhere else. |
 | 10 | The pooled formula assumed 12 attempts, and "environment failure" included an undefined wall-time clause | **`(N + 3)/(1 + c)` parameterized by valid attempts**, with a censoring table covering 2, 1 and 0 valid positive cells; **environment failure is `timed_out == 1` alone** | A preflight failure leaves 6 attempts pooled, not 12, so the fixed formula would have been wrong in exactly the case it was written to survive. And "wall far past the p90 of comparable runs" named no comparator and no threshold while deciding the denominator — and is inapplicable regardless, since every wall time we hold is from the OpenRouter arm. |
 | 9 | "Yield factor" was named as the deliverable but never defined as a statistic | **`c` (qualifying, not merely resolved) as numerator; `E[1/θ] = 9/(1+c)` under a `Beta(2,2)` prior fixed now; pooled over the two positive cells as `15/(1+c_pooled)`; per-cell yields never averaged; preflight-failed cells excluded, environment failures re-run, `c = 0` a real measurement** | `resolved / 6` is a rate, not rollouts-per-trace, and the reciprocal of a mean is not the mean of a reciprocal. Left open, the choice between pooled rate, reciprocal, and a model — and the handling of a zero — would have been made with the counts already visible. A uniform prior would have given `7/c`, undefined at exactly the plausible outcome `c = 0`. |
 | 8 | The per-cell rule was "at most 6 attempts, stop at 2 resolved" | **Exactly six attempts per cell**, preflight counted as attempt 1, all retained, the two lowest-indexed qualifying traces selected after calibrating every resolved one | Stopping early on the second success is optional stopping just as running unbounded is — the stopping time still carries outcome information, so attempts-per-trace stays biased even with every attempt retained. Only a count fixed in advance makes `resolved / 6` an unbiased rate. The pilot becomes 24 rollouts. |
