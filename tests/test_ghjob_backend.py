@@ -140,9 +140,11 @@ def test_pass_env_inherits_by_reference(
       pass_env={"SECRET_TOKEN": "SECRET_TOKEN"},
   )
   sandbox.up()
-  _ = (ws / "main.sh").write_text('echo "tok=$SECRET_TOKEN"\n')
+  # Compared in the script, never echoed: a captured stdout is a log, and a
+  # credential's value does not belong in one even when it is a fixture.
+  _ = (ws / "main.sh").write_text('test "$SECRET_TOKEN" = s3cr3t\n')
   result = sandbox.run_script("main.sh", timeout=5.0)
-  assert "tok=s3cr3t" in result.stdout
+  assert result.exit_code == 0
 
 
 def test_pass_env_renames_the_job_variable(
@@ -161,9 +163,31 @@ def test_pass_env_renames_the_job_variable(
       pass_env={"AGENT_TOKEN": "SWE_LAB_TOKEN"},
   )
   sandbox.up()
-  _ = (ws / "main.sh").write_text('echo "tok=$AGENT_TOKEN"\n')
+  _ = (ws / "main.sh").write_text('test "$AGENT_TOKEN" = s3cr3t\n')
   result = sandbox.run_script("main.sh", timeout=5.0)
-  assert "tok=s3cr3t" in result.stdout
+  assert result.exit_code == 0
+
+
+def test_pass_env_drops_an_ambient_name_when_its_source_is_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  # The job's whole environment is inherited, so a stale CLAUDE_CODE_OAUTH_TOKEN
+  # left by an older workflow would otherwise answer to the mapping's
+  # destination name and quietly authenticate the agent with the wrong
+  # credential. A declared source that is absent passes nothing — the same
+  # answer the host backend gives.
+  monkeypatch.delenv("SWE_LAB_TOKEN", raising=False)
+  monkeypatch.setenv("AGENT_TOKEN", "stale-ambient")
+  ws = _workspace(tmp_path)
+  sandbox = GitHubJobSandbox(
+      spec=SPEC,
+      workspace=epath.Path(ws),
+      pass_env={"AGENT_TOKEN": "SWE_LAB_TOKEN"},
+  )
+  sandbox.up()
+  _ = (ws / "main.sh").write_text('[ -z "${AGENT_TOKEN:-}" ]\n')
+  result = sandbox.run_script("main.sh", timeout=5.0)
+  assert result.exit_code == 0
 
 
 def test_down_never_raises(tmp_path: Path):

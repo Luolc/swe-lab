@@ -51,9 +51,11 @@ class GitHubJobSandbox(Sandbox):
       variable it is read from. The job *is* the container here, so the run
       already inherits the job's environment wholesale — what this field adds
       is the **rename**, which is the only way a variable the job carries
-      under a repo-scoped name reaches the agent under the name it reads. The
-      value is read from the ambient process, never rebuilt onto a command
-      line.
+      under a repo-scoped name reaches the agent under the name it reads. A
+      source that is not set is warned about and its destination name is
+      *removed* from the run's environment — an inherited variable of that
+      name never stands in for the mapping. The value is read from the ambient
+      process, never rebuilt onto a command line.
     reuse: Allow ``up`` to run in a non-empty workspace.
   """
 
@@ -247,6 +249,12 @@ class GitHubJobSandbox(Sandbox):
       value = os.environ.get(source)
       if value is None:
         _logger.warning("pass_env variable %s is not set in the job", source)
+        # Nothing was declared under this name, so nothing may answer to it:
+        # the run inherited the job's whole environment above, and leaving an
+        # ambient variable of the same name in place would let a stale one
+        # stand in for the mapping. The host backend passes nothing in the
+        # same case; this is how that comes out the same here.
+        _ = run_env.pop(name, None)
       else:
         run_env[name] = value
     run_env.update(self.env)
