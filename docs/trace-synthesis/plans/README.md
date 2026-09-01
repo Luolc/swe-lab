@@ -124,7 +124,11 @@ dropped decision must be **recorded**, never silently skipped.
 - **Acceptance:** the guidebook and the belief state are provably absent from
   the actor's context and mounts (named tests, per the spec's
   [invariants](../spec.md#12-invariants-intended-none-enforced-today)); a
-  dropped or timed-out supervisor decision appears in the run record.
+  dropped or timed-out supervisor decision appears in the run record; the
+  Supervisor's hook response can never carry `updatedInput`, a deny decision or
+  `additionalContext` — the three channels
+  [§5](../spec.md#5-the-mechanism-decisions) bans, `additionalContext` included
+  because it is delivered as a system reminder.
 - **Verification:** unit tests over the hook payload handling; one live guided
   rollout end to end.
 - **Dependencies:** 02, 04. **Scope:** M–L

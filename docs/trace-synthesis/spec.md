@@ -396,6 +396,16 @@ where they cannot be tested — the guidebook's tone
 ([Phase B](#phase-b--the-oracle)) and the honesty of a trace's reasoning
 ([Objective](#objective)) are read by a human, not asserted by a checker.
 
+The banned-channel row covers exactly the three of
+[§5](#5-the-mechanism-decisions)'s decisions that surface as fields in a hook
+response, and claims nothing beyond them. The other three are not
+settings-level facts and are not pinned here: *steer from a hook rather than
+the proxy or our own loop* is an architectural choice visible in what the
+component builds at all, *inject as a user hint* is the positive form of the
+same three bans, and *direction only, never specifics* is a property of
+generated prose — the [hint-specificity dial](#8-what-hint-specificity-now-trades)
+is tuned by reading traces, not asserted by a test.
+
 | Intended invariant | Test that must pin it |
 |---|---|
 | The guidebook never enters the actor's context or the training trace | a test asserting the guidebook path is absent from phase C's mounts and from the serialized `Conversation` |
@@ -404,7 +414,7 @@ where they cannot be tested — the guidebook's tone
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
 | A hint lost in conversion is detectable — conversion fails rather than emitting a hint-less trace | a test feeding a run whose hint the converter cannot represent and asserting conversion errors |
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
-| No steering mechanism [§5](#5-the-mechanism-decisions) bans is in use: no `updatedInput`, no denial | a test over the injected hook settings asserting neither a rewrite field nor a deny decision is reachable |
+| No banned channel is reachable in a hook response: the Supervisor's output never carries `updatedInput` (a rewrite), a deny decision, or `additionalContext` (the system-reminder channel) | a test over the Supervisor's hook-response builder asserting all three fields are absent from every response it can produce |
 
 ## 13. Where this plugs into swe-lab
 
