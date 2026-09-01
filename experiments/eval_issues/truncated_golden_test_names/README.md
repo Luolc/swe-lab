@@ -141,6 +141,13 @@ reporter-based extraction would prevent this class — but that's out of scope; 
 
 ## Reproduce
 
+> **These commands no longer run.** Both scripts import `swe_lab.core.*`, a
+> package dissolved on 2026-07-25 by #53; they raise `ModuleNotFoundError` on
+> import. They are kept as evidence of the method behind the conclusion
+> above, and are exempted by name from the `no-stale-module-refs` pre-commit
+> hook — see the dated exemption list in `.pre-commit-config.yaml`. Reviving one
+> means porting it to today's module layout, not deleting the guard entry.
+
 ```bash
 # base + golden in Docker, capture + analyze + derive fix
 python experiments/eval_issues/truncated_golden_test_names/investigate.py reproduce all

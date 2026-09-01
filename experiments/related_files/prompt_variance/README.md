@@ -78,3 +78,13 @@ Scaling this to the full dataset would also want the **repeats of one instance**
 parallelized (not just across languages), which needs per-run isolation the main
 runner lacks today (distinct checkout / proxy port / proxy-log per run — all
 currently keyed by `instance_id`).
+
+## Status of the scripts
+
+`run_experiment.py` no longer runs: it imports `swe_lab.core.*`, a package
+dissolved on 2026-07-25 by #53, and raises `ModuleNotFoundError` on import. The
+experiment's deliverable is [`REPORT.md`](REPORT.md); the script is kept as
+evidence of the method. It is exempted by name from the `no-stale-module-refs`
+pre-commit hook — see the dated exemption list in `.pre-commit-config.yaml`.
+Reviving it means porting it to today's module layout, not deleting the guard
+entry. The other scripts here are unaffected and remain under the guard.
