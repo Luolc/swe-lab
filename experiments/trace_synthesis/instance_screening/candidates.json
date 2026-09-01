@@ -561,7 +561,7 @@
     "verdict": "good",
     "category": null,
     "confidence": "high",
-    "evidence": "the payload reshape from an array to a single {tid, order} is stated verbatim (\"accepts a single payload containing the topic identifier (tid) and a zero-based target position (order)\"); the three graded behaviours (no-privileges error, no-op on an unpinned topic, relative order preserved) each map to a requirements bullet. All four screens silent. Soft spot, and a useful one: order 0 means the top of the pinned list as displayed (getSortedSetRevRange), the opposite direction from the old score-as-order behaviour - derivable but easy to get backwards.",
+    "evidence": "the payload reshape from an array to a single {tid, order} is stated verbatim (\"accepts a single payload containing the topic identifier (tid) and a zero-based target position (order)\"); the three graded behaviours (no-privileges error, no-op on an unpinned topic, relative order preserved) each map to a requirements bullet. All five screens silent. Soft spot, and a useful one: order 0 means the top of the pinned list as displayed (getSortedSetRevRange), the opposite direction from the old score-as-order behaviour - derivable but easy to get backwards.",
     "fail_to_pass": 3,
     "pass_to_pass": 169,
     "image_runnable": "proven",

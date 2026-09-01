@@ -28,7 +28,7 @@ comes from the parquet plus repository source fetched over HTTP at
 | --- | --- |
 | [`REPORT.md`](REPORT.md) | the results: per-instance verdicts, screen overlap, the control, what to hand the trace-synthesis line |
 | [`candidates.json`](candidates.json) | the same verdicts, machine-readable, with each screen's raw output per instance |
-| [`screens.py`](screens.py) | the four mechanical screens, plus `--random N --seed S` for the control |
+| [`screens.py`](screens.py) | the five mechanical screens, plus `--random N --seed S` for the control |
 | [`screens.json`](screens.json) | screen output over the 40 candidates |
 | [`control-screens.json`](control-screens.json) | screen output over a seeded random 40 of the full 731 |
 | [`instances.txt`](instances.txt) | the 40 instance ids, extracted from issue #261 |

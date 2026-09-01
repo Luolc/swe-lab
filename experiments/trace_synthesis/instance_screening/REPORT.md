@@ -347,7 +347,21 @@ Over the 40 candidates, after calibration:
 - **at least one fires:** 27 of 40; **none fires:** 13
 
 
-No screen's hit set is contained in another's, so none can be dropped. The two
+**One containment does hold, and it is the snapshot screen:** both its hits
+(`element-web-4fec4368`, `element-web-880428ab`) are also token hits, so
+snapshot ⊆ token — the overlap table says so directly (snapshot 2,
+token ∩ snapshot 2), and an earlier version of this sentence claimed the
+opposite while that row sat immediately above it. So set-complementarity is
+*not* the argument for keeping screen 5. Its argument is evidentiary, and it is
+the reason it was built as a separate screen: on those two rows the token screen
+produces a **suspicion** a human must resolve, while the snapshot screen
+produces something close to a **proof** — a committed DOM snapshot fixes every
+class name and nesting level, so no prose prompt can pin it and the task is
+*overly strict tests* by construction. Dropping screen 5 would not lose the two
+instances; it would lose the certainty with which they are judged.
+
+Among screens 1–4 no hit set is contained in another's, so none of those four
+can be dropped. The two
 verdicts contested between the two task pairs this round —
 `teleport-b4e7cd3a` and `vuls-4c04acbd` — trip screens 3 and 4 and nothing
 else, and it was **screen 4 that settled both arguments**, because it is the
@@ -386,7 +400,7 @@ the row cannot underwrite the screens' recall any more than the 16/16 row can.
 That distinction is load-bearing because of one specific known hole. The token
 screen reports a literal only when the graded tests **require** it *and* the
 gold patch **introduces** it, and
-[that second conjunct](#a-miss-that-survived-the-fix-and-why) can only ever
+[that second conjunct](#what-this-says-about-the-token-screen) can only ever
 remove alarms. It demonstrably swallowed one instance in this set —
 `ansible-de5858f4`, recovered by reading the assertion by hand, not by any
 screen. **How many more it swallowed is unknown**, and the silent 13 cannot
@@ -396,7 +410,7 @@ would land in.
 ## The control: a random 40 from the same corpus
 
 To test whether issue #261's mixed-outcome subset is *enriched* for broken
-tasks, the same four screens were run over a seeded random sample of 40 rows
+tasks, the same five screens were run over a seeded random sample of 40 rows
 from the full 731 (`--random 40 --seed 261`). Mechanical layer only: no manual
 verdicts, by [decision](#open-questions), because the alarm rate is not a
 broken-task rate and re-measuring it on another 40 would re-measure the same
@@ -420,7 +434,7 @@ standard error near 11. Two readings remain, and nothing here separates them:
   that the compile gate is a sharper instrument than OpenAI's human read, not
   that it is a stricter standard;
 - **(b)** the screens' alarm rate is too false-alarm-dominated to resolve an
-  enrichment effect. The [calibration](#calibration-three-false-alarm-sources-found-and-fixed)
+  enrichment effect. The [calibration](#calibration-four-instrument-defects-found-and-fixed)
   is direct evidence for this.
 
 So the 40% is recorded here as an **unexplained difference**, not as evidence of
@@ -491,7 +505,7 @@ output — is in [`candidates.json`](candidates.json).
 | 14 | `gravitational__teleport-ba6c4a135412c4296dd5551bd94042f0dc024504-v626ec2a48416b10a88641359a169d99e935ff037` | ❌ bad | overly_strict_tests | 16 / 0 | TestProcessStateGetState grades a newly added unexported processState.getState() and a componentStateEnum; lib/service/state.go exists at base with processState and stateOK but neither getState nor any per-component map. No prompt field gives those names. The interface field declares only SetOnHeartbeat, which the graded tests never touch - the same shape as teleport-b4e7cd3a. |
 | 15 | `flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1` | ❌ bad ⚠︎untested image | underspecified_prompt | 6 / 0 | tests require `version: 1.0` as the supported document version and assert EqualError(err, "unsupported version: 5.0"); the prompt says only "validate that the document version is supported" and never gives a version value or an error format. |
 | 16 | `protonmail__webclients-cb8cc309c6968b0a2a5fe4288d0ae0a969ff31e1` | ✅ good 🚫un-runnable image | — | 10 / 0 | requirements give a worked example for every one of the ten graded cases (drive.env.proton.black -> drive.proton.local:8888 etc.) and the interface declares the file and function. NOTE: image family unrunnable. |
-| 17 | `NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e` | ✅ good | — | 3 / 169 | the payload reshape from an array to a single {tid, order} is stated verbatim ("accepts a single payload containing the topic identifier (tid) and a zero-based target position (order)"); the three graded behaviours (no-privileges error, no-op on an unpinned topic, relative order preserved) each map to a requirements bullet. All four screens silent. Soft spot, and a useful one: order 0 means the top of the pinned list as displayed (getSortedSetRevRange), the opposite direction from the old score-as-order behaviour - derivable but easy to get backwards. |
+| 17 | `NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e` | ✅ good | — | 3 / 169 | the payload reshape from an array to a single {tid, order} is stated verbatim ("accepts a single payload containing the topic identifier (tid) and a zero-based target position (order)"); the three graded behaviours (no-privileges error, no-op on an unpinned topic, relative order preserved) each map to a requirements bullet. All five screens silent. Soft spot, and a useful one: order 0 means the top of the pinned list as displayed (getSortedSetRevRange), the opposite direction from the old score-as-order behaviour - derivable but easy to get backwards. |
 | 18 | `gravitational__teleport-007235446f85b1cbaef92664c3b3867517250f21` | ✅ good | — | 1 / 0 | the exact error text is produced by the test's own fake FileSystem (newErrMissingFile), so the solver only has to propagate it unwrapped, which requirements demand ("path-qualified error in the exact form"). Requirements also state explicitly that they do not prescribe internal function names. One graded test, and it is an end-to-end SCP flow. |
 | 19 | `protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd` | ✅ good 🚫un-runnable image | — | 1 / 18 | requirements state the optional cancellation parameter and, bullet by bullet, the exact result object the single graded test asserts. The signature alarm is benign: the added parameter is optional and stated. NOTE: image family unrunnable. |
 | 20 | `gravitational__teleport-2b15263e49da5625922581569834eec4838a9257-vee9b09fb20c43af7e520f57e9239bbcf46b7113d` | ✅ good | — | 14 / 0 | the interface field is exhaustive (every exported type, constructor and method of the new tokencount.go) and requirements state the two changed signatures verbatim, including `(any, *model.TokenCount, error)`. The expected token totals 721/729/932 rest on perMessage/perRole/perRequest, which already exist at base_commit - the gold diff removes lines that use them. |
@@ -554,7 +568,7 @@ wish for it.
 | **Question** | What is the screens' actual recall — how many broken tasks does no screen touch? |
 | **Why it cannot be answered here** | Every verdict above was formed with the screen output visible, so verdicts and screens are not independent. [Both](#against-the-verdicts) the 16/16 and the silent-13 rows are contaminated by it. |
 | **Method** | A judging agent that has never seen `screens.py` or any of its output re-judges the **23 rows the screens disagree with the reader about or are silent on** — the 13 no screen fired on, plus the 10 usable ones that alarmed — against the determinacy criterion alone. Compare its verdicts against this report's. |
-| **What it measures** | A broken task in the silent 13 is a genuine screen miss, and the first real estimate of the [second-conjunct hole](#a-miss-that-survived-the-fix-and-why). A usable task among the 10 alarms confirms the dismissal rate. |
+| **What it measures** | A broken task in the silent 13 is a genuine screen miss, and the first real estimate of the [second-conjunct hole](#what-this-says-about-the-token-screen). A usable task among the 10 alarms confirms the dismissal rate. |
 | **Cost** | One independent agent, no containers, no rollouts — the same pure-text budget as this round. |
 | **Status** | **Not executed.** |
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Two mechanical screens over the issue #261 SWE-bench Pro candidates.
+"""Five mechanical screens over the issue #261 SWE-bench Pro candidates.
 
-Both answer one question — **determinacy**: is the behavior the hidden tests
+They all answer one question — **determinacy**: is the behavior the hidden tests
 judge pinned down by what the solver holds (``problem_statement`` +
 ``requirements`` + ``interface`` + the repository at ``base_commit``)? A task
 that is not pinned down is broken regardless of whether some rollout guessed
@@ -35,7 +35,7 @@ happens on another. Neither of the other two screens can see it, because
 ``string`` and ``[]byte`` both appear in the prompt and the two prose fields
 do not contradict each other.
 
-Screen 4 — **the signature-change screen**, the sharpest of the four. For a
+Screen 4 — **the signature-change screen**, the sharpest of the first four. For a
 symbol that already exists at ``base_commit`` and that the gold patch
 redefines, put the two definition lines side by side. When they differ in
 *name, parameter count, parameter types or return arity*, the graded test only
@@ -54,7 +54,9 @@ resolve; this one outputs something closer to a proof. It fires only when the
 test patch adds a snapshot assertion, adds or modifies the matching
 ``__snapshots__`` file, and the paired test file is in ``fail_to_pass`` — so a
 snapshot already at ``base_commit``, guarding a ``pass_to_pass`` test against
-DOM regressions, is left alone.
+DOM regressions, is left alone. Both of its hits here are also token hits
+(snapshot ⊆ token), so it earns its keep by *upgrading* those two rows from a
+suspicion to a near-proof, not by reaching instances nothing else reaches.
 
 The first four screens are complementary, not redundant — four different
 diseases:
@@ -74,22 +76,28 @@ Repository source is read over HTTP from GitHub at ``base_commit`` rather than
 out of the instance image, because this analysis must not start a container.
 
 **Calibration.** A first pass alarmed on 22/40, and reading the alarms found
-three false-alarm sources rather than three broken tasks. All three are fixed
-here, and the fix is the point: an alarm rate dominated by false alarms cannot
+defects in the instrument rather than broken tasks. They are fixed here, and
+the fix is the point: an alarm rate dominated by false alarms cannot
 stand in for a broken-task rate, so anything measured on top of it measures
 noise.
 
 1. *The token screen read only the files the patches touch.* A symbol defined
    anywhere else in the repository read as un-derivable — ``storage.ListWithOptions``
    and ``storage.NewNamespace`` in ``flipt-3b2c25ee`` are ordinary existing
-   API. The screen now tokenizes the **whole repository** at ``base_commit``,
-   streamed from the source tarball.
+   API. The whole repository at ``base_commit`` is now tokenized, streamed from
+   the source tarball — but only to **annotate** the alarm
+   (``unpinned_but_present_in_repo``), never to suppress it. ``unpinned()``
+   still reads the touched files alone. Existing somewhere in the checkout
+   makes a symbol *available*, not *pinned*, and annotating dominates
+   suppressing: a reader can reproduce suppression by ignoring the annotated
+   alarms, but cannot recover an alarm that was never printed.
 2. *The token screen counted prose in comments.* ``element-web-b007ea81``
    alarmed on ``100``, ``curve`` and ``seeing`` — all of them words in a
-   comment. Comments are now stripped from the two sides that state a
-   *requirement* (the added test lines and the added gold lines) and left
-   intact on the side that states what the solver was *given*, which is the
-   conservative direction for both.
+   comment. Comments are now stripped from the **identifier and number
+   streams only** — never from string literals, because doing that ate
+   ``navidrome-d0dceae0``'s required literal ``http://localhost/p/ABC123``
+   from the ``//localhost`` onward, which is exactly the miss this screen
+   exists to prevent.
 3. *The signature screen ignored the interface field.* ``flipt-3b2c25ee``
    grows a ``store`` parameter on ``New`` — and the interface field declares
    the new signature verbatim, so nothing was guessed. A signature change is
