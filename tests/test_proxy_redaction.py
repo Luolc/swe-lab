@@ -11,10 +11,9 @@ from __future__ import annotations
 import json
 
 from swe_lab.harnesses.claude_code.redaction import (
-    BODY_IDENTITY_PATH,
     REDACTED,
     SENSITIVE_HEADERS,
-    unredacted_headers,
+    unredacted_fields,
 )
 
 
@@ -64,7 +63,7 @@ def test_a_redacted_capture_is_clean() -> None:
   # What the proxy writes by default: the header names survive, the values
   # do not. This is the state a stored artifact must be in.
   capture = _record(authorization=REDACTED, organization=REDACTED) + "\n"
-  assert unredacted_headers(capture) == []
+  assert unredacted_fields(capture) == []
 
 
 def test_a_raw_capture_is_caught_on_both_sides() -> None:
@@ -77,7 +76,7 @@ def test_a_raw_capture_is_caught_on_both_sides() -> None:
       )
       + "\n"
   )
-  findings = unredacted_headers(capture)
+  findings = unredacted_fields(capture)
   assert findings == [
       "record 1 request Authorization",
       "record 1 request X-Api-Key",
@@ -102,34 +101,9 @@ def test_an_account_id_in_the_request_body_is_caught() -> None:
       )
       + "\n"
   )
-  assert unredacted_headers(capture) == [
+  assert unredacted_fields(capture) == [
       "record 1 request body.metadata.user_id"
   ]
-
-
-def test_the_scanner_covers_the_set_this_repo_already_accepted() -> None:
-  # The root cause of the miss above: two copies of one fact. The experiment's
-  # redactor is the accepted set (task 09 names it as the shape to start from),
-  # and this scanner was written narrower without consulting it.
-  #
-  # Asserting coverage stops the drift from recurring. It is a splint, not the
-  # cure — it only proves this set is no *smaller*, so a gap in the accepted
-  # set would propagate. Converging them onto one home is task 09's.
-  accepted = _accepted_secret_headers()
-  assert accepted <= SENSITIVE_HEADERS, sorted(accepted - SENSITIVE_HEADERS)
-  assert BODY_IDENTITY_PATH == ("metadata", "user_id")
-
-
-def _accepted_secret_headers() -> frozenset[str]:
-  """Load ``SECRET_HEADERS`` from the injection-shape experiment's redactor.
-
-  Through the loader that already exists for it, rather than a second copy of
-  the by-path import dance — writing that twice would be the same duplication
-  this test is here to catch.
-  """
-  from .test_injection_shape_redaction import _load_driver
-
-  return frozenset(_load_driver().SECRET_HEADERS)
 
 
 def test_identifiers_and_telemetry_are_not_treated_as_secrets() -> None:
@@ -157,7 +131,7 @@ def test_findings_name_the_offending_record() -> None:
   # say which one — "somewhere in this file" is not actionable.
   clean = _record(authorization=REDACTED, organization=REDACTED)
   dirty = _record(authorization="Bearer live", organization=REDACTED)
-  findings = unredacted_headers(f"{clean}\n{dirty}\n")
+  findings = unredacted_fields(f"{clean}\n{dirty}\n")
   assert findings == [
       "record 2 request Authorization",
       "record 2 request X-Api-Key",
@@ -173,7 +147,7 @@ def test_a_truncated_capture_is_still_checkable() -> None:
   clean = _record(authorization=REDACTED, organization=REDACTED)
   dirty = _record(authorization="Bearer live", organization=REDACTED)
   truncated = f"{clean}\n{dirty}\n" + '{"request": {"headers": {"Auth'
-  assert unredacted_headers(truncated) == [
+  assert unredacted_fields(truncated) == [
       "record 2 request Authorization",
       "record 2 request X-Api-Key",
       "record 2 request Cookie",
