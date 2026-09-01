@@ -205,18 +205,13 @@ WORKSPACE_FILES = {
 }
 
 
-# Which fields are sensitive, and what replaces them, is **owned by `src`** —
-# `swe_lab.harnesses.claude_code.redaction`. This file used to carry its own
-# copy, and the two drifted twice: in membership (this one knew the
-# representative claim and `metadata.user_id` before `src` did) and in
-# representation (this one wrote `<redacted>`, `src` wrote `[REDACTED]`, so
-# `src`'s scanner called every capture committed from here dirty). The
-# dependency points this way and never the other, because `experiments/` is
-# exempt from the quality hooks and cannot be the place a security-relevant
-# fact is maintained.
+# Which fields are sensitive, and what replaces them, is owned by `src` —
+# `swe_lab.harnesses.claude_code.redaction`. The dependency points this way and
+# never the other: `experiments/` is exempt from the quality hooks, so it
+# cannot be where a security-relevant fact is maintained.
 #
-# Captures committed before 2026-09-01 hold the old `<redacted>`; readers
-# accept it through `LEGACY_REDACTED`, and nothing writes it any more.
+# Captures committed here before 2026-09-01 hold the older `<redacted>`
+# placeholder; readers accept it through `LEGACY_REDACTED`.
 from swe_lab.harnesses.claude_code.redaction import (  # noqa: E402
     redact_record,
 )

@@ -1,9 +1,9 @@
 """One home for *which* fields are sensitive, and *what* replaces them.
 
-The same fact used to be written down three times — the rollout checker, the
-injection-shape experiment's post-run redactor, and W1's exchange builder — and
-the copies drifted twice, in membership and in representation. These tests pin
-the direction of the dependency: `src` owns the fact, everyone else imports it.
+These tests pin the properties that make a single home worth having: a record
+this module redacts is a record this module calls clean, the older placeholder
+is still readable, masking never quietly becomes dropping, and a field nobody
+has classified is reported rather than published.
 """
 
 from __future__ import annotations

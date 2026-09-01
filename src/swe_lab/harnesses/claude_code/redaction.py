@@ -1,25 +1,29 @@
-"""Check that a proxy capture carries no credential and no account identity.
+"""What is sensitive in a captured HTTP exchange, and how to mask and check it.
+
+**This module is the one home for that.** The sets below, the placeholder that
+replaces a value, and both the producer and the reader live here; everything
+that redacts or checks a capture imports them rather than restating them.
 
 Proxy capture records whole HTTP exchanges, so unlike a stream trace it has an
-*envelope*: the request's `Authorization` / `X-Api-Key` and the response's
-Anthropic organization and workspace ids. Those must never reach a stored
-artifact — a log is the thing that gets copied into an issue, pushed to a
-dataset repo, or handed to another tool, and a credential in a file travels much
-further than the same credential in an environment variable.
+*envelope*: credentials on the request, the operator's account identity on the
+response. Those must never reach a stored artifact — a log is the thing that
+gets copied into an issue, pushed to a dataset repo, or handed to another tool,
+and a credential in a file travels much further than the same credential in an
+environment variable.
 
-**Redaction itself happens upstream of this module, at write time**, inside
-`cc-reverse-proxy`: it masks those four values as it records each exchange, so a
-raw artifact never exists on disk. That is the fix; after-the-fact cleanup is
-not equivalent, because it leaves a window in which the unredacted file is
-there. ADR-0012 §4 carries the decision.
+Three jobs, deliberately together:
 
-What lives *here* is the check that the fix is actually in force, which is a
-different job and belongs on this side: the proxy is an external, separately
-versioned binary, and "the build we ran redacts" is exactly the kind of
-assumption that stops being true without anyone noticing. So this module answers
-one question about a capture we already have — *does any record still hold a
-real secret?* — and the answer is a list of findings rather than a bool, because
-"which header, in which record" is what a person needs in order to act.
+- :func:`redact_record` masks a record we produce.
+- :func:`unredacted_fields` checks a record somebody else produced —
+  `cc-reverse-proxy` masks at write time (ADR-0012 §4), and it is an external,
+  separately versioned binary, so "the build we ran redacts" is exactly the
+  assumption that stops holding without anyone noticing.
+- :func:`unclassified_fields` reports fields nobody has judged either way,
+  because redaction is a deny-list and silence about a new field is not
+  safety.
+
+The checks return findings rather than a bool: "which field, in which record"
+is what a person needs in order to act.
 """
 
 from __future__ import annotations
@@ -54,12 +58,8 @@ _REDACTED_MARKERS = frozenset({REDACTED, LEGACY_REDACTED})
 # case-insensitive matching (HTTP header names are case-insensitive and the
 # recorded casing is whatever the client or server sent).
 #
-# This set is the one already accepted in this repo — ``SECRET_HEADERS`` in the
-# injection-shape experiment's redactor, which task 09 names as the shape to
-# start from — and `test_proxy_redaction.py` asserts it stays a superset of
-# that one, so the two cannot drift apart again. (They are two copies of one
-# fact, which is a defect in itself; converging them onto a single home is
-# task 09's, and the assertion is a splint until then.)
+# The canonical set. Every redactor and every checker in this repo reads it
+# from here, so there is nothing for it to drift against.
 SENSITIVE_HEADERS = frozenset(
     {
         # request — credentials

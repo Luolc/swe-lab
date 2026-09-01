@@ -281,6 +281,14 @@ not the same as clearing a trace for publication: bodies carry repository
 contents and whatever the agent typed. The gate is what stands between a scanned
 capture and a HF dataset repo, and it is the part still missing.
 
+`publication_blockers` exists but is **not yet wired to the real boundary**, and
+the boundary is now known precisely (traced during the review of the
+convergence work): `push_traces` uploads `*.last_exchange.json`, whereas that
+function reads raw proxy JSONL. So the gate has to run on the **normalized
+exchange record**, not on the capture — and an unclassified raw response header
+can survive into that record, which is exactly the case a capture-side check
+would miss. Wiring it there, with the body sweep, is what closes this task.
+
 - **Acceptance:** one home for the set, the placeholder and the body field list,
   with `experiments/` importing from `src`; the scanner reports unclassified
   fields; a publishing path that refuses an unscanned capture or one carrying
