@@ -188,7 +188,33 @@ pilot's twelve amendments.
   It is the same object as a green tautological assertion: **an announcement
   that a check was performed, whose effect is that nobody performs it.** A
   review, not the authors, found the missing half. Expect this shape in your own
-  summaries first, where it is cheapest to write and hardest to see.
+  summaries first, where it is cheapest to write and hardest to see: **a summary
+  is the natural habitat of a coverage claim**, because its whole genre is
+  gathering several things into one complete-sounding statement, and
+  *completeness* is the part nobody checks. **Being able to name a failure
+  confers no immunity to it.**
+- **Finding one defect ends the search for the others.** Once a number has a
+  named problem it reads as *examined*, and the examination stops there. A
+  wall-clock estimate here was correctly found to be missing its machine-state
+  predicate — and that was **not** the main reason it was wrong: it had
+  extrapolated from a **different population** (frozen runs on another arm) than
+  the one it predicted, and overshot by 2–4× for that reason, which no predicate
+  about CPU steal would have fixed. **A number having a known problem is not
+  evidence that it has only one**, and repairing the found one is what makes it
+  look reviewed. When you fix a defect in an estimate, re-derive the estimate
+  rather than patching the defect.
+- **"This is just a natural extension of the accepted X" is a scope expansion
+  arguing itself into a fait accompli.** The form is valid only if the new scope
+  is contained in the old one — and if it were, the new rule would have nothing
+  to add. **So whenever the extension is worth proposing, the argument's premise
+  is false.** It is self-defeating, and it works anyway, because it invites the
+  reader to check the *old* rule's standing instead of the new territory. The
+  question it must trigger: **what is in the new scope that was not in the old
+  one?** That set is necessarily non-empty, it is exactly the part that needs
+  independent defence, and this argument form is precisely what stops anyone
+  looking at it. A new rule stands on its own scope, cost and evidence, or it
+  does not stand; an accepted neighbour is **precedent and motivation, never
+  authority**.
 - **The strongest form needs no blind party at all.** Protecting a ruler's
   blindness is a remedy for a *timing* defect: it is needed only because some
   decision was still live after results existed. So the target shape for a

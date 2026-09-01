@@ -683,10 +683,31 @@ from frozen baselines whose host state was never recorded, so they silently
 assumed a condition that need not hold — the same error as measuring on A and
 stating about B. So the estimate is written with its predicate:
 
-| machine state | estimate |
-| --- | --- |
-| CPU credit available | ~3.6 h serial for 24 executions |
-| credit exhausted, steal ≈ 60% (≈ 40% of nominal capacity), measured 2026-09-01 08:59 PDT | ≈ 9.5 h |
+| estimate | what it assumed | what it was for |
+| --- | --- | --- |
+| ~3.6 h serial for 24 executions | CPU credit available (unstated at the time) | superseded |
+| ≈ 9.5 h | credit exhausted, steal ≈ 60% ≈ 40% of nominal, 2026-09-01 08:59 PDT | superseded |
+
+**Both were wrong, and the report keeps them with the reason rather than
+quietly swapping in the measured number.** At 8 of 24 executions the measured
+mean was **313 s per attempt** — extrapolating to about **2.1 h** and **$12.2**
+nominal for the full 24 — against estimates of 3.6 h and 9.5 h, several of those
+attempts having run at steal ≈ 59%.
+
+**The cause was not throttling, and that is the part worth recording.** A long
+argument established that the estimate lacked a machine-state predicate. That
+argument was correct, and it was **not the main reason the number was wrong**:
+the extrapolation drew its per-attempt wall from the **frozen baselines** —
+`navidrome`'s ~689 s median, from a different arm under different conditions —
+while this batch's own attempts average 313 s. **The reference population was
+not the population being extrapolated to**, and no predicate about CPU steal
+repairs that.
+
+Which yields the rule this pilot reports instead of an estimate: **the report
+carries the measured total wall and cost, plus one sentence saying the prior
+estimates ran 2–4× high because the reference population differed — not because
+the host was throttled.** An estimate that is wrong and whose error is explained
+is worth keeping; one silently replaced by the measurement teaches nothing.
 
 **Pausing stops at an attempt boundary, never at a cell boundary.** The
 intuition runs the other way, and it is wrong here: there are only four cells,
