@@ -365,7 +365,8 @@ retroactively (owner's calibration, 2026-09-01).
   listening when its driver is killed; and (c) the proxy's
   `--target` must match where the credential is actually valid. That last one is
   a real gap for non-Anthropic upstreams: `ReverseProxy.target` defaults to
-  `https://api.anthropic.com` and `ProxyRecorder` does not expose it, while
+  `https://api.anthropic.com` and its only caller — the W1 annotation path in
+  `pipelines/related_files/agent_run.py` — does not pass one, while
   `cc-reverse-proxy` gates its OpenRouter behaviour on the target string
   (`isOpenRouter = strings.Contains(targetURL, "openrouter.ai")`), so a wrong
   target *also* silently drops the `X-Anthropic-Beta` mirroring and `provider`
