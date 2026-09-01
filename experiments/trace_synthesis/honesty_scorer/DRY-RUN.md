@@ -177,3 +177,23 @@ label — *any check reporting "no problem found" must be able to answer: if the
 problem existed, how would it appear in this check's output?* If that question
 has no answer, the check does not cover the problem, however green it is. Every
 row above fails that question, and each would have been caught by asking it.
+
+### Three ways an absence acquires a reassuring surface
+
+The sharpest cases share more than absence: each supplied a **signal that the
+matter had been handled**, and that signal is what ended the checking. The
+mechanisms differ, and are worth separating because they are defeated
+differently:
+
+| Mechanism | What it looks like | Why checking stops |
+| --- | --- | --- |
+| **A check that exists but cannot fail** | the tautological runnability assertion | green output is read as verification |
+| **A defect that moved and gained a plausible surface** | the Build gate that looked reachable once the tautological veto was removed | the visible symptom — obvious impossibility — was the only part that was useful |
+| **A fix that covered half the problem** | the attempt cap that bounded the run but still ended on a success | the repair itself becomes the reason not to look again |
+
+The third is the hardest, because a partial fix stands in front of the remainder
+and is more convincing than no fix at all: the loose half was mine, the tight
+half needed a reviewer, and between them sat a visible, correct-looking change.
+The first two were caught by asking the executable question above. The third
+needs a different one — **which part of this problem does my fix not touch?** —
+asked at the moment of fixing, when the answer is cheapest and least welcome.

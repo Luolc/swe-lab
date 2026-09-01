@@ -370,8 +370,16 @@ rule that produced it.
   written: a repository that cannot supply `k` of each leaves the scored set.
 
 This makes the pilot **24 rollouts**, not the ~12 a stop-on-success rule would
-average — the price of an unbiased yield figure, which is the only thing this
-batch exists to produce.
+average. The extra six to eight are the price of an unbiased yield figure, and
+the justification is not that unbiasedness is nice to have:
+
+> **A biased measurement does not cost what its own run cost. It costs every
+> downstream decision that depends on it.** The downstream of this figure is the
+> purchase decision itself — how many positives to buy, at what price — so the
+> bias is **multiplied** by every later batch rather than averaged away by them.
+
+A cheap biased yield is therefore not a cheap yield. It is a full-price yield
+plus an unknown error propagated into every purchase that cites it.
 
 **Balance is an endpoint condition, not a purchase plan**, because a plan is
 defeated by what the purchase actually yields. If a repository ends the batch
