@@ -270,6 +270,122 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `packaging/claude-code-bundle/` | Builds the portable Claude Code tarball (agent + glibc + loader + `rg`) that runs on musl/Alpine, ancient glibc and distroless. `build.sh` resolves + pins the version, `Dockerfile.bundle` is the hermetic builder, `smoke-test.sh` is the target matrix. Output lands in `dist/` (**gitignored**). The artifact is **internal-use only** — private channels, never published. Design: [task 24](horizontal/plans/task-24-claude-code-portable-bundle.md). |
 | `tests/` | pytest suite over the engine, axes, and tasks. |
 
+## What may be committed as evidence
+
+`AGENTS.md` says never commit "dataset data files or large trace records
+(gitignored / off-repo on HF by design)". That sentence names a mechanism but
+no boundary, and in [#304](https://github.com/Luolc/swe-lab/pull/304) two
+competent readers read two different answers out of it — a P0 raised on a
+329 KB experiment directory (260 KB of it evidence), rebutted with what `main`
+already carries, and withdrawn a round later. Neither reading was careless.
+**The defect was the missing definition**, so here it is.
+
+**The test is not the byte count. It is two questions, asked in this order:**
+
+1. **Is this a product of *dataset scale* — one artifact per instance, growing
+   with the dataset?** Then it is off-repo by design: gitignored locally,
+   published on HF. The 731-instance sweeps, rollout trees, raw proxy logs of
+   batch runs. Scale is the property that makes them unmanageable in git, and
+   it is a property of the *pipeline*, not of any one file's size.
+2. **Is this the minimum a reader needs to rederive the report's conclusions
+   without leaving the repository?** Then it belongs in git, and its size is
+   not by itself an objection. An experiment whose numbers can only be checked
+   by re-running it on the author's machine has not reported a result; it has
+   asserted one.
+
+**Question 1 is asked first and it wins.** The two are not alternatives to
+weigh: an artifact that is dataset-scale stays off-repo *even when a claim
+needs all of it*, because the alternative is the dataset in git. What question
+2 then buys is not an exemption but an obligation — commit a **witness**: the
+derived numbers the claim actually rests on, provenance identifying the corpus
+they came from (path or HF id, digest, row count), and the command that
+regenerates them where the corpus exists. So the two categories are disjoint by
+construction: **the corpus is off-repo, the witness is in-repo**, and no
+artifact is ever both.
+
+This is what the repo already does, in three places at three scales:
+
+- `test_the_rule_set_stays_clean_on_the_gold_corpus` measures each integrity
+  rule's false-positive rate over all 731 gold patches. The parquet is
+  gitignored and CI does not download it, so the test **skips** when it is
+  absent — and the numbers it would produce are pinned in the test as
+  `_GOLD_FALSE_POSITIVE_BUDGET`. The corpus stayed out; the claim stayed
+  checkable.
+- `outputs/` commits the annotation parquet and per-instance JSON while the
+  traces they were derived from live on HF.
+- An experiment commits a field-reduced snapshot of an off-repo run ledger
+  beside its `runs/`, with a provenance file recording the source path, its
+  sha256 and which fields were dropped — the fix a
+  [#306](https://github.com/Luolc/swe-lab/pull/306) review finding required
+  when the report's cost figures turned out to depend on a ledger only one
+  machine had.
+
+**If no witness can carry the claim, downgrade the claim** — say plainly that
+the number is rederivable only with the corpus in hand, and name the command —
+rather than committing the corpus to make the sentence true.
+
+Question 2 is not a preference — it is [the experiment
+playbook](experiments/playbook.md)'s "raw artifacts, preserved" and "ground
+every claim in raw data", and reviews enforce it, as that third example shows.
+Which is why the #304 reading collided with it: pushing an experiment's own
+evidence out of the repo satisfies one rule by breaking the other. **When two
+rules appear to forbid each other, that is the signal one of them is being read
+wrong** — here, "large trace records" was being read as "many bytes" when it
+means "the dataset-scale corpus that HF hosts".
+
+**Calibration, not a threshold.** These are the accepted magnitudes at one
+pinned commit, recorded so a future argument starts from what the repo already
+agreed to rather than from a number someone picks in the moment. **`main` moves
+and these numbers move with it** — `process_supervision` gained four files
+between this table being written and being reviewed — so the tree is named,
+not the branch:
+
+```sh
+git ls-tree -r -l c1fd9e9 | awk '{split($5, a, "/")
+    key = (a[1] == "experiments") ? a[1]"/"a[2]"/"a[3] : a[1]
+    bytes[key] += $4; files[key]++}
+  END {for (k in bytes) printf "%10d %5d  %s\n", bytes[k], files[k], k}' | sort -rn
+```
+
+| Committed corpus, at `c1fd9e9` | Size |
+| --- | --- |
+| `experiments/trace_synthesis/injection_shape/` | 8,336,053 bytes / 379 files — the largest, reviewed and merged |
+| `experiments/trace_synthesis/process_supervision/` | 2,187,200 bytes / 60 files |
+| `experiments/related_files/prompt_variance/` | 443,275 bytes / 88 files (a playbook exemplar) |
+| `outputs/` (the committed deliverable) | 17,559,873 bytes / 3,662 files |
+
+Nothing depends on these being current — they are evidence of what review has
+accepted, not a budget anyone spends against, so a stale row misleads only if
+it is read as a limit. Re-measure at a newer commit and say which.
+
+The directory the argument was *about* is deliberately not in that table:
+`streamjson_input/` measured 329 KB on an unmerged branch, and #304 is still
+open. It is what prompted the definition, not a precedent for it — a magnitude
+is accepted when it is on `main`, not when it has been argued for.
+
+**No byte limit is set on purpose.** A limit would have to be either low enough
+to evict `injection_shape` — an accepted corpus whose loss would cost more than
+it saves — or high enough to permit anything under it, including a corpus that
+fails question 1 and belongs on HF. Size correlates with the thing we care
+about; it is not the thing.
+
+**Prune by question 2, not by megabytes.** The right response to a large
+evidence tree is to ask which files the report actually cites and reduce to
+those (a field-reduced snapshot, a normalized evidence record) — not to delete
+a small one because it *looks* big next to a source file. `runs/` is
+append-only per the playbook: new variant, new directory, never an overwrite.
+
+**None of this loosens what is absolute.** Independent of size or usefulness,
+and enforced elsewhere rather than judged here: **no secrets** (the gitleaks
+hook and the CI history scan — see [Quality bar](../AGENTS.md#quality-bar)) and
+**no operator PII** in any committed record — home paths, names, emails,
+account or organization identifiers. The other #304 P0, which was *not*
+withdrawn, was exactly this: raw transcript snapshots carrying an operator home
+path. A capture that must be redacted before it can be committed is redacted
+first and verified after ([the redaction
+module](../src/swe_lab/harnesses/claude_code/redaction.py) is the one home for
+that rule).
+
 ## Source-of-truth rule
 
 - **Code > provisional docs.** Where a doc and the code disagree, the code wins
@@ -558,7 +674,9 @@ retroactively (owner's calibration, 2026-09-01).
   read the corrected rows straight from the dataset.
 - **`outputs/` is a deliverable, not scratch.** The annotation JSON + parquet are
   version-controlled ground truth. Dataset data files and large trace records are
-  *not* in git (gitignored / on HF respectively).
+  *not* in git (gitignored / on HF respectively) — where that line falls, and
+  why it is not a byte count, is
+  [above](#what-may-be-committed-as-evidence).
 - **Claude Code usage limits.** Long batch runs hit the subscription credit wall;
   the runners are built to stop cleanly on `UsageLimitError` and resume
   idempotently (skip instances whose output already exists).
