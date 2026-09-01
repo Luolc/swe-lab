@@ -7,20 +7,56 @@ Reads only the checked-in artifacts — no network, no `claude` invocation. The
 proxy captures were redacted with this repo's own
 :mod:`swe_lab.harnesses.claude_code.redaction` before being committed; the
 `--check-redaction` flag re-asserts that.
+
+**The pilot-scale figures come from another component's run ledger**, which
+lives off-repo and in no git repository at all. A reduced, attributable
+snapshot of it is committed beside the runs (`runs/pilot_ledger.jsonl`, with
+`runs/pilot_ledger.provenance.json` recording the source path, its sha256 and
+which fields were kept), so those figures regenerate here like every other one.
+`--freeze-pilot` is the one-shot that produced the snapshot; it is the **only**
+mode that reads outside this directory, and it runs only where the source
+ledger exists.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import statistics
 import sys
+import time
 
 HERE = pathlib.Path(__file__).resolve().parent
 RUNS = HERE / "runs"
-LEDGER = pathlib.Path(
+
+# The honesty-scorer pilot's ledger, as it sits on the machine that ran it.
+# Read only by `--freeze-pilot`.
+PILOT_SOURCE = pathlib.Path(
     "/home/ubuntu/dev/swe-lab-artifacts/honesty_scorer/pilot/ledger.jsonl"
+)
+PILOT_FROZEN = RUNS / "pilot_ledger.jsonl"
+PILOT_PROVENANCE = RUNS / "pilot_ledger.provenance.json"
+
+# What the snapshot keeps: the five statistics the report quotes, the keys that
+# identify a row, and the commit that produced it. Everything else is dropped —
+# including `frozen_to`, an absolute path on the operator's machine.
+PILOT_FIELDS = (
+    "cell",
+    "class",
+    "instance_id",
+    "slot",
+    "execution_no",
+    "git_commit",
+    "input_tokens",
+    "output_tokens",
+    "cache_read_input_tokens",
+    "cache_creation_input_tokens",
+    "total_cost_usd",
+    "wall_seconds",
+    "rollout_wall_seconds",
+    "num_turns",
 )
 
 
@@ -124,11 +160,84 @@ def converter_survival() -> dict:
   }
 
 
-def ledger_scale() -> dict | None:
-  """Calibrate against the 20 honesty-scorer pilot attempts, if present."""
-  if not LEDGER.exists():
-    return None
-  rows = [json.loads(line) for line in LEDGER.read_text().splitlines() if line.strip()]
+def freeze_pilot() -> int:
+  """Snapshot the off-repo pilot ledger into `runs/`, with its provenance.
+
+  One-shot, and the only mode that reads outside this directory. The source is
+  another component's run ledger on this machine and is in no git repository,
+  so without a snapshot the report's scale figures would be unauditable by
+  anyone else — which is precisely the claim this experiment made and could
+  not keep.
+
+  Returns:
+    0 on success, 1 when the source ledger is not on this machine.
+  """
+  if not PILOT_SOURCE.exists():
+    print(f"pilot ledger not on this machine: {PILOT_SOURCE}")
+    return 1
+  raw = PILOT_SOURCE.read_bytes()
+  rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
+  reduced = [{k: row[k] for k in PILOT_FIELDS if k in row} for row in rows]
+  PILOT_FROZEN.write_text(
+      "\n".join(json.dumps(row, sort_keys=True) for row in reduced) + "\n"
+  )
+  PILOT_PROVENANCE.write_text(
+      json.dumps(
+          {
+              "source_path": str(PILOT_SOURCE),
+              "source_sha256": hashlib.sha256(raw).hexdigest(),
+              "source_rows": len(rows),
+              "frozen_rows": len(reduced),
+              "fields_kept": list(PILOT_FIELDS),
+              "dropped": sorted(
+                  set().union(*(row.keys() for row in rows)) - set(PILOT_FIELDS)
+              ),
+              "produced_by": (
+                  "analyze.py --freeze-pilot"
+                  " (experiments/trace_synthesis/process_supervision)"
+              ),
+              "frozen_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+              "note": (
+                  "The honesty-scorer pilot's own ledger is the source of"
+                  " truth; this is a dated, field-reduced snapshot taken so"
+                  " FEASIBILITY-A's scale figures can be rederived from this"
+                  " directory alone."
+              ),
+          },
+          indent=2,
+          sort_keys=True,
+      )
+      + "\n"
+  )
+  print(f"froze {len(reduced)} rows -> {PILOT_FROZEN}")
+  return 0
+
+
+def ledger_scale() -> dict:
+  """Calibrate against the 20 honesty-scorer pilot attempts.
+
+  Reads the committed snapshot, never the off-repo original: a figure the
+  report quotes has to be rederivable in a fresh checkout.
+
+  Returns:
+    Mean and median of the five statistics, plus the derived prefix scale.
+
+  Raises:
+    FileNotFoundError: If the committed snapshot is missing, which is a broken
+      checkout rather than a machine without the pilot — the earlier "skipped"
+      branch made those two look alike.
+  """
+  if not PILOT_FROZEN.exists():
+    raise FileNotFoundError(
+        f"{PILOT_FROZEN} is committed and missing; re-take it with"
+        " `analyze.py --freeze-pilot` on a machine holding"
+        f" {PILOT_SOURCE}"
+    )
+  rows = [
+      json.loads(line)
+      for line in PILOT_FROZEN.read_text().splitlines()
+      if line.strip()
+  ]
   out = {"n": len(rows)}
   for key in (
       "cache_read_input_tokens",
@@ -166,9 +275,12 @@ def check_redaction() -> int:
 def main() -> int:
   parser = argparse.ArgumentParser()
   parser.add_argument("--check-redaction", action="store_true")
+  parser.add_argument("--freeze-pilot", action="store_true")
   args = parser.parse_args()
   if args.check_redaction:
     return 1 if check_redaction() else 0
+  if args.freeze_pilot:
+    return freeze_pilot()
 
   print("== stream shape per segment (what event_stream capture carries) ==")
   for name in ("r5a.stream.jsonl", "r5b.stream.jsonl", "rD.stream.jsonl"):
@@ -196,13 +308,10 @@ def main() -> int:
   for key, value in converter_survival().items():
     print(f"  {key}: {value}")
 
-  scale = ledger_scale()
   print("\n== honesty-scorer pilot ledger (scale calibration) ==")
-  if scale is None:
-    print("  ledger not on this machine — skipped")
-  else:
-    for key, value in scale.items():
-      print(f"  {key}: {value}")
+  print(f"  source: {PILOT_FROZEN.name} (see {PILOT_PROVENANCE.name})")
+  for key, value in ledger_scale().items():
+    print(f"  {key}: {value}")
   return 0
 
 

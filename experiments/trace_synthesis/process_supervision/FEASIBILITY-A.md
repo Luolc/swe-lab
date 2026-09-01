@@ -17,7 +17,7 @@ costs, and what is still unknown**. It does not propose a design.
 | Repo commit | `exp/process-supervision-research` @ `0e593e1` |
 | Raw artifacts | [`runs/`](runs/) — 20 real `claude` invocations (16 reached the API), 2 redacted proxy captures |
 | Probes | [`probes/`](probes/) — the hooks and settings files, verbatim |
-| Regenerate every number | `uv run python experiments/trace_synthesis/process_supervision/analyze.py` |
+| Regenerate every number | `uv run python experiments/trace_synthesis/process_supervision/analyze.py` — offline, from this directory alone. The [§5](#5-what-does-resume-cost) pilot statistics come from another component's ledger, which lives off-repo; a field-reduced snapshot of it is committed as [`runs/pilot_ledger.jsonl`](runs/pilot_ledger.jsonl) so they regenerate here too |
 | Measured spend | $0.92 — the sum of the 16 `result` events' `total_cost_usd`; a resumed segment's figure appears to be session-cumulative, so this over-counts |
 
 Every row below is one of three: **measured** (a run in `runs/`),
@@ -302,6 +302,22 @@ to run a registered test, not a result.
 Derived prefix scale ≈ `cache_read / num_turns` ≈ **51 k tokens per request**
 (approximate: `num_turns` is the harness's turn count, not the API request
 count — order of magnitude only).
+
+> **Where these five figures come from, and what that costs the claim.** They
+> are the *only* numbers in this report not produced by its own runs: the
+> source is the honesty-scorer pilot's ledger on this machine, which is
+> off-repo and — measured, not assumed — in no git repository at all. So the
+> report's "regenerate every number" originally held for everything except this
+> table and the two estimates below it, which is a false evidence boundary of
+> exactly the kind [§10](../../../docs/trace-synthesis/spec.md#10-what-is-measured-about-hooks)'s
+> classes exist to prevent. A field-reduced snapshot is now committed as
+> [`runs/pilot_ledger.jsonl`](runs/pilot_ledger.jsonl) (20 rows; source sha256
+> `d93f3adf…`, provenance in
+> [`runs/pilot_ledger.provenance.json`](runs/pilot_ledger.provenance.json)),
+> taken with `analyze.py --freeze-pilot`, and `analyze.py` reads the snapshot
+> rather than the original. **The pilot's own ledger remains the source of
+> truth**; this is a dated copy of the fields these five statistics need, and
+> the values above are unchanged by it.
 
 At **6 interventions per rollout** (the [steered re-run](../steered_rerun/REPORT.md)'s
 rate: 6 hints over 27 boundaries):
