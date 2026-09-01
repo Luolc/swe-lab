@@ -225,6 +225,17 @@ the design is the **guard** — a hint the converter cannot represent must fail
 the conversion rather than produce a hint-less trace
 ([task 03](plans/README.md)).
 
+**A capture is not automatically the conversation.** Two measured ways a
+collector can be wrong about which bytes are the trace, both from
+[§10](#the-stdin-channel--measured-and-not-a-hook): a proxy capture of a TUI
+session contains a **prompt-suggestion exchange** whose body is the whole
+conversation plus a user message nobody sent, and reading the *last* proxy
+record picks exactly that one; and where the two captures disagree about a
+message's shape, the **wire** is what the model saw. Both are collector
+obligations, not channel properties, and the first is
+[an invariant](#12-invariants-intended-enforced-where-marked) rather than
+advice.
+
 ## 4. Why judging after the fact, and not before
 
 The steering point is *after* the tool result, not before the tool call, and
@@ -267,9 +278,23 @@ Owner-decided (2026-08-31 / 2026-09-01). These are the design of record.
 | **Never rewrite the tool call** | Measured: a rewritten call is *not* reflected back in the assistant turn, so the actor finishes the turn believing it did something it did not do, and every later step reasons from a false premise ([§10](#10-what-is-measured-about-hooks)). |
 | **Appending is *our* invariant, not the platform's** | `updatedToolOutput`'s own schema says it **replaces** the tool output ([§10](#10-what-is-measured-about-hooks)); there is no append mode. So "the tool's real bytes survive verbatim" holds only because our hook copies them into every rewrite it emits, every time. This is the *never rewrite* red line in the specific shape this field takes — implementing append on top of a replace-semantics field — and it is a property of our code that a test has to hold up, not a guarantee we are given. |
 | **Never deny** | Let the call execute and take its result; see [§4](#4-why-judging-after-the-fact-and-not-before). |
-| **Inject as an identifiable external hint** *(terminated arm; see the note above)* | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so would a real user turn. [§11](#11-open-questions) states the three tests a channel has to pass. |
+| **Inject as an identifiable external hint** *(terminated arm; see the note above)* | The intervention has to be honest *conditioning* — text the actor visibly received from outside, not a fabricated observation and not something it produced itself. What makes it honest is that the actor can **tell it apart**: an explicit marker (`<oracle_hint>` …) saying so. The wire-level `role` field is **not** the criterion (owner, 2026-09-01) — a tagged segment appended to a tool result qualifies, and so would a real user turn. What a trace may contain is decided by (a)/(b) in [§6](#what-disqualifies-a-trace--the-two-criteria-of-record); [§11](#11-open-questions) states the three tests a *delivery channel* has to pass. |
 | **Direction only, never specifics** | The leakage / teaching dial; see [§8](#8-what-hint-specificity-now-trades). |
 | **Not a system-reminder** | Claude Code already uses that channel heavily, so ours would be indistinguishable from machine noise — both to the actor at run time and to anyone reading the trace. |
+
+> **The attribution row — *steer from a hook, not the proxy* — stands, and a
+> conditional verdict is waiting on an experiment.** A structured debate
+> adjudicated 2026-09-01 ruled **A′ now** — deliver the correction on the stdin
+> of the live `claude -p --input-format stream-json` process — **gated on a
+> registered compliance test that has not been run**, with the proxy-resident
+> alternative gated on a witness that has not been run either
+> ([verdict](../../experiments/trace_synthesis/process_supervision/DEBATE-VERDICT.md)).
+> Neither gate has been attempted, so **nothing in this table changes**: an
+> attribution decision moves only by a new ADR, and writing one now would record
+> an unfinished decision as finished. The row below on *not a system-reminder*
+> is the one the verdict would reopen — see the note in
+> [§6](#6-the-trace-is-the-conversation-unedited) on why the mid-turn
+> `<system-reminder>` is a different object from a hook's `additionalContext`.
 
 ## 6. The trace is the conversation, unedited
 
@@ -293,6 +318,46 @@ the user turn and what remains is an assistant that pivots hard for no visible
 reason — which is precisely the pathology in the
 [Objective](#objective): a confident, unmotivated jump. Keeping the hint means
 every assistant token is justified by its own visible context, by construction.
+
+### What disqualifies a trace — the two criteria of record
+
+Owner's ruling, 2026-09-01. These are the criteria for this whole product line,
+and they replace every earlier test phrased in terms of what a turn *looks*
+like:
+
+- **(a)** we would take SFT loss on tokens **the actor did not generate**;
+- **(b)** the **context shape does not occur at inference time**.
+
+**The wire-level `role` field is not one of them**, and neither is "is this a
+clean `user` turn". A message the actor genuinely received is conditioning, not
+a target, so it cannot violate (a) whatever role the wire gives it; whether it
+violates (b) is an empirical question about the production front end, not a
+question about the field.
+
+What *does* violate (a) is a **synthetic assistant turn**. The `--resume` repair
+pair writes `"No response requested."` as an assistant message the model never
+produced; training on that takes loss on fabricated tokens, and it is the single
+artifact that disqualifies the stop-and-resume path
+([FEASIBILITY-A](../../experiments/trace_synthesis/process_supervision/FEASIBILITY-A.md)).
+Its sibling `"Continue from where you left off."` is a synthetic **user** turn
+and is **not** a disqualifier under either criterion.
+
+**Deleting a turn is still forbidden, and (a)/(b) is not the reason.** A
+deletion adds no tokens and can even improve the shape, so anyone reaching for
+the new criteria to authorize one is holding the wrong instrument: **(a)/(b)
+governs what may be added to a trace; this section governs what may be removed
+from it.** The ban on removal is §6 itself and the [Objective](#objective) — an
+assistant turn whose cause has been deleted is exactly the unmotivated pivot
+this design exists to avoid.
+
+**This subsection exists because the superseded criterion has already come back
+once.** The stdin-channel experiment re-derived "not a genuine `user` turn, so
+it is dirty" and disqualified mid-turn delivery on it, then corrected itself in
+[§14.1 of its own report](../../experiments/trace_synthesis/streamjson_input/REPORT.md)
+— *"I re-imported it without noticing"*. A rejected criterion does not decay; it
+survives wherever it is still written down, so the replacement is stated here,
+in the section that owns what a trace may contain, rather than only in the
+report that killed it.
 
 ## 7. What that simplifies
 
@@ -421,6 +486,26 @@ have no equivalent, so this design is `claude_code`-only — even though
 `grok_build`'s headless output happens to share Claude Code's `stream-json`
 schema ([task 29](../horizontal/plans/task-29-grok-harness.md)).
 
+### The stdin channel — measured, and not a hook
+
+A second delivery surface exists and has been measured: writing a user message
+on the stdin of a live `claude -p --input-format stream-json` process. It is
+recorded here with the hook facts because this is where measured instrument
+behaviour lives, but **it is not a hook** and nothing in
+[§5](#5-the-mechanism-decisions) authorizes it; the
+[verdict](../../experiments/trace_synthesis/process_supervision/DEBATE-VERDICT.md)
+that favours it is conditional on an unrun test. Claude Code `2.1.257` on this
+machine, 2026-09-01, full design and arm list in
+[the report](../../experiments/trace_synthesis/streamjson_input/REPORT.md).
+
+| Fact | Status, with its domain | Consequence here |
+|---|---|---|
+| **Mid-turn injection is a production shape.** A correction typed into the real interactive TUI while a turn is running, and the same correction written on `-p` stdin, produce the **same wire**: same message count (7 vs 7), same role sequence ending in `system`, same `<system-reminder>` count (4 vs 4), and a **byte-identical** injected block (`len 440`, `sha256 3ba88726…fb90c8`) | measured, **N=1 per arm, 4 arms** — one task, one correction, one timing, one model; pinned by `tests/test_streamjson_input_evidence.py` | This is what settles **(b)** for mid-turn delivery: the shape is what an ordinary interactive user produces, not a supervision-only artifact. An exact match is strong evidence that this assembly path is deterministic *for this input*, and no evidence about variance across tasks, models or timings |
+| **Turn-boundary injection adds none of the three `--resume` artifacts** — no `<system-reminder>`, no `"Continue from where you left off."`, no `"No response requested."` | measured, **N=25 runs plus a positive control that does fire** on two of the three strings | The grep is two-sided for the two message strings, so their absence is informative. It is **one-sided for `<system-reminder>`** — that literal is never in a transcript, in any arm — so only the wire count speaks to it, and on the wire boundary injection adds **zero** |
+| **A mid-turn message costs zero extra actor API requests**; a boundary message costs **+1** | measured (proxy request counts: control 4, mid-turn 4, two boundary injections 6) | Supervision at an arbitrary moment is as cheap as not supervising, which is what dissolved the earlier search for a "clean seam" |
+| **The two captures disagree about mid-turn, and the wire is the truth.** Stream capture drops the injected message entirely unless `--replay-user-messages` is passed, and *with* it renders the message as a `user` turn where the wire carries a `system` one | measured | A stream-derived trace would assert a user turn the model never saw. This channel requires **proxy capture**; it is the concrete case of "which capture a run used" changing the answer |
+| **A proxy capturing a TUI session sees two exchanges that are not the conversation** — a startup quota probe and a post-turn **prompt-suggestion** request whose body is the whole conversation plus a `[SUGGESTION MODE: …]` user message | measured (`api_calls` 6 for each TUI arm against 4 headless) | A collector that takes the last proxy record puts **a user message nobody sent** into the corpus. The experiment's own evidence builder made exactly this mistake before review caught it, which is why phase D carries it as an obligation ([§12](#12-invariants-intended-enforced-where-marked)) |
+
 ## 11. Open questions
 
 > **The head question is closed, and the answer killed the arm it was asked
@@ -459,8 +544,10 @@ schema ([task 29](../horizontal/plans/task-29-grok-harness.md)).
 
 **Head question — what shape can the hint actually take?** Not "can a hook
 produce a genuine `user`-role turn?": the owner ruled on 2026-09-01 that the
-wire-level role is **not** the criterion. A channel qualifies when three things
-hold, and those three are the whole question:
+wire-level role is **not** the criterion — what a trace may contain is
+[(a)/(b)](#what-disqualifies-a-trace--the-two-criteria-of-record). A *delivery
+channel* qualifies when three things hold, and those three are the whole
+question:
 
 1. **The actor sees it** — it is in the context of the next model request.
 2. **It is marked as an external injection** — an explicit tag
@@ -469,6 +556,13 @@ hold, and those three are the whole question:
    asked to carry.
 3. **Our typed `Conversation` conversion preserves it** — the second half,
    below.
+
+**A second delivery surface exists outside the hook API**, measured after this
+question was framed: a user message written on the stdin of a live
+`claude -p --input-format stream-json` process, mid-turn or at a boundary
+([§10](#the-stdin-channel--measured-and-not-a-hook)). It is measured, it is not
+a hook, and [§5](#5-the-mechanism-decisions) does not authorize it; the verdict
+that favours it is conditional on a test nobody has run.
 
 **[Task 02](plans/README.md) measured this, and the answer *on the delivery
 axis* is `updatedToolOutput` carrying a tagged suffix appended to the tool's
@@ -636,7 +730,18 @@ The rest, in no particular order:
 - **Guidebook reuse.** One guidebook per instance, reused across attempts, or
   regenerated per attempt from the newest failure?
 - **Triage.** Can a cheap model answer "on track?" and escalate to an expensive
-  one only on suspicion (a repeated file, an error loop, no progress)?
+  one only on suspicion (a repeated file, an error loop, no progress)? What is
+  now shown is narrower and is an **existence** result: a judge holding only the
+  guidebook produced reviewable step-level verdicts, 20 of 67 steps adjudicated
+  and 47 silent, with all 20 citations verbatim in the guidebook and two of the
+  four rejections catching the exact trap the guidebook was written for
+  ([report](../../experiments/trace_synthesis/process_supervision/guidebook_as_step_criterion/REPORT.md),
+  **trace-level N=2**, one guidebook, one judge). That report **withholds a
+  pass/fail** because no feasibility condition was registered before it ran, and
+  **none of its numbers is a per-step rejection rate**. Stage coverage was
+  lopsided — one stage cited twelve times, another never — because guidebook
+  stages differ in whether they map onto a single observable action, so a
+  guidebook is a step-level criterion only over the subset of stages that do.
 - **Termination.** What ends a guided rollout that is still failing — a hint
   budget, a fallback to a more directive Supervisor, or discard?
 - **Quality filtering.** A blind judge is no longer needed as a leak detector
@@ -678,6 +783,7 @@ is tuned by reading traces, not asserted by a test.
 | The Supervisor's account of a run has **no silent gaps**: every boundary the sandbox saw has a host-side record, judgement or explicit gap | a test driving a judge that raises mid-run and asserting the host log carries a gap record for each unjudged boundary, with the sandbox's sequence numbers contiguous across the join |
 | A hint lost in conversion is detectable — conversion fails rather than emitting a hint-less trace | a test feeding a run whose hint the converter cannot represent and asserting conversion errors |
 | Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
+| Phase D never collects an exchange the actor was not part of: a request whose body carries a `[SUGGESTION MODE: …]` message, or any other side call the front end makes, is excluded from the conversation | a test over a captured TUI session asserting the collected `Conversation` is built from the agent-loop request and that a trailing prompt-suggestion request is not selected |
 | A hint never replaces a tool's output: the tool's own output is a substring of what the actor is shown | a test over the Supervisor's hook-response builder asserting the tool response it returns contains the original response's text verbatim |
 | No banned channel is reachable in a hook response: the Supervisor's output never carries `updatedInput` (a rewrite), a deny decision, or `additionalContext` (the system-reminder channel) | a test over the Supervisor's hook-response builder asserting all three fields are absent from every response it can produce |
 | Phase B runs with the git-history purge **off** and composes no result verifier — the Oracle sees the history it is meant to see, and a run contaminated by declaration is not put through the detector — while the solving definitions keep purging | ✅ `test_the_oracle_task_composes_no_purge_no_extractor_and_no_verifier` and its converse `test_the_rollout_definitions_still_purge` (`tests/test_oracle_analysis.py`) |
@@ -761,7 +867,13 @@ for it. Two consequences, and neither is negotiable:
   is unchanged by that: it already modified *requests* (OpenRouter `provider`
   preferences, `X-Anthropic-Beta` mirroring) when it ran host-side, it still
   does not touch assistant turns, and moving it changed where it runs rather
-  than what it may do.
+  than what it may do. **This line is under challenge and has not moved:** the
+  proxy-resident rejection-sampling design argued in the 2026-09-01 debate would
+  rewrite this bullet and [§5](#5-the-mechanism-decisions)'s attribution row
+  together, and the verdict ruled against building it *for now* — gated on a
+  witness nobody has produced
+  ([verdict](../../experiments/trace_synthesis/process_supervision/DEBATE-VERDICT.md)).
+  Until an ADR says otherwise, this bullet stands as written.
 - **Training itself.** This component produces traces; running SFT on them is
   somebody else's pipeline.
 - **Deciding the data mixture.** [§9](#9-data-mixture--to-be-validated-not-solved)
