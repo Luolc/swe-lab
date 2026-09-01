@@ -82,6 +82,38 @@ def test_terminating_only_the_child_is_what_leaked(tree: subprocess.Popen[str]):
   os.kill(grandchild, signal.SIGKILL)
 
 
+def test_nothing_is_reaped_before_the_last_group_signal(
+    tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
+):
+  """The pid must stay reserved while the group is still being signalled.
+
+  Reaping the leader releases its pid, and the group is addressed *by* that
+  number — so a `wait()` in between would leave the final `SIGKILL` resolving
+  a number the kernel may have reissued. This is the ordering, not the effect,
+  so it is asserted at the seam.
+  """
+  order: list[str] = []
+  real_killpg, real_wait = os.killpg, subprocess.Popen.wait
+
+  def killpg(pid: int, sig: int) -> None:
+    order.append(f"killpg:{signal.Signals(sig).name}")
+    real_killpg(pid, sig)
+
+  def wait(self: subprocess.Popen[str], timeout: float | None = None) -> int:
+    order.append("reap")
+    return real_wait(self, timeout=timeout)
+
+  monkeypatch.setattr(os, "killpg", killpg)
+  monkeypatch.setattr(subprocess.Popen, "wait", wait)
+
+  end_process_group(tree, grace_s=1.0)
+
+  assert order[-1] == "reap", order
+  assert order.index("reap") > max(
+      index for index, call in enumerate(order) if call.startswith("killpg")
+  ), order
+
+
 def test_ending_an_already_dead_group_is_silent(tree: subprocess.Popen[str]):
   """Teardown runs on paths where the child is already gone."""
   os.killpg(tree.pid, signal.SIGKILL)
