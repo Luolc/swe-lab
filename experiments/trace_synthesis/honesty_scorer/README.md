@@ -683,10 +683,53 @@ from frozen baselines whose host state was never recorded, so they silently
 assumed a condition that need not hold — the same error as measuring on A and
 stating about B. So the estimate is written with its predicate:
 
-| machine state | estimate |
-| --- | --- |
-| CPU credit available | ~3.6 h serial for 24 executions |
-| credit exhausted, steal ≈ 60% (≈ 40% of nominal capacity), measured 2026-09-01 08:59 PDT | ≈ 9.5 h |
+| estimate | what it assumed | what it was for |
+| --- | --- | --- |
+| ~3.6 h serial for 24 executions | CPU credit available (unstated at the time) | superseded |
+| ≈ 9.5 h | credit exhausted, steal ≈ 60% ≈ 40% of nominal, 2026-09-01 08:59 PDT | superseded |
+
+**Both were wrong, and the report keeps them with the reason rather than
+quietly swapping in the measured number.** At 8 of 24 executions the measured
+mean was **313 s per attempt** — extrapolating to about **2.1 h** and **$12.2**
+nominal for the full 24 — against estimates of 3.6 h and 9.5 h, several of those
+attempts having run at steal ≈ 59%.
+
+**No cause is assigned, and the attempt to exclude one failed for the reason
+this section is about.** A first correction argued that throttling could be
+ruled out *by direction*: CPU steal only makes an attempt take longer, so it
+cannot explain an estimate that came out too high, and the measured attempts
+ran at steal ≈ 59% while still averaging 313 s. **That argument is wrong**, and
+its flaw is the same missing predicate the paragraph above is about — it
+silently assumed the **baselines** were unthrottled. Their host state was never
+recorded. If the frozen runs themselves executed under equal or worse steal,
+their ~689 s median is partly a throttling artifact, and throttling becomes a
+live explanation for the gap rather than an excluded one. **Knowing this
+batch's steal says nothing about the baseline's**, and the direction argument
+needs both.
+
+So: **throttling remains an unseparated candidate.** The extrapolation drew its
+per-attempt wall from the frozen baselines, which differ from this batch on
+several axes at once — a different arm, different and *unrecorded* host
+conditions, and different instances — and **eight attempts with no controlled
+comparison cannot apportion the gap among them**. This document claims only the
+structural fault: **the reference population was not the population being
+extrapolated to**, which is enough to invalidate the estimate without
+identifying which difference did the work.
+
+The lesson is sharper than the correction. An unrecorded predicate does not
+merely weaken the estimate that omitted it — **it disqualifies every later
+argument that conditions on the quantity nobody recorded**, including arguments
+built to explain what went wrong. That is the second time in this section that
+finding one defect ended the search for the next.
+
+Which yields the rule this pilot reports instead of an estimate: **the report
+carries the measured total wall and cost, plus one sentence saying the prior
+estimates ran 2–4× high and that the candidates — arm, unrecorded host state on
+both sides, and instance mix — are not separable at this sample size.** An estimate that
+is wrong and whose error is characterized as far as the evidence allows is worth
+keeping; one silently replaced by the measurement teaches nothing — and one
+whose error is assigned a single cause the data cannot support has traded a
+wrong number for a wrong explanation.
 
 **Pausing stops at an attempt boundary, never at a cell boundary.** The
 intuition runs the other way, and it is wrong here: there are only four cells,
@@ -760,7 +803,34 @@ would defeat its purpose:
 - **But one cell's partial outcomes were known** to the executing agent and,
   after it reported them honestly on request, to the author of this amendment.
   The values are deliberately **not reproduced here**, so that the reviewer
-  assigned below stays blind.
+  assigned below stays blind — and the rule is written over **channels**, not
+  over this document, because the leak that produced it happened in an
+  inter-agent message rather than in a file:
+
+  > **Until the rule a designated blind ruler must fix is settled, no outcome
+  > value reaches them by any route — document, PR description, agent message,
+  > spoken relay. All routes are the same route.**
+
+  A rule naming only the place a leak was *noticed* protects the channel that
+  did not leak. Its partner is the clause further down ("further revisions must
+  be ruled by someone who has seen no results"), and the two do **not** add up
+  to detection — say what each one actually is:
+
+  | clause | what it does | what it does not do |
+  | --- | --- | --- |
+  | the channel prohibition above | **prevention** — nothing is supposed to cross | cannot notice a crossing that happens anyway |
+  | recusal of anyone who has seen results | **containment of a *disclosed* breach** — once a leak is known, the leaked-to party stops ruling | does not surface an undisclosed one |
+
+  **The residual blind spot is named rather than papered over: an undisclosed
+  leak through an agent message or a spoken relay is not mechanically
+  detectable here.** Those channels leave no audit trail, so nothing in this
+  protocol can observe them. What surfaced the breach that produced this rule
+  was the leaking party volunteering it — **a norm, and norms are not
+  mechanisms.** Writing a third "check" over that gap would produce exactly the
+  shape catalogued elsewhere in this document: a check that cannot fail.
+  **Acknowledging a lapse is likewise not one of the clauses** — an
+  acknowledgement is not enforceable, and treating it as the remedy is how the
+  same breach recurs.
 - The direction of the fix limits what that knowledge could do **for the
   operational clauses, and for those only**: replacing "re-run on timeout" with
   "count it and never re-run" reduces the remaining degrees of freedom to zero —

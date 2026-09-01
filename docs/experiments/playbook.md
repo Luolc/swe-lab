@@ -137,6 +137,159 @@ yourself. Hold to these:
   rejected," "the 3 fails were dataset defects, not our bug" are first-class
   outcomes. Record them; they save the next round.
 
+## Pre-registration and blinding — what a running experiment may still change
+
+Registered before the run, an experiment's rules are protocol; changed during
+it, they are results in disguise. These are the distinctions that survived a
+pilot's twelve amendments.
+
+- **Separate the operational half from the analytical half, because they have
+  different authors.** *Operational* rules fix what the machine does — how many
+  executions happen, whether a failure is retried, what gets recorded. They are
+  prospective, they remove discretion, and an author who has seen partial
+  results may still fix them when the fix reduces the remaining degrees of
+  freedom to zero. *Analytical* rules decide what may be concluded, and a
+  non-blind author must not choose their free parameters. When an amendment
+  touches both, split it: register the operational half, and **leave the
+  analytical half explicitly open with a gate** — "no analysis may run until a
+  party that has seen no outcome fixes this in writing" — rather than settling
+  it once the numbers are in.
+- **"My choice cannot exploit my knowledge" is an argument about a mechanism,
+  not a property of a person.** It must be re-checked for every clause it is
+  applied to, and it fails first on the clauses that decide what gets
+  concluded. It is also not an argument its author may certify: **self-certified
+  blindness is the human version of an assertion that cannot fail.**
+- **Explaining an isolation rule can breach it.** Stating *why* someone is
+  disqualified from ruling ("they have seen the outcomes, which are X") hands
+  the disqualifying information to the next reader. Name the disqualification;
+  do not reproduce what caused it. **And write the remedy over *channels*, not
+  over the one place the leak was noticed** — "the values do not go in the
+  document" protects a channel that never leaked, when the actual leak was an
+  inter-agent message. Quantify: *no outcome value reaches a designated blind
+  ruler by any route — document, PR description, agent message, spoken relay —
+  until the rule they must fix is settled.* Its partner clause — anyone who has
+  seen results recuses themselves from ruling — is **containment of a
+  *disclosed* breach, not detection**: it takes effect only once a leak is
+  known. Be exact about that, because "prevention + detection" is a claim of
+  coverage the pair does not have. **The gap is that an undisclosed leak through
+  an unlogged channel — an agent message, a spoken relay — is not mechanically
+  detectable at all**; what surfaces one is the leaking party volunteering it,
+  which is a norm rather than a mechanism. Name the gap instead of writing a
+  third check over it: a check that cannot observe its subject is the
+  cannot-fail shape from the hazards list. And **owning a mistake is not a
+  mechanism either** — an acknowledgement is not enforceable, and treating it as
+  the remedy is how the same breach recurs.
+
+  A worked instance, because it caught two people who had spent the day naming
+  this exact failure: the summary sentence "one prevents, one detects, and only
+  both together are a mechanism" **was itself a coverage claim whose coverage
+  had not been checked** — two clauses pointing different directions were
+  declared jointly complete without anyone asking what would observe a breach.
+  It is the same object as a green tautological assertion: **an announcement
+  that a check was performed, whose effect is that nobody performs it.** A
+  review, not the authors, found the missing half. Expect this shape in your own
+  summaries first, where it is cheapest to write and hardest to see: **a summary
+  is the natural habitat of a coverage claim**, because its whole genre is
+  gathering several things into one complete-sounding statement, and
+  *completeness* is the part nobody checks. **Being able to name a failure
+  confers no immunity to it.**
+- **Finding one defect ends the search for the others.** Once a number has a
+  named problem it reads as *examined*, and the examination stops there. A
+  wall-clock estimate here was correctly found to be missing its machine-state
+  predicate — and that was **not** the main reason it was wrong: it had
+  extrapolated from a **different population** (frozen runs on another arm) than
+  the one it predicted, and overshot by 2–4×. Then the correction itself
+  overreached twice: first assigning the gap to the population difference, and
+  then — when that was withdrawn — arguing that throttling could at least be
+  **excluded by direction**, since steal only lengthens a run and cannot explain
+  an estimate that came out too high. That second argument silently assumed the
+  *baselines* were unthrottled, and their host state was never recorded; if they
+  ran under equal or worse steal, their median is itself inflated and throttling
+  is back in play. **An unrecorded predicate does not merely weaken the estimate
+  that omitted it — it disqualifies every later argument that conditions on the
+  quantity nobody recorded**, the arguments explaining the failure included. With
+  eight attempts and no controlled comparison the gap cannot be apportioned at
+  all. The structural fault is enough to invalidate the estimate; naming a cause
+  trades a wrong number for a wrong explanation. **A number having a known problem is not
+  evidence that it has only one**, and repairing the found one is what makes it
+  look reviewed. When you fix a defect in an estimate, **re-derive the estimate
+  rather than patching the defect** — and the reason that works is mechanical
+  rather than a matter of diligence: a patch preserves the original derivation's
+  *structure*, so every other wrong premise inside it is preserved too, with a
+  qualifier bolted on outside. **Re-deriving forces you to restate each premise
+  aloud**, which is the only step at which a question like "is the reference
+  population the same population?" gets asked a second time.
+- **"This is just a natural extension of the accepted X" transfers an accepted
+  rule's standing to a proposal that has not earned it.** The move works because
+  it points the reader at the old rule — whose standing is not in question — and
+  away from whatever the new one adds. And it always adds something: **a rule
+  worth proposing imposes some obligation its neighbour did not.** That
+  obligation is what needs independent defence, and this argument form is
+  precisely what stops anyone looking for it.
+
+  The question it must trigger is therefore **"what does this require that the
+  accepted rule did not?"** — deliberately *not* "is the new scope contained in
+  the old one?" Containment is the wrong test, and an earlier draft of this
+  bullet got it wrong in a way worth keeping: a proposal can sit **entirely
+  inside** an accepted rule's scope and still be a real proposal, by making an
+  implicit obligation explicit, by tightening it, or by making it enforceable
+  where it was only advisory. So the criterion is the **added obligation**, not
+  the added territory; the added obligation is non-empty whenever the proposal
+  is not redundant, and it is the whole of what is being asked for. A new rule
+  stands on its own obligation, cost and evidence, or it does not stand; an
+  accepted neighbour is **precedent and motivation, never authority**.
+- **The strongest form needs no blind party at all.** Protecting a ruler's
+  blindness is a remedy for a *timing* defect: it is needed only because some
+  decision was still live after results existed. So the target shape for a
+  pre-registration is the one where the question never arises —
+
+  > **Pin the analysis policy — the estimator, the censoring rule, what a unit
+  > containing failures may conclude — before the first attempt runs. Once
+  > execution begins, there should be no live decision whose ruler needs
+  > protecting.**
+
+  Say plainly when a run did not reach that shape and why. The honesty-scorer
+  pilot did not: the defect that forced its analysis policy was only visible
+  once the run was under way, which is a legitimate reason and not a failure —
+  a rule cannot be pinned before the flaw in it is known. It was handled by
+  isolating one person; **the next pre-registration's goal is to need no
+  isolation at all.**
+- **A stopping rule that reads the clock is outcome-correlated.** Truncating a
+  fixed design on wall time removes whole units, and the slowest unit goes
+  first — which is a property of the workload, not of chance. The same shape
+  wears other costumes: retrying on "environment failure" is optional stopping
+  whenever the failure is a function of how long a unit takes.
+- **A wall-clock figure is workload × available compute, so it carries a
+  predicate.** Record the machine state a timing estimate assumes (CPU steal,
+  load, timestamp); an estimate without it silently asserts a condition that may
+  not hold. For the same reason a fixed wall-clock timeout is **not** a fixed
+  compute budget when steal varies — it is a variable disguised as a constant.
+- **Never typeset an estimate and a hard constraint the same way.** Format
+  carries credibility, and nothing checks format: side by side, a derived
+  estimate and a registered constraint become indistinguishable in epistemic
+  status, and the estimate starts being defended as a rule.
+- **When a stratifying variable is perfectly aligned with the experimental
+  unit, "we recorded it" is not a remedy** — diagnosability requires the
+  variable to vary *within* some unit. And an **unmeasured** endpoint cannot
+  serve as the control arm of a measured one: prefer **a weaker true statement
+  to a stronger one that needs data you do not have** ("heterogeneity exists but
+  is not quantifiable" beats "we have an internal control"). Never back-fill an
+  estimated value into a missing measurement.
+- **Disclosure is not a remedy for a degree of freedom.** This is the boundary
+  of every "make it visible" fix above, and it constrains the remedies
+  themselves: **for a measurement, visibility is a sufficient remedy — for a
+  free parameter it is not, because a disclosed choice is still a choice made by
+  someone who knew the results.** A parameter chosen post-outcome has to be
+  *deleted*, not annotated. The test is whether the replacement rule has **zero**
+  free parameters: re-tuning a cut to a safer value relocates the discretion,
+  while removing the cut ends it.
+- **Label an amendment for what it is.** "Post-hoc but prospective, with an
+  empty prior action set" is a real and useful category — a rule changed after
+  the run began but before it had ever fired changes nothing that already
+  happened. Say so precisely, and confine the claim to the layer it covers; a
+  document that asserts outcome-independence in one section and discloses known
+  outcomes in another has written its own refutation.
+
 ## Investigations (the lighter variant)
 
 A failure investigation (why did *this* break?) is the same loop, compressed, and

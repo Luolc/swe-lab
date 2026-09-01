@@ -341,6 +341,50 @@ retroactively (owner's calibration, 2026-09-01).
   to a reader, from a working one. Both read as coverage. So specify the
   **failure condition** a check must produce — "deleting a row turns it red" —
   rather than the shape of the assertion.
+- **Ways a check reassures without checking.** Four shapes, all met in one day
+  of screening work, and each looks like coverage from the outside:
+  (a) **a check that cannot fail** — `sum(partition.values()) == len(rows)` is
+  true by construction, so it read nothing and stayed green with a whole
+  category deleted; (b) **summing is blind to permutation** — rewriting one row
+  as a duplicate of another of the same size keeps every per-row count *and* the
+  total correct while losing a category, so coverage has to be asserted as
+  **exactly once**, which no sum implies; (c) **a defect that moved and gained a
+  plausible surface**, and (d) **a fix that covered half**. The executable test
+  for all four: *any check reporting "no problem found" must be able to answer —
+  if the problem existed, how would it appear in this check's output?* And the
+  failure mode underneath them is **enumeration standing in for universal
+  quantification**: fixing the case in front of you and leaving the one a step to
+  the side is what enumerated cases are for. So specify the **failure condition**
+  a check must produce ("deleting a row turns it red"), never the shape of the
+  assertion — and produce each failure deliberately before relying on the check.
+- **Evidence can exist and still not be about the thing you are claiming.** Three
+  instances, same week: a PR body said the quality bar was green "at this head"
+  while the run in hand came from the pre-rebase SHA on an older base; a run read
+  `docker ps` and then did not gate on it; and a branch rebuilt by restoring
+  files from an old SHA silently reverted what two other PRs had merged into
+  those files, whose only alarm was a `git diff --stat` line count that looked
+  slightly wrong. Generally: **a silent revert's only alarm is a number that
+  looks slightly off, and nobody is obliged to look at that number.** Re-measure
+  at the object you are describing, or describe the object you measured.
+- **`git checkout <sha> -- <paths>` has overwrite semantics, not merge
+  semantics — so it never conflicts, and that is exactly what makes it dangerous
+  when rebuilding a branch.** The safe form is
+  `git diff <base> <sha> -- <paths> | git apply --3way`, which is right *because
+  it conflicts*. Related, and cheap to avoid: **never let a branch switch race a
+  background quality-bar run** — one such race reported a `basedpyright` error
+  against a `loader.py` line that did not exist on the branch it was read
+  against.
+- **A rule can be *undefined* rather than unmet, and undefined looks exactly
+  like satisfied at the point of use.** The jurisdiction bullet above is one
+  case (rollout criteria applied to a local test run). Two more shapes: a
+  criterion that **cites a baseline which does not exist** for the arm or path
+  in question — switching arms does not make it false, it makes it undefined;
+  and a criterion whose author **cannot create the conditions under which it
+  holds** ("resume when steal < 10%" on a box whose own agent fleet keeps it
+  throttled), which is worse when it is also **self-referential** — only a
+  stopped pilot can satisfy it, and satisfying it exists to restart the pilot.
+  Before relying on a criterion, name the reading that would satisfy it and say
+  where that reading comes from.
 - **Memory ceiling: MAXJOBS=2.** On the 16 GB dev box, ≥ 6 headless agents (or
   MAXJOBS=4 → 12 agents) swap-thrash. Streaming subprocess stdout to a file (not
   `capture_output=True`) and `killpg`-on-timeout are load-bearing — an early run
