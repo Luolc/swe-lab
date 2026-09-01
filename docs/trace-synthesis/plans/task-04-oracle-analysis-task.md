@@ -116,6 +116,50 @@ genuinely derivable is a reader's judgement, per the spec.
 | unit tests for the schema | ✅ |
 | one live run producing a guidebook a human judges usable | ⬜ pending — needs Docker and an agent run; the code path is exercised docker-free end to end over a `FakeSandbox` |
 
+## The live run — what one run can and cannot show
+
+Declared **before** the first run, because a first guidebook is the easiest
+artifact to mistake for stronger evidence than it is. One `oracle_analysis`
+run over the first `oracle_failures` record (qutebrowser/9ed748ef, baseline
+rollout 0) on the real image with the real harness shows exactly:
+
+- **The path is real, end to end.** Loader → delegated record → mounts (the
+  failure files, the compiled grading procedure with the failed patch, the
+  gold patch) → Claude Code in the sandbox → `guidebook.md` → schema
+  validation → the run record's `guidebook.*` metrics. Everything before the
+  agent call was already exercised over a `FakeSandbox`; the run adds the
+  image, the harness and the token.
+- **The brief elicits the shape at least once** — a schema-valid guidebook
+  with N stages, each carrying the five fields.
+- **A human can judge whether the content is usable** — the acceptance row —
+  and that is a judgement over one sample, recorded as such.
+
+It does **not** show:
+
+- **That the justifications are derivable.** The Oracle saw the answer; a
+  justification that *reads* as derivable from the statement and the repo at
+  `base_commit` is not thereby shown to be. The spec makes that a reader's
+  judgement, and no blind check exists yet.
+- **That the guidebook helps anything.** No consumer exists — neither the
+  judge that would score rollouts against it nor a guided re-run — so nothing
+  about yield, steering, scoring or trace quality follows from it.
+- **Generalisation or variance.** One instance, one dataset (SWE-bench Pro),
+  one model, one sample: nothing about other instances or datasets, and
+  nothing about how a second run of the same record would differ. Cost and
+  wall-clock are one data point; task 08 measures them.
+- **That the brief's rules are reliably followed.** "Quote the task statement
+  whole" and "a green suite only says you broke nothing else" are
+  instructions; one run shows whether the model honoured them once.
+- **The record's blind-run property** (a run over `record.instance` sees no
+  failure material) — a different run, not taken here.
+
+A timeout or crash under host throttling is an environment failure and is
+reported as *no result*, never as a negative finding (the box policy's rule 4).
+The run's artifacts are copied to the stable artifacts path outside every
+checkout (`docs/conventions.md`, hazards: a removed worktree takes its
+`.cache/` with it) after a credential scan, and the guidebook is linked from
+the outcome, not pasted into it.
+
 ## Out of scope
 
 - **Consuming the guidebook** — neither the judge that scores unguided
