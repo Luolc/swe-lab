@@ -159,11 +159,13 @@ def test_mount_absolute_asset_copied_read_only(
   ]
 
 
-def test_up_always_maps_host_gateway(
+def test_up_maps_no_host_gateway(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  # Every container maps host.docker.internal so a host-side proxy is always
-  # reachable; construction stays independent of the capture mode.
+  # Nothing in a container dials the host anymore: proxy capture runs its
+  # proxy inside the sandbox, on the sandbox's own loopback. A container that
+  # can still resolve the host gateway is reach we do not use and should not
+  # hand out.
   fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
   _install(monkeypatch, fake)
   sandbox = DockerHostSandbox(
@@ -171,11 +173,7 @@ def test_up_always_maps_host_gateway(
   )
   sandbox.up()
   create = fake.last_matching("create")
-  at = create.index("host.docker.internal:host-gateway")
-  assert create[at - 1 : at + 1] == [
-      "--add-host",
-      "host.docker.internal:host-gateway",
-  ]
+  assert "--add-host" not in create
 
 
 def test_up_create_failure_raises(

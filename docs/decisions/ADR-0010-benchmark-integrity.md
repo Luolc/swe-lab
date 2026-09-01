@@ -260,3 +260,37 @@ all.
 Unchanged: §1 (environment, not prompt), §2 (declared per entry, refused
 loudly), §4 (every control asserts; a failure is a recorded failed attempt),
 §5 (policy stamp; no pooling across policies), §6 (post-hoc trace audit).
+
+## Amendment (2026-09-01): the egress chokepoint is the sandbox's network, not the capture proxy
+
+§3a named the host-side PROXY recorder as the enforcement point for default-deny
+egress ("that chokepoint becomes the *enforcement* point"). That is no longer
+available, and on reflection was never sound.
+
+[ADR-0012](ADR-0012-in-sandbox-capture-proxy.md) moves the capture proxy
+**inside the sandbox**, because the host-side shape made a now-required
+component depend on a host firewall rule, an unbounded index-derived port, and a
+listener exposed to the whole tailnet — and cannot work at all on a backend
+handed an already-running job. An in-sandbox proxy sits on the same side of the
+boundary as the agent, which can kill it or ignore `ANTHROPIC_BASE_URL`.
+
+So §3a's *goal* stands unchanged and still at P0 — the rollout entry should stop
+running with general network access — while its *mechanism* moves: enforcement
+belongs to the **sandbox's own network configuration**, which the agent is
+genuinely outside of and which does not depend on whether the run happens to be
+recording its traffic. A recorder is evidence, not a control; conflating the two
+was the error.
+
+**Nothing implemented changes.** §3a is still unbuilt and rollout still runs
+`network=True`, so no control is weakened by this — what changes is where the
+control will be built.
+
+Also settled here, because ADR-0012 §4 rests on it: proxy capture's log now
+lands in the workspace, where the agent can read it. That is **parity with
+`STREAM` capture**, whose `claude.event_stream.jsonl` already does, carrying the
+same content — the agent's own conversation, and nothing about the golden patch,
+the tests, or future commits. It is not a new integrity surface. It *is* a new
+place the operator's account identifiers appear (the proxy records response
+headers verbatim), which is a PII-redaction obligation, tracked separately.
+
+Unchanged: §1, §2, §3b, §3c, §4, §5, §6, and the 2026-08-06 amendment.

@@ -11,6 +11,12 @@ absolute path (:data:`~swe_lab.harnesses.claude_code.constants.BINARY_AT`) and
 each backend's own observer puts it there the way that backend can (see
 ``swe_lab.sandbox.backends``). Mounting it from here would have forced one
 backend's answer — hand over ~100 MB from the host — on every other.
+
+``PROXY`` capture works the same way, and runs the recording proxy **inside**
+the sandbox: it is declared as a second asset, started by the invocation script
+on the sandbox's own loopback, and it writes its log straight into the
+workspace. See :mod:`~swe_lab.harnesses.claude_code.proxy` for why it stopped
+being a host process.
 """
 
 from __future__ import annotations
@@ -50,14 +56,18 @@ from .constants import (
     AGENT_HOME,
     AGENT_SCRIPT_NAME,
     AGENT_STDERR_NAME,
+    ANTHROPIC_API,
     BINARY_AT,
-    CONTAINER_PROXY_HOST,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
     MAX_PROMPT_BYTES,
     PROMPT_FILENAME,
+    PROXY_BASE_URL,
+    PROXY_BINARY_AT,
     PROXY_LOG_NAME,
+    PROXY_PORT,
+    PROXY_STDERR_NAME,
     UNATTENDED_DENIED_TOOLS,
 )
 from .convert import (
@@ -66,13 +76,88 @@ from .convert import (
     proxy_log_outcome,
     proxy_log_to_conversation,
 )
-from .proxy import DEFAULT_BASE_PORT
-from .recorder import ProxyRecorder
 
 _logger = logging.getLogger(__name__)
 
 # Generous: `--help` on a cold 275 MB binary is mostly process start-up.
 _INFO_TIMEOUT_S = 60.0
+
+# Readiness polling for the in-sandbox proxy: how many attempts, how long
+# between them. A pure-Go listener binds in milliseconds, so 30s is a ceiling
+# for "something is wrong", not a budget to spend — and it is polled rather
+# than slept through, because a fixed sleep is either a wasted second on every
+# run or a race on a loaded machine.
+_PROXY_READY_ATTEMPTS = 300
+_PROXY_READY_INTERVAL_S = "0.1"
+# The script exit code reserved for "the run could not even start" (EX_CONFIG),
+# already used for the missing-credential guard below.
+_MISCONFIGURED_EXIT = 78
+
+
+def _proxy_start_lines(target: str) -> list[str]:
+  """Return the script lines that start the in-sandbox recording proxy.
+
+  Three things have to be true before the agent may run, and each is a line
+  here rather than an assumption:
+
+  - **the proxy is running** — backgrounded, with its own output on a workspace
+    file (see ``PROXY_STDERR_NAME``), because an in-sandbox process that fails
+    silently leaves no other trace;
+  - **it is accepting connections** — polled on the loopback port, not slept
+    through. A fixed sleep is a race, and the failure it produces (the agent's
+    very first API call refused) reads as an auth or network problem;
+  - **it is reaped when the script ends** — an ``EXIT`` trap, so the proxy dies
+    on every path out, including the guards that ``exit 78`` above it.
+
+  The trap is also why no observer is needed for ordering anymore: by the time
+  ``run`` returns, the proxy is gone and its log is closed.
+
+  **If the script is killed instead of exiting** (the caller's timeout fires
+  and the container is torn down), the trap never runs and the proxy is killed
+  with the container. That truncates the log at a line boundary and loses at
+  most the exchange in flight: cc-reverse-proxy appends one JSON record per
+  completed exchange and closes the file each time, so every line already
+  written is a complete record. A killed run yields *partial* capture, never a
+  corrupt file.
+
+  Args:
+    target: The upstream API base URL to forward to.
+
+  Returns:
+    The lines, in order.
+  """
+  binary = shlex.quote(PROXY_BINARY_AT)
+  log = f'"$SANDBOX_WORKSPACE"/{PROXY_LOG_NAME}'
+  own_log = f'"$SANDBOX_WORKSPACE"/{PROXY_STDERR_NAME}'
+  # Bash's /dev/tcp is the only TCP probe that needs nothing installed in the
+  # image; `curl` and `nc` are not present in every instance image. A shell
+  # without it fails every attempt and hits the loud timeout below rather than
+  # running the agent against a proxy nobody confirmed.
+  probe = f"(exec 3<>/dev/tcp/127.0.0.1/{PROXY_PORT}) 2>/dev/null"
+  return [
+      (
+          f"{binary} --port {PROXY_PORT} --target {shlex.quote(target)}"
+          f" --output {log} > {own_log} 2>&1 &"
+      ),
+      "proxy_pid=$!",
+      'trap \'kill "$proxy_pid" 2>/dev/null; wait "$proxy_pid" 2>/dev/null\''
+      " EXIT",
+      "proxy_wait=0",
+      f"until {probe}; do",
+      '  if ! kill -0 "$proxy_pid" 2>/dev/null; then',
+      f'    echo "FATAL: the capture proxy exited; see {PROXY_STDERR_NAME}"'
+      " >&2",
+      f"    exit {_MISCONFIGURED_EXIT}",
+      "  fi",
+      "  proxy_wait=$((proxy_wait+1))",
+      f'  if [ "$proxy_wait" -ge {_PROXY_READY_ATTEMPTS} ]; then',
+      f'    echo "FATAL: the capture proxy never listened on port'
+      f' {PROXY_PORT}; see {PROXY_STDERR_NAME}" >&2',
+      f"    exit {_MISCONFIGURED_EXIT}",
+      "  fi",
+      f"  sleep {_PROXY_READY_INTERVAL_S}",
+      "done",
+  ]
 
 
 @dataclass(frozen=True)
@@ -88,13 +173,15 @@ class ClaudeCodeHarness(Harness):
       version works.
 
     capture: The output-capture strategy — ``STREAM`` (default) or ``PROXY``.
-    proxy_port: The host port ``PROXY`` capture records on. This harness runs
-      the recorder itself (see ``observers``), so the port is all it needs;
-      two runs on one host must not share one.
-    proxy_base_url: What the *agent* dials to reach that recorder. Defaults to
-      the container→host gateway on the declared port, which is what a
-      containerized run needs; set it when the run reaches the host some other
-      way. Unused for ``STREAM``.
+      ``PROXY`` needs no port and no URL: the proxy runs in the sandbox, on
+      the fixed loopback port every run uses (see ``constants.PROXY_PORT``).
+    proxy_target: The upstream ``PROXY`` capture forwards to. The default is
+      the Anthropic API; an OpenRouter run points it at
+      ``https://openrouter.ai/api``, which is not cosmetic — the proxy mirrors
+      ``Anthropic-Beta`` into ``X-Anthropic-Beta`` (without which interleaved
+      thinking silently does nothing) and injects OpenRouter provider
+      preferences, and it does both only when the target says OpenRouter.
+      Unused for ``STREAM``.
     bare: Run the agent with ``--bare`` — minimal mode: no hooks, plugins, MCP
       config, auto-memory or CLAUDE.md discovery, so the repo under test cannot
       inject instructions into the harness. **It also disables keychain and
@@ -130,8 +217,7 @@ class ClaudeCodeHarness(Harness):
   model: str = DEFAULT_MODEL
   version: str = PINNED_CLAUDE_CODE_VERSION
   capture: Capture = "stream"
-  proxy_port: int = DEFAULT_BASE_PORT
-  proxy_base_url: str | None = None
+  proxy_target: str = ANTHROPIC_API
   bare: bool = True
   effort: Effort = "high"
   max_turns: int = 500
@@ -144,58 +230,61 @@ class ClaudeCodeHarness(Harness):
     """This harness's identifier; namespaces its artifacts."""
     return "claude_code"
 
-  @property
-  def agent_proxy_url(self) -> str:
-    """The URL the in-container agent dials to reach the recorder."""
-    return (
-        self.proxy_base_url
-        or f"http://{CONTAINER_PROXY_HOST}:{self.proxy_port}"
-    )
-
   @override
   def observers(self) -> Sequence[SandboxObserver]:
-    """Return the generic pair, preceded by the recorder ``PROXY`` needs.
+    """Return the generic pair, preceded by the agent-build probe.
 
     This harness's own choice (ADR-0007 §3), not an inherited default — the
     pair are generic building blocks that delegate back to
     ``to_conversation`` / ``outcome`` / ``native_outputs``, which is where
     everything Claude-Code-specific lives.
 
-    In ``PROXY`` capture the trace *is* a recording this harness has to make,
-    so it composes the recorder itself, **first**: its ``before_destroy``
-    closes the proxy and lands the log, and only then does the converter read
-    it. Nothing above this class has to know a proxy exists.
+    ``PROXY`` capture adds nothing here. It used to add an observer whose whole
+    job was ordering — start a host process before ``up``, stop it before the
+    converter read its log — and moving the proxy into the sandbox deleted the
+    problem rather than solving it: the proxy is started and reaped by the
+    invocation script, so it is already gone, and its log already complete,
+    before ``run`` returns.
     """
-    recorder = (
-        (ProxyRecorder(port=self.proxy_port),)
-        if self.capture == "proxy"
-        else ()
-    )
     return (
         # First: record which build the sandbox actually got, before anything
         # can go wrong with the run it describes.
         AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
-        *recorder,
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
     )
 
   @override
   def assets(self) -> Sequence[AgentAsset]:
-    """Declare the pinned binary at ``BINARY_AT``.
+    """Declare the pinned agent binary, and the proxy when recording one.
 
-    One file. ``ensure_claude_binary`` already has the materializer contract
-    (``dest=None`` caches, a path installs), so the seam needed no new
-    fetching code.
+    Both already have the materializer contract (``dest=None`` caches, a path
+    installs), so the seam needed no new fetching code. The proxy is declared
+    **only** for ``PROXY`` capture: a stream run has no use for it, and an
+    asset declared is an asset transferred.
+
+    Returns:
+      One asset, or two under ``PROXY`` capture.
     """
     from .binary import ensure_claude_binary
+    from .proxy import ensure_proxy_binary, proxy_source_version
 
     version = self.version
+    agent = AgentAsset(
+        path=BINARY_AT,
+        version=version,
+        fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
+    )
+    if self.capture != "proxy":
+      return (agent,)
     return (
+        agent,
         AgentAsset(
-            path=BINARY_AT,
-            version=version,
-            fetch=lambda dest: ensure_claude_binary(version=version, dest=dest),
+            path=PROXY_BINARY_AT,
+            # cc-reverse-proxy is a single unversioned Go file in a sibling
+            # checkout, so its content hash *is* its release (see the module).
+            version=proxy_source_version(),
+            fetch=lambda dest: ensure_proxy_binary(dest=dest),
         ),
     )
 
@@ -280,7 +369,12 @@ class ClaudeCodeHarness(Harness):
     the artifact name and knows how to parse it.
     """
     trace = (
-        {"proxy_log.jsonl": PROXY_LOG_NAME}
+        {
+            "proxy_log.jsonl": PROXY_LOG_NAME,
+            # The proxy's own log, not the trace: what it said about itself,
+            # which is the only evidence available when capture came up empty.
+            "proxy_stderr.log": PROXY_STDERR_NAME,
+        }
         if self.capture == "proxy"
         else {"event_stream.jsonl": EVENT_STREAM_NAME}
     )
@@ -334,9 +428,10 @@ class ClaudeCodeHarness(Harness):
     - **Wall-clock is the caller's**, deliberately not here.
 
     In ``STREAM`` capture the agent's ``stream-json`` stdout *is* the trace
-    (redirected to the event-stream file). In ``PROXY`` capture the host-side
-    proxy records the trace instead, so the agent points at it via
-    ``ANTHROPIC_BASE_URL`` and its own stdout is discarded.
+    (redirected to the event-stream file). In ``PROXY`` capture the script also
+    owns the recorder: it starts the proxy on the sandbox's own loopback, waits
+    for it, points the agent at it via ``ANTHROPIC_BASE_URL``, discards the
+    agent's stdout, and reaps the proxy on exit.
 
     Args:
       workdir: The repo path (``$WORKDIR``) the agent ``cd``s into.
@@ -368,11 +463,11 @@ class ClaudeCodeHarness(Harness):
         f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
     if self.capture == "proxy":
-      # Route the agent's API calls through the recording proxy; its own stdout
-      # (a plain JSON result) is not the trace, so discard it.
-      lines.append(
-          f"export ANTHROPIC_BASE_URL={shlex.quote(self.agent_proxy_url)}"
-      )
+      # Start the recording proxy, then route the agent's API calls through it;
+      # the agent's own stdout (a plain JSON result) is not the trace, so it is
+      # discarded.
+      lines += _proxy_start_lines(self.proxy_target)
+      lines.append(f"export ANTHROPIC_BASE_URL={PROXY_BASE_URL}")
       output_format = "json"
       capture_redirect = "> /dev/null"
     else:
@@ -414,16 +509,9 @@ class ClaudeCodeHarness(Harness):
           'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then',
           '  echo "FATAL: --bare needs ANTHROPIC_API_KEY (it does not read'
           ' OAuth or the keychain)" >&2',
-          "  exit 78",
+          f"  exit {_MISCONFIGURED_EXIT}",
           "fi",
       ]
-      if self.capture == "proxy":
-        lines += [
-            'if [ -z "${ANTHROPIC_BASE_URL:-}" ]; then',
-            '  echo "FATAL: PROXY capture needs ANTHROPIC_BASE_URL" >&2',
-            "  exit 78",
-            "fi",
-        ]
 
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [

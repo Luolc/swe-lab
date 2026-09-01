@@ -38,12 +38,6 @@ from swe_lab.harnesses.claude_code.errors import (
     MissingOutputError,
     RetryableError,
 )
-from swe_lab.harnesses.claude_code.proxy import (
-    build_proxy,
-    DEFAULT_BASE_PORT,
-    port_for_index,
-    ReverseProxy,
-)
 from swe_lab.paths import cache_root, find_repo_root
 from swe_lab.pipelines.related_files.exchange import (
     final_result_event,
@@ -55,6 +49,12 @@ from swe_lab.pipelines.related_files.exchange import (
 from swe_lab.repo.provider import GitCheckoutProvider
 
 from .agent_validator import validate_output
+from .host_proxy import (
+    build_proxy,
+    DEFAULT_BASE_PORT,
+    port_for_index,
+    ReverseProxy,
+)
 from .schema import Annotation, parse_agent_output, Snippet
 from .workspace import prepare_workspace, Workspace
 

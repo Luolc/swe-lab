@@ -1,34 +1,57 @@
-"""Build and run one ``cc-reverse-proxy`` per agent call.
+"""Build the ``cc-reverse-proxy`` binary that records a run's API traffic.
 
-Every headless Claude Code invocation (annotation or aggregation) gets its own
-proxy on a distinct port so concurrent/interleaved runs never collide, and each
-proxy logs to a per-run path so logs never overwrite each other. The proxy
-records every request/response pair — used later to extract the final exchange
-and the session-success (``complete``) flag.
+Proxy capture used to run the proxy on the **host**: one process per run, bound
+to a host port, dialled back from the container over the Docker host gateway.
+That made a *required* component depend on three fragile things at once — a
+host firewall rule opening the Docker bridge, an unbounded port derived from a
+dataset index (and a second, independent base for the aggregator), and a
+listener on every interface, which on a tailnet host means every node on the
+tailnet.
+
+The proxy now runs **inside the sandbox**, which removes all three: a container
+has its own network namespace, so the port is a fixed constant that cannot
+collide with anything; the agent dials the sandbox's own loopback, so there is
+no firewall rule left to need; and the host binds nothing. It is also the only
+shape that works on a backend where the host has no foothold at all — a
+``GitHubJobSandbox`` is handed a job that is already running, and a host-side
+process has nowhere to live in it.
+
+So this module does not *run* anything anymore. It only produces the bytes,
+exactly as :mod:`~swe_lab.harnesses.claude_code.binary` does for the agent
+itself, and the sandbox's own asset observer places them at
+:data:`~swe_lab.harnesses.claude_code.constants.PROXY_BINARY_AT`.
+
+The Go source lives OUTSIDE this repo — a standalone project, not a vendored
+or submoduled file. By default we look for a sibling checkout next to the repo
+(``../cc-reverse-proxy/reverse_proxy.go``); set :data:`PROXY_SOURCE_ENV` to an
+explicit ``reverse_proxy.go`` path to override.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
 import os
-import socket
 import subprocess
-import time
-from types import TracebackType
 
 from etils import epath
 
 from swe_lab.paths import cache_root, find_repo_root
 
-DEFAULT_BASE_PORT = 20000
-_ANTHROPIC_API = "https://api.anthropic.com"
-
-# The cc-reverse-proxy Go source lives OUTSIDE this repo — it is a standalone
-# project, not a vendored/submoduled file. By default we look for a sibling
-# checkout next to the repo (``../cc-reverse-proxy/reverse_proxy.go``); set
-# ``CC_REVERSE_PROXY_SRC`` to an explicit ``reverse_proxy.go`` path to override.
 PROXY_SOURCE_ENV = "CC_REVERSE_PROXY_SRC"
 _SIBLING_SOURCE = epath.Path("cc-reverse-proxy") / "reverse_proxy.go"
+
+_BIN_SUBDIR = "bin"
+_CACHE_NAMESPACE = "cc-reverse-proxy"
+_BINARY_NAME = "cc-reverse-proxy"
+
+# The sandbox is linux/amd64, so that is the only build we ever want — the host
+# doing the building may be anything (a Mac laptop), and a host-native binary
+# would be an "exec format error" in the container. cc-reverse-proxy imports
+# nothing outside the standard library, so ``CGO_ENABLED=0`` costs nothing and
+# buys a static binary that runs in an image with any libc.
+_GO_ENV = {"GOOS": "linux", "GOARCH": "amd64", "CGO_ENABLED": "0"}
+SANDBOX_PLATFORM = "linux-amd64"
+_BUILD_TIMEOUT_S = 300.0
 
 
 def proxy_source_path(repo_root: epath.PathLike | None = None) -> epath.Path:
@@ -48,120 +71,126 @@ def proxy_source_path(repo_root: epath.PathLike | None = None) -> epath.Path:
   return root.parent / _SIBLING_SOURCE
 
 
-def proxy_binary_path(repo_root: epath.PathLike | None = None) -> epath.Path:
-  """Return the cache path of the built ``cc-reverse-proxy`` binary."""
-  return cache_root(repo_root) / "bin" / "cc-reverse-proxy"
+def proxy_source_version(repo_root: epath.PathLike | None = None) -> str:
+  """Return the proxy's pinned "release": the sha256 of its Go source.
 
+  cc-reverse-proxy is a single unversioned file in a sibling checkout, so there
+  is no release string to pin — its content hash is the honest equivalent, and
+  it buys the thing a version is actually *for* here: an edited source resolves
+  to a different cache path, so a stale binary can never be silently reused.
+  The old fixed cache path did exactly that.
 
-def build_proxy(
-    repo_root: epath.PathLike | None = None, *, force: bool = False
-) -> epath.Path:
-  """Compile the proxy binary into the cache if missing; return its path."""
-  root = repo_root or find_repo_root()
-  binary = proxy_binary_path(root)
-  source = proxy_source_path(root)
-  if binary.is_file() and not force:
-    return binary
+  Args:
+    repo_root: The repo root; used only to locate the default sibling checkout.
+
+  Returns:
+    The hex sha256 of the source file.
+
+  Raises:
+    FileNotFoundError: If the source is not where we looked, said with the two
+      ways to fix it.
+  """
+  source = proxy_source_path(repo_root)
   if not source.is_file():
     raise FileNotFoundError(
         f"cc-reverse-proxy source not found at {source}. Clone the standalone"
         f" project beside this repo, or set {PROXY_SOURCE_ENV} to its"
         " reverse_proxy.go path."
     )
-  binary.parent.mkdir(parents=True, exist_ok=True)
-  result = subprocess.run(
-      ["go", "build", "-o", str(binary), str(source)],
-      capture_output=True,
-      text=True,
-      check=False,
+  return hashlib.sha256(source.read_bytes()).hexdigest()
+
+
+def proxy_binary_path(
+    version: str, *, repo_root: epath.PathLike | None = None
+) -> epath.Path:
+  """Return the host cache path of the built proxy binary for ``version``."""
+  return (
+      cache_root(repo_root or find_repo_root())
+      / _BIN_SUBDIR
+      / _CACHE_NAMESPACE
+      / version
+      / SANDBOX_PLATFORM
+      / _BINARY_NAME
   )
-  if result.returncode != 0:
-    raise RuntimeError(f"Failed to build proxy:\n{result.stderr.strip()}")
-  return binary
 
 
-def port_for_index(index: int, *, base_port: int = DEFAULT_BASE_PORT) -> int:
-  """Derive an instance's proxy port from its stable dataset index."""
-  return base_port + index
+def ensure_proxy_binary(
+    *,
+    dest: epath.PathLike | None = None,
+    repo_root: epath.PathLike | None = None,
+) -> epath.Path:
+  """Ensure a linux/amd64 proxy binary exists, and return where it landed.
 
+  Satisfies the ``Materializer`` contract the asset seam expects (see
+  :mod:`swe_lab.sandbox.assets`): ``dest=None`` caches on the host and returns
+  the cache path; a ``dest`` puts it exactly there. Idempotent — a build
+  already in the cache for this source is reused, so declaring the asset twice
+  costs nothing.
 
-@dataclass
-class ReverseProxy:
-  """A running ``cc-reverse-proxy`` process, managed as a context manager.
+  Propagates ``FileNotFoundError`` when the Go source is not where we looked
+  (from :func:`proxy_source_version`) and ``RuntimeError`` when the toolchain
+  is missing or the build fails; both say how to fix themselves.
 
-  Entering the context starts the proxy and blocks until it accepts
-  connections; exiting terminates the process (killing it if it does not
-  stop promptly).
+  Args:
+    dest: Where the binary must end up; ``None`` for the host cache.
+    repo_root: Repo root used to locate the source and the cache; discovered
+      when omitted.
 
-  Attributes:
-    port: Local port the proxy listens on.
-    output_path: File the proxy appends request/response records to.
-    binary: Path of the built proxy executable.
-    target: Upstream API base URL requests are forwarded to.
-    startup_timeout_s: Seconds to wait for the proxy to start listening.
+  Returns:
+    The path of the executable binary.
   """
+  root = repo_root or find_repo_root()
+  version = proxy_source_version(root)
+  cached = proxy_binary_path(version, repo_root=root)
+  if not cached.is_file():
+    _build(proxy_source_path(root), cached)
+  if dest is None:
+    return cached
+  target = epath.Path(dest)
+  target.parent.mkdir(parents=True, exist_ok=True)
+  _ = cached.copy(target, overwrite=True)
+  os.chmod(target, 0o755)
+  return target
 
-  port: int
-  output_path: epath.Path
-  binary: epath.Path
-  target: str = _ANTHROPIC_API
-  startup_timeout_s: float = 15.0
 
-  _process: subprocess.Popen[bytes] | None = None
+def _build(source: epath.Path, binary: epath.Path) -> None:
+  """Cross-compile ``source`` to ``binary``, atomically.
 
-  @property
-  def base_url(self) -> str:
-    """The local URL agent calls should use as their API base."""
-    return f"http://127.0.0.1:{self.port}"
-
-  def __enter__(self) -> ReverseProxy:
-    self.output_path.parent.mkdir(parents=True, exist_ok=True)
-    self._process = subprocess.Popen(
+  Built to a temporary sibling and renamed, so two runs building concurrently
+  (or one that dies mid-build) can never leave a half-written file at the path
+  a later run treats as a finished binary.
+  """
+  binary.parent.mkdir(parents=True, exist_ok=True)
+  staged = binary.parent / f"{binary.name}.{os.getpid()}.tmp"
+  try:
+    result = subprocess.run(
         [
-            str(self.binary),
-            "--port",
-            str(self.port),
-            "--target",
-            self.target,
-            "--output",
-            str(self.output_path),
+            "go",
+            "build",
+            "-ldflags=-s -w",
+            "-trimpath",
+            "-o",
+            str(staged),
+            str(source),
         ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=_BUILD_TIMEOUT_S,
+        env=os.environ | _GO_ENV,
     )
-    self._wait_until_listening()
-    return self
-
-  def __exit__(
-      self,
-      exc_type: type[BaseException] | None,
-      exc: BaseException | None,
-      tb: TracebackType | None,
-  ) -> None:
-    if self._process is None:
-      return
-    self._process.terminate()
-    try:
-      _ = self._process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-      self._process.kill()
-      _ = self._process.wait(timeout=5)
-    self._process = None
-
-  def _wait_until_listening(self) -> None:
-    deadline = time.monotonic() + self.startup_timeout_s
-    while time.monotonic() < deadline:
-      if self._process is not None and self._process.poll() is not None:
-        raise RuntimeError(
-            f"Proxy exited early (code {self._process.returncode}) on port"
-            f" {self.port}."
-        )
-      try:
-        with socket.create_connection(("127.0.0.1", self.port), timeout=0.5):
-          return
-      except OSError:
-        time.sleep(0.1)
-    raise TimeoutError(
-        f"Proxy did not start listening on port {self.port} within"
-        f" {self.startup_timeout_s}s."
-    )
+    if result.returncode != 0:
+      raise RuntimeError(f"failed to build {source}:\n{result.stderr.strip()}")
+    os.chmod(staged, 0o755)
+    os.replace(staged, binary)
+  except FileNotFoundError as exc:
+    raise RuntimeError(
+        "the Go toolchain is required to build cc-reverse-proxy for"
+        " proxy capture, and `go` was not found on PATH"
+    ) from exc
+  except subprocess.TimeoutExpired as exc:
+    raise RuntimeError(
+        f"building {source} timed out after {_BUILD_TIMEOUT_S}s"
+    ) from exc
+  finally:
+    epath.Path(staged).unlink(missing_ok=True)
