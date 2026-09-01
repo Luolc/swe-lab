@@ -13,8 +13,9 @@ Two arms, both at `max_tokens = 2000`:
   ship it. Any disagreement here is enough to confound the witness, whatever its
   cause;
 - **`temperature = 0`** (n = 5) -- **one-directional.** A flip here *falsifies*
-  "pinning the temperature fixes this gate"; five quiet calls confirm nothing,
-  since the upper bound they leave is near 0.6. It is not determinism on a
+  "pinning the temperature fixes this gate", and one counterexample needs no
+  distributional assumption; five quiet calls confirm nothing. It is not
+  determinism on a
   hosted endpoint, and routing and served model are recorded but not held fixed,
   so it can never attribute the variance to sampling or to the guidebook.
 
@@ -47,10 +48,11 @@ _POSITION = 14
 _ROLLOUT = "baseline-qutebrowser-rollout-0"
 _MAX_TOKENS = 2000
 # Fixed here rather than exposed as a flag: n is pre-registered, and a knob that
-# changes it would undo the pre-registration. The default arm is large enough
-# that a *quiet* result still bounds something -- 0/20 puts the 95% upper bound
-# on the flip rate near 0.15, while 0/5 leaves it near 0.6, which reads like
-# stability and says nothing.
+# changes it would undo the pre-registration. The default arm is the larger one
+# because more trials strictly increase the chance of seeing a flip if flips
+# happen at all -- not because 20 licenses a confidence bound, which this design
+# cannot claim: routing and served model vary freely and are only recorded, so
+# the calls are not known to be independent or identically distributed.
 _ARMS = (("default", {}, 20), ("temperature-0", {"temperature": 0}, 5))
 # Binds the *entire* judge input, not just the completion: the prompt is built
 # from the guidebook, the preceding-steps rendering and the completion summary,
@@ -174,9 +176,10 @@ def main() -> None:
       "providers": sorted({str(r["provider"]) for r in records}),
       "n_per_arm": {arm: count for arm, _extra, count in _ARMS},
       "_note": (
-          "Counts only; no rate is implied. A quiet arm bounds rather than "
-          "establishes: 0 disagreements in n puts the 95% upper bound on the "
-          "flip rate near 3/n, which is NOT a finding of stability. "
+          "Counts only; no rate and no confidence bound are implied. A quiet "
+          "arm is reported as 'observed 0 disagreements in n calls' and "
+          "nothing further: the familiar 3/n bound needs iid trials at a "
+          "stationary rate, which this design does not establish. "
           "temperature-0 can falsify 'pinning the temperature fixes this gate' "
           "and can never confirm it: routing and served model are recorded but "
           "not controlled."

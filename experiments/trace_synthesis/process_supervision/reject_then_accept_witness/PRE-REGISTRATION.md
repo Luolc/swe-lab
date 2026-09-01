@@ -369,25 +369,37 @@ The completion fixed in §2 is judged **25 times, all at `max_tokens = 2000`**:
 - **5 at `temperature = 0`** — **one-directional**, see below.
 
 **Why 20 and not 5.** The risk of a small n is not in the noisy case but in the
-**quiet** one: 5 identical answers leave the 95% upper bound on the flip rate
-near **0.6**, which establishes nothing while *reading* like a stable gate. At
-20 the bound is near **0.15**. The extra calls cost about twenty cents.
+**quiet** one: a handful of identical answers reads like a stable gate while
+excluding almost nothing. More trials strictly increase the chance of observing a
+flip if flips occur at all, and the extra calls cost about twenty cents.
 
 **The zero-disagreement reading, fixed now so it cannot be written after the
 fact:**
 
-> **20 identical answers ⇒ no disagreement observed, 95% upper bound on the flip
-> rate ≈ 0.15.** That is **not** "the gate is stable". It is "if the gate is
-> unstable, the magnitude is below this."
+> **20 identical answers ⇒ `observed 0 disagreements in 20 calls`. That is the
+> whole result**, and it is **not** "the gate is stable".
+
+**No confidence bound is asserted from it.** The familiar ≈ 3/n bound (≈ 0.15 at
+n = 20, ≈ 0.6 at n = 5) requires **independent, identically distributed trials at
+a stationary rate** — and this design **deliberately does not establish that**:
+routing and the served model vary freely and are only *recorded*, so the calls
+are not known to be exchangeable. The bound may be quoted **only** as an explicit
+conditional — *were the trials iid at a stationary rate, 0/20 would correspond to
+a 95% upper bound near 0.15* — and never as a property of this run.
+
+The decision-relevant reading does not depend on any of this: **a single
+disagreement in the default arm confounds the witness**, and that needs no
+distributional model at all.
 
 **The `temperature = 0` arm is hard in one direction only**, and must be reported
 that way:
 
 > **A flip at `temperature = 0` falsifies "pinning the temperature fixes this
-> gate".** That conclusion is solid at n = 5.
+> gate".** That conclusion needs no distributional assumption: one counterexample
+> is enough.
 >
-> **Five quiet calls at `temperature = 0` confirm nothing** — the upper bound
-> they leave is ≈ 0.6, and `temperature = 0` is not determinism on a hosted
+> **Five quiet calls at `temperature = 0` confirm nothing** — the same
+> conditional applies, and `temperature = 0` is not determinism on a hosted
 > endpoint anyway.
 
 A test that is sharp in one direction read as sharp in both is the error this
