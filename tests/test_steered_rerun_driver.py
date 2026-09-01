@@ -30,6 +30,7 @@ from swe_lab.harnesses.claude_code.constants import (
     PROXY_BASE_URL,
     PROXY_BINARY_AT,
 )
+from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 
 _DRIVER = (
     Path(__file__).resolve().parents[1]
@@ -57,7 +58,7 @@ def driver() -> ModuleType:
 
 
 def test_the_driver_runs_the_actor_through_the_in_sandbox_proxy(
-    driver: ModuleType,
+    driver: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
   """The staged script starts the proxy at the actor's own upstream."""
   harness = driver.SteeredClaudeCodeHarness(
@@ -68,6 +69,12 @@ def test_the_driver_runs_the_actor_through_the_in_sandbox_proxy(
       hook_source="#!/usr/bin/env python3\n",
       settings_json="{}\n",
   )
+  source = tmp_path / "reverse_proxy.go"
+  _ = source.write_text("package main\n")
+  # The proxy asset's "version" is the sha256 of a Go source that lives in a
+  # sibling checkout, not in this repo — so declaring the assets reads a file
+  # CI does not have. Same override the proxy's own tests use.
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
   script = harness.mounts("/repo")[AGENT_SCRIPT_NAME].resource.content.decode()
   # The target is not cosmetic: cc-reverse-proxy gates its OpenRouter
   # behaviour on this string, and the Anthropic default silently drops the
