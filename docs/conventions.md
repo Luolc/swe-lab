@@ -320,6 +320,37 @@ retroactively (owner's calibration, 2026-09-01).
   row). Both are one command: copy `.envrc.local.example` to `.envrc.local` and
   `direnv allow`; then re-run the download in the dataset's README
   ([`datasets/`](../datasets/README.md)). Do both before spending a rollout.
+- **`git worktree remove` deletes gitignored content, silently.** It refuses on
+  a dirty *tracked* tree and says nothing about anything gitignored — so a
+  removed worktree takes its `.cache/`, its `.envrc.local`, and any experiment
+  artifact that lived under it with it, with no warning and no prompt. The
+  other face of the bullet above: gitignored things live in one checkout, and
+  removing that checkout is how they stop existing. This is not hypothetical —
+  trace-synthesis task 01's frozen phase-A failure was gitignored inside the
+  implementer's worktree, the merged PR was followed by a `git worktree
+  remove`, and the raw evidence was gone while the analysis written from it
+  survived in git (2026-09-01; re-harvesting it cost three rollouts). So
+  anything worth keeping does **not** live in a worktree: put it on a stable
+  path outside every checkout (this box uses
+  `/home/ubuntu/dev/swe-lab-artifacts/`) and commit a pointer plus a sha256
+  manifest instead.
+- **`capture="proxy"` has host prerequisites, and two of them fail silently.**
+  The agent reaches the recorder at `host.docker.internal:<port>`, so:
+  (a) the host firewall must let the Docker bridge in — this box's `ufw`
+  default-denies incoming, which blocked proxy capture outright until
+  `machine-setup` PR #138 opened `20000:20999` and `25000:25999` (2026-09-01);
+  (b) the port must be **free**, because `ReverseProxy._wait_until_listening`
+  accepts *any* listener and an unrelated process squatting on it reads as "the
+  proxy is up" — a stray `python3 -m http.server` cost one rollout that failed
+  with an empty proxy log, empty stderr and exit 1; and (c) the proxy's
+  `--target` must match where the credential is actually valid. That last one is
+  a real gap for non-Anthropic upstreams: `ReverseProxy.target` defaults to
+  `https://api.anthropic.com` and `ProxyRecorder` does not expose it, while
+  `cc-reverse-proxy` gates its OpenRouter behaviour on the target string
+  (`isOpenRouter = strings.Contains(targetURL, "openrouter.ai")`), so a wrong
+  target *also* silently drops the `X-Anthropic-Beta` mirroring and `provider`
+  injection that OpenRouter needs for interleaved thinking. Verify a proxied run
+  by its log, never by its exit code.
 - **`patches.py` is a stopgap.** The loader corrects 3 upstream dataset rows
   (truncated `fail_to_pass` names) **in memory**; it's a no-op on every other
   row. Retire it once a fixed parquet is published to HF and the loader can
