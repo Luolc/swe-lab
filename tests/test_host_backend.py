@@ -243,9 +243,13 @@ def test_up_labels_name_the_owning_process_and_session(
   assert f"swe-lab-owner-session={host._OWNER_SESSION}" in create  # noqa: SLF001
 
 
-def test_the_session_id_is_stable_in_process_and_differs_across_processes():
+def test_the_session_id_is_one_per_process_not_one_per_container(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
   """The pid cannot stand alone: it is reused, and it is not per session."""
-  assert host._OWNER_SESSION == host._OWNER_SESSION  # noqa: SLF001
+  # Before `subprocess.run` is faked, and in a second interpreter: a different
+  # process is a different session, which is the half that makes the label
+  # worth carrying beside the pid.
   other = subprocess.run(
       [
           sys.executable,
@@ -257,7 +261,20 @@ def test_the_session_id_is_stable_in_process_and_differs_across_processes():
       text=True,
       check=True,
   ).stdout.strip()
-  assert other and other != host._OWNER_SESSION  # noqa: SLF001
+
+  fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
+  _install(monkeypatch, fake)
+  sessions: list[str] = []
+  for name in ("a", "b"):
+    DockerHostSandbox(
+        spec=SPEC, workspace=epath.Path(tmp_path / name), pull=False
+    ).up()
+    labels = fake.last_matching("create")
+    sessions.append(
+        next(a for a in labels if a.startswith("swe-lab-owner-session="))
+    )
+  assert sessions[0] == sessions[1]  # two containers, one owning process
+  assert other and f"swe-lab-owner-session={other}" != sessions[0]
 
 
 def test_missing_docker_cli_raises(

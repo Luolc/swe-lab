@@ -50,22 +50,27 @@ kill executed *by* the parent, and proposed a verification that only exercised
 normal exit. A mechanism claim and a test that cannot fail against it travel
 together.
 
-**A name is not a handle, and three of this design's four defects were that
-confusion.** A name is resolved late and can point at something else by then; a
-handle is taken at the moment of attribution and keeps pointing at the same
-thing. Recording the container id only after `start` (A), attributing a process
-by the port a record mentions (D), and signalling a verified pid with `os.kill`
-(D again) are the same mistake at three scales — check-then-act across a
-re-bindable name.
+**Two rules, and the review of this design had to separate them.** The first
+is above: *ownership is registered when the resource is created*. That is A —
+`docker create` already hands back an immutable container id, and nothing
+re-resolves it; the defect is only that the id was recorded too late for
+`down()` to use.
 
-**This repo already pays for that lesson daily, in a domain with no kernel in
-it:** `gh pr merge --match-head-commit <approved-sha>`. A branch name is a
-name — it can point at a commit the reviewer never saw by the time the merge
-runs — and the approved SHA is the handle. The thing that guard stops (a push
-landing silently between the LGTM and the merge) and the thing `pidfd` stops
-(a pid recycled between the check and the signal) are one rule in two domains.
-So this is not a Linux detail: it is a rule the project has already been billed
-for elsewhere, applied where the resources are containers and processes.
+The second is different, and it is what D's two defects were: **a name is
+resolved late and can point at something else by then; a handle is taken at the
+moment of attribution and keeps pointing at the same thing.** Attributing a
+process by the port a record mentions, and signalling a verified pid with
+`os.kill`, are both check-then-act across a re-bindable name — a port is a
+rendezvous anyone can occupy, and a pid is a number the kernel reissues.
+
+**This repo already pays for that second lesson daily, in a domain with no
+kernel in it:** `gh pr merge --match-head-commit <approved-sha>`. A branch name
+is a name — it can point at a commit the reviewer never saw by the time the
+merge runs — and the approved SHA is the handle. What that guard stops (a push
+landing silently between the LGTM and the merge) and what `pidfd` stops (a pid
+recycled between the check and the signal) are one rule in two domains. So it
+is not a Linux detail: it is a rule the project has already been billed for
+elsewhere, applied where the resources are containers and processes.
 
 ## Design
 
