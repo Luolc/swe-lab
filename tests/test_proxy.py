@@ -15,15 +15,26 @@ import pytest
 
 from swe_lab.harnesses.claude_code.proxy import (
     ensure_proxy_binary,
+    HOST_BUILD,
     proxy_binary_path,
     PROXY_SOURCE_ENV,
     proxy_source_path,
     proxy_source_version,
     SANDBOX_PLATFORM,
 )
-from swe_lab.pipelines.related_files.host_proxy import (
-    proxy_binary_path as host_proxy_binary_path,
-)
+
+
+def _host_binary_path(tmp_path: Path) -> Path:
+  """Where `pipelines.related_files.host_proxy` caches its build."""
+  return Path(
+      str(
+          proxy_binary_path(
+              proxy_source_version(tmp_path),
+              repo_root=tmp_path,
+              build=HOST_BUILD,
+          )
+      )
+  )
 
 
 def _source(tmp_path: Path, body: str) -> Path:
@@ -121,18 +132,18 @@ def test_a_dest_gets_its_own_executable_copy(
 def test_an_existing_host_binary_does_not_wedge_the_first_proxied_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-  """A file at `<cache>/bin/cc-reverse-proxy` neither blocks nor is disturbed.
+  """A host-native build already in the cache is neither blocking nor disturbed.
 
-  That file is `pipelines.related_files.host_proxy`'s property and may be in
-  use, so this module builds elsewhere and leaves it alone.
+  It is `pipelines.related_files.host_proxy`'s artifact and may be in use, so
+  the sandbox build lands in its own namespace and leaves it alone.
   """
   source = _source(tmp_path, "package main\n")
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
-  host = Path(str(host_proxy_binary_path(tmp_path)))
+  host = _host_binary_path(tmp_path)
   host.parent.mkdir(parents=True, exist_ok=True)
   _ = host.write_text("the host-native build\n")
 
-  def _fake_build(_source: object, binary: object) -> None:
+  def _fake_build(_source: object, binary: object, _go_env: object) -> None:
     path = Path(str(binary))
     path.parent.mkdir(parents=True, exist_ok=True)
     _ = path.write_text("#!/bin/true\n")
@@ -150,18 +161,18 @@ def test_the_sandbox_cache_never_collides_with_the_host_proxy_binary(
 ) -> None:
   """The two proxy artifacts must not share a path.
 
-  `host_proxy` writes a host-native binary as a *file* at
-  `<cache>/bin/cc-reverse-proxy`; this module caches a cross-compiled
-  linux/amd64 build under a versioned *directory* tree. Nesting the second
-  under the first made one component's directory the other's file, so whichever
-  ran second destroyed or was blocked by the first.
+  They are different programs' inputs — a host-native build that W1 spawns as a
+  subprocess, and a cross-compiled linux/amd64 build mounted into a container —
+  and they once overlapped: one component's versioned directory tree was nested
+  under the other component's file, so whichever ran second destroyed or was
+  blocked by the first. Both now cache under a namespace of their own.
 
   Pinned as a relationship between the two paths rather than as a literal
   string, so renaming either one cannot quietly recreate the overlap.
   """
   source = _source(tmp_path, "package main\n")
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
-  host = Path(str(host_proxy_binary_path(tmp_path)))
+  host = _host_binary_path(tmp_path)
   sandbox = Path(
       str(proxy_binary_path(proxy_source_version(tmp_path), repo_root=tmp_path))
   )
@@ -182,7 +193,7 @@ def test_building_the_sandbox_binary_leaves_the_host_binary_alone(
   """
   source = _source(tmp_path, "package main\n")
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
-  host = Path(str(host_proxy_binary_path(tmp_path)))
+  host = _host_binary_path(tmp_path)
   host.parent.mkdir(parents=True, exist_ok=True)
   _ = host.write_text("#!/bin/true  <- the host-native build\n")
 

@@ -29,6 +29,8 @@ explicit ``reverse_proxy.go`` path to override.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+import dataclasses
 import hashlib
 import os
 import subprocess
@@ -41,22 +43,52 @@ PROXY_SOURCE_ENV = "CC_REVERSE_PROXY_SRC"
 _SIBLING_SOURCE = epath.Path("cc-reverse-proxy") / "reverse_proxy.go"
 
 _BIN_SUBDIR = "bin"
-# Deliberately NOT "cc-reverse-proxy": that exact path is the host-native
-# binary written by `swe_lab.pipelines.related_files.host_proxy`, and nesting a
-# versioned tree under it made one component's directory collide with another
-# component's file. These are different artifacts anyway -- host-native there,
-# cross-compiled linux/amd64 here -- and they now have different homes.
-_CACHE_NAMESPACE = "cc-reverse-proxy-sandbox"
 _BINARY_NAME = "cc-reverse-proxy"
 
-# The sandbox is linux/amd64, so that is the only build we ever want — the host
-# doing the building may be anything (a Mac laptop), and a host-native binary
-# would be an "exec format error" in the container. cc-reverse-proxy imports
-# nothing outside the standard library, so ``CGO_ENABLED=0`` costs nothing and
-# buys a static binary that runs in an image with any libc.
-_GO_ENV = {"GOOS": "linux", "GOARCH": "amd64", "CGO_ENABLED": "0"}
 SANDBOX_PLATFORM = "linux-amd64"
 _BUILD_TIMEOUT_S = 300.0
+
+
+@dataclasses.dataclass(frozen=True)
+class ProxyBuild:
+  """One compilation target for the proxy, and the cache subtree it owns.
+
+  A target is *only* these two differences — the Go environment it compiles
+  under, and the namespace it caches into — so every consumer of the proxy
+  shares one builder and one cache key.
+
+  Attributes:
+    namespace: The ``<cache>/bin/<namespace>`` subtree this target owns.
+      Distinct per target so two targets' builds of one source never share a
+      path.
+    platform: The platform component of the cache path, so a cache carried
+      between machines cannot serve one platform's binary to another.
+    go_env: Environment overrides for ``go build``; empty means host-native.
+  """
+
+  namespace: str
+  platform: str
+  go_env: Mapping[str, str]
+
+
+# The sandbox is linux/amd64, so that is the only build we ever want for it —
+# the host doing the building may be anything (a Mac laptop), and a host-native
+# binary would be an "exec format error" in the container. cc-reverse-proxy
+# imports nothing outside the standard library, so ``CGO_ENABLED=0`` costs
+# nothing and buys a static binary that runs in an image with any libc.
+SANDBOX_BUILD = ProxyBuild(
+    namespace="cc-reverse-proxy-sandbox",
+    platform=SANDBOX_PLATFORM,
+    go_env={"GOOS": "linux", "GOARCH": "amd64", "CGO_ENABLED": "0"},
+)
+
+# W1's annotation pipeline runs its agent as a host subprocess, so its proxy is
+# a host process and its binary must be native to whatever built it.
+HOST_BUILD = ProxyBuild(
+    namespace="cc-reverse-proxy-host",
+    platform="host-native",
+    go_env={},
+)
 
 
 def proxy_source_path(repo_root: epath.PathLike | None = None) -> epath.Path:
@@ -106,15 +138,18 @@ def proxy_source_version(repo_root: epath.PathLike | None = None) -> str:
 
 
 def proxy_binary_path(
-    version: str, *, repo_root: epath.PathLike | None = None
+    version: str,
+    *,
+    repo_root: epath.PathLike | None = None,
+    build: ProxyBuild = SANDBOX_BUILD,
 ) -> epath.Path:
-  """Return the host cache path of the built proxy binary for ``version``."""
+  """Return the host cache path of ``build``'s proxy binary for ``version``."""
   return (
       cache_root(repo_root or find_repo_root())
       / _BIN_SUBDIR
-      / _CACHE_NAMESPACE
+      / build.namespace
       / version
-      / SANDBOX_PLATFORM
+      / build.platform
       / _BINARY_NAME
   )
 
@@ -123,8 +158,9 @@ def ensure_proxy_binary(
     *,
     dest: epath.PathLike | None = None,
     repo_root: epath.PathLike | None = None,
+    build: ProxyBuild = SANDBOX_BUILD,
 ) -> epath.Path:
-  """Ensure a linux/amd64 proxy binary exists, and return where it landed.
+  """Ensure ``build``'s proxy binary exists, and return where it landed.
 
   Satisfies the ``Materializer`` contract the asset seam expects (see
   :mod:`swe_lab.sandbox.assets`): ``dest=None`` caches on the host and returns
@@ -140,15 +176,17 @@ def ensure_proxy_binary(
     dest: Where the binary must end up; ``None`` for the host cache.
     repo_root: Repo root used to locate the source and the cache; discovered
       when omitted.
+    build: Which target to compile and cache for; the sandbox's cross-compiled
+      build by default, :data:`HOST_BUILD` for a host-native one.
 
   Returns:
     The path of the executable binary.
   """
   root = repo_root or find_repo_root()
   version = proxy_source_version(root)
-  cached = proxy_binary_path(version, repo_root=root)
+  cached = proxy_binary_path(version, repo_root=root, build=build)
   if not cached.is_file():
-    _build(proxy_source_path(root), cached)
+    _build(proxy_source_path(root), cached, build.go_env)
   if dest is None:
     return cached
   target = epath.Path(dest)
@@ -158,8 +196,10 @@ def ensure_proxy_binary(
   return target
 
 
-def _build(source: epath.Path, binary: epath.Path) -> None:
-  """Cross-compile ``source`` to ``binary``, atomically.
+def _build(
+    source: epath.Path, binary: epath.Path, go_env: Mapping[str, str]
+) -> None:
+  """Compile ``source`` to ``binary`` under ``go_env``, atomically.
 
   Built to a temporary sibling and renamed, so two runs building concurrently
   (or one that dies mid-build) can never leave a half-written file at the path
@@ -182,7 +222,7 @@ def _build(source: epath.Path, binary: epath.Path) -> None:
         text=True,
         check=False,
         timeout=_BUILD_TIMEOUT_S,
-        env=os.environ | _GO_ENV,
+        env=os.environ | dict(go_env),
     )
     if result.returncode != 0:
       raise RuntimeError(f"failed to build {source}:\n{result.stderr.strip()}")

@@ -22,6 +22,12 @@ was sent**. That is the only ground truth for "what the actor sees";
 ``stream.jsonl`` is the only evidence for "what our converter keeps". The two
 questions need the two captures, so the ``p*`` runs carry both.
 
+**Which `cc-reverse-proxy` is not a detail.** The standalone project ships three
+implementations of it and only the Go one redacts as it writes, so the build
+comes from :mod:`swe_lab.pipelines.related_files.host_proxy` rather than from a
+path spelled out here. Every capture is then re-read and checked before the run
+is allowed to end (:func:`redact_proxy_log`).
+
 Runs are idempotent: a variant whose ``stream.jsonl`` already exists is skipped
 (and says so) so an interrupted round resumes without burning tokens.
 """
@@ -29,10 +35,10 @@ Runs are idempotent: a variant whose ``stream.jsonl`` already exists is skipped
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import shutil
-import socket
 import subprocess
 import sys
 import time
@@ -41,7 +47,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 RUNS = HERE / "runs"
 HOOK = HERE / "hook.py"
-PROXY = Path("/home/ubuntu/dev/cc-reverse-proxy/python/reverse_proxy.py")
 PROXY_PORT = 9611
 
 MODEL = "claude-sonnet-4-5"
@@ -302,13 +307,36 @@ WORKSPACE_FILES_FOR = {
 #
 # Captures committed here before 2026-09-01 hold the older `<redacted>`
 # placeholder; readers accept it through `LEGACY_REDACTED`.
+from etils import epath  # noqa: E402
+
 from swe_lab.harnesses.claude_code.redaction import (  # noqa: E402
     redact_record,
+    unredacted_fields,
+)
+from swe_lab.pipelines.related_files.host_proxy import (  # noqa: E402
+    ReverseProxy,
+    build_proxy,
 )
 
 
 def redact_proxy_log(path: Path) -> None:
-  """Redact a captured proxy log in place (see `src`'s redaction module)."""
+  """Redact a captured proxy log in place, and refuse to leave a dirty one.
+
+  Redaction is a deny-list applied by code that can be wrong or aimed at a
+  producer that masks nothing, so **checking the bytes on disk is what turns
+  "we redact" into "this file is redacted"** — through `src`'s shared checker
+  rather than a local copy of the rules. A capture that fails is **deleted,
+  not reported and kept**: a file that must not exist is not made safe by a
+  warning nobody reads. Pinned by
+  `tests/test_injection_shape_redaction.py::test_a_capture_that_stays_dirty_is_deleted`.
+
+  Only the *names* of the offending fields reach the message. A gate that
+  prints the value it caught has published it.
+
+  Args:
+    path: The capture to clean; a missing file is a no-op, because the
+      unproxied variants never produce one.
+  """
   if not path.exists():
     return
   lines = [
@@ -317,24 +345,37 @@ def redact_proxy_log(path: Path) -> None:
       if line.strip()
   ]
   path.write_text("\n".join(lines) + "\n")
+  findings = unredacted_fields(path.read_text())
+  if findings:
+    path.unlink()
+    sys.exit(
+        f"redaction gate: {path} still carried {len(findings)} unredacted"
+        f" field(s) after redact_record and has been deleted — {findings}"
+    )
 
 
-def start_proxy(out_path: Path) -> subprocess.Popen[bytes]:
-  """Start cc-reverse-proxy logging to ``out_path`` and wait for the listener."""
-  proc = subprocess.Popen(
-      ["uv", "run", str(PROXY), "--port", str(PROXY_PORT), "--output", str(out_path)],
-      cwd=PROXY.parent,
-      stdout=subprocess.DEVNULL,
-      stderr=subprocess.DEVNULL,
+def start_proxy(out_path: Path) -> ReverseProxy:
+  """Return the Go ``cc-reverse-proxy``, ready to enter as a context manager.
+
+  The binary comes from `host_proxy`, which caches it under the sha256 of the
+  Go source, so the process started here is a build of **the source in the
+  sibling checkout right now**. Whether that source redacts is a property of
+  the checkout, not of this call, which is why :func:`redact_proxy_log` re-reads
+  the capture regardless of who produced it.
+
+  Building is skipped when a build of this exact source is already cached;
+  entering the returned object starts the process and blocks until it accepts
+  connections, and leaving the context ends its whole process group.
+
+  Args:
+    out_path: File the proxy appends request/response records to.
+
+  Returns:
+    An un-entered `ReverseProxy` bound to `PROXY_PORT`.
+  """
+  return ReverseProxy(
+      port=PROXY_PORT, output_path=epath.Path(out_path), binary=build_proxy()
   )
-  for _ in range(100):
-    with socket.socket() as sock:
-      sock.settimeout(0.2)
-      if sock.connect_ex(("127.0.0.1", PROXY_PORT)) == 0:
-        return proc
-    time.sleep(0.2)
-  proc.kill()
-  sys.exit(f"reverse proxy did not come up on port {PROXY_PORT}")
 
 
 def as_text(captured: str | bytes | None) -> str:
@@ -432,12 +473,11 @@ def run_variant(variant: str, workspace_root: Path, replicate: int = 0) -> None:
   env["PROBE_TAG"] = tag
   env.pop("CLAUDECODE", None)  # we run inside Claude Code; the guard would bite
 
-  proxy_proc = None
+  proxied = variant in PROXIED
   if variant in DIRECT_BASE_URL:
     env["ANTHROPIC_BASE_URL"] = DIRECT_BASE_URL[variant]
-  if variant in PROXIED:
+  if proxied:
     env["ANTHROPIC_BASE_URL"] = f"http://127.0.0.1:{PROXY_PORT}"
-    proxy_proc = start_proxy(out_dir / "proxy.jsonl")
 
   started = time.time()
   print(f"[run ] {run_name} (mode={mode})")
@@ -447,21 +487,26 @@ def run_variant(variant: str, workspace_root: Path, replicate: int = 0) -> None:
   # already produced, and record it like any other ending.
   timed_out = False
   try:
-    proc = subprocess.run(
-        argv, cwd=workspace, env=env, capture_output=True, text=True, timeout=600
-    )
-  except subprocess.TimeoutExpired as expired:
-    timed_out = True
-    proc = subprocess.CompletedProcess(
-        argv,
-        returncode=-1,
-        stdout=as_text(expired.stdout),
-        stderr=as_text(expired.stderr),
-    )
+    # The proxy's own context ends *inside* this `try`, so its log is complete
+    # and closed before the `finally` below reads it back to check.
+    with contextlib.ExitStack() as running:
+      if proxied:
+        _ = running.enter_context(start_proxy(out_dir / "proxy.jsonl"))
+      try:
+        proc = subprocess.run(
+            argv, cwd=workspace, env=env, capture_output=True, text=True,
+            timeout=600,
+        )
+      except subprocess.TimeoutExpired as expired:
+        timed_out = True
+        proc = subprocess.CompletedProcess(
+            argv,
+            returncode=-1,
+            stdout=as_text(expired.stdout),
+            stderr=as_text(expired.stderr),
+        )
   finally:
-    if proxy_proc is not None:
-      proxy_proc.terminate()
-      proxy_proc.wait(timeout=30)
+    if proxied:
       redact_proxy_log(out_dir / "proxy.jsonl")
   (out_dir / "stream.jsonl").write_text(proc.stdout)
   (out_dir / "stderr.txt").write_text(proc.stderr)

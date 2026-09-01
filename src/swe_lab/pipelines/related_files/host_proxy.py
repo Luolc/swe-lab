@@ -28,61 +28,34 @@ from types import TracebackType
 
 from etils import epath
 
-from swe_lab.harnesses.claude_code.proxy import (
-    PROXY_SOURCE_ENV,
-    proxy_source_path,
-)
-from swe_lab.paths import cache_root, find_repo_root
+from swe_lab.harnesses.claude_code.proxy import ensure_proxy_binary, HOST_BUILD
 from swe_lab.process_group import end_process_group
 
 DEFAULT_BASE_PORT = 20000
 _ANTHROPIC_API = "https://api.anthropic.com"
 
 
-def proxy_binary_path(repo_root: epath.PathLike | None = None) -> epath.Path:
-  """Return the cache path of the host-native ``cc-reverse-proxy`` binary."""
-  return cache_root(repo_root) / "bin" / "cc-reverse-proxy"
+def build_proxy(repo_root: epath.PathLike | None = None) -> epath.Path:
+  """Build (or reuse) the host-native proxy binary; return its path.
 
+  A thin call into :func:`ensure_proxy_binary`, the one implementation of
+  "compile this Go source and cache the result"; this module supplies only the
+  host-native target.
 
-def build_proxy(
-    repo_root: epath.PathLike | None = None, *, force: bool = False
-) -> epath.Path:
-  """Compile the proxy binary into the cache if missing; return its path.
+  Propagates ``FileNotFoundError`` when the Go source is not where we looked
+  and ``RuntimeError`` when the toolchain is missing or the build fails; both
+  say how to fix themselves.
 
-  Host-native (no ``GOOS``/``GOARCH``), because this proxy runs on the machine
-  that builds it.
+  Args:
+    repo_root: Repo root used to locate the source and the cache; discovered
+      when omitted.
+
+  Returns:
+    The path of the executable host-native binary. It moves whenever the
+    sibling checkout's source changes, so a build of an earlier revision is
+    never served as the current one.
   """
-  root = repo_root or find_repo_root()
-  binary = proxy_binary_path(root)
-  source = proxy_source_path(root)
-  # This path is this module's property, and only a file belongs at it. A
-  # directory here is an incompatible residue: it must be removed rather than
-  # reported, because `go build -o <dir>` writes *into* a directory and reports
-  # success, so the caller would receive a path that is still a directory and
-  # fail much later, at spawn.
-  #
-  # Idempotent because two runs can reach this together; what matters is the
-  # resulting state, not which of them produced it.
-  if binary.is_dir():
-    binary.rmtree(missing_ok=True)
-  if binary.is_file() and not force:
-    return binary
-  if not source.is_file():
-    raise FileNotFoundError(
-        f"cc-reverse-proxy source not found at {source}. Clone the standalone"
-        f" project beside this repo, or set {PROXY_SOURCE_ENV} to its"
-        " reverse_proxy.go path."
-    )
-  binary.parent.mkdir(parents=True, exist_ok=True)
-  result = subprocess.run(
-      ["go", "build", "-o", str(binary), str(source)],
-      capture_output=True,
-      text=True,
-      check=False,
-  )
-  if result.returncode != 0:
-    raise RuntimeError(f"Failed to build proxy:\n{result.stderr.strip()}")
-  return binary
+  return ensure_proxy_binary(repo_root=repo_root, build=HOST_BUILD)
 
 
 def port_for_index(index: int, *, base_port: int = DEFAULT_BASE_PORT) -> int:
