@@ -366,7 +366,7 @@ The three at the top of this document plus:
 | # | What leaked | How it died | Evidence quality |
 |---|---|---|---|
 | ④ | eight stale worktrees | removed without their branches being reconciled | archaeology |
-| ⑤ | a container orphaned on purpose | `swelab-inproxy-impl` killed the owning process, watched the container survive, and stopped it by hand | **causal chain observed end to end** |
+| ⑤ | a container orphaned on purpose | the owning process was killed, the container was watched surviving it, and it was stopped by hand (2026-09-01, during [#289](https://github.com/Luolc/swe-lab/pull/289)) | **causal chain observed end to end** |
 
 The first four are all *post hoc*: a leak was found and its cause reconstructed.
 ⑤ is the only one where the death was chosen, the survival was watched, and the
@@ -491,6 +491,25 @@ The general form: **a scope judgement does not inherit to every factual finding
 the scope contains. What is obsolete is the scope, not necessarily the
 contents.** This is the dual of deleting a cut point — that one is about
 removing what should not stay; this one is about not removing what should.
+
+### Cite the artifact, not the agent
+
+A permanent document must not name a *running* agent — `…-impl`, `…-review`,
+any slug from the run-time registry. Those names are closed the day the work
+merges, so "X found this" is unverifiable a month later and untraceable
+forever. Cite what outlives the process: **a PR number, a review round, a
+commit SHA, a file and line**. Each is permanent, clickable, and points at the
+evidence rather than at a process that no longer exists. (A PR description's
+`Pair:` line is the exception — it is written *into* the PR and becomes history
+along with it.)
+
+This is the deliberate **converse** of the expiring-designator rule above, and
+the two do not conflict because their purposes are opposite: when naming a
+*process to act on*, choose a designator that goes invalid when the thing dies,
+so a stale mechanism disarms itself. When naming *evidence to look up*, choose
+one that never goes invalid. A permanent document citing a run-time identifier
+gets the worst of both — a designator guaranteed to expire, pointing at
+something that was supposed to stay checkable.
 
 ### When an argument rests on an absence, look for the exclusive branch
 
