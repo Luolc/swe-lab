@@ -411,6 +411,16 @@ than an artifact of the collection method.
 
 ## 10. What is measured about hooks
 
+> **Read the Consequence column as of its date.** Every *fact* below was
+> measured and none is refuted, which is why this section is retained verbatim.
+> But the consequences were written while a hook **was** the steering mechanism,
+> and [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) moved
+> that to the stdin channel. Where a consequence says what *our design* does —
+> "Phase C is expressible", "hooks *are* the mechanism", "the Supervisor must be
+> our own `command` / `http` handler" — it states what the fact meant for a
+> hook-based design, not what we build now. The current mechanism is
+> [§5](#5-the-mechanism-decisions) and [§3](#phase-c--the-guided-rollout).
+
 Claude Code `2.1.252`, measured on this machine 2026-08-31 / 2026-09-01 under
 `claude -p --output-format stream-json --include-hook-events` with an isolated
 `CLAUDE_CONFIG_DIR`. Documentation source:
@@ -472,7 +482,7 @@ reader that is what happened rather than a mis-recorded result.
 | `updatedToolOutput`'s own schema says *"Replaces the tool output before it is sent to the model"* | first-party schema + measured | Corroborates the measurement above from the platform's side — the field is in the model's context, not display-only. **It also says `Replaces`: there is no append semantics to lean on** ([§5](#5-the-mechanism-decisions)) |
 | `updatedMCPToolOutput`'s schema says *"Replaces the output for MCP tools only. **Prefer `updatedToolOutput`, which works for all tools**"* | first-party schema, **not measured** here | The platform names `updatedToolOutput` as the general-purpose field, which is the one we chose. We have not exercised the MCP variant at all, and claim nothing about it |
 | A hook-response field can be **display-only**: `MessageDisplay`'s schema says *"Display-only: the stored message and what the model sees are untouched"* | first-party schema, **not measured** here | Not an event we use. It matters as a *control*: the same binary distinguishes "reaches the model" from "reaches the screen" in so many words, so `updatedToolOutput`'s "before it is sent to the model" is a deliberate distinction rather than loose phrasing |
-| `--bare` **disables hooks outright**, `--settings`-supplied ones included | measured (2026-09-01, the same one-tool probe with and without the flag: with `--bare` the hook never fires and no hint reaches the actor; without it the hook fires and the hint lands) | Bare mode was mutually exclusive with this design while hooks *were* the mechanism; since [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) the exclusion no longer binds the steering path, and the row stands as a measured hook fact. Suppressing subagents, which is what bare mode was wanted for, is bought with `--disallowedTools …,Task` instead |
+| `--bare` **disables hooks outright**, `--settings`-supplied ones included | measured (2026-09-01, the same one-tool probe with and without the flag: with `--bare` the hook never fires and no hint reaches the actor; without it the hook fires and the hint lands) | Bare mode and this design are mutually exclusive — hooks *are* the mechanism. Suppressing subagents, which is what bare mode was wanted for, is bought with `--disallowedTools …,Task` instead |
 | The binary's own help text says *"hooks are disabled in this mode (--bare)"* | first-party schema + measured | Corroborates the row above: the exclusion is the contract, not a version accident |
 | `--setting-sources user` keeps a `--settings` hook firing while dropping the repo's **project** settings and its `CLAUDE.md` | measured (2026-09-01: with the flag the repo's own `.claude/settings.json` hook did **not** fire and its `CLAUDE.md` instruction was not obeyed, 2 runs; without it both took effect) | The **directed** replacement for the half of `--bare` worth keeping — bare mode exists partly so "the repo under test cannot inject instructions into the harness", and this buys that without disabling hooks. Valid sources are `user` / `project` / `local`; `--settings` is always loaded and is not a selectable source. The project-hook half is binary and solid; the `CLAUDE.md` half rests on the actor not obeying a planted instruction, which is model behaviour and therefore the weaker of the two claims |
 | `updatedToolOutput` cannot carry a hint on a tool whose response has **no free-text field** — `Edit` answers with `{filePath, structuredPatch, userModified, …}` | measured (2026-09-01: three hints judged at `Edit` boundaries, all three unappendable, zero reaching the actor) | **The channel is blind at the commit points.** The Supervisor most wants to intervene where the actor is writing code, and that is exactly where there is nowhere to append. A hint judged there has to be carried to the next boundary that can take one |
@@ -549,7 +559,12 @@ machine, 2026-09-01, full design and arm list in
 > not on any account of the mechanism. Full passages and the adjudication:
 > [micro-test report](../../experiments/trace_synthesis/hint_legitimacy/REPORT.md).
 > The rest of this section is the measurement history that led there, kept
-> because the delivery findings remain true.
+> because the delivery findings remain true. **It is also hook-era history in a
+> second sense**: it was written while steering came from a hook, and
+> [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) has since
+> moved delivery to the stdin channel. Read what follows as *what was measured*,
+> not as *what we now build*; the live mechanism is [§5](#5-the-mechanism-decisions)
+> and [§3](#phase-c--the-guided-rollout).
 
 **Head question — what shape can the hint actually take?** Not "can a hook
 produce a genuine `user`-role turn?": the owner ruled on 2026-09-01 that the
@@ -569,9 +584,11 @@ question:
 **A second delivery surface exists outside the hook API**, measured after this
 question was framed: a user message written on the stdin of a live
 `claude -p --input-format stream-json` process, mid-turn or at a boundary
-([§10](#the-stdin-channel--measured-and-not-a-hook)). It is measured, it is not
-a hook, and [§5](#5-the-mechanism-decisions) does not authorize it; the verdict
-that favours it is conditional on a test nobody has run.
+([§10](#the-stdin-channel--measured-and-not-a-hook)). **That surface is now the
+mechanism**: [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
+moved [§5](#5-the-mechanism-decisions)'s attribution row onto it, across a
+compliance gate that returned `BELOW_BAR` — the ADR is where that is recorded,
+and this paragraph is not a substitute for reading it.
 
 **[Task 02](plans/README.md) measured this, and the answer *on the delivery
 axis* is `updatedToolOutput` carrying a tagged suffix appended to the tool's
@@ -596,9 +613,11 @@ command's output, and it survives `event_stream_to_conversation` and
 `PostToolBatch` / `PostToolUseFailure` fails (3) on the default capture — it is
 delivered wrapped in a system reminder that `stream-json` does not carry — and
 `decision: "block"` fails it as an `attachment`
-([§10](#10-what-is-measured-about-hooks)). **This is a recommendation from a
-measurement, not yet a [§5](#5-the-mechanism-decisions) decision**; it needs the
-owner's sign-off before it becomes one.
+([§10](#10-what-is-measured-about-hooks)). **This recommendation was never
+adopted and is now moot**: it ranked the *hook* channels against each other, and
+[ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md) moved
+delivery off hooks entirely. It is kept because the measurement behind it — which
+hook channel survives which capture — remains true of hooks.
 
 The measurement also says something about the marker, and it is narrower than
 it first looked. An **unmarked** hint is refused as a prompt injection far more
@@ -677,14 +696,18 @@ The correct form of the requirement, which nothing implements yet:
 Until those exist, treat "a lost hint is detectable" as **intended and not
 enforced**.
 
-The rest, in no particular order:
+The rest, in no particular order. **The first two are retired by
+[ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)** — they
+ask how to arrange hooks, and steering no longer goes through one; their
+measured content is kept, their design question is closed:
 
-- **Which events do we hook? — answered: both.** `PostToolUse` fires only
+- **Which events do we hook? — retired; the measured content stands.** `PostToolUse` fires only
   after a tool *succeeds* and `PostToolUseFailure` on a failure, both measured
   ([§10](#10-what-is-measured-about-hooks)), so a `PostToolUse`-only design is
   blind exactly when the actor is spinning after an error. What is *not*
   settled is a permission or schema failure, which triggers neither.
-- **One hint per batch, or one per call?** Parallel tool calls fan out to one
+- **One hint per batch, or one per call? — retired with the row above.**
+  Parallel tool calls fan out to one
   hook each plus a single `PostToolBatch` (measured: three calls → three
   `PostToolUse` invocations and one batch invocation). `PostToolBatch` remains
   the natural seam for one decision per batch, but it carries **only**
@@ -811,7 +834,7 @@ from the store — so this is a workflow, not a new subsystem.
 |---|---|---|
 | A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
 | B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
-| C | the rollout composition | hook settings injected into the sandbox (`--settings` + `CLAUDE_CONFIG_DIR`); a host-side Supervisor; declared intervention records |
+| C | the rollout composition | a live correction channel on the actor's stdin ([ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); a host-side Supervisor beside the blocking run; declared intervention records |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
 
@@ -869,8 +892,12 @@ for it. Two consequences, and neither is negotiable:
 
 ## 16. Out of scope
 
-- **Harnesses other than `claude_code`.** No hook equivalent exists for `codex`
-  or `grok_build` ([§10](#10-what-is-measured-about-hooks)).
+- **Harnesses other than `claude_code`.** The measured correction channel is
+  Claude Code's — its stdin under `--input-format stream-json`
+  ([§10](#the-stdin-channel--measured-and-not-a-hook)), and before that its hook
+  API ([§10](#10-what-is-measured-about-hooks)). Nothing equivalent has been
+  measured for `codex` or `grok_build`; whether either offers one is unexamined
+  rather than answered.
 - **Rewriting the actor's tool calls or its assistant turns.** Banned by
   [§5](#5-the-mechanism-decisions); a proxy-based design that could rewrite the
   assistant turn is a different design, not a later phase of this one. The

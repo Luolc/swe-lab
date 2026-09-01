@@ -161,7 +161,9 @@ commit points a supervisor most wants to speak at**
   that could do either.
 - **§10 is untouched.** Every hook fact there was measured and none is refuted.
 - **[Task 05](../trace-synthesis/plans/README.md)** is re-scoped from *hook
-  wiring* to the supervisor component. **[Task 16](../trace-synthesis/plans/task-16-live-correction-channel-in-the-harness.md)
+  wiring* to the supervisor component, and **carries this ADR's refutation
+  condition as an acceptance condition** — the in-sandbox fold check described
+  under *What would overturn this*. **[Task 16](../trace-synthesis/plans/task-16-live-correction-channel-in-the-harness.md)
   remains design-only and unauthorized** — this ADR moves attribution, not the
   harness's stdin plumbing.
 - **Nothing here authorizes a production run that injects.** §5's standing note
@@ -175,11 +177,21 @@ one it is acting on.
 
 1. **Refutation — the artifact is not the one we ship.** Every measurement of
    this channel is host-side against Claude Code 2.1.257; the sandbox runs the
-   pinned 2.1.212 with its own `CLAUDE_CONFIG_DIR`. If the in-sandbox check
-   ([task 13](../trace-synthesis/plans/README.md)) finds the fold differs — in
-   particular if local tool calls begin interrupting the way the 2.1.246
+   pinned 2.1.212 with its own `CLAUDE_CONFIG_DIR`. If the fold differs there —
+   in particular if local tool calls begin interrupting the way the 2.1.246
    changelog describes for MCP — then the byte-identity result is about the
    wrong artifact and this decision is **wrong**, not merely obsolete.
+
+   **This condition is scheduled, and that is deliberate.** It is an
+   **acceptance condition of [task 05](../trace-synthesis/plans/README.md)**,
+   not a future check filed against an unowned task: the supervisor must
+   deliver one intervention *inside the sandbox* and the fold's measured shape
+   (block length and `sha256`) must match the host measurement. A mismatch
+   means **task 05 is not complete** and opens this ADR's refutation path. A
+   falsification condition nobody is scheduled to evaluate is not a
+   falsification condition, and this one sits on the critical path anyway — the
+   rollouts that will use this channel run in containers, and the byte-identity
+   result was measured on a host.
 2. **Retirement — the decision loses its purpose.** If the paired-arm
    measurement shows supervision does not raise the resolved rate, there is
    nothing to deliver and the attribution question is moot. This ADR would then
