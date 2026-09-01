@@ -35,9 +35,13 @@ comes from the parquet plus repository source fetched over HTTP at
 
 ## Method
 
-1. **Screen mechanically.** Four screens, each catching a different disease;
-   every hit is an alarm routed to manual review, never a verdict. Two of them
-   report their own precondition, so "no signal" is never read as "no evidence".
+1. **Screen mechanically.** Five screens, and screen 5 is not the same kind of
+   instrument as the rest. Screens 1–4 each catch a different disease, and
+   every hit is an alarm routed to manual review, never a verdict; two of them
+   report their own precondition, so "no signal" is never read as "no
+   evidence". Screen 5 checks for a graded DOM snapshot, which pins every class
+   name and nesting level of the rendered output — no prose prompt can state
+   that, so a hit condemns the task on its own.
 2. **Judge each instance by hand** against the determinacy criterion, quoting
    the prompt text and the repository source that settles it.
 3. **Calibrate the instrument.** Alarms that turned out to be artifacts were
