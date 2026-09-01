@@ -1,11 +1,13 @@
 # Document map & routing
 
 Where each kind of content lives, and where a new learning goes. **The rule
-behind both tables: every fact has exactly one home; other docs *link* to it,
-they never copy it.** Most drift starts as a well-meant paragraph in the wrong
-file — before writing one, ask *what question does a reader have when they open
-this file?* If your paragraph doesn't answer that question, it belongs
-elsewhere.
+behind both tables: every fact has exactly one home, and everywhere else
+*points* at it rather than restating its value.** Where the line falls — what
+counts as a second home, and what is harmless explanatory restatement — is the
+first of the [guards](#the-single-source-of-truth-guards) below. Most drift
+starts as a well-meant paragraph in the wrong file — before writing one, ask
+*what question does a reader have when they open this file?* If your paragraph
+doesn't answer that question, it belongs elsewhere.
 
 ## Document map
 
