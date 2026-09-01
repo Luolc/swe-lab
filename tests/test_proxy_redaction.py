@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 
 from swe_lab.harnesses.claude_code.redaction import (
+    BODY_IDENTITY_PATH,
     REDACTED,
     SENSITIVE_HEADERS,
     unredacted_headers,
@@ -18,7 +19,7 @@ from swe_lab.harnesses.claude_code.redaction import (
 
 
 def _record(
-    *, authorization: str, organization: str, extra_request: str = ""
+    *, authorization: str, organization: str, user_id: str = REDACTED
 ) -> str:
   """One capture record, shaped as cc-reverse-proxy writes it."""
   return json.dumps(
@@ -26,19 +27,25 @@ def _record(
           "request": {
               "headers": {
                   "Authorization": authorization,
-                  "X-Api-Key": extra_request or authorization,
+                  "X-Api-Key": authorization,
+                  "Cookie": authorization,
+                  "Proxy-Authorization": authorization,
                   "Anthropic-Beta": "interleaved-thinking-2025-05-14",
                   "X-Claude-Code-Session-Id": "3f2b1c4d-session",
               },
-              "body": {"messages": []},
+              "body": {"messages": [], "metadata": {"user_id": user_id}},
           },
           "response": {
               "status": 200,
               "headers": {
                   "Anthropic-Organization-Id": organization,
                   "Anthropic-Workspace-Id": organization,
+                  "Anthropic-Ratelimit-Unified-Representative-Claim": (
+                      organization
+                  ),
                   "Request-Id": "req_011Cabcd",
                   "Anthropic-Ratelimit-Unified-Status": "allowed",
+                  "Anthropic-Ratelimit-Unified-Reset": "2026-09-01T12:00:00Z",
               },
           },
       }
@@ -66,9 +73,54 @@ def test_a_raw_capture_is_caught_on_both_sides() -> None:
   assert findings == [
       "record 1 request Authorization",
       "record 1 request X-Api-Key",
+      "record 1 request Cookie",
+      "record 1 request Proxy-Authorization",
       "record 1 response Anthropic-Organization-Id",
       "record 1 response Anthropic-Workspace-Id",
+      "record 1 response Anthropic-Ratelimit-Unified-Representative-Claim",
   ]
+
+
+def test_an_account_id_in_the_request_body_is_caught() -> None:
+  # Identity does not travel only in headers, and a header-only check would
+  # call this capture clean. That is the defect this test exists for: every
+  # header is masked and the record is still not safe to keep.
+  capture = (
+      _record(
+          authorization=REDACTED,
+          organization=REDACTED,
+          user_id="account-identifier",
+      )
+      + "\n"
+  )
+  assert unredacted_headers(capture) == [
+      "record 1 request body.metadata.user_id"
+  ]
+
+
+def test_the_scanner_covers_the_set_this_repo_already_accepted() -> None:
+  # The root cause of the miss above: two copies of one fact. The experiment's
+  # redactor is the accepted set (task 09 names it as the shape to start from),
+  # and this scanner was written narrower without consulting it.
+  #
+  # Asserting coverage stops the drift from recurring. It is a splint, not the
+  # cure — it only proves this set is no *smaller*, so a gap in the accepted
+  # set would propagate. Converging them onto one home is task 09's.
+  accepted = _accepted_secret_headers()
+  assert accepted <= SENSITIVE_HEADERS, sorted(accepted - SENSITIVE_HEADERS)
+  assert BODY_IDENTITY_PATH == ("metadata", "user_id")
+
+
+def _accepted_secret_headers() -> frozenset[str]:
+  """Load ``SECRET_HEADERS`` from the injection-shape experiment's redactor.
+
+  Through the loader that already exists for it, rather than a second copy of
+  the by-path import dance — writing that twice would be the same duplication
+  this test is here to catch.
+  """
+  from .test_injection_shape_redaction import _load_driver
+
+  return frozenset(_load_driver().SECRET_HEADERS)
 
 
 def test_identifiers_and_telemetry_are_not_treated_as_secrets() -> None:
@@ -76,13 +128,19 @@ def test_identifiers_and_telemetry_are_not_treated_as_secrets() -> None:
   # costs signal if it drifts: a session id reconciles a run against its
   # trace, and the rate-limit family is telemetry. Neither is a credential,
   # and the redacted capture above keeps both verbatim without a finding.
+  # Enumerated one by one on purpose. The retained rate-limit fields are named
+  # individually rather than exempted as a family, because the family also
+  # holds `…-Representative-Claim`, which is identity — and a wildcard keep-rule
+  # is exactly what let that one through the first time. A keep-list is a list.
   for name in (
       "x-claude-code-session-id",
       "request-id",
       "anthropic-beta",
       "anthropic-ratelimit-unified-status",
+      "anthropic-ratelimit-unified-reset",
   ):
     assert name not in SENSITIVE_HEADERS
+  assert "anthropic-ratelimit-unified-representative-claim" in SENSITIVE_HEADERS
 
 
 def test_findings_name_the_offending_record() -> None:
@@ -94,6 +152,8 @@ def test_findings_name_the_offending_record() -> None:
   assert findings == [
       "record 2 request Authorization",
       "record 2 request X-Api-Key",
+      "record 2 request Cookie",
+      "record 2 request Proxy-Authorization",
   ]
 
 
@@ -107,4 +167,6 @@ def test_a_truncated_capture_is_still_checkable() -> None:
   assert unredacted_headers(truncated) == [
       "record 2 request Authorization",
       "record 2 request X-Api-Key",
+      "record 2 request Cookie",
+      "record 2 request Proxy-Authorization",
   ]

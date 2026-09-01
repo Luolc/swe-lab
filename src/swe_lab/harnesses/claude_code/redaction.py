@@ -34,23 +34,39 @@ REDACTED = "[REDACTED]"
 # case-insensitive matching (HTTP header names are case-insensitive and the
 # recorded casing is whatever the client or server sent).
 #
-# Deliberately short, and what is absent matters as much as what is present:
-# `X-Claude-Code-Session-Id` is an identifier rather than a credential and is
-# load-bearing for reconciling a run against its trace, and `Request-Id`,
-# `Anthropic-Beta` and the rate-limit family are telemetry and protocol. None of
-# them are secrets, and treating them as such would cost real signal.
+# This set is the one already accepted in this repo — ``SECRET_HEADERS`` in the
+# injection-shape experiment's redactor, which task 09 names as the shape to
+# start from — and `test_proxy_redaction.py` asserts it stays a superset of
+# that one, so the two cannot drift apart again. (They are two copies of one
+# fact, which is a defect in itself; converging them onto a single home is
+# task 09's, and the assertion is a splint until then.)
 SENSITIVE_HEADERS = frozenset(
     {
+        # request — credentials
         "authorization",
         "x-api-key",
+        "cookie",
+        "proxy-authorization",
+        # response — operator identity
         "anthropic-organization-id",
         "anthropic-workspace-id",
+        # Identity despite the prefix: it names the account a limit is
+        # claimed against. Deliberately kept out of any "Ratelimit-* is
+        # telemetry" shortcut — that shortcut is how it was missed the
+        # first time.
+        "anthropic-ratelimit-unified-representative-claim",
     }
 )
 
+# Identity does not travel only in headers: Claude Code sends a per-account
+# identifier in the request body. A header-only check calls such a capture
+# clean while an operator identifier sits in it — which is what this line
+# exists to stop.
+BODY_IDENTITY_PATH = ("metadata", "user_id")
+
 
 def unredacted_headers(proxy_log: str) -> list[str]:
-  """Find every sensitive header recorded with a real value.
+  """Find every sensitive header or body field recorded with a real value.
 
   Args:
     proxy_log: A proxy capture as written by ``cc-reverse-proxy`` — one JSON
@@ -60,17 +76,33 @@ def unredacted_headers(proxy_log: str) -> list[str]:
       must still be able to report on the records that did land.
 
   Returns:
-    One finding per offending header, as ``"record <n> <side> <Header>"``
-    with ``n`` counted from 1 over parsed records. Empty means the capture is
-    clean, which is the only acceptable state for a stored artifact.
+    One finding per offending field, as ``"record <n> <side> <field>"`` with
+    ``n`` counted from 1 over parsed records. Empty means the capture is clean,
+    which is the only acceptable state for a stored artifact.
   """
-  return [
-      f"record {index} {side} {name}"
-      for index, record in enumerate(_records(proxy_log), start=1)
-      for side in ("request", "response")
-      for name, value in _headers(record, side).items()
-      if name.lower() in SENSITIVE_HEADERS and value != REDACTED
-  ]
+  findings: list[str] = []
+  for index, record in enumerate(_records(proxy_log), start=1):
+    for side in ("request", "response"):
+      findings += [
+          f"record {index} {side} {name}"
+          for name, value in _headers(record, side).items()
+          if name.lower() in SENSITIVE_HEADERS and value != REDACTED
+      ]
+    if _body_identity(record) not in (None, REDACTED):
+      findings.append(
+          f"record {index} request body.{'.'.join(BODY_IDENTITY_PATH)}"
+      )
+  return findings
+
+
+def _body_identity(record: dict[str, object]) -> object | None:
+  """Return the request body's account identifier, or ``None`` if absent."""
+  value: object = record.get("request")
+  for key in ("body", *BODY_IDENTITY_PATH):
+    if not isinstance(value, dict):
+      return None
+    value = value.get(key)
+  return value
 
 
 def _records(proxy_log: str) -> Iterator[dict[str, object]]:
