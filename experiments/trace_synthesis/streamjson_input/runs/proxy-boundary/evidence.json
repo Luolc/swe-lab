@@ -1,0 +1,638 @@
+{
+ "run": "proxy-boundary",
+ "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+ "meta": {
+  "scenario": "boundary",
+  "session_id": "3979a011-3fd2-494d-a64e-bdeb62ee867e",
+  "argv": [
+   "claude",
+   "-p",
+   "--input-format",
+   "stream-json",
+   "--output-format",
+   "stream-json",
+   "--verbose",
+   "--model",
+   "sonnet",
+   "--session-id",
+   "3979a011-3fd2-494d-a64e-bdeb62ee867e",
+   "--dangerously-skip-permissions"
+  ],
+  "env": {
+   "ANTHROPIC_BASE_URL": "http://127.0.0.1:20112"
+  },
+  "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
+  "started_at": "2026-09-01T19:45:17.326075+00:00",
+  "claude_version": "2.1.257 (Claude Code)",
+  "exit_code": 0,
+  "ended_at": "2026-09-01T19:46:04.697531+00:00",
+  "timeline": [
+   "0.005s sent task",
+   "36.661s saw result 1",
+   "36.661s sent correction at turn boundary",
+   "45.434s saw result 2",
+   "45.434s sent second correction (persistence probe)",
+   "47.088s saw result 3"
+  ]
+ },
+ "sources": {
+  "events.jsonl": {
+   "sha256": "786652880ef5b83d952deb0f20a879f4085e73df3c2527e2fdf1f3b3b2af1358",
+   "bytes": 31195
+  },
+  "transcript.jsonl": {
+   "sha256": "8a72bd0e46003171cd9007c0b46854bd8ea1df73871e8d953528979e3d64440a",
+   "bytes": 29128
+  },
+  "proxy.jsonl": {
+   "sha256": "0e407fdbe928e9e9d1f6f04621dc3d106554a92013713463de98d8b85190ba2e",
+   "bytes": 293374
+  }
+ },
+ "transcript_source": "snapshot",
+ "artifact_greps": {
+  "<system-reminder>": {
+   "transcript": false,
+   "stream": false,
+   "wire": true
+  },
+  "Continue from where you left off.": {
+   "transcript": false,
+   "stream": false,
+   "wire": false
+  },
+  "No response requested.": {
+   "transcript": false,
+   "stream": false,
+   "wire": false
+  }
+ },
+ "stdout_events": [
+  {
+   "dt": 0.005,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 1.242,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 2.89,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedJ18uGhgJfwSj84fhz1"
+  },
+  {
+   "dt": 3.392,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedJ18uGhgJfwSj84fhz1"
+  },
+  {
+   "dt": 3.41,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 4.9,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedJ1J7QqtZ1nsoqV4kmZ"
+  },
+  {
+   "dt": 5.392,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print confirmation\", \"timeout\": 40000}"
+   ],
+   "message_id": "msg_011CedJ1J7QqtZ1nsoqV4kmZ"
+  },
+  {
+   "dt": 8.619,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_started"
+  },
+  {
+   "dt": 35.658,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_notification"
+  },
+  {
+   "dt": 35.667,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 36.591,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedJ3g1bXiwxBDMXP6qJY"
+  },
+  {
+   "dt": 36.649,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 3,
+   "result": "<uncited: 43 chars>"
+  },
+  {
+   "dt": 36.661,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 36.67,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 45.347,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedJ3kEqyzZQ2vdtTExKM"
+  },
+  {
+   "dt": 45.348,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA"
+   ],
+   "message_id": "msg_011CedJ3kEqyzZQ2vdtTExKM"
+  },
+  {
+   "dt": 45.4,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 1,
+   "result": "BANANA"
+  },
+  {
+   "dt": 45.434,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "One more thing: also append the word MANGO after it."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 45.444,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 47.001,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA MANGO"
+   ],
+   "message_id": "msg_011CedJ4Q8too2hLZs2fitKp"
+  },
+  {
+   "dt": 47.081,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 1,
+   "result": "BANANA MANGO"
+  },
+  {
+   "dt": 47.088,
+   "dir": "in",
+   "type": null
+  }
+ ],
+ "stdout_events_elided": {
+  "thinking_tokens": 8,
+  "None": 2
+ },
+ "transcript_records": [
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "agent_listing_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "skill_listing"
+  },
+  {
+   "type": "ai-title"
+  },
+  {
+   "type": "atis-latch"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print confirmation\", \"timeout\": 40000}"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "One more thing: also append the word MANGO after it."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA MANGO"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "last-prompt"
+  }
+ ],
+ "wire": {
+  "api_calls": 6,
+  "agent_loop_calls": 5,
+  "excluded_side_calls": 1,
+  "selected_record_index": 5,
+  "selection": "last agent-loop request: has `tools`, trailing message is not the TUI prompt-suggestion prompt",
+  "messages": [
+   {
+    "i": 0,
+    "role": "user",
+    "blocks": [
+     "text",
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 15435 chars of startup context>",
+     "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+    ],
+    "text_digests": [
+     {
+      "len": 15452,
+      "sha256": "e088842254decb57b97f8856c1cae4c67a2327060e2d7721c04be82ad7ede16b"
+     },
+     {
+      "len": 231,
+      "sha256": "0a772d5ecfc8c6e8042d173c0f1ba82008c941dba0ac2794e4709c0b4c18aa32"
+     }
+    ],
+    "system_reminder_blocks": 1
+   },
+   {
+    "i": 1,
+    "role": "system",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 8122 chars of startup context>"
+    ],
+    "text_digests": [
+     {
+      "len": 8122,
+      "sha256": "97f9b0622fa1beec06c7f4fc90bf25dfa0e7f576a5491367c54eb021390f4ab4"
+     }
+    ],
+    "system_reminder_blocks": 2
+   },
+   {
+    "i": 2,
+    "role": "assistant",
+    "blocks": [
+     "thinking",
+     "tool_use:Read"
+    ],
+    "texts": [],
+    "text_digests": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 3,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [],
+    "text_digests": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 4,
+    "role": "assistant",
+    "blocks": [
+     "text",
+     "tool_use:Bash"
+    ],
+    "texts": [
+     "<uncited: 50 chars>",
+     "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print confirmation\", \"timeout\": 40000}"
+    ],
+    "text_digests": [
+     {
+      "len": 50,
+      "sha256": "c0afb638284f3f7df26e495448fbec0a01ce5bf274fd295a3f5c41bf1a2f99cf"
+     }
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 5,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [
+     "\"slept\""
+    ],
+    "text_digests": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 6,
+    "role": "assistant",
+    "blocks": [
+     "text"
+    ],
+    "texts": [],
+    "text_digests": [
+     {
+      "len": 43,
+      "sha256": "4cf89e2d68a3cefdd480a18d478e49aa882097090816ee86eabbc0b1e9e06ff9"
+     }
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 7,
+    "role": "user",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+    ],
+    "text_digests": [
+     {
+      "len": 121,
+      "sha256": "05cb874dfb9d99027b0fed4a70176649a3e08368b9a059eaa9c1259712cbec7f"
+     }
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 8,
+    "role": "assistant",
+    "blocks": [
+     "thinking",
+     "text"
+    ],
+    "texts": [
+     "BANANA"
+    ],
+    "text_digests": [
+     {
+      "len": 6,
+      "sha256": "82379da710fc913d545b2d3ea7c6b7a48e5cc9f3c8c7f63a7927be3153325109"
+     }
+    ],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 9,
+    "role": "user",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "One more thing: also append the word MANGO after it."
+    ],
+    "text_digests": [
+     {
+      "len": 52,
+      "sha256": "bf4a0585d6874de5052a6bb99dc671c1efbdee6a31ef0cb68f81cea737e9e48e"
+     }
+    ],
+    "system_reminder_blocks": 0
+   }
+  ],
+  "system_reminder_blocks": 3
+ }
+}

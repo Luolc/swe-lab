@@ -1,0 +1,280 @@
+{
+ "run": "control-fixture",
+ "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+ "meta": {
+  "scenario": "control",
+  "session_id": "da145a3a-89e8-4759-a18d-a40cd825fc17",
+  "argv": [
+   "claude",
+   "-p",
+   "--input-format",
+   "stream-json",
+   "--output-format",
+   "stream-json",
+   "--verbose",
+   "--model",
+   "sonnet",
+   "--session-id",
+   "da145a3a-89e8-4759-a18d-a40cd825fc17",
+   "--dangerously-skip-permissions"
+  ],
+  "env": {},
+  "workdir": "<HOME>/dev/swe-lab-streamjson/experiments/trace_synthesis/streamjson_input/workdir",
+  "started_at": "2026-09-01T20:13:15.015154+00:00",
+  "claude_version": "2.1.257 (Claude Code)",
+  "provenance": {
+   "variant": "none",
+   "fields": {}
+  },
+  "exit_code": 0,
+  "ended_at": "2026-09-01T20:13:52.473573+00:00",
+  "timeline": [
+   "0.001s sent task",
+   "37.078s saw result"
+  ]
+ },
+ "sources": {
+  "events.jsonl": {
+   "sha256": "16f3dd7e3dbaa0526ea456cc1524a8bc4396e0d34125c745465de8ac6cc3be65",
+   "bytes": 12774
+  },
+  "transcript.jsonl": {
+   "sha256": "e684cad1b219db900d8ba224cd937517fe03834042ceab091f8b4ce6a1f37f8d",
+   "bytes": 29216
+  }
+ },
+ "transcript_source": "snapshot",
+ "artifact_greps": {
+  "<system-reminder>": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  },
+  "Continue from where you left off.": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  },
+  "No response requested.": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  }
+ },
+ "stdout_events": [
+  {
+   "dt": 0.001,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 1.786,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 4.125,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedL8rG7NKTM4q4vRrRg5"
+  },
+  {
+   "dt": 4.152,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 5.734,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print\", \"timeout\": 60000}"
+   ],
+   "message_id": "msg_011CedL922VQrrzMGjw3pE4k"
+  },
+  {
+   "dt": 9.034,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_started"
+  },
+  {
+   "dt": 36.077,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_notification"
+  },
+  {
+   "dt": 36.087,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "message_id": null
+  },
+  {
+   "dt": 37.038,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "notes.txt says the secret color is teal."
+   ],
+   "message_id": "msg_011CedLBNaK6Mr5inhVm8iCU"
+  },
+  {
+   "dt": 37.051,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 3,
+   "result": "notes.txt says the secret color is teal."
+  },
+  {
+   "dt": 37.078,
+   "dir": "in",
+   "type": null
+  }
+ ],
+ "stdout_events_elided": {
+  "None": 2
+ },
+ "transcript_records": [
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "deferred_tools_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "agent_listing_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "skill_listing"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "ai-title"
+  },
+  {
+   "type": "atis-latch"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep 30 seconds then print\", \"timeout\": 60000}"
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "notes.txt says the secret color is teal."
+   ],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "last-prompt"
+  }
+ ]
+}

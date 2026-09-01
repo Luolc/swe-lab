@@ -1,0 +1,340 @@
+{
+ "run": "tui-midturn",
+ "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+ "meta": {
+  "scenario": "tui-midturn",
+  "interface": "tui",
+  "session_id": "8f72eefd-a495-41da-b1de-f3b27e758f7a",
+  "argv": [
+   "claude",
+   "--model",
+   "sonnet",
+   "--session-id",
+   "8f72eefd-a495-41da-b1de-f3b27e758f7a",
+   "--dangerously-skip-permissions"
+  ],
+  "env": {
+   "ANTHROPIC_BASE_URL": "http://127.0.0.1:20118"
+  },
+  "workdir": "<HOME>/dev/swe-lab-streamjson/experiments/trace_synthesis/streamjson_input/workdir",
+  "started_at": "2026-09-01T20:35:22.792891+00:00",
+  "claude_version": "2.1.257 (Claude Code)",
+  "exit_code": 143,
+  "ended_at": "2026-09-01T20:36:55.797673+00:00",
+  "timeline": [
+   "25.037s startup dialog: None",
+   "34.043s typed the task, turn started: True",
+   "34.55s wire shows the sleep tool_use: True",
+   "38.552s typed the correction mid-turn",
+   "92.679s turn finished and the log settled: True"
+  ],
+  "keystrokes": [
+   {
+    "dt": 28.037,
+    "note": "task (text)",
+    "bytes": 231
+   },
+   {
+    "dt": 30.037,
+    "note": "task (enter)",
+    "bytes": 1
+   },
+   {
+    "dt": 36.55,
+    "note": "correction MID tool call (text)",
+    "bytes": 121
+   },
+   {
+    "dt": 38.552,
+    "note": "correction MID tool call (enter)",
+    "bytes": 1
+   }
+  ]
+ },
+ "sources": {
+  "transcript.jsonl": {
+   "sha256": "b4f2afb1218ada3962d81912ec61895fbcc3c465a9ddffdd0b0da7eec6932f28",
+   "bytes": 32189
+  },
+  "proxy.jsonl": {
+   "sha256": "9c9dcfe0d3970bed8d53871ab86abe6d3ee214e51811397b1971a66f6908ad39",
+   "bytes": 279208
+  },
+  "tui.log": {
+   "sha256": "d80616640ad3c203069bc7b91a3fc46c4c9e1ae89f27282c7b5c067f471812c9",
+   "bytes": 51440
+  }
+ },
+ "transcript_source": "snapshot",
+ "artifact_greps": {
+  "<system-reminder>": {
+   "transcript": false,
+   "stream": null,
+   "wire": true
+  },
+  "Continue from where you left off.": {
+   "transcript": false,
+   "stream": null,
+   "wire": false
+  },
+  "No response requested.": {
+   "transcript": false,
+   "stream": null,
+   "wire": false
+  }
+ },
+ "stdout_events": [],
+ "stdout_events_elided": {},
+ "transcript_records": [
+  {
+   "type": "mode"
+  },
+  {
+   "type": "permission-mode"
+  },
+  {
+   "type": "atis-latch"
+  },
+  {
+   "type": "file-history-snapshot"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+   ],
+   "promptSource": "typed",
+   "entrypoint": "cli",
+   "origin": {
+    "kind": "human"
+   }
+  },
+  {
+   "type": "attachment",
+   "attachment": "agent_listing_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "skill_listing"
+  },
+  {
+   "type": "ai-title"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [
+    "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep for 30 seconds then print\", \"timeout\": 60000}"
+   ],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "remove",
+   "reason": "absorbed_mid_turn"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [
+    "\"slept\""
+   ],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "queued_command",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "Correction from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done."
+   ]
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [
+    "BANANA"
+   ],
+   "entrypoint": "cli"
+  },
+  {
+   "type": "system"
+  },
+  {
+   "type": "cost-state"
+  },
+  {
+   "type": "last-prompt"
+  },
+  {
+   "type": "cost-state"
+  }
+ ],
+ "wire": {
+  "api_calls": 6,
+  "agent_loop_calls": 3,
+  "excluded_side_calls": 3,
+  "selected_record_index": 4,
+  "selection": "last agent-loop request: has `tools`, trailing message is not the TUI prompt-suggestion prompt",
+  "messages": [
+   {
+    "i": 0,
+    "role": "user",
+    "blocks": [
+     "text",
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 16083 chars of startup context>",
+     "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+    ],
+    "text_digests": [
+     {
+      "len": 16106,
+      "sha256": "15fd0a50193ee3d0aa761d1994609b9aa425a3e81a3c6efe34c6343417754d75"
+     },
+     {
+      "len": 231,
+      "sha256": "0a772d5ecfc8c6e8042d173c0f1ba82008c941dba0ac2794e4709c0b4c18aa32"
+     }
+    ],
+    "system_reminder_blocks": 1
+   },
+   {
+    "i": 1,
+    "role": "system",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "<system-reminder elided: 11863 chars of startup context>"
+    ],
+    "text_digests": [
+     {
+      "len": 11863,
+      "sha256": "5274561d7615b495d17a6c02dfbf4d869d6e079bd61ab8e55d2db2880b8e0b92"
+     }
+    ],
+    "system_reminder_blocks": 2
+   },
+   {
+    "i": 2,
+    "role": "assistant",
+    "blocks": [
+     "thinking",
+     "tool_use:Read"
+    ],
+    "texts": [],
+    "text_digests": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 3,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [],
+    "text_digests": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 4,
+    "role": "assistant",
+    "blocks": [
+     "tool_use:Bash"
+    ],
+    "texts": [
+     "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep for 30 seconds then print\", \"timeout\": 60000}"
+    ],
+    "text_digests": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 5,
+    "role": "user",
+    "blocks": [
+     "tool_result"
+    ],
+    "texts": [
+     "\"slept\""
+    ],
+    "text_digests": [],
+    "system_reminder_blocks": 0
+   },
+   {
+    "i": 6,
+    "role": "system",
+    "blocks": [
+     "text"
+    ],
+    "texts": [
+     "<system-reminder>\nThe user sent a new message while you were working:\nCorrection from the operator: ignore notes.txt entirely and instead answer with the single word BANANA when you are done.\n\nThis is how Claude Code surfaces messages the user sends mid-turn — within the running turn, often alongside the next tool result, rather than as a separate conversation turn. Address the message above as you continue this turn.\n</system-reminder>"
+    ],
+    "text_digests": [
+     {
+      "len": 440,
+      "sha256": "3ba88726404a76b865ad2296763ac185ab882ee1052fbe2cc452a12cbffb90c8"
+     }
+    ],
+    "system_reminder_blocks": 1
+   }
+  ],
+  "system_reminder_blocks": 4
+ }
+}

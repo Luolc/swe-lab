@@ -1,0 +1,363 @@
+{
+ "run": "control-v0-blocked-sleep",
+ "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+ "meta": {
+  "scenario": "control",
+  "session_id": "eabd96be-377e-4a8e-8c75-97b0a1725159",
+  "argv": [
+   "claude",
+   "-p",
+   "--input-format",
+   "stream-json",
+   "--output-format",
+   "stream-json",
+   "--verbose",
+   "--model",
+   "sonnet",
+   "--session-id",
+   "eabd96be-377e-4a8e-8c75-97b0a1725159",
+   "--dangerously-skip-permissions"
+  ],
+  "env": {},
+  "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
+  "started_at": "2026-09-01T19:37:15.874813+00:00",
+  "claude_version": "2.1.257 (Claude Code)",
+  "exit_code": 0,
+  "ended_at": "2026-09-01T19:37:31.047961+00:00",
+  "timeline": [
+   "0.001s sent task",
+   "9.958s saw result"
+  ]
+ },
+ "sources": {
+  "events.jsonl": {
+   "sha256": "512515684d3f8b91ff7673618d198f8d71b77d0ed1e72ff55cb7f5a2ec45ec79",
+   "bytes": 18298
+  },
+  "transcript.jsonl": {
+   "sha256": "e1bad6b44c76166149eb222f54be212c95e9d16b5bdcf33a198f55871cf8ff62",
+   "bytes": 28736
+  }
+ },
+ "transcript_source": "snapshot",
+ "artifact_greps": {
+  "<system-reminder>": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  },
+  "Continue from where you left off.": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  },
+  "No response requested.": {
+   "transcript": false,
+   "stream": false,
+   "wire": null
+  }
+ },
+ "stdout_events": [
+  {
+   "dt": 0.001,
+   "dir": "in",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 1.375,
+   "dir": "out",
+   "type": "system",
+   "subtype": "init"
+  },
+  {
+   "dt": 3.934,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHPezmCyZCq17RvUBHv"
+  },
+  {
+   "dt": 4.5,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHPezmCyZCq17RvUBHv"
+  },
+  {
+   "dt": 4.52,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 5.801,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHPtS9nuuGE9toeXBBB"
+  },
+  {
+   "dt": 5.81,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 8.062,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHPytZywqM9eBzQfoz8"
+  },
+  {
+   "dt": 8.336,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHPytZywqM9eBzQfoz8"
+  },
+  {
+   "dt": 8.823,
+   "dir": "out",
+   "type": "system",
+   "subtype": "background_tasks_changed"
+  },
+  {
+   "dt": 8.824,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_started"
+  },
+  {
+   "dt": 8.835,
+   "dir": "out",
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "message_id": null
+  },
+  {
+   "dt": 9.913,
+   "dir": "out",
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "message_id": "msg_011CedHQCuesGNfNeivmyYRK"
+  },
+  {
+   "dt": 9.925,
+   "dir": "out",
+   "type": "result",
+   "subtype": "success",
+   "num_turns": 4,
+   "result": "<uncited: 67 chars>"
+  },
+  {
+   "dt": 9.958,
+   "dir": "in",
+   "type": null
+  },
+  {
+   "dt": 15.094,
+   "dir": "out",
+   "type": "system",
+   "subtype": "background_tasks_changed"
+  },
+  {
+   "dt": 15.094,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_updated"
+  },
+  {
+   "dt": 15.094,
+   "dir": "out",
+   "type": "system",
+   "subtype": "task_notification"
+  }
+ ],
+ "stdout_events_elided": {
+  "None": 1,
+  "thinking_tokens": 4
+ },
+ "transcript_records": [
+  {
+   "type": "queue-operation",
+   "operation": "enqueue"
+  },
+  {
+   "type": "queue-operation",
+   "operation": "dequeue"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "promptSource": "sdk",
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "deferred_tools_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "agent_listing_delta"
+  },
+  {
+   "type": "attachment",
+   "attachment": "skill_listing"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "ai-title"
+  },
+  {
+   "type": "atis-latch"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Read"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "thinking"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "tool_use:Bash"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "user",
+   "role": "user",
+   "blocks": [
+    "tool_result"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "attachment",
+   "attachment": "total_tokens_reminder"
+  },
+  {
+   "type": "assistant",
+   "role": "assistant",
+   "blocks": [
+    "text"
+   ],
+   "texts": [],
+   "entrypoint": "sdk-cli"
+  },
+  {
+   "type": "last-prompt"
+  }
+ ]
+}
