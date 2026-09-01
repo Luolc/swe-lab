@@ -27,8 +27,27 @@ from __future__ import annotations
 from collections.abc import Iterator
 import json
 
-# What cc-reverse-proxy writes in place of a masked value.
+# What cc-reverse-proxy writes in place of a masked value, and what everything
+# in this repo writes when it redacts a record itself.
 REDACTED = "[REDACTED]"
+
+# The placeholder an earlier redactor wrote, accepted on read and written by
+# nothing. **Closed and dated:** it appears in the 37 injection-shape captures
+# committed up to 2026-09-01 (under
+# `experiments/trace_synthesis/injection_shape/runs/`) and in W1 exchange
+# records written before the same date. Those files are a
+# record and must not be rewritten, so a reader has to know this string.
+#
+# A legacy alias is not a second source of truth. The difference is that this
+# one is *closed* — no code path can produce it, so the set of files containing
+# it can only shrink — whereas two live constants keep diverging, which is
+# exactly what happened here: a scanner that knew only `[REDACTED]` called
+# every one of those 37 properly-redacted captures dirty, 790 findings, all
+# false.
+LEGACY_REDACTED = "<redacted>"
+
+# Every spelling of "this value was masked" that a reader must accept.
+_REDACTED_MARKERS = frozenset({REDACTED, LEGACY_REDACTED})
 
 # Headers whose *value* is a secret or an account identifier, lowercased for
 # case-insensitive matching (HTTP header names are case-insensitive and the
@@ -71,7 +90,40 @@ SENSITIVE_HEADERS = frozenset(
 BODY_IDENTITY_PATH = ("metadata", "user_id")
 
 
-def unredacted_headers(proxy_log: str) -> list[str]:
+def redact_record(record: dict[str, object]) -> dict[str, object]:
+  """Mask every sensitive field in one capture record, in place.
+
+  The producer half of this module, so that whatever redacts and whatever
+  checks agree by construction rather than by two people keeping two lists in
+  step. Masks rather than drops: a missing field cannot be told apart from one
+  that was never sent, and that distinction is most of debugging an auth
+  failure.
+
+  Args:
+    record: One decoded capture record (``request`` / ``response`` objects).
+
+  Returns:
+    The same record, mutated in place and returned for convenience.
+  """
+  for side in ("request", "response"):
+    half = record.get(side)
+    if not isinstance(half, dict):
+      continue
+    headers = half.get("headers")
+    if isinstance(headers, dict):
+      for name in headers:
+        if str(name).lower() in SENSITIVE_HEADERS:
+          headers[name] = REDACTED
+  body = record.get("request")
+  body = body.get("body") if isinstance(body, dict) else None
+  for key in BODY_IDENTITY_PATH[:-1]:
+    body = body.get(key) if isinstance(body, dict) else None
+  if isinstance(body, dict) and BODY_IDENTITY_PATH[-1] in body:
+    body[BODY_IDENTITY_PATH[-1]] = REDACTED
+  return record
+
+
+def unredacted_fields(proxy_log: str) -> list[str]:
   """Find every sensitive header or body field recorded with a real value.
 
   Args:
@@ -92,9 +144,10 @@ def unredacted_headers(proxy_log: str) -> list[str]:
       findings += [
           f"record {index} {side} {name}"
           for name, value in _headers(record, side).items()
-          if name.lower() in SENSITIVE_HEADERS and value != REDACTED
+          if name.lower() in SENSITIVE_HEADERS
+          and value not in _REDACTED_MARKERS
       ]
-    if _body_identity(record) not in (None, REDACTED):
+    if _body_identity(record) not in (None, *_REDACTED_MARKERS):
       findings.append(
           f"record {index} request body.{'.'.join(BODY_IDENTITY_PATH)}"
       )

@@ -14,7 +14,7 @@ from swe_lab.harnesses.claude_code.redaction import (
     BODY_IDENTITY_PATH,
     REDACTED,
     SENSITIVE_HEADERS,
-    unredacted_headers,
+    unredacted_fields,
 )
 
 
@@ -64,7 +64,7 @@ def test_a_redacted_capture_is_clean() -> None:
   # What the proxy writes by default: the header names survive, the values
   # do not. This is the state a stored artifact must be in.
   capture = _record(authorization=REDACTED, organization=REDACTED) + "\n"
-  assert unredacted_headers(capture) == []
+  assert unredacted_fields(capture) == []
 
 
 def test_a_raw_capture_is_caught_on_both_sides() -> None:
@@ -77,7 +77,7 @@ def test_a_raw_capture_is_caught_on_both_sides() -> None:
       )
       + "\n"
   )
-  findings = unredacted_headers(capture)
+  findings = unredacted_fields(capture)
   assert findings == [
       "record 1 request Authorization",
       "record 1 request X-Api-Key",
@@ -102,7 +102,7 @@ def test_an_account_id_in_the_request_body_is_caught() -> None:
       )
       + "\n"
   )
-  assert unredacted_headers(capture) == [
+  assert unredacted_fields(capture) == [
       "record 1 request body.metadata.user_id"
   ]
 
@@ -157,7 +157,7 @@ def test_findings_name_the_offending_record() -> None:
   # say which one — "somewhere in this file" is not actionable.
   clean = _record(authorization=REDACTED, organization=REDACTED)
   dirty = _record(authorization="Bearer live", organization=REDACTED)
-  findings = unredacted_headers(f"{clean}\n{dirty}\n")
+  findings = unredacted_fields(f"{clean}\n{dirty}\n")
   assert findings == [
       "record 2 request Authorization",
       "record 2 request X-Api-Key",
@@ -173,7 +173,7 @@ def test_a_truncated_capture_is_still_checkable() -> None:
   clean = _record(authorization=REDACTED, organization=REDACTED)
   dirty = _record(authorization="Bearer live", organization=REDACTED)
   truncated = f"{clean}\n{dirty}\n" + '{"request": {"headers": {"Auth'
-  assert unredacted_headers(truncated) == [
+  assert unredacted_fields(truncated) == [
       "record 2 request Authorization",
       "record 2 request X-Api-Key",
       "record 2 request Cookie",
