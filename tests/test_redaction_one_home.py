@@ -13,9 +13,11 @@ from typing import Any
 
 from swe_lab.harnesses.claude_code.redaction import (
     LEGACY_REDACTED,
+    publication_blockers,
     redact_record,
     REDACTED,
     SENSITIVE_HEADERS,
+    unclassified_fields,
     unredacted_fields,
 )
 
@@ -111,3 +113,52 @@ def test_every_sensitive_header_is_actually_redacted_by_the_producer() -> None:
       if name.lower() in SENSITIVE_HEADERS and value != REDACTED
   }
   assert remaining == {}
+
+
+# ── Unclassified fields, and the gate ────────────────────────────────────
+
+
+def _capture(**extra_response_headers: str) -> str:
+  """Render one already-redacted capture, plus any extra response headers."""
+  record: dict[str, Any] = redact_record(_raw_record())
+  record["response"]["headers"].update(extra_response_headers)
+  return json.dumps(record) + "\n"
+
+
+def test_a_capture_of_known_fields_has_nothing_unclassified() -> None:
+  # The quiet case, and the one that decides whether anyone keeps listening:
+  # an upstream that has not changed must not produce findings.
+  assert unclassified_fields(_capture(), upstream="anthropic") == []
+
+
+def test_a_header_nobody_has_classified_is_reported() -> None:
+  # The failure this exists for. Redaction is a deny-list, so an unenumerated
+  # field is recorded verbatim; without this it is published in silence.
+  findings = unclassified_fields(
+      _capture(**{"Anthropic-New-Telemetry-Field": "whatever"}),
+      upstream="anthropic",
+  )
+  assert findings == ["record 1 response Anthropic-New-Telemetry-Field"]
+
+
+def test_switching_upstream_reclassifies_the_whole_capture() -> None:
+  # The trigger is upstream identity, not elapsed time: the same capture read
+  # as another upstream's is unclassified in bulk, because a different server
+  # is a different header space. Anthropic's rate-limit fields are classified
+  # for Anthropic and unknown for OpenRouter.
+  capture = _capture(**{"Anthropic-Ratelimit-Unified-Status": "allowed"})
+  assert unclassified_fields(capture, upstream="anthropic") == []
+  assert unclassified_fields(capture, upstream="openrouter") == [
+      "record 1 response Anthropic-Ratelimit-Unified-Status"
+  ]
+
+
+def test_the_gate_refuses_both_a_secret_and_an_unknown_field() -> None:
+  # Publishing is where the two checks have to be one decision: a capture is
+  # publishable only if nothing is unredacted *and* nothing is unclassified.
+  raw = json.dumps(_raw_record()) + "\n"
+  assert publication_blockers(raw, upstream="anthropic")
+  assert publication_blockers(
+      _capture(**{"X-Brand-New": "v"}), upstream="anthropic"
+  ) == ["record 1 response X-Brand-New"]
+  assert publication_blockers(_capture(), upstream="anthropic") == []

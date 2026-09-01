@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 import json
+from typing import Literal
 
 # What cc-reverse-proxy writes in place of a masked value, and what everything
 # in this repo writes when it redacts a record itself.
@@ -82,6 +83,105 @@ SENSITIVE_HEADERS = frozenset(
         "anthropic-ratelimit-unified-representative-claim",
     }
 )
+
+# ── Classification ───────────────────────────────────────────────────────
+#
+# Redaction is a **deny-list**: by construction a header nobody enumerated is
+# recorded verbatim, so "unseen fields are redacted by default" is not what the
+# code does (ADR-0012 §4). These sets are the reading-side answer — every header
+# is *must-mask*, *deliberately kept*, or **unclassified**, and the third state
+# is reported rather than published in silence.
+#
+# Names are listed one at a time, never as a prefix or a family. A pattern
+# promises safety for names nobody has seen: keeping `Anthropic-Ratelimit-*`
+# wholesale is what published `…-Representative-Claim`, which is identity.
+#
+# **The trigger for re-classification is the upstream, not the calendar.**
+# Measured 2026-09-01: across 37 captures (158 records) the Anthropic response
+# header space holds 26 names, and a fresh real response returned 25 of them
+# with zero new. The only unseen field of that day arrived by switching
+# upstream — `Set-Cookie`, from OpenRouter. So a stable upstream should stay
+# quiet, and a new one should re-open the whole set.
+Upstream = Literal["anthropic", "openrouter"]
+
+# Protocol, transport, CDN and client-SDK headers — carry no account identity
+# and no credential, whoever is serving.
+_KEPT_ANY_UPSTREAM = frozenset(
+    {
+        # request — protocol and client SDK telemetry
+        "accept",
+        "anthropic-beta",
+        "anthropic-dangerous-direct-browser-access",
+        "anthropic-version",
+        "connection",
+        "content-length",
+        "content-type",
+        "user-agent",
+        "x-app",
+        # Run identifiers, deliberately kept: they are how a run is reconciled
+        # against its trace, and masking them breaks that silently.
+        "x-claude-code-agent-id",
+        "x-claude-code-session-id",
+        "x-stainless-arch",
+        "x-stainless-lang",
+        "x-stainless-os",
+        "x-stainless-package-version",
+        "x-stainless-retry-count",
+        "x-stainless-runtime",
+        "x-stainless-runtime-version",
+        "x-stainless-timeout",
+        # response — transport, caching and CDN
+        "cache-control",
+        "cf-cache-status",
+        "cf-ray",
+        "content-security-policy",
+        "date",
+        "request-id",
+        "server",
+        "strict-transport-security",
+        "traceresponse",
+        "vary",
+        "x-robots-tag",
+    }
+)
+
+# Upstream-specific vocabulary. Splitting these out is what makes a change of
+# upstream re-open the classification instead of inheriting the old answer.
+_KEPT_BY_UPSTREAM: dict[str, frozenset[str]] = {
+    # Rate-limit telemetry: quantities and timestamps, not identity. The one
+    # member of this family that *is* identity is in SENSITIVE_HEADERS above,
+    # which is why the family is spelled out rather than matched.
+    "anthropic": frozenset(
+        {
+            "anthropic-ratelimit-unified-5h-reset",
+            "anthropic-ratelimit-unified-5h-status",
+            "anthropic-ratelimit-unified-5h-utilization",
+            "anthropic-ratelimit-unified-7d-reset",
+            "anthropic-ratelimit-unified-7d-status",
+            "anthropic-ratelimit-unified-7d-utilization",
+            "anthropic-ratelimit-unified-fallback-percentage",
+            # Account *state*, not an account *identifier*: a status word
+            # and a reason string. Kept deliberately — widening the mask
+            # costs telemetry and buys nothing here.
+            "anthropic-ratelimit-unified-overage-disabled-reason",
+            "anthropic-ratelimit-unified-overage-status",
+            "anthropic-ratelimit-unified-reset",
+            "anthropic-ratelimit-unified-status",
+        }
+    ),
+    "openrouter": frozenset(
+        {
+            "access-control-allow-origin",
+            "access-control-expose-headers",
+            "permissions-policy",
+            "referrer-policy",
+            "server-timing",
+            "x-content-type-options",
+            "x-generation-id",
+        }
+    ),
+}
+
 
 # Identity does not travel only in headers: Claude Code sends a per-account
 # identifier in the request body. A header-only check calls such a capture
@@ -191,3 +291,54 @@ def _headers(record: dict[str, object], side: str) -> dict[str, str]:
       for name, value in headers.items()
       if isinstance(value, str)
   }
+
+
+def unclassified_fields(proxy_log: str, *, upstream: Upstream) -> list[str]:
+  """Find every header nobody has classified as sensitive or as safe to keep.
+
+  The point is not that an unclassified header is dangerous — most are
+  transport noise. It is that nothing else notices a new one. A deny-list
+  publishes what it does not recognize, so without this the first sign of a
+  new field is somebody finding it in a published artifact.
+
+  Args:
+    proxy_log: A proxy capture, one JSON record per line.
+    upstream: Which server produced it. Classification is per-upstream, so
+      reading a capture as the wrong one reports its whole vocabulary — that
+      is the intended behaviour, not a false positive: a different server is a
+      different header space and deserves a fresh look.
+
+  Returns:
+    One finding per unclassified header, as ``"record <n> <side> <name>"``.
+  """
+  kept = _KEPT_ANY_UPSTREAM | _KEPT_BY_UPSTREAM.get(upstream, frozenset())
+  known = kept | SENSITIVE_HEADERS
+  return [
+      f"record {index} {side} {name}"
+      for index, record in enumerate(_records(proxy_log), start=1)
+      for side in ("request", "response")
+      for name in _headers(record, side)
+      if name.lower() not in known
+  ]
+
+
+def publication_blockers(proxy_log: str, *, upstream: Upstream) -> list[str]:
+  """Return every reason this capture must not be published, empty if none.
+
+  The gate between a scanned capture and anywhere it would be shared. Both
+  checks have to be one decision, because they fail in ways that look alike
+  from the outside and neither alone is enough: a capture can be perfectly
+  redacted and still carry a field nobody has looked at.
+
+  Args:
+    proxy_log: A proxy capture, one JSON record per line.
+    upstream: Which server produced it (see :func:`unclassified_fields`).
+
+  Returns:
+    Findings from both checks; empty means publishable as far as this can
+    tell. **Necessary, not sufficient** — it reasons about the envelope, not
+    about what the bodies contain.
+  """
+  return unredacted_fields(proxy_log) + unclassified_fields(
+      proxy_log, upstream=upstream
+  )
