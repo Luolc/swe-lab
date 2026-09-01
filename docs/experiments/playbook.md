@@ -223,6 +223,20 @@ pilot's twelve amendments.
   state is not "a person read it" but **the assurance described as what it
   is** — here: one reading, at one revision, by someone who knew what to look
   for.
+- **Put a statement about the parameter and a statement about the data in
+  separate sentences.** Their modalities differ — a prior is an assumption, a
+  count is an observation — and ordinary English hides the difference, because
+  *"does not assume X"* parses correctly for both. So one sentence can assert
+  something about the parameter while its author means the observation, and the
+  prose gives no signal either way. A prior rationale here said the model "is
+  **not** a claim that θ > 0" when what it declines to assume is `c > 0`: the
+  prior's support does exclude θ = 0, and has to, since `E[1/θ]` is not finite
+  otherwise. The remedy is structural rather than a matter of care — **put the
+  assumption in one sentence and the observation in the next, and name the
+  symbol in each.** A sentence carrying both is the one to split before checking
+  anything else in it, and this is the cheapest place to catch it: **a merged
+  sentence stays grammatical no matter which half is wrong**, so nothing later
+  in the review will trip on it.
 - **Finding one defect ends the search for the others.** Once a number has a
   named problem it reads as *examined*, and the examination stops there. A
   wall-clock estimate here was correctly found to be missing its machine-state
