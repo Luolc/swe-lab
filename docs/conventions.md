@@ -377,15 +377,15 @@ retroactively (owner's calibration, 2026-09-01).
   eligible, non-empty evidence, validate that premise **separately, and first**.
   Measured 2026-09-01, and it nearly voided a deliverable: `freeze_sample`'s
   stability gate compared the set of failing required tests across a run's
-  grading attempts, and for a run that **resolved** every one of those sets is
-  empty — so agreement holds, and the strictest gate in the program cleared the
-  one input that contradicted the sample's whole claim. (How many attempts that
-  is varies and does not matter: `UnitTest.should_retry` stops at the first
-  resolved attempt, so a resolved run can be a single attempt, or an unresolved
-  prefix ending in a resolved one.) Note what did *not* go wrong: the sets
-  compared were real, and their equality is a correct answer to the question the
-  gate was asked. What was missing is the premise it was silently trusted to
-  carry — that this run failed at all. Stability qualifies a validity established some other way; it never
+  grading attempts. A run that **resolved on its first attempt** leaves exactly
+  one such set and it is empty, so agreement holds trivially — and the strictest
+  gate in the program cleared the one input that contradicted the sample's whole
+  claim. (The blind spot is *uniformly empty sets*, not resolution as such: a
+  resolved run with an unresolved prefix carries real failures in that prefix,
+  the sets then disagree, and the same gate refuses it.) Note what did *not* go
+  wrong: the set compared was real, and its self-equality is a correct answer to
+  the question the gate was asked. What was missing is the premise it was
+  silently trusted to carry — that this run failed at all. Stability qualifies a validity established some other way; it never
   establishes one. (This is not "every agreement predicate must reject
   emptiness": `len({...}) == 1` rejects zero observations, and an API may define
   agreement over nothing as a valid neutral answer. The rule is about what you
