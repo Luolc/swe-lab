@@ -280,11 +280,12 @@ exercised none of its new code.
 This is structural to the corpus, not particular to this instance, and it is why
 the guidebook's stage 5 is about knowing what a green suite cannot tell you.
 
-### A correction to the stage-2 justification
+### The stage-2 contradiction, found and fixed
 
-The guidebook's stage 2 says the interface block "gives a path, it does not give
-a container" and is "silent about the container". **It is not silent.** The
-dataset row's `interface` field says, three times:
+Verifying the guidebook against the dataset row turned up one claim that did not
+hold. The **first** version of stage 2 said the `interface` block "gives a path,
+it does not give a container" and is "silent about the container". It is not
+silent. The row's `interface` field says, for all three units:
 
 ```
 - Type: Function
@@ -292,25 +293,38 @@ dataset row's `interface` field says, three times:
 - Path: openlibrary/core/models.py
 ```
 
-The `requirements` field does say "**The method** `get_isbn_or_asin(...)`" three
-times, as the guidebook states — but the interface block explicitly says
-**Function**, and it points the *wrong* way.
+while `requirements` says "**The method** `get_isbn_or_asin(...)`" three times.
+**The task statement contradicts itself**, and the interface half points at the
+placement the agent chose. So the agent's patch was a defensible reading of a
+self-contradictory spec, not carelessness.
 
-So the task statement **contradicts itself**, and the agent followed one of its
-two halves. That changes the reading in two ways worth carrying into step 5:
+This mattered because stage 2 is load-bearing and its justification would not
+have survived contact with the actor: an actor told "the interface block is
+silent" can re-read it in one command and find otherwise, and a hint that loses
+that argument is worse than no hint. The spec's `justification` field exists to
+force exactly this check
+([phase B](../../../docs/trace-synthesis/spec.md#phase-b--the-oracle)).
 
-1. The agent's choice was a **defensible reading of a self-contradictory spec**,
-   not carelessness. Any honest hint has to acknowledge that the text supports
-   both readings and give a reason to prefer "method" — it cannot claim the
-   interface block is silent, because an actor that re-reads it will find
-   otherwise, and a hint that loses that argument is worse than none.
-2. It makes stage 5 the load-bearing stage rather than stage 2. Stage 5's
-   observation — *no test in the tree names your new units, so its green proves
-   nothing* — is derivable, true, and independent of the contradiction. Stage 2's
-   is not, as written.
+Reported to orchestra, which **revised the guidebook**: stage 2 now puts the two
+vocabularies side by side, states that they disagree, and resolves it without
+guessing — both placements can be satisfied at once (a `@staticmethod` on the
+class *and* a module-level name bound to the same object), so the honest move is
+to satisfy both rather than flip a coin on which one the caller used. The
+committed guidebook is that revision.
 
-Left for orchestra to resolve before step 5; the guidebook is committed as the
-step-4 artifact of record, unedited.
+Stage 5 was tightened in the same pass, using a detail from the frozen trace:
+the agent's own smoke test at tool call 18 imported the three helpers
+module-level, which succeeded *because* that is how it had written them. A smoke
+test against your own import is self-consistent with your own placement and
+therefore proves nothing about it — stage 5 now says so.
+
+**This is the round's most useful finding about the pipeline**, beyond the
+artifacts: an Oracle with full privileged access still produced a justification
+that a blind actor could have falsified, and it took an independent pass over
+the raw task text to catch. Whatever automates phase B in
+[task 04](../../../docs/trace-synthesis/plans/README.md) needs a check of this
+kind, because the failure was invisible from the guidebook alone — it read as
+perfectly reasonable.
 
 ## Cost
 
@@ -359,6 +373,11 @@ per attempt with nothing to show.
   corpus, a directional hint has to compensate for missing information rather
   than for bad reasoning — which is a different, and weaker, claim for the
   pipeline than "the actor reasoned poorly".
-- **The stage-2 contradiction is unresolved** (above). Whether an honest hint
-  can prefer "method" over "Function" on derivable grounds is exactly the kind
-  of question the spec's `justification` field exists to force, and it is open.
+- **Does "satisfy both readings" survive contact with an actor?** Stage 2's
+  revised resolution is sound on paper and untested: nobody has yet run an actor
+  against it. It is also specific to a contradiction where both readings happen
+  to be cheaply satisfiable at once — a contradiction where they are mutually
+  exclusive has no such escape, and this round says nothing about that case.
+- **Nothing here validates the guidebook as a guidebook.** It was written
+  against a known failure by an author who had seen the gold patch; whether it
+  steers a blind actor is step 5's question.

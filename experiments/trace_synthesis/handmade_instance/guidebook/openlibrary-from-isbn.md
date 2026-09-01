@@ -37,39 +37,44 @@ what `canonical("B06XYHVXVJ")` returns without running it.
 ## Stage 2 — Decide *where* the three new units live
 
 **This stage is a decision, not a formality. Getting it wrong makes every
-correct line you write afterwards unreachable.**
+correct line you write afterwards unreachable — and the task text will not
+settle it for you.**
 
-**Goal.** Place the three new units so that the callers the task describes can
-actually reach them.
+**Goal.** Place the three new units so that *every* access path the task
+describes actually works.
 
 **Actions.**
-- Re-read the requirements section and note, precisely, the **noun** it uses for
-  each new unit.
-- Re-read the interface section and note what it does *and does not* specify: it
-  gives a path, it does not give a container.
-- Look at how the existing code declares units that operate on an identifier
-  without needing instance state.
+- Read the requirements section and note the **noun** it uses for each new unit.
+- Read the interface section and note the **type** it assigns to each one.
+- Put the two side by side before writing any code.
 
-**Expected observations.** The requirements say "**The method**
-`get_isbn_or_asin(...)`", "**The method** `is_valid_identifier(...)`", "**The
-method** `get_identifier_forms(...)`" — the same noun, three times. The
-interface block says only `Path: openlibrary/core/models.py`. And the entire
-task is scoped to `Edition.from_isbn`.
+**Expected observations.** They disagree, and each is consistent with itself:
 
-**Justification.** A specification that calls something a *method* three times
-is telling you it is reached through the class, not through the module. The
-interface block's `Path` narrows the file; it is silent about the container,
-so it neither contradicts nor settles this — the requirements' wording is the
-only signal that speaks to it, and it speaks clearly. A module-level function
-with an identical name and an identical body is **a different interface**: it
-answers to `models.get_isbn_or_asin(...)` and not to
-`Edition.get_isbn_or_asin(...)` or `edition.get_isbn_or_asin(...)`. Note also
-that none of the three needs instance state, which tells you *how* to attach
-them, not *whether* to.
+- The requirements say "**The method** `get_isbn_or_asin(...)`", "**The method**
+  `is_valid_identifier(...)`", "**The method** `get_identifier_forms(...)`" —
+  the same noun, three times.
+- The interface section says `Type: Function` for all three, with
+  `Path: openlibrary/core/models.py` and **no container**.
 
-**Exit criteria.** The three units are declared inside `class Edition`, and both
-`Edition.get_isbn_or_asin("…")` and `some_edition.get_isbn_or_asin("…")`
-resolve and run.
+A *method* is reached through a class; a *function* at that path is reached
+through the module. These are different interfaces, and the task asserts both.
+
+**Justification.** The task specifies the same three units twice, in two
+vocabularies, and the two do not agree. No amount of re-reading resolves that —
+the conflict is in the text, not in your understanding of it. So committing to
+one reading is a coin flip, and it is a coin flip on every assertion that will
+be made about these three names. Neither placement excludes the other: a
+`@staticmethod` on the class and a module-level name can both exist, and they
+can be the same object. When a specification contradicts itself and satisfying
+both readings is cheap, satisfy both — do not guess which half the caller used.
+
+Note separately that none of the three needs instance state. That tells you
+*how* to attach them to the class (`@staticmethod`), not *whether* to.
+
+**Exit criteria.** All three of these resolve and return the same thing:
+`Edition.get_isbn_or_asin("…")`, `some_edition.get_isbn_or_asin("…")`, and
+`models.get_isbn_or_asin("…")`. If you can only make one of them work, you have
+picked a side — go back and say why.
 
 ---
 
@@ -134,9 +139,12 @@ time — which is exactly why you grep for them rather than trusting the tests.
 - Then ask a second question, and answer it explicitly: **how many of the tests
   that just ran actually name your three new units?** Grep the test file for
   their names.
-- Whatever that answer is, exercise the three units yourself the way the
-  requirements describe them — reached from `Edition` and from an instance of
-  it — and compare against the exact input/output pairs in the requirements.
+- Whatever that answer is, exercise the three units yourself against the exact
+  input/output pairs in the requirements — and do it through **every** access
+  path the task names ([stage 2](#stage-2--decide-where-the-three-new-units-live)),
+  not only the one your file happens to expose. A smoke test that imports the
+  names the way *you* wrote them will pass whichever way you wrote them; that is
+  what makes it worthless as a check on placement.
 
 **Expected observations.** The suite passes. And **no test in the working tree
 mentions any of the three new names.**
@@ -147,10 +155,12 @@ them, and its green says only that you broke nothing — it is silent on whether
 the new units are correct, and silent on whether they are even reachable by the
 name the task specified. A pass whose scope you have not checked is not
 evidence. The requirements are themselves a list of concrete input/output pairs;
-you can execute them directly, through the same access path the specification
-used, and that check *does* discriminate.
+you can execute them directly, through each access path the specification
+names, and that check *does* discriminate — which a self-consistent smoke test
+against your own import does not.
 
-**Exit criteria.** You have called each of the three units through `Edition`
-(and through an instance), on the exact inputs listed in the requirements —
+**Exit criteria.** You have called each of the three units through `Edition`,
+through an instance, **and** through the module, on the exact inputs listed in
+the requirements —
 including `""`, a lowercase ASIN, an ISBN-10 and an ISBN-13 — and seen the
 specified outputs.
