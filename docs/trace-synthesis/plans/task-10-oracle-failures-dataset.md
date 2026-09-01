@@ -6,8 +6,11 @@
 
 The [spec](../spec.md#3-the-pipeline) was written as a line: phase A runs a
 baseline rollout and keeps the failures, phase B writes a guidebook against
-one, phase C re-runs the actor under supervision. The owner's ruling
-(2026-09-01) is that phase A is, in practice, already paid for: by the time
+one, and whatever consumes the guidebook comes after — a judge scoring
+unguided rollouts against it, or a guided re-run; which of those is the
+default is decided by the spec's [§15.5](../spec.md#15-success-criteria) cost
+comparison, not here. The owner's ruling (2026-09-01) is that phase A is, in
+practice, already paid for: by the time
 this pipeline is wanted a full eval sweep has run, and its failed rollouts —
 conversation, verdict and patch — are sitting in the cache. Re-running a
 rollout to *reproduce* a failure we already own is a rollout paid twice.
@@ -76,10 +79,10 @@ Two consequences worth stating:
   replaces its row. A second failure of the same instance is a second dataset
   file, not a second id; nothing needs that yet.
 - **Every task run against the record sees the failure.** That is what a
-  mount source means. A run that must *not* see it — the blind phase-C re-run
-  — runs the underlying instance, which the delegation keeps in hand as
-  `record.instance`. Task 05/07 decide how that is wired; nothing here forces
-  it either way.
+  mount source means. A run that must *not* see it — any blind run of the
+  task, guided or not — runs the underlying instance, which the delegation
+  keeps in hand as `record.instance`. The tasks that consume a guidebook
+  decide how that is wired; nothing here forces it either way.
 
 ### The names are a contract, and they live on neutral ground
 
@@ -156,9 +159,11 @@ column records the source run's absolute path, sweep and timestamp.
 
 ## Out of scope
 
-- **Phase C.** Nothing here delivers a hint; the record only makes phase B
-  startable. How the blind re-run avoids the failure mounts is task 05/07's
-  design.
+- **Consuming the guidebook.** Nothing here delivers a hint or scores a
+  rollout; the record only makes phase B startable. Whether the guidebook then
+  judges unguided rollouts or steers a guided one is decided downstream
+  ([spec §15.5](../spec.md#15-success-criteria)), and a blind run of either
+  kind runs `record.instance`.
 - **The policy stamp.** Records of runs over this dataset are contaminated by
   construction (the Oracle sees the answer) and must never pool with benchmark
   numbers; the stamp (ADR-0010 §5) lands with the workflow in task 07.

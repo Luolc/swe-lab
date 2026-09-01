@@ -355,5 +355,5 @@ design record is
 - **Dependencies:** none. **Scope:** M
 - **Outcome:** landed as designed. The first record's re-graded verdict names
   the same two failed tests the experiment's report diagnoses. Follow-ups are
-  named in the design record: phase C must run `record.instance` to stay
-  blind, and the policy stamp on phase-B records is task 07's.
+  named in the design record: a blind run of the task — guided or not — must
+  run `record.instance`, and the policy stamp on phase-B records is task 07's.

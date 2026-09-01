@@ -118,7 +118,10 @@ genuinely derivable is a reader's judgement, per the spec.
 
 ## Out of scope
 
-- **Phase C** — hint delivery, the Supervisor, the hook wiring (task 05); the
-  channel is under adjudication and nothing here touches injection code.
+- **Consuming the guidebook** — neither the judge that scores unguided
+  rollouts against it nor the Supervisor and hook wiring of a guided re-run
+  (task 05). Which of the two is the pipeline's default is decided by the
+  spec's [§15.5](../spec.md#15-success-criteria) cost comparison; nothing here
+  touches injection code.
 - **The policy stamp** on phase-B records (task 07).
 - **Guidebook reuse across attempts** — still an [open question](../spec.md#11-open-questions).
