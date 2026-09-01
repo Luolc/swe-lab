@@ -325,8 +325,16 @@ retroactively (owner's calibration, 2026-09-01).
   fails differently (the PR is already merged, the branch already gone), and
   that second error reads like confirmation that the first attempt did nothing.
   Take three readings instead: `gh pr view <n> --json state` is `MERGED`, a
-  `mergeCommit` exists, and the remote branch is gone. Then delete the local
-  branch by name yourself.
+  `mergeCommit` exists, and the remote branch is gone.
+
+  Then delete the local branch — **but not from the worktree that still has it
+  checked out**, which is where you are standing, since `gh`'s checkout of
+  `main` is exactly what failed. Git refuses:
+  `error: cannot delete branch 'topic' used by worktree at …` (verified in a
+  disposable repo, `rc=1`). Either move that worktree off the branch first
+  (check out the next branch, or `git checkout --detach`) or
+  `git worktree remove` it; both then delete cleanly (`rc=0`). For a long-lived
+  worktree the first is the one you want.
 
   The shape outlives the command: **an error names the step that raised it,
   which can be later than the step you care about — so it is silent about

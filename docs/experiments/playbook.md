@@ -230,8 +230,11 @@ pilot's twelve amendments.
   something about the parameter while its author means the observation, and the
   prose gives no signal either way. A prior rationale here said the model "is
   **not** a claim that θ > 0" when what it declines to assume is `c > 0`: the
-  prior does hold a vanishing qualifying rate to be unlikely — its density goes
-  to zero at θ = 0, which is what keeps `E[1/θ]` finite — while `c = 0` stays an
+  prior does put θ > 0 with probability one, and at a rate that matters: for
+  `Beta(a, b)` the inverse moment is finite exactly when `a > 1`, and the chosen
+  `Beta(2, 2)` has density proportional to θ near zero. "The density vanishes at
+  0" is **not** the condition — a density proportional to `1 / log(e/θ)` also
+  vanishes there and still leaves `E[1/θ]` infinite. Meanwhile `c = 0` stays an
   ordinary observation. The remedy is structural rather than a matter of care — **put the
   assumption in one sentence and the observation in the next, and name the
   symbol in each.** A sentence carrying both is the one to split before checking
