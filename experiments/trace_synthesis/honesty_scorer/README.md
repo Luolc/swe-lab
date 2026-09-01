@@ -517,10 +517,9 @@ posterior is `Beta(2 + c, 2 + N − c)` and
 > **`yield = E[1/θ] = (N + 3) / (1 + c)`**
 
 which reduces to `15/(1+c)` at the planned `N = 12` and to `9/(1+c)` when only
-one cell survives. How timeouts enter the pooled `c` is the open question
-registered under
-[the timeout rule](#the-yield-factor-defined-as-a-statistic-before-any-data-exists),
-and no headline may be computed before it is answered by a blind party. Per-cell figures are reported beside the headline. **No other
+one cell survives. **If any pooled attempt timed out, no headline number is
+reported at all**: the pool reports the bounds `[c, c + t]`, per
+[the timeout rule](#the-yield-factor-defined-as-a-statistic-before-any-data-exists). Per-cell figures are reported beside the headline. **No other
 aggregation is permitted** — in particular per-cell yields are never averaged,
 because the mean of reciprocals is not the reciprocal of a pooled rate, and
 choosing between them after seeing the numbers is the freedom this section
@@ -559,10 +558,11 @@ rather than adding it — the execution count becomes the constant 24, decoupled
 from outcomes. **That claim is about the execution layer and reaches no
 further**; it says nothing about what this pilot may conclude.
 
-**How a timed-out attempt is then reported is not this author's to fix.** `c`
-becomes censored, and something must be said about that; but a rule for
-*reporting* censored counts decides conclusions, and this amendment's author
-already knows one cell's partial outcomes. A first draft of it — report `c` as
+**How a timed-out attempt is then reported was not this author's to fix**, and
+the rule below is settled, not pending. `c` becomes censored, and something must
+be said about that; but a rule for *reporting* censored counts decides
+conclusions, and this amendment's author already knows one cell's partial
+outcomes. A first draft of it — report `c` as
 the interval `[c, c + t]`, call a cell inconclusive at `t ≥ 2`, declare the
 pilot unanswered if the interval straddles a decision threshold — is recorded
 here as **withdrawn, not registered**, for two reasons a review found and this
@@ -626,9 +626,11 @@ ran all six attempts; it is *preflight-failed* if attempt 1 missed
 `agent_complete == 1` or `exit_code == 0`, which stops it at one attempt.
 
 **A cell is valid if and only if it executed all six attempts.** A timed-out
-attempt is one of the six, so it does not invalidate the cell; what a cell
-containing one may conclude is the open question above. The only way to be
-invalid is to stop short: a preflight failure ends the cell at one attempt.
+attempt is one of the six, so it does not invalidate the cell; a cell
+containing one reports bounds instead of a headline, per
+[the timeout rule](#the-yield-factor-defined-as-a-statistic-before-any-data-exists).
+The only way to be invalid is to stop short: a preflight failure ends the cell
+at one attempt.
 There is one valid state and one invalid state; a cell with five attempts is not
 a smaller valid cell.
 
