@@ -172,27 +172,36 @@ resource is created*:
   that spawned it. It therefore survives the crash window that the record's
   child pid does not.
 
-  So the reaper resolves a port to its listening pid and then **checks that
-  pid's `SWE_LAB_RUN_ID` against the record's** before it signals anything. Both
-  incomplete states are then decidable without guessing:
+  So the reaper never signals a *number*. It resolves the port to a pid,
+  **opens a `pidfd` for that pid first**, and only then reads
+  `/proc/<pid>/environ` and compares the run id. The order is what makes it
+  sound: a `pidfd` refers to that one process for as long as it is held, so a
+  pid recycled *before* the open fails verification, and a pid recycled *after*
+  it cannot be reached through the handle — `signal.pidfd_send_signal` on a
+  process that has exited raises `ProcessLookupError`, which is the reaper's
+  "already gone", never somebody else's process (`os.pidfd_open` /
+  `signal.pidfd_send_signal`, both standard library; verified on this host,
+  Linux 6.17 / CPython 3.13). **`os.kill` by pid does not appear on this path at
+  all**, which is the invariant a test can name. Containers need no equivalent:
+  `docker rm` takes an id, and ids are not recycled.
+
+  With the handle held, both incomplete states are decidable without guessing:
 
   | state | reaper |
   |---|---|
   | no listener on the recorded port | stale record, deleted, nothing signalled |
-  | listener whose run id matches, owner dead | our orphan — ended |
+  | listener whose run id matches, owner dead | our orphan — ended through its `pidfd` |
   | listener whose run id differs, is absent, or is unreadable | **unknown owner — reported, never signalled** |
 
-  **The limits, stated rather than papered over.** The check reads `/proc`, so
-  the process side of the reaper is Linux-only — which is where sandboxes run,
-  and a Mac laptop is a place this is skipped, not a place it guesses. It
-  identifies a *cooperating* process, not an adversarial one: an environment
-  block can be rewritten by the process that owns it, so this defends against
-  the accident that actually happens (a stray listener, a reused port) and not
-  against a program impersonating one of ours. And the pid→signal step keeps the
-  residual race every pid-based kill has, which is why rule 3 re-reads identity
-  immediately before the signal rather than trusting the listing. What none of
-  it licenses is acting on a listener that no record claims, or one whose
-  identity does not check out: that is an unknown owner, and rule 1 applies.
+  **The limits, stated rather than papered over.** `pidfd` and `/proc` make the
+  process side Linux-only — which is where sandboxes run, and a Mac laptop is a
+  place this is skipped, not a place it guesses. It identifies a *cooperating*
+  process, not an adversarial one: an environment block can be rewritten by the
+  process that owns it, so this defends against the accident that actually
+  happens (a stray listener, a reused port) and not against a program
+  impersonating one of ours. And what none of it licenses is acting on a
+  listener that no record claims, or one whose identity does not check out:
+  that is an unknown owner, and rule 1 applies.
 
 One code path, two entry points:
 
@@ -224,11 +233,14 @@ Three rules, and the last two are corrections the review forced:
    The fixture still reports what it removed and fails the session — rule 2.
 2. **Report rather than tidy.** A leak that is silently cleaned is a leak that
    repeats; today's three were visible only because nobody swept them.
-3. **`--force` re-checks immediately before each removal, per resource.** Owner
-   liveness can change between listing and removing — pid reuse alone
-   guarantees it — so a set computed once and deleted later cannot honour rule
-   1. Each removal re-reads the labels and re-tests liveness, and skips and
-   reports anything that is now live or unknown.
+3. **`--force` re-verifies immediately before each removal, per resource, and
+   removes through an identity handle rather than a name.** Owner liveness can
+   change between listing and removing, so a set computed once and deleted later
+   cannot honour rule 1. Each removal re-reads the labels and re-tests liveness
+   — and on the process path it signals through the `pidfd` it verified through,
+   because a re-read alone still leaves the gap between the last check and the
+   signal, which is precisely where a recycled pid lands. Anything now live or
+   unknown is skipped and reported.
 
 **Rule 2 is not new here — it is this project's third independent arrival at the
 same principle**, in three unrelated domains, and it is worth saying so rather
@@ -277,6 +289,7 @@ Each invariant gets a named test; none of them needs Docker except where marked:
 | an incomplete record with no listener is deleted, not acted on | intent record whose port is free → removed, nothing signalled |
 | a foreign listener on a **recorded** port is never signalled | a process holding the recorded port with no matching run id is reported as unknown — the squatter case, run against a completed record and an incomplete one |
 | the fixture removes only its **own** session | a container stamped with a different session id survives the fixture untouched |
+| a verified process that exits before the signal is reported gone, never re-killed by pid | the reaper signals only through the `pidfd` opened during verification: `ProcessLookupError` reads as "already gone", and `os.kill` is absent from the path — asserted at the seam |
 | the reaper never touches a live owner | listing with a live pid yields nothing to remove |
 | the reaper never touches an unknown owner | a container whose owner label is missing or malformed is reported, not removed |
 | `--force` re-checks per resource | a resource that becomes live between listing and removal is skipped and reported |
