@@ -1,0 +1,99 @@
+{
+  "seed": 261,
+  "presentation_order": [
+    "baseline-navidrome-rollout-1",
+    "baseline-navidrome-rollout-2",
+    "baseline-nodebb-rollout-1",
+    "baseline-navidrome-rollout-0",
+    "baseline-nodebb-rollout-0"
+  ],
+  "class_present": [
+    "good"
+  ],
+  "records": [
+    {
+      "run": "baseline-navidrome-rollout-0",
+      "instance_id": "instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310",
+      "repo": "navidrome/navidrome",
+      "base_commit": null,
+      "screening_verdict": "good",
+      "resolved": true,
+      "messages": 152,
+      "tool_calls": 69,
+      "history_reads": [],
+      "purge_held": true,
+      "leaks_instance_id": false,
+      "leaks_base_commit": false,
+      "leaks_repo_name": true,
+      "bundle_chars": 180693
+    },
+    {
+      "run": "baseline-navidrome-rollout-1",
+      "instance_id": "instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310",
+      "repo": "navidrome/navidrome",
+      "base_commit": null,
+      "screening_verdict": "good",
+      "resolved": true,
+      "messages": 107,
+      "tool_calls": 60,
+      "history_reads": [],
+      "purge_held": true,
+      "leaks_instance_id": false,
+      "leaks_base_commit": false,
+      "leaks_repo_name": true,
+      "bundle_chars": 173026
+    },
+    {
+      "run": "baseline-navidrome-rollout-2",
+      "instance_id": "instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310",
+      "repo": "navidrome/navidrome",
+      "base_commit": null,
+      "screening_verdict": "good",
+      "resolved": true,
+      "messages": 124,
+      "tool_calls": 74,
+      "history_reads": [],
+      "purge_held": true,
+      "leaks_instance_id": false,
+      "leaks_base_commit": false,
+      "leaks_repo_name": true,
+      "bundle_chars": 188940
+    },
+    {
+      "run": "baseline-nodebb-rollout-0",
+      "instance_id": "instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+      "repo": "NodeBB/NodeBB",
+      "base_commit": null,
+      "screening_verdict": "good",
+      "resolved": true,
+      "messages": 70,
+      "tool_calls": 31,
+      "history_reads": [
+        "{\"command\": \"git log --oneline -5 -- src/topics/tools.js src/socket.io/topics/tools.js public/src/client/category/tools.js test/topics.js\"}"
+      ],
+      "purge_held": true,
+      "leaks_instance_id": false,
+      "leaks_base_commit": false,
+      "leaks_repo_name": true,
+      "bundle_chars": 94216
+    },
+    {
+      "run": "baseline-nodebb-rollout-1",
+      "instance_id": "instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+      "repo": "NodeBB/NodeBB",
+      "base_commit": null,
+      "screening_verdict": "good",
+      "resolved": true,
+      "messages": 102,
+      "tool_calls": 46,
+      "history_reads": [
+        "{\"command\": \"git log --oneline -- src/topics/tools.js | head -20 && echo --- && git log --oneline --all | grep -i \\\"pin\\\" | head -20\"}"
+      ],
+      "purge_held": true,
+      "leaks_instance_id": false,
+      "leaks_base_commit": false,
+      "leaks_repo_name": true,
+      "bundle_chars": 128802
+    }
+  ]
+}
