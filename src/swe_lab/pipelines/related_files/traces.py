@@ -246,6 +246,14 @@ def push_traces(
   """
   root = repo_root or find_repo_root()
   base = _task_dir(root)
+
+  # The gate, first: before the API object exists, before the manifest is
+  # read, before any network call. "Before anything leaves the machine" is
+  # not the boundary that matters — asking the remote about the repo is
+  # already contact, and a check placed after it is one that can be
+  # reordered past. No bypass flag, for the same reason: a way to skip a
+  # safety gate becomes the way it is used.
+  refuse_unpublishable_traces(base)
   api = HfApi()
   manifest = _load_manifest(dataset, root)
   parent = None if manifest is None else manifest.get("revision")
@@ -259,10 +267,6 @@ def push_traces(
           "then `git pull` + `fetch` (or `adopt-remote`) to take remote, or "
           "`push --force` / `push --mirror` to overwrite it with local."
       )
-
-  # The gate. Before anything leaves the machine, and with no bypass flag:
-  # a way to skip this would become the way it is used.
-  refuse_unpublishable_traces(base)
 
   _ = api.create_repo(
       repo_id, repo_type=REPO_TYPE, private=private, exist_ok=True

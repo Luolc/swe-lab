@@ -159,3 +159,52 @@ def test_push_traces_refuses_before_touching_the_api(
   assert (
       reached == []
   ), "the push reached the API despite an unpublishable trace"
+
+
+def test_the_gate_runs_before_the_manifest_check_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """The ordinary push path — a manifest exists — must refuse just as early.
+
+  The no-manifest test above passes even when the gate sits after the
+  concurrency guard, because that branch is skipped without a manifest
+  revision. On every subsequent push the guard calls ``repo_info`` first, so a
+  gate placed after it has already contacted the remote about a tree it was
+  supposed to refuse.
+  """
+  from swe_lab.pipelines.related_files import traces
+
+  base = tmp_path / "outputs" / "related_files" / "swebench_pro"
+  base.mkdir(parents=True)
+  bad = _record()
+  bad["extra_info"]["response_headers"][
+      "Anthropic-Organization-Id"
+  ] = "org_real"
+  (base / "c1.last_exchange.json").write_text(json.dumps(bad))
+
+  reached: list[str] = []
+
+  class _FakeApi:
+
+    def repo_info(self, *_args: object, **_kwargs: object) -> None:
+      reached.append("repo_info")
+
+    def create_repo(self, *_args: object, **_kwargs: object) -> None:
+      reached.append("create_repo")
+
+    def upload_folder(self, *_args: object, **_kwargs: object) -> None:
+      reached.append("upload_folder")
+
+  monkeypatch.setattr(traces, "HfApi", _FakeApi)
+  monkeypatch.setattr(
+      OperatorIdentity, "of_this_machine", classmethod(lambda cls: _IDENTITY)
+  )
+
+  def _manifest(*_args: object, **_kwargs: object) -> dict[str, str]:
+    return {"revision": "deadbeef"}
+
+  monkeypatch.setattr(traces, "_load_manifest", _manifest)
+
+  with pytest.raises(UnpublishableTraceError):
+    _ = traces.push_traces(repo_root=tmp_path)
+  assert reached == [], "the push contacted the remote despite a bad trace"
