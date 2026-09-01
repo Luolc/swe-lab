@@ -48,10 +48,9 @@ from swe_lab.process_group import end_process_group
 ROWS, COLS = 50, 200
 
 # Markers Claude Code exports into its own child processes. Inherited, they make
-# the TUI behave as a *nested* session — most visibly by refusing to persist a
-# transcript ("Transcript saving is off — inherited CLAUDE_CODE_CHILD_SESSION
-# marker"), which would remove one of the three surfaces this run is here to
-# record. Stripped so the child is an ordinary user session.
+# the TUI behave as a *nested* session, which among other things stops it
+# persisting a transcript — one of the three surfaces this run records. Stripped
+# so the child is an ordinary user session.
 INHERITED_MARKERS = (
     "CLAUDE_CODE_CHILD_SESSION",
     "CLAUDE_CODE_SESSION_ID",
@@ -137,9 +136,8 @@ class TuiRun:
   def type_line(self, text: str, note: str, *, settle: float = 2.0) -> None:
     """Type `text`, let the input box settle, then press Enter.
 
-    A long string arrives as a bracketed paste, and an `Enter` sent on its heels
-    is swallowed while the box is still absorbing it — the first attempt at this
-    typed the task and never submitted it. So: send, wait, send Enter.
+    A long string arrives as a bracketed paste, and an `Enter` sent while the
+    input box is still absorbing it is swallowed — hence the settle.
     """
     self.send(text, f"{note} (text)")
     time.sleep(settle)
@@ -208,9 +206,9 @@ def _agent_loop_records(proxy_path: pathlib.Path) -> list[dict[str, object]]:
   """Records that are the agent's own loop, not a side call.
 
   The CLI also makes small unrelated requests on this connection — a `quota`
-  probe, a one-token title generation. They are told apart by carrying no
-  `tools`, and counting them as turn activity is what made the first attempt
-  stop in the middle of a turn.
+  probe, a one-token title generation — told apart by carrying no `tools`.
+  Counting them as turn activity would report a turn that is still running as
+  finished.
   """
   return [r for r in _records(proxy_path) if r.get("request", {}).get("body", {}).get("tools")]
 
@@ -238,9 +236,9 @@ def turn_finished(proxy_path: pathlib.Path) -> bool:
 def wait_for_finish(proxy_path: pathlib.Path, timeout: float) -> bool:
   """Wait for the agent loop to end a turn, then for the log to settle.
 
-  Read from the wire, not from the terminal: the first attempt watched the TUI
-  for the string "esc to interrupt", which this build does not render, so a run
-  that had in fact completed was recorded as never having started.
+  Read from the wire rather than the terminal: what the TUI renders while a turn
+  is in flight is a presentation detail and varies by build, while the agent
+  loop's own requests are not.
   """
   deadline = time.monotonic() + timeout
   while time.monotonic() < deadline:

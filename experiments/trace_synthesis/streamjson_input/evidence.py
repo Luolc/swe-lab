@@ -5,8 +5,7 @@
 with this experiment — absolute operator-home paths, the operator's global
 `CLAUDE.md` (which names them and carries their email), the machine's skill and
 agent listings. `AGENTS.md` says to redact operator PII in any trace record and
-never to commit raw trace records, and this repo's history was once force-pushed
-to scrub exactly that class of leak.
+never to commit raw trace records.
 
 So the raw files stay in the run directory and are **gitignored**; what is
 committed is `evidence.json`, built here: the record shapes, roles, provenance
@@ -172,7 +171,7 @@ def _text(value: str, limit: int = TEXT_KEEP_CHARS) -> str:
     return f"<system-reminder elided: {len(clean)} chars of startup context>"
   if not cited:
     return f"<uncited: {len(clean)} chars>"
-  # A cited `<system-reminder>` is kept whole — §14's byte-identical claim is
+  # A cited `<system-reminder>` is kept whole: §14's byte-identical claim is
   # about this string, and a truncated copy cannot witness it.
   if "<system-reminder>" in clean:
     return clean
@@ -309,8 +308,8 @@ def _transcript_records(raw: str) -> list[dict[str, object]]:
 # The TUI issues requests that are not the agent's task loop and must not be the
 # one the report compares: a startup `quota` probe (no `tools`) and, after the
 # turn, a prompt-suggestion request whose body is the whole conversation plus a
-# synthetic trailing user message. Taking `records[-1]` picked the suggestion
-# exchange and made the committed evidence disagree with REPORT.md §14.
+# synthetic trailing user message — a message nobody sent, which would enter the
+# comparison as a real turn.
 SUGGESTION_MARKER = "SUGGESTION MODE"
 
 

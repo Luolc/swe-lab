@@ -5,11 +5,9 @@ hooks — but its report asserts an equality between two committed artifacts, an
 `AGENTS.md` says an invariant needs a test or the claim gets downgraded. Two
 things are guarded here, both offline:
 
-- the evidence builder compares the **last agent-loop request**, not the last
-  request — a trailing prompt-suggestion exchange (which the TUI makes and the
-  headless path does not) must not be the one selected. Selecting it silently
-  made the committed evidence render 8/9 wire messages where the report says
-  6/7;
+- the evidence builder compares the **last agent-loop request**, so a trailing
+  side call — the prompt-suggestion exchange a TUI session makes and a headless
+  one does not — is never the request the report's table is read from;
 - the committed evidence still says what §14 says: the four arms' message
   counts and `<system-reminder>` counts, and the byte-identical mid-turn
   wrapper, checked through the digest the artifact carries.
@@ -25,10 +23,9 @@ from typing import Any
 
 import pytest
 
-# Resolved from this file, not from `find_repo_root()`: that helper prefers the
-# inherited `PROJECT_ROOT`, which in a detached review worktree still names the
-# main checkout — so the test would load a *different* tree's `evidence.py`, or
-# none. Same pattern as the other path-loaded experiment tests.
+# Resolved from this file so the test always loads the checkout it lives in.
+# `find_repo_root()` consults ambient configuration and can name another tree,
+# which for a path-loaded module means importing someone else's copy of it.
 EXPERIMENT = (
     Path(__file__).resolve().parents[1]
     / "experiments/trace_synthesis/streamjson_input"
@@ -93,9 +90,7 @@ def _quota_record() -> dict[str, object]:
 
 def _wire(run: str) -> dict[str, Any]:
   # A missing artifact is a failure, not a skip: these files are committed, and
-  # skipping is how this guard would silently stop guarding. The skip is also
-  # what hid the path bug below -- five of these went green-by-absence while the
-  # module was being loaded from the wrong worktree.
+  # a skip is how this guard would silently stop guarding.
   path = EXPERIMENT / "runs" / run / "evidence.json"
   assert path.is_file(), f"{path} is committed and must be present"
   return json.loads(path.read_text())["wire"]
