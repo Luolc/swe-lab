@@ -1,26 +1,24 @@
-"""Judge one fixed completion repeatedly, to measure the gate's own variance.
+"""Judge one fixed completion 20 times, to characterise the gate's flip rate.
 
-A precondition for reading the witness experiment, not a side quest. B's loop is
-*judged reject -> resend -> judged accept -> stop*, so if the gate is a random
-function of its input the loop can terminate on a coin flip: the second
-completion need not be better, the judge need only land the other way. "The
-accepted resend was better" is only meaningful against a measured variance, and
-there is no such measurement yet.
+A cheap characterisation, not a gate and not a precondition: it blocks nothing.
+Whether the guidebook adjudicates a step is a **reasoned, subjective call** --
+more than one reading can be defensible -- so identical answers across runs are
+not required of the judge and their absence is not a defect. What is worth
+knowing is simply *how often* the verdict flips on a byte-identical input, as a
+number to carry into later work.
 
-Two arms, both at `max_tokens = 2000`:
+One arm, 20 calls at `max_tokens = 2000` under the provider's default sampling:
+the gate as it actually runs.
 
-- **default sampling** (n = 20) -- the gate as it actually runs, and as B would
-  ship it. Any disagreement here is enough to confound the witness, whatever its
-  cause;
-- **`temperature = 0`** (n = 5) -- **one-directional.** A flip here *falsifies*
-  "pinning the temperature fixes this gate", and one counterexample needs no
-  distributional assumption; five quiet calls confirm nothing. It is not
-  determinism on a
-  hosted endpoint, and routing and served model are recorded but not held fixed,
-  so it can never attribute the variance to sampling or to the guidebook.
+Reporting discipline, which is what this measurement mostly exists to honour:
+the result is a **count**. A quiet outcome is reported as `observed 0
+disagreements in 20 calls`, never as "the gate is stable", and no confidence
+bound is asserted -- the familiar 3/n interval needs independent, identically
+distributed trials at a stationary rate, and routing and served model are
+recorded here but not controlled.
 
 Usage:
-  python3 <this file> --out-dir <dir> [--n 5]
+  python3 <this file> --out-dir <dir>
 
 Needs `OPENROUTER_API_KEYS` in the environment; `.envrc` exports it.
 """
@@ -48,12 +46,11 @@ _POSITION = 14
 _ROLLOUT = "baseline-qutebrowser-rollout-0"
 _MAX_TOKENS = 2000
 # Fixed here rather than exposed as a flag: n is pre-registered, and a knob that
-# changes it would undo the pre-registration. The default arm is the larger one
-# only to collect more observations cheaply. It licenses no confidence bound and
-# no detection claim: routing and served model are recorded but not controlled,
-# so the calls are not known to be independent, and if the serving path is fixed
-# for a run's duration then 20 calls may carry what 5 do.
-_ARMS = (("default", {}, 20), ("temperature-0", {"temperature": 0}, 5))
+# Fixed rather than exposed as a flag: a knob that changes a pre-registered
+# quantity undoes the pre-registration. 20 buys 20 observations cheaply and
+# nothing more -- no confidence bound and no detection claim, since routing and
+# served model are recorded but not controlled.
+_CALLS = 20
 # Binds the *entire* judge input, not just the completion: the prompt is built
 # from the guidebook, the preceding-steps rendering and the completion summary,
 # each of which lives in an off-repo or separately edited file. Asserted before
@@ -118,8 +115,7 @@ def main() -> None:
         f"{args.out_dir / 'judge_input.json'}")
 
   records, spent = [], 0.0
-  for arm, extra, count in _ARMS:
-    for index in range(count):
+  for index in range(_CALLS):
       payload = {
           "model": _judge.MODEL,
           "max_tokens": _MAX_TOKENS,
@@ -127,14 +123,12 @@ def main() -> None:
               {"role": "system", "content": _judge.INSTRUCTIONS},
               {"role": "user", "content": user},
           ],
-          **extra,
       }
       response = _judge.call(payload)
       raw = response["choices"][0]["message"]["content"]
       usage = response.get("usage") or {}
       spent += float(usage.get("cost") or 0)
       records.append({
-          "arm": arm,
           "index": index,
           "verdict": _verdict(raw),
           "stage": _field(raw, "stage"),
@@ -142,15 +136,14 @@ def main() -> None:
           "reason": _field(raw, "reason"),
           "raw": raw,
           "response_model": response.get("model"),
-          # Recorded, not controlled: routing is free to vary between calls, so
-          # an arm's behaviour is not attributable to its temperature.
+          # Recorded, not controlled: routing is free to vary between calls.
           "provider": response.get("provider"),
           "sampling_sent": _judge.sampling_sent(payload),
           "max_tokens": _MAX_TOKENS,
           "usage": usage,
           "at": time.strftime("%FT%TZ", time.gmtime()),
       })
-      print(f"{arm} {index}: verdict={records[-1]['verdict']} "
+      print(f"{index}: verdict={records[-1]['verdict']} "
             f"stage={records[-1]['stage']} model={response.get('model')} "
             f"spent=${spent:.4f}")
 
@@ -161,28 +154,18 @@ def main() -> None:
       "step_index": _STEP_INDEX,
       "max_tokens": _MAX_TOKENS,
       "total_usd": round(spent, 6),
-      "arms": {
-          arm: dict(collections.Counter(
-              r["verdict"] for r in records if r["arm"] == arm))
-          for arm, _extra, _count in _ARMS
-      },
-      "stages_cited": {
-          arm: dict(collections.Counter(
-              r["stage"] for r in records if r["arm"] == arm))
-          for arm, _extra, _count in _ARMS
-      },
+      "verdicts": dict(collections.Counter(r["verdict"] for r in records)),
+      "stages_cited": dict(collections.Counter(r["stage"] for r in records)),
       "response_models": sorted(
           {str(r["response_model"]) for r in records}),
       "providers": sorted({str(r["provider"]) for r in records}),
-      "n_per_arm": {arm: count for arm, _extra, count in _ARMS},
+      "calls": _CALLS,
       "_note": (
           "Counts only; no rate and no confidence bound are implied. A quiet "
-          "arm is reported as 'observed 0 disagreements in n calls' and "
+          "result is reported as 'observed 0 disagreements in 20 calls' and "
           "nothing further: the familiar 3/n bound needs iid trials at a "
-          "stationary rate, which this design does not establish. "
-          "temperature-0 can falsify 'pinning the temperature fixes this gate' "
-          "and can never confirm it: routing and served model are recorded but "
-          "not controlled."
+          "stationary rate, which this design does not establish, since "
+          "routing and served model are recorded but not controlled."
       ),
   }
   (args.out_dir / "summary.json").write_text(json.dumps(summary, indent=2))

@@ -310,48 +310,58 @@ module and guidebook this run uses:
   and report this as a result in its own right, since it is an observation about
   judge stability.
 
-## 9. Judge variance — a precondition, pre-registered before its data
+## 9. Judge flip rate — a characterisation, superseding this section's first form
 
-Attempt 0 returned **on_track** on the completion #305 judged **off_track**. The
-material's digests both matched, so the input was identical.
+Attempt 0 returned **on_track** on the completion #305 judged **off_track**, with
+both material digests matching, so the input was byte-identical.
 
-**Measured before drawing anything from that:** the judge's request carries
-`{model, max_tokens, messages}` and **no `temperature`, `top_p`, `top_k` or
-`seed`** — in either run, since today's code imports #305's module. Sampling is
-the provider's default and was never recorded. So disagreement across runs is
-**expected**, and the claim "the judge is unstable" is not available; what is
-available is "**this gate's sampling was never pinned**".
+**The premise that made this look like a defect is withdrawn.** Whether a
+guidebook adjudicates a step is a **reasoned, subjective call**: more than one
+reading can be defensible, and the two verdicts here are a case in point — both
+cite stage 5, one reading *"run it **before** editing anything"* and the other
+reading the command form, and **the guidebook says both**. A judge is not
+required to answer identically across runs, and its not doing so is **not a
+defect to be repaired**. The stage-5 clause split stays in the report as an
+**observation**, not as a bug with a fix pending.
 
-Two further differences are **permanently unresolvable**, and that is a cost of
-this study, not a footnote: neither run recorded the model id the *response*
-reported (only the alias sent), and #305's compared verdict ran at
-`max_tokens = 700` against today's `2000`. Whether the alias resolved to the same
-served model cannot be recovered. **We do not attempt to repair this by adding
-one variable; a missing variable does not return another.**
+**What this section asserted before, and no longer does.** It argued that a
+stochastic gate blocks the witness, because a reject→accept transition could come
+from the judge landing the other way rather than from a better completion. That
+argument required the gate to be a deterministic function of its input. With that
+requirement withdrawn, the argument does not apply: the question B has to answer
+is **distributional** — does B push the quality distribution of traces up? — and
+no single witness settles a distribution either way. **The witness experiment is
+therefore paused pending a redesign**, and this pre-registration's §1–§8 stand as
+the record of what was built, not as a plan awaiting execution.
 
-### Why this blocks the witness, not merely informs it
+**Recorded rather than deleted** because it was reviewed, merged, and acted on:
+the material-retired result and its $0.0107 were produced under it.
 
-B's loop is *judged reject → resend → judged accept → stop*. **If the gate is a
-random function of its input, that loop can terminate on a coin flip** — the
-second completion need not be better; the judge need only land the other way.
-As designed, the witness therefore **cannot distinguish "resampling produced a
-better completion" from "the judge flipped"**. "The accepted resend was better"
-is only meaningful against a measured variance, and none exists.
+### What remains, and it blocks nothing
 
-The 3-of-3 rule in §8.3 reduces that probability without removing it, and it
-guards only the accepting side: **a rejection is still a single judgement**.
+A **cheap characterisation**: how often does the verdict flip on a byte-identical
+input? Useful as a number to carry into later work, and not a gate on anything.
 
-### The judge's whole input is bound, not just the completion
+**20 calls at `max_tokens = 2000`, provider default sampling** — the gate as it
+runs. About twenty cents. 20 buys 20 observations and nothing more: **no
+confidence bound and no detection claim**, since routing and the served model are
+recorded but not controlled.
+
+**No `temperature = 0` arm.** It existed to attribute variance and to test
+whether pinning sampling would repair the gate. Under the withdrawn premise there
+is nothing to repair, so an arm serving no decision is only cost.
+
+### The judge's whole input stays bound
 
 The material digests in §2 cover the request body and the original completion.
-They do **not** cover the two other things the judge's prompt is built from: the
-**guidebook** and the **preceding-steps rendering**. Either can drift without a
-material digest noticing, and the run would then spend money producing results
-that look ordinary and are no longer about the pre-registered material.
+They do **not** cover the other two things the judge's prompt is built from: the
+**guidebook** and the **preceding-steps rendering**. Either can drift while both
+material digests still match, and the run would then spend money on results that
+look ordinary and are about different material.
 
 So the entire judge input — instructions, guidebook, preceding steps and the
 completion summary, exactly as sent — is pinned and asserted **before any paid
-call**, in both this measurement and the witness's attempt 0:
+call**, in this measurement and in the witness's attempt 0 alike:
 
 | | canonical sha256 |
 |---|---|
@@ -360,100 +370,18 @@ call**, in both this measurement and the witness's attempt 0:
 A mismatch is `void`: there was no run. Both scripts render that prompt through
 **one implementation**, so the digest cannot bind text a script no longer sends.
 
-### The measurement
+### Reporting discipline, which is the durable part
 
-The completion fixed in §2 is judged **25 times, all at `max_tokens = 2000`**:
+> **A quiet result is `observed 0 disagreements in 20 calls`, and nothing
+> further.** It is not "the gate is stable".
 
-- **20 at the provider's default sampling** — the gate as it runs, and as B would
-  ship it. **This arm is the object of study.**
-- **5 at `temperature = 0`** — **one-directional**, see below.
+The familiar ≈ 3/n bound needs **independent, identically distributed trials at a
+stationary rate**, which this design does not establish. It may be quoted only as
+an explicit conditional, never as a property of this run.
 
-**Why 20 and not 5.** The risk of a small n is not in the noisy case but in the
-**quiet** one: a handful of identical answers reads like a stable gate while
-excluding almost nothing. 20 calls yield **20 observations instead of 5**, and
-the extra calls cost about twenty cents. That is the whole rationale.
+### Not repaired here
 
-**It is not a detection claim.** Whether more calls improve the chance of seeing
-a flip depends on *where* the variation lives, and this design does not control
-that: if routing and the served model are effectively fixed **for the duration of
-a run**, 20 calls can carry the same information as 5 — the disagreement would
-then be a between-run property, and this run would be one draw of it either way.
-
-**The zero-disagreement reading, fixed now so it cannot be written after the
-fact:**
-
-> **20 identical answers ⇒ `observed 0 disagreements in 20 calls`. That is the
-> whole result**, and it is **not** "the gate is stable".
-
-**No confidence bound is asserted from it.** The familiar ≈ 3/n bound (≈ 0.15 at
-n = 20, ≈ 0.6 at n = 5) requires **independent, identically distributed trials at
-a stationary rate** — and this design **deliberately does not establish that**:
-routing and the served model vary freely and are only *recorded*, so the calls
-are not known to be exchangeable. The bound may be quoted **only** as an explicit
-conditional — *were the trials iid at a stationary rate, 0/20 would correspond to
-a 95% upper bound near 0.15* — and never as a property of this run.
-
-The decision-relevant reading does not depend on any of this: **a single
-disagreement in the default arm confounds the witness**, and that needs no
-distributional model at all.
-
-**The `temperature = 0` arm is hard in one direction only**, and must be reported
-that way:
-
-> **A flip at `temperature = 0` falsifies "pinning the temperature fixes this
-> gate".** That conclusion needs no distributional assumption: one counterexample
-> is enough.
->
-> **Five quiet calls at `temperature = 0` confirm nothing** — the same
-> conditional applies, and `temperature = 0` is not determinism on a hosted
-> endpoint anyway.
-
-A test that is sharp in one direction read as sharp in both is the error this
-pre-registration keeps catching, so the asymmetry is written beside the arm
-rather than left to the reader.
-
-No arm at 700: that cap only serves the #305-versus-today comparison, which is
-already unresolvable for want of a recorded model id.
-
-### Reading, fixed before the run — one, and it is not causal
-
-**The only claim this measurement supports:**
-
-> **Does the gate disagree with itself on a byte-identical input?** Any
-> disagreement within the **default arm** is sufficient to establish that the
-> witness, as designed, **cannot separate "resampling produced a better
-> completion" from "the judge landed the other way"** — because a reject→accept
-> transition is then available without the completion changing at all.
-
-That is decision-relevant and needs **no attribution**: it does not matter *why*
-the gate disagrees for the witness to be confounded by it.
-
-**What this measurement cannot do, stated so no later reader tries:** it cannot
-decide *pin the sampling* versus *fix the guidebook*.
-
-- `temperature = 0` **is not determinism** on a hosted endpoint. Batching,
-  serving-stack nondeterminism and mixture routing all survive it.
-- **Routing and served model are uncontrolled.** Provider and the model id the
-  response reports are *recorded per judgement* (§9's instrumentation) but are
-  **not held fixed**, so an arm's behaviour is not attributable to its
-  temperature.
-- **No convergence statistic is defined, and none can be at n = 5 per arm.**
-  "Converges" is not an observation this design can make. Agreement counts are
-  reported as counts, with n, and nothing is inferred from them about a rate.
-
-The `temperature = 0` arm is therefore **descriptive only**: it is reported
-beside the default arm, with provider and model id per call, as *context for
-where variance might sit*. Any sentence in the report that turns it into a cause
-is out of bounds.
-
-The stage-5 clause split — the same stage cited by both verdicts, read once as
-ordering ("run it *before* editing anything") and once as command form — remains
-**a description of where the observed disagreement concentrated**. This
-measurement cannot promote it to an independent finding, and the report must not.
-Establishing a semantic source needs a design that controls routing and served
-model, which is a separate pre-registration.
-
-**Not repaired here.** Fixing the guidebook to make the judge steadier and then
-measuring whether the judge is steady is circular. That question is a separate
-pre-registration belonging to `guidebook_as_step_criterion/`, and no conclusion
-here may be rescued by "it would be fine once fixed".
+The guidebook is not edited to make the judge steadier. The user's direction is
+explicit that judgements of this kind are subjective and that a defensible
+reading suffices; and making the guidebook steadier in order to measure
+steadiness would be circular in any case.
