@@ -50,7 +50,7 @@ was the less safe of the two each time.
 
 | # | Where | What the prose said | What was true |
 | :---: | --- | --- | --- |
-| 4 | `conventions.md:57`, until [#305](https://github.com/Luolc/swe-lab/pull/305) | `OPENROUTER_API_KEYS` — "no code consumer yet" | `experiments/trace_synthesis/steered_rerun/supervisor.py` (`key_pool`) had been a consumer for days — and carried the correct splitting rule |
+| 4 | `conventions.md:57` (fix pending in [#305](https://github.com/Luolc/swe-lab/pull/305), open at the time of writing) | `OPENROUTER_API_KEYS` — "no code consumer yet" | `experiments/trace_synthesis/steered_rerun/supervisor.py` (`key_pool`) had been a consumer for days — and carried the correct splitting rule |
 | 5 | machine-setup — "this one is *later* mapped to `CLAUDE_CODE_OAUTH_TOKEN` by swe-lab" | a mapping that had not happened | `packaging/claude-code-bundle/smoke-test.sh` already read it, alongside a repo-scoped fallback variable |
 
 **Instance 5 is msetup's finding and is not reproduced here** — it is in
@@ -71,7 +71,7 @@ Every absence claim in the **reference** documents (`conventions.md`, the
 
 | Claim | Verdict | How it was checked |
 | --- | :---: | --- |
-| `conventions.md:57` — "no code consumer yet" | **false** | `supervisor.py`, `judge_steps.py`; fixed by #305 |
+| `conventions.md:57` — "no code consumer yet" | **false** | `supervisor.py` (`key_pool`) and `judge_steps.py` read it; left to #305 rather than fixed twice |
 | `conventions.md:76` — "no vault item yet" for `OPENAI_API_KEY` / `XAI_API_KEY` / `ANTHROPIC_API_KEY` | true | `op item list --vault dev-shared` (titles only): seven items, none of the three |
 | `conventions.md:263` — `related_files` "not yet on the engine" | true | no `register_workflow` / `register_task` entry; it has its own `__main__.py`; the only mentions outside the package are a path docstring and one comment |
 | `spec.md:184` — the guidebook's privacy, "nothing enforces that yet" | true | no `belief_state` / guidebook test in `src` or `tests`; §12 lists it unenforced |
