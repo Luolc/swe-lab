@@ -74,6 +74,6 @@ the diff-extract observer), so emptying `core/` required relocating them too
 
 - W1 (`pipelines/`) now imports the relocated modules from their new homes; W1's
   own architecture is untouched (spec: not migrated now).
-- Docs still referencing old paths/commands are swept in [task 11](task-11-…).
+- Docs still referencing old paths/commands are swept in task 11.
 - Live golden sweep (731/731) + flipt rollout re-run over the new CLI is **CP3**
   (user-triggered manual dispatch).

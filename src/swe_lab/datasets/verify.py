@@ -1,10 +1,10 @@
 """Full-dataset golden verification — dataset QA over base + golden runs.
 
-Lives inside ``datasets/swebench_pro/`` (not the generic ``cli/``): its
-classification is SWE-Bench-Pro semantics (``fail_to_pass`` must fail at base,
-the golden patch must resolve), so it is dataset-specific by design. When more
-SWE-like datasets are ported, the shared parts can be lifted to a dataset-
-agnostic seam. Run it as ``python -m swe_lab.datasets.verify``.
+Lives beside the dataset axis (``datasets/verify.py``, not the generic
+``cli/``): its classification is SWE-like dataset semantics — the required
+tests must fail at base, the golden patch must resolve — and it runs against
+any registered dataset via ``--dataset``. Run it as
+``python -m swe_lab.datasets.verify --dataset <name>``.
 
 For each instance we do two graded runs in its image and check the pair:
 
@@ -613,7 +613,7 @@ def verify_cmd(
         typer.Option(help="Re-verify instances even if a result exists."),
     ] = False,
 ) -> None:
-  """Full-dataset golden verification for SWE-Bench Pro.
+  """Verify a dataset's golden patches, one shard at a time.
 
   Runs base + golden for each instance in this shard and classifies the pair
   into OK / BASE_UNEXPECTED_PASS / GOLDEN_FAIL / ERROR. With ``--aggregate``,

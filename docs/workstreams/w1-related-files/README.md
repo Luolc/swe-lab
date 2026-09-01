@@ -1,10 +1,15 @@
 # Workstream 1 — Related-files annotation
 
-**Status: ✅ COMPLETE — full dataset, 731/731 instances annotated & QA'd.**
+> 📚 **Archive (2026-07) — complete, not maintained.** The annotation shipped in
+> full and nothing here is being worked on. **Live status lives elsewhere** —
+> the workstream row in [`docs/README.md`](../../README.md). Everything below is
+> the design and QA record of how it was built; **the code is the source of
+> truth** for how the pipeline behaves today
+> ([`src/swe_lab/pipelines/related_files/`](../../../src/swe_lab/pipelines/related_files/)).
 
-Ground-truth "what code must a solver read" per instance. 7083 snippets over 37
-rounds; final commit `6fe7095`. Nothing left to annotate. Code lives under
-[`src/swe_lab/pipelines/related_files/`](../../../src/swe_lab/pipelines/related_files/).
+Ground-truth "what code must a solver read" per instance: 731/731 SWE-Bench Pro
+instances annotated & QA'd, 7083 snippets over 37 rounds; final commit
+`6fe7095`. Nothing left to annotate.
 
 ---
 

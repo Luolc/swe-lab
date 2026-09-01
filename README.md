@@ -2,20 +2,43 @@
 
 Tooling to **build, run, enrich, audit and fix SWE (a.k.a. coding agent) evaluation data**.
 
-## Tasks
+## What's in it
 
-- **Related-files annotation** (`src/swe_lab/pipelines/related_files/`) —
-  for each task instance, produce a ground-truth list of the code snippets a
-  model needs to read to solve it. **Shipped**: 100 instances annotated & QA'd.
-  See [`pipelines/related_files/README.md`](src/swe_lab/pipelines/related_files/README.md).
+- **The run engine** ([`src/swe_lab/sandbox/`](src/swe_lab/sandbox/),
+  [`workflow/`](src/swe_lab/workflow/)) — one sandboxed run of a coding agent
+  over a benchmark instance, composed from three plug-in axes: a **harness**
+  (`claude_code`, `codex`, `grok_build`), a **dataset** (SWE-Bench Pro,
+  DeepSWE 1.1) and an **eval method** (unit-test grading). A *workflow* chains
+  those steps — solve, grade, or both — and is run by name:
+
+  ```bash
+  python -m swe_lab run --list                                  # what can be run
+  python -m swe_lab run rollout_and_unit_test <instance_id>     # solve, then grade
+  ```
+
+- **Benchmark integrity** ([`src/swe_lab/git/`](src/swe_lab/git/),
+  [`integrity/`](src/swe_lab/integrity/)) — the task repo's future is stripped
+  out of the container before the agent starts (and the strip is proved), and
+  each run is swept for the ways an agent can reach the answer anyway.
+  Detection, never a gate —
+  [ADR-0010](docs/decisions/ADR-0010-benchmark-integrity.md).
+
+- **Related-files annotation**
+  ([`src/swe_lab/pipelines/related_files/`](src/swe_lab/pipelines/related_files/README.md))
+  — for each task instance, a ground-truth list of the code snippets a model
+  needs to read to solve it. **Shipped**: 731/731 SWE-Bench Pro instances
+  annotated & QA'd.
 
 - **Quality auditing** *(planned)* — flag "skewed" eval examples that no longer
   measure real capability (ambiguous specs vs. overly-specific tests, broken
   environments, contamination, brittle graders), in the spirit of OpenAI's
   [*Separating signal from noise in coding evaluations*](https://openai.com/index/separating-signal-from-noise-coding-evaluations/).
-  Not started; it will land as a sibling under `pipelines/`.
+  Not started; the nearest shipped work is the benchmark-integrity detection
+  above.
 
-The overall roadmap and design live in [`docs/README.md`](docs/README.md).
+The overall roadmap and status live in [`docs/README.md`](docs/README.md); the
+codebase map, commands and hazards in
+[`docs/conventions.md`](docs/conventions.md).
 
 ## Setup
 
@@ -48,7 +71,8 @@ direnv allow     # auto-activate the venv on cd (uses .envrc)
 
 If you don't use direnv, activate manually with `source .venv/bin/activate`.
 
-Install the pre-commit hooks (ruff, pyink, isort, basedpyright, uv-lock):
+Install the pre-commit hooks (the full set is listed in
+[`docs/conventions.md`](docs/conventions.md#formatting--lint-enforced-by-pre-commit)):
 
 ```bash
 uv run pre-commit install

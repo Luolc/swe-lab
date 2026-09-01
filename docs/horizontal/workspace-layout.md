@@ -13,7 +13,8 @@ lives — host-side and in-container.
 | workspace (host) | `.cache/eval_workspaces/<instance_id>/` (eval) · `.cache/rollout_workspaces/<instance_id>/` (rollout) | engine + composition | the per-run host dir; gitignored |
 | `$SANDBOX_WORKSPACE` | `/workspace` (A-host bind-mount) · the local dir (A-ghjob) | **backend** | the workspace as seen in-container; every script references staged files only through it |
 | `$WORKDIR` | `/app` for SWE-Bench Pro | **dataset** (`SandboxSpec.workdir`) | where the repo is checked out in the image; the `git diff` / test target |
-| `$HOME` | `/agent-home` | **harness** (claude_code) | a writable HOME the agent binary needs; set by `export HOME=…` inside `run_claude_code.sh` (not a Docker/backend env); in-container `/tmp`, ephemeral, **not** a workspace file |
+| `$HOME` | the image's own, else the passwd entry, else `/tmp/agent-home` | **harness** (shared) | resolved in three tiers by `run_claude_code.sh`, never hijacked (#240/#245): task images pre-warm toolchain caches under the user's home, and an unconditional `HOME` hands an offline run a cold cache |
+| `$CLAUDE_CONFIG_DIR` | `/agent-home/.claude` | **harness** (claude_code) | the agent's **config** root — pinned per run so the image cannot inject instructions through `~/.claude.json` (the ADR-0010 door); ephemeral, **not** a workspace file |
 
 Two facts that shape everything below:
 
@@ -27,18 +28,19 @@ Two facts that shape everything below:
   that generates them. Either way the exact script survives in the workspace
   for audit.
 
-## Assets — read-only infrastructure placed *outside* the workspace
+## Read-only infrastructure placed *outside* the workspace
 
-An **asset** is read-only infrastructure the run must never mutate — that
-immutability (not its size) is what makes it an asset. It lives at a fixed
-container path **outside** the read/write workspace. Per
-[ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md) (task 14) an asset
-is **not a separate type**: it is just a **read-only `Mount`**
+Read-only infrastructure the run must never mutate — that immutability (not
+its size) is what makes it one — lives at a fixed container path **outside**
+the read/write workspace. There is **no `Assets` type**: per
+[ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md) (task 14) such a
+thing is just a **read-only `Mount`**
 (`Mount(resource, executable=…, read_only=True)`) at an absolute target,
 contributed through the same `mounts` seam and staged by the sandbox after
-`up()`. The pinned agent binary is an asset.
+`up()`. The pinned agent binary is the one we have. ("Asset" survives below
+as the informal word for it — it names no type.)
 
-| Asset | Container path | Host source | Realized by |
+| Read-only mount | Container path | Host source | Realized by |
 |---|---|---|---|
 | Claude Code binary | `/opt/claude-code/claude` | `.cache/bin/claude-code/<version>/linux-x64/claude` | A-host: `docker cp` in, then `chmod 0555` · A-ghjob: `cp` into place at mode `0555` (executable + read-only) |
 
@@ -49,7 +51,7 @@ Keeping the binary out of the busy workspace is deliberate: the workspace stays
 pure run data (a persisted workspace, task 12, isn't polluted) and nothing can
 scribble on the binary.
 
-**Mounts** (the workspace files below) wrap the same **`Resource`** as assets
+**Mounts** (the workspace files below) wrap the same **`Resource`**
 (the shared content-source) and are transferred by the sandbox's **`mount` /
 `_mount_one`** step that dispatches on the Resource kind (`Inline` → write,
 `LocalFile` → copy today; `Url` / object-store fetched natively later), never a
@@ -72,7 +74,7 @@ Host root: `.cache/eval_workspaces/<instance_id>/` · in-container:
 | `parser.py` | `$SANDBOX_WORKSPACE/parser.py` | compile (mount) | entryscript | SWE-Bench-Pro output → `output.json` parser |
 | `required_tests.json` | `$SANDBOX_WORKSPACE/required_tests.json` | compile (mount) | the grader (host) | `sorted(fail_to_pass ∪ pass_to_pass)` — the expectation |
 | `patch.diff` | `$SANDBOX_WORKSPACE/patch.diff` | compile (mount) | entryscript (`git apply`) | the candidate patch — **only** when grading a patch (`--gold` stages the gold patch) |
-| *(per-instance fix assets)* | `$SANDBOX_WORKSPACE/<name>` | `fixes.py` (mount) | entryscript | **only** for the few instances whose *environment* is broken upstream — e.g. `matrix-wysiwyg-1.4.1.tgz` for `element-web-aec454dd…`. See [`fixes.py`](../../src/swe_lab/datasets/swebench_pro/fixes.py) |
+| *(per-instance fix files)* | `$SANDBOX_WORKSPACE/<name>` | `fixes/` (mount) | entryscript | **only** for the few instances whose *environment* is broken upstream — e.g. `matrix-wysiwyg-1.4.1.tgz` for `element-web-aec454dd…`. See [`fixes/`](../../src/swe_lab/datasets/swebench_pro/fixes/) |
 
 An instance's fix also splices bash into `entryscript.sh` at one seam — **after**
 the golden test checkout, **before** the run script, still under `set -e`.
@@ -106,7 +108,7 @@ Host root: `.cache/rollout_workspaces/<instance_id>/` · in-container:
 
 | File | In-container path | Written by | Read by | Content |
 |---|---|---|---|---|
-| `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation: `export HOME=/agent-home` · `mkdir -p $HOME` · `export IS_SANDBOX=1` · `. agent_env.sh` (caller-injected env) · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions < prompt.txt > claude.event_stream.jsonl 2> claude.stderr.log \|\| true` (the prompt is piped in on **stdin**, not inlined) |
+| `run_claude_code.sh` | `$SANDBOX_WORKSPACE/run_claude_code.sh` | harness (mount) | the main body | the agent invocation: resolve `$HOME` in three tiers (image → passwd → `/tmp/agent-home`) · `export CLAUDE_CONFIG_DIR=/agent-home/.claude` · `export IS_SANDBOX=1` · `. agent_env.sh` (caller-injected env) · `cd $WORKDIR` · `/opt/claude-code/claude -p --model … --output-format stream-json --verbose --dangerously-skip-permissions < prompt.txt > claude.event_stream.jsonl 2> claude.stderr.log \|\| true` (the prompt is piped in on **stdin**, not inlined) |
 | `prompt.txt` | `$SANDBOX_WORKSPACE/prompt.txt` | **harness** (written in `run`) | the agent (via run_claude_code.sh) | the task prompt — content is **dataset-derived** (`SweBenchProInstance.prompt`), handed to `Harness.run(prompt=...)` as text; the *filename* is this harness's own choice (ADR-0007 §8) |
 
 ### Produced during the run (in-container, by `run_claude_code.sh`)

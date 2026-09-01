@@ -190,7 +190,7 @@ the gitignored `.envrc.local` — see
      in [ADR-0001](../../decisions/ADR-0001-patch-extraction-and-grading.md)
      (Accepted); the [corner-case survey](../../patch-extraction.md) is retained as
      non-authoritative background. The code is the source of truth
-     ([`patch.py`](../../../src/swe_lab/patch.py) + the
+     ([`git/patch.py`](../../../src/swe_lab/git/patch.py) + the
      diff-extract observer in
      [`sandbox/observers/`](../../../src/swe_lab/sandbox/observers/)).
    - Extract the generic "run Claude Code headless + trace → `Conversation`" into
