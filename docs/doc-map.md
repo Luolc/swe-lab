@@ -9,8 +9,9 @@ elsewhere.
 
 ## Document map
 
-`<component>` = `docs/horizontal/` (the shared foundation) or a
-`docs/workstreams/<w>/` folder (a vertical). An active component owns a
+`<component>` = any active component's folder — `docs/horizontal/` (the shared
+foundation), `docs/trace-synthesis/`, or a `docs/workstreams/<w>/` folder (a
+vertical). An active component owns a
 `spec.md` and a `plans/` directory whose `README.md` is the ordered task index
 **and the one live status home**; `plan.md` is optional and there is **no**
 `todo.md` (see `AGENTS.md` → How we work). A dormant component is just a
@@ -28,6 +29,7 @@ elsewhere.
 | `<component>/plan.md` *(optional)* | In what order, with what risks / DoD? (strategy) — worth writing only for a multi-phase migration, and deleted when it ends | per-task design; task list; status |
 | `<component>/plans/README.md` | The ordered task index — **the one live status home** for that component | design detail |
 | `<component>/plans/task-NN-*.md` | The deep design of one task (point-in-time record) + an optional dated `## Result` | live status |
+| `docs/trace-synthesis/` | Oracle-guided trace synthesis — the component layout above (`spec.md` + `plans/`) | horizontal / shared design; training itself |
 | `docs/workstreams/<w>/` | A vertical's design / history — the component layout above when active, just a `README` when dormant (most are) | horizontal / shared design |
 | `docs/releases/vX.Y.Z.md` | I depend on swe-lab and am upgrading to this version — what broke, and what do I change? | design (link to the ADR/plan); the exhaustive commit list (the Release's generated notes own that) |
 | `docs/releases/README.md` | The release-note index + what belongs in one | the note bodies |

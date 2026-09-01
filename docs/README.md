@@ -53,6 +53,7 @@ extraction is settled in
 | Path | What's in it |
 | --- | --- |
 | [horizontal/](horizontal/) | The **horizontal** shared foundation — design of the shared execution core and any cross-cutting shared-code work. |
+| [trace-synthesis/](trace-synthesis/) | **Oracle-guided trace synthesis** — an active component building SFT training traces on top of the foundation. Its [task index](trace-synthesis/plans/README.md) is its own live status home. |
 | [workstreams/](workstreams/) | The **verticals** — one folder per workstream. All three are dormant: each is a design/history `README`. |
 | [conventions.md](conventions.md) | Codebase map, build/test/lint commands, directory meanings, hazards, source-of-truth rule. |
 | [doc-map.md](doc-map.md) | Which doc answers which question, where a new learning belongs, and the single-source-of-truth guards. |
