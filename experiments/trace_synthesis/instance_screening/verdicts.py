@@ -15,10 +15,15 @@ Usage::
 
   direnv exec . uv run python experiments/trace_synthesis/instance_screening/verdicts.py
 """
-import json, pathlib
+import json
+import pathlib
+import sys
 from swe_lab.datasets.loader import load_dataset
 
 HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from table_check import check_runnability_table
+
 V = [
  (0,"bad","misleading_prompt","high","requirements say \"The method\" three times for the same three units the interface types \"Type: Function\"; the two halves of the task statement disagree and the graded tests only accept one placement."),
  (1,"bad","underspecified_prompt","high","test_api_parameters asserts the destinationAddress->dst_address API field mapping; none of the three prompt fields contains those spellings, no sibling bigip_message_routing_* module exists at base_commit, and the one in-repo precedent (bigiq_application_*.py) maps to destination_address instead."),
@@ -63,8 +68,13 @@ V = [
 ]
 RUNNABLE_UNKNOWN = {"element-hq/element-web", "tutao/tutanota"}
 UNRUNNABLE = {"protonmail/webclients"}
+# Repo families with a surviving run whose workflow.json rollout entry shows the
+# agent executed: agent_complete == 1, exit_code == 0, timed_out == 0. Family
+# granularity, as the field has always had — one instance's image is the
+# evidence for its repo.
 PROVEN = {"qutebrowser/qutebrowser", "internetarchive/openlibrary", "future-architect/vuls",
-          "navidrome/navidrome", "gravitational/teleport", "NodeBB/NodeBB"}
+          "navidrome/navidrome", "gravitational/teleport", "NodeBB/NodeBB",
+          "ansible/ansible"}
 
 d = load_dataset('swebench_pro')
 ids = (HERE / 'instances.txt').read_text().split()
@@ -104,3 +114,20 @@ print(Counter(r["verdict"] for r in rows))
 print(Counter(r["category"] for r in rows if r["category"]))
 print("usable now:", [r["rank_in_issue_261"] for r in rows
                       if r["verdict"].startswith("good") and r["image_runnable"] != "unrunnable"])
+
+# The runnability table in REPORT.md is hand-written, and it shipped listing 34
+# of 40 instances because two families were missing outright. A stale value at
+# least sits there to be doubted; a *missing* row looks exactly like a category
+# that does not exist. So the check reads the table out of the report and
+# compares it against the data - checking the data against itself would be
+# tautological, and would stay green with a family deleted from the report.
+#
+# The check lives in table_check.py, and tests/test_screening_table.py exercises
+# it without the dataset: running it only from here meant it ran only when a
+# human ran this script, so a docs-only change that broke the table shipped
+# green through CI.
+print(check_runnability_table(
+    (HERE / "REPORT.md").read_text(), Counter(r["repo"] for r in rows), len(rows)))
+
+for name, field in (("verdict", "verdict"), ("runnability", "image_runnable")):
+  print(f"{name} partition:", dict(Counter(r[field] for r in rows)))
