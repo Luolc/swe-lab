@@ -146,6 +146,32 @@ resource is created*:
   lives is an orphan by construction; a record with no live child is stale and
   is deleted.
 
+  **Writing that record has the same creation race A fixes for containers**, and
+  the review was right that leak ① is not closed until it is spelled out here: a
+  proxy exists the moment `Popen` returns, so a record written *after* the spawn
+  leaves a window in which an orphan exists with nothing naming it — and rule 1
+  below then correctly forbids the reaper from touching it. The ordering is
+  therefore part of the design, not an implementation detail:
+
+  1. **write an intent record before spawning** — owner session, owner pid,
+     port, start time, and a unique run id — so the resource is named before it
+     can exist;
+  2. `Popen`;
+  3. **atomically add the child pid** — write a sibling file and `rename`, never
+     a partial in-place edit, so a reader sees one state or the other.
+
+  That leaves exactly two incomplete states, and both are recoverable **without
+  guessing**: an intent record whose port has no listener is stale and is
+  deleted; an intent record whose port *does* have a listener, and whose owner
+  is dead, names an orphan the reaper can end **by port** — the record
+  identifies the resource even though the child pid was never written.
+
+  **The limit, stated rather than papered over:** this closes leak ① for every
+  proxy this repo spawns, because every one of them is recorded before it can
+  exist. It does not let the reaper act on a listener that *no* record claims —
+  a pre-existing process, or one spawned by code that does not write a record.
+  That is an unknown owner, and rule 1 applies: report it, never kill it.
+
 One code path, two entry points:
 
 - **`swe-lab containers reap`** — lists every container labelled `swe-lab=1`,
@@ -154,12 +180,26 @@ One code path, two entry points:
 - **A session-scoped pytest fixture** that, at session end, removes containers
   carrying **this session's** id and **fails the session** if it removed any.
 
-Three rules, and the third is a correction the review forced:
+Three rules, and the last two are corrections the review forced:
 
-1. **Never touch a resource whose owner is alive, or whose owner is unknown.**
+1. **Never reap a resource whose owner is alive, or whose owner is unknown.**
    An unreadable or malformed owner label is *unknown*, not *dead*. Today's
    standoff — three agents each refusing to remove a container they could not
    attribute — was the correct behaviour and must stay possible.
+
+   **This is a rule about reaping *someone else's* resource, and the session
+   fixture is not doing that** — the review caught the two reading as one. A
+   process that removes what carries **its own session id** is exercising
+   ownership, not reaping: it is the owner, it is necessarily alive, and that is
+   precisely what entitles it to clean up. Two authorities, two predicates, and
+   neither may borrow the other's:
+
+   | path | may remove | owner liveness |
+   |---|---|---|
+   | `containers reap` | any session **but** this one | only when provably dead |
+   | session fixture | **only** this session's id | its own, alive by construction |
+
+   The fixture still reports what it removed and fails the session — rule 2.
 2. **Report rather than tidy.** A leak that is silently cleaned is a leak that
    repeats; today's three were visible only because nobody swept them.
 3. **`--force` re-checks immediately before each removal, per resource.** Owner
@@ -211,6 +251,10 @@ Each invariant gets a named test; none of them needs Docker except where marked:
 | a resource names its owner | create argv carries the pid and session labels; the session id is stable in-process and differs across processes |
 | the proxy's whole child tree dies with the context | `start_new_session` asserted; exiting signals the **group** |
 | an orphaned proxy is reclaimed after its owner dies | spawn the proxy, `SIGKILL` the owner, run the reaper, assert the port is released — the test that would have caught leak ① |
+| an orphan created **before** its child pid was recorded is still reclaimed | kill the owner between the intent record and the update; the reaper ends the listener from the record's port |
+| an incomplete record with no listener is deleted, not acted on | intent record whose port is free → removed, nothing signalled |
+| a listener no record claims is never touched | a foreign process holding a recorded port is reported as unknown |
+| the fixture removes only its **own** session | a container stamped with a different session id survives the fixture untouched |
 | the reaper never touches a live owner | listing with a live pid yields nothing to remove |
 | the reaper never touches an unknown owner | a container whose owner label is missing or malformed is reported, not removed |
 | `--force` re-checks per resource | a resource that becomes live between listing and removal is skipped and reported |
