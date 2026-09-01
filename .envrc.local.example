@@ -16,7 +16,9 @@ fi
 export HF_TOKEN=$(op read --no-newline --force "op://dev-shared/hf-token/credential")
 # NOT named CLAUDE_CODE_OAUTH_TOKEN: direnv exports these into every shell under
 # this directory, and the `claude` CLI logs in with that name if it sees it —
-# with an inference-only token, which breaks Remote Control. The sandbox renames
-# it back for the agent. See docs/conventions.md → Hazards.
+# with an inference-only token, which breaks Remote Control. Whatever needs the
+# canonical name copies it in its own process (swe_lab/cli/host_env.py, and
+# packaging/claude-code-bundle/smoke-test.sh). See docs/conventions.md →
+# Hazards.
 export SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN=$(op read --no-newline --force "op://dev-shared/claude-code-oauth-token/credential")
 export OPENROUTER_API_KEYS=$(op read --no-newline --force "op://dev-shared/openrouter-api-keys/credential")

@@ -88,20 +88,9 @@ CONTAINER_PROXY_HOST = "host.docker.internal"
 
 DEFAULT_MODEL = "claude-sonnet-5"
 
-# The subscription OAuth token, under one name per side of the sandbox
-# boundary. Keeping the two apart is the point:
-#
-# - inside, the agent reads the name Claude Code itself defines;
-# - on the host, we carry it under a repo-scoped name so it never appears in a
-#   developer's or an agent's login shell. A bare ``CLAUDE_CODE_OAUTH_TOKEN``
-#   there hijacks the *interactive* ``claude`` login with an inference-only
-#   token, and Remote Control then refuses to start ("requires a full-scope
-#   login token"). See the hazard note in ``docs/conventions.md``.
-#
-# The rollout definition declares the pair as one ``pass_env`` entry, so the
-# value crosses by reference and never reaches a command line.
-SANDBOX_OAUTH_TOKEN_ENV = "CLAUDE_CODE_OAUTH_TOKEN"
-HOST_OAUTH_TOKEN_ENV = "SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN"
+# The subscription OAuth token the agent reads from its env; the rollout backend
+# passes it by reference (never in the docker argv).
+OAUTH_TOKEN_ENV = "CLAUDE_CODE_OAUTH_TOKEN"
 
 # The API-key env var Claude Code authenticates with when an API key (not the
 # subscription OAuth token) is used — required by ``--bare``, which disables

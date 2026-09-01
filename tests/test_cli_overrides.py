@@ -321,14 +321,14 @@ def test_sandbox_swaps_whole_by_backend_name_then_takes_field_edits():
       definitions.ROLLOUT_AND_UNIT_TEST,
       parse_overrides(
           [
-              "--rollout.sandbox.pass_env=TOKEN=HOST_TOKEN",
+              "--rollout.sandbox.pass_env=TOKEN",
               "--rollout.sandbox=ghjob",
           ]
       ),
   )
   rollout, unit_test = entries
   assert isinstance(rollout.sandbox, GhjobSandboxConfig)
-  assert rollout.sandbox.pass_env == {"TOKEN": "HOST_TOKEN"}
+  assert rollout.sandbox.pass_env == ("TOKEN",)
   # …and the other entry is untouched: a workflow can straddle two backends.
   assert isinstance(unit_test.sandbox, DockerHostSandboxConfig)
   assert backend_of(rollout.sandbox) == "ghjob"

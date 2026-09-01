@@ -19,8 +19,7 @@ from swe_lab.git.audit import GitIntegrityAuditTask
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     DEFAULT_MODEL,
-    HOST_OAUTH_TOKEN_ENV,
-    SANDBOX_OAUTH_TOKEN_ENV,
+    OAUTH_TOKEN_ENV,
 )
 
 # Imported for its registration alone. A harness registers itself at import of
@@ -68,12 +67,9 @@ ROLLOUT: WorkflowDef = (
         ),
         timeout=_AGENT_TIMEOUT_S,
         # The agent needs the network, and its credential travels by name so
-        # the value never reaches a command line. The two names differ on
-        # purpose: the host must not carry a bare CLAUDE_CODE_OAUTH_TOKEN
-        # (see the constants), and the sandbox is where the agent reads it.
+        # the value never reaches a command line.
         sandbox=DockerHostSandboxConfig(
-            network=True,
-            pass_env={SANDBOX_OAUTH_TOKEN_ENV: HOST_OAUTH_TOKEN_ENV},
+            network=True, pass_env=(OAUTH_TOKEN_ENV,)
         ),
     ),
 )
