@@ -110,12 +110,22 @@ runs/<variant>/     cmd.txt, meta.json, stream.jsonl, hook_log.jsonl,
                     stderr.txt, and proxy.jsonl for the proxied variants
 ```
 
-**The proxy log carries credentials until it is redacted.** `cc-reverse-proxy`
-records every request header verbatim, including the run's OAuth bearer token,
-and the request body's `metadata.user_id` carries the account id. The driver
-redacts both in place as soon as a proxied run ends
-(`redact_proxy_log`); anything captured by other means must be redacted before
-it goes anywhere near a commit.
+**The proxy log carries credentials and operator identity until it is
+redacted.** `cc-reverse-proxy` records the headers it forwards on **both**
+sides: the request carries the run's OAuth bearer token (and
+`metadata.user_id` in the body), and the response carries the operator's
+`anthropic-organization-id` / `anthropic-workspace-id`. The driver redacts all
+of it in place as soon as a proxied run ends (`redact_record` /
+`redact_proxy_log`), and
+[`tests/test_injection_shape_redaction.py`](../../../tests/test_injection_shape_redaction.py)
+pins both directions plus the committed artifacts. Anything captured by other
+means must be redacted before it goes anywhere near a commit.
+
+This is a property of the capture path, not of this experiment: the same
+binary writes the production `claude.proxy.jsonl` under
+`capture="proxy"`, with no redaction anywhere in
+`src/swe_lab/harnesses/claude_code/`. Filed as
+[task 09](../../../docs/trace-synthesis/plans/README.md#task-09-redact-the-production-proxy-capture).
 
 ## Limits
 

@@ -151,6 +151,13 @@ VARIANTS: dict[str, tuple[str, str, tuple[str, ...]]] = {
     # "does routing through a proxy change what reaches the actor".
     "p8-updated-tool-output-visibility": (
         "updated_tool_output", PROMPT_VISIBILITY, ALL_EVENTS),
+    # p5 varies the tag name *and* the hint body against p1, so on its own it
+    # cannot say which half draws the objections. These two split it: p10 moves
+    # only the tag name, p11 only the impersonating sentence.
+    "p10-updated-tool-output-tag-name-only": (
+        "updated_tool_output", PROMPT_COMPLIANCE, ALL_EVENTS),
+    "p11-updated-tool-output-impersonation-only": (
+        "updated_tool_output", PROMPT_COMPLIANCE, ALL_EVENTS),
     # Falsification probe for "the last proxy record reconstructs the whole
     # session": a subagent runs its own conversation over the same proxy.
     "p9-subagent-thread-mixing": (
@@ -179,6 +186,8 @@ PROXIED = {
     "p7-post-tool-use-failure-context": (HINT, "oracle_hint"),
     "p8-updated-tool-output-visibility": (HINT, "oracle_hint"),
     "p9-subagent-thread-mixing": (HINT, "oracle_hint"),
+    "p10-updated-tool-output-tag-name-only": (HINT, "supervisor_note"),
+    "p11-updated-tool-output-impersonation-only": (HINT_PROVENANCE, "oracle_hint"),
 }
 
 # The throwaway workspace the actor works in: notes.txt makes a claim the code
@@ -196,32 +205,59 @@ WORKSPACE_FILES = {
 }
 
 
-# Headers whose value is a credential. The proxy logs every request header
-# verbatim, so a raw proxy.jsonl carries the run's OAuth bearer token; the
-# capture is redacted the moment the run ends and before anything can commit it.
-SECRET_HEADERS = frozenset(
-    {"authorization", "x-api-key", "cookie", "proxy-authorization"}
-)
+# Headers to strip from a captured proxy log. The proxy records every header
+# verbatim on **both** sides, so a raw proxy.jsonl carries the run's OAuth
+# bearer token on the way out and the operator's organization / workspace ids
+# on the way back. Both are redacted the moment a run ends, before anything can
+# commit them.
+#
+# Compared by lowercased name, because the two sides do not agree on casing.
+SECRET_HEADERS = frozenset({
+    # request — credentials
+    "authorization",
+    "x-api-key",
+    "cookie",
+    "proxy-authorization",
+    # response — operator identity
+    "anthropic-organization-id",
+    "anthropic-workspace-id",
+    "anthropic-ratelimit-unified-representative-claim",
+})
+
+REDACTED = "<redacted>"
+
+
+def redact_record(record: dict) -> dict:
+  """Strip credentials and operator identity from one proxy record, in place.
+
+  Args:
+    record: One decoded proxy log record (``request`` / ``response``).
+
+  Returns:
+    The same record, redacted.
+  """
+  for side in ("request", "response"):
+    headers = record.get(side, {}).get("headers")
+    if not isinstance(headers, dict):
+      continue
+    for key in list(headers):
+      if key.lower() in SECRET_HEADERS:
+        headers[key] = REDACTED
+  metadata = record.get("request", {}).get("body", {}).get("metadata")
+  if isinstance(metadata, dict) and "user_id" in metadata:
+    metadata["user_id"] = REDACTED
+  return record
 
 
 def redact_proxy_log(path: Path) -> None:
-  """Strip credentials and the account id from a captured proxy log, in place."""
+  """Redact a captured proxy log in place (see :data:`SECRET_HEADERS`)."""
   if not path.exists():
     return
-  lines = []
-  for line in path.read_text().splitlines():
-    if not line.strip():
-      continue
-    record = json.loads(line)
-    headers = record.get("request", {}).get("headers", {})
-    for key in list(headers):
-      if key.lower() in SECRET_HEADERS:
-        headers[key] = "<redacted>"
-    body = record.get("request", {}).get("body", {})
-    metadata = body.get("metadata")
-    if isinstance(metadata, dict) and "user_id" in metadata:
-      metadata["user_id"] = "<redacted>"
-    lines.append(json.dumps(record, sort_keys=True, ensure_ascii=False))
+  lines = [
+      json.dumps(redact_record(json.loads(line)), sort_keys=True, ensure_ascii=False)
+      for line in path.read_text().splitlines()
+      if line.strip()
+  ]
   path.write_text("\n".join(lines) + "\n")
 
 

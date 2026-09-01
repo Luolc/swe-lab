@@ -27,6 +27,7 @@ recorded in [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
+| 09 | **Redact the production proxy capture** — gates *publishing* any proxy-captured trace | ⬜ |
 
 ---
 
@@ -195,3 +196,39 @@ versus the cheap "failed once, gold self-test passes" proxy.
   against rejection sampling on the same instances.
 - **Verification:** an experiment `REPORT.md`.
 - **Dependencies:** 07. **Scope:** L
+
+## Task 09: Redact the production proxy capture
+
+**Description:** `ClaudeCodeHarness(capture="proxy")` declares
+`claude.proxy.jsonl` as a native output, so the proxy log is a registered run
+artifact. That log is written by the same `cc-reverse-proxy` binary
+[task 02](#task-02-measure-the-injection-shape) used, and the binary records the
+headers it forwards: its `excludedRequestHeaders` drops only `host` and
+`accept-encoding`, and its response `excludedHeaders` only the hop-by-hop four.
+So **every proxy-captured run stores the run's `Authorization` bearer token and
+the operator's `anthropic-organization-id` / `anthropic-workspace-id`
+verbatim**, and nothing under `harnesses/claude_code/` redacts anything —
+`convert.py`'s "No PII redaction is needed here" reasons about the agent's
+identity *inside the container*, which is a different question from what the
+proxy wrote down.
+
+**This is latent, not live.** Today those artifacts land in `.cache/` and in the
+cache-backed T1 store, and no running path publishes a rollout artifact. But
+[`.gitignore`](../../../.gitignore) states that full-conversation trace records
+live off-repo in a HF dataset repo — publishing traces is the intent — so
+whoever first publishes a proxy-captured trace publishes a credential and the
+operator's account identifiers with it. Task 02 put proxy capture near this
+pipeline's critical path, which is why the task is filed here.
+
+Redaction belongs **at write time**, not as an after-the-fact cleanup, so a raw
+artifact never exists on disk. `redact_record` in
+[`experiments/trace_synthesis/injection_shape/run_experiment.py`](../../../experiments/trace_synthesis/injection_shape/run_experiment.py)
+is the header set and the shape to start from.
+
+- **Acceptance:** a proxy-captured run's stored artifact carries no credential
+  and no operator identifier; a named test covers **both** directions (a request
+  credential header and a response identity header). `convert.py`'s redaction
+  docstring is corrected to say which capture it is talking about.
+- **Verification:** unit tests; one proxy-captured run inspected end to end.
+- **Dependencies:** none. **Gates:** publishing any proxy-captured trace — not
+  local runs. **Scope:** S

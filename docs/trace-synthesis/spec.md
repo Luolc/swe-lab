@@ -345,12 +345,16 @@ delivered wrapped in a system reminder that `stream-json` does not carry — and
 measurement, not yet a [§5](#5-the-mechanism-decisions) decision**; it needs the
 owner's sign-off before it becomes one.
 
-Two results from that measurement bear on the marker itself, and both are
-empirical: an **unmarked** hint is refused as a prompt injection far more often
-than a tagged one, and a marker **claiming to be the user** is refused more
-often still — which is what Claude Code's own guard is built to catch. So the
-marker is a neutral, acknowledged third party (`<oracle_hint>`), never an
-impersonation of the operator.
+The measurement also says something about the marker, and it is narrower than
+it first looked. An **unmarked** hint is refused as a prompt injection far more
+often than a tagged one; and of the four combinations of tag name and hint body
+that were tried, **only a neutral tag with a body that does not claim to be the
+user drew no objections at all** — the other three drew objections in 2 to 4 of
+4 runs. So the marker is a neutral, acknowledged third party (`<oracle_hint>`)
+whose text does not impersonate the operator. *Why* that combination wins is
+**not** settled: the 2×2 splitting the tag from the body is non-monotone, so
+"never impersonate the user" is the provisional reading rather than a
+demonstrated mechanism.
 
 **Appending a tagged suffix is not rewriting the tool output**, and the
 distinction is exactly where [§5](#5-the-mechanism-decisions)'s *never rewrite*
