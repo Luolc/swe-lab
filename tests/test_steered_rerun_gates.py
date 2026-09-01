@@ -66,20 +66,24 @@ def _records(
   for seq in range(3):
     identity = f"toolu_{seq}"
     emitted = seq == hinted
-    host.append({
-        "session": "s",
-        "seq": seq,
-        "tool": "Bash",
-        "tool_use_id": identity if identified else None,
-        "hint": _HINT if emitted else None,
-        "hint_emitted": emitted,
-    })
-    hook.append({
-        "seq": seq,
-        "tool": "Bash",
-        "tool_use_id": identity if identified else None,
-        "applied": emitted,
-    })
+    host.append(
+        {
+            "session": "s",
+            "seq": seq,
+            "tool": "Bash",
+            "tool_use_id": identity if identified else None,
+            "hint": _HINT if emitted else None,
+            "hint_emitted": emitted,
+        }
+    )
+    hook.append(
+        {
+            "seq": seq,
+            "tool": "Bash",
+            "tool_use_id": identity if identified else None,
+            "applied": emitted,
+        }
+    )
     text = f"real output {seq}"
     if emitted:
       text += f"\n\n<oracle_hint>\n{_HINT}\n</oracle_hint>"
@@ -94,7 +98,7 @@ def test_clean_run_reconciles(reconciler: ModuleType) -> None:
 
 
 def test_positional_fallback_is_named(reconciler: ModuleType) -> None:
-  """A run without the identity still reconciles, and says the join is weaker."""
+  """Without the identity it still reconciles, and says the join is weaker."""
   problems, _, identity = reconciler.reconcile(*_records(identified=False))
   assert problems == []
   assert identity == "position + tool name"
@@ -108,7 +112,9 @@ def test_omitted_converted_boundary_is_caught(reconciler: ModuleType) -> None:
   assert problems, "a dropped converted boundary must not reconcile"
 
 
-def test_duplicated_hint_bearing_result_is_caught(reconciler: ModuleType) -> None:
+def test_duplicated_hint_bearing_result_is_caught(
+    reconciler: ModuleType,
+) -> None:
   """Counts stay equal when a hinted result is pasted over an unhinted one."""
   host, hook, converted = _records()
   converted[0] = dict(converted[1], tool_use_id=converted[0]["tool_use_id"])
@@ -128,11 +134,13 @@ def test_hint_missing_from_the_trace_is_caught(reconciler: ModuleType) -> None:
   host, hook, converted = _records()
   converted[1]["text"] = "real output 1"
   problems, _, _ = reconciler.reconcile(host, hook, converted)
-  assert any("missing from the converted trace" in problem for problem in problems)
+  assert any(
+      "missing from the converted trace" in problem for problem in problems
+  )
 
 
 def test_unjudged_boundary_is_caught(reconciler: ModuleType) -> None:
-  """The gap that killed the first steered run: the sandbox asked, the host died."""
+  """The gap that killed the first steered run: it asked, the host had died."""
   host, hook, converted = _records()
   del host[2]
   problems, _, _ = reconciler.reconcile(host, hook, converted)
@@ -175,11 +183,13 @@ def _attempts(*failures: tuple[str, ...]) -> dict[str, Any]:
 
 
 def test_a_stable_failure_passes_the_gates(freezer: ModuleType) -> None:
-  freezer.check_gates(_HEALTHY, _attempts(("test_a",), ("test_a",), ("test_a",)))
+  freezer.check_gates(
+      _HEALTHY, _attempts(("test_a",), ("test_a",), ("test_a",))
+  )
 
 
 def test_an_actor_that_never_ran_is_refused(freezer: ModuleType) -> None:
-  """protonmail/webclients: exit 2, timed_out 0, and the binary never executed."""
+  """protonmail/webclients: exit 2, timed_out 0, the binary never executed."""
   metrics = _HEALTHY | {"agent_complete": 0.0, "claude_code.exit_code": 127.0}
   with pytest.raises(SystemExit, match="agent_complete"):
     freezer.check_gates(metrics, _attempts(("test_a",)))
@@ -187,7 +197,9 @@ def test_an_actor_that_never_ran_is_refused(freezer: ModuleType) -> None:
 
 def test_a_killed_run_is_refused(freezer: ModuleType) -> None:
   with pytest.raises(SystemExit, match="timed_out"):
-    freezer.check_gates(_HEALTHY | {"claude_code.timed_out": 1.0}, _attempts(("test_a",)))
+    freezer.check_gates(
+        _HEALTHY | {"claude_code.timed_out": 1.0}, _attempts(("test_a",))
+    )
 
 
 def test_disagreeing_grade_attempts_are_refused(freezer: ModuleType) -> None:
