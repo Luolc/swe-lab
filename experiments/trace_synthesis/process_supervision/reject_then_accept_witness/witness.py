@@ -110,6 +110,23 @@ def _start_proxy(out_dir: pathlib.Path) -> tuple[subprocess.Popen[bytes], int, p
   raise RuntimeError("the proxy never accepted a connection")
 
 
+def _without_cache_control(body: dict) -> dict:
+  """Return the body with every ``cache_control`` marker removed.
+
+  Args:
+    body: The request body.
+
+  Returns:
+    A copy carrying no cache directives.
+  """
+  if isinstance(body, dict):
+    return {k: _without_cache_control(v)
+            for k, v in body.items() if k != "cache_control"}
+  if isinstance(body, list):
+    return [_without_cache_control(v) for v in body]
+  return body
+
+
 def _judge_completion(message: dict, before: str, total: int) -> dict:
   """Ask the #305 judge whether the guidebook adjudicates this completion.
 
@@ -160,6 +177,22 @@ def main() -> None:
       f"  step {i}: {s['content'][:120]}"
       for i, s in enumerate(steps[:_POSITION][-8:])
   ) or "  (none -- this is the first step)"
+
+  # 8.4 -- attempt 0: re-judge the original completion with *this* judge, so
+  # the premise is not inherited from #305's run.
+  original = (rows[_STEP_INDEX].get("response") or {}).get("message") or {}
+  attempt_zero = _judge_completion(original, before, len(steps))
+  try:
+    still_off = json.loads(attempt_zero["raw"]).get("verdict") == "off_track"
+  except json.JSONDecodeError:
+    still_off = False
+  (args.out_dir / "attempt-0-original.json").write_text(
+      json.dumps({"judge": attempt_zero, "still_off_track": still_off}, indent=2))
+  print(f"attempt 0 (original completion) still_off_track={still_off}")
+  if not still_off:
+    print("material is VOID: this judge no longer calls the step off-track. "
+          "Stopping, per pre-registration 8.4.")
+    return
 
   process, port, proxy_log = _start_proxy(args.out_dir)
   records, spent, seen = [], 0.0, 0
@@ -217,12 +250,51 @@ def main() -> None:
       print(f"attempt {attempt} accepted={accepted} "
             f"provider={records[-1]['provider_name']} spent=${spent:.4f}")
       if accepted:
+        # 8.3 -- an accept that does not reproduce is not a witness.
+        repeats = [_judge_completion(message, before, len(steps)) for _ in range(2)]
+        agreed = 1 + sum(
+            1 for r in repeats
+            if (json.loads(r["raw"]).get("verdict") if r["raw"].strip().startswith("{")
+                else None) == "on_track")
+        records[-1]["judge_repeats"] = repeats
+        records[-1]["accepted_of_3"] = agreed
+        print(f"  re-judged the same completion: accepted {agreed} of 3")
         break
       if spent > _COST_CEILING_USD:
         print("cost ceiling reached; run is INCONCLUSIVE, not outcome 2")
         break
   finally:
     process.terminate()
+
+  # 8.2 -- outcome 1 has two mechanisms; this separates them. Authorized in the
+  # pre-registration, not decided after seeing the result.
+  shas = {r["completion_sha256"] for r in records}
+  if len(records) == args.k and len(shas) == 1:
+    print("all K identical -- running the authorized cache-off confirmation")
+    process, port, proxy_log = _start_proxy(args.out_dir)
+    try:
+      stripped = json.dumps(_without_cache_control(body)).encode()
+      request = urllib.request.Request(
+          f"http://127.0.0.1:{port}/v1/messages", data=stripped,
+          headers={
+              "Content-Type": "application/json",
+              "Anthropic-Version": "2023-06-01",
+              "X-Api-Key": _judge.key_pool()[0],
+          },
+      )
+      with urllib.request.urlopen(request, timeout=600) as response:
+        sse = response.read()
+      (args.out_dir / "cache-off.sse").write_bytes(sse)
+      logged = [json.loads(l) for l in proxy_log.read_text().splitlines()]
+      message = (logged[-1].get("response") or {}).get("message") or {}
+      completion = json.dumps(message.get("content"), sort_keys=True).encode()
+      (args.out_dir / "cache-off.json").write_text(json.dumps({
+          "completion_sha256": hashlib.sha256(completion).hexdigest(),
+          "same_as_cached_runs": hashlib.sha256(completion).hexdigest() in shas,
+          "usage": message.get("usage") or {},
+      }, indent=2))
+    finally:
+      process.terminate()
 
   (args.out_dir / "attempts.jsonl").write_text(
       "".join(json.dumps(r) + "\n" for r in records))

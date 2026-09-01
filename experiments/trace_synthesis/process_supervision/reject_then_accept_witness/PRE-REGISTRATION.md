@@ -143,3 +143,79 @@ asserting anything.
 **Stop rule, declared now:** if cumulative measured cost exceeds **$2.00** before
 K = 10, stop. A run stopped that way is reported as **inconclusive** — explicitly
 *not* as outcome 2, since "0/K accepted" requires all K attempts.
+
+## 8. Four additions, fixed before the run
+
+Each closes a way the run could finish and still not be readable.
+
+### 8.1 Sampling parameters — checked before the run, not assumed
+
+We kept saying *no temperature, that answers a different question*, without ever
+asking what it already was. **Checked, measured:**
+
+| field | value |
+|---|---|
+| `temperature` | **absent** |
+| `top_p`, `top_k`, `seed` | **absent** |
+
+Absent in this request **and in all 37 agent turns of the rollout**. So sampling
+is whatever the provider defaults to; **the value is unknown to us**.
+
+This is the "absent" branch, so the run proceeds — but it fixes a limit on
+**outcome 1**: identical completions would be evidence about *this upstream at
+its default sampling*, not about re-sending in general, and a deployment of B at
+non-zero temperature is not excluded by it. Had the body pinned `temperature: 0`,
+outcome 1 would have been guaranteed by our own setting and the design would have
+gone back for redesign.
+
+Two further fields are recorded for the same reason, both able to bear on
+determinism and neither part of the debate's vocabulary:
+`output_config: {"effort": "high"}` and
+`thinking: {"display": "omitted", "type": "adaptive"}`. Also
+`provider.require_parameters: true`, which restricts routing to providers
+supporting every parameter sent. **None of these is modified.**
+
+### 8.2 Outcome 1 has two mechanisms, and they must be separable
+
+The request carries `cache_read_input_tokens = 72122` and **three
+`cache_control: {"type": "ephemeral"}` markers** — at `messages[30].content[0]`,
+`system[1]` and `system[2]`. If all K are identical, at least two mechanisms
+explain it:
+
+- the upstream is deterministic or deduplicates identical requests → **B does not
+  work**; or
+- a cache layer returned a memoized completion → **B might work with caching
+  off**.
+
+These mean opposite things for B. So: cache usage fields and any cache-related
+response header are recorded per attempt, and **if the run lands on outcome 1, one
+additional attempt is made with those three `cache_control` markers removed**.
+That extra attempt is **authorized here, in advance**; it is not a design change
+made after seeing the result.
+
+**Outcome 1 must be worded "under this run's caching conditions"** unless that
+confirmation attempt was performed.
+
+### 8.3 The judge has variance too, and outcome 3 is the expensive one
+
+The judge is an LLM. A first accept at attempt *k* may be **the judge moving, not
+the completion improving** — and outcome 3 is the only outcome that reopens a
+debate.
+
+So: **on the first accept, the same completion is judged twice more**, and the
+report states **"accepted n of 3"**. Cost is two judge calls. An accept that does
+not reproduce is not a witness.
+
+### 8.4 Attempt 0 — re-judge the original completion with *this* judge
+
+The claim that this step is off-track comes from #305's run. Carrying it into
+this run unexamined would be using one run's verdict to support another run's
+premise.
+
+So the original recorded completion is judged as **attempt 0**, by the same judge
+module and guidebook this run uses:
+
+- still **off_track** → the material holds, continue;
+- now **on_track** → the material is **void**: stop, move to the next step named
+  in §2, and report this as a result in its own right, since it is an
+  observation about judge stability.
