@@ -282,15 +282,34 @@ new has to be built.
   for readiness, flush before teardown. The log is append-only JSONL, so a
   killed process truncates at a line boundary and every already-written line
   stays complete.
-- **The log lands inside the sandbox, where the agent can reach it.** That is a
-  trace-integrity question. The honest framing is that it is **level, not new**:
-  `event_stream.jsonl` is already written into the workspace and is already
-  just as reachable. It must be stated rather than left for someone to find.
+- **The log lands inside the sandbox, where the agent can reach it — and that is
+  a new exposure, not a level one.** An earlier version of this paragraph called
+  it "level, not new" on the grounds that `event_stream.jsonl` is already in the
+  workspace and already just as reachable. Both halves are wrong, and the review
+  of the implementing PR established it: the host-side recorder kept its log in
+  a **host** temporary directory until teardown, so the agent could not reach it
+  at all while it ran; and "as reachable" is not "as sensitive" — the proxy log
+  carries HTTP **headers**, which the event stream does not. One real capture
+  held **39** live credentials and operator identifiers where the stream capture
+  held none.
+
+  What makes it acceptable is therefore a mechanism, not a comparison:
+  **redaction at write time**, so an unredacted capture never exists on disk
+  inside or outside the sandbox, and **no unredacted capture may enter any
+  collected artifact**. Post-hoc cleanup does not satisfy this — it leaves a
+  window in which the raw file is on disk and reachable.
 
 - **Acceptance:** proxy capture works with **no host firewall rule and no port
   allocation scheme**; `machine-setup` can then drop both `ufw` ranges together
   with their `defaults` variables and the bringup-acceptance row.
-- **Verification:** one proxy-captured run on a box with the rules removed.
+- **Verification:** owned by the implementing PR, and deliberately **not**
+  "one proxy-captured run on a box with the rules removed" — that criterion is
+  weaker than the property it tests (it shows the rules were unused on one run,
+  not that nothing can depend on them) and it is circular here, since removing
+  the rules waits on the very change it would verify. The constructive form —
+  a proxy-captured run that binds **no host port at all**, with the agent
+  dialing container-local loopback — is what the implementer lands and is not
+  claimed as met by this entry.
 - **Dependencies:** none. It gates nothing today (the firewall workaround has
   landed), but it removes a required component's dependency on machine-level
   configuration. **Scope:** M
