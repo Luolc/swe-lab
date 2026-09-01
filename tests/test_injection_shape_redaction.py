@@ -6,12 +6,9 @@ organization / workspace identifiers on the response side. The experiment's
 driver redacts both the moment a run ends; these tests pin that, because the
 failure is silent and the artifacts are committed.
 
-They also pin the **gate**, which is the half that was missing on 2026-09-01:
-redacting and checking that it worked are different claims, and only the second
-one holds when the redactor is wrong or is pointed at a producer that never
-redacted anything. A capture that fails the check is deleted, and
-`test_a_capture_that_stays_dirty_is_deleted` is what keeps that a fact rather
-than an intention.
+They also pin the **gate**: redacting and checking that it worked are different
+claims, and only the second holds when the redactor is wrong or is pointed at a
+producer that masks nothing. A capture that fails the check is deleted.
 
 The driver lives under `experiments/`, which is exempt from the code-quality
 hooks and is not an importable package, so it is loaded by path.
@@ -137,16 +134,10 @@ def test_redact_proxy_log_rewrites_the_file(
 def test_a_capture_that_stays_dirty_is_deleted(
     driver: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-  """The gate the 2026-09-01 token exposure existed for want of.
+  """A redactor that quietly does nothing must not leave a capture behind.
 
-  Redacting and *checking that it worked* are different claims, and only the
-  second one survives the redactor being wrong or aimed at the wrong producer
-  — which is exactly what happened: the driver was spawning a proxy build with
-  no redaction in it, nothing re-read the result, and a live bearer token sat
-  in a capture that looked clean.
-
-  So this drives the failure the real incident could not signal: a redactor
-  that quietly does nothing. The capture must not survive it.
+  The failure the gate exists for, and the one nothing else can signal: the
+  bytes look like a clean capture, so only re-reading them catches it.
   """
 
   def redact_nothing(record: dict[str, Any]) -> dict[str, Any]:

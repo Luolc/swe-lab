@@ -53,24 +53,14 @@ _BUILD_TIMEOUT_S = 300.0
 class ProxyBuild:
   """One compilation target for the proxy, and the cache subtree it owns.
 
-  There are two, and they differ in exactly two things: the Go environment
-  they compile under, and the namespace they cache into. Everything else —
-  above all *how a cached build is keyed* — is deliberately written once here.
-
-  That last point is the reason this type exists rather than two builders.
-  Keying a cached binary by the digest of the source it came from is what stops
-  a stale binary being handed back as if it were current, and while
-  `pipelines.related_files.host_proxy` had a builder of its own it did not have
-  that rule: a fixed cache path returned whatever binary happened to sit there,
-  from any revision. For this particular program that is a security property
-  and not merely hygiene — the redaction that masks credentials as the proxy
-  writes them arrived in a specific upstream commit, so a binary predating it
-  writes bearer tokens to disk while every caller believes the opposite. One
-  behaviour implemented twice is how the first fix reached only one of them.
+  A target is *only* these two differences — the Go environment it compiles
+  under, and the namespace it caches into — so every consumer of the proxy
+  shares one builder and one cache key.
 
   Attributes:
     namespace: The ``<cache>/bin/<namespace>`` subtree this target owns.
-      Distinct per target so two builds of the same source never share a path.
+      Distinct per target so two targets' builds of one source never share a
+      path.
     platform: The platform component of the cache path, so a cache carried
       between machines cannot serve one platform's binary to another.
     go_env: Environment overrides for ``go build``; empty means host-native.

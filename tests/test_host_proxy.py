@@ -42,8 +42,7 @@ def _go_writing_the_source_back(
 ) -> None:
   """Stub `go build` with one that stamps its source into the binary.
 
-  That is what makes "which revision is this binary" observable in a test
-  without a Go toolchain — the exact question the cache has to get right.
+  Makes "which revision is this binary" observable without a Go toolchain.
   """
 
   def _fake_go(
@@ -79,18 +78,11 @@ def test_the_binary_path_is_keyed_by_the_source_digest(
 def test_a_binary_built_from_an_older_source_is_not_reused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-  """The P0 this module was carrying, driven end to end through `build_proxy`.
+  """A changed source must not be served the build made for the old one.
 
-  The cache used to key on a fixed path and never look at the source, so a
-  binary compiled from *any* earlier revision came back as if it were current.
-  For this program that is a security bug rather than staleness: upstream added
-  the redaction that masks credentials as the proxy writes them in a specific
-  commit, so a binary from before it writes live bearer tokens to disk while
-  the caller believes the opposite.
-
-  Asserted on the bytes of the returned binary, not just on the path — the
-  claim is "the caller runs the current source", and a path that merely differs
-  would not establish it.
+  Asserted on the bytes of the returned binary rather than on its path: the
+  claim is that the caller executes the current source, and a path that merely
+  differs would not establish it.
   """
   builds: list[str] = []
   _go_writing_the_source_back(monkeypatch, builds)
@@ -110,10 +102,10 @@ def test_a_binary_built_from_an_older_source_is_not_reused(
 def test_an_unchanged_source_reuses_the_cached_binary(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-  """The converse, so "rebuild every time" cannot pass the test above.
+  """The converse: an unchanged source is reused, not rebuilt.
 
-  Caching is the whole point of the function; a guard that bought correctness
-  by never reusing anything would be a different bug.
+  Without it, a function that rebuilt unconditionally would satisfy the test
+  above while defeating the point of a cache.
   """
   builds: list[str] = []
   _go_writing_the_source_back(monkeypatch, builds)

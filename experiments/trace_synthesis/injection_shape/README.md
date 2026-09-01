@@ -100,13 +100,12 @@ The proxy is the **Go** `cc-reverse-proxy`, built from the sibling checkout by
 `CC_REVERSE_PROXY_SRC`). The driver starts one per proxied variant on port 9611
 and stops it afterwards.
 
-**It is deliberately not the project's Python port.** Only the Go
-implementation redacts credentials and operator identity as it writes; this
-driver spawned the Python one until 2026-09-01 and produced a capture carrying
-a live OAuth bearer token, which cost a rotation. Every capture is now re-read
-through `swe_lab.harnesses.claude_code.redaction.unredacted_fields` before the
-run ends, and one that still fails is deleted rather than kept — so "we redact"
-and "this file is redacted" stop being the same claim.
+**Do not point this at the project's Python ports.** Of the three
+implementations it ships, only the Go one redacts credentials and operator
+identity as it writes. Every capture is also re-read through
+`swe_lab.harnesses.claude_code.redaction.unredacted_fields` before the run
+ends, and one that fails is deleted rather than kept — so "we redact" and "this
+file is redacted" stay separate claims.
 
 ## Layout
 

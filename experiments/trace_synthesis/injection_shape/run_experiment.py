@@ -23,13 +23,10 @@ was sent**. That is the only ground truth for "what the actor sees";
 questions need the two captures, so the ``p*`` runs carry both.
 
 **Which `cc-reverse-proxy` is not a detail.** The standalone project ships three
-implementations of it and only the Go one redacts as it writes; this driver
-spawned a Python one until 2026-09-01, and that is how a capture with a live
-bearer token on it came to exist. It now goes through
-:mod:`swe_lab.pipelines.related_files.host_proxy` — the same host-side launcher
-the W1 annotation pipeline uses, building the Go source — and every capture is
-re-read and checked before the run is allowed to end
-(:func:`redact_proxy_log`).
+implementations of it and only the Go one redacts as it writes, so the build
+comes from :mod:`swe_lab.pipelines.related_files.host_proxy` rather than from a
+path spelled out here. Every capture is then re-read and checked before the run
+is allowed to end (:func:`redact_proxy_log`).
 
 Runs are idempotent: a variant whose ``stream.jsonl`` already exists is skipped
 (and says so) so an interrupted round resumes without burning tokens.
@@ -325,18 +322,12 @@ from swe_lab.pipelines.related_files.host_proxy import (  # noqa: E402
 def redact_proxy_log(path: Path) -> None:
   """Redact a captured proxy log in place, and refuse to leave a dirty one.
 
-  Two steps, and the second is the one that was missing. Redaction is a
-  deny-list applied by code that can be wrong or can be pointed at the wrong
-  producer; **checking is what turns "we redact" into "this file is
-  redacted"**. The distinction is not theoretical: this driver used to start a
-  `cc-reverse-proxy` build with no redaction in it at all, and because nothing
-  re-read the result, a capture with a live bearer token on it looked exactly
-  like a clean one.
-
-  So the check runs at write time, over the bytes actually on disk, through
-  `src`'s shared checker rather than a local copy of the rules. A capture that
-  fails it is **deleted, not reported and kept** — a file that must not exist
-  is not made safe by a warning nobody reads. Pinned by
+  Redaction is a deny-list applied by code that can be wrong or aimed at a
+  producer that masks nothing, so **checking the bytes on disk is what turns
+  "we redact" into "this file is redacted"** — through `src`'s shared checker
+  rather than a local copy of the rules. A capture that fails is **deleted,
+  not reported and kept**: a file that must not exist is not made safe by a
+  warning nobody reads. Pinned by
   `tests/test_injection_shape_redaction.py::test_a_capture_that_stays_dirty_is_deleted`.
 
   Only the *names* of the offending fields reach the message. A gate that
@@ -366,20 +357,11 @@ def redact_proxy_log(path: Path) -> None:
 def start_proxy(out_path: Path) -> ReverseProxy:
   """Return the Go ``cc-reverse-proxy``, ready to enter as a context manager.
 
-  **The build matters, and it is why this returns what it returns.** There are
-  three implementations of this proxy in the standalone project and only the Go
-  one redacts as it writes; this driver used to spawn one of the other two, and
-  that is what produced a capture with a live token in it. Reusing
-  `host_proxy` — the same launcher the W1 annotation pipeline uses — is what
-  makes "which build" stop being a choice this file gets to make wrongly.
-
-  What that buys, stated exactly, because an earlier version of this docstring
-  claimed more than it had: the binary is cached under the sha256 of the Go
-  source, so the process started here is a build of **the source in the sibling
-  checkout right now** — never an older binary that happens to sit in the
-  cache. Whether that source redacts is a property of the checkout, which is
-  why :func:`redact_proxy_log` re-reads the capture regardless of who produced
-  it.
+  The binary comes from `host_proxy`, which caches it under the sha256 of the
+  Go source, so the process started here is a build of **the source in the
+  sibling checkout right now**. Whether that source redacts is a property of
+  the checkout, not of this call, which is why :func:`redact_proxy_log` re-reads
+  the capture regardless of who produced it.
 
   Building is skipped when a build of this exact source is already cached;
   entering the returned object starts the process and blocks until it accepts

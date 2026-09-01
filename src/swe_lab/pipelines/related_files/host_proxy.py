@@ -38,20 +38,9 @@ _ANTHROPIC_API = "https://api.anthropic.com"
 def build_proxy(repo_root: epath.PathLike | None = None) -> epath.Path:
   """Build (or reuse) the host-native proxy binary; return its path.
 
-  A thin call into :func:`ensure_proxy_binary`, which is the **only**
-  implementation of "compile this Go source and cache the result" in the repo.
-  It did not use to be: this module had a builder of its own that cached on a
-  fixed path and never looked at the source, so a binary compiled from any
-  earlier revision was handed straight back. That is how a caller could hold a
-  proxy built *before* upstream added the redaction that masks credentials as
-  it writes them — and, believing the opposite, write a live bearer token to
-  disk.
-
-  Merging the two rather than teaching this one the same trick is the point:
-  the incident that prompted it was one behaviour implemented three times
-  upstream with the security fix landing in exactly one of them, and a second
-  cache keyed by source digest here would have been the same mistake one level
-  down.
+  A thin call into :func:`ensure_proxy_binary`, the one implementation of
+  "compile this Go source and cache the result"; this module supplies only the
+  host-native target.
 
   Propagates ``FileNotFoundError`` when the Go source is not where we looked
   and ``RuntimeError`` when the toolchain is missing or the build fails; both
@@ -62,8 +51,9 @@ def build_proxy(repo_root: epath.PathLike | None = None) -> epath.Path:
       when omitted.
 
   Returns:
-    The path of the executable host-native binary, which moves whenever the
-    sibling checkout's source changes — the path *is* the staleness check.
+    The path of the executable host-native binary. It moves whenever the
+    sibling checkout's source changes, so a build of an earlier revision is
+    never served as the current one.
   """
   return ensure_proxy_binary(repo_root=repo_root, build=HOST_BUILD)
 
