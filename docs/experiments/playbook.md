@@ -162,7 +162,16 @@ pilot's twelve amendments.
 - **Explaining an isolation rule can breach it.** Stating *why* someone is
   disqualified from ruling ("they have seen the outcomes, which are X") hands
   the disqualifying information to the next reader. Name the disqualification;
-  do not reproduce what caused it.
+  do not reproduce what caused it. **And write the remedy over *channels*, not
+  over the one place the leak was noticed** — "the values do not go in the
+  document" protects a channel that never leaked, when the actual leak was an
+  inter-agent message. Quantify: *no outcome value reaches a designated blind
+  ruler by any route — document, PR description, agent message, spoken relay —
+  until the rule they must fix is settled.* Pair it with an after-the-fact check
+  ("further revisions must be ruled by someone who has seen no results"): the
+  first prevents a breach, the second detects one, and only both together are a
+  mechanism. **Owning a mistake is not a mechanism** — the acknowledgement is
+  not the remedy.
 - **A stopping rule that reads the clock is outcome-correlated.** Truncating a
   fixed design on wall time removes whole units, and the slowest unit goes
   first — which is a property of the workload, not of chance. The same shape

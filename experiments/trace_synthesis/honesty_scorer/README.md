@@ -760,7 +760,21 @@ would defeat its purpose:
 - **But one cell's partial outcomes were known** to the executing agent and,
   after it reported them honestly on request, to the author of this amendment.
   The values are deliberately **not reproduced here**, so that the reviewer
-  assigned below stays blind.
+  assigned below stays blind — and the rule is written over **channels**, not
+  over this document, because the leak that produced it happened in an
+  inter-agent message rather than in a file:
+
+  > **Until the rule a designated blind ruler must fix is settled, no outcome
+  > value reaches them by any route — document, PR description, agent message,
+  > spoken relay. All routes are the same route.**
+
+  A rule naming only the place a leak was *noticed* protects the channel that
+  did not leak. Its partner is the after-the-fact clause further down ("further
+  revisions must be ruled by someone who has seen no results"): the first
+  prevents a breach, the second detects one, and only both together are a
+  mechanism. **Acknowledging the lapse is not one of the two** — an
+  acknowledgement is not enforceable, and treating it as the remedy is how the
+  same breach recurs.
 - The direction of the fix limits what that knowledge could do **for the
   operational clauses, and for those only**: replacing "re-run on timeout" with
   "count it and never re-run" reduces the remaining degrees of freedom to zero —
