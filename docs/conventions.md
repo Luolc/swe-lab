@@ -22,7 +22,7 @@ direnv allow                         # auto-activate venv on cd (or: source .ven
 uv run pre-commit install            # install the hooks (once)
 
 uv run pytest                        # run the test suite
-uv run pre-commit run --all-files    # ruff + pyink + isort + basedpyright + uv-lock
+uv run pre-commit run --all-files    # the full hook set — see Formatting & lint
 
 # The engine CLI — one entry point, per-subcommand modules (cli/<name>.py).
 # `run` takes a REGISTERED WORKFLOW and an instance; any field of it is
@@ -33,7 +33,8 @@ python -m swe_lab run rollout <instance_id>                # run the container a
 python -m swe_lab run rollout_and_unit_test <instance_id> \
     --rollout.harness.model opus --unit_test.retries 2     # …solved, graded, adjusted
 python -m swe_lab run unit_test <instance_id> --input ./candidate.diff   # grade a patch you have
-python -m swe_lab.datasets.swebench_pro.verify --shard i/N                       # golden-sweep one shard
+python -m swe_lab run git_integrity_audit <instance_id>     # agent-free: prove the purge held
+python -m swe_lab.datasets.verify --dataset <name> --shard i/N          # golden-sweep one shard
 # W1 annotation keeps its own module entrypoint:
 python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
 ```
@@ -110,6 +111,9 @@ patch version.
 
 ## Formatting & lint (enforced by pre-commit)
 
+The full hook set. `.pre-commit-config.yaml` is the source of truth; this is
+the one prose copy of it (`AGENTS.md` links here rather than restating it):
+
 - **pyink** — the formatter (Google's black fork): **line length 80, 2-space
   indent, majority quotes**, `py313`. Not ruff-format (ruff's formatter is
   disabled for `.py` in `pyproject.toml`).
@@ -117,8 +121,16 @@ patch version.
   `--fix`.
 - **isort** — black profile, line length 80.
 - **basedpyright** — type checker over `src` + `tests`.
-- `experiments/` is **exempt** from the code-quality hooks (it holds exploratory
-  scripts + captured artifacts, not shipped code).
+- **pydoclint** — docstring `Args:`/`Returns:`/`Raises:` must match the
+  signature; docstring *types* are deliberately unchecked (see Style).
+- **uv-lock** — regenerates `uv.lock` when `pyproject.toml` changes.
+- **no-stale-module-refs** (local pygrep) — fails if a deleted or renamed
+  module/symbol reappears under `src/` or `tests/`; add a token to it
+  whenever you remove one. `docs/` is exempt on purpose (point-in-time
+  records are supposed to name retired code).
+
+`experiments/` is **exempt** from the code-quality hooks (it holds exploratory
+scripts + captured artifacts, not shipped code).
 
 ## Naming (see AGENTS.md)
 
@@ -223,12 +235,14 @@ with the following repo-wide choices and deviations (full plan + rationale:
 
 | Path | What it is |
 | --- | --- |
-| `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, shared observers (diff-extract). |
-| `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `claude_code/` (invocation, `convert`/`capture`, and the Claude Code runner utilities `binary`/`proxy`/`trace`/`errors`). |
-| `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus per-dataset packages (`swebench_pro/`: record, run setup, unit-test compile + grader). |
+| `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, and the shared observers (`diff_extract`, `git_history_purge`, `result_verify`). |
+| `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `registry.py`, then one package per agent — `claude_code/` (invocation, `convert`/`capture`/`recorder`, and the runner utilities `binary`/`proxy`/`errors`), `codex/`, `grok_build/`. |
+| `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus one package per dataset (`swebench_pro/`, `deepswe/`: record, run setup, unit-test compile + grader). `verify.py` is the dataset-agnostic golden sweep (`--dataset <name>`). |
 | `src/swe_lab/evaluation/` | The **evaluation axis**: the `verdict` contract + one module per method (`unit_test`). |
+| `src/swe_lab/workflow/` | The **task layer** above the engine ([ADR-0007](decisions/ADR-0007-task-and-workflow-layer.md)): `task.py` (the generic `Task` — one sandbox, three hooks, one `execute`), `workflow.py` (chains tasks by matching output to input store name), `registry.py` + `definitions.py` (the workflows `run` can name: `rollout`, `unit_test`, `rollout_and_unit_test`, `gold_unit_test`, `git_integrity_audit`), `run_task.py` (executes one and writes its record). |
+| `src/swe_lab/rollout.py` | The **rollout composition** (`CodingAgentTask`): a harness solves the bound instance under the shared observers, with optional proxy capture. Backend-, dataset- and harness-agnostic. |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
-| `src/swe_lab/cli/` + `__main__.py` | The CLI entry point (`eval`/`rollout`/`promote`); `rollout.py` is the rollout composition. (`verify` — golden QA — moved into `datasets/swebench_pro/`, it is dataset-specific.) |
+| `src/swe_lab/cli/` + `__main__.py` | The CLI entry point: one Typer app, one module per subcommand — `run` (any registered workflow, with `--<field>` overrides parsed by `overrides.py`) and `promote`. `host_env.py` hands the repo-scoped OAuth token back to the name a run reads (see [Hazards](#hazards-learned-the-hard-way)). Golden QA is not a subcommand: it is `python -m swe_lab.datasets.verify`. |
 | `src/swe_lab/git/` | Everything about the task repo's **git state**, one module per concern: `patch.py` gets the agent's work *out* as a clean diff vs `base_commit` ([ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md)); `history.py` keeps the answer *out* by stripping future commits and proving it ([ADR-0010](decisions/ADR-0010-benchmark-integrity.md) §3b); `audit.py` is the agent-free task that sweeps a dataset for purge failures. `patch`/`history` are **pure** script builders — the observers that run them live in `sandbox/observers/`. |
 | `src/swe_lab/integrity/` | **Benchmark-integrity detection** (ADR-0010 §3c/§6): `rules.py` is the pure rule core — patch rules, trace rules (an allowlist, after SWE-bench's own detector) and the audit of our own purge; `replay.py` re-runs them over a stored run. Each rule's false-positive rate is measured against the 731 gold patches and pinned as a test. **Detection, never a gate**; the observer that drives it in-flight is in `sandbox/observers/`. |
 | `src/swe_lab/repo/`, `paths.py` | Repo checkout providers (W1) + repo-root/cache path helpers. |
@@ -288,8 +302,8 @@ with the following repo-wide choices and deviations (full plan + rationale:
   `test_an_existing_canonical_token_is_never_overwritten`.
 - **`patches.py` is a stopgap.** The loader corrects 3 upstream dataset rows
   (truncated `fail_to_pass` names) **in memory**; it's a no-op on every other
-  row. Retire it once the fixed parquet is published to HF. See
-  [[dataset-golden-fix]].
+  row. Retire it once a fixed parquet is published to HF and the loader can
+  read the corrected rows straight from the dataset.
 - **`outputs/` is a deliverable, not scratch.** The annotation JSON + parquet are
   version-controlled ground truth. Dataset data files and large trace records are
   *not* in git (gitignored / on HF respectively).
