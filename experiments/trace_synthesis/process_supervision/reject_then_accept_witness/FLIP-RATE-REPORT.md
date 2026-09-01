@@ -64,11 +64,14 @@ the audit behind it, over the run's artifact directory
   was committed). A reader with only `main` reaches the same place from the
   merged version: `c1fd9e9`'s writer records `model` and `max_tokens` **in every
   record**, and the artifacts carry neither — which is how we know they predate
-  it, and why the cap survives only as the manifest's operator assertion. In
-  both versions `"model"` appears solely inside the **request payload**. Neither
-  opens a surface that could hold a response beyond the verdict file:
-  `3e0ce33` opens two, `run.log` and `verdicts.jsonl`; `c1fd9e9` opens one,
-  `args.out`, and prints progress to stdout.
+  it, and why the cap survives only as the manifest's operator assertion. The two
+  versions differ exactly there: `3e0ce33` names the model **only in the request
+  payload**, while `c1fd9e9` also writes the requested alias into each record —
+  and neither reads anything back off the response but `raw` and `usage`, so
+  under either writer the served model, the provider and the applied sampling
+  were never captured. Nor does either open a surface that could hold a response
+  beyond the verdict file: `3e0ce33` opens two, `run.log` and `verdicts.jsonl`;
+  `c1fd9e9` opens one, `args.out`, and prints progress to stdout.
 - **The two response-bearing files hold 79 records over a fixed key set** —
   `verdicts.jsonl` 69, `verdicts_retry.jsonl` 10; keys `rollout`, `position`,
   `step_index`, `tool_names`, `raw`, `usage`, `judged_at`, plus `wall_seconds`
