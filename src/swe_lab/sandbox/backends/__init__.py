@@ -63,8 +63,11 @@ class SandboxConfig:
       enforce ``False`` (A-ghjob: the job container is already live) must
       refuse it, not no-op.
     env: Variables set on each exec as ``KEY=VALUE``.
-    pass_env: Names of variables inherited by reference (value never on
-      argv or in a staged file).
+    pass_env: Variables inherited **by reference** — each key is the name the
+      run sees, each value the host/job variable it is read from (usually the
+      same name; they differ when a variable must not carry its in-sandbox
+      name on the host, as the agent's OAuth token must not). The value never
+      reaches argv or a staged file either way.
     shell: The interpreter each ``run_script`` / ``run_command`` uses —
       every backend execs scripts, so this is a run semantic.
     assets: The machinery the run's agent needs (task-28 §7), filled in by the
@@ -86,7 +89,7 @@ class SandboxConfig:
 
   network: bool = True
   env: Mapping[str, str] = field(default_factory=dict)
-  pass_env: Sequence[str] = ()
+  pass_env: Mapping[str, str] = field(default_factory=dict)
   shell: str = "/bin/bash"
   assets: Sequence[AgentAsset] = ()
 
@@ -288,7 +291,7 @@ def _build_host(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
       pull=config.pull,
       shell=config.shell,
       env=dict(config.env),
-      pass_env=config.pass_env,
+      pass_env=dict(config.pass_env),
   )
 
 
@@ -307,7 +310,7 @@ def _build_ghjob(spec: SandboxSpec, config: SandboxConfig) -> Sandbox:
       workspace=_local_workspace(config, "ghjob"),
       shell=config.shell,
       env=dict(config.env),
-      pass_env=config.pass_env,
+      pass_env=dict(config.pass_env),
   )
 
 

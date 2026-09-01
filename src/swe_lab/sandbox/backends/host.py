@@ -79,9 +79,13 @@ class DockerHostSandbox(Sandbox):
       keep-alive entrypoint use (default ``/bin/bash``; set to ``/bin/sh`` for
       an image without bash).
     env: Variables set in the container as ``KEY=VALUE`` on each exec.
-    pass_env: Names of variables inherited by reference from the host process
-      (``-e NAME`` with no value), so a secret's value never appears in the
-      ``docker`` command line, process list, or logs.
+    pass_env: Variables inherited by reference from the host process: each key
+      is the name the container sees, each value the host variable it is read
+      from. Only the container-side **name** reaches the ``docker`` command
+      line (``-e NAME``); the value travels in the Docker CLI's own
+      environment, so it never appears in the argv, process list, or logs. A
+      host variable that is not set is warned about and skipped — the
+      container never falls back to inheriting the name ambiently.
     reuse: Allow ``up`` to run in a non-empty workspace.
   """
 
@@ -93,7 +97,7 @@ class DockerHostSandbox(Sandbox):
   mount_at: str = "/workspace"
   shell: str = "/bin/bash"
   env: Mapping[str, str] = field(default_factory=dict)
-  pass_env: Sequence[str] = ()
+  pass_env: Mapping[str, str] = field(default_factory=dict)
   reuse: bool = False
   _container: str = field(default="", init=False, repr=False)
   # How long the image pull took, recorded by ``up`` for the metrics observer:
@@ -131,7 +135,8 @@ class DockerHostSandbox(Sandbox):
     create_args += ["--add-host", _HOST_GATEWAY]
     for key, value in self.env.items():
       create_args += ["-e", f"{key}={value}"]
-    for key in self.pass_env:
+    create_env, passed = self._pass_env()
+    for key in passed:
       create_args += ["-e", key]
     create_args += [
         "--label",
@@ -144,7 +149,9 @@ class DockerHostSandbox(Sandbox):
         "-c",
         "sleep infinity",
     ]
-    created = self._docker(create_args, timeout=_DOCKER_TIMEOUT_S)
+    created = self._docker(
+        create_args, timeout=_DOCKER_TIMEOUT_S, env=create_env
+    )
     if created.returncode != 0:
       raise SandboxError(
           f"docker create for {self.spec.image_ref} failed:\n"
@@ -376,14 +383,42 @@ class DockerHostSandbox(Sandbox):
           f"docker pull {image_ref} failed:\n{pulled.stderr[-2000:]}"
       )
 
+  def _pass_env(self) -> tuple[dict[str, str], list[str]]:
+    """Resolve ``pass_env`` into the Docker CLI's environment and its names.
+
+    The rename happens here rather than on the argv: ``docker -e NAME`` copies
+    ``NAME`` out of the CLI's *own* environment, so putting the host
+    variable's value under the container-side name in that environment is what
+    carries a renamed variable across without ever spelling the value.
+
+    Returns:
+      The environment to run ``docker create`` with, and the container-side
+      names to pass as ``-e NAME``.
+    """
+    resolved = dict(os.environ)
+    names: list[str] = []
+    for name, source in self.pass_env.items():
+      value = os.environ.get(source)
+      if value is None:
+        _logger.warning("pass_env source %s is not set on the host", source)
+        continue
+      resolved[name] = value
+      names.append(name)
+    return resolved, names
+
   def _docker(
-      self, args: list[str], *, timeout: float
+      self,
+      args: list[str],
+      *,
+      timeout: float,
+      env: Mapping[str, str] | None = None,
   ) -> subprocess.CompletedProcess[str]:
     """Run one ``docker`` subcommand, capturing output.
 
     Args:
       args: The ``docker`` arguments (without the leading ``docker``).
       timeout: Seconds before the command is killed.
+      env: The environment to run the CLI with; ours when omitted.
 
     Returns:
       The completed process.
@@ -397,6 +432,7 @@ class DockerHostSandbox(Sandbox):
           capture_output=True,
           text=True,
           timeout=timeout,
+          env=None if env is None else dict(env),
           check=False,
       )
     except FileNotFoundError as exc:
