@@ -273,6 +273,14 @@ it in full (`ansible-c1f2df47` 27 alarms → 2 worth reading, `flipt-e50808c0`
 19 → 9, `element-web-880428ab` 5 → 1), suppression buys nothing that annotation
 does not, at the cost of an irreversible edit in the optimistic direction.
 
+The general form is worth stating, because it is what makes the argument
+durable: **when two designs' outputs are comparable, choose the reversible
+one.** The rejected example was an *existence* argument — "there exists a true
+positive that suppression would silence" — and an existence argument collapses
+entirely when its one witness collapses, which is exactly what happened here.
+The dominance argument is *structural*: it holds for every alarm set, so no
+future counter-example can overturn it.
+
 `flipt-3b2c25ee`'s four alarms are still reported, and are still resolved by
 hand — in that case correctly, because the interface field gives
 `Storer.ListFlags`'s parameter type as
