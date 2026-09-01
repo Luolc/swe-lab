@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (supersedes [ADR-0005](ADR-0005-flaky-eval-retry.md))
+Accepted (supersedes [ADR-0005](ADR-0005-flaky-eval-retry.md); amended
+2026-08-07 — see the Amendment below)
 
 ## Date
 

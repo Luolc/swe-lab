@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted
+Accepted (the key amended by
+[ADR-0007](ADR-0007-task-and-workflow-layer.md) §§6–7 — it gains a `<task>`
+segment: `<sweep>/<instance>/r<rollout>/<task>/a<attempt>`; and see the
+2026-07-29 Amendment below)
 
 ## Date
 

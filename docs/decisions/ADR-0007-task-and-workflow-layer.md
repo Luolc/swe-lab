@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted, **partly superseded**: the record-absence rule of §10 is superseded by
+[ADR-0009](ADR-0009-workflow-record-always-written.md) (the rest of §10 stands).
+Three 2026-08-03 amendments follow the body.
 
 ## Date
 

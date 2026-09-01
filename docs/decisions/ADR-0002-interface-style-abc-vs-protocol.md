@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted (superseded **for `Verdict` only** by
+[ADR-0006](ADR-0006-verdict-is-an-abc.md); the rest stands)
 
 ## Date
 

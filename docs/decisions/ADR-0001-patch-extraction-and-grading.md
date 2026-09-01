@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (amended 2026-08-25 — see the Amendment at the end)
 
 ## Date
 
@@ -24,11 +24,14 @@ extract and apply patches, and catalogued ~40 corner cases. That survey is
 retained as **non-authoritative background** in
 [`docs/patch-extraction.md`](../patch-extraction.md); this ADR is the decision of
 record, and the **implementing code is the source of truth**:
-[`core/patch.py`](../../src/swe_lab/core/patch.py) (extract/clean),
-[`rollout/entryscript.py`](../../src/swe_lab/rollout/entryscript.py) +
-[`rollout/runner.py`](../../src/swe_lab/rollout/runner.py) (drive + strip), and
-[`core/datasets/swebench_pro/grading.py`](../../src/swe_lab/core/datasets/swebench_pro/grading.py)
-(apply + grade).
+[`git/patch.py`](../../src/swe_lab/git/patch.py) (the extraction script,
+binary-hunk strip, empty-patch check),
+[`sandbox/observers/diff_extract.py`](../../src/swe_lab/sandbox/observers/diff_extract.py)
+(runs it against the live container, for any harness), and
+[`datasets/swebench_pro/unit_test.py`](../../src/swe_lab/datasets/swebench_pro/unit_test.py)
+(apply + grade). The `core/` and `rollout/` package paths this ADR was written
+against were dissolved at horizontal task 10b; the code moved, the decision did
+not.
 
 The decision is scoped to the **MVP happy path**: text patches, one strict
 apply, graded exactly like Scale. Several richer behaviors are deliberately
