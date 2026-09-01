@@ -7,6 +7,10 @@
 # the one just harvested. Run this the moment a rollout exits 2, before issuing
 # any further swe-lab command.
 #
+# Set FROZEN_ROOT to freeze somewhere other than this directory. Do set it when
+# working in a git worktree: `git worktree remove` deletes gitignored content
+# with no warning, and `frozen/` is gitignored (docs/conventions.md -> Hazards).
+#
 # Usage: freeze.sh <instance_id> <rollout_id> [workflow] [label]
 set -euo pipefail
 
@@ -18,7 +22,7 @@ label="${4:-failure}"
 here="$(cd "$(dirname "$0")" && pwd)"
 repo_root="$(cd "$here/../../.." && pwd)"
 src="$repo_root/.cache/runs/$workflow/$instance"
-dst="$here/frozen/$label-rollout-$rollout_id"
+dst="${FROZEN_ROOT:-$here/frozen}/$label-rollout-$rollout_id"
 
 [ -d "$src" ] || { echo "freeze: nothing at $src" >&2; exit 1; }
 [ -e "$dst" ] && { echo "freeze: $dst already exists; not overwriting" >&2; exit 1; }
