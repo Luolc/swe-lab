@@ -320,6 +320,76 @@ retroactively (owner's calibration, 2026-09-01).
   row). Both are one command: copy `.envrc.local.example` to `.envrc.local` and
   `direnv allow`; then re-run the download in the dataset's README
   ([`datasets/`](../datasets/README.md)). Do both before spending a rollout.
+- **`git worktree remove` deletes gitignored content, silently.** It refuses on
+  a dirty *tracked* tree and says nothing about anything gitignored — so a
+  removed worktree takes its `.cache/`, its `.envrc.local`, and any experiment
+  artifact that lived under it with it, with no warning and no prompt. The
+  other face of the bullet above: gitignored things live in one checkout, and
+  removing that checkout is how they stop existing. This is not hypothetical —
+  trace-synthesis task 01's frozen phase-A failure was gitignored inside the
+  implementer's worktree, the merged PR was followed by a `git worktree
+  remove`, and the raw evidence was gone while the analysis written from it
+  survived in git (2026-09-01; re-harvesting it cost three rollouts). So
+  anything worth keeping does **not** live in a worktree: put it on a stable
+  path outside every checkout (this box uses
+  `/home/ubuntu/dev/swe-lab-artifacts/`) and commit a pointer plus a sha256
+  manifest instead.
+- **`docker rm` on a failed run can be irreversible evidence destruction.** Only
+  `/workspace` is bind-mounted, so everything the actor writes elsewhere — its
+  own native event stream at `/agent-home/.claude/projects/-app/*.jsonl` most of
+  all — exists **only in the container's writable layer**, with no copy on the
+  host. And a host run tree of the same name is not proof the record survives:
+  `.cache/runs/<instance>/` is keyed by instance, so a rerun overwrites it.
+  Measured 2026-09-01: the container of a steered run whose host-side Supervisor
+  died mid-flight held the *only* surviving in-sandbox record of that attempt,
+  because a rerun 21 minutes later had overwritten its host tree — and it was
+  still there to recover only because nobody had reaped the container. So
+  `docker cp` what you need out **before** `docker rm`. Same family as the
+  bullet above: look before you delete.
+- **While the capture proxy runs host-side, `capture="proxy"` has host
+  prerequisites, and two of them fail silently.** Every item below follows from
+  that one premise — the proxy is a process on the host, bound to a host port,
+  that the container dials outward. Change the premise and the list stops
+  applying rather than becoming wrong in place. The agent reaches the recorder
+  at `host.docker.internal:<port>`, so:
+  (a) the host firewall must let the Docker bridge in — this box's `ufw`
+  default-denies incoming, so proxy capture fails outright unless the recorder's
+  port ranges (`20000:20999` for rollouts, `25000:25999` for the aggregator) are
+  allowed; that rule belongs to `machine-setup`, and `sudo ufw status` is how you
+  check it rather than assuming it;
+  (b) the port must be **free**, because `ReverseProxy._wait_until_listening`
+  accepts *any* listener and an unrelated process squatting on it reads as "the
+  proxy is up" — a stray `python3 -m http.server` cost one rollout that failed
+  with an empty proxy log, empty stderr and exit 1, and the commonest squatter
+  is **the previous run's own proxy**, which is reparented to `init` and keeps
+  listening when its driver is killed; and (c) the proxy's
+  `--target` must match where the credential is actually valid. That last one is
+  a real gap for non-Anthropic upstreams: `ReverseProxy.target` defaults to
+  `https://api.anthropic.com` and `ProxyRecorder` does not expose it, while
+  `cc-reverse-proxy` gates its OpenRouter behaviour on the target string
+  (`isOpenRouter = strings.Contains(targetURL, "openrouter.ai")`), so a wrong
+  target *also* silently drops the `X-Anthropic-Beta` mirroring and `provider`
+  injection that OpenRouter needs for interleaved thinking. Verify a proxied run
+  by its log, never by its exit code.
+- **An unresolved workflow verdict has four causes, not two.** Exit 2 means the
+  grading suite did not resolve the instance; whether the *actor* erred is a
+  separate question, and neither the workflow's exit code nor
+  `claude_code.timed_out` answers it. A run can come back unresolved with
+  `timed_out == 0` and the actor never having started — measured 2026-09-01, a
+  `protonmail/webclients` image that cannot execute the mounted `linux-x64`
+  binary (`cannot execute: required file not found`, `claude_code.exit_code`
+  127 after 0.69 s, `agent_complete` 0) still produced an ordinary unresolved
+  verdict. A fourth cause sits on the grading side: `_UNIT_TEST_RETRIES = 2`
+  means the suite runs three times and the *last* attempt is not privileged, so
+  a suite that disagrees with itself across attempts produces an unresolved
+  verdict that is a property of the suite rather than of the patch. (That one is
+  a guard, not a measurement — it was identified in review, not observed here.)
+  Before treating an unresolved run as evidence about reasoning, require **all
+  four**: `claude_code.timed_out == 0`, `agent_complete == 1`,
+  `claude_code.exit_code == 0`, and the same required-test verdict in every
+  recorded grading attempt. Whether an image can host the actor at all is a
+  property of the repo family and is probed for free on every run —
+  `rollout/a0/claude.info` opens with `claude --version` and its exit code.
 - **`patches.py` is a stopgap.** The loader corrects 3 upstream dataset rows
   (truncated `fail_to_pass` names) **in memory**; it's a no-op on every other
   row. Retire it once a fixed parquet is published to HF and the loader can
