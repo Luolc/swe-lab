@@ -2,7 +2,7 @@
 
 Cached **failed rollouts** of instances from another registered dataset, one
 row per failure, for the trace-synthesis pipeline's Oracle
-([design](../../docs/trace-synthesis/plans/task-10-oracle-failures-dataset.md)).
+([design](../../docs/trace-synthesis/plans/task-11-oracle-failures-dataset.md)).
 A row names the underlying instance (`dataset` + `instance_id`) and carries the
 one attempt that failed: its typed conversation, the grader's verdict and the
 patch it submitted. Loading a row resolves the underlying instance, so the

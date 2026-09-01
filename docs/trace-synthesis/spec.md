@@ -69,7 +69,7 @@ instruction.
 Four phases. A and B are offline and privileged; C is the run that produces the
 trace; D is collection. **A is skippable**: when the failure already exists —
 a full eval sweep caches one for every instance it failed on — it enters as an
-`oracle_failures` record ([task 10](plans/task-10-oracle-failures-dataset.md))
+`oracle_failures` record ([task 11](plans/task-11-oracle-failures-dataset.md))
 and the pipeline starts at B.
 
 ```mermaid
@@ -112,7 +112,7 @@ question](#11-open-questions).
 **Phase A is skipped when the failure already exists.** A full eval sweep
 caches exactly this pair for every instance it failed on, and re-running a
 rollout to reproduce one is a rollout paid for twice. The
-[`oracle_failures` dataset](plans/task-10-oracle-failures-dataset.md) captures
+[`oracle_failures` dataset](plans/task-11-oracle-failures-dataset.md) captures
 a cached failure as a dataset record — the underlying instance's identity plus
 the failed conversation, the grader's verdict and the submitted patch — built
 from the finished run's own output directory
@@ -508,7 +508,7 @@ from the store — so this is a workflow, not a new subsystem.
 
 | Phase | Reuses | New |
 |---|---|---|
-| A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 10](plans/task-10-oracle-failures-dataset.md)) |
+| A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
 | B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): golden patch and grading procedure staged, git-history purge **off**, declared output `guidebook.md` |
 | C | the rollout composition | hook settings injected into the sandbox (`--settings` + `CLAUDE_CONFIG_DIR`); a host-side Supervisor; declared intervention records |
 | D | the `Conversation` converter + `Store` | — |

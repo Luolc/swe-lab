@@ -33,7 +33,7 @@ this index is not a task: its results are recorded in
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
 | 09 | **Redact the production proxy capture** — gates *publishing* any proxy-captured trace | ⬜ |
 | 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ⬜ |
-| 10 | **Start from a cached failure** — the `oracle_failures` dataset: a record that delegates the instance and stages the failure, plus the builder from a finished run — [`task-10-oracle-failures-dataset.md`](task-10-oracle-failures-dataset.md) | ✅ First record built locally: the qutebrowser/9ed748ef baseline failure (data gitignored by design) |
+| 11 | **Start from a cached failure** — the `oracle_failures` dataset: a record that delegates the instance and stages the failure, plus the builder from a finished run — [`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md) | ✅ First record built locally: the qutebrowser/9ed748ef baseline failure (data gitignored by design) |
 
 ---
 
@@ -128,7 +128,7 @@ grading procedure and the failed conversation mounted, the **git-history purge
 off**, producing a validated `guidebook.md`. The schema enforces the
 `justification` field per stage — the field that makes an honest hint possible
 at all. The failure arrives as the instance's own mounts — the instance is an
-`oracle_failures` record ([task 10](#task-10-start-from-a-cached-failure)) —
+`oracle_failures` record ([task 11](#task-11-start-from-a-cached-failure)) —
 which is what lets the shipped `oracle_analysis` workflow be a single entry
 run from a name alone. The design record is
 [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md).
@@ -188,7 +188,7 @@ work? **This task starts with the decision, and may end there.**
 
 **Description:** Wire B→C→D — with A ahead of it only for an instance no sweep
 has failed on yet; a cached failure enters as an `oracle_failures` record
-([task 10](#task-10-start-from-a-cached-failure)) — as a registered workflow on the existing
+([task 11](#task-11-start-from-a-cached-failure)) — as a registered workflow on the existing
 [workflow layer](../../decisions/ADR-0007-task-and-workflow-layer.md), with the
 edges resolved from the store. The integrity half is not optional: every phase
 B / C record carries the oracle-guided **policy stamp**
@@ -329,7 +329,7 @@ new has to be built.
   landed), but it removes a required component's dependency on machine-level
   configuration. **Scope:** M
 
-## Task 10: Start from a cached failure
+## Task 11: Start from a cached failure
 
 **Description:** Make phase A skippable. A full eval sweep has already cached
 the failures phase B needs, so the pipeline's input becomes a **dataset of
@@ -342,7 +342,7 @@ the compile contract is touched by nothing; a builder turns a finished
 `rollout_and_unit_test` run directory into a row, refusing anything that is
 not a finished actor graded unresolved and anything credential-shaped. The
 design record is
-[`task-10-oracle-failures-dataset.md`](task-10-oracle-failures-dataset.md).
+[`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md).
 
 - **Acceptance:** `load_dataset("oracle_failures")` yields runnable records
   whose `sandbox_spec` / `prompt` / `gold_patch` / `unit_test_spec` are the

@@ -18,7 +18,7 @@ python -m swe_lab run oracle_analysis <instance_id> --dataset oracle_failures \
     --oracle_analysis.harness.model=opus
 ```
 
-The instance is an [`oracle_failures`](task-10-oracle-failures-dataset.md)
+The instance is an [`oracle_failures`](task-11-oracle-failures-dataset.md)
 record — that is what makes the workflow one entry: the failure arrives as the
 record's own mounts, so no earlier task and no `--input` is needed. The task is
 written against `TaskInstance`, not against that record type; a future chain
