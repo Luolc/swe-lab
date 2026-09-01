@@ -325,8 +325,10 @@ def unclassified_fields(proxy_log: str, *, upstream: Upstream) -> list[str]:
 def publication_blockers(proxy_log: str, *, upstream: Upstream) -> list[str]:
   """Return every reason this capture must not be published, empty if none.
 
-  The gate between a scanned capture and anywhere it would be shared. Both
-  checks have to be one decision, because they fail in ways that look alike
+  The decision a publishing gate makes, not the gate itself: **nothing calls
+  this on the way to an upload yet**, and the uploader's input is the
+  normalized exchange record rather than the raw capture this reads. Both
+  checks belong in one decision, because they fail in ways that look alike
   from the outside and neither alone is enough: a capture can be perfectly
   redacted and still carry a field nobody has looked at.
 
@@ -337,7 +339,8 @@ def publication_blockers(proxy_log: str, *, upstream: Upstream) -> list[str]:
   Returns:
     Findings from both checks; empty means publishable as far as this can
     tell. **Necessary, not sufficient** — it reasons about the envelope, not
-    about what the bodies contain.
+    about what the bodies contain, and an empty list is not evidence that
+    anything actually stopped a publish.
   """
   return unredacted_fields(proxy_log) + unclassified_fields(
       proxy_log, upstream=upstream

@@ -3,7 +3,9 @@
 These tests pin the properties that make a single home worth having: a record
 this module redacts is a record this module calls clean, the older placeholder
 is still readable, masking never quietly becomes dropping, and a field nobody
-has classified is reported rather than published.
+has classified is *reported*, so that a publishing gate has something to
+refuse on. Reporting is all these prove: nothing wires the gate to the
+uploader yet.
 """
 
 from __future__ import annotations
@@ -133,7 +135,7 @@ def test_a_capture_of_known_fields_has_nothing_unclassified() -> None:
 
 def test_a_header_nobody_has_classified_is_reported() -> None:
   # The failure this exists for. Redaction is a deny-list, so an unenumerated
-  # field is recorded verbatim; without this it is published in silence.
+  # field is recorded verbatim and nothing notices it is new.
   findings = unclassified_fields(
       _capture(**{"Anthropic-New-Telemetry-Field": "whatever"}),
       upstream="anthropic",
@@ -154,8 +156,9 @@ def test_switching_upstream_reclassifies_the_whole_capture() -> None:
 
 
 def test_the_gate_refuses_both_a_secret_and_an_unknown_field() -> None:
-  # Publishing is where the two checks have to be one decision: a capture is
-  # publishable only if nothing is unredacted *and* nothing is unclassified.
+  # The two checks have to be one decision at the point of publishing: a
+  # capture is publishable only if nothing is unredacted *and* nothing is
+  # unclassified. This pins the decision function, not a wired gate.
   raw = json.dumps(_raw_record()) + "\n"
   assert publication_blockers(raw, upstream="anthropic")
   assert publication_blockers(
