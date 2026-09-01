@@ -141,6 +141,17 @@ def join(
         problems.append(f"host/hook disagree on identity at seq {host_row.get('seq')}")
       if key not in by_id:
         problems.append(f"boundary {key} is absent from the converted trace")
+        continue
+      # The id says the three records mean the same boundary; the tool name
+      # says they *saw* the same one. Matching ids with disagreeing names is a
+      # corrupted record, not a match, and this branch used to accept it.
+      tools = {
+          str(host_row.get("tool")),
+          str(hook_row.get("tool")),
+          str(by_id[key]["tool"]),
+      }
+      if len(tools) != 1:
+        problems.append(f"boundary {key}: tools disagree {sorted(tools)}")
     triples = [
         (host_row, hook_row, by_id[str(host_row.get("tool_use_id"))])
         for host_row, hook_row in zip(host, hook, strict=False)

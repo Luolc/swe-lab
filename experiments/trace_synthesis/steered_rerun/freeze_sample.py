@@ -64,7 +64,9 @@ def instance_fields(instance: object) -> dict[str, object]:
   }
 
 
-def verdict(frozen: pathlib.Path, instance: object) -> dict[str, object]:
+def verdict(
+    frozen: pathlib.Path, instance: object, resolved: bool
+) -> dict[str, object]:
   """Return what the grading suite decided, and how firmly.
 
   The suite runs once per attempt and the entry retries, so a per-attempt
@@ -76,6 +78,10 @@ def verdict(frozen: pathlib.Path, instance: object) -> dict[str, object]:
   Args:
     frozen: The frozen run directory.
     instance: The dataset row.
+    resolved: What the grading entry actually decided, read from the run's own
+      ``unit_test.resolved`` metric. Taken as an argument rather than assumed:
+      this field used to be hard-coded ``False``, so a resolved run would have
+      been written out as a sample asserting it had failed.
 
   Returns:
     The verdict record.
@@ -94,7 +100,7 @@ def verdict(frozen: pathlib.Path, instance: object) -> dict[str, object]:
     }
   failures = [set(a["failed"]) for a in attempts.values()]  # pyright: ignore[reportArgumentType]
   return {
-      "resolved": False,
+      "resolved": resolved,
       "required": len(required),
       "fail_to_pass": list(instance.fail_to_pass),
       "attempts": attempts,
@@ -124,7 +130,9 @@ def manifest(root: pathlib.Path) -> str:
 
 
 def check_gates(
-    metrics: dict[str, float], decision: dict[str, object]
+    metrics: dict[str, float],
+    unit_test_metrics: dict[str, float],
+    decision: dict[str, object],
 ) -> None:
   """Refuse a run that is unresolved for any reason other than reasoning.
 
@@ -135,6 +143,7 @@ def check_gates(
 
   Args:
     metrics: The rollout entry's metrics.
+    unit_test_metrics: The grading entry's metrics.
     decision: The verdict record from ``verdict``.
 
   Raises:
@@ -156,12 +165,26 @@ def check_gates(
           " unresolved verdict is not evidence the actor erred."
       )
 
-  # The fourth is about the *grader*, and the three above cannot see it: the
-  # actor finished, the suite ran, and the suite disagreed with itself. The
-  # entry retries, so an unresolved last attempt can sit next to an attempt
-  # that resolved, or that failed an entirely different required set — a flaky
-  # suite, not a wrong patch. `verdict()` has always computed this; refusing on
-  # it is what makes computing it worth anything.
+  # Before anything about *how* it failed: that it failed at all. The sample's
+  # whole claim is "the actor erred here", and nothing above reads the grade,
+  # so a run whose required tests all passed would otherwise be written out as
+  # a failure sample asserting `resolved: false`.
+  if unit_test_metrics.get("unit_test.resolved") != 0.0:
+    raise SystemExit(
+        "refusing to freeze: unit_test.resolved is"
+        f" {unit_test_metrics.get('unit_test.resolved')!r}, so the grading"
+        " suite resolved this instance. A resolved run is not a failure"
+        " sample, whatever else is stable about it."
+    )
+
+  # The fourth gate is about the *grader*, and the three above cannot see it.
+  # It is **not** that a resolved attempt can sit beside an unresolved one:
+  # `UnitTest.should_retry` stops at the first resolved attempt, so a run that
+  # ends unresolved had every executed attempt unresolved. What those attempts
+  # can still disagree about is *which* required tests failed — and that
+  # disagreement is a property of the suite, not of the patch. `verdict()` has
+  # always computed this; refusing on it is what makes computing it worth
+  # anything.
   attempts = decision["attempts"]
   if not attempts:
     raise SystemExit(
@@ -198,8 +221,16 @@ def main() -> None:
       name: value
       for name, value in (summary["entries"]["rollout"]["metrics"] or {}).items()
   }
-  decision = verdict(frozen, instance)
-  check_gates(metrics, decision)
+  unit_test_metrics = {
+      name: value
+      for name, value in (
+          summary["entries"].get("unit_test", {}).get("metrics") or {}
+      ).items()
+  }
+  decision = verdict(
+      frozen, instance, unit_test_metrics.get("unit_test.resolved") == 1.0
+  )
+  check_gates(metrics, unit_test_metrics, decision)
 
   # Only now: a refusal must not leave a directory behind that looks like a
   # sample. Nothing is created until the run has earned it.

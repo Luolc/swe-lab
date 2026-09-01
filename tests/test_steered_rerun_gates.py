@@ -104,6 +104,17 @@ def test_positional_fallback_is_named(reconciler: ModuleType) -> None:
   assert identity == "position + tool name"
 
 
+def test_matching_ids_with_a_wrong_tool_name_are_caught(
+    reconciler: ModuleType,
+) -> None:
+  """The id says it is the same boundary; the name says it was the same tool."""
+  host, hook, converted = _records()
+  hook[1]["tool"] = "Edit"  # same tool_use_id, a record that saw something else
+  problems, _, identity = reconciler.reconcile(host, hook, converted)
+  assert identity == "tool_use_id"
+  assert any("tools disagree" in problem for problem in problems)
+
+
 def test_omitted_converted_boundary_is_caught(reconciler: ModuleType) -> None:
   """The failure the count-only version printed RECONCILED on."""
   host, hook, converted = _records()
@@ -172,6 +183,12 @@ _HEALTHY = {
 }
 
 
+# What the grading entry decided. The freezer's whole claim is that the actor
+# erred here, so a resolved grade must never reach a sample.
+_UNRESOLVED = {"unit_test.resolved": 0.0}
+_RESOLVED = {"unit_test.resolved": 1.0}
+
+
 def _attempts(*failures: tuple[str, ...]) -> dict[str, Any]:
   """Build a verdict record from one list of failed tests per attempt."""
   attempts = {
@@ -184,7 +201,7 @@ def _attempts(*failures: tuple[str, ...]) -> dict[str, Any]:
 
 def test_a_stable_failure_passes_the_gates(freezer: ModuleType) -> None:
   freezer.check_gates(
-      _HEALTHY, _attempts(("test_a",), ("test_a",), ("test_a",))
+      _HEALTHY, _UNRESOLVED, _attempts(("test_a",), ("test_a",), ("test_a",))
   )
 
 
@@ -192,22 +209,34 @@ def test_an_actor_that_never_ran_is_refused(freezer: ModuleType) -> None:
   """protonmail/webclients: exit 2, timed_out 0, the binary never executed."""
   metrics = _HEALTHY | {"agent_complete": 0.0, "claude_code.exit_code": 127.0}
   with pytest.raises(SystemExit, match="agent_complete"):
-    freezer.check_gates(metrics, _attempts(("test_a",)))
+    freezer.check_gates(metrics, _UNRESOLVED, _attempts(("test_a",)))
 
 
 def test_a_killed_run_is_refused(freezer: ModuleType) -> None:
   with pytest.raises(SystemExit, match="timed_out"):
     freezer.check_gates(
-        _HEALTHY | {"claude_code.timed_out": 1.0}, _attempts(("test_a",))
+        _HEALTHY | {"claude_code.timed_out": 1.0},
+        _UNRESOLVED,
+        _attempts(("test_a",)),
     )
 
 
 def test_disagreeing_grade_attempts_are_refused(freezer: ModuleType) -> None:
   """The fourth cause: the actor finished, the suite disagreed with itself."""
   with pytest.raises(SystemExit, match="attempts disagree"):
-    freezer.check_gates(_HEALTHY, _attempts(("test_a",), (), ("test_b",)))
+    freezer.check_gates(
+        _HEALTHY, _UNRESOLVED, _attempts(("test_a",), (), ("test_b",))
+    )
+
+
+def test_a_resolved_grade_is_refused_however_stable(
+    freezer: ModuleType,
+) -> None:
+  """A passing run is stable, and stability is not what makes it a sample."""
+  with pytest.raises(SystemExit, match="resolved"):
+    freezer.check_gates(_HEALTHY, _RESOLVED, _attempts((), (), ()))
 
 
 def test_a_run_with_no_grade_attempt_is_refused(freezer: ModuleType) -> None:
   with pytest.raises(SystemExit, match="no grading attempt"):
-    freezer.check_gates(_HEALTHY, _attempts())
+    freezer.check_gates(_HEALTHY, _UNRESOLVED, _attempts())
