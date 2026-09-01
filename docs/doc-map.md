@@ -34,6 +34,7 @@ vertical). An active component owns a
 | `docs/releases/vX.Y.Z.md` | I depend on swe-lab and am upgrading to this version — what broke, and what do I change? | design (link to the ADR/plan); the exhaustive commit list (the Release's generated notes own that) |
 | `docs/releases/README.md` | The release-note index + what belongs in one | the note bodies |
 | `docs/reviews/` | A dated engineering audit (a snapshot, not a spec) | design; status |
+| `docs/research/` | What does the outside world already know? (a dated survey of external sources, with its own claim/inference/not-found marking) | our own empirical results (an experiment `REPORT.md` owns those); a decision (an ADR does) |
 | `docs/experiments/` | An empirical question → logged run → `REPORT.md` | production design |
 
 ## Routing a learning
@@ -53,6 +54,7 @@ into three files (they drift):
 | **workstream-level status** | `docs/README.md` snapshot (the ONE place) | the snapshot row |
 | a naming / interface-style rule | `docs/conventions.md` (or an ADR — e.g. ADR-0002) | a convention |
 | an empirical / ML finding | an experiment `REPORT.md` | hypothesis → result |
+| what an **external** source (a paper, a vendor audit, an upstream issue) already established | `docs/research/<topic>.md` | a survey, every claim cited and dated |
 | a change a **consumer** must react to (removed name, changed default, shifted results) | `docs/releases/vX.Y.Z.md` for the version shipping it | what changed / why / what you must do |
 
 ## The single-source-of-truth guards
