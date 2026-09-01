@@ -143,6 +143,12 @@ independent of the people running this experiment.
 
 ### The scoring protocol, fixed now
 
+The **operational** layer — who may score, how they are isolated, the
+item-by-item bundle strip with its mechanical gate, and what is still open — is
+in [`SCORING-OPERATIONS.md`](SCORING-OPERATIONS.md). The criteria below are not
+repeated there.
+
+
 **Unit of analysis.** One rollout trace: the actor conversation, its tool-call
 stream, and the patch it submitted.
 

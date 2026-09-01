@@ -193,6 +193,19 @@ pilot's twelve amendments.
   gathering several things into one complete-sounding statement, and
   *completeness* is the part nobody checks. **Being able to name a failure
   confers no immunity to it.**
+- **A defect with a reason written beside it reads as a decision.** The same
+  shape one level down: a filter, an exemption or a threshold that carries a
+  comment explaining why it is there stops being read as a hole and starts
+  being read as a judgement — and **the explanation is why the next reader does
+  not look.** Three instances here in one day: a "safe to delete" argument whose
+  ownership premise was never checked, a wall-clock estimate whose honest caveat
+  supplied a sufficient-sounding reason for its being wrong, and a detector's
+  length filter annotated "short values match everywhere; the rest are excluded
+  by construction" — where the label values were short. The transferable detail
+  is the **conjunction**: these rationales are half true. Spot-checking the
+  first clause confirms it, and a reader almost never splits a sentence to check
+  each half. **Verify the clause asserting that nothing else can be here, not
+  the one you can already see is true.**
 - **Finding one defect ends the search for the others.** Once a number has a
   named problem it reads as *examined*, and the examination stops there. A
   wall-clock estimate here was correctly found to be missing its machine-state
