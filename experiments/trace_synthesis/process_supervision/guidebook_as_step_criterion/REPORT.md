@@ -148,19 +148,17 @@ The paid steps, optional and not needed to check any figure:
 ```sh
 python3 extract_steps.py --out $A/steps.json \
   baseline-qutebrowser-rollout-0 steered-qutebrowser-rollout-11
-OPENROUTER_API_KEYS=$(op read <reference>) \
-  python3 judge_steps.py --steps $A/steps.json --out $A/verdicts.jsonl --max-tokens 700
-OPENROUTER_API_KEYS=$(op read <reference>) \
-  python3 judge_steps.py --steps $A/steps.json --out $A/verdicts_retry.jsonl \
+source .envrc.local   # exports OPENROUTER_API_KEYS
+python3 judge_steps.py --steps $A/steps.json --out $A/verdicts.jsonl --max-tokens 700
+python3 judge_steps.py --steps $A/steps.json --out $A/verdicts_retry.jsonl \
   --max-tokens 2000 --only baseline-qutebrowser-rollout-0:11 ...   # the empty ones
 ```
 
-**The credential field is passed in whole and divided inside `judge_steps.py`,
-which selects the first key.** The field holds more than one, and splitting it
-in a shell would route the value through argv or parameter expansion — the
-channel that must not carry it. So there is no shell recipe here to copy: the
-environment variable receives the field verbatim and the consuming program does
-the rest.
+`OPENROUTER_API_KEYS` holds several comma-separated keys. **`judge_steps.py`
+splits the variable itself and takes the first key**, the same way
+`steered_rerun/supervisor.py` does — splitting it in a shell instead would route
+the value through argv or parameter expansion, the channel that must not carry
+it.
 
 Check that the selected key authenticates before a run: a reference resolving
 successfully does not mean the value it returns is usable as-is.

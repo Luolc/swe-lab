@@ -9,11 +9,11 @@ turned out to select which steps get an answer: a judgement that needs more room
 than the cap comes back with no content at all.
 
 Usage:
-  OPENROUTER_API_KEYS=$(op read <reference>) \
-    python3 judge_steps.py --steps steps.json --out verdicts.jsonl [--max-tokens 700]
+  source .envrc.local   # exports OPENROUTER_API_KEYS
+  python3 judge_steps.py --steps steps.json --out verdicts.jsonl [--max-tokens 700]
 
-`OPENROUTER_API_KEYS` receives the credential field **verbatim**; this program
-selects a key from it. Do not split the field in a shell -- that is what puts a
+`OPENROUTER_API_KEYS` holds several comma-separated keys; this program splits
+the variable and selects one. Do not split it in a shell -- that is what puts a
 credential value into argv.
 """
 
@@ -52,24 +52,23 @@ Rules:
 - Judge only this step, not the eventual outcome."""
 
 
-def api_key() -> str:
-  """Take the first key out of the credential field, inside this program.
+def key_pool() -> list[str]:
+  """Return the configured key pool.
 
-  The field holds several keys. Splitting it in a shell would route the value
-  through argv or parameter expansion, so the whole field is passed in
-  untouched and divided here, where it never leaves the process.
+  Same shape as `steered_rerun/supervisor.py`: the variable holds several keys
+  and is divided here rather than in a shell, because splitting it out there
+  routes the value through argv or parameter expansion.
+
+  Returns:
+    The keys, in the order ``OPENROUTER_API_KEYS`` lists them.
+
+  Raises:
+    RuntimeError: If the variable is unset.
   """
-  field = os.environ.get("OPENROUTER_API_KEYS")
-  if not field:
-    raise SystemExit(
-        "OPENROUTER_API_KEYS is unset. Inject the credential field verbatim, "
-        "e.g. OPENROUTER_API_KEYS=$(op read <reference>), and do not split it "
-        "in the shell."
-    )
-  key = field.split(",")[0].strip()
-  if not key:
-    raise SystemExit("OPENROUTER_API_KEYS holds no usable key.")
-  return key
+  keys = [k for k in os.environ.get("OPENROUTER_API_KEYS", "").split(",") if k]
+  if not keys:
+    raise RuntimeError("OPENROUTER_API_KEYS is unset; source .envrc.local")
+  return keys
 
 
 def call(payload: dict) -> dict:
@@ -77,7 +76,7 @@ def call(payload: dict) -> dict:
       ENDPOINT,
       data=json.dumps(payload).encode(),
       headers={
-          "Authorization": f"Bearer {api_key()}",
+          "Authorization": f"Bearer {key_pool()[0]}",
           "Content-Type": "application/json",
       },
   )

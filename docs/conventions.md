@@ -54,7 +54,7 @@ direnv), which holds **only `op://` references read at load time via
 |---|---|---|
 | `HF_TOKEN` | `op://dev-shared/hf-token/credential` | HF pushes (`pipelines/related_files/traces.py`, `datasets/deepswe/build_parquet.py --upload`) |
 | `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN` | `op://dev-shared/claude-code-oauth-token/credential` | the `claude_code` harness (subscription auth). **Deliberately not named `CLAUDE_CODE_OAUTH_TOKEN`** in your shell — see [Hazards](#hazards-learned-the-hard-way); the CLI copies it to that name inside its own process |
-| `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys; no code consumer yet |
+| `OPENROUTER_API_KEYS` | `op://dev-shared/openrouter-api-keys/credential` | comma-separated OpenRouter keys, **split inside the consuming program, never in a shell** — `experiments/trace_synthesis/steered_rerun/supervisor.py` (`key_pool`), `experiments/trace_synthesis/process_supervision/guidebook_as_step_criterion/judge_steps.py` |
 
 `op read` needs `OP_SERVICE_ACCOUNT_TOKEN` in the environment. On the
 workstation an interactive zsh (so every herdr pane) gets it from `~/.zshrc`; a
