@@ -157,6 +157,28 @@ arm B′ performs like arm B, then arm B's verdicts do not depend on the guidebo
 being the right one — the judge is reading the trace, or leaking the label — and
 the guidebook is not doing the work.
 
+**The mismatch is assigned by a rule, not by hand.** Which wrong guidebook a
+trace receives is a degree of freedom, and an unfixed one would let the
+`B − B′` comparison be steered after the results are in — the same hole the rest
+of this document exists to close. So:
+
+1. Take the **distinct instances** that contributed a scored trace, ordered by
+   `instance_id` ascending.
+2. Draw a **derangement** of that ordering — a permutation with no fixed point,
+   so no instance can draw its own guidebook — using `random.Random(261)`,
+   resampling until no fixed point remains. Seed 261 is the seed already used
+   for this experiment family's control sample.
+3. Every trace of an instance receives the guidebook assigned to **its
+   instance**, not one drawn per trace. Pairing is per instance, so two traces
+   of the same instance are never scored against two different wrong guidebooks.
+4. The resulting map is written into the run record **before** any B′ scoring
+   begins, and reported with the results.
+
+**If only one distinct instance contributes traces, a derangement does not
+exist.** Then arm B′ cannot be run, `B − B′` is undefined, and the **Build**
+outcome is unreachable for that batch — which is reported as the outcome, not
+worked around. The same holds if fewer than two instances survive calibration.
+
 **Build therefore requires two comparisons, both fixed now:**
 `accuracy(B) − accuracy(A) ≥ 4 traces` **and**
 `accuracy(B) − accuracy(B′) ≥ 4 traces`. Either one alone is insufficient.
