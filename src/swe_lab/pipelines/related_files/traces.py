@@ -48,6 +48,10 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from swe_lab.paths import find_repo_root, outputs_root
 
+from .exchange import (
+    exchange_publication_blockers,
+    OperatorIdentity,
+)
 from .storage import DEFAULT_DATASET, TASK_DIRNAME
 
 DEFAULT_REPO_ID = "luolc/swe-lab-traces"
@@ -59,6 +63,52 @@ _UPLOAD_PATTERN = f"**/*{TRACE_SUFFIX}"
 
 class SyncError(RuntimeError):
   """A push/pull was refused because the three states have diverged."""
+
+
+class UnpublishableTraceError(RuntimeError):
+  """A push was refused because a trace still carries something private."""
+
+
+def refuse_unpublishable_traces(
+    base: epath.PathLike, *, identity: OperatorIdentity | None = None
+) -> None:
+  """Check every trace that would be uploaded; raise if any must not be.
+
+  Runs on the **normalized records** that are actually uploaded, not on the
+  proxy captures they came from — a capture can be spotless while the record
+  built from it carries an unclassified header, and the conversation bodies
+  exist only in the record.
+
+  Args:
+    base: The upload root; every ``*.last_exchange.json`` under it is checked.
+    identity: The identity that must not appear. Read from this machine when
+      omitted, which is the same source the record builder redacts against.
+
+  Raises:
+    UnpublishableTraceError: If any trace carries an unmasked secret, an
+      unclassified header, or the operator's identity. The message names the
+      files and fields, never the offending values.
+  """
+  who = identity or OperatorIdentity.of_this_machine()
+  blockers: list[str] = []
+  for path in sorted(Path(base).rglob(f"*{TRACE_SUFFIX}")):
+    try:
+      record = json.loads(path.read_text())
+    except json.JSONDecodeError:
+      blockers.append(f"{path.name}: not valid JSON")
+      continue
+    if not isinstance(record, dict):
+      blockers.append(f"{path.name}: not an object")
+      continue
+    blockers += [
+        f"{path.name}: {finding}"
+        for finding in exchange_publication_blockers(record, identity=who)
+    ]
+  if blockers:
+    raise UnpublishableTraceError(
+        f"{len(blockers)} trace(s) must not be published:\n  "
+        + "\n  ".join(blockers)
+    )
 
 
 def _task_dir(repo_root: epath.PathLike | None = None) -> epath.Path:
@@ -196,6 +246,14 @@ def push_traces(
   """
   root = repo_root or find_repo_root()
   base = _task_dir(root)
+
+  # The gate, first: before the API object exists, before the manifest is
+  # read, before any network call. "Before anything leaves the machine" is
+  # not the boundary that matters — asking the remote about the repo is
+  # already contact, and a check placed after it is one that can be
+  # reordered past. No bypass flag, for the same reason: a way to skip a
+  # safety gate becomes the way it is used.
+  refuse_unpublishable_traces(base)
   api = HfApi()
   manifest = _load_manifest(dataset, root)
   parent = None if manifest is None else manifest.get("revision")

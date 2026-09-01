@@ -52,7 +52,7 @@ REDACTED = "[REDACTED]"
 LEGACY_REDACTED = "<redacted>"
 
 # Every spelling of "this value was masked" that a reader must accept.
-_REDACTED_MARKERS = frozenset({REDACTED, LEGACY_REDACTED})
+REDACTED_MARKERS = frozenset({REDACTED, LEGACY_REDACTED})
 
 # Headers whose *value* is a secret or an account identifier, lowercased for
 # case-insensitive matching (HTTP header names are case-insensitive and the
@@ -244,10 +244,9 @@ def unredacted_fields(proxy_log: str) -> list[str]:
       findings += [
           f"record {index} {side} {name}"
           for name, value in _headers(record, side).items()
-          if name.lower() in SENSITIVE_HEADERS
-          and value not in _REDACTED_MARKERS
+          if name.lower() in SENSITIVE_HEADERS and value not in REDACTED_MARKERS
       ]
-    if _body_identity(record) not in (None, *_REDACTED_MARKERS):
+    if _body_identity(record) not in (None, *REDACTED_MARKERS):
       findings.append(
           f"record {index} request body.{'.'.join(BODY_IDENTITY_PATH)}"
       )
@@ -293,6 +292,18 @@ def _headers(record: dict[str, object], side: str) -> dict[str, str]:
   }
 
 
+def kept_headers(upstream: Upstream) -> frozenset[str]:
+  """Return the headers classified as safe to record for one upstream.
+
+  Args:
+    upstream: Which server produced the exchange.
+
+  Returns:
+    The upstream-independent names plus that upstream's own vocabulary.
+  """
+  return _KEPT_ANY_UPSTREAM | _KEPT_BY_UPSTREAM.get(upstream, frozenset())
+
+
 def unclassified_fields(proxy_log: str, *, upstream: Upstream) -> list[str]:
   """Find every header nobody has classified as sensitive or as safe to keep.
 
@@ -311,8 +322,7 @@ def unclassified_fields(proxy_log: str, *, upstream: Upstream) -> list[str]:
   Returns:
     One finding per unclassified header, as ``"record <n> <side> <name>"``.
   """
-  kept = _KEPT_ANY_UPSTREAM | _KEPT_BY_UPSTREAM.get(upstream, frozenset())
-  known = kept | SENSITIVE_HEADERS
+  known = kept_headers(upstream) | SENSITIVE_HEADERS
   return [
       f"record {index} {side} {name}"
       for index, record in enumerate(_records(proxy_log), start=1)
