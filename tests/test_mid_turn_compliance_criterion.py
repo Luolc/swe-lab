@@ -317,19 +317,25 @@ def test_the_report_numbers_recompute_from_the_committed_evidence():
   assert criterion.verdict(summary) == "BELOW_BAR"
 
 
-def test_a_check_over_no_runs_does_not_pass():
-  """A guard that exits 0 while checking nothing has stopped guarding."""
-  result = subprocess.run(
-      [
-          sys.executable,
-          str(EXPERIMENT / "evidence.py"),
-          "--check",
-          "--bundle",
-          str(EXPERIMENT / "evidence/graded.json"),
-      ],
-      capture_output=True,
-      text=True,
-      check=False,
-  )
-  assert result.returncode == 1, result.stdout
-  assert "refusing" in result.stdout
+def test_no_invocation_form_reports_success_over_zero_runs():
+  """A guard that exits 0 while checking nothing has stopped guarding.
+
+  Every form is exercised, not just the one the guard was first written for:
+  the bundle comparison passes trivially over an empty list, and the per-run
+  form simply never enters its loop. The first fix covered only the branch it
+  was tested in.
+  """
+  for argv in (
+      ["--check"],
+      ["--check", "--bundle", str(EXPERIMENT / "evidence/graded.json")],
+      ["--bundle", str(EXPERIMENT / "evidence/graded.json")],
+      [],
+  ):
+    result = subprocess.run(
+        [sys.executable, str(EXPERIMENT / "evidence.py"), *argv],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1, f"{argv} exited {result.returncode}"
+    assert "refusing" in result.stdout, argv

@@ -247,13 +247,17 @@ def main() -> int:
   if args.scan_tracked:
     return scan_tracked()
 
+  # Before any branch, because every path below reports success over an empty
+  # list: the bundle form by comparing nothing, the per-run form by not
+  # entering its loop. A guard that goes green by absence has stopped guarding,
+  # and one placed inside a single branch only guards the branch it was tested
+  # in.
+  if not args.runs:
+    print("no runs given; refusing to report a passing run over nothing")
+    return 1
+
   if args.bundle:
     path = pathlib.Path(args.bundle)
-    if not args.runs:
-      # A check over zero runs exits 0 while checking nothing — the guard going
-      # green by absence, which is how a guard silently stops guarding.
-      print("no runs given; refusing to report a passing check over nothing")
-      return 1
     witnesses = [build(pathlib.Path(run)) for run in args.runs]
     text = json.dumps(witnesses, indent=2, sort_keys=True) + "\n"
     found = blockers(text)
