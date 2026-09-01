@@ -287,8 +287,12 @@ capture and a HF dataset repo, and it is the part still missing.
 
 ## Task 10: Run the capture proxy inside the sandbox
 
-**Description:** `ProxyRecorder` starts `cc-reverse-proxy` **on the host** and
-the container dials back through the Docker host gateway. That makes a
+**Description:** *(The state below is the **pre-task** one. The task is done:
+`ProxyRecorder` is deleted, the proxy runs in the sandbox, and the three
+dependencies described here are gone — see the Verification line.)*
+
+`ProxyRecorder` started `cc-reverse-proxy` **on the host** and the container
+dialled back through the Docker host gateway. That made a
 **required** component — on the OpenRouter path the proxy's `X-Anthropic-Beta`
 mirroring and `provider` injection are what make interleaved thinking work at
 all — depend on three fragile things:
@@ -310,7 +314,7 @@ all — depend on three fragile things:
    allowing the recorder's ranges, which is the point: it is an exposure nobody
    chose, and no capture-side change introduced it.
 
-Moving the proxy **into the sandbox** removes all three at once. Each container
+Moving the proxy **into the sandbox** removed all three at once. Each container
 has its own network namespace, so a **hard-coded** port cannot collide by
 construction; the agent dials container loopback, so **no firewall rule is
 needed**; nothing binds on the host, so the **tailnet exposure disappears**. It

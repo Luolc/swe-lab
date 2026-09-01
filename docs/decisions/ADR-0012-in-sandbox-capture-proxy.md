@@ -154,9 +154,13 @@ the raw file exists on disk, which is the whole objection.
 Write time is now *inside* `cc-reverse-proxy`, since the proxy writes to the
 workspace with no intermediary of ours, so that is where the fix went
 ([cc-reverse-proxy#1](https://github.com/Luolc/cc-reverse-proxy/pull/1)). It
-masks four values as it records each exchange — the request's `Authorization`
-and `X-Api-Key`, the response's `Anthropic-Organization-Id` and
-`Anthropic-Workspace-Id` — and **redaction is the default**, with an explicit
+masks, as it records each exchange, the request's `Authorization`, `X-Api-Key`,
+`Cookie` and `Proxy-Authorization`; the request body's `metadata.user_id`; and
+the response's `Anthropic-Organization-Id`, `Anthropic-Workspace-Id`,
+`Anthropic-Ratelimit-Unified-Representative-Claim` and `Set-Cookie`. (The set
+started as four request/response headers; the last four arrived through review
+and through one real request per upstream — see the acceptance section.)
+**Redaction is the default**, with an explicit
 `--keep-sensitive-headers` to turn it off. A safe behaviour behind an opt-in
 flag would be a default that depends on every future caller remembering, which
 is not a default. Values are **masked, not dropped**: the header name survives
@@ -166,9 +170,16 @@ was sent and hidden".
 What is deliberately *not* redacted is load-bearing too. `X-Claude-Code-Session-Id`
 is an identifier, not a credential, and a session id is one leg of reconciling a
 run against its trace — masking it would break that silently. `Request-Id`,
-`Anthropic-Beta` and the `Anthropic-Ratelimit-*` family are telemetry and
-protocol. Both repos assert this direction explicitly, so a later "mask a few
-more while I'm here" cannot land unnoticed.
+`Anthropic-Beta` and the rate-limit **status / reset / utilization** fields are
+telemetry and protocol.
+
+Those retained fields are named **one at a time, never as a family**. An earlier
+version kept `Anthropic-Ratelimit-*` wholesale, and that family also contains
+`…-Representative-Claim`, which names the account a limit is claimed against —
+so the wildcard is exactly what let an identity field through. A keep-list
+expressed as a pattern is not a list: it promises safety for fields nobody has
+seen. Both repos assert this direction explicitly, so a later "mask a few more
+while I'm here" cannot land unnoticed either.
 
 **What is *not* enforced, said plainly because the opposite is easy to assume.**
 Redaction is a **deny-list**: by construction, a header or body field that
@@ -209,11 +220,15 @@ response — and both carriers: headers, and the account identifier Claude Code
 sends in the request body.
 
 Run against the **real** pre-fix rollout log, it reports **65 findings** over 13
-records: four request headers, two response headers, the representative claim,
-and `metadata.user_id`. (An earlier header-only version of this check reported
-39 on the same file. The two numbers measure different scopes and are not
-comparable; the gap is the body field and the representative claim, both added
-after review.)
+records — five fields in every record: `Authorization`,
+`Anthropic-Organization-Id`, `Anthropic-Workspace-Id`,
+`Anthropic-Ratelimit-Unified-Representative-Claim` and
+`request.body.metadata.user_id`. (An earlier header-only version of this check
+reported 39 on the same file. The two numbers measure different scopes and are
+not comparable; the increment is the representative claim and the body field,
+both added after review. The other masked fields — `X-Api-Key`, `Cookie`,
+`Proxy-Authorization`, `Set-Cookie` — do not appear in that capture at all,
+which is why the arithmetic is 13 × 5 rather than 13 × 9.)
 
 **Verified against both real upstreams.** One real request each was sent
 through the merged binary — to `api.anthropic.com` (the `ROLLOUT` path) and to
