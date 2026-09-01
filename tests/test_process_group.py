@@ -146,11 +146,12 @@ def test_reaping_is_what_releases_the_group_number():
 def test_a_leader_reaped_elsewhere_stops_the_group_signal(
     tree: subprocess.Popen[str], monkeypatch: pytest.MonkeyPatch
 ):
-  """Ownership unknown is not permission.
+  """Ownership unknown is not permission, whenever it becomes unknown.
 
-  If something else reaped the leader, this parent no longer holds the pid
-  that the group id *is*, so it can no longer say what that number names. The
-  conservative move is to stop signalling, not to send one more.
+  Here the leader is still held when the helper is entered — so SIGTERM goes
+  out — and is reaped by something else while the group is draining. From that
+  point this parent can no longer say what the number names, so the
+  conservative move is to stop signalling rather than send one more.
   """
   signalled: list[str] = []
   real_killpg = os.killpg
@@ -159,16 +160,43 @@ def test_a_leader_reaped_elsewhere_stops_the_group_signal(
     signalled.append(signal.Signals(sig).name)
     real_killpg(pid, sig)
 
-  def reaped_elsewhere(*args: object, **kwargs: object) -> None:
+  calls: list[int] = []
+
+  def reaped_after_the_first_signal(*args: object, **kwargs: object) -> None:
     del args, kwargs
+    calls.append(1)
+    if len(calls) == 1:
+      return None  # the pre-flight check: still ours, so SIGTERM is sent
     raise ChildProcessError(10, "No child processes")
 
   monkeypatch.setattr(os, "killpg", killpg)
-  monkeypatch.setattr(os, "waitid", reaped_elsewhere)
+  monkeypatch.setattr(os, "waitid", reaped_after_the_first_signal)
 
   end_process_group(tree, grace_s=1.0)
 
   assert signalled == ["SIGTERM"], signalled
+
+
+def test_a_leader_reaped_before_entry_is_never_signalled(
+    monkeypatch: pytest.MonkeyPatch,
+):
+  """The check has to precede the *first* signal, not only the last.
+
+  If the leader was already reaped when this was called, the number stopped
+  naming that tree before we touched it — so even the SIGTERM is unsafe.
+  """
+  signalled: list[str] = []
+  process = subprocess.Popen(["/bin/true"], start_new_session=True)
+  _ = process.wait(timeout=5)  # reaped by us: the reservation is gone
+
+  def killpg(pid: int, sig: int) -> None:
+    del pid
+    signalled.append(signal.Signals(sig).name)
+
+  monkeypatch.setattr(os, "killpg", killpg)
+  end_process_group(process, grace_s=1.0)
+
+  assert signalled == [], signalled
 
 
 def test_ending_an_already_dead_group_is_silent(tree: subprocess.Popen[str]):

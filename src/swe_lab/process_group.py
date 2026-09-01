@@ -91,6 +91,17 @@ def end_process_group(
       and then again to be reaped.
   """
   group = process.pid  # start_new_session ⇒ the child leads its own group
+  if not _identity_held(process):
+    # Checked before the *first* signal and not only before the last: if the
+    # leader was already reaped when this was called, the number stopped
+    # naming that tree before we touched it, and `SIGTERM` is then the unsafe
+    # act.
+    _logger.warning(
+        "process %d is no longer held; not signalling group %d",
+        process.pid,
+        group,
+    )
+    return
   try:
     os.killpg(group, signal.SIGTERM)
   except (ProcessLookupError, PermissionError):
@@ -109,6 +120,31 @@ def end_process_group(
   with contextlib.suppress(ProcessLookupError, PermissionError):
     os.killpg(group, signal.SIGKILL)
   _reap(process, grace_s)
+
+
+def _identity_held(process: subprocess.Popen[Any]) -> bool:
+  """Whether this parent still holds the leader, unreaped.
+
+  Two ways it may not: this parent reaped it itself (``returncode`` is set), or
+  something else did (``waitid`` reports no such child). Either way the pid —
+  and with it the group id — is no longer ours to name, and the answer to that
+  is to signal nothing.
+
+  Args:
+    process: The group leader.
+
+  Returns:
+    Whether a group-directed signal may still be sent.
+  """
+  if process.returncode is not None:
+    return False
+  if not hasattr(os, "waitid"):
+    return True  # no way to ask, and this parent has not reaped it
+  try:
+    _ = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOWAIT | os.WNOHANG)
+  except ChildProcessError:
+    return False
+  return True
 
 
 def _await_exit(process: subprocess.Popen[Any], timeout_s: float) -> bool:
