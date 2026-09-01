@@ -1,32 +1,38 @@
-# Can a guidebook be used as a step-level criterion? — REPORT
+# Can *this* guidebook be applied as a step-level criterion? — REPORT
 
 **Run 2026-09-01, on already-purchased traces, no rollouts, no containers.**
-Judged with `anthropic/claude-sonnet-5` through OpenRouter. Total cost **$0.59**.
+Judge: `anthropic/claude-sonnet-5` via OpenRouter. Total cost **$0.643**
+(recomputed from the preserved responses, retries included).
 
-## What this run can establish, and what it cannot
+## Scope, and why this report renders no pass/fail
 
-**The direction is the whole point, so it goes first.** With **2 traces**, a
-*failure* would falsify "a guidebook can be applied at step granularity"; a
-*pass* establishes **nothing** about how often an oracle would reject.
+Everything below is about **one guidebook, one judge, two traces**. It is not
+about guidebooks in general, and a result here could not have established
+anything general even had it come out cleanly.
 
-> **No number in this report may be cited as a per-step rejection rate.** The
-> rejection counts below are properties of *this guidebook, this judge, these
-> two traces* — they are not an estimate of anything, and they carry no
-> confidence interval because none would mean anything at this N.
+**No feasibility condition was declared before the run.** That is a defect in
+this experiment, not a detail: a threshold chosen after seeing coverage is not a
+test, and an earlier draft of this report did exactly that — it asserted that a
+guidebook unable to speak to most steps fails the question, observed **70%
+silent**, and still called the attempt "not falsified". Those cannot both stand.
+Rather than pick whichever reading the data flatters, this report **withholds a
+verdict** and states observations. The pass/fail belongs to a run whose
+condition was fixed in advance.
 
-Three further limits, each of which changes what the numbers refer to:
+> **No number here may be cited as a per-step rejection rate**, and none may be
+> cited as evidence that the approach works. What the four rejections below
+> establish is **existence** — that reviewable step-level verdicts can be
+> produced from a guidebook at all — not frequency.
 
-1. **This is a first-intervention rate on an unsupervised trajectory, not a
-   steady-state rate.** Every step here was produced by an actor nobody
-   corrected. Once interventions actually happen, later steps are not these
-   steps. The two quantities are different and ordinary language does not
-   distinguish them.
-2. **It measures what a judge holding a guidebook rejects, not what a real
-   oracle would reject.** No oracle specification exists; a hand-written
-   guidebook is not one.
-3. **Steps within a trace are not independent.** Report both N: **trace-level
-   N = 2**, step-level N = 67. The step count is not a sample size — one trace
-   contributes up to 36 of them.
+Three further limits decide what the numbers refer to:
+
+1. **First-intervention on an unsupervised trajectory, not a steady-state
+   rate.** Every step was produced by an actor nobody corrected; once
+   interventions happen, later steps are not these steps.
+2. **A judge holding a guidebook, not an oracle.** No oracle specification
+   exists; a hand-written guidebook is not one.
+3. **Steps are clustered within traces.** Both N: **trace-level N = 2**,
+   step-level 67. The step count is not a sample size — one trace contributes 36.
 
 ## Design
 
@@ -38,83 +44,100 @@ Three further limits, each of which changes what the numbers refer to:
 | judge input | full guidebook + the step + up to 8 preceding steps, summarized |
 | judge output | `adjudicable` / `stage` / `quote` / `verdict` / `reason`, JSON |
 
-**"Silent" was made a first-class answer**, not a failure mode: a guidebook that
-cannot speak to most steps fails this feasibility question regardless of how
-good its verdicts are on the rest.
-
-Auxiliary requests in the capture were excluded before judging — Claude Code's
-conversation-title call asks for a JSON `title` and carries no tools, and
-judging it as a trajectory step would measure a population the question is not
-about. That removed 2 of 71 records.
+**"Silent" was a first-class answer**, not a failure mode. Auxiliary capture
+records were excluded before judging — Claude Code's conversation-title call
+asks for a JSON `title` and carries no tools — because judging them would
+measure a population the question is not about. That removed 2 of 71.
 
 ## Results
+
+Every figure is recomputed offline by `aggregate.py` from the preserved raw
+responses; see [Reproduce](#reproduce).
 
 | quantity | value | label |
 | --- | --- | --- |
 | steps judged | 69 | measured |
-| parsed | 67 (2 unparseable) | measured |
+| parsed | 67 | measured |
+| unparseable | 2 | measured |
 | **adjudicable** | **20 / 67 = 30%** | measured, this guidebook + judge |
 | silent | 47 / 67 = 70% | measured |
 | verdicts among adjudicable | 16 on-track, **4 off-track** | measured |
-| quotes traceable to the guidebook | **20 / 20** | measured |
+| quoted span found **literally** in the guidebook | **15 / 20** | measured |
+| …found after normalizing whitespace and markdown delimiters | 20 / 20 | measured |
+| of the 4 off-track verdicts, quotes found literally | **1 / 4** | measured |
 | trace-level N | **2** | design |
 
-Per trace: baseline 36 steps / 11 adjudicable / 3 off-track; steered 31 steps /
-9 adjudicable / 1 off-track.
+Per trace: baseline 36 steps / 11 adjudicable / 3 off-track; steered 31 / 9 / 1.
 
-**Stage coverage is lopsided.** Of 20 adjudicable steps the cited stage was
-5 (×12), 1 (×4), 4 (×3), 3 (×1) — and **stage 2 was never cited once**. A
-guidebook's stages are not equally reachable at step granularity: stage 5 ("run
-the neighbouring suite") maps onto observable single actions, stage 2 ("turn the
-prose into a checklist") largely does not.
+**Stage coverage is lopsided.** Cited stages: 5 (×12), 1 (×4), 4 (×3), 3 (×1);
+**stage 2 never**. Stages differ in how well they map onto one observable
+action — "run the neighbouring suite" does, "turn the prose into a checklist"
+does not. This is a property of the guidebook's shape, and it is the finding
+most likely to survive a change of instance.
 
-### The rejections are reviewable, which was the third question
+### The rejections are reviewable
 
-All four cite a verbatim guidebook span and give a checkable reason. Two of them
-catch **the exact trap the guidebook was written to prevent** — a stricter entry
-regex that makes malformed strings miss the branch — in the baseline trace, at
-steps 26 and 36. One catches a baseline-run ordering violation; one catches an
-actor preparing to edit pre-existing tests to match its own implementation.
+All four cite a guidebook span and give a checkable reason, and a reader can
+agree or disagree on the merits. Two of them catch **the trap this guidebook was
+written to prevent** — a stricter entry regex that makes malformed strings miss
+the branch — in the **unsteered** trace, at steps 26 and 36. One catches a
+baseline-run ordering violation; one catches an actor preparing to edit
+pre-existing tests to match its own implementation.
 
-A human reading those four against the guidebook can agree or disagree on the
-merits. That is the property this question was asking about.
+**Only 1 of those 4 quotes is a literal substring**; the other three match after
+normalization. They are checkable, not copy-pasteable.
 
-## Two instrument defects, both found before they reached a conclusion
+## Three instrument defects
 
-**`max_tokens = 700` truncated 10 of 69 judgements**, and the truncation was
-**not random**: every one had `completion_tokens == 700` exactly, and they
-clustered mid-trajectory. Re-judged at 2000 tokens, all 10 returned content and
-**4 of 8 parsed retries were adjudicable — above the 30% overall rate**. So the
-first pass would have computed coverage on a population that systematically
-dropped the steps the guidebook engages with most. The figures above include the
-re-judged steps.
+**The `max_tokens` cap selects which steps get an answer, and it still does.**
+A judgement needing more room than the cap returns no content at all. At 700, 10
+of 69 came back empty, every one with `completion_tokens == 700` exactly. Those
+10 were re-judged at 2000: **8 returned text and 2 came back empty again, at
+`completion_tokens == 2000`** — those two are the 2 unparseable rows above. So
+the effect was **reduced, not removed**, and it is directional: 4 of the 8
+recovered judgements were adjudicable, above the 30% overall rate, so the
+truncated steps were ones the guidebook engages with more often than average.
 
-**My quote checker reported 3 fabricated quotes that were not fabricated.** The
-guidebook is hard-wrapped and uses backticks; an exact-substring test fails on a
-quote spanning a line break or dropping markdown delimiters. After normalizing
-whitespace and delimiters, **20 of 20 quotes are verbatim**. The instrument was
-wrong, not the judge — checked before the claim was written down rather than
-after.
+**A quote checker reported fabrications that were not fabrications.** The
+guidebook is hard-wrapped and uses backticks, so exact-substring matching fails
+on a faithful quote spanning a line break. The literal and normalized counts are
+therefore both reported above rather than collapsed into one.
 
-## Conclusion, attributable
+**An earlier cost figure omitted the retry calls** ($0.59 against the correct
+$0.643). The aggregate is now computed from the same records that produce every
+other number, so the two cannot drift apart again.
 
-**A guidebook of this shape can be applied at step granularity, and the attempt
-is falsifiable — it was not falsified here.** The evidence for that is narrow
-and specific: a judge holding only the guidebook produced verdicts on 30% of
-steps, cited real spans for all of them, and its rejections include the failure
-the guidebook exists to prevent, found in the trace that was not steered.
+## What can be said
 
-**What is not established:** any rejection rate; anything about a real oracle;
-anything that survives a change of instance, guidebook, or judge. The 70% silent
-figure is the honest headline for *feasibility* — it says a guidebook adjudicates
-a minority of steps, which is a fact about design cost, not about frequency of
-error.
+- Reviewable step-level verdicts **can** be produced from this guidebook by this
+  judge: 20 exist, and 4 of them are rejections a human can check.
+- This guidebook adjudicates a **minority** of steps, and its stages are not
+  equally reachable at step granularity.
+- Neither observation is a pass or a fail, because no condition was set in
+  advance to decide which it would be.
 
 ## Reproduce
 
+Offline, from the preserved responses — this recomputes every table above:
+
 ```sh
-python3 extract_steps.py baseline-qutebrowser-rollout-0 steered-qutebrowser-rollout-11 > steps.json
-OPENROUTER_API_KEY=... python3 judge_steps.py
+A=~/dev/swe-lab-artifacts/process_supervision/guidebook_step_criterion
+python3 aggregate.py \
+  --verdicts $A/verdicts.jsonl --verdicts $A/verdicts_retry.jsonl \
+  --guidebook experiments/trace_synthesis/steered_rerun/guidebook/qutebrowser-qtcolor.md
+```
+
+Later verdict files override earlier ones for the same step, so a re-judged step
+replaces its truncated first answer.
+
+The paid steps, optional and not needed to check any figure:
+
+```sh
+python3 extract_steps.py --out $A/steps.json \
+  baseline-qutebrowser-rollout-0 steered-qutebrowser-rollout-11
+python3 judge_steps.py --steps $A/steps.json --out $A/verdicts.jsonl --max-tokens 700
+python3 judge_steps.py --steps $A/steps.json --out $A/verdicts_retry.jsonl \
+  --max-tokens 2000 --only baseline-qutebrowser-rollout-0:11 ...   # the empty ones
 ```
 
 The key was read from the credential manager into the environment only — never
@@ -123,5 +146,5 @@ that a chosen key authenticates (`GET /api/v1/key`) before a run, because a
 reference resolving successfully does not mean the value it returns is usable
 as-is.
 
-Raw judgements, run log and merged verdicts are off-repo at
+Raw responses, run log and the merged summary are off-repo at
 `swe-lab-artifacts/process_supervision/guidebook_step_criterion/`.
