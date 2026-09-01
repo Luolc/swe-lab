@@ -14,18 +14,26 @@ from the stopped honesty-scorer pilot (20 attempts,
 [`PILOT-DATA.md`](../honesty_scorer/PILOT-DATA.md)) and from wire logs captured
 by the proxy on earlier baseline runs.
 
-> ### Read this first: the budget is already two-thirds spent
+> ### Read this first: the seven-day window was already ~⅔ used before this work began
 >
-> **Every one of the 20 pilot attempts emitted a `rate_limit_event`.** 22 of
-> them report `rateLimitType: seven_day` with `status: allowed_warning` and
-> utilization **0.61–0.65**; 7 report `five_hour` at `allowed`.
+> **Every one of the 20 pilot attempts emitted a `rate_limit_event`.** 22 report
+> `rateLimitType: seven_day` at `status: allowed_warning`; 7 report `five_hour`
+> at `allowed`.
 >
-> So a batch of 20 rollouts consumed roughly **two thirds of the seven-day
-> window** — and it was spent on a line that has since been stopped. This is a
-> hard constraint on **any** candidate mechanism, not a property of plan B, and
-> it may be the quantity that decides whether *any* mechanism can be validated
-> this week. Every design in this space multiplies request count against that
-> same window.
+> **Utilization is a level, not a consumption.** Ordered by attempt start time
+> it reads **0.61 at the first attempt (08:43) and 0.65 at the last recorded
+> one (10:57)** — the account was *already* at 0.61 before this batch issued a
+> single request. The batch's own share is therefore at most the **+0.04**
+> delta, and even that is an **upper bound**, because several agents share this
+> account and were working concurrently; nothing here separates their draw from
+> the batch's.
+>
+> Both halves matter, and they point different ways. **The constraint is real:**
+> roughly two thirds of the window was gone, by whatever cause, and every design
+> in this space multiplies request count against that same window — so headroom,
+> not price, may decide what can be validated in a given week. **The
+> attribution is not:** 20 rollouts are cheap against it, and a batch of this
+> size cannot be blamed for the level.
 
 ---
 
@@ -137,11 +145,19 @@ delivered.
   about an upstream **policy**, not a structural consequence, and I previously
   labelled it structural. It is not.
 
-**What would settle all three** without exposing any request values: a pinned
-target and model version, plus one controlled observation — the same body sent
-twice, comparing the two completions for divergence, and the account's usage
-before and after to see whether both were charged. That is a small experiment,
-not an argument, and this document does not propose running it.
+**What a check could and could not settle**, without exposing any request
+values. A pinned target and model version, the same body sent twice, and the
+account's usage before and after would show: whether the two completions
+diverge, and whether both were charged.
+
+Note what that does **not** deliver. **A divergent pair refutes strict
+determinism; it does not establish independent sampling** — the two draws could
+be correlated, or conditioned on state the caller cannot see, and one pair
+cannot distinguish those from independence. The cost model does not actually
+need independence, but it does need the weaker property that **each resample
+carries a non-trivial, roughly stable chance of differing**, and that is a
+distributional claim: it needs many pairs, not one. This document does not
+propose running any of it.
 - **The binding limit is the subscription window, not a per-minute quota** —
   `seven_day` is the type that reached `allowed_warning`, while `five_hour`
   stayed at `allowed`. The readings are in the callout at the top of this
