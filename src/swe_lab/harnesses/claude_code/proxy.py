@@ -29,7 +29,6 @@ explicit ``reverse_proxy.go`` path to override.
 
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import os
 import subprocess
@@ -42,7 +41,12 @@ PROXY_SOURCE_ENV = "CC_REVERSE_PROXY_SRC"
 _SIBLING_SOURCE = epath.Path("cc-reverse-proxy") / "reverse_proxy.go"
 
 _BIN_SUBDIR = "bin"
-_CACHE_NAMESPACE = "cc-reverse-proxy"
+# Deliberately NOT "cc-reverse-proxy": that exact path is the host-native
+# binary written by `swe_lab.pipelines.related_files.host_proxy`, and nesting a
+# versioned tree under it made one component's directory collide with another
+# component's file. These are different artifacts anyway -- host-native there,
+# cross-compiled linux/amd64 here -- and they now have different homes.
+_CACHE_NAMESPACE = "cc-reverse-proxy-sandbox"
 _BINARY_NAME = "cc-reverse-proxy"
 
 # The sandbox is linux/amd64, so that is the only build we ever want — the host
@@ -142,7 +146,6 @@ def ensure_proxy_binary(
   """
   root = repo_root or find_repo_root()
   version = proxy_source_version(root)
-  _clear_legacy_cache_entry(root)
   cached = proxy_binary_path(version, repo_root=root)
   if not cached.is_file():
     _build(proxy_source_path(root), cached)
@@ -153,59 +156,6 @@ def ensure_proxy_binary(
   _ = cached.copy(target, overwrite=True)
   os.chmod(target, 0o755)
   return target
-
-
-def _clear_legacy_cache_entry(repo_root: epath.PathLike) -> None:
-  """Remove a pre-sandbox binary squatting on today's cache directory.
-
-  When the proxy ran on the host, the build was cached as a *file* at
-  ``<cache>/bin/cc-reverse-proxy``. The version-keyed layout needs that same
-  path to be a *directory*, so a machine that ever ran the host-side proxy
-  fails its first proxied run in ``mkdir`` with ``NotADirectoryError``.
-
-  Deleting something in the way is only safe when three things hold at once,
-  and they do here: the entry is **ours** (this module is the only writer of
-  this path), it is **regenerable** (the next few lines rebuild it, so nothing
-  is lost), and it is **identified by construction** rather than guessed (the
-  path is one we compute, not one we found and judged). Drop any one and this
-  stops being safe — an orphaned container, for instance, satisfies none of
-  them, which is why the same gesture is wrong there.
-
-  A directory at this path is the current layout and is left alone.
-
-  Two first proxied runs can race here, so what this asserts is a *state*, not
-  a sequence of steps: on return, nothing but a directory stands at that path.
-  The condition is written that way on purpose. Enumerating the ways a removal
-  can fail — missing, already a directory, and whatever a future filesystem
-  adds — is a list that is wrong as soon as it is incomplete, whereas the
-  target state is a single fact that can be checked. A peer that removed the
-  file, or that already replaced it with the real directory, has produced
-  exactly the state this wanted; losing that race is success.
-
-  Removal goes through :func:`os.remove` rather than ``Path.unlink`` because
-  ``epath``'s ``unlink`` deletes an *empty directory* instead of refusing —
-  which, in the losing interleaving, would destroy the cache directory the
-  peer had just created.
-
-  Args:
-    repo_root: Repo root whose cache to check.
-
-  Raises:
-    RuntimeError: If a non-directory still stands at the path afterwards. That
-      is no longer a race — it is an entry we could not clear and must not
-      silently build on top of.
-  """
-  namespace = cache_root(repo_root) / _BIN_SUBDIR / _CACHE_NAMESPACE
-  if namespace.is_dir():
-    return
-  # A peer may win any part of this; the state check below is what decides.
-  with contextlib.suppress(OSError):
-    os.remove(namespace)
-  if namespace.exists() and not namespace.is_dir():
-    raise RuntimeError(
-        f"{namespace} is not a directory and could not be cleared; the proxy"
-        " binary cache cannot be created under it"
-    )
 
 
 def _build(source: epath.Path, binary: epath.Path) -> None:
