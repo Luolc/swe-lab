@@ -140,11 +140,12 @@ Two kinds of resource, one principle — *the identity is stamped where the
 resource is created*:
 
 - **containers** carry it in their labels (B);
-- **processes** cannot, so a spawn writes a small **spawn record** — owner
-  session, owner pid, child pid, port, start time — under a known directory, and
-  removes it on clean exit. A record whose owner is dead and whose child still
-  lives is an orphan by construction; a record with no live child is stale and
-  is deleted.
+- **processes** cannot carry a label, so a spawn stamps its identity **in the
+  child's environment** and writes a small **spawn record** — owner session,
+  owner pid, child pid, port, start time, and a unique run id — under a known
+  directory, removing it on clean exit. A record whose owner is dead and whose
+  child still lives is an orphan by construction; a record with no live child is
+  stale and is deleted.
 
   **Writing that record has the same creation race A fixes for containers**, and
   the review was right that leak ① is not closed until it is spelled out here: a
@@ -153,24 +154,45 @@ resource is created*:
   below then correctly forbids the reaper from touching it. The ordering is
   therefore part of the design, not an implementation detail:
 
-  1. **write an intent record before spawning** — owner session, owner pid,
-     port, start time, and a unique run id — so the resource is named before it
-     can exist;
-  2. `Popen`;
+  1. **write an intent record before spawning** — everything but the child pid —
+     so the resource is named before it can exist;
+  2. `Popen`, with `SWE_LAB_RUN_ID` and `SWE_LAB_OWNER_SESSION` in the child's
+     environment;
   3. **atomically add the child pid** — write a sibling file and `rename`, never
      a partial in-place edit, so a reader sees one state or the other.
 
-  That leaves exactly two incomplete states, and both are recoverable **without
-  guessing**: an intent record whose port has no listener is stale and is
-  deleted; an intent record whose port *does* have a listener, and whose owner
-  is dead, names an orphan the reaper can end **by port** — the record
-  identifies the resource even though the child pid was never written.
+  **The environment stamp, not the port, is what attributes the process** — the
+  second review round was right that a record naming a port proves nothing about
+  who is listening on it. A port is a rendezvous anyone can occupy, and this
+  repo has already been bitten once by an unrelated `python3 -m http.server`
+  squatting on a proxy port (`run_steered.py`'s guard records the incident). The
+  environment is the process-side equivalent of B's container label: the parent
+  sets it at `Popen`, the kernel stamps it at `exec` — **before the child can
+  bind anything** — and `/proc/<pid>/environ` is readable back by the same uid
+  that spawned it. It therefore survives the crash window that the record's
+  child pid does not.
 
-  **The limit, stated rather than papered over:** this closes leak ① for every
-  proxy this repo spawns, because every one of them is recorded before it can
-  exist. It does not let the reaper act on a listener that *no* record claims —
-  a pre-existing process, or one spawned by code that does not write a record.
-  That is an unknown owner, and rule 1 applies: report it, never kill it.
+  So the reaper resolves a port to its listening pid and then **checks that
+  pid's `SWE_LAB_RUN_ID` against the record's** before it signals anything. Both
+  incomplete states are then decidable without guessing:
+
+  | state | reaper |
+  |---|---|
+  | no listener on the recorded port | stale record, deleted, nothing signalled |
+  | listener whose run id matches, owner dead | our orphan — ended |
+  | listener whose run id differs, is absent, or is unreadable | **unknown owner — reported, never signalled** |
+
+  **The limits, stated rather than papered over.** The check reads `/proc`, so
+  the process side of the reaper is Linux-only — which is where sandboxes run,
+  and a Mac laptop is a place this is skipped, not a place it guesses. It
+  identifies a *cooperating* process, not an adversarial one: an environment
+  block can be rewritten by the process that owns it, so this defends against
+  the accident that actually happens (a stray listener, a reused port) and not
+  against a program impersonating one of ours. And the pid→signal step keeps the
+  residual race every pid-based kill has, which is why rule 3 re-reads identity
+  immediately before the signal rather than trusting the listing. What none of
+  it licenses is acting on a listener that no record claims, or one whose
+  identity does not check out: that is an unknown owner, and rule 1 applies.
 
 One code path, two entry points:
 
@@ -251,9 +273,9 @@ Each invariant gets a named test; none of them needs Docker except where marked:
 | a resource names its owner | create argv carries the pid and session labels; the session id is stable in-process and differs across processes |
 | the proxy's whole child tree dies with the context | `start_new_session` asserted; exiting signals the **group** |
 | an orphaned proxy is reclaimed after its owner dies | spawn the proxy, `SIGKILL` the owner, run the reaper, assert the port is released — the test that would have caught leak ① |
-| an orphan created **before** its child pid was recorded is still reclaimed | kill the owner between the intent record and the update; the reaper ends the listener from the record's port |
+| an orphan created **before** its child pid was recorded is still reclaimed | kill the owner between the intent record and the update; the listener's `SWE_LAB_RUN_ID` matches the record and it is ended |
 | an incomplete record with no listener is deleted, not acted on | intent record whose port is free → removed, nothing signalled |
-| a listener no record claims is never touched | a foreign process holding a recorded port is reported as unknown |
+| a foreign listener on a **recorded** port is never signalled | a process holding the recorded port with no matching run id is reported as unknown — the squatter case, run against a completed record and an incomplete one |
 | the fixture removes only its **own** session | a container stamped with a different session id survives the fixture untouched |
 | the reaper never touches a live owner | listing with a live pid yields nothing to remove |
 | the reaper never touches an unknown owner | a container whose owner label is missing or malformed is reported, not removed |
