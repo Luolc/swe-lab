@@ -93,3 +93,193 @@ def test_the_pre_registered_digests_match_the_document(witness: ModuleType):
   text = _PRE_REGISTRATION.read_text()
   assert witness._BODY_SHA256 in text
   assert witness._ORIGINAL_COMPLETION_SHA256 in text
+
+
+def _fake_capture(tmp_path: Path, witness: ModuleType) -> Path:
+  """Write a capture whose digests the test then pre-registers.
+
+  Args:
+    tmp_path: Directory for the file.
+    witness: The runner module, for its canonical serializer.
+
+  Returns:
+    The capture path.
+  """
+  import json
+
+  body = {
+      "model": "m",
+      "stream": True,
+      "messages": [],
+      "tools": [{"name": "t"}],
+  }
+  message = {
+      "content": [{"type": "text", "text": "x"}],
+      "stop_reason": "end_turn",
+  }
+  row = {
+      "request": {"body": body},
+      "response": {"message": message, "headers": {}},
+  }
+  path = tmp_path / "capture.jsonl"
+  _ = path.write_text(
+      "".join(json.dumps(row) + "\n" for _ in range(witness._STEP_INDEX + 1))
+  )
+  return path
+
+
+def _arrange(
+    witness: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    actor_cost: float,
+    judge_cost: float,
+) -> Path:
+  """Point the runner at fakes so `main` runs with no network.
+
+  Args:
+    witness: The runner module.
+    monkeypatch: Patcher.
+    tmp_path: Working directory.
+    actor_cost: Cost each actor response reports.
+    judge_cost: Cost each judge response reports.
+
+  Returns:
+    The output directory `main` was given.
+  """
+  import hashlib
+  import json
+
+  capture = _fake_capture(tmp_path, witness)
+  rows = [json.loads(line) for line in capture.read_text().splitlines()]
+  body = rows[witness._STEP_INDEX]["request"]["body"]
+  original = rows[witness._STEP_INDEX]["response"]["message"]
+  monkeypatch.setattr(witness, "_CAPTURE", capture)
+  monkeypatch.setattr(
+      witness,
+      "_BODY_SHA256",
+      hashlib.sha256(witness.canonical(body)).hexdigest(),
+  )
+  monkeypatch.setattr(
+      witness,
+      "_ORIGINAL_COMPLETION_SHA256",
+      hashlib.sha256(witness.canonical(original["content"])).hexdigest(),
+  )
+
+  def _extract_steps(_rollout: str) -> list[dict[str, object]]:
+    return [
+        {"content": "c", "step_index": i, "tool_names": []} for i in range(37)
+    ]
+
+  def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
+    return {
+        "raw": json.dumps({"adjudicable": True, "verdict": "off_track"}),
+        "usage": {"cost": judge_cost},
+    }
+
+  monkeypatch.setattr(witness._extract, "extract", _extract_steps)
+  monkeypatch.setattr(witness, "_judge_completion", _judge)
+
+  proxy_log = tmp_path / "proxy_log.jsonl"
+  _ = proxy_log.write_text("")
+
+  class _Process:
+
+    def terminate(self) -> None:
+      return None
+
+  def _start(_out_dir: Path):
+    return _Process(), 1, proxy_log
+
+  monkeypatch.setattr(witness, "_start_proxy", _start)
+
+  def _keys() -> list[str]:
+    # No credential is read: the request never leaves the fake transport below.
+    return ["not-a-key"]
+
+  monkeypatch.setattr(witness._judge, "key_pool", _keys)
+
+  class _Response:
+
+    def __enter__(self):
+      return self
+
+    def __exit__(self, *_exc: object) -> None:
+      return None
+
+    def read(self) -> bytes:
+      with proxy_log.open("a") as handle:
+        _ = handle.write(
+            json.dumps(
+                {
+                    "response": {
+                        "message": {
+                            "content": [{"type": "text", "text": "y"}],
+                            "usage": {"cost": actor_cost},
+                        },
+                        "headers": {},
+                    }
+                }
+            )
+            + "\n"
+        )
+      return b"data: {}\n"
+
+  def _urlopen(*_args: object, **_kwargs: object) -> _Response:
+    return _Response()
+
+  monkeypatch.setattr(witness.urllib.request, "urlopen", _urlopen)
+  out = tmp_path / "out"
+  monkeypatch.setattr(
+      witness.sys, "argv", ["witness.py", "--out-dir", str(out), "--k", "3"]
+  )
+  return out
+
+
+def test_an_actor_response_crossing_the_ceiling_stops_before_the_judge(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """The judge is not billed once the actor's own cost has crossed."""
+  import json
+
+  out = _arrange(
+      witness,
+      monkeypatch,
+      tmp_path,
+      actor_cost=witness._COST_CEILING_USD + 1,
+      judge_cost=0.01,
+  )
+  witness.main()
+  kinds = [
+      e["kind"]
+      for e in json.loads((out / "ledger.json").read_text())["entries"]
+  ]
+  assert kinds == ["judge:attempt-0", "actor:attempt-1"]
+  assert (
+      json.loads((out / "classification.json").read_text())["classification"]
+      == "inconclusive"
+  )
+
+
+def test_a_cache_off_call_crossing_the_ceiling_is_not_complete(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """A cache-off call that crosses gives inconclusive, not complete."""
+  import json
+
+  # Each attempt is cheap; the K identical completions trigger cache-off, and
+  # the ledger crosses only once that last call is added.
+  out = _arrange(
+      witness,
+      monkeypatch,
+      tmp_path,
+      actor_cost=witness._COST_CEILING_USD / 3,
+      judge_cost=0.0,
+  )
+  witness.main()
+  entries = json.loads((out / "ledger.json").read_text())["entries"]
+  assert "actor:cache-off" in [e["kind"] for e in entries]
+  assert (
+      json.loads((out / "classification.json").read_text())["classification"]
+      == "inconclusive"
+  )

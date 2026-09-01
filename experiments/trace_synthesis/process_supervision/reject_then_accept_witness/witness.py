@@ -323,14 +323,29 @@ def main() -> None:
       headers = (new[-1].get("response") or {}).get("headers") or {} if new else {}
       completion = json.dumps(message.get("content"), sort_keys=True).encode()
 
+      # Recorded before the next paid call, not after it: an actor response that
+      # crosses the ceiling must stop the judge request, and a cost known only
+      # after the judge has already been billed enforces nothing.
+      ledger.record(f"actor:attempt-{attempt + 1}", usage)
+      if ledger.exhausted:
+        inconclusive = True
+        records.append({
+            "attempt": attempt,
+            "sent_body_sha256": payload_sha,
+            "completion_sha256": hashlib.sha256(completion).hexdigest(),
+            "usage": usage,
+            "judge": None,
+            "accepted": False,
+            "stopped_before_judging": True,
+        })
+        break
+
       verdict = _judge_completion(message, before, len(steps))
+      ledger.record(f"judge:attempt-{attempt + 1}", verdict["usage"])
       try:
         accepted = json.loads(verdict["raw"]).get("verdict") == "on_track"
       except json.JSONDecodeError:
         accepted = False
-
-      ledger.record(f"actor:attempt-{attempt + 1}", usage)
-      ledger.record(f"judge:attempt-{attempt + 1}", verdict["usage"])
       records.append({
           "attempt": attempt,
           "sent_body_sha256": payload_sha,
@@ -408,9 +423,14 @@ def main() -> None:
 
   (args.out_dir / "attempts.jsonl").write_text(
       "".join(json.dumps(r) + "\n" for r in records))
+  # Derived from the ledger's final state, not from a flag set earlier: the
+  # cache-off call above is billable too, and a run that crossed the ceiling
+  # there is inconclusive however it got there.
+  inconclusive = inconclusive or ledger.exhausted
   (args.out_dir / "classification.json").write_text(json.dumps(
       {"classification": "inconclusive" if inconclusive else "complete",
-       "attempts": len(records), "total_usd": round(ledger.total, 6)}, indent=2))
+       "attempts": len(records), "total_usd": round(ledger.total, 6),
+       "ceiling_usd": _COST_CEILING_USD}, indent=2))
   if inconclusive:
     print("inconclusive: the cost ceiling was crossed. This is not outcome 2, "
           "which requires all K attempts.")
