@@ -14,7 +14,7 @@ from the stopped honesty-scorer pilot (20 attempts,
 [`PILOT-DATA.md`](../honesty_scorer/PILOT-DATA.md)) and from wire logs captured
 by the proxy on earlier baseline runs.
 
-> ### Read this first: the seven-day window was already ~⅔ used before this work began
+> ### Read this first: the seven-day window read 0.61–0.65 while this batch ran
 >
 > **Every one of the 20 pilot attempts emitted a `rate_limit_event`.** 22 report
 > `rateLimitType: seven_day` at `status: allowed_warning`; 7 report `five_hour`
@@ -277,12 +277,21 @@ The 37× ratio between them is an **identity, not a finding** — cost per attem
 divided by cost per request *is* requests per attempt. The empirical content is
 the denominator: **a trace averages 37 requests**.
 
-With a stationary per-step rejection rate `p`, expected requests per accepted
-step is `1/(1-p)`, so:
+`1/(1-p)` is the expected number of requests per accepted step **only under a
+geometric assumption**, and a stationary *marginal* `p` is not enough for it.
+What it requires is that the acceptance probability be **constant conditional on
+the history of rejections at that step** — that the second resample after a
+rejection is no more and no less likely to be accepted than the first. If a
+rejected sample makes the next one more likely to resemble it, the count is not
+geometric and this expression understates the cost, possibly without bound. That
+is a strictly stronger condition than the marginal rate, it is untested, and it
+is related to the independence question retracted in §3.
+
+Stated with that assumption made explicit rather than buried:
 
 | approach | cost multiplier over an unfiltered rollout |
 | --- | --- |
-| per-step resampling at rate `p` | `1/(1-p)` — 2× at `p = 0.5`, 5× at `p = 0.8` |
+| per-step resampling at rate `p`, **assuming geometric counts** | `1/(1-p)` — 2× at `p = 0.5`, 5× at `p = 0.8` |
 | trace-level best-of-N | `N` |
 
 so per-step is cheaper whenever `1/(1-p) < N`. At the pilot's measured price a
@@ -294,10 +303,13 @@ up:
 - **The oracle's own cost.** If judging a step is itself an LLM call, it adds
   roughly one request per step — which on its own is close to a 2× multiplier
   before any resampling. Not modelled here.
-- **Stationarity is assumed and unmeasured.** Rejecting a step changes the
-  trajectory, so later steps are not the steps that would have occurred. The
+- **Two separate unmeasured assumptions, not one.** *Across* steps: rejecting a
+  step changes the trajectory, so later steps are not the steps that would have
+  occurred. *Within* a step: the geometric count above needs acceptance to be
+  constant **conditional on the rejections already seen at that step**. The
   step-level accept rate has **never been measured** — no oracle has ever run at
-  step granularity. **Not verified.**
+  step granularity — so neither assumption has evidence either way. **Not
+  verified.**
 - **Prompt caching.** A resample re-sends an identical prefix and should hit the
   cache (cache reads dominate input: 46,837 of which the overwhelming majority
   is cache read). Whether the cache entry behaves identically on an immediate
