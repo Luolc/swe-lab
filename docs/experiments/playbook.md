@@ -201,8 +201,13 @@ pilot's twelve amendments.
   the one it predicted, and overshot by 2–4× for that reason, which no predicate
   about CPU steal would have fixed. **A number having a known problem is not
   evidence that it has only one**, and repairing the found one is what makes it
-  look reviewed. When you fix a defect in an estimate, re-derive the estimate
-  rather than patching the defect.
+  look reviewed. When you fix a defect in an estimate, **re-derive the estimate
+  rather than patching the defect** — and the reason that works is mechanical
+  rather than a matter of diligence: a patch preserves the original derivation's
+  *structure*, so every other wrong premise inside it is preserved too, with a
+  qualifier bolted on outside. **Re-deriving forces you to restate each premise
+  aloud**, which is the only step at which a question like "is the reference
+  population the same population?" gets asked a second time.
 - **"This is just a natural extension of the accepted X" is a scope expansion
   arguing itself into a fait accompli.** The form is valid only if the new scope
   is contained in the old one — and if it were, the new rule would have nothing
