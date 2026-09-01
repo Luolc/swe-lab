@@ -12,6 +12,28 @@
 # silent, which is why it is acceptable: omit one and that hook immediately
 # starts checking experiments/ and goes red, rather than quietly not running.
 repos:
+  # First on purpose: a leaked credential has to be caught before any other
+  # hook rewrites the staged files. This half scans the STAGED DIFF only (the
+  # upstream entry ends in `--staged`), which is the only input domain that can
+  # see a secret that is being committed right now; CI scans the full history
+  # instead, and the two domains are complementary, not redundant — see the
+  # gitleaks step in .github/workflows/ci.yml.
+  #
+  # `--redact` is repeated here although the upstream entry already carries it:
+  # inherited, it is invisible in this file and one `rev` bump could drop it
+  # silently. An unredacted secret scanner prints the credential it found into
+  # the terminal and the session transcript — finding it would be the moment it
+  # leaks — so the redundancy buys visibility, and it is harmless (verified:
+  # the doubled flag still exits 1 on a staged fake token, prints
+  # `Secret: REDACTED`, and the token appears 0 times in the output).
+  #
+  # When bumping `rev`, re-check that the upstream entry still contains
+  # `--staged`; without it this hook silently changes what it scans.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        args: ["--redact", "--no-banner", "."]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.7
     hooks:

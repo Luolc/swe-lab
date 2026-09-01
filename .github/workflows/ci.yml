@@ -21,6 +21,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history: the secret scan below reads commits, not the
+          # worktree, so a shallow clone would hide everything but the tip.
+          fetch-depth: 0
+
+      # The second half of the credential guard. The pre-commit hook scans the
+      # STAGED DIFF; there is no staged diff in CI, so this cannot be the same
+      # scan — it reads the FULL HISTORY instead. The two input domains are
+      # complementary: the hook is the only thing that sees a secret before it
+      # becomes a commit, and this is the only thing that catches one that got
+      # in anyway — via `--no-verify`, or from a clone where nobody ran
+      # `pre-commit install`. Neither is redundant with the other.
+      #
+      # Pinned by version AND checksum: this downloads an executable and runs
+      # it over the repository, so a moved tag must not change what runs.
+      # gitleaks is a single static binary with no dependencies, which is why
+      # this can run before `uv sync` and fail fast.
+      - name: Scan history for secrets (gitleaks)
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          # Unpack outside the checkout so the scanned repository stays exactly
+          # what `actions/checkout` produced.
+          bindir="$(mktemp -d)"
+          tarball="${bindir}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$tarball" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  ${tarball}" | sha256sum -c -
+          tar -xzf "$tarball" -C "$bindir" gitleaks
+          # --redact is not optional: without it a finding prints the
+          # credential into a public Actions log, so the scan that found the
+          # leak becomes the leak.
+          "${bindir}/gitleaks" git --redact --no-banner --verbose .
 
       - name: Install uv (with cache)
         uses: astral-sh/setup-uv@v9.0.0
