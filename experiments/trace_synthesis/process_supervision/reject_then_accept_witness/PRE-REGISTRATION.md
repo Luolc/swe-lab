@@ -72,6 +72,14 @@ the difference B needs, and counting it as divergence would misread **outcome 1
 as outcome 2 or 3**. Outcome 1 is the only one that can kill B, so the criterion
 is set where it cannot be inflated away.
 
+**Scope of the word "identical".** The body sets
+`thinking: {"display": "omitted", …}`, so hidden reasoning is not in the
+response. "Identical" therefore means **identical in the part we and the judge
+can see**. Two generations may reason differently and emit the same visible
+output; this run does not observe that and makes no claim about it. This is not a
+defect in the design — it is the word's scope written down, which is what most of
+this week's errors were missing.
+
 ## 4. Pre-registered reading of the three outcomes
 
 Quoted from `DEBATE-VERDICT.md` §4; fixed before the run:
