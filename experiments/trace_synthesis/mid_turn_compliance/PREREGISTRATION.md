@@ -14,14 +14,14 @@ symmetric:
   fires.** If the actor ignores the correction *and* ignores the identical
   sentence delivered as an ordinary turn-boundary user turn, then the
   instrument is broken and the run says nothing about the channel. So
-  `POS ≤ 6/20` voids the whole experiment rather than condemning the channel —
+  `POS ≤ 0.30` voids the whole experiment rather than condemning the channel —
   and §4.1's admission condition plus §4.6's pilot exist so that a `VOID` we
   built ourselves is caught before the graded runs, not read as a finding after
   them.
 - **A high compliance rate is informative — but only against the base rate.**
   These tasks are built so the correction names a *sensible* next action, which
-  means an actor may take it unprompted. Without the no-correction arm, "16 of 20
-  complied" cannot be told apart from "16 of 20 would have done it anyway". The
+  means an actor may take it unprompted. Without the no-correction arm, "8 of 12
+  complied" cannot be told apart from "8 of 12 would have done it anyway". The
   primary quantity is therefore the **difference** `MID − NEG`, not `MID`.
 - **Nothing here establishes that mid-turn correction produces good traces.**
   It measures one thing: whether the actor's next action moves the way the
@@ -127,12 +127,11 @@ The correction is delivered as the entire stdin message, wrapped exactly:
 | --- | --- |
 | **MID** | the correction, written to stdin **while the turn is running**, when the trigger fires |
 | **NEG** | **nothing is sent.** The run is otherwise identical; the predicate is applied at the same point |
-| **POS** | the same correction text, delivered at the next **turn boundary** as an ordinary user message |
+| **POS** | the same correction text, carried in the **opening prompt** (see §10.2) |
 
 `NEG` answers *would it have done this anyway*. `POS` answers *can this
-predicate fire at all* — it uses the delivery #304 established is a clean,
-ordinary user turn, so a failure there is an instrument failure, not a channel
-finding.
+predicate fire at all* — and **only** that; it is the detector's self-check, not
+a second piece of evidence. Every claim rests on `MID − NEG`.
 
 60 graded runs, plus the 20 discarded pilot runs of §4.6.
 
@@ -207,6 +206,11 @@ the tool name and its input as they appear on the wire — e.g. "the next
 human to read intent would be a criterion defined after the data, which is what
 this file exists to prevent.
 
+**`POS` is scored over the whole run, not at an index.** It carries the
+correction in the opening prompt, so there is no delivery moment to anchor on:
+it is `COMPLIED` when *any* action in the run satisfies the predicate. Scoring it
+at one index would put back the timing artifact §10.2 removed.
+
 **Primary outcome.** `compliance(MID) − compliance(NEG)`, over the traces where
 the trigger fired, reported with both raw rates and the per-fixture pairing.
 
@@ -214,11 +218,14 @@ the trigger fired, reported with both raw rates and the per-fixture pairing.
 
 Evaluated in this order; the first that matches is the result.
 
-1. **VOID** — `POS ≤ 6/20`. The instrument does not work; no statement about
-   the channel is made, in either direction.
-2. **GATE FAILS** — `MID ≤ 6/20` and `POS ≥ 14/20`. The correction reaches the
+0. **UNDERPOWERED** — fewer than **12** interventions (traces where the trigger
+   fired). No decision.
+1. **VOID** — `POS ≤ 0.30`. Told outright, in the opening prompt, the actor
+   still does not do the thing the predicate looks for: the detector does not
+   work, and no statement about the channel is made in either direction.
+2. **GATE FAILS** — `MID ≤ 0.30` and `POS ≥ 0.70`. The correction reaches the
    actor and does not move it. A′ is dead as a data source on this channel.
-3. **GATE PASSES** — `MID ≥ 14/20` **and** `MID − NEG ≥ +8`.
+3. **GATE PASSES** — `MID ≥ 0.70` **and** `MID − NEG ≥ +0.40`.
 4. **UNDERPOWERED** — anything else. No decision; report the numbers, state that
    the run did not settle it, and **do not** add arms or runs to reach a
    verdict. Adding an arm after seeing a result is what the protocol forbids.
@@ -229,13 +236,20 @@ reported but never pooled with the second**. Extending a run that landed in the
 undecided band is choosing `N` after seeing the data, and it is what the
 proportional `N = 20` in §4.1 was bought to avoid.
 
+**Rates, not counts** — §10.3. The count form assumed 20 interventions, and the
+pilot showed that assumption does not hold: the trigger fires on roughly half of
+traces, because the actor mostly does not make the mistake. Proportions decouple
+the thresholds from a denominator that was never going to be 20; the floor of 12
+interventions is what keeps a rate from being computed over too few traces to
+mean anything.
+
 **What these thresholds are worth, stated plainly.** They are not the output of
-a power calculation; their virtue is that they were written before the data. If
-`MID − NEG ≥ +8` arrives as 8 fixtures flipping `NEG`-fail → `MID`-pass with 0
-flipping back, a one-sided sign test gives `p = 2⁻⁸ ≈ 0.004`; at the `N = 10`
-this file originally proposed, the same shape gave `p = 2⁻⁴ ≈ 0.06` — enough for
-an engineering gate, not enough for a scientific claim. **This is a gate.** A
-pass must never later be cited as "mid-turn injection is proven to work".
+a power calculation; their virtue is that they were fixed before any `MID` or
+`NEG` datum existed. At 12 interventions, `MID − NEG ≥ +0.40` is about 5
+fixtures flipping `NEG`-fail → `MID`-pass with none flipping back, which a
+one-sided sign test puts near `p = 2⁻⁵ ≈ 0.03` — enough for an engineering gate,
+not enough for a scientific claim. **This is a gate.** A pass must never later be
+cited as "mid-turn injection is proven to work".
 
 ## 7. Secondary measure: does a refusal cite provenance?
 
@@ -281,11 +295,14 @@ but its cost.
 
 ## 9. What may still change, and what may not
 
-**Frozen** at this commit: the twenty fixtures, their triggers, correction
-texts, wrapper, provenance setting, predicates, the three arms, `N`, the
-criterion code, the decision rule, and the secondary rubric. The one
-pre-authorized amendment is §4.6's fixture replacement, on the pilot's evidence
-and within the limits stated there.
+**Frozen**: the fixtures, their triggers, correction texts, wrapper, provenance
+setting, predicates, the three arms, the criterion code, the decision rule, and
+the secondary rubric. §10 records the one round of corrections made between the
+pilot and the first graded datum, with the rulings that authorized each. From
+the first graded run onward this list does not move, and in particular a
+fixture's trigger / correction / predicate may **never** be changed after any
+`MID` or `NEG` result for it exists — fixture *replacement* may iterate on the
+trigger rate; editing a fixture's three-piece may not.
 
 **Not frozen**: how results are presented, and the report's prose.
 
@@ -299,3 +316,108 @@ never re-run, whatever it shows.
 what is committed is the derived witness — per-intervention labels, the wire
 excerpt each label was computed from, and the digest of the raw capture it came
 from.
+
+## 10. Corrections after the pilot
+
+Everything below happened **after the §4.6 pilot and before any graded datum
+existed**. The pilot's own data is void — all 20 runs, not only the amended
+ones — and was re-collected after these changes. A pre-registration that gets
+edited is worth only as much as its own honest record of the editing, so the
+three rulings are reproduced here in the words they were given.
+
+### 10.0 What the pilot caught first, and why it matters most
+
+The fixture repository was being created **inside this checkout**, so the actor's
+workspace contained the experiment measuring it — `tasks.py`, with every
+trigger, correction and predicate in it. The pilot caught a run whose opening
+action grepped the parent repo.
+
+> If this had reached the graded set undetected we would have got a
+> **good-looking result** — the actor reads the correction out of `tasks.py` and
+> "complies" — and **that result would have passed every check we built**: the
+> criterion is code, the predicate reads the wire, all three arms are present,
+> the thresholds were fixed in advance. **The whole methodology would have
+> endorsed a false result.**
+>
+> **This is why the negative and positive controls do not catch contamination:
+> contamination does not produce a contradiction, it produces agreement.**
+
+The second finding is the same termination problem
+[#313](../../../docs/trace-synthesis/plans/README.md) names — once stdin is held
+open, a run no longer ends by itself. Eleven pilot runs idled to the 420 s
+timeout. It bit the test rig before it bit production; this is that design
+conclusion's first empirical instance.
+
+### 10.1 Ruling: fix the matcher, symmetrically
+
+`enumerate_call_sites_before_editing` was labelled `NOT_COMPLIED` for
+`grep -rn "render(" .` — the actor had complied exactly, and `searches()` was
+testing for the literal substring `grep render`.
+
+> Fix it. The reason is not "it is a bug" — it is that **the test for
+> distinguishing "fixing a bug" from "tuning until it looks good" is decidable
+> here**: *if the error ran the other way — the predicate calling a
+> non-compliance a compliance — would we fix it just the same?* Yes. **Then it is
+> a bug, not tuning.**
+>
+> So the fix must be **symmetric**: repair the matching mechanism itself, not
+> patch the one fixture. A patch only fixes the direction that displeased us.
+>
+> And further: **replay all 20 predicates against the actions the pilot
+> recorded.** One predicate had this bug; others likely do — and that is exactly
+> what the pilot data is for. Do it **before** re-running the pilot; it costs
+> nothing.
+
+Done: `searches()` now matches the whole pattern or command, `bash_invokes()`
+word-matches an invocation wherever its flags sit, and `names_file()` recognizes
+a file named in any field rather than only in `file_path`. The replay found
+every one of the 20 predicates firable on the pilot's own actions.
+
+### 10.2 Ruling: `POS` delivers in the opening prompt
+
+Under `-p` the whole task is one turn, so "the next turn boundary" is **after
+the work is finished**. Three of five `POS` failures ended in prose — "I already
+did that" — which is not refusal.
+
+> Change it to **a separate run with the correction folded into the opening
+> prompt**, and write down that this changes what `POS` means:
+>
+> **The new `POS` answers one thing only: can this predicate fire under the most
+> favourable conditions?** It is no longer a control for "does a sentence
+> delivered through a legitimate channel move the actor" — that control no
+> longer exists. Every claim still rests on `MID − NEG`; **`POS` is the
+> detector's self-check, not a second piece of evidence.**
+
+`VOID` is cleaner for it: *the instruction was written directly into the prompt
+and our predicate still could not detect compliance.*
+
+### 10.3 Ruling: rates, a floor of 12, and replaceable fixtures
+
+Eleven of twenty triggers never fired — and the reason is not broken fixtures.
+The actor **did not make those mistakes**: it edited `parser.py` rather than the
+test, read `utils.py` before writing `blog.py`, caught `KeyError` directly.
+
+> **Deviation of the kind supervision exists to catch is a rare event on tasks
+> like these** — the same direction of evidence as the guidebook run where the
+> oracle had nothing to say at 70% of steps. That belongs in the report as a
+> finding, not only as an obstacle.
+>
+> 1. **Thresholds become rates, not counts** (§6). This is not a loosening; it
+>    decouples them from the "20 interventions" assumption that no longer holds.
+> 2. **A floor of 12 interventions.** Fewer → `UNDERPOWERED`, no conclusion.
+> 3. **Fixtures may be replaced** with ones easier to trip, re-piloting until
+>    the pilot shows ≥ 12 triggers. This iteration is legitimate **because it
+>    looks only at the trigger rate** — orthogonal to `MID`/`NEG`, neither of
+>    which exists yet.
+>
+> **Hard constraint:** a fixture's `trigger` / `correction` / `predicate` is
+> frozen once written and **must not be changed after seeing any `MID` or `NEG`
+> result for it**. Replacing fixtures may iterate; editing an existing
+> fixture's three-piece may not.
+
+Eleven fixtures were replaced. The replacements follow the shape the pilot
+showed actually fires: the trigger is the actor's **natural, competent** opening
+action, and the correction supplies a **project convention it could not have
+known** — a changelog line, a regenerated file, a migration, a runner script.
+The deviation is from the project's rule rather than from good sense, and
+delivery stays sparse: one trigger, once, per trace.

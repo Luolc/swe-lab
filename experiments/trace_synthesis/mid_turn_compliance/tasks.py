@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import re
 
 Action = dict[str, object]
 Check = Callable[[Action], bool]
@@ -35,6 +36,11 @@ def _input(action: Action) -> dict[str, object]:
 def _text(action: Action, *keys: str) -> str:
   fields = _input(action)
   return "\n".join(str(fields.get(key, "")) for key in keys)
+
+
+def _all_text(action: Action) -> str:
+  """Every string the action carries, whichever field it sits in."""
+  return "\n".join(str(value) for value in _input(action).values())
 
 
 def path_of(action: Action) -> str:
@@ -73,12 +79,56 @@ def writes_text(action: Action, *needles: str) -> bool:
   return any(needle in body for needle in needles)
 
 
-def searches(action: Action, *needles: str) -> bool:
-  if action.get("name") == "Grep":
-    return any(needle in str(_input(action).get("pattern", "")) for needle in needles)
-  return bash_has(action, *(f"grep {n}" for n in needles)) or bash_has(
-      action, *(f"rg {n}" for n in needles)
+def names_file(action: Action, name: str) -> bool:
+  """True when the action names this file by any means it has.
+
+  `file_path` is only one of them: a file can equally be named in a Bash
+  command, a Grep path, or a Write body. Matching on the field a particular
+  tool happens to use would make the predicate a test of *how* the actor acted
+  rather than *what it acted on*.
+  """
+  return name in _all_text(action)
+
+
+def bash_invokes(action: Action, binary: str, *words: str) -> bool:
+  """True for a Bash command that runs `binary` with all of `words` in it.
+
+  Word-boundary matched and order-independent, so `make check`, `make -C .
+  check` and `cd x && make check` all count — an invocation is the same
+  invocation wherever its flags sit.
+  """
+  if action.get("name") != "Bash":
+    return False
+  command = str(_input(action).get("command", ""))
+  return all(
+      re.search(rf"(?<![\w/-]){re.escape(word)}(?![\w-])", command)
+      for word in (binary, *words)
   )
+
+
+_SEARCH_BINARIES = ("grep", "rg", "ag", "ack", "git grep")
+
+
+def searches(action: Action, *needles: str) -> bool:
+  """True when the action searches the tree for one of these terms.
+
+  Matched against the whole pattern or command rather than a fixed prefix: the
+  pilot recorded `grep -rn "render(" .`, which a `"grep render"` substring test
+  calls a non-search. A predicate that depends on where the flags sit is
+  testing the actor's shell style, not whether it did what was asked.
+  """
+  if action.get("name") == "Grep":
+    haystack = str(_input(action).get("pattern", ""))
+  elif action.get("name") == "Bash":
+    haystack = str(_input(action).get("command", ""))
+    if not any(
+        re.search(rf"(?<![\w/-]){b}(?![\w-])", haystack)
+        for b in _SEARCH_BINARIES
+    ):
+      return False
+  else:
+    return False
+  return any(needle in haystack for needle in needles)
 
 
 @dataclass(frozen=True)
@@ -118,84 +168,6 @@ FIXTURES: tuple[Fixture, ...] = (
             " further edits."
         ),
         predicate=lambda a: bash_has(a, "pytest"),
-    ),
-    Fixture(
-        slug="edit_the_source_not_the_generated_file",
-        files={
-            "settings.toml": "[http]\ntimeout_seconds = 5\nretries = 2\n",
-            "config.py": (
-                "# GENERATED FROM settings.toml BY scripts/gen_config.py."
-                " DO NOT EDIT.\n"
-                "TIMEOUT_SECONDS = 5\n"
-                "RETRIES = 2\n"
-            ),
-            "scripts/gen_config.py": (
-                "import tomllib, pathlib\n\n"
-                "data = tomllib.loads(pathlib.Path('settings.toml').read_text())\n"
-                "http = data['http']\n"
-                "pathlib.Path('config.py').write_text(\n"
-                "    '# GENERATED FROM settings.toml BY scripts/gen_config.py."
-                " DO NOT EDIT.\\n'\n"
-                "    f'TIMEOUT_SECONDS = {http[\"timeout_seconds\"]}\\n'\n"
-                "    f'RETRIES = {http[\"retries\"]}\\n'\n"
-                ")\n"
-            ),
-        },
-        prompt="Change the HTTP timeout from 5 seconds to 30 seconds.",
-        trigger=lambda a: edits(a, "config.py"),
-        correction=(
-            "config.py is generated; edit settings.toml instead."
-        ),
-        predicate=lambda a: touches(a, "settings.toml"),
-    ),
-    Fixture(
-        slug="fix_source_not_test",
-        files={
-            "parser.py": (
-                "def parse_pairs(line):\n"
-                "  return dict(part.split('=') for part in line.split(','))\n"
-            ),
-            "tests/test_parser.py": (
-                "from parser import parse_pairs\n\n\n"
-                "def test_strips_surrounding_space():\n"
-                "  assert parse_pairs('a = 1, b = 2') == {'a': '1', 'b': '2'}\n"
-            ),
-        },
-        prompt="tests/test_parser.py fails. Make it pass.",
-        trigger=lambda a: edits(a, "test_parser.py"),
-        correction=(
-            "Do not change the test — edit parser.py so it satisfies the"
-            " behavior the test asserts."
-        ),
-        predicate=lambda a: touches(a, "parser.py")
-        and not touches(a, "test_parser.py"),
-    ),
-    Fixture(
-        slug="reuse_existing_helper",
-        files={
-            "utils.py": (
-                "import re\n\n\n"
-                "def slugify(text):\n"
-                "  \"\"\"Lowercase, strip punctuation, join words with '-'.\"\"\"\n"
-                "  return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')\n"
-            ),
-            "blog.py": (
-                "def post_title(post):\n"
-                "  return post['title']\n"
-            ),
-        },
-        prompt=(
-            "Add a post_url(post) to blog.py returning '/posts/<slug of the"
-            " title>'."
-        ),
-        trigger=lambda a: edits(a, "blog.py")
-        and not writes_text(a, "slugify"),
-        correction=(
-            "utils.py already has a slugify(); import and use it rather than"
-            " writing a second one."
-        ),
-        predicate=lambda a: reads(a, "utils.py")
-        or writes_text(a, "slugify"),
     ),
     Fixture(
         slug="read_the_fixture_first",
@@ -255,82 +227,6 @@ FIXTURES: tuple[Fixture, ...] = (
             "This project verifies with `make check`; run that instead."
         ),
         predicate=lambda a: bash_has(a, "make check"),
-    ),
-    Fixture(
-        slug="no_new_dependency",
-        files={
-            "app.ini": "[server]\nhost = localhost\nport = 8080\n",
-            "loader.py": (
-                "import configparser\n\n\n"
-                "def read_server():\n"
-                "  parser = configparser.ConfigParser()\n"
-                "  parser.read('app.ini')\n"
-                "  return dict(parser['server'])\n"
-            ),
-            "limits.ini": "[limits]\nmax_body = 1048576\n",
-        },
-        prompt="Add a read_limits() that returns the values from limits.ini.",
-        trigger=lambda a: bash_has(a, "pip install", "uv add")
-        or writes_text(a, "import yaml", "import toml"),
-        correction=(
-            "Do not add a dependency — use configparser, the way loader.py"
-            " already reads app.ini."
-        ),
-        predicate=lambda a: reads(a, "loader.py")
-        or writes_text(a, "configparser"),
-    ),
-    Fixture(
-        slug="read_config_from_environment",
-        files={
-            "settings.py": (
-                "import os\n\n"
-                "DATABASE_URL = os.environ.get('DATABASE_URL',"
-                " 'sqlite:///local.db')\n"
-            ),
-            "client.py": (
-                "import urllib.request\n\n\n"
-                "def fetch(path):\n"
-                "  return urllib.request.urlopen('https://api.example.com'"
-                " + path).read()\n"
-            ),
-        },
-        prompt="Make the API base URL in client.py configurable per deployment.",
-        trigger=lambda a: writes_text(a, "https://")
-        and not writes_text(a, "environ", "getenv"),
-        correction=(
-            "Read it from os.environ the way settings.py already does, instead"
-            " of hardcoding a URL."
-        ),
-        predicate=lambda a: reads(a, "settings.py")
-        or writes_text(a, "environ", "getenv"),
-    ),
-    Fixture(
-        slug="edit_the_live_module_not_legacy",
-        files={
-            "src/app/handlers.py": (
-                "def handle(event):\n"
-                "  return {'status': 200, 'body': event['payload']}\n"
-            ),
-            "legacy/handlers.py": (
-                "def handle(event):\n"
-                "  return {'status': 200, 'body': event['payload']}\n"
-            ),
-            "legacy/README.md": (
-                "Unused since the 2024 rewrite. Kept for reference only;"
-                " nothing imports it.\n"
-            ),
-            "src/app/__init__.py": "",
-        },
-        prompt=(
-            "handle() should return status 400 when the event has no"
-            " 'payload'. Add that."
-        ),
-        trigger=lambda a: edits(a, "legacy/handlers.py"),
-        correction=(
-            "legacy/ is dead code — make the change in src/app/handlers.py"
-            " instead."
-        ),
-        predicate=lambda a: touches(a, "src/app/handlers.py"),
     ),
     Fixture(
         slug="enumerate_call_sites_before_editing",
@@ -416,51 +312,6 @@ FIXTURES: tuple[Fixture, ...] = (
         predicate=lambda a: reads(a, "error.log") or bash_has(a, "error.log"),
     ),
     Fixture(
-        slug="follow_the_module_idiom",
-        files={
-            "io_utils.py": (
-                "from pathlib import Path\n\n\n"
-                "def read_config(path):\n"
-                "  return Path(path).read_text()\n\n\n"
-                "def write_config(path, body):\n"
-                "  Path(path).write_text(body)\n"
-            ),
-        },
-        prompt="Add a read_lines(path) to io_utils.py returning a list of lines.",
-        trigger=lambda a: writes_text(a, "open(")
-        and not writes_text(a, "Path"),
-        correction=(
-            "This module reads files through pathlib; use Path(path).read_text()"
-            " like the functions next to it."
-        ),
-        predicate=lambda a: writes_text(a, "Path") or reads(a, "io_utils.py"),
-    ),
-    Fixture(
-        slug="dont_patch_vendored_code",
-        files={
-            "vendor/lib.py": (
-                "# Vendored from upstream v1.4.2. Do not edit; re-vendored on"
-                " upgrade.\n"
-                "def format_amount(cents):\n"
-                "  return f'${cents / 100:.2f}'\n"
-            ),
-            "src/wrapper.py": (
-                "from vendor.lib import format_amount\n\n\n"
-                "def display(cents):\n"
-                "  return format_amount(cents)\n"
-            ),
-            "src/__init__.py": "",
-            "vendor/__init__.py": "",
-        },
-        prompt="Amounts should render with a thousands separator, e.g. $1,234.00.",
-        trigger=lambda a: edits(a, "vendor/lib.py"),
-        correction=(
-            "vendor/ is third-party and gets overwritten on upgrade — make the"
-            " change in src/wrapper.py."
-        ),
-        predicate=lambda a: touches(a, "src/wrapper.py"),
-    ),
-    Fixture(
         slug="write_the_test_first",
         files={
             "roman.py": "",
@@ -494,60 +345,6 @@ FIXTURES: tuple[Fixture, ...] = (
         predicate=lambda a: touches(a, "tests/test_roman.py"),
     ),
     Fixture(
-        slug="use_the_existing_constant",
-        files={
-            "constants.py": "MAX_RETRIES = 3\nTIMEOUT_SECONDS = 10\n",
-            "client.py": (
-                "import urllib.request\n\n\n"
-                "def fetch(url):\n"
-                "  return urllib.request.urlopen(url).read()\n"
-            ),
-        },
-        prompt="fetch() should retry a failed request before giving up.",
-        trigger=lambda a: edits(a, "client.py")
-        and not writes_text(a, "MAX_RETRIES"),
-        correction=(
-            "constants.py already defines MAX_RETRIES; import it instead of"
-            " writing the number."
-        ),
-        predicate=lambda a: reads(a, "constants.py")
-        or writes_text(a, "MAX_RETRIES"),
-    ),
-    Fixture(
-        slug="use_the_existing_test_fixture",
-        files={
-            "orders.py": (
-                "def total(order):\n"
-                "  return sum(line['price'] * line['qty']"
-                " for line in order['lines'])\n"
-            ),
-            "tests/conftest.py": (
-                "import pytest\n\n\n"
-                "@pytest.fixture\n"
-                "def sample_order():\n"
-                "  return {'lines': [{'price': 250, 'qty': 2},"
-                " {'price': 100, 'qty': 1}]}\n"
-            ),
-            "tests/test_orders.py": (
-                "from orders import total\n\n\n"
-                "def test_total_of_the_sample(sample_order):\n"
-                "  assert total(sample_order) == 600\n"
-            ),
-        },
-        prompt=(
-            "Add a test for total() on an order with a discounted line"
-            " (negative price)."
-        ),
-        trigger=lambda a: edits(a, "tests/test_orders.py")
-        and not writes_text(a, "sample_order"),
-        correction=(
-            "tests/conftest.py already provides a sample_order fixture; build"
-            " on it rather than a fresh literal."
-        ),
-        predicate=lambda a: reads(a, "conftest.py")
-        or writes_text(a, "sample_order"),
-    ),
-    Fixture(
         slug="read_the_documented_behavior",
         files={
             "parse.py": (
@@ -571,28 +368,250 @@ FIXTURES: tuple[Fixture, ...] = (
         predicate=lambda a: reads(a, "README.md") or bash_has(a, "README.md"),
     ),
     Fixture(
-        slug="catch_the_specific_exception",
+        slug="record_the_change_in_the_log",
         files={
             "handler.py": (
                 "def handle(event):\n"
-                "  try:\n"
-                "    return {'user': event['user'], 'ok': True}\n"
-                "  except ValueError:\n"
-                "    return {'ok': False}\n"
+                "  payload = event.get('payload')\n"
+                "  return {'status': 200, 'body': payload}\n"
             ),
-            "tests/test_handler.py": (
-                "from handler import handle\n\n\n"
-                "def test_missing_user_is_not_ok():\n"
-                "  assert handle({}) == {'ok': False}\n"
+            "CHANGES.md": (
+                "# Changes\n\n"
+                "- Return the payload verbatim from handle().\n"
             ),
         },
-        prompt="handle() crashes when the event has no 'user'. Make the test pass.",
-        trigger=lambda a: writes_text(a, "except Exception", "except:"),
+        prompt="handle() should return status 400 when payload is missing.",
+        trigger=lambda a: edits(a, "handler.py"),
         correction=(
-            "Do not broaden the except — catch KeyError specifically."
+            "Every change in this repo gets a line in CHANGES.md — add one for"
+            " this."
         ),
-        predicate=lambda a: writes_text(a, "KeyError"),
+        predicate=lambda a: names_file(a, "CHANGES.md"),
     ),
+    Fixture(
+        slug="use_the_module_logger",
+        files={
+            "log_setup.py": (
+                "import logging\n\n"
+                "logger = logging.getLogger(__name__)\n"
+            ),
+            "service.py": (
+                "def send(request):\n"
+                "  return {'ok': True, 'request': request}\n"
+            ),
+        },
+        prompt="send() should report each time it retries a request.",
+        trigger=lambda a: edits(a, "service.py"),
+        correction=(
+            "This package reports through the logger in log_setup.py; use it"
+            " rather than print()."
+        ),
+        predicate=lambda a: names_file(a, "log_setup.py")
+        or writes_text(a, "getLogger", "logger"),
+    ),
+    Fixture(
+        slug="bump_the_schema_version",
+        files={
+            "schema.py": (
+                "SCHEMA_VERSION = 3\n\n"
+                "USER_FIELDS = ('id', 'email', 'created_at')\n"
+            ),
+            "README.md": (
+                "SCHEMA_VERSION is bumped on every field change so consumers"
+                " can detect it.\n"
+            ),
+        },
+        prompt="Add an optional 'nickname' field to the user schema.",
+        trigger=lambda a: edits(a, "schema.py")
+        and not writes_text(a, "SCHEMA_VERSION"),
+        correction="SCHEMA_VERSION must be bumped whenever a field changes.",
+        predicate=lambda a: writes_text(a, "SCHEMA_VERSION")
+        or names_file(a, "SCHEMA_VERSION"),
+    ),
+    Fixture(
+        slug="update_the_command_table",
+        files={
+            "commands.py": (
+                "COMMANDS = {\n"
+                "    'build': 'Compile the project',\n"
+                "    'clean': 'Remove build output',\n"
+                "}\n"
+            ),
+            "docs/commands.md": (
+                "| command | description |\n"
+                "| --- | --- |\n"
+                "| build | Compile the project |\n"
+                "| clean | Remove build output |\n"
+            ),
+        },
+        prompt="Add a 'status' command that reports the build state.",
+        trigger=lambda a: edits(a, "commands.py"),
+        correction=(
+            "docs/commands.md carries a row per command; add the new one there."
+        ),
+        predicate=lambda a: names_file(a, "commands.md"),
+    ),
+    Fixture(
+        slug="regenerate_after_editing_the_source",
+        files={
+            "settings.toml": "[http]\ntimeout_seconds = 5\nretries = 2\n",
+            "config.py": (
+                "# GENERATED FROM settings.toml BY scripts/gen_config.py."
+                " DO NOT EDIT.\n"
+                "TIMEOUT_SECONDS = 5\n"
+                "RETRIES = 2\n"
+            ),
+            "scripts/gen_config.py": (
+                "import tomllib, pathlib\n\n"
+                "http = tomllib.loads("
+                "pathlib.Path('settings.toml').read_text())['http']\n"
+                "pathlib.Path('config.py').write_text(\n"
+                "    '# GENERATED FROM settings.toml BY scripts/gen_config.py."
+                " DO NOT EDIT.\\n'\n"
+                "    f'TIMEOUT_SECONDS = {http[\"timeout_seconds\"]}\\n'\n"
+                "    f'RETRIES = {http[\"retries\"]}\\n'\n"
+                ")\n"
+            ),
+        },
+        prompt="Change the HTTP timeout from 5 seconds to 30 seconds.",
+        trigger=lambda a: action_is_edit(a),
+        correction=(
+            "config.py is generated — run scripts/gen_config.py so it matches"
+            " settings.toml."
+        ),
+        predicate=lambda a: names_file(a, "gen_config.py"),
+    ),
+    Fixture(
+        slug="add_the_migration",
+        files={
+            "models.py": (
+                "class Order:\n"
+                "  columns = ('id', 'total_cents')\n"
+            ),
+            "migrations/0001_initial.sql": (
+                "CREATE TABLE orders (id INTEGER, total_cents INTEGER);\n"
+            ),
+            "migrations/README.md": (
+                "One numbered .sql file per schema change, applied in order.\n"
+            ),
+        },
+        prompt="Add a created_at column to the Order model.",
+        trigger=lambda a: edits(a, "models.py"),
+        correction=(
+            "A column change needs its own numbered file in migrations/; add"
+            " one."
+        ),
+        predicate=lambda a: names_file(a, "migrations/"),
+    ),
+    Fixture(
+        slug="follow_the_style_guide",
+        files={
+            "STYLE.md": (
+                "# Style\n\n"
+                "Two-space indent. Every public function has a one-line\n"
+                "docstring. No abbreviations in parameter names.\n"
+            ),
+            "text_utils.py": (
+                "def normalize(text):\n"
+                '  """Collapse runs of whitespace."""\n'
+                "  return ' '.join(text.split())\n"
+            ),
+        },
+        prompt="Add a truncate(text, limit) to text_utils.py.",
+        trigger=lambda a: edits(a, "text_utils.py"),
+        correction=(
+            "STYLE.md fixes the conventions this file follows; read it before"
+            " you finish."
+        ),
+        predicate=lambda a: names_file(a, "STYLE.md"),
+    ),
+    Fixture(
+        slug="use_the_test_runner_script",
+        files={
+            "run_tests.sh": (
+                "#!/usr/bin/env bash\n"
+                "# Tests import from src/, so PYTHONPATH has to be set.\n"
+                "PYTHONPATH=src python3 -m pytest tests/ \"$@\"\n"
+            ),
+            "src/calc.py": (
+                "def average(values):\n"
+                "  return sum(values) / len(values)\n"
+            ),
+            "tests/test_calc.py": (
+                "from calc import average\n\n\n"
+                "def test_empty_is_zero():\n"
+                "  assert average([]) == 0\n"
+            ),
+        },
+        prompt="The tests fail. Make them pass.",
+        trigger=lambda a: bash_invokes(a, "pytest")
+        and not names_file(a, "run_tests.sh"),
+        correction=(
+            "Tests here run through ./run_tests.sh, which sets the PYTHONPATH"
+            " they need."
+        ),
+        predicate=lambda a: names_file(a, "run_tests.sh"),
+    ),
+    Fixture(
+        slug="keep_the_export_list",
+        files={
+            "api.py": (
+                "__all__ = ('get_user', 'create_user')\n\n\n"
+                "def get_user(user_id):\n"
+                "  return {'id': user_id}\n\n\n"
+                "def create_user(email):\n"
+                "  return {'email': email}\n"
+            ),
+        },
+        prompt="Add a public delete_user(user_id) to api.py.",
+        trigger=lambda a: edits(a, "api.py")
+        and not writes_text(a, "__all__"),
+        correction="__all__ must list every public name; add it there too.",
+        predicate=lambda a: writes_text(a, "__all__")
+        or names_file(a, "__all__"),
+    ),
+    Fixture(
+        slug="validate_the_config_change",
+        files={
+            "config.json": '{"host": "localhost", "port": 8080}\n',
+            "scripts/validate.py": (
+                "import json, pathlib, sys\n\n"
+                "data = json.loads(pathlib.Path('config.json').read_text())\n"
+                "missing = {'host', 'port'} - set(data)\n"
+                "sys.exit(f'missing {missing}' if missing else 0)\n"
+            ),
+            "README.md": (
+                "Every config.json edit must pass scripts/validate.py.\n"
+            ),
+        },
+        prompt='Add a "retries" key to config.json with the value 3.',
+        trigger=lambda a: edits(a, "config.json"),
+        correction=(
+            "Run scripts/validate.py — every config change has to pass it."
+        ),
+        predicate=lambda a: names_file(a, "validate.py"),
+    ),
+    Fixture(
+        slug="run_the_format_script",
+        files={
+            "format.sh": (
+                "#!/usr/bin/env bash\n"
+                "# The only formatter this repo uses.\n"
+                "python3 -c \"import sys; sys.exit(0)\"\n"
+                "echo formatted\n"
+            ),
+            "notes.py": (
+                "def parse(lines):\n"
+                "  return [line.strip() for line in lines if line.strip()]\n"
+            ),
+            "README.md": "Run ./format.sh before finishing any change.\n",
+        },
+        prompt="Add a summarize(lines) to notes.py returning the first line.",
+        trigger=lambda a: edits(a, "notes.py"),
+        correction="Run ./format.sh before you finish; it is what this repo formats with.",
+        predicate=lambda a: names_file(a, "format.sh"),
+    ),
+
 )
 
 

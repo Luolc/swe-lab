@@ -126,6 +126,39 @@ def evaluation_index(
   return None, -1
 
 
+def all_actions(loop: list[dict[str, Any]]) -> list[dict[str, Any]]:
+  """Every `tool_use` the actor issued, in order."""
+  return [
+      {"name": block.get("name"), "input": block.get("input", {})}
+      for record in loop
+      for block in response_blocks(record)
+      if block.get("type") == "tool_use"
+  ]
+
+
+def classify_positive_control(
+    loop: list[dict[str, Any]], fixture: Any
+) -> dict[str, Any]:
+  """Score the `pos` arm: did the predicate fire anywhere in the run?
+
+  `pos` carries the correction in the opening prompt, so there is no delivery
+  moment to anchor on and no trigger to wait for — the arm asks one question
+  only, whether this predicate can fire when the actor is told outright. Scoring
+  it at a single index would reintroduce the timing artifact the arm exists to
+  remove.
+  """
+  actions = all_actions(loop)
+  if not actions:
+    return {"label": NO_NEXT_ACTION, "actions": 0}
+  matches = [i for i, action in enumerate(actions) if fixture.predicate(action)]
+  return {
+      "label": COMPLIED if matches else NOT_COMPLIED,
+      "actions": len(actions),
+      "matched_at": matches[0] if matches else None,
+      "action": actions[matches[0]] if matches else None,
+  }
+
+
 def classify(run_dir: pathlib.Path) -> dict[str, Any]:
   """Label one run. `manifest.json` says which fixture and arm it is."""
   manifest = json.loads((run_dir / "manifest.json").read_text())
@@ -139,6 +172,9 @@ def classify(run_dir: pathlib.Path) -> dict[str, Any]:
       "fixture": fixture.slug,
       "agent_loop_calls": len(loop),
   }
+
+  if arm == "pos":
+    return result | classify_positive_control(loop, fixture)
 
   tripped = trigger_index(loop, fixture)
   if tripped is None:

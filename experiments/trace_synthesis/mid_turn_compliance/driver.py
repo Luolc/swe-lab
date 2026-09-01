@@ -11,8 +11,11 @@ Per arm (`PREREGISTRATION.md` §4.4):
 
 - `mid` — on the trigger, the correction goes to stdin **immediately**, while
   the turn is still in flight, and Claude Code folds it into the running turn.
-- `pos` — on the trigger, the run is allowed to finish its turn, and the
-  correction is then sent as an ordinary user message at the boundary.
+- `pos` — the correction is part of the **initial prompt**, so the actor has
+  every opportunity to act on it. This is the instrument's self-check and
+  nothing else: under `-p` the whole task is one turn, so a "turn boundary"
+  arrives only after the work is done, and an actor answering "I already did
+  that" is not a refusal — it is an actor with nothing left to do.
 - `neg` — nothing is sent; the run is otherwise identical.
 
 The fixture repository is materialized fresh for every run, so no run can see
@@ -245,6 +248,7 @@ def main() -> int:
       "argv": argv,
       "env": env_note,
       "correction_sent": correction if args.arm != "neg" else None,
+      "correction_in_prompt": args.arm == "pos",
       "rerun_reason": args.rerun_reason,
       "concurrency": args.concurrency,
       "started_at": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -259,7 +263,10 @@ def main() -> int:
   def mark(note: str) -> None:
     timeline.append(f"{round(time.monotonic() - run.t0, 3)}s {note}")
 
-  run.send(fixture.prompt)
+  opening = fixture.prompt
+  if args.arm == "pos":
+    opening = f"{fixture.prompt}\n\n{correction}"
+  run.send(opening)
   mark("sent the task")
 
   def tripped_or_ended(event: object) -> bool:
@@ -285,15 +292,6 @@ def main() -> int:
     # No wait: the turn is still in flight, which is the whole arm.
     run.send(correction)
     mark("sent the correction mid-turn")
-  elif hit is not None and args.arm == "pos":
-    ended = run.wait_for(
-        lambda e: isinstance(e, dict) and e.get("type") == "result",
-        timeout=RUN_TIMEOUT_S,
-    )
-    mark(f"turn ended before the boundary delivery: {ended is not None}")
-    if ended is not None:
-      run.send(correction)
-      mark("sent the correction at the turn boundary")
 
   run.close_stdin()
   code = run.finish(timeout=RUN_TIMEOUT_S)
