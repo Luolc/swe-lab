@@ -35,6 +35,17 @@ def _alive(pid: int) -> bool:
   return True
 
 
+def _wait_gone_from_group(pid: int, timeout: float = 5.0) -> bool:
+  """Wait for ``pid`` to exit without reaping it."""
+  deadline = time.monotonic() + timeout
+  options = os.WEXITED | os.WNOWAIT | os.WNOHANG
+  while time.monotonic() < deadline:
+    if os.waitid(os.P_PID, pid, options) is not None:
+      return True
+    time.sleep(0.05)
+  return False
+
+
 def _wait_gone(pid: int, timeout: float = 5.0) -> bool:
   """Wait for ``pid`` to disappear, so the assert is not a race."""
   deadline = time.monotonic() + timeout
@@ -112,6 +123,24 @@ def test_nothing_is_reaped_before_the_last_group_signal(
   assert order.index("reap") > max(
       index for index, call in enumerate(order) if call.startswith("killpg")
   ), order
+
+
+def test_reaping_is_what_releases_the_group_number():
+  """The measurement the ordering rests on, pinned so a platform change shows.
+
+  An exited-but-unreaped leader keeps its pid — and therefore its group id —
+  reserved. Reap it with no member left behind and the number is free, which
+  is why a `killpg` after a `wait()` is a lookup of a name that may since have
+  been reissued.
+  """
+  process = subprocess.Popen(["/bin/true"], start_new_session=True)
+  assert _wait_gone_from_group(process.pid)
+
+  os.killpg(process.pid, 0)  # still addressable: the zombie holds the number
+
+  _ = process.wait(timeout=5)
+  with pytest.raises(ProcessLookupError):
+    os.killpg(process.pid, 0)
 
 
 def test_ending_an_already_dead_group_is_silent(tree: subprocess.Popen[str]):
