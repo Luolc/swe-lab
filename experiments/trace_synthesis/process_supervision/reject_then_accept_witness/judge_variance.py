@@ -1,0 +1,176 @@
+"""Judge one fixed completion repeatedly, to measure the gate's own variance.
+
+A precondition for reading the witness experiment, not a side quest. B's loop is
+*judged reject -> resend -> judged accept -> stop*, so if the gate is a random
+function of its input the loop can terminate on a coin flip: the second
+completion need not be better, the judge need only land the other way. "The
+accepted resend was better" is only meaningful against a measured variance, and
+there is no such measurement yet.
+
+Two arms, both at `max_tokens = 2000`:
+
+- **default sampling** -- the gate as it actually runs, and as B would ship it;
+- **`temperature = 0`** -- an attribution tool, not a second object of study.
+
+Usage:
+  python3 <this file> --out-dir <dir> [--n 5]
+
+Needs `OPENROUTER_API_KEYS` in the environment; `.envrc` exports it.
+"""
+
+from __future__ import annotations
+
+import argparse
+import collections
+import importlib.util
+import json
+import pathlib
+import sys
+import time
+import types
+
+_HERE = pathlib.Path(__file__).resolve().parent
+_STUDY = _HERE.parent / "guidebook_as_step_criterion"
+_CAPTURE = pathlib.Path(
+    "/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis"
+    "/baseline-qutebrowser-rollout-0/rollout/a0/claude_code.proxy_log.jsonl"
+)
+_STEP_INDEX = 15
+_POSITION = 14
+_ROLLOUT = "baseline-qutebrowser-rollout-0"
+_MAX_TOKENS = 2000
+
+
+def _load(path: pathlib.Path, name: str) -> types.ModuleType:
+  """Import a module by path.
+
+  Args:
+    path: The module file.
+    name: Name to register the import under.
+
+  Returns:
+    The executed module.
+  """
+  spec = importlib.util.spec_from_file_location(name, path)
+  assert spec is not None and spec.loader is not None
+  module = importlib.util.module_from_spec(spec)
+  sys.modules[spec.name] = module
+  spec.loader.exec_module(module)
+  return module
+
+
+_extract = _load(_STUDY / "extract_steps.py", "variance_extract_steps")
+_judge = _load(_STUDY / "judge_steps.py", "variance_judge_steps")
+
+
+def main() -> None:
+  """Judge the fixed completion `n` times in each arm."""
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--out-dir", type=pathlib.Path, required=True)
+  parser.add_argument("--n", type=int, default=5)
+  args = parser.parse_args()
+  args.out_dir.mkdir(parents=True, exist_ok=True)
+
+  rows = [json.loads(l) for l in _CAPTURE.read_text().splitlines()]
+  message = (rows[_STEP_INDEX].get("response") or {}).get("message") or {}
+  steps = _extract.extract(_ROLLOUT)
+  before = "\n".join(
+      f"  step {i}: {s['content'][:120]}"
+      for i, s in enumerate(steps[:_POSITION][-8:])
+  ) or "  (none -- this is the first step)"
+  user = (
+      f"# Guidebook\n\n{_judge.GUIDEBOOK.read_text()}\n\n"
+      f"# Preceding steps (most recent last)\n{before}\n\n"
+      f"# The step to judge (step {_POSITION} of {len(steps)})\n"
+      f"{_extract.summarize(message)}"
+  )
+
+  records, spent = [], 0.0
+  for arm, extra in (("default", {}), ("temperature-0", {"temperature": 0})):
+    for index in range(args.n):
+      payload = {
+          "model": _judge.MODEL,
+          "max_tokens": _MAX_TOKENS,
+          "messages": [
+              {"role": "system", "content": _judge.INSTRUCTIONS},
+              {"role": "user", "content": user},
+          ],
+          **extra,
+      }
+      response = _judge.call(payload)
+      raw = response["choices"][0]["message"]["content"]
+      usage = response.get("usage") or {}
+      spent += float(usage.get("cost") or 0)
+      records.append({
+          "arm": arm,
+          "index": index,
+          "verdict": _verdict(raw),
+          "stage": _field(raw, "stage"),
+          "quote": _field(raw, "quote"),
+          "reason": _field(raw, "reason"),
+          "raw": raw,
+          "response_model": response.get("model"),
+          "sampling_sent": _judge.sampling_sent(payload),
+          "max_tokens": _MAX_TOKENS,
+          "usage": usage,
+          "at": time.strftime("%FT%TZ", time.gmtime()),
+      })
+      print(f"{arm} {index}: verdict={records[-1]['verdict']} "
+            f"stage={records[-1]['stage']} model={response.get('model')} "
+            f"spent=${spent:.4f}")
+
+  (args.out_dir / "judgements.jsonl").write_text(
+      "".join(json.dumps(r) + "\n" for r in records))
+  summary = {
+      "position": _POSITION,
+      "step_index": _STEP_INDEX,
+      "max_tokens": _MAX_TOKENS,
+      "total_usd": round(spent, 6),
+      "arms": {
+          arm: dict(collections.Counter(
+              r["verdict"] for r in records if r["arm"] == arm))
+          for arm in ("default", "temperature-0")
+      },
+      "stages_cited": {
+          arm: dict(collections.Counter(
+              r["stage"] for r in records if r["arm"] == arm))
+          for arm in ("default", "temperature-0")
+      },
+      "response_models": sorted(
+          {str(r["response_model"]) for r in records}),
+  }
+  (args.out_dir / "summary.json").write_text(json.dumps(summary, indent=2))
+  print(json.dumps(summary, indent=2))
+
+
+def _verdict(raw: str) -> str | None:
+  """Read the verdict from a judge answer.
+
+  Args:
+    raw: The answer text.
+
+  Returns:
+    The verdict, or None when the answer cannot be parsed.
+  """
+  return _field(raw, "verdict")
+
+
+def _field(raw: str, name: str) -> object:
+  """Read one field from a judge answer.
+
+  Args:
+    raw: The answer text.
+    name: The field to read.
+
+  Returns:
+    The field's value, or None when the answer cannot be parsed.
+  """
+  try:
+    parsed = json.loads(raw)
+  except (json.JSONDecodeError, TypeError):
+    return None
+  return parsed.get(name) if isinstance(parsed, dict) else None
+
+
+if __name__ == "__main__":
+  main()

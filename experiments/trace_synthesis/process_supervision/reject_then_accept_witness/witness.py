@@ -231,17 +231,20 @@ def _judge_completion(message: dict, before: str, total: int) -> dict:
       f"# The step to judge (step {_POSITION} of {total})\n"
       f"{_extract.summarize(message)}"
   )
-  response = _judge.call({
+  payload = {
       "model": _judge.MODEL,
       "max_tokens": 2000,
       "messages": [
           {"role": "system", "content": _judge.INSTRUCTIONS},
           {"role": "user", "content": user},
       ],
-  })
+  }
+  response = _judge.call(payload)
   return {
       "raw": response["choices"][0]["message"]["content"],
       "usage": response.get("usage") or {},
+      "response_model": response.get("model"),
+      "sampling_sent": _judge.sampling_sent(payload),
   }
 
 

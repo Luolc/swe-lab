@@ -309,3 +309,64 @@ module and guidebook this run uses:
   is reserved for a digest mismatch): stop, move to the next step named in §2,
   and report this as a result in its own right, since it is an observation about
   judge stability.
+
+## 9. Judge variance — a precondition, pre-registered before its data
+
+Attempt 0 returned **on_track** on the completion #305 judged **off_track**. The
+material's digests both matched, so the input was identical.
+
+**Measured before drawing anything from that:** the judge's request carries
+`{model, max_tokens, messages}` and **no `temperature`, `top_p`, `top_k` or
+`seed`** — in either run, since today's code imports #305's module. Sampling is
+the provider's default and was never recorded. So disagreement across runs is
+**expected**, and the claim "the judge is unstable" is not available; what is
+available is "**this gate's sampling was never pinned**".
+
+Two further differences are **permanently unresolvable**, and that is a cost of
+this study, not a footnote: neither run recorded the model id the *response*
+reported (only the alias sent), and #305's compared verdict ran at
+`max_tokens = 700` against today's `2000`. Whether the alias resolved to the same
+served model cannot be recovered. **We do not attempt to repair this by adding
+one variable; a missing variable does not return another.**
+
+### Why this blocks the witness, not merely informs it
+
+B's loop is *judged reject → resend → judged accept → stop*. **If the gate is a
+random function of its input, that loop can terminate on a coin flip** — the
+second completion need not be better; the judge need only land the other way.
+As designed, the witness therefore **cannot distinguish "resampling produced a
+better completion" from "the judge flipped"**. "The accepted resend was better"
+is only meaningful against a measured variance, and none exists.
+
+The 3-of-3 rule in §8.3 reduces that probability without removing it, and it
+guards only the accepting side: **a rejection is still a single judgement**.
+
+### The measurement
+
+The completion fixed in §2 is judged **10 times, all at `max_tokens = 2000`**:
+
+- **5 at the provider's default sampling** — the gate as it runs, and as B would
+  ship it. **This arm is the object of study.**
+- **5 at `temperature = 0`** — **an attribution tool, not a second object of
+  study**, and to be labelled as such wherever it is reported.
+
+No arm at 700: that cap only serves the #305-versus-today comparison, which is
+already unresolvable for want of a recorded model id.
+
+### Readings, fixed before the run
+
+1. **`temperature = 0` converges and the default arm diverges** → the variance is
+   from sampling, and **B is rescuable by pinning sampling — one line of
+   configuration.**
+2. **`temperature = 0` also diverges** → the disagreement has a semantic source,
+   and pinning sampling cannot rescue B; the guidebook is what must change.
+
+Under reading 2 the stage-5 clause split — the same stage cited by both verdicts,
+read once as ordering ("run it *before* editing anything") and once as command
+form — is promoted from *a description of where variance concentrates* to an
+independent finding. Under reading 1 it stays a description.
+
+**Not repaired here.** Fixing the guidebook to make the judge steadier and then
+measuring whether the judge is steady is circular. That question is a separate
+pre-registration belonging to `guidebook_as_step_criterion/`, and no conclusion
+here may be rescued by "it would be fine once fixed".

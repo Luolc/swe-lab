@@ -443,6 +443,17 @@ pilot's twelve amendments.
   caveat as the signal that a structural fix was available and skipped.
 
   Instances for all five: [PR #305](https://github.com/Luolc/swe-lab/pull/305).
+- **A call whose result will be cited as evidence records what answered it and
+  how.** Two things are absent by default and unrecoverable afterwards: the model
+  id the **response** reports — never the alias in the request, since an alias
+  re-pointed upstream leaves the request looking correct — and the sampling
+  parameters actually sent, **including the ones that were not**, because an
+  unset parameter is invisible unless absence is written down as absence.
+  Without the first, *the same model disagreed with itself* and *the alias moved*
+  cannot be separated. Without the second, disagreement between runs cannot be
+  told from ordinary sampling, and a stochastic component gets written up as an
+  instability discovery. **Adding one of them later does not bring the other
+  back**, so the whole comparison is lost at the call site or nowhere.
 - **A sentence saying you checked is itself a claim — and the most trusted kind,
   because it looks like diligence.** "Every link resolves", "each row carries
   its domain", "I searched for a sibling implementation": each asserts the
