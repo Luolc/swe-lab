@@ -136,3 +136,64 @@ just cannot be *interpreted* on one class.
 Everything else that needs two classes: arm A vs arm B vs arm B′, the tie rule,
 and the calibration step that admits a candidate positive. Those wait on the
 purchased positives — 4 first, to measure the yield factor.
+
+## What the amendments were, taken together
+
+Seven amendments followed this dry run and its review. Listing them
+individually is less useful than the induction: **every one was a rule that
+closed a channel, and a place that closure did not reach.** A tie-break that
+could never bind; positives left unallocated between repositories; a
+replacement path that walked around the constraint; "present in both classes"
+mistaken for statistical independence; a noise margin borrowed from an `n` the
+batch did not have; a Build gate that required traces the document never
+registered buying; and an arm that would have correlated perfectly with the
+label.
+
+**I saw none of them until they were pointed out, and not one was an integrity
+problem — every one was incompleteness.** That distinction is the case for this
+process: pre-registration reviewed by a second party did not catch someone
+tuning criteria to results, it caught a protocol that could not do the job it
+was written for. The second failure is more common and more expensive than the
+first.
+
+### The principle underneath: invisible absence
+
+Four of today's defects, in four unrelated domains, share one structure — **the
+absence was disguised as a completed check, or as a check not needed**:
+
+| Defect | What the absence looked like |
+| --- | --- |
+| No control on arm B | a control that was not needed |
+| A tautological assertion | a table that had been verified |
+| Missing rows in the runnability table | categories that did not exist |
+| A Build gate needing unregistered traces | a decision that was reachable |
+
+A stale value at least sits there looking like a value and can be doubted. An
+absence offers nothing to doubt, which is why none of these was found by
+re-reading.
+
+**The executable form**, and the reason this is a principle rather than a
+label — *any check reporting "no problem found" must be able to answer: if the
+problem existed, how would it appear in this check's output?* If that question
+has no answer, the check does not cover the problem, however green it is. Every
+row above fails that question, and each would have been caught by asking it.
+
+### Three ways an absence acquires a reassuring surface
+
+The sharpest cases share more than absence: each supplied a **signal that the
+matter had been handled**, and that signal is what ended the checking. The
+mechanisms differ, and are worth separating because they are defeated
+differently:
+
+| Mechanism | What it looks like | Why checking stops |
+| --- | --- | --- |
+| **A check that exists but cannot fail** | the tautological runnability assertion | green output is read as verification |
+| **A defect that moved and gained a plausible surface** | the Build gate that looked reachable once the tautological veto was removed | the visible symptom — obvious impossibility — was the only part that was useful |
+| **A fix that covered half the problem** | the attempt cap that bounded the run but still ended on a success | the repair itself becomes the reason not to look again |
+
+The third is the hardest, because a partial fix stands in front of the remainder
+and is more convincing than no fix at all: the loose half was mine, the tight
+half needed a reviewer, and between them sat a visible, correct-looking change.
+The first two were caught by asking the executable question above. The third
+needs a different one — **which part of this problem does my fix not touch?** —
+asked at the moment of fixing, when the answer is cheapest and least welcome.
