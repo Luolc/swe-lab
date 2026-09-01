@@ -443,6 +443,15 @@ pilot's twelve amendments.
   caveat as the signal that a structural fix was available and skipped.
 
   Instances for all five: [PR #305](https://github.com/Luolc/swe-lab/pull/305).
+- **A URL is an assertion, not formatting.** It claims *this exists, and it is
+  there*. Writing a link you have not resolved is writing a number you have not
+  measured — worse, because a link **looks like a citation**, so a reader assumes
+  it was already checked. A fabricated one is the most credible bad value of all:
+  not an empty result but one shaped exactly like a verified result, and an
+  anchor guessed from a plausible pattern reads identically to one that was
+  copied. **Never write a link you have not opened**; when you lack it, name the
+  thing in words — "the review comment on PR #305" — rather than inventing an
+  anchor.
 - **Label an amendment for what it is.** "Post-hoc but prospective, with an
   empty prior action set" is a real and useful category — a rule changed after
   the run began but before it had ever fired changes nothing that already
