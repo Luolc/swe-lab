@@ -28,12 +28,39 @@ by the proxy on earlier baseline runs.
 > account and were working concurrently; nothing here separates their draw from
 > the batch's.
 >
-> Both halves matter, and they point different ways. **The constraint is real:**
+> Both halves matter, and they point different ways. **The constraint was real:**
 > roughly two thirds of the window was gone, by whatever cause, and every design
 > in this space multiplies request count against that same window — so headroom,
 > not price, may decide what can be validated in a given week. **The
 > attribution is not:** 20 rollouts are cheap against it, and a batch of this
 > size cannot be blamed for the level.
+>
+> **Update, 2026-09-01 afternoon: the weekly quota was reset upstream.** Two
+> agents' status lines read `Weekly: 3.0%`, against 61–63% that morning
+> (reading relayed by `swelab-orchestra`; not independently measured here, since
+> the figure is only visible to a running agent and no rollout has run since).
+> The headroom constraint is **lifted for this window**. That is all it says —
+> the window was reset once; it is not a finding that quota is not a
+> consideration.
+
+### How this number drifted, in three steps
+
+Recorded because the number reached a user before it was checked, and because
+**no step in the chain felt like an inference**:
+
+| step | what was said | what was added |
+| --- | --- | --- |
+| the reading | 22 `seven_day` events at `allowed_warning`, utilization 0.61–0.65 | — |
+| first restatement | "20 attempts consumed ~⅔ of the weekly window" | **consumption** — a flow, from a stock |
+| second restatement | "we spent ⅔ of the week's budget on a cancelled line" | **attribution** — whose consumption |
+
+**A number becomes more useful with every misreading**: more specific, more
+dramatic, better shaped as a conclusion. That is exactly why the drift is not
+noticed — **each restatement feels like summarizing.** The check that catches
+it is one question, asked of your own sentence:
+
+> **When restating someone else's number, ask what you added that was not in
+> their words.** Here: "consumed", and "by us". Neither was in the reading.
 
 ---
 
@@ -155,9 +182,21 @@ determinism; it does not establish independent sampling** — the two draws coul
 be correlated, or conditioned on state the caller cannot see, and one pair
 cannot distinguish those from independence. The cost model does not actually
 need independence, but it does need the weaker property that **each resample
-carries a non-trivial, roughly stable chance of differing**, and that is a
-distributional claim: it needs many pairs, not one. This document does not
-propose running any of it.
+carries a non-trivial, roughly stable chance of differing** — a distributional
+claim, and one that needs a stated sample size so the next reader cannot cite a
+single pair for it:
+
+- **1 pair** supports nothing distributional. It refutes strict determinism and
+  stops there.
+- **~30 pairs, all diverging**, put a 95% lower bound of about **0.90** on the
+  divergence probability (rule of three: 0 non-divergences in 30 trials bounds
+  the non-divergence rate at roughly 3/30).
+- **~30 pairs at a middling rate** estimate it to only about **±0.18** at 95%,
+  so if divergence turns out to be occasional rather than near-certain, tens of
+  pairs are not enough and the required number grows with how tight a bound the
+  cost model needs.
+
+This document does not propose running any of it.
 - **The binding limit is the subscription window, not a per-minute quota** —
   `seven_day` is the type that reached `allowed_warning`, while `five_hour`
   stayed at `allowed`. The readings are in the callout at the top of this
@@ -322,9 +361,24 @@ had not yet formed:
 > re-read is needed.
 
 It is a relative of *measured on A, stated about B*, but harder to see: that
-family misaligns the **object**, this one misaligns the **question**. Same
-evidence, same reader, a few lines apart, with nothing in between to prompt a
-second look.
+family misaligns the **object**, this one misaligns the **question**.
+
+### Three of these happened in one document, and they are one class
+
+Separately each looks like an oversight. Together they are a single failure
+mode: **one reading admits two modalities, and ordinary language does not
+distinguish them.**
+
+| instance | the two readings the same words support |
+| --- | --- |
+| `Beta(2,2)` rationale | a statement about the **parameter** θ vs one about the **observation** `c` — *"does not assume X"* parses for both |
+| §5 red-line check | evidence taken under **question A** reused under **question B** — the same table, the same reader, a few lines apart |
+| `seven_day` utilization | a **stock** (level right now) vs a **flow** (what this batch consumed) — *"utilization 0.65"* is true either way |
+
+In all three the sentence stays grammatical and plausible under the wrong
+reading, so nothing downstream trips on it — which is why none was caught by
+re-reading, and all three were caught by someone asking *which quantity is
+this?*
 
 ## 8. What remains unverified
 
