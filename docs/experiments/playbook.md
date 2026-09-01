@@ -443,6 +443,17 @@ pilot's twelve amendments.
   caveat as the signal that a structural fix was available and skipped.
 
   Instances for all five: [PR #305](https://github.com/Luolc/swe-lab/pull/305).
+- **A result of "we did not observe X" must report how large an X it can
+  exclude.** Without that bound a negative reads exactly like *X does not
+  happen*, and the two are not the same sentence. The bound is what separates
+  them and it is cheap: with no occurrences in *n* independent tries, the 95%
+  upper bound on the rate is about **3/n** — so 0 in 5 leaves ~0.6, which
+  establishes nothing while *sounding* like stability, and 0 in 20 leaves ~0.15.
+  **Choose n from the bound you need the quiet outcome to carry**, before
+  running, because after the fact the quiet outcome is the one nobody
+  re-examines. The same asymmetry decides what a one-directional check may be
+  cited for: a test that is sharp when it fires and empty when it does not must
+  say so where it is defined, or its silence gets read as its verdict.
 - **A call whose result will be cited as evidence records what answered it and
   how.** Two things are absent by default and unrecoverable afterwards: the model
   id the **response** reports — never the alias in the request, since an alias

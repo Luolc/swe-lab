@@ -9,13 +9,14 @@ there is no such measurement yet.
 
 Two arms, both at `max_tokens = 2000`:
 
-- **default sampling** -- the gate as it actually runs, and as B would ship it.
-  Any disagreement here is enough to confound the witness, whatever its cause;
-- **`temperature = 0`** -- **descriptive context only.** It is not determinism on
-  a hosted endpoint, routing and served model are recorded but not held fixed,
-  and no convergence statistic is defined at this n. It cannot attribute the
-  variance to sampling or to the guidebook, and nothing here may be read as
-  doing so.
+- **default sampling** (n = 20) -- the gate as it actually runs, and as B would
+  ship it. Any disagreement here is enough to confound the witness, whatever its
+  cause;
+- **`temperature = 0`** (n = 5) -- **one-directional.** A flip here *falsifies*
+  "pinning the temperature fixes this gate"; five quiet calls confirm nothing,
+  since the upper bound they leave is near 0.6. It is not determinism on a
+  hosted endpoint, and routing and served model are recorded but not held fixed,
+  so it can never attribute the variance to sampling or to the guidebook.
 
 Usage:
   python3 <this file> --out-dir <dir> [--n 5]
@@ -45,6 +46,12 @@ _STEP_INDEX = 15
 _POSITION = 14
 _ROLLOUT = "baseline-qutebrowser-rollout-0"
 _MAX_TOKENS = 2000
+# Fixed here rather than exposed as a flag: n is pre-registered, and a knob that
+# changes it would undo the pre-registration. The default arm is large enough
+# that a *quiet* result still bounds something -- 0/20 puts the 95% upper bound
+# on the flip rate near 0.15, while 0/5 leaves it near 0.6, which reads like
+# stability and says nothing.
+_ARMS = (("default", {}, 20), ("temperature-0", {"temperature": 0}, 5))
 # Binds the *entire* judge input, not just the completion: the prompt is built
 # from the guidebook, the preceding-steps rendering and the completion summary,
 # each of which lives in an off-repo or separately edited file. Asserted before
@@ -83,7 +90,6 @@ def main() -> None:
   """Judge the fixed completion `n` times in each arm."""
   parser = argparse.ArgumentParser()
   parser.add_argument("--out-dir", type=pathlib.Path, required=True)
-  parser.add_argument("--n", type=int, default=5)
   args = parser.parse_args()
   args.out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -110,8 +116,8 @@ def main() -> None:
         f"{args.out_dir / 'judge_input.json'}")
 
   records, spent = [], 0.0
-  for arm, extra in (("default", {}), ("temperature-0", {"temperature": 0})):
-    for index in range(args.n):
+  for arm, extra, count in _ARMS:
+    for index in range(count):
       payload = {
           "model": _judge.MODEL,
           "max_tokens": _MAX_TOKENS,
@@ -156,21 +162,24 @@ def main() -> None:
       "arms": {
           arm: dict(collections.Counter(
               r["verdict"] for r in records if r["arm"] == arm))
-          for arm in ("default", "temperature-0")
+          for arm, _extra, _count in _ARMS
       },
       "stages_cited": {
           arm: dict(collections.Counter(
               r["stage"] for r in records if r["arm"] == arm))
-          for arm in ("default", "temperature-0")
+          for arm, _extra, _count in _ARMS
       },
       "response_models": sorted(
           {str(r["response_model"]) for r in records}),
       "providers": sorted({str(r["provider"]) for r in records}),
-      "n_per_arm": args.n,
+      "n_per_arm": {arm: count for arm, _extra, count in _ARMS},
       "_note": (
-          "Counts only. No convergence statistic is defined at this n, and "
-          "temperature-0 is descriptive context, not a cause: routing and "
-          "served model are recorded but not controlled."
+          "Counts only; no rate is implied. A quiet arm bounds rather than "
+          "establishes: 0 disagreements in n puts the 95% upper bound on the "
+          "flip rate near 3/n, which is NOT a finding of stability. "
+          "temperature-0 can falsify 'pinning the temperature fixes this gate' "
+          "and can never confirm it: routing and served model are recorded but "
+          "not controlled."
       ),
   }
   (args.out_dir / "summary.json").write_text(json.dumps(summary, indent=2))

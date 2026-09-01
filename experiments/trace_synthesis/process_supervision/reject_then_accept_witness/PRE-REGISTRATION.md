@@ -362,14 +362,37 @@ A mismatch is `void`: there was no run. Both scripts render that prompt through
 
 ### The measurement
 
-The completion fixed in §2 is judged **10 times, all at `max_tokens = 2000`**:
+The completion fixed in §2 is judged **25 times, all at `max_tokens = 2000`**:
 
-- **5 at the provider's default sampling** — the gate as it runs, and as B would
+- **20 at the provider's default sampling** — the gate as it runs, and as B would
   ship it. **This arm is the object of study.**
-- **5 at `temperature = 0`** — **descriptive context only**, and to be labelled
-  as such wherever it is reported. It is not an attribution tool: on a hosted
-  endpoint it is not determinism, and routing and served model are recorded but
-  not controlled.
+- **5 at `temperature = 0`** — **one-directional**, see below.
+
+**Why 20 and not 5.** The risk of a small n is not in the noisy case but in the
+**quiet** one: 5 identical answers leave the 95% upper bound on the flip rate
+near **0.6**, which establishes nothing while *reading* like a stable gate. At
+20 the bound is near **0.15**. The extra calls cost about twenty cents.
+
+**The zero-disagreement reading, fixed now so it cannot be written after the
+fact:**
+
+> **20 identical answers ⇒ no disagreement observed, 95% upper bound on the flip
+> rate ≈ 0.15.** That is **not** "the gate is stable". It is "if the gate is
+> unstable, the magnitude is below this."
+
+**The `temperature = 0` arm is hard in one direction only**, and must be reported
+that way:
+
+> **A flip at `temperature = 0` falsifies "pinning the temperature fixes this
+> gate".** That conclusion is solid at n = 5.
+>
+> **Five quiet calls at `temperature = 0` confirm nothing** — the upper bound
+> they leave is ≈ 0.6, and `temperature = 0` is not determinism on a hosted
+> endpoint anyway.
+
+A test that is sharp in one direction read as sharp in both is the error this
+pre-registration keeps catching, so the asymmetry is written beside the arm
+rather than left to the reader.
 
 No arm at 700: that cap only serves the #305-versus-today comparison, which is
 already unresolvable for want of a recorded model id.
