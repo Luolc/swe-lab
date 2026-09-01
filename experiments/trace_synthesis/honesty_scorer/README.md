@@ -505,29 +505,56 @@ estimator must not be one that breaks precisely there.
 | --- | --: | --: | --: | --: | --: | --: | --: |
 | yield | 9.00 | 4.50 | 3.00 | 2.25 | 1.80 | 1.50 | 1.29 |
 
-**Aggregation.** The headline figure pools the **two positive cells** — 12
-attempts, `c` summed — giving `E[1/θ] = 15 / (1 + c_pooled)`. Per-cell figures
-are reported beside it. **No other aggregation is permitted**: in particular the
-per-cell yields are not averaged, because the mean of reciprocals is not the
-reciprocal of a pooled rate and choosing between them after seeing four numbers
-is exactly the freedom this section removes. Negative cells are reported the
-same way and priced separately; they are not pooled with the positives.
+**Aggregation.** The headline pools the positive cells that ran their full six
+attempts. With `N` valid attempts in the pool and `c` qualifying among them, the
+posterior is `Beta(2 + c, 2 + N − c)` and
 
-**Censoring cases.**
+> **`yield = E[1/θ] = (N + 3) / (1 + c)`**
 
-- **Preflight failure** (attempt 1 misses `agent_complete == 1` or
-  `exit_code == 0`) stops the cell at one attempt. That cell yields **no
-  estimate at all** — it is reported as preflight-failed and excluded from both
-  the per-cell and the pooled figures, because its stop was outcome-dependent
-  and its denominator is not 6. The repository then leaves the scored set under
-  the balance rule.
-- **Environment failure** (`timed_out == 1`, or wall far past the p90 of
-  comparable runs) is not an attempt: it is re-run, both records are reported,
-  and the denominator stays at six *valid* attempts. This is decidable from the
-  mechanical gates alone and is therefore independent of whether the attempt
-  would have resolved.
-- **`c = 0` in a cell that ran all six** is a real measurement, not a failure to
-  measure: yield 9.0, and the cell contributes no traces.
+which reduces to `15/(1+c)` at the planned `N = 12` and to `9/(1+c)` when only
+one cell survives. Per-cell figures are reported beside the headline. **No other
+aggregation is permitted** — in particular per-cell yields are never averaged,
+because the mean of reciprocals is not the reciprocal of a pooled rate, and
+choosing between them after seeing the numbers is the freedom this section
+removes. Negative cells are priced the same way, separately, and never pooled
+with the positives.
+
+**Environment failure is `timed_out == 1`, and nothing else.** An earlier
+version also admitted "wall far past the p90 of comparable runs", which is not a
+mechanical gate: it names no comparator population and no threshold, while
+deciding both the denominator and whether an attempt is re-run. It is also
+**inapplicable by construction here** — every wall time we hold comes from the
+OpenRouter arm, so no p90 exists for the shipping path until this batch creates
+one. A wall-based rule may be added later, but only with its comparator and
+threshold written down before it is used.
+
+A timed-out attempt is **not an attempt**: it is re-run, both records are
+reported, and the denominator stays at six *valid* attempts. That decision uses
+one boolean the harness already emits, so it cannot depend on whether the
+attempt would have resolved.
+
+**Censoring, as a table covering every combination.** A cell is *valid* if it
+ran all six attempts; it is *preflight-failed* if attempt 1 missed
+`agent_complete == 1` or `exit_code == 0`, which stops it at one attempt.
+
+| Valid positive cells | Headline yield | Consequences |
+| :---: | --- | --- |
+| 2 | `(12 + 3) / (1 + c_pooled)` | the planned case |
+| 1 | `(6 + 3) / (1 + c)` from that cell, reported as **single-cell** | the failed cell contributes no estimate; its repository leaves the scored set |
+| 0 | **none** — no yield is reported | both preflight failures are reported and the pilot is escalated, having delivered nothing |
+
+A preflight-failed cell is excluded from every figure: its stop was
+outcome-dependent and its denominator is not six.
+
+**Yield and scoring are decided separately**, and this is the combination most
+likely to be fudged: a valid *positive* cell still contributes its attempts to
+the yield estimate **even when its paired negative cell fails and the repository
+therefore leaves the scored set**. Yield measures what a positive costs to buy;
+the balance rule governs what may be scored. A repository can legitimately price
+the purchase while contributing nothing to the comparison.
+
+**`c = 0` in a cell that ran all six** is a real measurement — yield 9.0 — and
+not a failure to measure. The cell contributes no traces.
 
 ### The minimum cohort, and what the first batch can decide
 
@@ -669,6 +696,7 @@ dry-run corpus contains one class, so there is no result here to tune toward.
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
+| 10 | The pooled formula assumed 12 attempts, and "environment failure" included an undefined wall-time clause | **`(N + 3)/(1 + c)` parameterized by valid attempts**, with a censoring table covering 2, 1 and 0 valid positive cells; **environment failure is `timed_out == 1` alone** | A preflight failure leaves 6 attempts pooled, not 12, so the fixed formula would have been wrong in exactly the case it was written to survive. And "wall far past the p90 of comparable runs" named no comparator and no threshold while deciding the denominator — and is inapplicable regardless, since every wall time we hold is from the OpenRouter arm. |
 | 9 | "Yield factor" was named as the deliverable but never defined as a statistic | **`c` (qualifying, not merely resolved) as numerator; `E[1/θ] = 9/(1+c)` under a `Beta(2,2)` prior fixed now; pooled over the two positive cells as `15/(1+c_pooled)`; per-cell yields never averaged; preflight-failed cells excluded, environment failures re-run, `c = 0` a real measurement** | `resolved / 6` is a rate, not rollouts-per-trace, and the reciprocal of a mean is not the mean of a reciprocal. Left open, the choice between pooled rate, reciprocal, and a model — and the handling of a zero — would have been made with the counts already visible. A uniform prior would have given `7/c`, undefined at exactly the plausible outcome `c = 0`. |
 | 8 | The per-cell rule was "at most 6 attempts, stop at 2 resolved" | **Exactly six attempts per cell**, preflight counted as attempt 1, all retained, the two lowest-indexed qualifying traces selected after calibrating every resolved one | Stopping early on the second success is optional stopping just as running unbounded is — the stopping time still carries outcome information, so attempts-per-trace stays biased even with every attempt retained. Only a count fixed in advance makes `resolved / 6` an unbiased rate. The pilot becomes 24 rollouts. |
 | 7 | The negative class was the 5 surviving traces, produced on the **OpenRouter** arm, while positives would be bought on the **shipping path** | **Both classes are bought on the shipping path**; the 5 surviving traces are discarded, and the price table denominated in OpenRouter credits does not apply to this batch | The runner that produced the corpus no longer imports on `main`. Buying positives on the shipping path while keeping OpenRouter negatives would make **the arm perfectly correlated with the label** — any arm-varying artifact (proxy headers, env, harness version) becomes a label proxy, and a judge or arm B could separate the classes on the arm alone while we read it as guidebook power. The actor model is the same on both arms (`claude-sonnet-5`), so what is lost is the cost unit, not comparability of difficulty. |
