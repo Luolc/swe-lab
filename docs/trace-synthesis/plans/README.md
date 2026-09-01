@@ -46,16 +46,21 @@ this index is not a task: its results are recorded in
 | 12 | **Fold a run's outcome over its segments** — `event_stream_outcome` reduces a run to its *last* `result`, so an interrupted or turn-limited segment is invisible behind a later success | ⬜ Registered, not started ([§13.5](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
 | 13 | **Confirm the stream-json correction channel in the sandbox** — every measurement of it so far is host-side, against the host `claude` and the host user-level `CLAUDE.md`; the rollout harness runs in a container with a pinned `CLAUDE_CONFIG_DIR` | ⬜ Registered, not started ([§11](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
 | 14 | **The channel's edges that a real rollout will hit** — an interjection at turn 40 rather than turn 3, models other than `claude-sonnet-5`, non-text content blocks, and how several queued messages fold | ⬜ Registered, not started ([§11](../../../experiments/trace_synthesis/streamjson_input/REPORT.md), [§14.6](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
+| 16 | **A live correction channel in the harness** — stdin from a file to a FIFO, and who may act while `run()` blocks — [`task-16-live-correction-channel-in-the-harness.md`](task-16-live-correction-channel-in-the-harness.md) | ⬜ **Design only; no code authorized.** The plumbing answered ahead of the gate, so that a failed gate discards a document rather than an implementation |
 | 15 | **Segmentation and interrupt edges** — MCP tool calls vs. the 2.1.246 interrupt claim, `cancel_queued: true`, `--max-turns` above 1, whether a parallel tool batch can be prevented, whether the two interrupt records can be suppressed | ⬜ **Parked, not merely unstarted** — this is the machinery [§14](../../../experiments/trace_synthesis/streamjson_input/REPORT.md) superseded; it becomes live only if segmentation or interrupt returns as a design |
 
-**Rows 12–15 are a registration, not a plan.** They come from the measurements
+**Rows 12–16 are a registration, not a plan.** They come from the measurements
 in [`experiments/trace_synthesis/streamjson_input/REPORT.md`](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)
 (landed 2026-09-01) and are written down so they are not rediscovered as
 mysteries. **None is authorized to start**: the arm they serve is gated on a
 compliance test that has not run — whether an actor acts on a mid-turn
 correction at all — and engineering for A′ before that gate is a bet. Task 12 is
 the exception in kind rather than in status: it is a defect in a shipped
-collector, true regardless of which channel A′ ends up using.
+collector, true regardless of which channel A′ ends up using — and task 16
+identifies it as a **prerequisite** rather than a neighbour, because a supervised
+run produces several `result` events in one process. Task 16 is the other
+exception in kind: it is a design document written *because* the gate may fail,
+and it authorizes nothing.
 
 ---
 
