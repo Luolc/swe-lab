@@ -50,6 +50,12 @@ SENSITIVE_HEADERS = frozenset(
         # response — operator identity
         "anthropic-organization-id",
         "anthropic-workspace-id",
+        # The counterpart of the request's `cookie` above. Recording what the
+        # server sets while masking what the client sends protects nothing:
+        # this is the value that later becomes that cookie. Observed on the
+        # real OpenRouter path as a Cloudflare `__cf_bm`; the Anthropic path
+        # sends no cookie at all.
+        "set-cookie",
         # Identity despite the prefix: it names the account a limit is
         # claimed against. Deliberately kept out of any "Ratelimit-* is
         # telemetry" shortcut — that shortcut is how it was missed the

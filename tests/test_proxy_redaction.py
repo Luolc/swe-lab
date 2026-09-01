@@ -22,6 +22,13 @@ def _record(
     *, authorization: str, organization: str, user_id: str = REDACTED
 ) -> str:
   """One capture record, shaped as cc-reverse-proxy writes it."""
+  # A masked Set-Cookie is the whole value replaced, not a cookie whose crumb
+  # happens to be the placeholder — mirroring what the proxy actually writes.
+  cookie = (
+      REDACTED
+      if organization == REDACTED
+      else f"__cf_bm={organization}; path=/"
+  )
   return json.dumps(
       {
           "request": {
@@ -46,6 +53,7 @@ def _record(
                   "Request-Id": "req_011Cabcd",
                   "Anthropic-Ratelimit-Unified-Status": "allowed",
                   "Anthropic-Ratelimit-Unified-Reset": "2026-09-01T12:00:00Z",
+                  "Set-Cookie": cookie,
               },
           },
       }
@@ -78,6 +86,7 @@ def test_a_raw_capture_is_caught_on_both_sides() -> None:
       "record 1 response Anthropic-Organization-Id",
       "record 1 response Anthropic-Workspace-Id",
       "record 1 response Anthropic-Ratelimit-Unified-Representative-Claim",
+      "record 1 response Set-Cookie",
   ]
 
 

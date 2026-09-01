@@ -200,14 +200,31 @@ and `metadata.user_id`. (An earlier header-only version of this check reported
 comparable; the gap is the body field and the representative claim, both added
 after review.)
 
-**What is not yet verified, stated so it cannot be read as more:** the capture
-that scans clean was produced by the fixed binary against a **stub upstream**,
-not a rollout. So the criterion holds against every header and field observed on
-the real API — that inventory comes from the pre-fix real capture — but no
-*post-fix real* capture exists yet. The residual risk is narrow and specific: a
-sensitive header the real upstream sends that never appeared in those 13
-records. Closing it needs one real request through the merged binary, not an
-argument.
+**Verified against both real upstreams.** One real request each was sent
+through the merged binary — to `api.anthropic.com` (the `ROLLOUT` path) and to
+OpenRouter — and each resulting capture scans clean. On the Anthropic path the
+three identity headers were present **and masked**
+(`Anthropic-Organization-Id`, `Anthropic-Workspace-Id`,
+`Anthropic-Ratelimit-Unified-Representative-Claim`), as was `Authorization`, and
+the body's `metadata.user_id`; the session id and the rate-limit telemetry
+survived verbatim. Both probe captures were destroyed after scanning and neither
+is committed: what is kept is the *record* that the criterion held, not the file.
+
+The residual risk this closed was specific — *a sensitive header the real
+upstream sends that never appeared in our sampled inventory* — and its
+independent variable is **which upstream**, not how many records. That is why
+one request per upstream settles it and a second rollout would not have.
+
+**It found one.** The OpenRouter response carried a `Set-Cookie` (a Cloudflare
+`__cf_bm`) recorded verbatim, on a path whose request-side `Cookie` was already
+masked. Masking one half of that pair protects nothing, since `Set-Cookie` is
+the value that becomes the cookie; it is redacted as of
+[cc-reverse-proxy#2](https://github.com/Luolc/cc-reverse-proxy/pull/2) and the
+scanner matches. It is a **consistency** fix, not a disclosure one:
+`__cf_bm` is bot-management state, neither a credential nor an operator
+identifier, so the criterion held on that capture and still holds. Rewriting a
+truthful pass as a failure because a nearby improvement was found would make the
+criterion mean less, not more.
 
 Two further notes, so the record is complete rather than reassuring:
 
