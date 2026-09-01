@@ -1,6 +1,6 @@
 ---
 name: swelab-pr-review
-description: Repo-level PR review increments for swe-lab — the quality gate as acceptance test, invariant-needs-a-test, test scope, naming, doc source-of-truth, ADR placement, ask-first boundaries, docstrings and injection. Stacks on the user-level `pr-review` (`~/.agents/skills/pr-review`): the user-level skill owns the tracks, the priority axis and the Verdict format, this one only adds red lines and repo facts. Load both.
+description: Repo-level PR review increments for swe-lab — the quality gate as acceptance test, invariant-needs-a-test, test scope, naming, doc source-of-truth, ADR placement, ask-first boundaries, review evidence, docstrings and injection. Stacks on the user-level `pr-review` (`~/.agents/skills/pr-review`): the user-level skill owns the tracks, the priority axis and the Verdict format, this one only adds red lines and repo facts. Load both.
 ---
 
 # swe-lab PR review (repo increments)
@@ -23,8 +23,10 @@ description: Repo-level PR review increments for swe-lab — the quality gate as
 ## Increments
 
 - `SL1` **The quality gate is the acceptance test.** `uv run pre-commit run
-  --all-files` and `uv run pytest`, run **bare** (a pipe swallows the exit code)
-  in your own detached worktree at the PR head. Both exit 0 or there is no LGTM,
+  --all-files` and `uv run pytest -m 'not docker'`, run **bare** (a pipe
+  swallows the exit code) in your own detached worktree at the PR head. The
+  docker-marked tests are CI's job — see the jurisdiction rule in
+  `docs/conventions.md`. Both exit 0 or there is no LGTM,
   and the commands with their results go in `## Evidence`. A green CI `check` is
   necessary, not sufficient.
 - `SL2` **An invariant needs a test.** An *always / never / every path / exactly
@@ -51,6 +53,17 @@ description: Repo-level PR review increments for swe-lab — the quality gate as
   runtime dependency; changing the annotation schema or the `EvalSpec` / report
   contract; touching or deleting anything under `outputs/` (a committed
   deliverable); re-hosting or renaming the HF dataset repos.
+- `SL9` **"No findings" must be distinguishable from "not looked at".** A
+  `Verdict` whose `## Evidence` does not say *which tracks ran* is a criterion
+  citing an undefined object: a reader cannot tell "I reviewed that track and it
+  was clean" from "that track was never run", and the two read identically. So
+  `## Evidence` names, at minimum, **which tracks were reviewed**, **which
+  commands were run and what they returned**, and — whenever the PR adds or
+  changes a check — **which deliberately introduced mutants turned it red**. A
+  clean track is stated as reviewed-and-clean, never by omission. This is not a
+  new practice but a previously unenforced one: reviewers here already wrote
+  such sections, which is exactly why it needed writing down — an invariant
+  nobody enforces holds only until the first round somebody skips it.
 - `SL8` **Google-style docstrings, and inject built collaborators.** Docstrings
   are imperative ("Fetch rows…"), `Args:` matches the signature, types live in
   annotations only. An entry function takes the *built* dependency
@@ -69,7 +82,7 @@ docs/workstreams/w2-solve-eval/spec.md:31 | P1 | "every attempt writes exactly o
 src/swe_lab/cli/rollout.py:52 | P2 | `run_spec` clips the name of a `RunSpecification` value | Spell it out (`SL4`)
 
 ## Evidence
-Detached worktree at 1a2b3c4: `uv run pre-commit run --all-files` exit 0; `uv run pytest` exit 0 (651 passed, 4 skipped).
+Tracks reviewed: code + docs. Detached worktree at 1a2b3c4: `uv run pre-commit run --all-files` exit 0; `uv run pytest -m 'not docker'` exit 0 (651 passed, 4 skipped); required CI `check` green. Mutants against the new table check: deleting a family row → red, rewriting one row as a duplicate of another → red. Docs track: `docs/doc-map.md` routing checked, no fact duplicated.
 
 ## Out of scope
 Formatting, the lock file, anything the quality gate already covers.

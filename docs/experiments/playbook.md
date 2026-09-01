@@ -137,6 +137,68 @@ yourself. Hold to these:
   rejected," "the 3 fails were dataset defects, not our bug" are first-class
   outcomes. Record them; they save the next round.
 
+## Pre-registration and blinding — what a running experiment may still change
+
+Registered before the run, an experiment's rules are protocol; changed during
+it, they are results in disguise. These are the distinctions that survived a
+pilot's twelve amendments.
+
+- **Separate the operational half from the analytical half, because they have
+  different authors.** *Operational* rules fix what the machine does — how many
+  executions happen, whether a failure is retried, what gets recorded. They are
+  prospective, they remove discretion, and an author who has seen partial
+  results may still fix them when the fix reduces the remaining degrees of
+  freedom to zero. *Analytical* rules decide what may be concluded, and a
+  non-blind author must not choose their free parameters. When an amendment
+  touches both, split it: register the operational half, and **leave the
+  analytical half explicitly open with a gate** — "no analysis may run until a
+  party that has seen no outcome fixes this in writing" — rather than settling
+  it once the numbers are in.
+- **"My choice cannot exploit my knowledge" is an argument about a mechanism,
+  not a property of a person.** It must be re-checked for every clause it is
+  applied to, and it fails first on the clauses that decide what gets
+  concluded. It is also not an argument its author may certify: **self-certified
+  blindness is the human version of an assertion that cannot fail.**
+- **Explaining an isolation rule can breach it.** Stating *why* someone is
+  disqualified from ruling ("they have seen the outcomes, which are X") hands
+  the disqualifying information to the next reader. Name the disqualification;
+  do not reproduce what caused it.
+- **A stopping rule that reads the clock is outcome-correlated.** Truncating a
+  fixed design on wall time removes whole units, and the slowest unit goes
+  first — which is a property of the workload, not of chance. The same shape
+  wears other costumes: retrying on "environment failure" is optional stopping
+  whenever the failure is a function of how long a unit takes.
+- **A wall-clock figure is workload × available compute, so it carries a
+  predicate.** Record the machine state a timing estimate assumes (CPU steal,
+  load, timestamp); an estimate without it silently asserts a condition that may
+  not hold. For the same reason a fixed wall-clock timeout is **not** a fixed
+  compute budget when steal varies — it is a variable disguised as a constant.
+- **Never typeset an estimate and a hard constraint the same way.** Format
+  carries credibility, and nothing checks format: side by side, a derived
+  estimate and a registered constraint become indistinguishable in epistemic
+  status, and the estimate starts being defended as a rule.
+- **When a stratifying variable is perfectly aligned with the experimental
+  unit, "we recorded it" is not a remedy** — diagnosability requires the
+  variable to vary *within* some unit. And an **unmeasured** endpoint cannot
+  serve as the control arm of a measured one: prefer **a weaker true statement
+  to a stronger one that needs data you do not have** ("heterogeneity exists but
+  is not quantifiable" beats "we have an internal control"). Never back-fill an
+  estimated value into a missing measurement.
+- **Disclosure is not a remedy for a degree of freedom.** This is the boundary
+  of every "make it visible" fix above, and it constrains the remedies
+  themselves: **for a measurement, visibility is a sufficient remedy — for a
+  free parameter it is not, because a disclosed choice is still a choice made by
+  someone who knew the results.** A parameter chosen post-outcome has to be
+  *deleted*, not annotated. The test is whether the replacement rule has **zero**
+  free parameters: re-tuning a cut to a safer value relocates the discretion,
+  while removing the cut ends it.
+- **Label an amendment for what it is.** "Post-hoc but prospective, with an
+  empty prior action set" is a real and useful category — a rule changed after
+  the run began but before it had ever fired changes nothing that already
+  happened. Say so precisely, and confine the claim to the layer it covers; a
+  document that asserts outcome-independence in one section and discloses known
+  outcomes in another has written its own refutation.
+
 ## Investigations (the lighter variant)
 
 A failure investigation (why did *this* break?) is the same loop, compressed, and
