@@ -5,11 +5,7 @@ name: rollout
 # and — by default — grades that patch through the eval harness. Unlike `eval`
 # (which grades the gold patch and needs no secrets), rollout needs the agent's
 # subscription token: set the `CLAUDE_CODE_OAUTH_TOKEN` repo secret
-# (`claude setup-token`). The job exports it as `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN`
-# — the repo-scoped host-side name the rollout definition reads it from; the
-# sandbox renames it back to `CLAUDE_CODE_OAUTH_TOKEN` on the way in (see
-# docs/conventions.md → Hazards). The GitHub runner is native amd64 (no
-# emulation).
+# (`claude setup-token`). The GitHub runner is native amd64 (no emulation).
 #
 # MVP note: this uses the same "ubuntu runner + docker run" model as `eval`
 # (DockerProvider bind-mounts the pinned agent binary + inherits the token by
@@ -37,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v7
 
@@ -55,7 +51,7 @@ jobs:
 
       - name: Preflight — token present
         run: |
-          if [ -z "${SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN}" ]; then
+          if [ -z "${CLAUDE_CODE_OAUTH_TOKEN}" ]; then
             echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret is not set" >&2
             exit 1
           fi

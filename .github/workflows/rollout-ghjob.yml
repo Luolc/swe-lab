@@ -40,11 +40,8 @@ jobs:
     # The job IS the container: it runs inside the instance image.
     container:
       image: ${{ inputs.image_ref }}
-    # The repo secret keeps its own name; the job carries it under the
-    # repo-scoped host-side name, and the sandbox renames it back to
-    # CLAUDE_CODE_OAUTH_TOKEN for the agent (docs/conventions.md → Hazards).
     env:
-      SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v7
 
@@ -83,7 +80,7 @@ jobs:
 
       - name: Preflight — token present
         run: |
-          if [ -z "${SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN}" ]; then
+          if [ -z "${CLAUDE_CODE_OAUTH_TOKEN}" ]; then
             echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret is not set" >&2
             exit 1
           fi
@@ -94,7 +91,7 @@ jobs:
             ${{ inputs.grade && 'rollout_and_unit_test' || 'rollout' }} \
             "${{ inputs.instance_id }}" \
             --rollout.sandbox=ghjob \
-            --rollout.sandbox.pass_env=CLAUDE_CODE_OAUTH_TOKEN=SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN \
+            --rollout.sandbox.pass_env=CLAUDE_CODE_OAUTH_TOKEN \
             --unit_test.sandbox=ghjob \
             --rollout.harness.model="${{ inputs.model }}" \
             --rollout.timeout=3000

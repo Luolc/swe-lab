@@ -41,18 +41,15 @@ class _FakeDocker:
 
   results: list[subprocess.CompletedProcess[str]] = field(default_factory=list)
   calls: list[list[str]] = field(default_factory=list)
-  # The CLI's own environment per call — where a by-reference value travels.
-  envs: list[dict[str, str] | None] = field(default_factory=list)
   raise_missing: bool = False
 
   def __call__(
       self, argv: list[str], **kwargs: object
   ) -> subprocess.CompletedProcess[str]:
+    del kwargs
     if self.raise_missing:
       raise FileNotFoundError(2, "No such file", "docker")
     self.calls.append(list(argv))
-    env = kwargs.get("env")
-    self.envs.append(dict(env) if isinstance(env, dict) else None)
     index = min(len(self.calls) - 1, len(self.results) - 1)
     if self.results:
       return self.results[index]
@@ -62,13 +59,6 @@ class _FakeDocker:
     for argv in reversed(self.calls):
       if argv[:2] == ["docker", subcommand]:
         return argv
-    raise AssertionError(f"no docker {subcommand} call recorded")
-
-  def last_env_matching(self, subcommand: str) -> dict[str, str] | None:
-    pairs = zip(reversed(self.calls), reversed(self.envs), strict=True)
-    for argv, env in pairs:
-      if argv[:2] == ["docker", subcommand]:
-        return env
     raise AssertionError(f"no docker {subcommand} call recorded")
 
 
@@ -108,7 +98,6 @@ def test_up_argv_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 def test_up_network_off_env_and_pass_env(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  monkeypatch.setenv("SECRET_TOKEN", "s3cr3t")
   fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
   _install(monkeypatch, fake)
   sandbox = DockerHostSandbox(
@@ -117,7 +106,7 @@ def test_up_network_off_env_and_pass_env(
       network=False,
       pull=False,
       env={"FOO": "bar"},
-      pass_env={"SECRET_TOKEN": "SECRET_TOKEN"},
+      pass_env=["SECRET_TOKEN"],
   )
   sandbox.up()
   create = fake.last_matching("create")
@@ -130,55 +119,6 @@ def test_up_network_off_env_and_pass_env(
   # a by-reference secret carries no value in the argv
   assert not any("SECRET_TOKEN=" in a for a in create)
   assert ["docker", "pull"] not in [c[:2] for c in fake.calls]
-
-
-def test_pass_env_renames_without_spelling_the_value(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
-  # The host carries the token under a repo-scoped name; the container must
-  # see the name the agent reads. Only that name reaches the argv — the value
-  # rides in the Docker CLI's own environment.
-  monkeypatch.setenv("SWE_LAB_TOKEN", "s3cr3t")
-  monkeypatch.delenv("AGENT_TOKEN", raising=False)
-  fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
-  _install(monkeypatch, fake)
-  sandbox = DockerHostSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path),
-      pull=False,
-      pass_env={"AGENT_TOKEN": "SWE_LAB_TOKEN"},
-  )
-  sandbox.up()
-  create = fake.last_matching("create")
-  tok = create.index("AGENT_TOKEN")
-  assert create[tok - 1 : tok + 1] == ["-e", "AGENT_TOKEN"]
-  assert "SWE_LAB_TOKEN" not in create
-  assert not any("s3cr3t" in arg for arg in create)
-  env = fake.last_env_matching("create")
-  assert env is not None
-  assert env["AGENT_TOKEN"] == "s3cr3t"
-
-
-def test_pass_env_never_falls_back_to_the_ambient_name(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
-  # The declared source is missing but a same-named variable happens to sit in
-  # the host environment: `-e AGENT_TOKEN` would silently smuggle *that* one
-  # into the container, which is exactly the confusion the rename exists to
-  # prevent. Warn and pass nothing.
-  monkeypatch.delenv("SWE_LAB_TOKEN", raising=False)
-  monkeypatch.setenv("AGENT_TOKEN", "wrong-one")
-  fake = _FakeDocker(results=[_ok("cid\n"), _ok()])
-  _install(monkeypatch, fake)
-  sandbox = DockerHostSandbox(
-      spec=SPEC,
-      workspace=epath.Path(tmp_path),
-      pull=False,
-      pass_env={"AGENT_TOKEN": "SWE_LAB_TOKEN"},
-  )
-  sandbox.up()
-  create = fake.last_matching("create")
-  assert "AGENT_TOKEN" not in create
 
 
 def test_mount_absolute_asset_copied_read_only(

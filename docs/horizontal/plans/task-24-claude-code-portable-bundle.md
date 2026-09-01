@@ -491,7 +491,8 @@ by its own smoke matrix.
 
 - **Wiring into swe-lab** (§9) is designed but not built — sequenced after this.
 - **Live-agent smoke checks** (4 and 6) have never run green, only SKIP: they
-  need `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN` in the environment (the script renames
-  it for the container; the host-side name is never `CLAUDE_CODE_OAUTH_TOKEN` —
-  see [conventions → Hazards](../../conventions.md#hazards-learned-the-hard-way)).
+  need a token in the environment — `SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN` from
+  `.envrc.local`, which the script copies to `CLAUDE_CODE_OAUTH_TOKEN` for
+  itself (see
+  [conventions → Hazards](../../conventions.md#hazards-learned-the-hard-way)).
   Run once with a token before trusting the bundle in a real rollout.
