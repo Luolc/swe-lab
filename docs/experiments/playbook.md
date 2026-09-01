@@ -206,6 +206,37 @@ pilot's twelve amendments.
   first clause confirms it, and a reader almost never splits a sentence to check
   each half. **Verify the clause asserting that nothing else can be here, not
   the one you can already see is true.**
+- **A number handed to you carries a quantity, not just a value — say which.**
+  A reading is a *level*, a *delta*, a *count*, a *rate*; the words and the
+  units are usually identical, so "utilization 0.65" and "θ" and "the accept
+  rate" each parse correctly as two different quantities and nothing downstream
+  trips on the wrong one. The failure is not rare and not individual: it
+  happened three times in one document, in unrelated domains, and each time the
+  wrong reading was grammatical
+  ([instances](../../experiments/trace_synthesis/process_supervision/FEASIBILITY-B.md)).
+  There is no mechanical check for it, so it is a **review obligation** rather
+  than an invariant: **when you restate a reading, label what quantity it is;
+  a number arriving without that label should be refused, not discounted.**
+  Two questions do most of the work, and the second is the one that catches a
+  *correction* going wrong:
+
+  > **Restating someone's number — what did I add that was not in their words?**
+  > (A level becomes a consumption; a consumption acquires an owner. Each step
+  > feels like summarizing, and a number gets *more* useful with every
+  > misreading — more specific, better shaped as a conclusion — which is exactly
+  > why nobody stops.)
+  >
+  > **Correcting someone's number — is the new reference point I just
+  > introduced one that was measured?** (Replacing a level with a delta fixes
+  > the first error and commits it again, one layer in, whenever the delta's
+  > starting point was never observed.)
+
+  A related case, same cause: **change the question and the evidence has to be
+  re-taken.** Readings gathered under question A are invalid by default for
+  question B, most of all when both draw on the same material — that is exactly
+  when nothing signals a re-read is needed. It is a relative of *measured on A,
+  stated about B*: that family misaligns the **object**, this one the
+  **question**.
 - **A blind check's green is not an absence proof, and a better check does not
   make it one.** A verbatim n-gram overlap here returned zero and was reported
   as evidence that a document did not duplicate a registered rule. The
