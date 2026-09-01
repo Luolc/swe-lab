@@ -266,6 +266,13 @@ but its cost.
 - **Real rollouts.** Twenty small local fixtures, not SWE-bench Pro instances,
   and host-side rather than in-sandbox (tasks 13–14).
 - **Provenance variants**, **cost**, and **any model but `claude-sonnet-5`**.
+- **How generally followable a correction is.** §4.6's pilot drops fixtures whose
+  correction cannot move the actor even when delivered cleanly at a turn
+  boundary, so the graded set is conditioned on *"this correction works when the
+  channel is not in question"*. That is the right conditioning for the question
+  being asked — **does this channel deliver** — and it is the wrong conditioning
+  for any claim about corrections in general. **The conclusion here is about the
+  channel, not about the general compliability of corrections.**
 - **A model supervisor deciding when to intervene.** The trigger here is
   deterministic so the intervention point is part of the pre-registration.
   A model supervisor is the production form; substituting a fixed trigger buys
