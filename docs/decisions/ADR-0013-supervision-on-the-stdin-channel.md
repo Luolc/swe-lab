@@ -120,7 +120,7 @@ which:
    experiment on a different question.
 
 What the hook path loses, it loses on evidence rather than on preference:
-**[M]** `updatedToolOutput` cannot carry a hint on a tool whose response has no
+**Measured:** `updatedToolOutput` cannot carry a hint on a tool whose response has no
 free-text field — three hints judged at `Edit` boundaries, all three
 unappendable, zero reaching the actor — so the channel is **blind at exactly the
 commit points a supervisor most wants to speak at**
@@ -131,13 +131,25 @@ commit points a supervisor most wants to speak at**
 - **Keep the hook path and re-run the gate against it.** Rejected: the blindness
   at `Edit` boundaries is structural, and re-running a gate whose question the
   owner has ruled wrong buys a second answer to the same wrong question.
-- **B — hold-then-forward resampling in the proxy.** Not adopted, and the reason
-  is recorded rather than assumed: its gate (a reject-then-accept witness)
-  terminated `material-retired` at attempt 0, and its own judge was measured to
-  be a stochastic function with sampling never pinned
-  ([FLIP-RATE-REPORT](../../experiments/trace_synthesis/process_supervision/reject_then_accept_witness/FLIP-RATE-REPORT.md)).
-  B is not refuted here; it is un-evidenced, and it reverses §5's *not the
-  proxy* row, which this ADR keeps.
+- **B — hold-then-forward resampling in the proxy.** Not adopted, and what is
+  known about it is deliberately stated at its real strength, because B's whole
+  problem is that people keep granting it evidence it does not have:
+  - **Measured:** Its gate — a reject-then-accept witness — terminated
+    `material-retired` at attempt 0, so **B's existence claim has never been
+    tested**.
+  - **Measured:** No sampling parameter was ever pinned on the guidebook judge B would
+    gate with, across either recorded run.
+  - **Measured:** A disagreement was observed **between** two runs (`off_track` in
+    #305 against 20/20 `on_track` today), and its cause **cannot be recovered**
+    from what #305 retained.
+  - **Measured:** Within one run, **0 disagreements in 20 calls** — which the report
+    states explicitly is *not* evidence that the judge is stable, and is not a
+    measurement of a stochastic process either
+    ([FLIP-RATE-REPORT](../../experiments/trace_synthesis/process_supervision/reject_then_accept_witness/FLIP-RATE-REPORT.md)).
+
+  So B is **un-evidenced, not refuted**, and this ADR does not claim its judge
+  was measured to be unstable. It also reverses §5's *not the proxy* row, which
+  this ADR keeps.
 - **Wait for a redesigned compliance gate before moving the attribution.**
   Rejected on cost, not on principle: the engineering that the attribution
   authorizes — the supervisor component — is the same component the redesigned
@@ -160,10 +172,15 @@ commit points a supervisor most wants to speak at**
   (never rewrite, never deny) become **structural**: this channel has no field
   that could do either.
 - **§10 is untouched.** Every hook fact there was measured and none is refuted.
-- **[Task 05](../trace-synthesis/plans/README.md)** is re-scoped from *hook
-  wiring* to the supervisor component, and **carries this ADR's refutation
-  condition as an acceptance condition** — the in-sandbox fold check described
-  under *What would overturn this*. **[Task 16](../trace-synthesis/plans/task-16-live-correction-channel-in-the-harness.md)
+- **[Task 05](../trace-synthesis/plans/README.md)** must be re-scoped from
+  *hook wiring* to the supervisor component, and must **carry this ADR's
+  refutation condition as an acceptance condition** — the in-sandbox fold check
+  described under *What would overturn this*. **That rewrite is not in this
+  change.** Until the plan index and the task's own plan are rewritten, they
+  still describe the hook-era task, and **the plan is what is canonical about
+  what task 05 is**; this ADR authorizes the re-scope, it does not perform it.
+  A reader who finds the two disagreeing should trust the plan about *scope* and
+  this ADR about *attribution*. **[Task 16](../trace-synthesis/plans/task-16-live-correction-channel-in-the-harness.md)
   remains design-only and unauthorized** — this ADR moves attribution, not the
   harness's stdin plumbing.
 - **Nothing here authorizes a production run that injects.** §5's standing note
