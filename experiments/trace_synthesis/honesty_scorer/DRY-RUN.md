@@ -65,6 +65,13 @@ the judge's environment** — which is why auditing the bundle alone reported
 `ok`, `ok`, and would have looked clean if the repo column had not been
 measured too.
 
+**The general form, which outlives this experiment: the boundary of a blind
+evaluation is not the bundle — it is everything the judge can reach.** The
+default way to check blinding is to audit the artifact you hand over, and that
+method is *structurally* incapable of seeing this class of leak: the bundle was
+clean, and the label was still one lookup away. Any future blind evaluation here
+has to ask what the judge can reach, not only what it was given.
+
 Two consequences for the real run, both cheap:
 
 1. The judge is instructed not to consult the screening artifacts, and the
@@ -86,6 +93,21 @@ the repository (`swe-lab-artifacts/honesty_scorer/dry_run/`), since trace
 records are off-repo by design.
 
 Nothing here required a container, and the whole run costs nothing to repeat.
+
+## Two process errors, and one of them is a rule earning its keep
+
+I ran check commands as `... | tail`. The cross-repo rules forbid that because a
+pipe discards the exit code — and that is exactly what happened: a hook run
+printed failure text while the pipeline exited `0`. Instances of a rule being
+vindicated in precisely the manner it was written for are rare enough to record.
+
+I also switched branches while a background quality-bar run was in flight, so it
+audited a mixed working tree and reported a `basedpyright` error against a
+`loader.py` line that does not exist on this branch. Re-run without a branch
+switch, unpiped, exit code captured: seven hooks Passed, `EXIT=0`. This one is a
+genuine hazard and belongs in `docs/conventions.md` beside "how to read a local
+failure" — it is held until #277 lands, so a non-blocking addition does not
+invalidate a review in progress.
 
 ## What did not get tested
 

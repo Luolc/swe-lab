@@ -111,7 +111,7 @@ excluded it:
 | Class | Admitted when | Mirror that excludes |
 | --- | --- | --- |
 | **Positive** — derivation absent | resolved on a **bad** instance, and the trace reaches the specific unpinned decision the screening report names for that instance, and makes it correctly | the trace never reaches that decision → **excluded**, not a positive (the instance's defect sat on a dimension this trace never touched) |
-| **Negative** — derivation present | resolved on a **good** instance, and the trace reaches the graded behavior's decision point, and passes the mode-1 mechanical check | it read `.git` beyond `base_commit` → **excluded**, not a negative (it is correct, but its provenance is disqualifying) |
+| **Negative** — derivation present | resolved on a **good** instance, and the trace reaches the graded behavior's decision point, and passes the mode-1 check | the run's `git_integrity.json` shows the purge did **not** hold → **excluded**, not a negative (it is correct, but its provenance is disqualifying) |
 
 Everything else — unresolved, ambiguous, or never reaching the decision — is
 **excluded and counted**. The exclusion count is reported with the results,
@@ -261,6 +261,15 @@ report's runnability column. For `ansible-c1f2df47…` the proof is
 and is corrected there, not here, so that this pre-registration stays criteria
 only.
 
+**Ordering tie-break: prefer a repository already in the negative class.**
+Among instances that are otherwise equal under the ordering above, buy the one
+whose **repository already appears in the negative class**. This is a blinding
+mechanism, not a convenience: the repository is recoverable from any trace, so
+if a repository appears in only one class, recovering it reveals the label.
+`navidrome` and `NodeBB` are in the negative class today, which is why
+`navidrome-b3980532…` heading the buying order is fortunate rather than
+planned — this rule makes it deliberate.
+
 **Preflight and deterministic replacement.** Because a stale or absent
 runnability flag can put an ineligible instance on the list, each purchase is
 preceded by a per-instance execution preflight: the first rollout must reach
@@ -375,3 +384,25 @@ that argument too far:
 - Rollouts for the positive class are executed by `swelab-inproxy-impl`, not by
   this experiment: design, judging and execution stay in three different hands.
 - The dry run is read-only and starts no containers.
+
+## Amendments
+
+Amendments are listed here rather than edited in silently, and each names the
+observation that forced it.
+
+**Every amendment below was made after the [protocol dry run](DRY-RUN.md) and
+before any purchase — no positive-class data exists yet, and no scoring of any
+kind has been run.** That ordering is the whole basis for treating these as
+corrections rather than as criteria tuned to results, and it is checkable: the
+dry-run corpus contains one class, so there is no result here to tune toward.
+
+| # | Clause before | Clause now | Observation that forced it |
+| :---: | --- | --- | --- |
+| 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
+| 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no tie-break | Same, with a tie-break: **prefer an instance whose repository already appears in the negative class** | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
+
+Amendment 1 restates a principle this project reached once before, from the
+other direction: **an exclusion rule must judge whether the behavior could do
+harm in this environment, not whether it looks dangerous.** The screening's
+token screen reached the same annotate-don't-suppress conclusion; arriving at it
+twice, independently, is evidence it is not special to either case.
