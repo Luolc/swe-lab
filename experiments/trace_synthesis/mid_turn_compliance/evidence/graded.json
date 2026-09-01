@@ -27,6 +27,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 422190,
       "sha256": "7eb2fa7ca6283087481323adf3fa5cc9b2cdbaa6aff662a4907a05a7a76e1553"
@@ -45,6 +49,7 @@
     "label": "NO_TRIGGER",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 239977,
       "sha256": "ed53e7c609cc1a621e5fce09fc9f88f1e7081cf1d0aeefa646f7d133c3d5443c"
@@ -80,6 +85,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 501883,
       "sha256": "5a75e57a0a1ca4ae14c52c08ac80591b32836765b9e7be991f018625a6c8d849"
@@ -111,6 +120,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 357700,
       "sha256": "e0a355723b73dc94a631f0584d05b56ccce8471127baee433f21e29d23d76fcc"
@@ -129,6 +142,7 @@
     "label": "NO_TRIGGER",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 237891,
       "sha256": "0a287b99c526a7feb799e3bacd1433999088b7ac9dabfe6f579d88f9a820cce4"
@@ -163,6 +177,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 311966,
       "sha256": "1267fa4d7d4e4e715ecda144ec0c2c79834c60beb4fac903245857b489b209f7"
@@ -196,6 +214,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 302895,
       "sha256": "ea247c6050dc37e10a9c3339e4fdae5364ee3b579333e48810eb073d827db16b"
@@ -229,6 +251,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 431747,
       "sha256": "43ecdea69b98e69fa01cf76f2501070dc7a62590bcf9e9d13ecbb19aba25ef6c"
@@ -264,6 +290,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 302618,
       "sha256": "037e2c01ea66102c13ddc765280215b549180ba2a549dfd85031b8dad2db0fb5"
@@ -298,6 +328,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 422402,
       "sha256": "de27454e336533a565477a371f6b143d078ce39c81c61180e22daa1f577f24f7"
@@ -331,6 +365,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 300305,
       "sha256": "39cea460ccf940fd444eb1d3586d3c20601369b45667e601c03b6e035ce71818"
@@ -364,6 +402,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 362118,
       "sha256": "8d25dd4457066e3c9820571766a5ec4eefc4c18f544d4b4746476df5a9d3373f"
@@ -399,6 +441,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 302593,
       "sha256": "ede842137c3743a8e9f391c6e6c73e99dd804493121d79f66281b7fa26a3dab4"
@@ -430,6 +476,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 240029,
       "sha256": "828120afe6b4a2998852fae521aa4b0166e744c52c816d23609e4437a0e6b9ab"
@@ -463,6 +513,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 390899,
       "sha256": "48342017dc1c7fe4b87c6cca1a1d77f141d4cd5803809f480333c6c9bc67040d"
@@ -496,6 +550,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 502025,
       "sha256": "de0e6a29a244fe5fede27dff338e09d429b7e5dd4000e5a407b4943747dd10e6"
@@ -530,6 +588,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 368381,
       "sha256": "0fa93f728149ac9d488e4e05129d513d544fc5454e57915814bdb0b79630a6c6"
@@ -548,6 +610,7 @@
     "label": "NO_TRIGGER",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 427272,
       "sha256": "7f9e59afbc5bd94e22979df6209687eafe9d61ebb0e63c3dfb7469caab453549"
@@ -582,6 +645,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 415953,
       "sha256": "47cd41cc9a85be76407f23da9150e49adbd87508eb9fa3918e444d902c47ae09"
@@ -615,6 +682,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 699396,
       "sha256": "9e2e9e9986320597756fb3b32210781f518f18fff7358470b0aa0650d711ed39"
@@ -645,6 +716,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 427962,
       "sha256": "31bcd78a816bcc4633f8ca3da40bdf21ee570f38267e2a50d08ed9acfd0a9e0c"
@@ -663,6 +738,7 @@
     "label": "NO_TRIGGER",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 239228,
       "sha256": "1de673d7f9523d4b7ba5aec045a08921eebcfaad69713b4d06cb23953cb241f2"
@@ -694,6 +770,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 561123,
       "sha256": "3039a07a57c19f64f2d0ad81ff785c93a3a28ee241486715c704213547dcec54"
@@ -720,6 +800,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 238349,
       "sha256": "1c789aabd3e4f680e9ea67d8ee6f00ac17aee73b703e3b265305f05aa66c3114"
@@ -738,6 +822,7 @@
     "label": "NO_TRIGGER",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 238792,
       "sha256": "8d13d8d2f786f36f79bf7a3cbc4b92c1d4d96c36d4e956f5f304b3aed70da617"
@@ -766,6 +851,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 301511,
       "sha256": "cf282a08a3e1af0242635690f3743d1a23dd06982f51269bb5d56424bac0a14a"
@@ -794,6 +883,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 362058,
       "sha256": "606b4b44a49f9ea3f0df27f1c74fe73e25acbd7bef754c647e6f4a6a49275d12"
@@ -822,6 +915,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 306030,
       "sha256": "b20995df7baaaa11565eb9b7435208cc2261c9e45ca7f2b6dc8f54cb5d6bfeeb"
@@ -848,6 +945,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 248723,
       "sha256": "91335782551b4d980e92645b5d0cc0ac7629e0ff02c16d500ec0867c7abc90f0"
@@ -876,6 +977,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 422610,
       "sha256": "b93fa2747a9ec34e04c054dc0eabebca5e1b06bf90986bcda8b31a94e92b7795"
@@ -904,6 +1009,10 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 297378,
       "sha256": "82494495d7ffda967d20306ca123f78a5e503ab31ebf20381c3d68eb35eda745"
@@ -930,6 +1039,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 236552,
       "sha256": "4001ad39ca72b721a848402db988b35b4e5d1c96770210d6fa4c37c350c0199a"
@@ -956,6 +1069,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 306652,
       "sha256": "da565825358e0e4e73beaf98a953a4088e7bc40a5acfffe5658ddc4bc45a22a9"
@@ -982,6 +1099,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 311393,
       "sha256": "9fcf427fea7678dff6f4b25a67fb87d1b478ef7827b317d80a12007047d825c0"
@@ -1008,6 +1129,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 312456,
       "sha256": "7c3c97d48964d1eedc2cd26ff5e9642a75f55f454732eee92001e19fbe8e82d0"
@@ -1034,6 +1159,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 511956,
       "sha256": "beb919d22f2a279171e7b27e795d09a6abf32b14e637f702a4e600ffa5d4b0b3"
@@ -1052,6 +1181,7 @@
     "label": "NO_TRIGGER",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 255433,
       "sha256": "557a50b1453c7c2db11d92498976a4829e7ebbc8fb4a1d982f7f5a73c0840cd0"
@@ -1070,6 +1200,7 @@
     "label": "NO_TRIGGER",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 435276,
       "sha256": "f128d2e7a2f7c3c75461ff453275d0a1cb575e6fb4f1840d26aab1acb85bd604"
@@ -1096,6 +1227,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": false,
+      "before_evaluation": false
+    },
     "raw_capture": {
       "bytes": 236663,
       "sha256": "0b40fbbdcdef7b7dcbc3df278a056a31fda22f1b23dda78049c1052e95c29959"
@@ -1124,6 +1259,10 @@
     "label": "NOT_COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": {
+      "at_trigger": true,
+      "before_evaluation": true
+    },
     "raw_capture": {
       "bytes": 765096,
       "sha256": "da2b1c74f98236afeed31a38d7f7d3d153f8c096bf8092ed910b1a32b57a5458"
@@ -1147,6 +1286,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 536839,
       "sha256": "783ec860cb87b4bc81e06bf17b6a83b93af694155e3a436c803971acb73d093f"
@@ -1170,6 +1310,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 357646,
       "sha256": "fb3aa07f54a0d98c181e06a4b0b76b84f1f37ed3ca19eb6fc5fa5c6009a7b19a"
@@ -1193,6 +1334,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 432057,
       "sha256": "b794d000480d1743f240a5ec3baacfc06a0dfa719421a779418ec8299d2d6433"
@@ -1216,6 +1358,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 240854,
       "sha256": "9b1bb5040c6bfaa24833a983bf34dc373b66acd4680c6a61cf4bd5a1cb29d54a"
@@ -1241,6 +1384,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 237129,
       "sha256": "6374dbb5bfa2c9a38ca2b3107f2f620120fbb9d8cfe0bf289c6e4989bbe1ae5c"
@@ -1264,6 +1408,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 305359,
       "sha256": "885e0f5582cca8a592d44104322ab0b4028e4f6a8ba107694161416300619890"
@@ -1287,6 +1432,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 298388,
       "sha256": "058ebcccd3e724a8793ec1a3b6df2dedb7642bddede1de59d7f7d93f2bf19ac3"
@@ -1310,6 +1456,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 488315,
       "sha256": "7bd9c65e4c223cf895f6a087ad2f6fe131f030284c9a77009b3639319b2d8f12"
@@ -1333,6 +1480,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 362344,
       "sha256": "7699dd6de068d3e3ddf0b7eed63b21252160c51b687e3f85c5c1d54a644e83c3"
@@ -1357,6 +1505,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 298988,
       "sha256": "9550c504e4439049dd754f0f7adf6e326999ede8e639243b7f08c5e0d364b31d"
@@ -1380,6 +1529,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 301541,
       "sha256": "974df2d72c65709fb3c5cf378d852c27a04ec3b6d8f1c3553812edd009e5f986"
@@ -1403,6 +1553,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 361981,
       "sha256": "5c878f9f121849ffbb8c5c48af3d13833fd39a61b6e6006606f6c9f966d11750"
@@ -1426,6 +1577,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 241103,
       "sha256": "e4f5727162df27143105e773262e10bad4c63aa4a8cc4e2881d2aad9d0bbd909"
@@ -1452,6 +1604,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 296494,
       "sha256": "bad76180ba508c74dd0e76167d352d2dde48c62d0adcac3a7a581ea189444903"
@@ -1475,6 +1628,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 445621,
       "sha256": "52eb29d2726a76b286610407024eb8a1d416acc69b1dffb5362eb5e9b2b32b1b"
@@ -1498,6 +1652,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 550864,
       "sha256": "08d23c6b4128b05c0ce235590d22137ea82ddb07ee0fab16d05036758c1d69dd"
@@ -1521,6 +1676,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 183274,
       "sha256": "38d027713fa0c4faae58b4b7ee121d1fd9268b6364c3a5a3311605f392611b1c"
@@ -1545,6 +1701,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 360851,
       "sha256": "520cc96f928b4b096658fb4c7f55fd936bfe2b5047567e5966efbb14580f76e0"
@@ -1568,6 +1725,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 302377,
       "sha256": "2e32a8e819f5fbfdd47d16d9faf911e78080264f35ecd5dd6e49c53862d87fe5"
@@ -1592,6 +1750,7 @@
     "label": "COMPLIED",
     "model": "sonnet",
     "phase": "graded",
+    "predicate_already_true": null,
     "raw_capture": {
       "bytes": 437030,
       "sha256": "60cb67fa111eae39520808925a70eef60566ebf1f9875c339f58b5c01fa14674"

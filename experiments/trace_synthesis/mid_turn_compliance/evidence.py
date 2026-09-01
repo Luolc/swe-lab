@@ -27,6 +27,7 @@ from typing import Any
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import criterion
+import tasks
 
 _HOME = str(pathlib.Path.home())
 _HOME_SLUG = _HOME.replace("/", "-")
@@ -71,6 +72,43 @@ def digest(path: pathlib.Path) -> dict[str, Any]:
   return {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
 
 
+def predicate_history(
+    run_dir: pathlib.Path, result: dict[str, Any]
+) -> dict[str, Any] | None:
+  """Say whether the predicate was already satisfied before it was scored.
+
+  Returns:
+    `None` for a run with no intervention, else a mapping with `at_trigger`
+    (true when some action at or before the trigger already satisfies the
+    predicate — the trigger asked for something already done) and
+    `before_evaluation` (the same up to the scoring point).
+  """
+  if "trigger_index" not in result or "evaluation_index" not in result:
+    return None
+  fixture = tasks.BY_SLUG[result["fixture"]]
+  loop = criterion.agent_loop_records(
+      criterion.records(run_dir / "proxy.jsonl")
+  )
+  per_record = [
+      [
+          {"name": block.get("name"), "input": block.get("input", {})}
+          for block in criterion.response_blocks(record)
+          if block.get("type") == "tool_use"
+      ]
+      for record in loop
+  ]
+  def satisfied(limit: int) -> bool:
+    return any(
+        any(fixture.predicate(action) for action in actions)
+        for index, actions in enumerate(per_record)
+        if index <= limit
+    )
+  return {
+      "at_trigger": satisfied(result["trigger_index"]),
+      "before_evaluation": satisfied(result["evaluation_index"] - 1),
+  }
+
+
 def build(run_dir: pathlib.Path) -> dict[str, Any]:
   """Return the witness for one run: its label, and what produced it."""
   result = criterion.classify(run_dir)
@@ -100,6 +138,10 @@ def build(run_dir: pathlib.Path) -> dict[str, Any]:
       },
       "correction_sent": manifest.get("correction_sent"),
       "action": result.get("action"),
+      # Whether the predicate was already true when the trigger fired, and
+      # before the correction was scored. REPORT.md §2.1-§2.3 rest on these, so
+      # they are committed rather than left derivable only from the raw capture.
+      "predicate_already_true": predicate_history(run_dir, result),
       "raw_capture": digest(run_dir / "proxy.jsonl"),
   }
 
@@ -135,14 +177,43 @@ def emit(run_dir: pathlib.Path) -> pathlib.Path:
   return path
 
 
+EXPERIMENT_DIR = pathlib.Path(__file__).resolve().parent
+
+
 def scan_tracked() -> int:
-  """Scan every git-tracked file, so a leak cannot hide in a stale artifact."""
+  """Scan the tracked files **this experiment owns**, from anywhere.
+
+  Scoped and path-anchored on purpose. Run from the repository root, an
+  unscoped `git ls-files` sweeps 500+ files this experiment did not write and
+  reports blockers in other people's fixtures — a scan whose result depends on
+  the caller's working directory, and whose "clean" therefore means nothing.
+  Repo-wide credential scanning is gitleaks' job (the pre-commit hook over the
+  staged diff, and CI over the full history); this checks the narrower property
+  it is the only checker of: no operator identifier reaches a witness this
+  experiment commits.
+  """
   listing = subprocess.run(
-      ["git", "ls-files"], capture_output=True, text=True, check=True
+      ["git", "ls-files", "--", str(EXPERIMENT_DIR)],
+      capture_output=True,
+      text=True,
+      check=True,
+      cwd=EXPERIMENT_DIR,
   ).stdout.split()
+  if not listing:
+    print("no tracked files matched; refusing to report a clean scan")
+    return 1
+  root = pathlib.Path(
+      subprocess.run(
+          ["git", "rev-parse", "--show-toplevel"],
+          capture_output=True,
+          text=True,
+          check=True,
+          cwd=EXPERIMENT_DIR,
+      ).stdout.strip()
+  )
   bad = 0
   for name in listing:
-    path = pathlib.Path(name)
+    path = root / name
     if not path.is_file():
       continue
     try:
@@ -153,7 +224,11 @@ def scan_tracked() -> int:
     if found:
       print(f"{name}: {found}")
       bad += 1
-  print("clean" if not bad else f"{bad} file(s) with blockers")
+  print(
+      f"clean ({len(listing)} tracked files)"
+      if not bad
+      else f"{bad} of {len(listing)} file(s) with blockers"
+  )
   return 1 if bad else 0
 
 
@@ -174,6 +249,11 @@ def main() -> int:
 
   if args.bundle:
     path = pathlib.Path(args.bundle)
+    if not args.runs:
+      # A check over zero runs exits 0 while checking nothing — the guard going
+      # green by absence, which is how a guard silently stops guarding.
+      print("no runs given; refusing to report a passing check over nothing")
+      return 1
     witnesses = [build(pathlib.Path(run)) for run in args.runs]
     text = json.dumps(witnesses, indent=2, sort_keys=True) + "\n"
     found = blockers(text)

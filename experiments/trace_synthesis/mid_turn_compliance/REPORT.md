@@ -20,8 +20,22 @@ gives `p = 2⁻⁶ ≈ 0.016`.
 
 Protocol: [`PREREGISTRATION.md`](PREREGISTRATION.md), committed before the first
 run. Claude Code 2.1.257, `claude-sonnet-5`, 60 graded runs at concurrency 6,
-zero throttling, zero timeouts, zero re-runs. Per-run witnesses:
-[`evidence/graded.json`](evidence/graded.json); raw captures stay off-repo.
+zero throttling, zero timeouts, zero re-runs.
+
+**Verifying this report from a clean clone** — no raw data, no network, no
+credentials:
+
+```sh
+uv run python experiments/trace_synthesis/mid_turn_compliance/analyze.py
+```
+
+It reads the committed witness [`evidence/graded.json`](evidence/graded.json)
+and prints every number below, including §2.2's validity split and the §6
+verdict. What it **cannot** do is rebuild those witnesses from the wire: the raw
+proxy captures are off-repo by design, so `evidence.py --check` runs only on the
+machine that still holds `runs/`. The two claims are different strengths and are
+stated separately — *the arithmetic is reproducible by anyone; the step from wire
+to witness is reproducible only where the wire still exists.*
 
 ## 1. How the verdict was reached
 
