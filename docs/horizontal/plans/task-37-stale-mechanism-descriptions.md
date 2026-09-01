@@ -53,9 +53,14 @@ was the less safe of the two each time.
 | 4 | `conventions.md:57` (fix pending in [#305](https://github.com/Luolc/swe-lab/pull/305), open at the time of writing) | `OPENROUTER_API_KEYS` — "no code consumer yet" | `experiments/trace_synthesis/steered_rerun/supervisor.py` (`key_pool`) had been a consumer for days — and carried the correct splitting rule |
 | 5 | machine-setup — "this one is *later* mapped to `CLAUDE_CODE_OAUTH_TOKEN` by swe-lab" | a mapping that had not happened | `packaging/claude-code-bundle/smoke-test.sh` already read it, alongside a repo-scoped fallback variable |
 
-**Instance 5 is msetup's finding and is not reproduced here** — it is in
-another repository, and this document records its provenance rather than
-claiming a measurement of ours.
+**Instance 5 is msetup's finding, is not reproduced here, and is not counted
+below.** It is in another repository, so this document records its provenance
+rather than claiming a measurement of ours — and, more importantly for the
+proposal, **neither mechanism this task proposes can reach it**: both A and B
+act on swe-lab commits and swe-lab PRs. It is evidence that the subclass is not
+local to this repo. It is not coverage, and counting it as though a swe-lab
+policy would have caught it would be the same kind of unchecked claim this
+document is about. **The local accounting below is over four instances.**
 
 Instance 4's consequence is the whole argument. On the day it was found, the
 key-splitting behaviour was implemented a second time, in a shell — which is
@@ -103,14 +108,23 @@ the confident present**, and they are false in the one direction that stops
 anybody checking. A hook can require that a claim carry a reference. It cannot
 decide that a claim is *true*.
 
-So the arithmetic gets worse: A covers **one of five**, not one of three, and
-both additions are reachable only by Proposal B. Instance 4 is precisely the PR
-`SL10` would have caught — the PR that made `supervisor.py` a consumer is the
-PR that should have been asked to name the paragraph saying there was none.
+So the local arithmetic gets worse: A covers **one of four**, not one of three,
+and instance 4 is reachable only by Proposal B — it is precisely the PR `SL10`
+would have caught, since the PR that made `supervisor.py` a consumer is the PR
+that should have been asked to name the paragraph saying there was none.
 
 **This strengthens "ship A and B together, or neither" rather than qualifying
 it.** That recommendation was argued from A covering a third; it now covers a
-fifth, and every instance A misses is one B reaches.
+quarter, and of the three instances A misses, all three are B's.
+
+**Instance 5 is outside both, and that gap is named rather than closed here.**
+`SL10` is a swe-lab review policy; it cannot be asked of a machine-setup PR, and
+A's hook does not run on that repo's commits. So the honest failure scenario for
+shipping A and B is this: **the next occurrence in another repository passes
+both green.** Whether that is worth a coordinated cross-repo rule is a question
+for the repos that would carry it, and this document does not propose one —
+proposing it here, in a swe-lab plan, would create exactly the second home for a
+rule that the cross-repo guide already owns.
 
 ### Vocabulary evidence, offered without a proposal
 
@@ -128,7 +142,7 @@ document's kind**: reference docs make load-bearing absence claims, plans and
 ADRs make dated ones.
 
 If a mechanical check for this subclass is ever wanted, the honest form is
-therefore not lexical. It is the same shape [#291 landed](#proposal-a-covers-one-instance-of-five--so-it-is-not-the-whole-answer):
+therefore not lexical. It is the same shape [#291 landed](#proposal-a-covers-one-instance-of-four--so-it-is-not-the-whole-answer):
 have the assertion be produced by the thing it describes — a claim of "no
 consumer" that a test re-derives by searching for consumers.
 
@@ -182,7 +196,7 @@ sub-second commit hook. The local hook enforces the *form* (a reference exists);
 a separate check can enforce the *state* (it is still open). Splitting them this
 way keeps the commit hook inside its budget.
 
-## Proposal A covers one instance of five — so it is not the whole answer
+## Proposal A covers one instance of four — so it is not the whole answer
 
 This is the part worth being explicit about, because shipping A alone and
 calling the family handled would itself be an instance of "a fix that covered
@@ -235,10 +249,10 @@ So `SL10` is proposed with its scope stated:
 - **Cost** is one search per PR, and the failure state is definite: a PR that
   changes behavior and can name no paragraph is either incomplete or is
   asserting something the reviewer can confirm in that same search.
-- **Argument for it**: five instances in one day, listed above, four of which no
-  hook can reach — and instance 4 is the exact shape this asks about: the PR
-  that made `supervisor.py` a consumer is the PR that should have been asked to
-  name the paragraph saying there was none. The ADR clause is evidence that this obligation is workable in
+- **Argument for it**: four instances in this repo in one day, listed above,
+  three of which no hook can reach — and instance 4 is the exact shape this
+  asks about: the PR that made `supervisor.py` a consumer is the PR that should
+  have been asked to name the paragraph saying there was none. The ADR clause is evidence that this obligation is workable in
   practice, not evidence that it is already required here.
 
 The distinction from generic "update the docs" advice is that it is
@@ -249,5 +263,5 @@ reviewer can check in one search.
 ## Recommendation
 
 Ship A and B together, or neither. A alone hands back a green check that covers
-a fifth of the family, which is the failure mode this whole task exists to
+a quarter of the family, which is the failure mode this whole task exists to
 attack.
