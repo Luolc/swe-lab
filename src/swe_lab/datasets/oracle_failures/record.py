@@ -17,6 +17,8 @@ from dataclasses import dataclass
 import functools
 from typing import Any, ClassVar, override
 
+from pydantic import ValidationError
+
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
@@ -41,6 +43,29 @@ COLUMNS: tuple[str, ...] = (
     "patch",  # the patch it submitted
     "provenance",  # where the failure came from, as JSON
 )
+
+
+def describe_validation_error(error: ValidationError) -> str:
+  """Describe a validation failure without quoting what was rejected.
+
+  A pydantic error's own message embeds the input value it refused. For a
+  column that may hold a whole conversation, that is exactly the text a
+  refusal must not print — so only the error's *structure* is reported: where
+  it happened and which kind of check failed.
+
+  Args:
+    error: The validation error.
+
+  Returns:
+    One line naming every location and error type, never an input value.
+  """
+  places = sorted(
+      {
+          "/".join(str(part) for part in item["loc"]) + f" ({item['type']})"
+          for item in error.errors()
+      }
+  )
+  return f"{error.error_count()} validation error(s): {', '.join(places)}"
 
 
 @functools.cache
@@ -132,10 +157,10 @@ class OracleFailureInstance(TaskInstance[Verdict]):
     fields = {name: raw[name] for name in COLUMNS}
     try:
       _ = Conversation.model_validate_json(fields["conversation"])
-    except ValueError as error:
+    except ValidationError as error:
       raise ValueError(
           f"oracle failure {fields['instance_id']!r}: the conversation column"
-          f" is not a typed Conversation: {error}"
+          f" is not a typed Conversation: {describe_validation_error(error)}"
       ) from error
     fields["rollout_id"] = int(fields["rollout_id"])
     return cls(

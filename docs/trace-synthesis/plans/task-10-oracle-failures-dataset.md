@@ -76,8 +76,9 @@ Two consequences worth stating:
   record therefore lands in the store beside the instance's other runs
   (`<sweep>/<instance_id>/r<k>/oracle_analysis/…` next to `…/rollout/…`), and
   a dataset file holds **one failure per instance** — rebuilding an instance
-  replaces its row. A second failure of the same instance is a second dataset
-  file, not a second id; nothing needs that yet.
+  replaces its row, and the builder refuses a same-id row from a different
+  source rather than let it overwrite. A second failure of the same instance
+  is a second dataset file, not a second id; nothing needs that yet.
 - **Every task run against the record sees the failure.** That is what a
   mount source means. A run that must *not* see it — any blind run of the
   task, guided or not — runs the underlying instance, which the delegation
@@ -120,13 +121,19 @@ What it does, in order:
 3. **Reads the artifacts** the record points at (`store/<artifact key>`),
    validates the conversation as a typed `Conversation`, refuses an empty
    patch.
-4. **Scans for credentials.** The conversation and the patch are matched
-   against credential-shaped patterns (Anthropic / OpenRouter / OpenAI keys,
-   GitHub and Hugging Face tokens, bearer strings); a hit refuses the row
-   naming **only the pattern**. The value never reaches a message, a log or
-   the parquet. The scan is a guard on a deliverable, not a redaction pass —
-   see [task 09](README.md#task-09-redact-the-production-proxy-capture) for
-   the proxy log, which is not part of a row at all.
+4. **Scans for credentials — on the raw artifacts, before anything parses
+   them.** The conversation and the patch are matched against
+   credential-shaped patterns (Anthropic / OpenRouter / OpenAI keys, GitHub
+   and Hugging Face tokens, bearer strings); a hit refuses the row naming
+   **only the pattern**. The order matters: a parser's error message quotes
+   the input it rejected, so validating first would print a token on the way
+   to refusing it. For the same reason the typed-`Conversation` check that
+   follows reports only *where* and *what kind* of failure (`messages/0/content
+   (list_type)`), never the value — as does the record's own load-time check.
+   The value never reaches a message, a log or the parquet. The scan is a
+   guard on a deliverable, not a redaction pass — see
+   [task 09](README.md#task-09-redact-the-production-proxy-capture) for the
+   proxy log, which is not part of a row at all.
 5. **Re-grades the final grading attempt's persisted workspace**
    (`<run>/<grading key>/ws/a<attempts-1>/`) with the dataset's own grader,
    obtained through `instance.unit_test_spec(...).grader`. The verdict column
@@ -135,7 +142,11 @@ What it does, in order:
    `output.json` and DeepSWE's `ctrf.json` are read by the code that already
    knows how — and it doubles as a consistency check: a workspace that
    re-grades as resolved is not the graded one, and the row is refused.
-6. **Writes the row**, replacing any earlier row for the same instance.
+6. **Writes the row**, replacing any earlier row for the same instance —
+   from the **same** source dataset. The file is indexed by instance id
+   alone, so a same-id row from another source is a collision, refused with
+   the file left as it was; a second source that shares ids gets its own file
+   (`--out`).
 
 Rejected along the way: parsing `unit_test.output.json` directly (SWE-bench
 Pro's shape only); reusing the experiment's sample-directory layout as the
@@ -155,7 +166,9 @@ verdict names the same two failed tests the experiment's report diagnoses —
 `TestQtColor::test_invalid[rgb((1, 2, 3)-must be a valid color value]` and
 `…[rgb(1, 2, 3))-must be a valid color value]` — out of 985 required.
 `git check-ignore` confirms the parquet is untracked. The row's `provenance`
-column records the source run's absolute path, sweep and timestamp.
+column records the source run's workflow-record key, sweep and timestamp —
+never the run directory's host path, which names the operator on an ordinary
+workstation and a trace record must not carry.
 
 ## Out of scope
 

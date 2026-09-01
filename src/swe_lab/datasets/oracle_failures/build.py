@@ -39,13 +39,19 @@ from typing import Any, final, override
 
 from etils import epath
 import polars as pl
+from pydantic import ValidationError
 
 from swe_lab.conversation import Conversation
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.paths import datasets_root
 from swe_lab.sandbox import ExecResult, SandboxError, SandboxFs, SandboxSpec
 
-from .record import COLUMNS, DATASET_NAME, underlying_instance
+from .record import (
+    COLUMNS,
+    DATASET_NAME,
+    describe_validation_error,
+    underlying_instance,
+)
 
 PARQUET_FILENAME = "oracle_failures.parquet"
 
@@ -332,18 +338,11 @@ def build_row(run_dir: epath.PathLike, *, dataset: str) -> dict[str, Any]:
   rollout, grading = _entries(record)
   _check_gates(record, rollout, grading)
 
+  # The scan runs on the raw bytes, before anything parses them: a parser's
+  # error message quotes the input it rejected, so parsing a credential-
+  # bearing artifact first would print the credential on the way out.
   conversation = _artifact(run_dir, rollout, _CONVERSATION_ARTIFACT)
-  try:
-    _ = Conversation.model_validate_json(conversation)
-  except ValueError as error:
-    raise UnusableRunError(
-        f"conversation.json is not a typed Conversation: {error}"
-    ) from error
   patch = _artifact(run_dir, rollout, _PATCH_ARTIFACT)
-  if not patch.strip():
-    raise UnusableRunError(
-        "the failed rollout's patch is empty; nothing to analyze"
-    )
   for label, text in (("conversation", conversation), ("patch", patch)):
     hits = scan_for_credentials(text)
     if hits:
@@ -351,13 +350,26 @@ def build_row(run_dir: epath.PathLike, *, dataset: str) -> dict[str, Any]:
           f"the {label} matches credential pattern(s) {hits}; refusing to"
           " build a dataset row from it"
       )
+  try:
+    _ = Conversation.model_validate_json(conversation)
+  except ValidationError as error:
+    raise UnusableRunError(
+        "conversation.json is not a typed Conversation:"
+        f" {describe_validation_error(error)}"
+    ) from error
+  if not patch.strip():
+    raise UnusableRunError(
+        "the failed rollout's patch is empty; nothing to analyze"
+    )
 
   instance_id = str(record["instance_id"])
   instance = underlying_instance(dataset, instance_id)
   verdict = _regrade(run_dir, instance, grading)
+  # No host path: a run directory carries the operator's username on an
+  # ordinary workstation, and a trace record redacts operator PII at write
+  # time. The run is identified by its own store key and timestamp instead.
   provenance = {
       "source": {
-          "run_dir": str(run_dir),
           "workflow_record": str(record_path.relative_to(run_dir)),
           "sweep_id": record.get("sweep_id"),
           "run_ts": record.get("run_ts"),
@@ -386,7 +398,11 @@ def write_row(path: epath.PathLike, row: Mapping[str, Any]) -> bool:
   """Add a row to the dataset parquet, replacing the instance's earlier row.
 
   One failure per instance per dataset file: re-building an instance means
-  re-building it, exactly as re-running a command means re-running it.
+  re-building it, exactly as re-running a command means re-running it. The
+  file's identity is the instance id alone — that is what the loader indexes
+  by, and what a run's store key carries — so a row of the **same id from
+  another source dataset** is a collision, not a replacement, and is refused:
+  silently dropping the other source's row would be the wrong kind of quiet.
 
   Args:
     path: The parquet to write (created, with its parents, when absent).
@@ -394,12 +410,25 @@ def write_row(path: epath.PathLike, row: Mapping[str, Any]) -> bool:
 
   Returns:
     Whether an earlier row for the same instance was replaced.
+
+  Raises:
+    UnusableRunError: If the file already holds this instance id from a
+      different source dataset.
   """
   path = epath.Path(path)
   fresh = pl.DataFrame([dict(row)], schema=SCHEMA)
   replaced = False
   if path.is_file():
     existing = pl.read_parquet(str(path))
+    same_id = existing.filter(pl.col("instance_id") == row["instance_id"])
+    foreign = same_id.filter(pl.col("dataset") != row["dataset"])
+    if foreign.height:
+      raise UnusableRunError(
+          f"{path} already holds instance {row['instance_id']!r} from"
+          f" dataset {foreign['dataset'][0]!r}; a same-id row from"
+          f" {row['dataset']!r} would collide (the file is indexed by instance"
+          " id) — give the other source its own file with --out"
+      )
     kept = existing.filter(pl.col("instance_id") != row["instance_id"])
     replaced = kept.height != existing.height
     fresh = pl.concat([kept, fresh])

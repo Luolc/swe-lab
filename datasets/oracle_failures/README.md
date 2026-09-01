@@ -46,7 +46,11 @@ uv run python -m swe_lab run oracle_analysis <instance_id> --dataset oracle_fail
 - Columns (7): `dataset`, `instance_id`, `rollout_id`, `conversation`,
   `verdict`, `patch`, `provenance` — JSON text for the three structured ones
 - Identity: `instance_id` is the underlying instance's id, so runs of a row
-  land in the store beside that instance's other runs
+  land in the store beside that instance's other runs; ids are unique within
+  a file across sources — the builder refuses a same-id row from a different
+  source dataset rather than overwrite it
+- Provenance names the source run by its workflow-record key, sweep and
+  timestamp, never by a host path
 - Every task run against a row stages the three failure files
   (`failed_conversation.json`, `failed_verdict.json`, `failed_patch.diff`);
   a run that must not see them runs the underlying instance instead

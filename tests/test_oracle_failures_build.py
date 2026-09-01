@@ -193,6 +193,50 @@ def test_a_credential_shaped_string_refuses_the_row_without_echoing_it(
   assert secret not in message
 
 
+def test_a_credential_in_a_malformed_conversation_is_refused_before_parsing(
+    tmp_path: Path,
+):
+  # A parser's error quotes the input it rejected, so the scan has to run on
+  # the raw artifact first — otherwise a malformed conversation carrying a
+  # token would print the token on its way to being refused.
+  secret = "sk-ant-oat01-" + "B" * 40
+  malformed = json.dumps({"messages": [{"role": "user", "content": secret}]})
+  with pytest.raises(UnusableRunError) as info:
+    _ = build_row(_run_dir(tmp_path, conversation=malformed), dataset="fake")
+  message = str(info.value)
+  assert "anthropic api key or oauth token" in message
+  assert secret not in message
+
+
+def test_a_malformed_conversation_is_refused_without_echoing_its_content(
+    tmp_path: Path,
+):
+  # No credential this time, so the parser is reached — and its refusal must
+  # still describe the failure by location and kind, never by input value.
+  marker = "UNIQUE-CONTENT-MARKER-7f3a"
+  malformed = json.dumps({"messages": [{"role": "user", "content": marker}]})
+  with pytest.raises(
+      UnusableRunError, match="not a typed Conversation"
+  ) as info:
+    _ = build_row(_run_dir(tmp_path, conversation=malformed), dataset="fake")
+  assert marker not in str(info.value)
+  assert "messages/0/content (list_type)" in str(info.value)
+
+
+def test_the_provenance_carries_no_host_path(tmp_path: Path):
+  # A run directory names the operator on an ordinary workstation; a trace
+  # record redacts operator PII at write time, so the row identifies its
+  # source by store key and timestamp and never by where it sat on disk.
+  home = tmp_path / "Users" / "alice"
+  run = _run_dir(home)
+  row = build_row(run, dataset="fake")
+  assert "alice" not in row["provenance"]
+  assert str(run) not in row["provenance"]
+  source = json.loads(row["provenance"])["source"]
+  assert "run_dir" not in source
+  assert source["workflow_record"] == f"{STORE_PREFIX}/workflow.json"
+
+
 def test_the_credential_scan_names_patterns_not_values():
   assert scan_for_credentials("plain text, nothing here") == []
   hits = scan_for_credentials(
@@ -222,3 +266,19 @@ def test_write_row_replaces_the_instances_earlier_row(tmp_path: Path):
   record = dataset.require(INSTANCE_ID)
   assert isinstance(record, OracleFailureInstance)
   assert record.rollout_id == 0
+
+
+def test_a_same_id_row_from_another_source_is_a_collision_not_a_replacement(
+    tmp_path: Path,
+):
+  # The file is indexed by instance id alone, so two sources sharing an id
+  # cannot both live in it — and the second must not quietly delete the
+  # first. Refuse, keep the file as it was, and say which source holds the id.
+  out = epath.Path(tmp_path / "x.parquet")
+  first = build_row(_run_dir(tmp_path / "one"), dataset="one")
+  second = build_row(_run_dir(tmp_path / "two"), dataset="two")
+  assert write_row(out, first) is False
+  with pytest.raises(UnusableRunError, match="from dataset 'one'"):
+    _ = write_row(out, second)
+  frame = pl.read_parquet(str(out))
+  assert frame["dataset"].to_list() == ["one"]

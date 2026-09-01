@@ -148,10 +148,19 @@ def test_from_raw_parses_the_row_and_binds_the_underlying_instance(
 
 @pytest.mark.usefixtures("underlying")
 def test_a_row_whose_conversation_is_not_typed_is_refused_at_load():
-  with pytest.raises(ValueError, match="not a typed Conversation"):
+  # …and refused without quoting the column: a parser's own message embeds
+  # the input it rejected, which for this column is the whole conversation.
+  marker = "UNIQUE-CONTENT-MARKER-91c2"
+  with pytest.raises(ValueError, match="not a typed Conversation") as info:
     _ = OracleFailureInstance.from_raw(
-        _row(conversation=json.dumps({"messages": [{"role": "nobody"}]}))
+        _row(
+            conversation=json.dumps(
+                {"messages": [{"role": "nobody", "content": marker}]}
+            )
+        )
     )
+  assert marker not in str(info.value)
+  assert "messages/0/role (enum)" in str(info.value)
 
 
 def test_the_runnable_surface_is_the_underlying_instances(
