@@ -88,6 +88,21 @@ come from failures this experiment already had —
   unremovable would make every bundle unshippable and train the operator to pass
   an override, which removes the gate for everything else too.
 
+**When a gate should fail, and when it should only report.** These two rules
+read as contradictory — one says fail loudly on nothing, the other says never
+fail on something plainly present — so the discriminant is written down rather
+than left to taste:
+
+> **A gate that alarms on a condition the operator cannot remove trains the
+> operator to disable the gate.** And a disabled gate stops catching everything
+> else it was there for, not just the unfixable thing.
+
+The test is not the false-positive rate; it is whether the operator can make the
+trigger go away. A missing bundle is fixable — produce it, or fix the path — so
+failing is useful pressure. A repository name in a diff is not removable by any
+action available at scoring time, so failing on it buys nothing and costs the
+gate.
+
 The gate checks the artifact. It does **not** check what the judge can otherwise
 reach — the dry run's finding was precisely that the bundle was clean while the
 label sat one lookup away. That is what the first table above is for, and it is
@@ -123,6 +138,17 @@ are its endpoints and midpoint, not a curated list.
    **destroy the verdicts** so no accuracy figure exists to be quoted later.
 3. **Rehearsal, verdicts retained under seal.** As (2), but the verdicts are
    kept in the run record, marked non-reportable, and never aggregated.
+
+**Relevant fact already recorded in this document**, carried here so the
+deciding party sees it rather than having to find it — it is not a
+recommendation, and it is stated above for its own reasons:
+
+> A rehearsal's output must not be reported as an arm comparison, not even with
+> a caveat, because **a number that exists gets quoted later and the caveat does
+> not.**
+
+It bears on this choice because the three options differ in precisely whether a
+number from this batch exists at all.
 
 **The blind party may reject all three and write its own.** A menu written by a
 non-blind author bounds the outcome even when someone else picks from it — the
