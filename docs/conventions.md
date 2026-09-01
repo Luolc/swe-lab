@@ -280,7 +280,7 @@ competent readers read two different answers out of it — a P0 raised on a
 already carries, and withdrawn a round later. Neither reading was careless.
 **The defect was the missing definition**, so here it is.
 
-**The test is not the byte count. It is two questions:**
+**The test is not the byte count. It is two questions, asked in this order:**
 
 1. **Is this a product of *dataset scale* — one artifact per instance, growing
    with the dataset?** Then it is off-repo by design: gitignored locally,
@@ -293,15 +293,45 @@ already carries, and withdrawn a round later. Neither reading was careless.
    by re-running it on the author's machine has not reported a result; it has
    asserted one.
 
+**Question 1 is asked first and it wins.** The two are not alternatives to
+weigh: an artifact that is dataset-scale stays off-repo *even when a claim
+needs all of it*, because the alternative is the dataset in git. What question
+2 then buys is not an exemption but an obligation — commit a **witness**: the
+derived numbers the claim actually rests on, provenance identifying the corpus
+they came from (path or HF id, digest, row count), and the command that
+regenerates them where the corpus exists. So the two categories are disjoint by
+construction: **the corpus is off-repo, the witness is in-repo**, and no
+artifact is ever both.
+
+This is what the repo already does, in three places at three scales:
+
+- `test_the_rule_set_stays_clean_on_the_gold_corpus` measures each integrity
+  rule's false-positive rate over all 731 gold patches. The parquet is
+  gitignored and CI does not download it, so the test **skips** when it is
+  absent — and the numbers it would produce are pinned in the test as
+  `_GOLD_FALSE_POSITIVE_BUDGET`. The corpus stayed out; the claim stayed
+  checkable.
+- `outputs/` commits the annotation parquet and per-instance JSON while the
+  traces they were derived from live on HF.
+- An experiment commits a field-reduced snapshot of an off-repo run ledger
+  beside its `runs/`, with a provenance file recording the source path, its
+  sha256 and which fields were dropped — the fix a
+  [#306](https://github.com/Luolc/swe-lab/pull/306) review finding required
+  when the report's cost figures turned out to depend on a ledger only one
+  machine had.
+
+**If no witness can carry the claim, downgrade the claim** — say plainly that
+the number is rederivable only with the corpus in hand, and name the command —
+rather than committing the corpus to make the sentence true.
+
 Question 2 is not a preference — it is [the experiment
 playbook](experiments/playbook.md)'s "raw artifacts, preserved" and "ground
-every claim in raw data", and reviews enforce it directly: a
-[#306](https://github.com/Luolc/swe-lab/pull/306) finding required an
-experiment's cost figures to be rederivable from its own `runs/`, which is
-satisfied by committing a reduced snapshot and violated by moving evidence out.
-**When two rules appear to forbid each other, that is the signal one of them is
-being read wrong** — here, "large trace records" was being read as "many bytes"
-when it means "the dataset-scale corpus that HF hosts".
+every claim in raw data", and reviews enforce it, as that third example shows.
+Which is why the #304 reading collided with it: pushing an experiment's own
+evidence out of the repo satisfies one rule by breaking the other. **When two
+rules appear to forbid each other, that is the signal one of them is being read
+wrong** — here, "large trace records" was being read as "many bytes" when it
+means "the dataset-scale corpus that HF hosts".
 
 **Calibration, not a threshold.** These are the accepted magnitudes on `main`
 (measured 2026-09-01, `git ls-tree -r -l origin/main`), recorded so a future
@@ -313,8 +343,12 @@ someone picks in the moment:
 | `experiments/trace_synthesis/injection_shape/` | 8,336,053 bytes / 379 files — the largest, reviewed and merged |
 | `experiments/trace_synthesis/process_supervision/` | 2.1 MB / 56 files |
 | `experiments/related_files/prompt_variance/` | 443 KB (a playbook exemplar) |
-| `experiments/trace_synthesis/streamjson_input/` | 329 KB — the one that was disputed |
 | `outputs/` (the committed deliverable) | 17.6 MB / 3,662 files |
+
+The directory the argument was *about* is deliberately not in that table:
+`streamjson_input/` measured 329 KB on an unmerged branch, and #304 is still
+open. It is what prompted the definition, not a precedent for it — a magnitude
+is accepted when it is on `main`, not when it has been argued for.
 
 **No byte limit is set on purpose.** A limit would have to be either low enough
 to evict `injection_shape` — an accepted corpus whose loss would cost more than
