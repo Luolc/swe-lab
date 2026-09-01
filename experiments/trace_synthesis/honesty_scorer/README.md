@@ -460,6 +460,67 @@ A censored sample is only usable when the censoring is reported, so:
   none is **skipped** because two already succeeded. Both are optional stopping,
   in opposite directions.
 
+### The yield factor, defined as a statistic before any data exists
+
+"Yield factor" named a deliverable without defining it, which would have left
+the estimator, the aggregation and the zero case to be chosen once the counts
+were visible. All three are fixed here.
+
+**Per-cell outputs.** Each cell reports, for all six attempts: `resolved`,
+`agent_complete`, `exit_code`, `timed_out`, `wall_seconds`, token usage. From
+those, two counts:
+
+- `r` — attempts that resolved;
+- **`c` — attempts that yielded a *qualifying* trace**: resolved **and** passing
+  that class's admission rule (calibration for a positive cell; the
+  `git_integrity.json` check for a negative cell).
+
+`c`, not `r`, is the numerator that matters: an attempt that resolves but whose
+trace never reaches the unpinned decision costs a rollout and delivers nothing.
+
+**The estimator.** `resolved / 6` estimates a resolve *rate*; the quantity that
+prices a batch is **rollouts per qualifying trace**, which is `E[1/θ]` and not
+the reciprocal of the mean. With a `Beta(2, 2)` prior on θ — chosen now, and
+defensible because these instances are known to resolve *sometimes* and not
+*always*, so θ is strictly inside `(0, 1)` — the posterior is
+`Beta(2 + c, 8 − c)` and
+
+> **`yield = E[1/θ] = 9 / (1 + c)`**, reported with the posterior's 90%
+> credible interval on θ.
+
+That is defined at every `c` **including `c = 0`**, where it gives 9 rollouts
+per qualifying trace. A uniform prior would give `7 / c`, undefined at zero —
+and "no qualifying traces" is a plausible outcome of six attempts, so the
+estimator must not be one that breaks precisely there.
+
+| c | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | --: | --: | --: | --: | --: | --: | --: |
+| yield | 9.00 | 4.50 | 3.00 | 2.25 | 1.80 | 1.50 | 1.29 |
+
+**Aggregation.** The headline figure pools the **two positive cells** — 12
+attempts, `c` summed — giving `E[1/θ] = 15 / (1 + c_pooled)`. Per-cell figures
+are reported beside it. **No other aggregation is permitted**: in particular the
+per-cell yields are not averaged, because the mean of reciprocals is not the
+reciprocal of a pooled rate and choosing between them after seeing four numbers
+is exactly the freedom this section removes. Negative cells are reported the
+same way and priced separately; they are not pooled with the positives.
+
+**Censoring cases.**
+
+- **Preflight failure** (attempt 1 misses `agent_complete == 1` or
+  `exit_code == 0`) stops the cell at one attempt. That cell yields **no
+  estimate at all** — it is reported as preflight-failed and excluded from both
+  the per-cell and the pooled figures, because its stop was outcome-dependent
+  and its denominator is not 6. The repository then leaves the scored set under
+  the balance rule.
+- **Environment failure** (`timed_out == 1`, or wall far past the p90 of
+  comparable runs) is not an attempt: it is re-run, both records are reported,
+  and the denominator stays at six *valid* attempts. This is decidable from the
+  mechanical gates alone and is therefore independent of whether the attempt
+  would have resolved.
+- **`c = 0` in a cell that ran all six** is a real measurement, not a failure to
+  measure: yield 9.0, and the cell contributes no traces.
+
 ### The minimum cohort, and what the first batch can decide
 
 The 4-trace margin below was derived for `n ≈ 30` split about evenly. **The
@@ -600,6 +661,7 @@ dry-run corpus contains one class, so there is no result here to tune toward.
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
+| 9 | "Yield factor" was named as the deliverable but never defined as a statistic | **`c` (qualifying, not merely resolved) as numerator; `E[1/θ] = 9/(1+c)` under a `Beta(2,2)` prior fixed now; pooled over the two positive cells as `15/(1+c_pooled)`; per-cell yields never averaged; preflight-failed cells excluded, environment failures re-run, `c = 0` a real measurement** | `resolved / 6` is a rate, not rollouts-per-trace, and the reciprocal of a mean is not the mean of a reciprocal. Left open, the choice between pooled rate, reciprocal, and a model — and the handling of a zero — would have been made with the counts already visible. A uniform prior would have given `7/c`, undefined at exactly the plausible outcome `c = 0`. |
 | 8 | The per-cell rule was "at most 6 attempts, stop at 2 resolved" | **Exactly six attempts per cell**, preflight counted as attempt 1, all retained, the two lowest-indexed qualifying traces selected after calibrating every resolved one | Stopping early on the second success is optional stopping just as running unbounded is — the stopping time still carries outcome information, so attempts-per-trace stays biased even with every attempt retained. Only a count fixed in advance makes `resolved / 6` an unbiased rate. The pilot becomes 24 rollouts. |
 | 7 | The negative class was the 5 surviving traces, produced on the **OpenRouter** arm, while positives would be bought on the **shipping path** | **Both classes are bought on the shipping path**; the 5 surviving traces are discarded, and the price table denominated in OpenRouter credits does not apply to this batch | The runner that produced the corpus no longer imports on `main`. Buying positives on the shipping path while keeping OpenRouter negatives would make **the arm perfectly correlated with the label** — any arm-varying artifact (proxy headers, env, harness version) becomes a label proxy, and a judge or arm B could separate the classes on the arm alone while we read it as guidebook power. The actor model is the same on both arms (`claude-sonnet-5`), so what is lost is the cost unit, not comparability of difficulty. |
 | 6 | The Build gate required 24 scored traces while the document registered only 5 negatives and 4 positives | **Scope split:** this document registers the pilot and its yield factor; the Build decision is deferred to a **second pre-registration**, whose required contents are listed | Reaching 24 would have depended on acquisition and allocation rules chosen *after* the pilot, with results in hand — the same unreachable-Build defect as the original decision table, relocated. Registering the expansion now is impossible honestly, because its size and price depend on the yield factor the pilot measures. |
