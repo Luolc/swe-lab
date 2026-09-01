@@ -45,6 +45,10 @@ _COST_CEILING_USD = 2.00
 _BODY_SHA256 = "072544ccd33384d33b280bdafed44b159685cebf5af661426654a37b0d41fd45"
 _ORIGINAL_COMPLETION_SHA256 = (
     "e12278e8927ef3100498462c19218a8946bda1517bc910103403abf60aad877a")
+# The body and completion digests do not cover the guidebook or the
+# preceding-steps rendering, and attempt 0's prompt is built from both.
+_JUDGE_INPUT_SHA256 = (
+    "57d9cb24dc0b220fe366377e8d6757aa15843679da6af5a374311f77f5fbb661")
 
 
 def canonical(value: object) -> bytes:
@@ -214,6 +218,41 @@ def verdict_of(raw: str) -> str | None:
   return parsed.get("verdict") if isinstance(parsed, dict) else None
 
 
+def preceding(steps: list[dict], position: int) -> str:
+  """Render the steps a judge sees before the one under judgement.
+
+  Args:
+    steps: Every step of the rollout.
+    position: Index of the step being judged.
+
+  Returns:
+    The rendering, or a marker when the step is first.
+  """
+  return "\n".join(
+      f"  step {i}: {s['content'][:120]}"
+      for i, s in enumerate(steps[:position][-8:])
+  ) or "  (none -- this is the first step)"
+
+
+def _judge_prompt(message: dict, before: str, total: int) -> str:
+  """Render the judge's user message.
+
+  Args:
+    message: The assistant message being judged.
+    before: Rendering of the preceding steps.
+    total: Step count in the rollout.
+
+  Returns:
+    The prompt text.
+  """
+  return (
+      f"# Guidebook\n\n{_judge.GUIDEBOOK.read_text()}\n\n"
+      f"# Preceding steps (most recent last)\n{before}\n\n"
+      f"# The step to judge (step {_POSITION} of {total})\n"
+      f"{_extract.summarize(message)}"
+  )
+
+
 def _judge_completion(message: dict, before: str, total: int) -> dict:
   """Ask the #305 judge whether the guidebook adjudicates this completion.
 
@@ -225,12 +264,7 @@ def _judge_completion(message: dict, before: str, total: int) -> dict:
   Returns:
     The judge's raw answer and usage.
   """
-  user = (
-      f"# Guidebook\n\n{_judge.GUIDEBOOK.read_text()}\n\n"
-      f"# Preceding steps (most recent last)\n{before}\n\n"
-      f"# The step to judge (step {_POSITION} of {total})\n"
-      f"{_extract.summarize(message)}"
-  )
+  user = _judge_prompt(message, before, total)
   payload = {
       "model": _judge.MODEL,
       "max_tokens": 2000,
@@ -290,10 +324,16 @@ def main() -> None:
   payload_sha = hashlib.sha256(payload).hexdigest()
 
   steps = _extract.extract(_ROLLOUT)
-  before = "\n".join(
-      f"  step {i}: {s['content'][:120]}"
-      for i, s in enumerate(steps[:_POSITION][-8:])
-  ) or "  (none -- this is the first step)"
+  before = preceding(steps, _POSITION)
+
+  attempt_zero_input = hashlib.sha256(json.dumps(
+      {"system": _judge.INSTRUCTIONS,
+       "user": _judge_prompt(original, before, len(steps))},
+      sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+  if attempt_zero_input != _JUDGE_INPUT_SHA256:
+    raise SystemExit(
+        "void: attempt 0's judge input does not match the pre-registered "
+        f"digest ({attempt_zero_input}); this run did not happen.")
 
   ledger = Ledger(args.out_dir / "ledger.json")
 

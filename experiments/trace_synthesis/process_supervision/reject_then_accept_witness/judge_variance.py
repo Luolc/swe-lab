@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import hashlib
 import importlib.util
 import json
 import pathlib
@@ -39,6 +40,13 @@ _STEP_INDEX = 15
 _POSITION = 14
 _ROLLOUT = "baseline-qutebrowser-rollout-0"
 _MAX_TOKENS = 2000
+# Binds the *entire* judge input, not just the completion: the prompt is built
+# from the guidebook, the preceding-steps rendering and the completion summary,
+# each of which lives in an off-repo or separately edited file. Asserted before
+# any paid call, so drift in any of them ends the run instead of buying
+# results that look normal and are no longer about the pre-registered material.
+_JUDGE_INPUT_SHA256 = (
+    "57d9cb24dc0b220fe366377e8d6757aa15843679da6af5a374311f77f5fbb661")
 
 
 def _load(path: pathlib.Path, name: str) -> types.ModuleType:
@@ -61,6 +69,9 @@ def _load(path: pathlib.Path, name: str) -> types.ModuleType:
 
 _extract = _load(_STUDY / "extract_steps.py", "variance_extract_steps")
 _judge = _load(_STUDY / "judge_steps.py", "variance_judge_steps")
+# Reused so the two runs render the judge's prompt from one implementation; a
+# second copy would let the digest bind text this script no longer sends.
+_witness = _load(_HERE / "witness.py", "variance_witness")
 
 
 def main() -> None:
@@ -74,16 +85,27 @@ def main() -> None:
   rows = [json.loads(l) for l in _CAPTURE.read_text().splitlines()]
   message = (rows[_STEP_INDEX].get("response") or {}).get("message") or {}
   steps = _extract.extract(_ROLLOUT)
-  before = "\n".join(
-      f"  step {i}: {s['content'][:120]}"
-      for i, s in enumerate(steps[:_POSITION][-8:])
-  ) or "  (none -- this is the first step)"
+  before = _witness.preceding(steps, _POSITION)
   user = (
       f"# Guidebook\n\n{_judge.GUIDEBOOK.read_text()}\n\n"
       f"# Preceding steps (most recent last)\n{before}\n\n"
       f"# The step to judge (step {_POSITION} of {len(steps)})\n"
       f"{_extract.summarize(message)}"
   )
+
+  observed = hashlib.sha256(json.dumps(
+      {"system": _judge.INSTRUCTIONS, "user": user},
+      sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+  (args.out_dir / "judge_input.json").write_text(json.dumps({
+      "classification": None if observed == _JUDGE_INPUT_SHA256 else "void",
+      "judge_input_sha256_expected": _JUDGE_INPUT_SHA256,
+      "judge_input_sha256_observed": observed,
+  }, indent=2))
+  if observed != _JUDGE_INPUT_SHA256:
+    raise SystemExit(
+        "void: the judge input does not match the pre-registered digest, so "
+        "this run did not happen. Nothing was spent. See "
+        f"{args.out_dir / 'judge_input.json'}")
 
   records, spent = [], 0.0
   for arm, extra in (("default", {}), ("temperature-0", {"temperature": 0})):

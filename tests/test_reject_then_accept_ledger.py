@@ -182,6 +182,23 @@ def _arrange(
   monkeypatch.setattr(witness._extract, "extract", _extract_steps)
   monkeypatch.setattr(witness, "_judge_completion", _judge)
 
+  # The gate binds the whole judge input, so the fake material pins its own.
+  steps = witness._extract.extract(witness._ROLLOUT)
+  prompt = witness._judge_prompt(
+      original, witness.preceding(steps, witness._POSITION), len(steps)
+  )
+  monkeypatch.setattr(
+      witness,
+      "_JUDGE_INPUT_SHA256",
+      hashlib.sha256(
+          json.dumps(
+              {"system": witness._judge.INSTRUCTIONS, "user": prompt},
+              sort_keys=True,
+              separators=(",", ":"),
+          ).encode()
+      ).hexdigest(),
+  )
+
   proxy_log = tmp_path / "proxy_log.jsonl"
   _ = proxy_log.write_text("")
 
@@ -572,3 +589,28 @@ def test_identical_completions_outrank_unreadable_verdicts(
   assert final["classification"] == "outcome-1"
   assert final["distinct_completions"] == 1
   assert final["unreadable_judgements"] == 3
+
+
+def test_a_changed_guidebook_voids_the_run(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """The gate binds the guidebook, not only the capture."""
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  # Body and completion are untouched; only the guidebook the prompt embeds
+  # changes -- the drift the material digests cannot see.
+  swapped = tmp_path / "guidebook.md"
+  _ = swapped.write_text("# Guidebook — a different one\n")
+  monkeypatch.setattr(witness._judge, "GUIDEBOOK", swapped)
+
+  def _forbidden(*_args: object, **_kwargs: object) -> object:
+    raise AssertionError("a paid or starting call was reached")
+
+  monkeypatch.setattr(witness, "_judge_completion", _forbidden)
+  monkeypatch.setattr(witness, "_start_proxy", _forbidden)
+
+  with pytest.raises(SystemExit) as raised:
+    witness.main()
+  assert "void" in str(raised.value)
+  assert not (out / "ledger.json").exists()

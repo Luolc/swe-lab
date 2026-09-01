@@ -59,3 +59,18 @@ def test_a_sent_sampling_parameter_is_recorded_with_its_value(
   sent = judge.sampling_sent({"model": "m", "temperature": 0})
   assert sent["temperature"] == 0
   assert sent["top_p"] is None
+
+
+def test_the_pinned_judge_input_digest_matches_the_pre_registration():
+  """The digest the scripts enforce is the one the document fixed."""
+  root = Path(__file__).resolve().parents[1]
+  witness_dir = (
+      root
+      / "experiments/trace_synthesis/process_supervision"
+      / "reject_then_accept_witness"
+  )
+  document = (witness_dir / "PRE-REGISTRATION.md").read_text()
+  for script in ("witness.py", "judge_variance.py"):
+    source = (witness_dir / script).read_text()
+    digest = source.split('_JUDGE_INPUT_SHA256 = (\n    "')[1].split('"')[0]
+    assert digest in document, script

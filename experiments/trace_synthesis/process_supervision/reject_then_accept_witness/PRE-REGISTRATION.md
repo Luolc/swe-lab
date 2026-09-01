@@ -341,6 +341,25 @@ is only meaningful against a measured variance, and none exists.
 The 3-of-3 rule in §8.3 reduces that probability without removing it, and it
 guards only the accepting side: **a rejection is still a single judgement**.
 
+### The judge's whole input is bound, not just the completion
+
+The material digests in §2 cover the request body and the original completion.
+They do **not** cover the two other things the judge's prompt is built from: the
+**guidebook** and the **preceding-steps rendering**. Either can drift without a
+material digest noticing, and the run would then spend money producing results
+that look ordinary and are no longer about the pre-registered material.
+
+So the entire judge input — instructions, guidebook, preceding steps and the
+completion summary, exactly as sent — is pinned and asserted **before any paid
+call**, in both this measurement and the witness's attempt 0:
+
+| | canonical sha256 |
+|---|---|
+| judge input (system + user) | `57d9cb24dc0b220fe366377e8d6757aa15843679da6af5a374311f77f5fbb661` |
+
+A mismatch is `void`: there was no run. Both scripts render that prompt through
+**one implementation**, so the digest cannot bind text a script no longer sends.
+
 ### The measurement
 
 The completion fixed in §2 is judged **10 times, all at `max_tokens = 2000`**:
