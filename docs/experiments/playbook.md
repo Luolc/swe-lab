@@ -409,16 +409,15 @@ pilot's twelve amendments.
   the axis that motivated it, which is usually *cost*. What also changes,
   unwatched, is **which proposition the check still supports**: `--help` and a
   real invocation are equivalent on *does this command exist and parse its
-  arguments* and not equivalent on *can it find its data at run time*. Here the
-  substitution left the acceptance step blind to the exact defect that round had
-  fixed, and reported success. This is the same **scope** failure as *measured
+  arguments* and not equivalent on *can it find its data at run time*, so a
+  substitution made for cost can leave an acceptance step blind to the very
+  defect it is meant to confirm. This is the same **scope** failure as *measured
   on A, stated about B*, one level up: two actions interchangeable on one
   question and not on another, with the question never written down. It is the
-  worst of the family to catch because **nothing errors** — the check runs
-  clean and returns a reassuring value. A watcher polling a field this workflow
-  never populates logged forty minutes of `decision=none`, which reads as *no
-  verdict yet* and meant *this instrument cannot observe verdicts*. **Review
-  obligation:** when you substitute, name the proposition the original
+  worst of the family to catch because **nothing errors** — the check runs clean
+  and returns a reassuring value. A poller reading a field its workflow never
+  populates is the pure case: it reports *no result yet* forever, which reads as
+  waiting and means blindness. **Review obligation:** when you substitute, name the proposition the original
   supported and show the substitute still supports it — a green from an
   unnamed proposition is not a result.
 - **Verify a documented procedure by extracting and executing it, not by
@@ -428,9 +427,9 @@ pilot's twelve amendments.
   directory, the environment, the order — so the author's implicit knowledge
   becomes an invisible input to the check. Extract the commands from the file
   and run them; a step that only works because you knew something fails here and
-  passes when retyped. Two failures found this way in one sitting were in the
-  *extractor*, not the document, which is the previous entry's obligation
-  arriving from the other side.
+  passes when retyped. Expect the first failures to be in the *extractor* rather
+  than the document — the previous entry's obligation arriving from the other
+  side.
 - **A failure you can remove structurally must not be written as a rule for
   people to follow.** A caveat — "run this from the repo root" — transfers
   responsibility for the failure to the reader instead of ending it, and every
