@@ -71,7 +71,8 @@ repos:
         # protects a new file the moment it lands and can only shrink — each
         # addition is a line somebody had to write and a reviewer had to see.
         #
-        # All five were written 2026-07-17 and broken 2026-07-25 by #53
+        # All five were created between 2026-07-06 and 2026-07-15 (following
+        # renames), last touched 2026-07-17, and broken 2026-07-25 by #53
         # (`swe_lab.core` dissolves) — not by any later change. Each
         # experiment's deliverable is its write-up (REPORT.md, qa_log.md, or
         # the README's own conclusion) and the script is evidence of the method
