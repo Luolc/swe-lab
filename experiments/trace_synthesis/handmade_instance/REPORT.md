@@ -309,8 +309,12 @@ Reported to orchestra, which **revised the guidebook**: stage 2 now puts the two
 vocabularies side by side, states that they disagree, and resolves it without
 guessing — both placements can be satisfied at once (a `@staticmethod` on the
 class *and* a module-level name bound to the same object), so the honest move is
-to satisfy both rather than flip a coin on which one the caller used. The
-committed guidebook is that revision.
+to satisfy both rather than flip a coin on which one the caller used.
+
+**The file here is the corrected version; the original is preserved in commit
+`ce833e2`.** It was committed unedited first, deliberately — but the artifact of
+record is carried by git history, not by keeping a known-false file in the tree,
+so the fix is an appended commit (`1057e3f`) rather than an amend.
 
 Stage 5 was tightened in the same pass, using a detail from the frozen trace:
 the agent's own smoke test at tool call 18 imported the three helpers
