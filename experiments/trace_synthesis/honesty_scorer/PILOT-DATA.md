@@ -30,8 +30,22 @@ cell order P1 → P2 → N1 → N2 never reordered.
 | N1 | negative | `navidrome__navidrome-50015182…` | 6 | 5 | 6 |
 | N2 | negative | `NodeBB__NodeBB-2657804c…-vf2cf3cbd…` | **2** of 6 | 2 | 2 |
 
-`unit_test_passed` equals `resolved` in every row; no attempt resolved without
-its unit test passing, and none passed without resolving.
+**`unit_test_passed` is a count of passing tests, not a flag** — it takes the
+values 0, 1, 14, 172 and 195 across the batch, against a per-instance
+`unit_test_required`:
+
+| cell | `unit_test_required` | `unit_test_passed`, in attempt order |
+| --- | ---: | --- |
+| P1 | 1 | 0, 1, 1, 1, 1, 0 |
+| P2 | 195 | 195 ×6 |
+| N1 | 4 | 14, 14, 14, 0, 14, 14 |
+| N2 | 172 | 172, 172 |
+
+`unit_test_status` is `succeeded` in all 20 rows — that field reports whether
+the test run itself completed, not whether the tests passed. In every row
+`resolved` is 1 exactly when the required count was met, and each of the three
+unresolved attempts has 0 passing tests. N1 passes 14 against 4 required: the
+counts are not comparable across instances.
 
 ## Totals
 
