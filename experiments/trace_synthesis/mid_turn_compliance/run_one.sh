@@ -10,8 +10,25 @@ repo="$(cd "$here/../../.." && pwd)"
 arm="$1"; fixture="$2"; out_dir="$3"; port="${4:-20301}"
 shift 4 || shift 3
 
+binary="$repo/.cache/bin/cc-reverse-proxy"
+# Built once by the caller, never here: twenty processes racing to build the
+# same path is how a by-path binary cache corrupts (the #302 P0).
+if [ ! -x "$binary" ]; then
+  echo "missing $binary; build it once before fanning out" >&2
+  exit 1
+fi
+
+# A port collision would not fail loudly — the second proxy would exit and its
+# run would capture through the first one, silently writing two runs into one
+# log. Refuse instead.
+if (exec 3<>/dev/tcp/127.0.0.1/"$port") 2>/dev/null; then
+  exec 3>&-
+  echo "port $port is already in use; pick another" >&2
+  exit 1
+fi
+
 mkdir -p "$out_dir"
-"$repo/.cache/bin/cc-reverse-proxy" --port "$port" \
+"$binary" --port "$port" \
   --target https://api.anthropic.com --output "$out_dir/proxy.jsonl" \
   > "$out_dir/proxy.stderr.log" 2>&1 &
 proxy_pid=$!

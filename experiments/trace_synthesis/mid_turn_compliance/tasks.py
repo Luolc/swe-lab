@@ -1,4 +1,4 @@
-"""The ten fixtures, frozen by the pre-registration.
+"""The twenty fixtures, frozen by the pre-registration.
 
 Each fixture is a tiny self-contained repository plus a task prompt that
 underspecifies exactly one step, and carries the three things `PREREGISTRATION.md`

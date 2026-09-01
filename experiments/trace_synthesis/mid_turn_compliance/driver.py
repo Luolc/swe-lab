@@ -194,6 +194,12 @@ def main() -> int:
       help="pilot runs are discarded and never pooled (§4.6)",
   )
   _ = parser.add_argument("--rerun-reason", default=None)
+  _ = parser.add_argument(
+      "--concurrency",
+      type=int,
+      default=1,
+      help="how many runs were in flight; a run condition, so it is recorded",
+  )
   args = parser.parse_args()
 
   fixture = tasks.BY_SLUG[args.fixture]
@@ -232,6 +238,7 @@ def main() -> int:
       "env": env_note,
       "correction_sent": correction if args.arm != "neg" else None,
       "rerun_reason": args.rerun_reason,
+      "concurrency": args.concurrency,
       "started_at": dt.datetime.now(dt.timezone.utc).isoformat(),
       "claude_version": subprocess.run(
           ["claude", "--version"], capture_output=True, text=True, check=False
