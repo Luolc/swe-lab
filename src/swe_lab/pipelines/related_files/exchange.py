@@ -187,11 +187,6 @@ def _scrub_metadata(metadata: object) -> object:
   upstream sent no account id" and "one was sent and removed" the same record,
   and an invisible absence is the more expensive of the two mistakes: nobody
   audits a field they cannot see was ever there.
-
-  This changes a published schema — the key was absent for the whole history of
-  these records — so it is an owner decision rather than a redaction cleanup,
-  and it was taken as one (2026-09-01). Nothing branches on the key's absence;
-  no committed artifact carries this object at all.
   """
   if not isinstance(metadata, dict):
     return metadata
