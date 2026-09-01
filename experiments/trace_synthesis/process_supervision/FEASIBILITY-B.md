@@ -173,10 +173,14 @@ delivered.
   shared, so a usage delta cannot be attributed to particular calls.
 
 **What a same-body pair check answers, and the only thing it answers:** whether
-the upstream returns the same output again. That is the question of whether the
-mechanism can function at all. A divergent pair refutes strict determinism and
-stops there — it does not establish independent sampling, and **it bears on the
-cost model not at all**, because no oracle and no judgement are involved in it.
+the upstream returns the same output again. That rules out **one necessary
+blocker** — strict determinism or deduplication, either of which would make
+resampling impossible. It is **not** the question of whether the mechanism
+works: divergence is necessary, not sufficient. If every variant an upstream
+produces is still rejected by the oracle, plan B never reaches an accepted turn,
+and a divergent pair says nothing about that. So the check can **falsify** the
+design; passing it establishes nothing. It also **bears on the cost model not at
+all**, because no oracle and no judgement are involved in it.
 
 `p`, the oracle's rejection rate, is a different quantity and is measured only
 by an oracle judging real steps. It remains among the unknowns. **No pair study
