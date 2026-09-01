@@ -41,13 +41,13 @@ def gate() -> ModuleType:
   return module
 
 
-def _run(gate: ModuleType, tmp_path: Path, text: str, truth: object) -> int:
+def _run(gate: ModuleType, tmp_path: Path, text: str, *truth: object) -> int:
   """Write one bundle plus a truth file and run the gate over them."""
   bundles = tmp_path / "bundles"
   bundles.mkdir(exist_ok=True)
   _ = (bundles / "b.bundle.txt").write_text(text)
   truth_path = tmp_path / "truth.json"
-  _ = truth_path.write_text(json.dumps([truth]))
+  _ = truth_path.write_text(json.dumps(list(truth)))
   return gate.main_with(str(bundles), str(truth_path))
 
 
@@ -99,3 +99,30 @@ def test_finding_no_bundles_is_a_failure_not_an_empty_pass(
   truth = tmp_path / "truth.json"
   _ = truth.write_text(json.dumps([_TRUTH]))
   assert gate.main_with(str(empty), str(truth)) == 2
+
+
+def test_a_bundle_named_twice_in_the_ground_truth_is_a_failure(
+    gate: ModuleType, tmp_path: Path
+) -> None:
+  # Keyed by name, a repeat would discard every row but the last, and the
+  # survivor decides what is checked -- so a leak can pass by being described
+  # twice. A ground truth that names a bundle twice does not know what it
+  # asserts, and cannot be resolved by picking one.
+  other = dict(_TRUTH)
+  other["instance_id"] = "instance_other__other-000000000000000000000000"
+  other["base_commit"] = "0000000000000000000000000000000000000000"
+  other["screening_verdict"] = "bad"
+  other["resolved"] = False
+  other["arm"] = "A"
+  leaked = '{"screening_verdict": "good", "arm": "B"}\n'
+  assert _run(gate, tmp_path, leaked, _TRUTH, other) == 1
+
+
+def test_ground_truth_naming_an_absent_bundle_is_a_failure(
+    gate: ModuleType, tmp_path: Path
+) -> None:
+  # The manifest and the directory disagree, and nothing downstream can tell
+  # which is right.
+  absent = dict(_TRUTH)
+  absent["bundle"] = "not-here.bundle.txt"
+  assert _run(gate, tmp_path, "nothing sensitive\n", _TRUTH, absent) == 1

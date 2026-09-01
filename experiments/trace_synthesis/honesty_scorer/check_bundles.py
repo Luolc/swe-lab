@@ -136,15 +136,40 @@ def main_with(bundles_dir: str, truth_path: str) -> int:
     Process exit code: 0 only if bundles were found and none leaked.
   """
   args_bundles, args_truth = bundles_dir, truth_path
-  truth_by_bundle = {
-      str(row["bundle"]): row
-      for row in json.loads(pathlib.Path(args_truth).read_text())
-  }
+  rows = json.loads(pathlib.Path(args_truth).read_text())
+  truth_by_bundle: dict[str, dict[str, object]] = {}
+  duplicates: list[str] = []
+  for row in rows:
+    name = str(row["bundle"])
+    # Keyed by name, so a repeated name would silently discard every row but
+    # the last -- and the surviving one decides what gets checked. A ground
+    # truth that names a bundle twice is not something to resolve by a rule;
+    # it is a ground truth that does not know what it asserts.
+    if name in truth_by_bundle:
+      duplicates.append(name)
+    truth_by_bundle[name] = row
+
   bundles = sorted(pathlib.Path(args_bundles).glob("*.bundle.txt"))
 
   if not bundles:
     print(f"FAIL: no bundles found under {args_bundles}", file=sys.stderr)
     return 2
+
+  if duplicates:
+    for name in sorted(set(duplicates)):
+      print(f"FAIL {name}: ground truth has more than one row for this bundle",
+            file=sys.stderr)
+    return 1
+
+  # The two sets must correspond. A row naming a bundle that is not here means
+  # the manifest and the directory disagree, and nothing downstream can tell
+  # which of them is right.
+  orphaned = sorted(set(truth_by_bundle) - {b.name for b in bundles})
+  if orphaned:
+    for name in orphaned:
+      print(f"FAIL {name}: ground truth names a bundle that is not present",
+            file=sys.stderr)
+    return 1
 
   failures = 0
   for bundle in bundles:
