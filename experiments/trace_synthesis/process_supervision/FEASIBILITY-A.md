@@ -370,6 +370,35 @@ repo's own `swe_lab.harnesses.claude_code.redaction.redact_record`, and
 `analyze.py --check-redaction` reports **0 findings** on both. **Nothing
 containing the token has been committed.**
 
+### The mistake underneath it, which repeated once more before it was caught
+
+The exposure was not "a missing redaction rule". Three implementations of one
+behaviour existed upstream and the security fix landed in one of them, so
+*"cc-reverse-proxy redacts"* was true of the project and false of the process
+that ran. **Evidence for one question was read as an answer to another.**
+
+That is worth recording here because the *fix* for it made the same error one
+level down, and only a reviewer caught it. The remediation replaced the Python
+proxy with the Go one and demonstrated, by probing the Go binary directly with
+a fake bearer, that it masks at write time. The review's sentence is the exact
+statement of what that did and did not establish:
+
+> proves the Go source's write-time behavior, but not that `build_proxy()`
+> always selects that source revision
+
+— because that builder cached on a fixed path and never consulted the source,
+so a binary compiled before the redaction landed would have been reused as
+current. Same substitution, one layer lower, and this time stopped before
+merge ([PR #302](https://github.com/Luolc/swe-lab/pull/302)).
+
+The general form, which is the part worth carrying: **an experiment establishes
+a property of the artifact it actually exercised.** "This source redacts" and
+"the binary our capture ran redacts" are different claims, and the second is
+the one a stored artifact depends on. The durable answer is not a better
+experiment but a check on the artifact itself — here, re-reading every capture
+through `unredacted_fields` before the run is allowed to end, which holds
+whoever produced the file and whatever was assumed about them.
+
 **Two things need a human.** (1) The token value was echoed into this research
 session's transcript by a careless header dump before the exposure was noticed
 — **recommend rotating `op://dev-shared/claude-code-oauth-token`.**
