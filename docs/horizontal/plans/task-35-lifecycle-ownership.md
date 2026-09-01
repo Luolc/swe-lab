@@ -322,7 +322,249 @@ Each invariant gets a named test; none of them needs Docker except where marked:
 Three PRs, split by dependency and not by category:
 
 1. **A + B** — same two files, no dependency between them, one review.
-2. **C** — the shared process-group helper and its two call sites.
+   Shipped in [#288](https://github.com/Luolc/swe-lab/pull/288).
+2. **C** — the shared process-group helper and its two call sites. Shipped in
+   [#290](https://github.com/Luolc/swe-lab/pull/290).
 3. **D** — the reap command, the spawn records, and the pytest fixture; needs
    B's labels. **Leaks ① and ③ are closed here, not in C**, so this is the PR
-   that carries the owner-death test.
+   that carries the owner-death test. **Deferred** — see below.
+
+## D is deferred, and this is what the next pair needs
+
+D was designed, and its implementation was started and then stopped when the
+machine became the binding constraint (2026-09-01). Nothing of it was merged.
+What follows is the part that would otherwise be lost with the session: the two
+corrections the implementation forced, the leak evidence gathered since, and one
+proposal D was asked to carry.
+
+### Two corrections to D's design, found by implementing it
+
+**1. Attribution should not go through the port at all.** The design has the
+reaper resolve a recorded port to a listening pid and then check that pid's
+`SWE_LAB_RUN_ID`. There is a shorter road that removes the port from the
+attribution path entirely: **scan `/proc/*/environ` for the run id**. Reading
+another process's environment is permitted for the same uid, so a spawn's own
+children are exactly what this finds, and it works identically whether or not
+the record's `child_pid` was ever written — which is the incomplete-record case
+the design has to handle anyway.
+
+That makes the port purely diagnostic, and it makes the "foreign listener on a
+recorded port" case vanish rather than be defended against: a process that does
+not carry the stamp is never a candidate. The verification row for the squatter
+stays, and becomes trivially satisfied.
+
+**2. The label constants have to become public.** `host.py`'s `_OWNER_LABEL` and
+friends are read back by the reaper. Import them rather than restating them —
+two spellings of one label is how a reaper ends up looking for something nobody
+sets — which means dropping the leading underscore, since a cross-module
+contract is not private.
+
+### The evidence base is now five instances, and the fifth is the good one
+
+The three at the top of this document plus:
+
+| # | What leaked | How it died | Evidence quality |
+|---|---|---|---|
+| ④ | eight stale worktrees | removed without their branches being reconciled | archaeology |
+| ⑤ | a container orphaned on purpose | the owning process was killed, the container was watched surviving it, and it was stopped by hand (2026-09-01, during [#289](https://github.com/Luolc/swe-lab/pull/289)) | **causal chain observed end to end** |
+
+The first four are all *post hoc*: a leak was found and its cause reconstructed.
+⑤ is the only one where the death was chosen, the survival was watched, and the
+recovery was performed — so it is the one to build D's owner-death test from,
+and the one to cite when someone asks whether the leak really follows from the
+death.
+
+### The proposal D was asked to carry: one home for "report rather than tidy"
+
+Three independent arrivals at the same principle are recorded above (task
+screening's *annotate, never suppress*; [ADR-0010](../../decisions/ADR-0010-benchmark-integrity.md)
+§3c's *detection, never a gate*; this design's rule 2). The ask was to propose
+**exactly one** canonical home, citing the first two rather than writing a
+fourth copy.
+
+**The proposal: a new ADR — "Report rather than tidy" — and nothing else.** An
+ADR is the right shape because this is a decision with consequences, not a
+convention or a how-to: it says what a mechanism that *finds* a problem is
+allowed to do about it. `docs/conventions.md` is the wrong home (it is a
+codebase map and a hazard list, and it was held by another PR at the time);
+adding a section to ADR-0010 is worse, since that ADR is accepted and its §3c is
+one of the three arrivals rather than the general rule.
+
+What it should say, in one sentence each:
+
+- **The rule.** A mechanism that observes a problem it did not cause reports
+  it. It may annotate, record, or fail loudly; it may not silently suppress,
+  repair, or drop. Suppression is a separate, explicit, human-invoked act.
+- **Why the asymmetry.** The optimistic direction is the irreversible one:
+  a suppressed alarm, a swept leak and a skipped check each destroy the evidence
+  that anything happened, and nobody audits an alarm that never fired.
+- **Its dual, which cost this project a full day of review rounds.** An
+  observation that cannot change what happens is not a control: a gate that only
+  reports, a `docker ps` read whose value gates nothing, an assertion that cannot
+  go red. State the relation between an observation and an action, then wire it.
+- **Citations, not copies.** The three arrivals are named with links; the
+  paragraphs where they live stay where they are and gain a link back.
+
+### The rule the three arrivals add up to: identity, not resolution
+
+The name-vs-handle rule above got a third, independent instance on 2026-09-01,
+from a context with no production code in it at all — and three is where this
+repo lets a pattern become a rule:
+
+| where | the form it took |
+|---|---|
+| `process_group.py` ([#290](https://github.com/Luolc/swe-lab/pull/290)) | re-resolving a **numeric PGID** after the reap released its reservation |
+| the reaper (D) | attributing a resource by a **port**, or by a pid, rather than by a stamp |
+| an ad-hoc watcher script | **`pkill -f <pattern>`** — late name resolution in its purest form |
+
+The third one is the instructive one. It was armed under rules that had since
+changed, and it **fired**. It did no damage only because of what it happened to
+name: a hard-coded pid belonging to a driver that was already dead, which
+matched nothing. Had it said `pkill -f run_pilot.py`, the pattern would have
+matched the *successor* — by construction, since that is what a pattern is for
+— and killed the live run at the moment the old one finished.
+
+So the axis is not how long a designator lives. It is **whether the same
+designator can come to mean something else**:
+
+| designator | can it be re-bound? |
+|---|---|
+| a `pidfd` | **no** — it refers to that process and never to a successor |
+| a container id | **no** — Docker does not recycle ids; it keeps naming the same container, alive, stopped or gone |
+| an approved commit SHA | **no** — the content *is* the name |
+| a bare pid, a numeric pgid | **yes**, once released — the #290 hazard exactly |
+| a name pattern (`pkill -f`) | **yes, by design** — matching a successor is the feature |
+| a branch name, a port | **yes** — both are rendezvous, not identities |
+
+A `Popen` object belongs on neither side: it holds a *number* plus bookkeeping,
+not a kernel identity, and the number stays reserved only while the child is
+unreaped. That is precisely why `end_process_group` re-verifies before each
+send instead of trusting the object it holds — and it is **two distinct
+checks**, one per signal: `_identity_held` at entry guards `SIGTERM`, and
+`_await_exit`'s return value guards `SIGKILL` by reporting whether the leader
+stayed unreaped throughout the drain. Neither is redundant, and removing either
+re-opens the send it covers.
+
+> **Act only through an identity that cannot come to mean something else.**
+> Where no such identity exists, **verify immediately before acting, and treat
+> "cannot verify" as *unknown* — which is a refusal, not a fallback.**
+
+The stale-mechanism case is a consequence rather than a separate rule: a
+mechanism that outlives its rules is dangerous in proportion to how confidently
+its designator still resolves. Disarming correctly means enumerating every
+armed mechanism; where that is not possible, the damage is bounded by having
+chosen a designator that cannot silently acquire a new referent.
+
+This is also *why* D's rule 1 works — though the stamp is a **verifier, not a
+handle**, and the distinction matters. A uuid4 session plus a pid does not
+expire on its own; what it does is answer *verifies* / *fails to verify*, and
+**"cannot verify" is itself a usable signal** — the one that makes "unknown
+owner → report, never touch" expressible at all. A name match never yields that
+signal: it always returns a confident answer.
+
+### One review pattern worth keeping, from C's five rounds
+
+C ([#290](https://github.com/Luolc/swe-lab/pull/290)) went through four
+CHANGES_REQUESTED rounds on **one** invariant, each round moving it earlier:
+*don't reap before the last signal* → *the last signal was guarded and the
+first was not* → *of the two pre-flight conditions, only one has a seam*. The
+last of those is the form worth learning:
+
+> If the pre-flight quietly stopped handling `ChildProcessError`, **both
+> existing tests would still pass.**
+
+That is not "a case is missing". It is: **two tests cannot distinguish two
+branches of the same gate** — one was decided by `returncode`, the other by the
+drain, and neither pinned the entry check for an externally reaped leader. A
+test that goes red for a reason other than the one it is named for belongs to
+the same family as an assertion that cannot go red at all, and as an
+observation with no causal path to the decision it exists for. All three showed
+up in this task within a day; all three are invisible to a green suite.
+
+The same PR produced the leak-shaped version of it in its own fixture:
+teardown called the code under test, `pytest` finalizes `monkeypatch` *after*
+the fixture, so teardown met a faked `waitid`, correctly refused to signal, and
+leaked the tree it was there to clean up. **A cleanup routine that depends on
+the code it is testing is not a cleanup routine.**
+
+### Two more rules the same day produced
+
+**An invariant binds the apparatus that verifies it.** C's fifth round found the
+group-signal invariant violated inside the *fixture that tests it*: teardown
+signalled the group unconditionally, while one test reaps the leader in its own
+body — so the cleanup became exactly the numeric-reuse kill the helper exists to
+prevent. Test scaffolding is where an invariant is most often silently exempted,
+for three reasons that all feel adequate at the time: it is not production code,
+it is "just cleanup", and the author's attention is on the thing under test.
+
+An unconditional teardown *looks* like responsible cleanup; it was an unchecked
+late resolution. The fixture now gates on `returncode is None` — **one half of
+what the helper's pre-flight checks**, not the same condition: `_identity_held`
+also asks `waitid` and refuses on `ChildProcessError` — an external reap the
+fixture simply does not check for; `waitid` is as available to it as to the
+helper. That half is enough *there*, because in a controlled
+test setup the leader can only be reaped by the test itself — which is a
+narrower claim than "it shares the gate", and the narrower claim is the true
+one.
+
+The rule that generalizes is therefore about the invariant, not about copying a
+condition: **the apparatus must preserve the invariant across the identity
+boundary that actually applies to it.** Sharing the production gate verbatim is
+one way; covering the boundary a test can actually reach is another. What is
+never acceptable is exempting the apparatus because it is "only cleanup".
+
+**Closing a work item, migrate what inside it is still true.** Task 03 of
+trace-synthesis is closed because the arm it serves is closed — but one finding
+inside it is a real defect independent of that arm (`proxy_log_to_conversation`
+keeps only the last record's thread). Closing the row without rehoming it would
+delete the finding along with the task.
+
+The general form: **a scope judgement does not inherit to every factual finding
+the scope contains. What is obsolete is the scope, not necessarily the
+contents.** This is the dual of deleting a cut point — that one is about
+removing what should not stay; this one is about not removing what should.
+
+### Cite the artifact, not the agent
+
+A permanent document must not name a *running* agent — `…-impl`, `…-review`,
+any slug from the run-time registry. Those names are closed the day the work
+merges, so "X found this" is unverifiable a month later and untraceable
+forever. Cite what outlives the process: **a PR number, a review round, a
+commit SHA, a file and line**. Each is permanent, clickable, and points at the
+evidence rather than at a process that no longer exists. (A PR description's
+`Pair:` line is the exception — it is written *into* the PR and becomes history
+along with it.)
+
+It is the same rule as the one above, applied to a different object. There, a
+designator must not be able to acquire a **new referent** — that is what makes
+it safe to act through. Here, a designator must not be able to **lose its
+referent** — that is what makes it useful to look up. A run-time agent slug
+fails both at once: it stops resolving when the process closes, and the same
+slug is handed to the next agent that takes that role.
+
+### When an argument rests on an absence, look for the exclusive branch
+
+A third rule, and it settled a question this handoff was about to leave open.
+*Does the proxy converter's thread-loss defect touch the honesty-scorer pilot's
+records?* Both the answer and the way it was first argued are worth keeping:
+
+- **The weak form (argument from absence):** "the frozen trees contain no proxy
+  log, therefore the run was not proxy-captured." It needs the premise *I looked
+  everywhere*, which never fully holds — a missing file is also what a rename, a
+  different directory or an interrupted copy looks like.
+- **The strong form (argument from presence):** `native_outputs()` picks the
+  proxy files **or** the event-stream file — one `if`, two branches, mutually
+  exclusive and jointly exhaustive. So observing that `event_stream.jsonl` **is
+  there** settles it in one look, with no exhaustive search behind it.
+
+The rule: **when an argument rests on something being absent, look for an
+exclusive branch that turns it into something being present.** Where the code
+already forces a choice between two shapes, seeing one *is* proof of the other's
+absence — and that is an observation, not a survey.
+
+### What is left to build
+
+Everything in D: the spawn records, the reaper, the `swe-lab reap` command
+(named for what it reaps — the design's `containers reap` is now the wrong name,
+since it reaps processes too), the session-scoped pytest fixture, and the
+verification rows above that no test yet covers.
