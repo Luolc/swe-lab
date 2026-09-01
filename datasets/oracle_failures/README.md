@@ -35,6 +35,12 @@ or patch matches a credential-shaped pattern (the refusal names the pattern,
 never the value). The underlying dataset's data
 must be present locally, since the row is validated against it.
 
+Then run the Oracle over a row:
+
+```bash
+uv run python -m swe_lab run oracle_analysis <instance_id> --dataset oracle_failures
+```
+
 ## Details
 
 - File: `data/oracle_failures.parquet` (gitignored, like every dataset's data)
