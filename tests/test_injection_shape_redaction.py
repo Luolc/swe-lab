@@ -6,6 +6,13 @@ organization / workspace identifiers on the response side. The experiment's
 driver redacts both the moment a run ends; these tests pin that, because the
 failure is silent and the artifacts are committed.
 
+They also pin the **gate**, which is the half that was missing on 2026-09-01:
+redacting and checking that it worked are different claims, and only the second
+one holds when the redactor is wrong or is pointed at a producer that never
+redacted anything. A capture that fails the check is deleted, and
+`test_a_capture_that_stays_dirty_is_deleted` is what keeps that a fact rather
+than an intention.
+
 The driver lives under `experiments/`, which is exempt from the code-quality
 hooks and is not an importable package, so it is loaded by path.
 """
@@ -125,6 +132,50 @@ def test_redact_proxy_log_rewrites_the_file(
     assert (
         record["response"]["headers"]["Anthropic-Organization-Id"] == REDACTED
     )
+
+
+def test_a_capture_that_stays_dirty_is_deleted(
+    driver: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """The gate the 2026-09-01 token exposure existed for want of.
+
+  Redacting and *checking that it worked* are different claims, and only the
+  second one survives the redactor being wrong or aimed at the wrong producer
+  — which is exactly what happened: the driver was spawning a proxy build with
+  no redaction in it, nothing re-read the result, and a live bearer token sat
+  in a capture that looked clean.
+
+  So this drives the failure the real incident could not signal: a redactor
+  that quietly does nothing. The capture must not survive it.
+  """
+
+  def redact_nothing(record: dict[str, Any]) -> dict[str, Any]:
+    return record
+
+  monkeypatch.setattr(driver, "redact_record", redact_nothing)
+  path = tmp_path / "proxy.jsonl"
+  path.write_text(json.dumps(_record()) + "\n")
+
+  with pytest.raises(SystemExit) as exit_info:
+    driver.redact_proxy_log(path)
+
+  assert not path.exists()
+  # The message names the offending fields and never their values — a gate
+  # that prints what it caught has published it.
+  message = str(exit_info.value)
+  assert "Authorization" in message
+  assert "sk-ant-oat-EXAMPLE" not in message
+
+
+def test_a_clean_capture_survives_the_gate(
+    driver: ModuleType, tmp_path: Path
+) -> None:
+  """The converse: the gate must not eat the evidence it is guarding."""
+  path = tmp_path / "proxy.jsonl"
+  path.write_text(json.dumps(_record()) + "\n")
+  driver.redact_proxy_log(path)
+  assert path.exists()
+  assert unredacted_fields(path.read_text()) == []
 
 
 def test_committed_captures_carry_no_secret() -> None:

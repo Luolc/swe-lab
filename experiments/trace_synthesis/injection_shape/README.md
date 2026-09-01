@@ -95,10 +95,18 @@ it maps it to `CLAUDE_CODE_OAUTH_TOKEN`, which is what a bare `claude` reads. It
 also drops `CLAUDECODE` from the child's environment — these runs are launched
 from inside Claude Code, and the nesting guard would otherwise bite.
 
-The proxy is [`cc-reverse-proxy`](https://github.com/) at
-`/home/ubuntu/dev/cc-reverse-proxy/python` (used read-only; the Go original
-needs a toolchain this box does not have). The driver starts one per proxied
-variant on port 9611 and stops it afterwards.
+The proxy is the **Go** `cc-reverse-proxy`, built from the sibling checkout by
+`swe_lab.pipelines.related_files.host_proxy` (override the source path with
+`CC_REVERSE_PROXY_SRC`). The driver starts one per proxied variant on port 9611
+and stops it afterwards.
+
+**It is deliberately not the project's Python port.** Only the Go
+implementation redacts credentials and operator identity as it writes; this
+driver spawned the Python one until 2026-09-01 and produced a capture carrying
+a live OAuth bearer token, which cost a rotation. Every capture is now re-read
+through `swe_lab.harnesses.claude_code.redaction.unredacted_fields` before the
+run ends, and one that still fails is deleted rather than kept — so "we redact"
+and "this file is redacted" stop being the same claim.
 
 ## Layout
 
