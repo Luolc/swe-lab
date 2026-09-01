@@ -53,6 +53,11 @@ description: Repo-level PR review increments for swe-lab — the quality gate as
   runtime dependency; changing the annotation schema or the `EvalSpec` / report
   contract; touching or deleting anything under `outputs/` (a committed
   deliverable); re-hosting or renaming the HF dataset repos.
+- `SL8` **Google-style docstrings, and inject built collaborators.** Docstrings
+  are imperative ("Fetch rows…"), `Args:` matches the signature, types live in
+  annotations only. An entry function takes the *built* dependency
+  (`Task.execute(sandbox=…)`), not a name plus the construction knobs it feeds
+  to a builder — a **design** finding, not a nit.
 - `SL9` **"No findings" must be distinguishable from "not looked at".** A
   `Verdict` whose `## Evidence` does not say *which tracks ran* is a criterion
   citing an undefined object: a reader cannot tell "I reviewed that track and it
@@ -64,11 +69,6 @@ description: Repo-level PR review increments for swe-lab — the quality gate as
   new practice but a previously unenforced one: reviewers here already wrote
   such sections, which is exactly why it needed writing down — an invariant
   nobody enforces holds only until the first round somebody skips it.
-- `SL8` **Google-style docstrings, and inject built collaborators.** Docstrings
-  are imperative ("Fetch rows…"), `Args:` matches the signature, types live in
-  annotations only. An entry function takes the *built* dependency
-  (`Task.execute(sandbox=…)`), not a name plus the construction knobs it feeds
-  to a builder — a **design** finding, not a nit.
 
 ## Verdict example
 

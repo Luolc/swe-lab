@@ -179,6 +179,32 @@ pilot's twelve amendments.
   cannot-fail shape from the hazards list. And **owning a mistake is not a
   mechanism either** — an acknowledgement is not enforceable, and treating it as
   the remedy is how the same breach recurs.
+
+  A worked instance, because it caught two people who had spent the day naming
+  this exact failure: the summary sentence "one prevents, one detects, and only
+  both together are a mechanism" **was itself a coverage claim whose coverage
+  had not been checked** — two clauses pointing different directions were
+  declared jointly complete without anyone asking what would observe a breach.
+  It is the same object as a green tautological assertion: **an announcement
+  that a check was performed, whose effect is that nobody performs it.** A
+  review, not the authors, found the missing half. Expect this shape in your own
+  summaries first, where it is cheapest to write and hardest to see.
+- **The strongest form needs no blind party at all.** Protecting a ruler's
+  blindness is a remedy for a *timing* defect: it is needed only because some
+  decision was still live after results existed. So the target shape for a
+  pre-registration is the one where the question never arises —
+
+  > **Pin the analysis policy — the estimator, the censoring rule, what a unit
+  > containing failures may conclude — before the first attempt runs. Once
+  > execution begins, there should be no live decision whose ruler needs
+  > protecting.**
+
+  Say plainly when a run did not reach that shape and why. The honesty-scorer
+  pilot did not: the defect that forced its analysis policy was only visible
+  once the run was under way, which is a legitimate reason and not a failure —
+  a rule cannot be pinned before the flaw in it is known. It was handled by
+  isolating one person; **the next pre-registration's goal is to need no
+  isolation at all.**
 - **A stopping rule that reads the clock is outcome-correlated.** Truncating a
   fixed design on wall time removes whole units, and the slowest unit goes
   first — which is a property of the workload, not of chance. The same shape

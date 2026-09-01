@@ -91,15 +91,32 @@ question, and it takes the checklist form:
 > the specific, answerable form: *name the prose that describes what you just
 > changed.* An unanswerable question is a finding.
 
-**This is not a new rule; it is the existing one with a wider domain.**
-[`AGENTS.md`](../../../AGENTS.md) already binds the same obligation for one
-case — an ADR that supersedes a section of a spec rewrites that section in the
-same PR, and *if you cannot point at the paragraph you changed, the ADR is not
-finished*. `SL10` extends the domain from "an ADR changing a spec" to "any
-change to a mechanism", and it should be written as a reference to that
-sentence rather than a restatement of it, per the repo's one-home rule. Written
-that way it needs no independent justification in review: **objecting to `SL10`
-is objecting to a rule already in force.**
+**`SL10` would be a new review policy, and it has to argue for itself.** An
+earlier draft of this document claimed it was merely the existing rule with a
+wider domain, and that claim was wrong: [`AGENTS.md`](../../../AGENTS.md) binds
+this obligation for exactly one case — an ADR that supersedes a section of a
+spec rewrites that section in the same PR, *and if you cannot point at the
+paragraph you changed, the ADR is not finished*. That is the **precedent and
+the motivation** for `SL10`; it is not its authority. Widening the domain from
+"an ADR changing a spec" to "any change to a mechanism" is a change of scope
+that a reader must be able to accept or reject on its own merits, and borrowing
+the older rule's standing would have smuggled it past exactly the scrutiny a
+new policy is owed. (It would also have been this document's own subject matter
+in miniature: a claim about what is already true, which nothing checks.)
+
+So `SL10` is proposed with its scope stated:
+
+- **Applies to** a PR that changes the behavior of a mechanism a document
+  describes — a check, a protocol rule, a lifecycle, a contract.
+- **Does not apply to** new mechanisms with no prior description, pure
+  refactors that preserve behavior, or `experiments/` scratch that no document
+  describes.
+- **Cost** is one search per PR, and the failure state is definite: a PR that
+  changes behavior and can name no paragraph is either incomplete or is
+  asserting something the reviewer can confirm in that same search.
+- **Argument for it**: three instances in one day, listed above, none of which a
+  hook can reach. The ADR clause is evidence that this obligation is workable in
+  practice, not evidence that it is already required here.
 
 The distinction from generic "update the docs" advice is that it is
 **mechanically promptable** and has a definite failure state: a PR that changes
