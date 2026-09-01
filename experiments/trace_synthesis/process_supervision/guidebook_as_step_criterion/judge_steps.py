@@ -9,12 +9,12 @@ turned out to select which steps get an answer: a judgement that needs more room
 than the cap comes back with no content at all.
 
 Usage:
-  source .envrc.local   # exports OPENROUTER_API_KEYS
-  python3 judge_steps.py --steps steps.json --out verdicts.jsonl [--max-tokens 700]
+  python3 <this file> --steps steps.json --out verdicts.jsonl [--max-tokens 700]
 
-`OPENROUTER_API_KEYS` holds several comma-separated keys; this program splits
-the variable and selects one. Do not split it in a shell -- that is what puts a
-credential value into argv.
+Needs `OPENROUTER_API_KEYS` in the environment; `.envrc` exports it from
+`.envrc.local`, which an operator creates once from `.envrc.local.example`. It
+holds several comma-separated keys and this program splits the variable itself.
+Do not split it in a shell -- that is what puts a credential value into argv.
 """
 
 import argparse
@@ -24,8 +24,12 @@ import pathlib
 import time
 import urllib.request
 
-GUIDEBOOK = pathlib.Path(
-    "experiments/trace_synthesis/steered_rerun/guidebook/qutebrowser-qtcolor.md"
+# Resolved against this file, not the working directory: the guidebook is a
+# fixed neighbour of this script, and a cwd-relative path made the documented
+# command fail from the directory the script lives in.
+GUIDEBOOK = (
+    pathlib.Path(__file__).resolve().parents[2]
+    / "steered_rerun/guidebook/qutebrowser-qtcolor.md"
 )
 MODEL = "anthropic/claude-sonnet-5"
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"

@@ -130,11 +130,14 @@ other number, so the two cannot drift apart again.
 
 ## Reproduce
 
+**Run from the repo root**, where `$D` below resolves.
+
 Offline, from the preserved responses — this recomputes every table above:
 
 ```sh
 A=~/dev/swe-lab-artifacts/process_supervision/guidebook_step_criterion
-python3 aggregate.py \
+D=experiments/trace_synthesis/process_supervision/guidebook_as_step_criterion
+python3 $D/aggregate.py \
   --verdicts $A/verdicts.jsonl --verdicts $A/verdicts_retry.jsonl \
   --guidebook experiments/trace_synthesis/steered_rerun/guidebook/qutebrowser-qtcolor.md \
   --manifest $A/attempt_manifest.json
@@ -143,14 +146,16 @@ python3 aggregate.py \
 Later verdict files override earlier ones for the same step, so a re-judged step
 replaces its truncated first answer.
 
-The paid steps, optional and not needed to check any figure:
+The paid steps, optional and not needed to check any figure. They need
+`OPENROUTER_API_KEYS` in the environment: `.envrc` exports it from
+`.envrc.local`, which an operator creates once from `.envrc.local.example` —
+there is no per-command credential invocation to copy.
 
 ```sh
-python3 extract_steps.py --out $A/steps.json \
+python3 $D/extract_steps.py --out $A/steps.json \
   baseline-qutebrowser-rollout-0 steered-qutebrowser-rollout-11
-source .envrc.local   # exports OPENROUTER_API_KEYS
-python3 judge_steps.py --steps $A/steps.json --out $A/verdicts.jsonl --max-tokens 700
-python3 judge_steps.py --steps $A/steps.json --out $A/verdicts_retry.jsonl \
+python3 $D/judge_steps.py --steps $A/steps.json --out $A/verdicts.jsonl --max-tokens 700
+python3 $D/judge_steps.py --steps $A/steps.json --out $A/verdicts_retry.jsonl \
   --max-tokens 2000 --only baseline-qutebrowser-rollout-0:11 ...   # the empty ones
 ```
 
