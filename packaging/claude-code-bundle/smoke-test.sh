@@ -14,8 +14,10 @@ set -euo pipefail
 # `.envrc.local` exports the token under a repo-scoped name so an interactive
 # `claude` in this directory never picks it up (docs/conventions.md → Hazards).
 # The checks below read the canonical name, like everything else that runs an
-# agent; hand it over here, without overwriting one already set.
-if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -n "${SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+# agent; hand it over here. `+set` not `:-`: a canonical variable exported
+# empty is someone blanking the credential on purpose, and it stays blank.
+# Same two rules as swe_lab/cli/host_env.py.
+if [ -z "${CLAUDE_CODE_OAUTH_TOKEN+set}" ] && [ -n "${SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
   export CLAUDE_CODE_OAUTH_TOKEN="$SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN"
 fi
 

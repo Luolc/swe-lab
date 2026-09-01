@@ -26,16 +26,20 @@ HOST_OAUTH_TOKEN_ENV = "SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN"
 def adopt_host_scoped_token() -> None:
   """Copy the repo-scoped OAuth token to the canonical name, in this process.
 
-  A no-op unless it is needed: an environment that already carries the
-  canonical name is left alone, because that is what CI does — it sets it
-  straight from the repository secret, and a shim that overwrote it would be
-  deciding a question its caller had already answered.
+  A no-op unless it is needed: an environment that already *has* the canonical
+  name is left alone, because that is what CI does — it sets it straight from
+  the repository secret, and a shim that overwrote it would be deciding a
+  question its caller had already answered.
 
-  *Carries* means non-empty. The shell form of this same shim (the bundle's
-  ``smoke-test.sh``) tests ``-z``, and an empty variable is not a credential
-  either way; the two must not disagree about which environment is configured.
+  "Has" is presence, not a value: ``CLAUDE_CODE_OAUTH_TOKEN= swe-lab run …``
+  is someone blanking the credential for one command, and quietly restoring it
+  from ``.envrc.local`` would override an explicit instruction with an ambient
+  one. The *source* side is the other way round — an empty repo-scoped variable
+  is nothing to copy, and copying it would only manufacture the empty canonical
+  variable this branch exists to respect. The bundle's ``smoke-test.sh`` runs
+  the same two rules in shell.
   """
-  if os.environ.get(OAUTH_TOKEN_ENV):
+  if OAUTH_TOKEN_ENV in os.environ:
     return
   host_scoped = os.environ.get(HOST_OAUTH_TOKEN_ENV)
   if host_scoped:
