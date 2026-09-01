@@ -170,6 +170,21 @@ run against its trace — masking it would break that silently. `Request-Id`,
 protocol. Both repos assert this direction explicitly, so a later "mask a few
 more while I'm here" cannot land unnoticed.
 
+**What is *not* enforced, said plainly because the opposite is easy to assume.**
+Redaction is a **deny-list**: by construction, a header or body field that
+nobody enumerated is recorded verbatim. So "a field nobody has classified is
+redacted by default" is **not true today and nothing enforces it** — the
+mechanism does the reverse. This follows from the shape of the implementation,
+not from a count of fields that slipped through; it needs no witness.
+
+One observed instance, which is enough to show the risk is not theoretical:
+`Set-Cookie` (a Cloudflare `__cf_bm`) on the OpenRouter path, 2026-09-01. It
+appears in none of the sampled captures, it was recorded verbatim while the
+request's `Cookie` was already masked, and **it was found by a person reading a
+header list — no mechanism noticed it was new.** It is redacted as of
+cc-reverse-proxy#2. Turning the intended default into a mechanism belongs to
+task 09.
+
 This pulls forward the core of
 [trace-synthesis task 09](../trace-synthesis/plans/README.md#task-09-redact-the-production-proxy-capture),
 whose scope narrows to what is left: the publishing gate and the wider
