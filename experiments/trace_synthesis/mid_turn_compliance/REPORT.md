@@ -312,35 +312,68 @@ longer ends by itself — the termination problem
 [#313](../../../docs/trace-synthesis/plans/README.md) names. Eleven pilot runs
 idled to their 420 s timeout before the driver learned to stop on `result`.
 
-## 6. Where this leaves the two candidate designs
+## 6. What survives, and what this gate was actually asking
 
-Both live tracks now have a measured problem. Stating them together is a
-knowledge state, not two failures:
+### 6.1 The gate measured the wrong quantity
 
-- **A′ (mid-turn correction).** The channel is usable and mechanically clean.
-  Measured compliance 0.529, below the 0.70 set in advance — and the run does
-  **not** establish an effect on behavior (§2.3). The hand-read says the failures
-  are **timing**, not refusal: 8 of 8 arrived after the actor had already done
-  the thing.
+**`BELOW_BAR`, and the 0.70 threshold behind it, answer a question that is not
+the one that matters.** They measure *did the actor take the specific action we
+named*. The thing worth knowing is *does supervision raise the probability that
+the actor gets it right, or moves along a better path* — a question about
+distributions over outcomes, not about one named next step.
+
+The verdict is **not withdrawn**, no number is changed, nothing is re-run. It is
+labelled: it is a correct answer to a question chosen for its measurability.
+
+**And the choice of a mechanical criterion reached back and reshaped the
+intervention itself.** A predicate that a machine can check requires a correction
+that names one concrete, checkable next action — "run `pytest` now", "add the row
+to `docs/commands.md`". A correction specific enough to be scored that way is
+already close to handing over the answer. A real supervisor watching a trace go
+wrong says something looser and more directional. **So the measurement method
+selected a supervisor more specific than the one we would ever ship**, and the
+whole family of difficulties in §2 — the predicate being too strict, triggers
+firing on compliant actions, whether a trigger should require the predicate to be
+false — descends from that choice rather than from the channel.
+
+### 6.2 What survives intact
+
+- **The channel is mechanically sound.** 0 `NOT_DELIVERED` across 37 delivered
+  interventions; delivery lag of exactly one agent-loop record every time. Taken
+  with [`streamjson_input` §14](../streamjson_input/REPORT.md) — where the
+  mid-turn fold was byte-identical between headless and the interactive TUI, and
+  added no request of its own — the transport question is settled. **This is the
+  hardest thing this batch produced.**
+- **8 of 8 non-compliances arrived too late**, and under the framing above this
+  matters more, not less. Firing unconditionally on a syntactic pattern made
+  roughly half the interventions redundant. **When to speak is the real
+  variable**, not whether the actor obeys once spoken to.
+- **Provenance: 0 of 37.** Nothing challenged an unattributed `<supervisor_note>`.
+- **The instrument lessons** (§5.1), which are independent of any framing: a
+  contaminated workspace produces agreement rather than contradiction, and a
+  generative judge handed an empty input invents toward the hypothesis.
+
+### 6.3 Where the two candidate designs stand
+
+- **A′ (mid-turn correction).** Transport is settled and clean. Compliance with a
+  named action is 0.529, below the 0.70 set in advance, and no effect on behavior
+  is established (§2.3). The failures are **timing**, not refusal.
 - **B (gate-then-rerun).** The gate is a stochastic function — sampling was never
-  fixed — so a "refused, then accepted" transition can occur purely from judge
-  jitter.
+  fixed — so a "refused, then accepted" transition can occur from judge jitter
+  alone.
 
 Because §2 came out 8/8 in the *timing* category rather than the *ignored*
-category, this run does **not** support the argument that an actor asked to
-revisit its own deviation will decline. It supports something narrower: **we
-asked at the wrong moment.**
+category, this run does **not** support the claim that an actor asked to revisit
+its own deviation will decline. It supports something narrower: **we asked at the
+wrong moment.**
 
-And that is the structural result, because it is the same open question on both
-tracks:
+That is the structural result, because it is one question wearing two hats:
 
-> **A′'s next problem is "when to fire". B's gate is "when to refuse". These are
-> the same question — and both of them route through an arbiter that has not been
-> fixed.** The only drift detector on hand is B's judge, and it was measured
-> today to be a stochastic function.
+> **A′'s open problem is "when to speak". B's gate is "when to refuse". They are
+> the same question, and both route through an arbiter that has not been fixed.**
 
-This run also confirms an intuition stated at the outset — that an injection like
-this would mostly not fire, and should only be added when the actor has really
-drifted. Firing unconditionally on a syntactic trigger made roughly half the
-interventions redundant. **Supervision has to fire on "has actually drifted", not
-on "an action matching a pattern occurred".**
+A last note on that arbiter, now that the target is a probability rather than a
+named action: whether an actor is on track is a judgement a language model makes
+**probabilistically**, and there is no crisp answer to be recovered by tightening
+a criterion. Demanding a deterministic drift detector was a requirement this
+problem does not have.
