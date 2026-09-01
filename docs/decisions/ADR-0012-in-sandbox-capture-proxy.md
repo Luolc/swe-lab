@@ -146,14 +146,52 @@ So a raw proxy log contains **a live credential** and **the operator's account
 identity**, and the change as first written put that file in a directory the
 agent reads and writes, and registered it as a collected run artifact.
 
-**The rule, therefore: sensitive request and response headers are redacted at
-write time, and an unredacted capture never reaches a collected artifact.**
-Redaction after the fact is not equivalent and is not accepted here — it leaves
-a window in which the raw file exists on disk, which is the whole objection.
+**The rule, therefore: sensitive headers are redacted at write time, and an
+unredacted capture never reaches a collected artifact.** Redaction after the
+fact is not equivalent and is not accepted here — it leaves a window in which
+the raw file exists on disk, which is the whole objection.
+
+Write time is now *inside* `cc-reverse-proxy`, since the proxy writes to the
+workspace with no intermediary of ours, so that is where the fix went
+([cc-reverse-proxy#1](https://github.com/Luolc/cc-reverse-proxy/pull/1)). It
+masks four values as it records each exchange — the request's `Authorization`
+and `X-Api-Key`, the response's `Anthropic-Organization-Id` and
+`Anthropic-Workspace-Id` — and **redaction is the default**, with an explicit
+`--keep-sensitive-headers` to turn it off. A safe behaviour behind an opt-in
+flag would be a default that depends on every future caller remembering, which
+is not a default. Values are **masked, not dropped**: the header name survives
+with `[REDACTED]`, so "no credential was sent" stays distinguishable from "one
+was sent and hidden".
+
+What is deliberately *not* redacted is load-bearing too. `X-Claude-Code-Session-Id`
+is an identifier, not a credential, and a session id is one leg of reconciling a
+run against its trace — masking it would break that silently. `Request-Id`,
+`Anthropic-Beta` and the `Anthropic-Ratelimit-*` family are telemetry and
+protocol. Both repos assert this direction explicitly, so a later "mask a few
+more while I'm here" cannot land unnoticed.
+
 This pulls forward the core of
 [trace-synthesis task 09](../trace-synthesis/plans/README.md#task-09-redact-the-production-proxy-capture),
-whose scope narrows accordingly rather than staying as written; **until it
-holds, proxy capture must not be published.**
+whose scope narrows to what is left: the publishing gate and the wider
+PII sweep, not the header redaction itself.
+
+**The acceptance criterion is stated at the artifact, not at the agent.** An
+earlier version of it read "the agent cannot read the credential", and that is
+unverifiable in this topology — the agent runs as root in the container, so no
+file in the sandbox is beyond its reach, and an invariant nobody can write a
+test for is a wish. The testable statement, and the one that matches what is
+actually being protected:
+
+> **No record of a proxy capture contains a credential value or an operator
+> identifier.**
+
+That is checked from this side by
+`swe_lab.harnesses.claude_code.redaction.unredacted_headers`, because the proxy
+is an external, separately versioned binary and "the build we ran redacts" is
+exactly the assumption that quietly stops holding. `tests/test_proxy_redaction.py`
+covers both directions — a credential on the request and account identity on the
+response. Run against real captures, it reports the pre-fix rollout log as 39
+findings and a capture from the fixed binary as clean.
 
 Two further notes, so the record is complete rather than reassuring:
 

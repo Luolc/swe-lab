@@ -15,10 +15,19 @@ Both map their Anthropic content blocks through the **same** ``_content_blocks``
 / ``_one_block`` helpers, so a stream and a proxy capture of one session convert
 to the same :class:`~swe_lab.conversation.Conversation` by construction.
 
-No PII redaction is needed here: the rollout agent runs **inside** the instance
-container (its config dir pinned per run by ``CLAUDE_CONFIG_DIR``, git config =
-the instance's), so the operator's identity is never injected into the trace —
-unlike a host-subprocess run (W1), which redacts separately.
+**Which capture this is about matters, and an earlier version of this note did
+not say.** Nothing is redacted *here*, and for stream capture nothing needs to
+be: the rollout agent runs **inside** the instance container (its config dir
+pinned per run by ``CLAUDE_CONFIG_DIR``, git config = the instance's), so the
+operator's identity is never injected into what the agent emits — unlike a
+host-subprocess run (W1), which redacts separately.
+
+**Proxy capture is a different question and is answered elsewhere.** A proxy
+record is a whole HTTP exchange, so it has an envelope a stream event does not:
+credentials on the request, account identity on the response. Those are masked
+at write time by ``cc-reverse-proxy`` (see
+:mod:`~swe_lab.harnesses.claude_code.redaction`, which checks that the build we
+actually ran did so). Conversion neither adds nor removes any of it.
 """
 
 from __future__ import annotations

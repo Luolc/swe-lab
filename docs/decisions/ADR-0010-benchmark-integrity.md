@@ -333,9 +333,11 @@ the agent's own conversation, so no §3 control is weakened and no run becomes
 more cheatable — but that is a statement about benchmark integrity only, and it
 must not be read as clearing the change. The credential and operator-identity
 exposure is real, it is **new**, and it is closed by redacting sensitive headers
-**at write time**, so an unredacted capture never reaches a collected artifact.
-That obligation is
-[trace-synthesis task 09](../trace-synthesis/plans/README.md#task-09-redact-the-production-proxy-capture);
-until it holds, no proxy-captured trace may be published.
+**at write time** — in `cc-reverse-proxy` itself, on by default — so an
+unredacted capture never reaches a collected artifact. ADR-0012 §4 carries the
+mechanism and the acceptance criterion, which is stated at the artifact ("no
+record contains a credential value or an operator identifier") rather than at
+the agent, because the agent runs as root in the container and "the agent cannot
+read it" is not a testable claim here.
 
 Unchanged: §1, §2, §3b, §3c, §4, §5, §6, and the 2026-08-06 amendment.
