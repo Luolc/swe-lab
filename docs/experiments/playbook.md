@@ -233,6 +233,30 @@ pilot's twelve amendments.
   about B*: that family misaligns the **object**, this one the **question**.
   Worked instances of all of these are in
   [FEASIBILITY-B](../../experiments/trace_synthesis/process_supervision/FEASIBILITY-B.md).
+- **Describing a check: write what each direction establishes, separately.** A
+  check can be informative when it **fails** and empty when it **passes** — it
+  rules out one necessary blocker while the thing it was invoked to support
+  stays entirely open. Written as though both directions carried weight, its
+  green becomes evidence for a design it cannot speak to. So: **if a positive
+  result establishes nothing, say so in the sentence that introduces the check,
+  and its passing may then never be cited as support anywhere.** Such a check is
+  still worth running — being able to *kill* a design cheaply is valuable — but
+  only ever as a falsifier.
+
+  **When downgrading a document, magnitude and direction need separate passes.**
+  Shrinking a claim's *size* — how much, how many, how faithful — leaves
+  untouched the class of claim that says *what a check proves*, because nothing
+  about it is numeric. One of these survived an entire round aimed explicitly at
+  making claims smaller: the pass was over magnitude assertions, and no
+  direction assertion was re-examined.
+
+  With the two questions above, these are the three review obligations this
+  section asks for — none is machine-checkable, so none is written as an
+  invariant:
+
+  > **Restating a number:** what did I add that was not in their words?
+  > **Correcting a number:** was the new reference point actually measured?
+  > **Citing a check:** what does its *passing* establish?
 - **A blind check's green is not an absence proof, and a better check does not
   make it one.** A verbatim n-gram overlap here returned zero and was reported
   as evidence that a document did not duplicate a registered rule. The
