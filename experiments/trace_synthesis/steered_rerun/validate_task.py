@@ -284,12 +284,15 @@ def main() -> None:
   instance = load_dataset(args.dataset).require(args.instance)
   out = _HERE / "task-validation"
   out.mkdir(exist_ok=True)
-  # Repo *and* commit prefix: two instances of the same repo appear in the
-  # candidate list, and naming on the repo alone silently overwrote one dossier
-  # with the other's.
+  # Owner, repo *and* commit prefix. Two instances of one repo appear in the
+  # candidate list, so the repo alone silently overwrote one dossier with the
+  # other's; a fixed-width slice of the rest then did the same for qutebrowser,
+  # whose owner and repo are the same word and ate the whole budget. Parse the
+  # id's actual shape instead: `<owner>__<repo>-<sha>-v<sha>`.
   stem = args.instance.removeprefix("instance_")
-  repo, _, rest = stem.partition("-")
-  path = out / f"{repo}-{rest[:8]}.md"
+  owner, _, rest = stem.partition("__")
+  repo, _, tail = rest.partition("-")
+  path = out / f"{owner}__{repo}-{tail[:8]}.md"
   _ = path.write_text(report(instance))
   print(f"wrote {path}")
 

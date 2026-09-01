@@ -334,6 +334,16 @@ def main() -> None:
   _ = parser.add_argument("--proxy-port", type=int, default=20099)
   _ = parser.add_argument("--max-hints", type=int, default=8)
   _ = parser.add_argument(
+      "--key-index",
+      type=int,
+      default=0,
+      help=(
+          "which key of the pool to prefer. Every key is its own account with"
+          " its own balance and its own rate limit, so parallel runs take"
+          " different ones"
+      ),
+  )
+  _ = parser.add_argument(
       "--frozen-root",
       default="/home/ubuntu/dev/swe-lab-artifacts/trace_synthesis",
       help="outside every worktree, on purpose",
@@ -371,7 +381,10 @@ def main() -> None:
   # The actor and the Supervisor share one credential and one provider. Set in
   # this process only; `pass_env` hands it to the container by name, so the
   # value never appears in a command line.
-  os.environ[API_KEY_ENV] = supervisor_module.openrouter_key()
+  key_index, key = supervisor_module.openrouter_key(args.key_index)
+  os.environ[API_KEY_ENV] = key
+  key_name = supervisor_module.key_fingerprint(key)
+  credits_before = supervisor_module.key_credits(key)
   root = find_repo_root()
   workflow_name = "rollout_and_unit_test"
   output_dir = cache_root(root) / "runs" / workflow_name / args.instance
@@ -481,6 +494,12 @@ def main() -> None:
       "actor_model": ACTOR_MODEL,
       "actor_base_url": ACTOR_BASE_URL,
       "auth": "openrouter api key",
+      # Per key, because there is nothing else to be per: the pool is 25
+      # separate accounts, not 25 doors onto one balance (measured 2026-09-01).
+      "key_index": key_index,
+      "key": key_name,
+      "credits_before": credits_before,
+      "credits_after": supervisor_module.key_credits(key),
       "bare": False,
       "supervisor_model": args.supervisor_model if args.steer else None,
       "started": started_at,

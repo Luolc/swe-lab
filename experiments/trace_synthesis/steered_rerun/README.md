@@ -57,6 +57,7 @@ at all, only a directory it already shared.
 | | This round | Previous round |
 |---|---|---|
 | auth | OpenRouter API key (`pass_env`, never on a command line) | subscription OAuth token |
+| key | one of a 25-key pool, chosen by `--key-index` | n/a |
 | base URL | `https://openrouter.ai/api` | the Anthropic API |
 | actor model | `anthropic/claude-sonnet-5` | `claude-sonnet-5` |
 | `bare` | **`False`** — see below | `False` |
@@ -71,6 +72,15 @@ hint lands. Hooks *are* the mechanism. The reason bare mode was wanted — no
 subagents, so the proxy converter's
 [thread-loss defect](../injection_shape/REPORT.md) cannot bite — is bought with
 `--disallowedTools …,Task` instead, at the cost of one argument.
+
+**The pool is 25 accounts, not 25 doors onto one balance** — each key carries
+its own credit (measured 2026-09-01: 25 of 25 live, $117–$278 each). So runs
+are accounted per key: `summary.json` records the key's index, an irreversible
+8-character fingerprint of it, and its own balance before and after. A key is
+rotated because OpenRouter rate-limits per key and parallel harvests should not
+share one — not to spread spend, which is not a constraint here. (We have not
+hit a 429; the per-key limit is OpenRouter's documented model, not something
+this round measured.)
 
 ### `capture="proxy"` is required, not an arm
 
@@ -164,6 +174,8 @@ direnv exec . uv run python experiments/trace_synthesis/steered_rerun/validate_t
 
 # the control and the steered run; strictly sequential (each rmtree's the
 # shared cache directory)
+# `--key-index` and `--proxy-port` are what make two of these safe to run at
+# once; both default to a single value, so concurrent runs must pass them
 direnv exec . uv run python experiments/trace_synthesis/steered_rerun/run_steered.py \
     --label baseline-<repo> --instance <id> --rollout-id 0 --no-steer
 direnv exec . uv run python experiments/trace_synthesis/steered_rerun/run_steered.py \

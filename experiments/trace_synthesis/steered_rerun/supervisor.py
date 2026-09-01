@@ -36,6 +36,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 import argparse
+import hashlib
 from dataclasses import dataclass, field
 import json
 import os
@@ -438,38 +439,102 @@ class Watcher:
     temporary.rename(answer)
 
 
-def openrouter_key() -> str:
-  """Return the first usable key from the repo's comma-separated pool.
-
-  The pool holds many keys and not all of them are live, so this asks
-  OpenRouter which one is before a run is spent on it. **No key value is ever
-  returned in a message, logged, or printed** — the caller gets the key and the
-  errors name only how many were tried.
+def key_pool() -> list[str]:
+  """Return the configured key pool.
 
   Returns:
-    A key whose ``/api/v1/key`` lookup succeeds.
+    The keys, in the order ``OPENROUTER_API_KEYS`` lists them.
 
   Raises:
-    RuntimeError: If the variable is unset, or no key in the pool answers.
+    RuntimeError: If the variable is unset.
   """
   keys = [k for k in os.environ.get("OPENROUTER_API_KEYS", "").split(",") if k]
   if not keys:
     raise RuntimeError("OPENROUTER_API_KEYS is unset; source .envrc.local")
-  for index, key in enumerate(keys):
+  return keys
+
+
+def key_fingerprint(key: str) -> str:
+  """Return a short, non-reversible name for a key.
+
+  The report has to say *which* key a run spent, and the pool's index alone
+  stops meaning that the moment the pool is reordered. A hash prefix names the
+  key without being the key.
+
+  Args:
+    key: The credential.
+
+  Returns:
+    The first eight hex characters of its sha256.
+  """
+  return hashlib.sha256(key.encode()).hexdigest()[:8]
+
+
+def key_credits(key: str) -> dict[str, float]:
+  """Return one key's own balance.
+
+  **Each key in the pool is a separate OpenRouter account with its own
+  balance** — measured 2026-09-01 across all 25, which answered with remaining
+  balances spread over $117–$278. Reading one key's ``total_credits`` and
+  calling it an account-level pool, as an earlier version of this file's
+  accounting did, understates the budget by more than an order of magnitude.
+  So accounting is per key, and there is no total to report.
+
+  Args:
+    key: The credential.
+
+  Returns:
+    ``total``, ``used`` and ``remaining``, in dollars.
+  """
+  request = urllib.request.Request(
+      "https://openrouter.ai/api/v1/credits",
+      headers={"Authorization": f"Bearer {key}"},
+  )
+  with urllib.request.urlopen(request, timeout=20) as response:
+    data = json.load(response)["data"]
+  total = float(data["total_credits"])
+  used = float(data["total_usage"])
+  return {"total": total, "used": used, "remaining": total - used}
+
+
+def openrouter_key(start: int = 0) -> tuple[int, str]:
+  """Return a usable key from the pool, preferring the one asked for.
+
+  Not every key in the pool is live, so this asks OpenRouter before a run is
+  spent on one. **No key value is ever returned in a message, logged, or
+  printed** — the caller gets the key, and the errors name only how many were
+  tried.
+
+  ``start`` exists for concurrency, not for thrift: OpenRouter rate-limits per
+  key, so parallel runs are given different ones. (That the limit is per key is
+  OpenRouter's documented model; we have not hit one, so treat "three parallel
+  runs need three keys" as a precaution, not as a measurement.)
+
+  Args:
+    start: Index in the pool to try first; later keys are the fallback.
+
+  Returns:
+    The index that answered, and its key.
+
+  Raises:
+    RuntimeError: If the variable is unset, or no key from ``start`` on
+      answers.
+  """
+  keys = key_pool()
+  for index in range(start, len(keys)):
     request = urllib.request.Request(
         "https://openrouter.ai/api/v1/key",
-        headers={"Authorization": f"Bearer {key}"},
+        headers={"Authorization": f"Bearer {keys[index]}"},
     )
     try:
       with urllib.request.urlopen(request, timeout=20) as response:
         _ = json.load(response)
-      return key
+      return index, keys[index]
     except Exception:  # noqa: BLE001 — a dead key is data, not an error
-      if index == len(keys) - 1:
-        raise RuntimeError(
-            f"none of the {len(keys)} keys in OPENROUTER_API_KEYS answered"
-        ) from None
-  raise RuntimeError("unreachable")
+      continue
+  raise RuntimeError(
+      f"no key from index {start} on answered ({len(keys)} in the pool)"
+  )
 
 
 def main() -> None:
@@ -484,7 +549,7 @@ def main() -> None:
   supervisor = Supervisor(
       guidebook=pathlib.Path(args.guidebook).read_text(),
       log_path=pathlib.Path(args.log),
-      api_key=openrouter_key(),
+      api_key=openrouter_key()[1],
       model=args.model,
   )
   watcher = Watcher(supervisor, pathlib.Path(args.watch))
