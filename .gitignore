@@ -54,6 +54,10 @@ outputs/**/*.last_exchange.json
 # Experiment proxy logs are large and regenerable — never commit them
 experiments/related_files/prompt_variance/runs/**/*.proxy.jsonl
 
+# Frozen rollout trees: full agent conversations, workspaces and patches copied
+# out of .cache/. Large trace records stay off-repo by design (AGENTS.md).
+experiments/trace_synthesis/handmade_instance/frozen/
+
 # Claude Code: ignore personal + runtime state, but KEEP shareable project
 # config trackable (.claude/settings.json, commands/, agents/, skills/) — do
 # NOT blanket-ignore .claude/.
