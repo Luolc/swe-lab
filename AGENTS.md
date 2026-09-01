@@ -162,8 +162,10 @@ test for is a wish, and it silently decays into a lie.
 - **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
   gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));
   commit dataset data files or large trace records (gitignored / off-repo on HF
-  by design); push
-  non-trivial work straight to `main`; present the provisional patch-extraction
+  by design — what that covers, and why an experiment's own committed evidence
+  is not it, is in
+  [`docs/conventions.md`](docs/conventions.md#what-may-be-committed-as-evidence));
+  push non-trivial work straight to `main`; present the provisional patch-extraction
   docs as authoritative.
 
 ## Language of the codebase

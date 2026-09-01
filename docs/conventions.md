@@ -270,6 +270,75 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | `packaging/claude-code-bundle/` | Builds the portable Claude Code tarball (agent + glibc + loader + `rg`) that runs on musl/Alpine, ancient glibc and distroless. `build.sh` resolves + pins the version, `Dockerfile.bundle` is the hermetic builder, `smoke-test.sh` is the target matrix. Output lands in `dist/` (**gitignored**). The artifact is **internal-use only** — private channels, never published. Design: [task 24](horizontal/plans/task-24-claude-code-portable-bundle.md). |
 | `tests/` | pytest suite over the engine, axes, and tasks. |
 
+## What may be committed as evidence
+
+`AGENTS.md` says never commit "dataset data files or large trace records
+(gitignored / off-repo on HF by design)". That sentence names a mechanism but
+no boundary, and in [#304](https://github.com/Luolc/swe-lab/pull/304) two
+competent readers read two different answers out of it — a P0 raised on a
+329 KB experiment directory (260 KB of it evidence), rebutted with what `main`
+already carries, and withdrawn a round later. Neither reading was careless.
+**The defect was the missing definition**, so here it is.
+
+**The test is not the byte count. It is two questions:**
+
+1. **Is this a product of *dataset scale* — one artifact per instance, growing
+   with the dataset?** Then it is off-repo by design: gitignored locally,
+   published on HF. The 731-instance sweeps, rollout trees, raw proxy logs of
+   batch runs. Scale is the property that makes them unmanageable in git, and
+   it is a property of the *pipeline*, not of any one file's size.
+2. **Is this the minimum a reader needs to rederive the report's conclusions
+   without leaving the repository?** Then it belongs in git, and its size is
+   not by itself an objection. An experiment whose numbers can only be checked
+   by re-running it on the author's machine has not reported a result; it has
+   asserted one.
+
+Question 2 is not a preference — it is [the experiment
+playbook](experiments/playbook.md)'s "raw artifacts, preserved" and "ground
+every claim in raw data", and reviews enforce it directly: a
+[#306](https://github.com/Luolc/swe-lab/pull/306) finding required an
+experiment's cost figures to be rederivable from its own `runs/`, which is
+satisfied by committing a reduced snapshot and violated by moving evidence out.
+**When two rules appear to forbid each other, that is the signal one of them is
+being read wrong** — here, "large trace records" was being read as "many bytes"
+when it means "the dataset-scale corpus that HF hosts".
+
+**Calibration, not a threshold.** These are the accepted magnitudes on `main`
+(measured 2026-09-01, `git ls-tree -r -l origin/main`), recorded so a future
+argument starts from what the repo already agreed to rather than from a number
+someone picks in the moment:
+
+| Committed corpus | Size |
+| --- | --- |
+| `experiments/trace_synthesis/injection_shape/` | 8,336,053 bytes / 379 files — the largest, reviewed and merged |
+| `experiments/trace_synthesis/process_supervision/` | 2.1 MB / 56 files |
+| `experiments/related_files/prompt_variance/` | 443 KB (a playbook exemplar) |
+| `experiments/trace_synthesis/streamjson_input/` | 329 KB — the one that was disputed |
+| `outputs/` (the committed deliverable) | 17.6 MB / 3,662 files |
+
+**No byte limit is set on purpose.** A limit would have to be either low enough
+to evict `injection_shape` — an accepted corpus whose loss would cost more than
+it saves — or high enough to permit anything under it, including a corpus that
+fails question 1 and belongs on HF. Size correlates with the thing we care
+about; it is not the thing.
+
+**Prune by question 2, not by megabytes.** The right response to a large
+evidence tree is to ask which files the report actually cites and reduce to
+those (a field-reduced snapshot, a normalized evidence record) — not to delete
+a small one because it *looks* big next to a source file. `runs/` is
+append-only per the playbook: new variant, new directory, never an overwrite.
+
+**None of this loosens what is absolute.** Independent of size or usefulness,
+and enforced elsewhere rather than judged here: **no secrets** (the gitleaks
+hook and the CI history scan — see [Quality bar](../AGENTS.md#quality-bar)) and
+**no operator PII** in any committed record — home paths, names, emails,
+account or organization identifiers. The other #304 P0, which was *not*
+withdrawn, was exactly this: raw transcript snapshots carrying an operator home
+path. A capture that must be redacted before it can be committed is redacted
+first and verified after ([the redaction
+module](../src/swe_lab/harnesses/claude_code/redaction.py) is the one home for
+that rule).
+
 ## Source-of-truth rule
 
 - **Code > provisional docs.** Where a doc and the code disagree, the code wins
@@ -558,7 +627,9 @@ retroactively (owner's calibration, 2026-09-01).
   read the corrected rows straight from the dataset.
 - **`outputs/` is a deliverable, not scratch.** The annotation JSON + parquet are
   version-controlled ground truth. Dataset data files and large trace records are
-  *not* in git (gitignored / on HF respectively).
+  *not* in git (gitignored / on HF respectively) — where that line falls, and
+  why it is not a byte count, is
+  [above](#what-may-be-committed-as-evidence).
 - **Claude Code usage limits.** Long batch runs hit the subscription credit wall;
   the runners are built to stop cleanly on `UsageLimitError` and resume
   idempotently (skip instances whose output already exists).
