@@ -1,15 +1,17 @@
 # Spec: SandboxRun — unified sandboxed-task engine + pluggable axes
 
-> **Status: Approved (2026-07-18) · Implemented (tasks 02–11).** The design was
-> confirmed across the 2026-07-18 interview + interface sessions; the five
-> remaining open items (naming, code placement, persistence, on-error, sampling)
-> were **resolved in the same day's follow-up interview** — see
-> [Resolved questions](#resolved-questions-2026-07-18). The engine + three axes,
-> both backends, proxy capture, the CLI cutover, and the `core/` dissolution have
-> **landed**; the `Store`/tiers persistence (tasks 12–13) is the remaining slice.
-> Where this spec's prose describes the *pre-cutover* `core/` layout or `EvalSpec`
-> as motivation, the shipped code (per [`plans/README.md`](plans/README.md)) is
-> the source of truth. Below is the design of record.
+> **Status: Approved (2026-07-18) · Implemented, and since extended past what
+> it anticipated.** The design was confirmed across the 2026-07-18 interview +
+> interface sessions; the five remaining open items (naming, code placement,
+> persistence, on-error, sampling) were **resolved in the same day's follow-up
+> interview** — see [Resolved questions](#resolved-questions-2026-07-18). The
+> engine + three axes, both backends, proxy capture, the CLI cutover and the
+> `core/` dissolution have landed, and a **task layer this spec never
+> anticipated** has landed on top of them (ADR-0007, below). **Live task status
+> is not in this file** — it is [`plans/README.md`](plans/README.md), the one
+> status home. Where this spec's prose describes the *pre-cutover* `core/`
+> layout or `EvalSpec` as motivation, the shipped code is the source of truth.
+> Below is the design of record.
 >
 > **Amended by [ADR-0003](../decisions/ADR-0003-remote-sandbox-lifecycle.md)
 > (2026-07-26, P0) — landed in [task 14](plans/task-14-sandbox-lifecycle-refactor.md):**
@@ -25,6 +27,33 @@
 > mount), and an **open `build_sandbox` name registry** (not a closed enum).
 > Where this spec's body still shows `SandboxBackend` / `Assets` / a `materialize`
 > seam / `sb.workspace`, ADR-0003 + the shipped code are the source of truth.
+>
+> **Extended or superseded by later ADRs (each wins where it disagrees with
+> the body below):**
+>
+> - **[ADR-0007](../decisions/ADR-0007-task-and-workflow-layer.md)
+>   (2026-08-02) — the task layer.** A `Task` / `Workflow` layer now sits
+>   *above* `SandboxManager`: rollout and unit-test are tasks, a workflow chains
+>   them by matching output to input store name, and the CLI runs a **registered
+>   workflow** rather than a hand-wired composition. It also **amends
+>   [ADR-0004](../decisions/ADR-0004-multi-rollout-run-record-layout.md)** — the
+>   T1 key gains a `<task>` segment (see *Persistence*).
+> - **[ADR-0009](../decisions/ADR-0009-workflow-record-always-written.md)
+>   (2026-08-04)** supersedes the record-absence rule of ADR-0007 §10: the
+>   workflow record is **always** written — it is a report, not a marker.
+> - **[ADR-0008](../decisions/ADR-0008-retry-moves-to-the-task.md) (2026-08-03)
+>   + [ADR-0011](../decisions/ADR-0011-fair-retry.md) (2026-08-07)** put retry on
+>   the task (one fresh sandbox per attempt) and retry **only what is not the
+>   agent's own doing**.
+> - **[ADR-0010](../decisions/ADR-0010-benchmark-integrity.md) (2026-08-06) —
+>   benchmark integrity.** The environment is the control: the task repo's
+>   future is stripped before the agent starts (and the strip is proved), and
+>   the run is swept for the ways an agent reaches the answer anyway
+>   (`git/history.py`, `integrity/`). This spec's threat model did not cover it.
+> - **[ADR-0001](../decisions/ADR-0001-patch-extraction-and-grading.md)
+>   amendment (2026-08-25)** lets patch extraction baseline against the tree as
+>   the agent found it (`patch_baseline` / `DiffExtractObserver.baseline`),
+>   default off.
 >
 > **Date:** 2026-07-18 · **Scope:** the horizontal shared foundation, consumed
 > by every workstream. Names below (`SandboxManager`, `Sandbox`, `SandboxSpec`,
@@ -441,18 +470,30 @@ dissolves entirely** — this refactor migrates all of it (整锅端), no dual-t
 period. Rationale: keeping everything under `core/` would reduce the repo to a
 `core` + `workstreams` two-bucket shape, and the extra nesting buys nothing.
 
+The shape that decision produced, as it stands today (the annotated, live map
+is [`conventions.md`](../conventions.md#directory-map) — this tree is here to
+show the *flat* structure, not to duplicate that map):
+
 ```
 src/swe_lab/
   __main__.py     dispatcher table only → cli/<subcommand>.py modules
-  cli/            one module per subcommand (run, promote, …) + the override
+  cli/            one module per subcommand (run, promote) + the override
                   grammar `run` resolves against registered workflows
   sandbox/        SandboxManager, Sandbox, SandboxSpec, Mounts, SandboxObserver,
                   CompositeObserver, backends (A-host, A-ghjob), shared observers
-                  (setup, diff-extract, persist, metrics, logging)
-  harnesses/      one per harness: claude_code/ (now), codex/, grok_build/ (next)
-  datasets/       one per dataset: swebench_pro/ (now)   [moves up from core/]
+  workflow/       the task layer above the engine (ADR-0007): Task, Workflow,
+                  the registry + the statically written definitions
+  rollout.py      the rollout composition (CodingAgentTask)
+  harnesses/      one per harness: claude_code/, codex/, grok_build/
+  datasets/       one per dataset: swebench_pro/, deepswe/ + the dataset-agnostic
+                  golden sweep (verify.py)          [moved up from core/]
   evaluation/     the evaluation axis; verdict + one module per method
                   (unit_test now, model_judge later)
+  conversation/   the provider-neutral Conversation + its observer
+  git/            patch extraction, history purge, the audit task
+  integrity/      benchmark-integrity rules + replay (ADR-0010)
+  repo/           repo checkout providers (W1)
+  pipelines/      W1's annotation pipeline, off the engine for now
   paths.py        [moves up from core/]
 ```
 
@@ -472,7 +513,7 @@ single-HF-repo approach conflated them (it was designed for one task, W1).
 | Tier | What | Lifecycle | Home |
 |---|---|---|---|
 | **T0 debug residue** | ad-hoc runs, format-unstable intermediates | disposable, auto-expiring | **no infra built**: local runs → the workspace dir under `.cache/`; CI runs → GitHub Actions artifacts (built-in TTL, ≤90 days, free on the public repo) |
-| **T1 formal intermediates** | trajectories, patches, per-run results, diagnostics — **including failed runs** | **keep everything** (failures are research material for W3 / behavioral analysis); private | **S3-compatible object store** (below), keyed `<sweep-id>/<instance>/r<rollout>/a<attempt>/…` under a `runs/` root ([ADR-0004](../decisions/ADR-0004-multi-rollout-run-record-layout.md)) |
+| **T1 formal intermediates** | trajectories, patches, per-run results, diagnostics — **including failed runs** | **keep everything** (failures are research material for W3 / behavioral analysis); private | **S3-compatible object store** (below), keyed `<sweep-id>/<instance>/r<rollout>/<task>/a<attempt>/…`. [ADR-0004](../decisions/ADR-0004-multi-rollout-run-record-layout.md) moved the `runs/` namespace **out of the key** and into the store's configured root; [ADR-0007](../decisions/ADR-0007-task-and-workflow-layer.md) §§6–7 added the `<task>` segment |
 | **T2 formal publishes** | the final parquet, curated traces | versioned, public | **Hugging Face** (what it is actually for) |
 
 Mechanics:
@@ -582,11 +623,13 @@ engine never imports a concrete harness/dataset/eval-method.
    evaluator consumes run-context + its own grading spec.
 3. The three axes exist as plug points; **claude_code × swebench_pro × unit_test**
    works end-to-end, and a **second harness** (or a stub) registers **without
-   touching the engine**.
+   touching the engine**. *Met beyond its wording:* `codex` and `grok_build` are
+   both real harnesses, and `deepswe` a real second dataset.
 4. Both backends work behind one `Sandbox` (A-host locally / in CI; A-ghjob in a
    container job), and `proxy` is available as a harness capture strategy.
-5. Regression-free: flipt rollout still yields a graded patch; gold sweep still
-   731/731; `pytest` + `pre-commit` green.
+5. Regression-free: flipt rollout still yields a graded patch; the SWE-Bench
+   Pro gold sweep still 731/731 — and, since task 30, the DeepSWE gold sweep
+   113/113 — with `pytest` + `pre-commit` green.
 
 ## Out of scope
 
@@ -595,6 +638,9 @@ engine never imports a concrete harness/dataset/eval-method.
   don't build them yet — the one shipped composition is
   `claude_code × swebench_pro × unit_test`; a second harness may get a **stub**
   purely to prove the seam, per Success Criteria #3).
+  **No longer out of scope:** the seams held, so both were later built on
+  purpose — `codex` and `grok_build` (tasks 28/29) and the DeepSWE 1.1 dataset
+  (task 30). A 2nd *eval method* is still unbuilt.
 - A conditional-teardown **signal** (dropped for simplicity; revisit if needed).
 - The **on-error diagnostics observer** (P1 — see its section; the hook itself
   ships, the observer doesn't).
