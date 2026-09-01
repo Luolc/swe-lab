@@ -339,3 +339,42 @@ def test_no_invocation_form_reports_success_over_zero_runs():
     )
     assert result.returncode == 1, f"{argv} exited {result.returncode}"
     assert "refusing" in result.stdout, argv
+
+
+def test_only_three_pairs_are_interpretable():
+  """§2.3's retraction rests on this count, so it is pinned.
+
+  A pair is interpretable only where the trigger was valid in both arms — the
+  predicate false when it fired. Elsewhere one or both interventions asked for
+  something already done, and the two arms are not measuring the same quantity.
+  """
+  witnesses = json.loads((EXPERIMENT / "evidence/graded.json").read_text())
+  by_fixture: dict[str, dict[str, Any]] = {}
+  for witness in witnesses:
+    by_fixture.setdefault(witness["fixture"], {})[witness["arm"]] = witness
+
+  def valid(witness: dict[str, Any]) -> bool:
+    history = witness.get("predicate_already_true") or {}
+    return witness["label"] in (
+        "COMPLIED",
+        "NOT_COMPLIED",
+    ) and not history.get("at_trigger")
+
+  both = [
+      arms
+      for arms in by_fixture.values()
+      if "mid" in arms
+      and "neg" in arms
+      and valid(arms["mid"])
+      and valid(arms["neg"])
+  ]
+  discordant = [
+      arms
+      for arms in both
+      if (arms["mid"]["label"] == "COMPLIED")
+      != (arms["neg"]["label"] == "COMPLIED")
+  ]
+
+  assert len(both) == 3
+  assert len(discordant) == 2
+  assert all(a["mid"]["label"] == "COMPLIED" for a in discordant)

@@ -53,8 +53,10 @@ def main() -> int:
   print(f"{'rate':{width}}  " + "".join(f"{arms[a]['rate']:>8.3f}" for a in ("mid", "neg", "pos")))
 
   by_fixture: dict[str, dict[str, str]] = {}
+  by_fixture_witness: dict[str, dict[str, dict[str, object]]] = {}
   for witness in witnesses:
     by_fixture.setdefault(witness["fixture"], {})[witness["arm"]] = witness["label"]
+    by_fixture_witness.setdefault(witness["fixture"], {})[witness["arm"]] = witness
   up = down = concordant = dropped = 0
   for labels in by_fixture.values():
     mid, neg = labels.get("mid"), labels.get("neg")
@@ -87,6 +89,30 @@ def main() -> int:
     complied = [w for w in valid if w["label"] == criterion.COMPLIED]
     print(f"{arm.upper() + ' triggers':22}{len(valid):>8}{len(complied):>10}"
           f"{len(scored) - len(valid):>9}")
+  # The paired comparison is only interpretable where the trigger was valid in
+  # BOTH arms; elsewhere one or both interventions asked for something already
+  # done. See REPORT.md §2.3.
+  def is_valid(w: dict[str, object]) -> bool:
+    history = w.get("predicate_already_true") or {}
+    return w["label"] in (
+        criterion.COMPLIED,
+        criterion.NOT_COMPLIED,
+    ) and not history.get("at_trigger")
+
+  both_valid = up_valid = down_valid = 0
+  for labels in by_fixture_witness.values():
+    mid, neg = labels.get("mid"), labels.get("neg")
+    if not (mid and neg and is_valid(mid) and is_valid(neg)):
+      continue
+    both_valid += 1
+    if mid["label"] == criterion.COMPLIED and neg["label"] != criterion.COMPLIED:
+      up_valid += 1
+    elif neg["label"] == criterion.COMPLIED and mid["label"] != criterion.COMPLIED:
+      down_valid += 1
+  print(f"pairs valid in BOTH arms     {both_valid}")
+  print(f"  of those, discordant up    {up_valid}")
+  print(f"  of those, discordant down  {down_valid}")
+
   redundant_compliances = [
       w for w in witnesses
       if w["arm"] == "mid"

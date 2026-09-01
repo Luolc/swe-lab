@@ -1,8 +1,9 @@
 # Does an actor act on a mid-turn correction?
 
-**Verdict: `BELOW_BAR`.** The channel works mechanically, it does move behavior,
-and it moves it less than the bar set before looking. Not a pass, not a failure —
-a measured level below a threshold written down first.
+**Verdict: `BELOW_BAR`.** The channel works mechanically and its compliance level
+is below the bar set before looking. **This run does not establish that mid-turn
+correction changes behavior** — the paired comparison that appeared to show one
+does not survive §2.3, and the claim is withdrawn.
 
 | | `MID` | `NEG` | `POS` |
 | --- | --- | --- | --- |
@@ -14,9 +15,10 @@ a measured level below a threshold written down first.
 | **denominator** | **17** | **16** | **20** |
 | **rate** | **0.529** | **0.125** | **1.000** |
 
-`MID − NEG = +0.404`. Paired by fixture: 16 usable pairs, **6 flips
-`NEG`-fail → `MID`-pass, 0 the other way**, 10 concordant — a one-sided sign test
-gives `p = 2⁻⁶ ≈ 0.016`.
+`MID − NEG = +0.404`. Paired by fixture: 16 usable pairs, 6 flips
+`NEG`-fail → `MID`-pass, 0 the other way, 10 concordant. **Do not read these as an
+effect** — §2.3 shows only 3 of the 16 pairs are interpretable, and the sign test
+that number invites is not licensed.
 
 Protocol: [`PREREGISTRATION.md`](PREREGISTRATION.md), committed before the first
 run. Claude Code 2.1.257, `claude-sonnet-5`, 60 graded runs at concurrency 6,
@@ -136,28 +138,51 @@ repair of this batch exists.
 **None of this revises the verdict**, and it must not be read as "it would have
 passed". The bar was fixed first and the level half failed.
 
-### 2.3 Why the difference survives and the level does not
+### 2.3 The difference does not survive either (withdrawn claim)
 
-Both arms are distorted the same way. In `NEG`, 10 of 14 non-compliances also
-satisfy the predicate before the evaluation index; scored over the whole run the
-way `POS` is, `NEG` would read 0.75 rather than 0.125. **That rule is not a
-legitimate alternative for `MID`/`NEG`** — it counts actions taken before the
-correction existed, severing the causal link the experiment is about. But it
-locates the damage:
+An earlier version of this report called the difference the trustworthy half, on
+the reasoning that both arms were distorted the same way. **That was wrong, and
+the claim is withdrawn.**
 
-- The **difference** `+0.404` is between two measurements distorted alike, with
-  paired flips 6–0. This is the trustworthy half.
-- The **level** `0.529` is depressed by where the criterion looks, and is **not**
-  a good estimate of how often an actor acts on a mid-turn correction. It
-  estimates how often one acts on a correction *that still had something left to
-  ask for*.
+The distortion is **not** equal, and it is **not paired**. 14 of 17 `MID`
+interventions and 11 of 16 `NEG` interventions have an invalid trigger — the
+predicate was already satisfied when it fired — and validity is a property of the
+individual run, so a pair can be valid on one side and invalid on the other. A
+comparison between an arm where the correction had something to ask for and one
+where it did not is not a comparison of the same quantity.
+
+Restricting to pairs where the trigger was valid in **both** arms:
+
+| | count |
+| --- | --- |
+| pairs valid in both arms | **3** |
+| of those, `NEG`-fail → `MID`-pass | 2 |
+| of those, the reverse | 0 |
+
+**Only 2 of the 6 discordant pairs are interpretable.** The headline `+0.404`
+and its `p ≈ 0.016` are computed over a set that is mostly pairs where one or
+both interventions asked for something already done; on the interpretable subset
+the sign test has 2 discordant pairs, `p = 2⁻² = 0.25`, which is nothing.
+
+So **neither half of rule 3 is supported by an interpretable measurement**: the
+level is depressed by where the criterion looks, and the difference rests on 3
+pairs. What this run measured cleanly is mechanics (§3) and a defect (§2.1) — not
+an effect.
+
+This does not change the verdict. `BELOW_BAR` follows from the pre-registered
+rule applied to the pre-registered labels, and neither moved. It changes what
+may be *said around* the verdict, which was overstated.
 
 ## 3. What this establishes, and what it does not
 
 **Established.** The channel is mechanically sound: 0 `NOT_DELIVERED` across 37
 delivered interventions, with a delivery lag of exactly one agent-loop record in
-every `MID` case. The correction reaches the model, and the model responds to it.
-It also moves behavior — 6 discordant pairs, all one direction.
+every `MID` case. The correction reaches the model, and the model responds to it
+in words. `POS` = 20/20 shows the predicates can fire.
+
+**Not established: that the correction changes behavior.** The paired evidence
+for it reduces to 3 interpretable pairs (§2.3). This run neither shows an effect
+nor rules one out.
 
 **Not established.** `POS` = 20/20 rules out *the predicate cannot fire at all*.
 It does **not** rule out *the predicate misses compliance arriving in a messier
@@ -293,9 +318,10 @@ Both live tracks now have a measured problem. Stating them together is a
 knowledge state, not two failures:
 
 - **A′ (mid-turn correction).** The channel is usable and mechanically clean.
-  Measured compliance 0.529, below the 0.70 set in advance. The hand-read says
-  the failures are **timing**, not refusal: 8 of 8 arrived after the actor had
-  already done the thing.
+  Measured compliance 0.529, below the 0.70 set in advance — and the run does
+  **not** establish an effect on behavior (§2.3). The hand-read says the failures
+  are **timing**, not refusal: 8 of 8 arrived after the actor had already done
+  the thing.
 - **B (gate-then-rerun).** The gate is a stochastic function — sampling was never
   fixed — so a "refused, then accepted" transition can occur purely from judge
   jitter.
