@@ -7,9 +7,9 @@ imply the directory the script lives in. Copying the documented commands got a
 `FileNotFoundError`, and every test stayed green because nothing imported the
 module: it is a runnable instrument, not a library.
 
-The `--help` check that first "verified" the fix is blind to it — argparse exits
-before `main` reads the guidebook — so this reads the file instead, from a
-directory outside the repo, which is the only place the old literal is wrong.
+So the guidebook is *read*, with the working directory outside the repo: that is
+the only place a repo-root-relative literal is wrong, and anything short of
+reading the file passes against one.
 
 Loaded by path like `test_steered_rerun_driver.py`: `experiments/` is exempt
 from the code-quality hooks and is not an importable package.
