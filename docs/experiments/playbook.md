@@ -230,8 +230,9 @@ pilot's twelve amendments.
   something about the parameter while its author means the observation, and the
   prose gives no signal either way. A prior rationale here said the model "is
   **not** a claim that θ > 0" when what it declines to assume is `c > 0`: the
-  prior's support does exclude θ = 0, and has to, since `E[1/θ]` is not finite
-  otherwise. The remedy is structural rather than a matter of care — **put the
+  prior does hold a vanishing qualifying rate to be unlikely — its density goes
+  to zero at θ = 0, which is what keeps `E[1/θ]` finite — while `c = 0` stays an
+  ordinary observation. The remedy is structural rather than a matter of care — **put the
   assumption in one sentence and the observation in the next, and name the
   symbol in each.** A sentence carrying both is the one to split before checking
   anything else in it, and this is the cheapest place to catch it: **a merged
