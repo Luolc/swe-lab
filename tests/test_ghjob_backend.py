@@ -4,8 +4,11 @@ Because A-ghjob execs in the local shell, these are genuine end-to-end runs that
 need no Docker and no marker: they stage a script, run it, and observe output.
 """
 
+import os
 from pathlib import Path
+import signal
 import stat
+import time
 
 from etils import epath
 import pytest
@@ -127,6 +130,46 @@ def test_run_script_timeout_maps_to_124(tmp_path: Path):
   result = sandbox.run_script("main.sh", timeout=0.2)
   assert result.exit_code == 124
   assert result.timed_out is True
+
+
+def test_a_timed_out_script_takes_its_background_children_with_it(
+    tmp_path: Path,
+):
+  # The regression this backend needs and the Docker one does not: `down` here
+  # is a genuine no-op (the job *is* the container), so anything a timed-out
+  # script left running would outlive the run — holding its port and still
+  # using the run's credential. The harness's proxy capture backgrounds exactly
+  # such a process, so "the proxy dies with the sandbox" has to be true here by
+  # construction, not by luck.
+  ws = _workspace(tmp_path)
+  sandbox = GitHubJobSandbox(spec=SPEC, workspace=epath.Path(ws))
+  sandbox.up()
+  _ = (ws / "main.sh").write_text(
+      'sleep 120 &\necho $! > "$SANDBOX_WORKSPACE"/child.pid\nsleep 120\n'
+  )
+
+  started = time.monotonic()
+  result = sandbox.run_script("main.sh", timeout=1.0)
+  elapsed = time.monotonic() - started
+  assert result.timed_out is True
+
+  # The deadline has to be the deadline. Without the process group this call
+  # does not merely leak the child — it *blocks* on it: the backgrounded
+  # process inherits the stderr pipe, so the drain after the timeout waits for
+  # EOF, which cannot come until that process exits on its own. A capture proxy
+  # never exits on its own, so the run would hang rather than time out.
+  assert elapsed < 30.0, f"run_script blocked {elapsed:.0f}s past its timeout"
+
+  child = int((ws / "child.pid").read_text().strip())
+  deadline = time.monotonic() + 10.0
+  while time.monotonic() < deadline:
+    try:
+      os.kill(child, 0)
+    except ProcessLookupError:
+      return  # the grandchild went with the group, which is the whole point
+    time.sleep(0.05)
+  os.kill(child, signal.SIGKILL)  # do not leak it out of the test either
+  pytest.fail(f"backgrounded pid {child} survived the timeout")
 
 
 def test_pass_env_inherits_by_reference(

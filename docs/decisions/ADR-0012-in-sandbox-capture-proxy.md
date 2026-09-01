@@ -96,37 +96,95 @@ A readiness failure is loud (`exit 78`), because the alternative — the agent's
 first API call refused — reads as an auth or network problem and costs a run to
 diagnose.
 
-**A killed run yields partial capture, never a corrupt file.** If the caller's
-timeout fires, the trap never runs and the proxy dies with the container.
+**A killed run yields partial capture, never a corrupt file.**
 `cc-reverse-proxy` appends one JSON record per completed exchange and closes the
 file each time, so the log truncates at a line boundary and every line already
 written is a complete record. "Killed" therefore means *some* of the data, not
 *bad* data.
 
-### 4. The log lands in the workspace — parity, not new exposure
+**That the proxy actually dies is a per-backend fact, and it was not true on
+both.** On `DockerHostSandbox` the timeout kills the `docker` client, the trap
+never runs, and `down`'s `docker rm -f` takes the container and every process in
+it — so the guarantee holds by construction. On `GitHubJobSandbox` it did not:
+`down` is a genuine no-op (the job *is* the container), so a backgrounded proxy
+survived the run — and worse, `subprocess.run`'s post-timeout drain blocked on
+the stderr pipe that proxy inherited, so a timed-out capture **hung** instead of
+timing out. That backend now runs each command in its own process group and ends
+the group on timeout, pinned by
+`test_a_timed_out_script_takes_its_background_children_with_it`, which fails
+(a 120-second block) without it. The claim is stated here because a test holds
+it up, not the other way round.
 
-The proxy writes `claude.proxy.jsonl` straight into the workspace, so the agent
-can read (and write) it. That is deliberate, and it is **parity with what
-`STREAM` capture already does**: `claude.event_stream.jsonl` is redirected into
-the same workspace on every stream run today, and it carries the same content —
-the agent's own conversation. Nothing in the proxy log is knowledge the agent
-does not already have about its own turn: not the golden patch, not the tests,
-not future commits. On the axis [ADR-0010](ADR-0010-benchmark-integrity.md)
-cares about, the two captures are equivalent.
+### 4. The log lands in the workspace — a new exposure surface
 
-Two things are *not* claimed by that argument, and are recorded here rather than
-smoothed over:
+**This is the part an earlier draft of this ADR got wrong, and the correction is
+recorded rather than quietly applied**, because the wrong version was reviewed
+and approved before the error was caught.
 
-- **Operator identity is a real delta.** The proxy records response headers
-  verbatim, including `anthropic-organization-id` / `anthropic-workspace-id`,
-  which the agent would not otherwise see. That is not a benchmark-integrity
-  leak, and it is already a known defect on the *publishing* side —
-  [trace-synthesis task 09](../trace-synthesis/plans/README.md#task-09-redact-the-production-proxy-capture)
-  owns redacting it at write time. Moving the log in-container makes that task's
-  fix an in-sandbox or post-read concern rather than a host-side one; it does
-  not change what has to be redacted.
+That draft argued the in-workspace log was "parity, not new exposure", on the
+grounds that `claude.event_stream.jsonl` already sits in the same workspace
+carrying the agent's own conversation. **Both halves of that are false:**
+
+- **The old path was not in the sandbox at all.** `ProxyRecorder` wrote to a
+  *host* temp directory and only landed the log in the workspace at
+  `before_destroy` — after the agent was finished. The agent could never see it
+  while it ran. The proxy now creates the log in `$SANDBOX_WORKSPACE` *before*
+  the agent starts. That is not parity; it is a surface that did not exist.
+- **The contents are not equivalent either.** A proxy record is an HTTP
+  exchange and a stream event is not: the log carries headers, and a stream
+  trace has none anywhere.
+
+Measured on a real captured run rather than reasoned about, one record's headers
+are:
+
+- **request** — `Authorization`, plus `Anthropic-Beta`, `User-Agent`,
+  `X-Claude-Code-Session-Id` and the `X-Stainless-*` client-telemetry set;
+- **response** — `Anthropic-Organization-Id`, `Anthropic-Workspace-Id`,
+  `Request-Id`, and the `Anthropic-Ratelimit-Unified-*` quota/utilization set.
+
+So a raw proxy log contains **a live credential** and **the operator's account
+identity**, and the change as first written put that file in a directory the
+agent reads and writes, and registered it as a collected run artifact.
+
+**The rule, therefore: sensitive request and response headers are redacted at
+write time, and an unredacted capture never reaches a collected artifact.**
+Redaction after the fact is not equivalent and is not accepted here — it leaves
+a window in which the raw file exists on disk, which is the whole objection.
+This pulls forward the core of
+[trace-synthesis task 09](../trace-synthesis/plans/README.md#task-09-redact-the-production-proxy-capture),
+whose scope narrows accordingly rather than staying as written; **until it
+holds, proxy capture must not be published.**
+
+Two further notes, so the record is complete rather than reassuring:
+
+- **The credential is a duplicate, not a first disclosure — and that is a
+  mitigating fact, not a defence.** Both supported auth modes already export the
+  same credential into the agent's own environment (the shipped `rollout`
+  definition passes `CLAUDE_CODE_OAUTH_TOKEN` through the sandbox's `pass_env`,
+  a container-wide `-e`; `--bare` mode's own guard *requires*
+  `ANTHROPIC_API_KEY`). So the agent gains no capability it lacked. What it does
+  gain is a credential sitting in a **file that gets collected**, which has a far
+  larger blast radius than an environment variable, and that is the reason this
+  is fixed rather than argued away.
+- **File permissions cannot substitute for redaction here.** The agent runs as
+  root inside the container — the capture log from a real run is root-owned
+  because the same invocation script starts both the proxy and the agent — so no
+  path change, mode change or ownership trick makes anything in the sandbox
+  unreadable to it. Only keeping the data out of the file works.
+
+On the axis this ADR's predecessor cares about, **benchmark integrity is not
+affected**: the record *bodies* are the agent's own conversation, and none of
+the header material helps an agent solve its instance. That is why this is a
+credential-and-PII defect rather than an [ADR-0010](ADR-0010-benchmark-integrity.md)
+§3 control failure — but it is a defect either way, and it is not parity.
+
 - **The proxy is not a control.** An agent that wanted to could kill it or
   ignore `ANTHROPIC_BASE_URL`. See §5.
+- **The proxy *binary* is a new agent-reachable surface**, mounted `r-xr-xr-x`,
+  so the agent can run its own forwarding proxy. Known and accepted: it hands
+  the agent no answer, and under today's `network=True` it adds a tool, not a
+  capability. Under the default-deny policy of §5 it stays constrained by the
+  network layer, to which its own traffic is equally subject.
 
 ### 5. The egress chokepoint moves to the sandbox's network, not the proxy
 
@@ -138,13 +196,26 @@ be that**, because it lives on the same side of the boundary as the agent.
 
 This ADR does not weaken any control that exists — §3a is unimplemented and
 rollout still runs `network=True`, under which a host-side proxy was never an
-enforcement point either. What it does is settle *where* enforcement will go
-when §3a is built: in the **sandbox's network configuration** (the container's
-own egress policy), which is the backend's business and the only layer the
-agent is actually outside of. That is a better place regardless — an enforcement
-point the agent can `kill(1)` was never one — and it decouples the control from
-whether a run happens to be recording. ADR-0010 carries a dated amendment
-saying so.
+enforcement point either (with unrestricted egress the agent can bypass any
+proxy by dialling the API directly). What it does is settle *where* enforcement
+will go when §3a is built: in the **backend's container network configuration**,
+which is the only layer the agent is actually outside of. That is a better place
+regardless — an enforcement point the agent can `kill(1)` was never one — and it
+decouples the control from whether a run happens to be recording.
+
+Concretely, on `DockerHostSandbox`: a per-run `--internal` Docker network with no
+route off the host, whose single reachable peer is a host-side **forwarding**
+proxy allowlisting the model API host. Enforcement then sits in a process the
+agent cannot kill, on a route it cannot go around, while the *recording* proxy
+stays inside the sandbox — two processes, two jobs, which is the distinction §3a
+collapsed. `--network none` is the degenerate case of the same control.
+
+**None of that is built, and this ADR builds none of it.** Today
+`SandboxConfig.network` is a boolean, `definitions.py` passes `network=True` for
+both `rollout` and `unit_test`, and `build_sandbox` refuses `network=False` on
+`ghjob` outright — so the control is *intended*, not enforced, and no test
+asserts it. ADR-0010's dated amendment carries the full statement, including what
+the first test would have to assert before the claim may be stated as enforced.
 
 ## Alternatives Considered
 

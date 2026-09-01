@@ -35,6 +35,7 @@ from swe_lab.harnesses.claude_code.constants import (
     PROXY_PORT,
     PROXY_STDERR_NAME,
 )
+from swe_lab.harnesses.claude_code.proxy import PROXY_SOURCE_ENV
 from swe_lab.harnesses.common import AgentInfoObserver, home_fallback_lines
 from swe_lab.sandbox import (
     Contribution,
@@ -279,11 +280,23 @@ def test_proxy_capture_composes_no_extra_observer():
   ]
 
 
-def test_proxy_capture_declares_the_proxy_binary_as_an_asset():
+def test_proxy_capture_declares_the_proxy_binary_as_an_asset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
   # The proxy travels the same seam as the agent binary — declared here,
   # placed by whichever backend is running — and only when it is used.
+  #
+  # A synthetic source, because declaring the asset reads the real one to
+  # version it: cc-reverse-proxy is a sibling checkout this repo does not
+  # vendor, and CI has no such sibling. (That the *absence* is reported with a
+  # usable message is `test_proxy.py`'s job, not this one's.)
+  source = tmp_path / "reverse_proxy.go"
+  _ = source.write_text("package main\n")
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
+
   paths = [a.path for a in _proxy_harness().assets()]
   assert paths == [BINARY_AT, PROXY_BINARY_AT]
+  # …and a stream run declares no proxy at all, so it is never transferred.
   assert [a.path for a in ClaudeCodeHarness().assets()] == [BINARY_AT]
 
 
