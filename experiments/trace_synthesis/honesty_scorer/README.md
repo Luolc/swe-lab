@@ -262,7 +262,14 @@ discriminative power **on coin-flip tasks**, and does not transfer to
 SWE-bench Pro instances in general. The same selection is why buying positives
 here is cheap: the cheapness is a product of the selection, not luck.
 
-**2. How rare the scorer's target is cannot be measured from this pool — at any
+**2. The yield factor measured here holds for the shipping path only.** The
+pilot runs on the arm production will use, which is why it is measured there
+(amendment 7) — but a yield measured on one arm is a claim about that arm. The
+actor model is identical across arms, so the number is likely to transfer; that
+"likely" is an assumption this batch does not test and must not be quietly
+dropped.
+
+**3. How rare the scorer's target is cannot be measured from this pool — at any
 sample size.** The rate is set by the selection, not by sampling. That is a
 conclusion, not a gap: if someone later asks "how often does a solver get a
 correct answer it could not have derived?", these 40 instances cannot answer it,
@@ -329,12 +336,18 @@ judge's prior. The requirement is therefore **exactly `k` positives and `k`
 negatives within each repository**, which makes the repository statistically
 independent of the label rather than merely non-deterministic.
 
-For the first batch `k = 2`: 2 positives bought from `navidrome-b3980532` and 2
-from `NodeBB-cfc237c2`, scored against 2 negatives from each repository. The
-negative class holds 3 `navidrome` traces, so **one is dropped by a fixed rule
-rather than by choice: keep the lowest rollout ids**, i.e. `rollout-0` and
-`rollout-1`, drop `rollout-2`. Written here so the dropped trace cannot become
-a decision made after seeing a score.
+For the first batch `k = 2`, and **both classes are bought** (amendment 7 —
+the five surviving traces are not usable, see below):
+
+| Class | Instance | Buy |
+| --- | --- | :---: |
+| positive | `navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013` | 2 resolved |
+| positive | `NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863…` | 2 resolved |
+| negative | `navidrome-5001518260732e36d9a42fb8d4c054b28afab310` | 2 resolved |
+| negative | `NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd…` | 2 resolved |
+
+The preflight, the stop rule and the per-instance cap of 6 rollouts apply to the
+negative purchases exactly as to the positive ones.
 
 **Balance is an endpoint condition, not a purchase plan**, because a plan is
 defeated by what the purchase actually yields. If a repository ends the batch
@@ -400,6 +413,26 @@ None of them is reachable from the pilot registered here: see
 | Arm B beats arm A but does no better than **arm B′** (below) | **Do not build it.** Whatever arm B is reading, it is not the guidebook. |
 | The cohort is smaller than 24 scored traces | **No build decision is available.** Report the yield factor and the exclusion counts; do not report an arm comparison. |
 
+### Every attempt is retained and reported, not only the successes
+
+The per-instance cap exists so the sample is **censored rather than
+self-selected**. Running until two positives land would be optional stopping:
+the stopping time carries information about the outcome, so rollouts-per-positive
+would not be an unbiased estimate of `E[1/p]` — the one quantity the pilot
+exists to produce. **This is not a cost measure**, and recording why matters: a
+methodological constraint defended on cost grounds gets deleted the first time
+the budget loosens.
+
+A censored sample is only usable when the censoring is reported, so:
+
+- every rollout attempt is frozen to its own directory before the next one runs
+  (the shipping path deletes the previous run directory when not resuming);
+- every attempt is reported with `resolved`, `agent_complete`, `exit_code`,
+  `timed_out` and `wall_seconds` — **"6 attempts, 1 resolved" is a result, not a
+  failure to report**;
+- no attempt is added because an unresolved one "looked like bad luck". That is
+  optional stopping wearing a different hat.
+
 ### The minimum cohort, and what the first batch can decide
 
 The 4-trace margin below was derived for `n ≈ 30` split about evenly. **The
@@ -432,7 +465,20 @@ as a statistical test.
 
 All figures below are measured from the surviving runs, not estimated.
 
-### Cost of one rollout
+### There are now two price tables, and they must never be added together
+
+The figures in this section are **OpenRouter credits**, measured on the arm that
+produced the discarded corpus. The pilot runs on the shipping path, which
+authenticates differently and yields **no OpenRouter credit figures at all**; its
+cost is measured in wall time and token usage instead.
+
+**These are two incomparable currencies for the same work.** Anyone combining
+them — averaging, summing, or pricing a shipping-path batch from the table
+below — will produce a number that means nothing. That incomparability is a real
+cost of the arm switch (amendment 7), and it is recorded here rather than
+discovered later.
+
+### Cost of one rollout, on the OpenRouter arm (historical)
 
 From `PROVENANCE.json`'s `credits_before/after.used`, over the five baseline
 rollouts that carry before/after credit snapshots — `baseline-navidrome-rollout-1`,
@@ -524,6 +570,7 @@ dry-run corpus contains one class, so there is no result here to tune toward.
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
+| 7 | The negative class was the 5 surviving traces, produced on the **OpenRouter** arm, while positives would be bought on the **shipping path** | **Both classes are bought on the shipping path**; the 5 surviving traces are discarded, and the price table denominated in OpenRouter credits does not apply to this batch | The runner that produced the corpus no longer imports on `main`. Buying positives on the shipping path while keeping OpenRouter negatives would make **the arm perfectly correlated with the label** — any arm-varying artifact (proxy headers, env, harness version) becomes a label proxy, and a judge or arm B could separate the classes on the arm alone while we read it as guidebook power. The actor model is the same on both arms (`claude-sonnet-5`), so what is lost is the cost unit, not comparability of difficulty. |
 | 6 | The Build gate required 24 scored traces while the document registered only 5 negatives and 4 positives | **Scope split:** this document registers the pilot and its yield factor; the Build decision is deferred to a **second pre-registration**, whose required contents are listed | Reaching 24 would have depended on acquisition and allocation rules chosen *after* the pilot, with results in hand — the same unreachable-Build defect as the original decision table, relocated. Registering the expansion now is impossible honestly, because its size and price depend on the yield factor the pilot measures. |
 | 5 | Balance was "each repository appears in both classes", and the 4-trace margin was the only size rule | **Equal class counts inside each repository** (`k` positives, `k` negatives, with a fixed rule for dropping the third `navidrome` negative), plus a **minimum cohort of 24 scored traces for any Build decision** — the first batch of 8 is declared a yield-measuring pilot | Appearing in both classes removes certainty, not correlation: 2/5 versus 2/4 still shifts a judge's prior on recovering the repository. And the 4-trace margin was derived for `n ≈ 30`; applying it to an 8-trace batch would have let an unreadable difference be read. |
 | 4 | The constraint fixed *which* instances are eligible, said nothing about how the four positives are split, and kept a replacement rule naming `vuls` | **2 positives from each** eligible instance; every repository in the scored set must appear in **both** classes or its traces are dropped; and the replacement rule becomes a **stop rule** | Buying all four positives from one instance leaves the other repository in the negative class only — the same leak from the other side. And the surviving `vuls` replacement would have violated the repository constraint outright, undoing it precisely when nobody was re-reading the blinding rule. |
