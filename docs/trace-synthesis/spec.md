@@ -525,7 +525,14 @@ for it. Two consequences, and neither is negotiable:
   or `grok_build` ([§10](#10-what-is-measured-about-hooks)).
 - **Rewriting the actor's tool calls or its assistant turns.** Banned by
   [§5](#5-the-mechanism-decisions); a proxy-based design that could rewrite the
-  assistant turn is a different design, not a later phase of this one.
+  assistant turn is a different design, not a later phase of this one. The
+  capture proxy now runs **inside** the sandbox
+  ([task 10](plans/README.md#task-10-run-the-capture-proxy-inside-the-sandbox),
+  [ADR-0012](../decisions/ADR-0012-in-sandbox-capture-proxy.md)) and this line
+  is unchanged by that: it already modified *requests* (OpenRouter `provider`
+  preferences, `X-Anthropic-Beta` mirroring) when it ran host-side, it still
+  does not touch assistant turns, and moving it changed where it runs rather
+  than what it may do.
 - **Training itself.** This component produces traces; running SFT on them is
   somebody else's pipeline.
 - **Deciding the data mixture.** [§9](#9-data-mixture--to-be-validated-not-solved)

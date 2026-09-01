@@ -31,8 +31,8 @@ this index is not a task: its results are recorded in
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
-| 09 | **Redact the production proxy capture** — gates *publishing* any proxy-captured trace | ⬜ |
-| 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ⬜ |
+| 09 | **Converge redaction onto one home and publish behind a gate** — the header/body redaction itself shipped with task 10 | ⬜ |
+| 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ✅ |
 
 ---
 
@@ -206,7 +206,7 @@ versus the cheap "failed once, gold self-test passes" proxy.
 - **Verification:** an experiment `REPORT.md`.
 - **Dependencies:** 07. **Scope:** L
 
-## Task 09: Redact the production proxy capture
+## Task 09: Converge redaction onto one home, behind a publishing gate
 
 **Description:** `ClaudeCodeHarness(capture="proxy")` declares
 `claude.proxy.jsonl` as a native output, so the proxy log is a registered run
@@ -229,18 +229,64 @@ whoever first publishes a proxy-captured trace publishes a credential and the
 operator's account identifiers with it. Task 02 put proxy capture near this
 pipeline's critical path, which is why the task is filed here.
 
-Redaction belongs **at write time**, not as an after-the-fact cleanup, so a raw
-artifact never exists on disk. `redact_record` in
-[`experiments/trace_synthesis/injection_shape/run_experiment.py`](../../../experiments/trace_synthesis/injection_shape/run_experiment.py)
-is the header set and the shape to start from.
+**The header and body redaction itself shipped with
+[task 10](#task-10-run-the-capture-proxy-inside-the-sandbox)**, because once the
+proxy runs in the sandbox it writes straight into the workspace and "write time"
+is physically inside `cc-reverse-proxy`. Credentials, the operator's
+organization / workspace ids, the rate-limit representative claim, `Set-Cookie`
+and the request body's `metadata.user_id` are masked there by default, and
+`swe_lab.harnesses.claude_code.redaction` checks a capture from this side. What
+remains is the part that was never about a header list.
 
-- **Acceptance:** a proxy-captured run's stored artifact carries no credential
-  and no operator identifier; a named test covers **both** directions (a request
-  credential header and a response identity header). `convert.py`'s redaction
-  docstring is corrected to say which capture it is talking about.
-- **Verification:** unit tests; one proxy-captured run inspected end to end.
-- **Dependencies:** none. **Gates:** publishing any proxy-captured trace — not
-  local runs. **Scope:** S
+**1. Converge the redaction facts onto one home.** The same fact is written down
+twice — in `src` and in
+[`experiments/…/run_experiment.py`](../../../experiments/trace_synthesis/injection_shape/run_experiment.py)
+— and the copies have already drifted twice: once in *membership* (the accepted
+set knew the representative claim and `metadata.user_id`; the `src` set was
+written narrower without consulting it) and once in *representation* (the
+experiment writes `<redacted>`, `src` writes `[REDACTED]`, so the `src` scanner
+calls **every** committed experiment capture dirty — 790 findings, all false).
+`src` owns the canonical set, the placeholder constant and the body field list;
+`experiments/` imports from it and never the reverse, since `experiments/` is
+exempt from the hooks. The superset assertion in
+`tests/test_proxy_redaction.py` is a splint until this lands.
+
+**2. Keep the old placeholder as a named legacy alias, with a date boundary.**
+The 37 committed captures are a **record** and must not be rewritten, so the
+scanner has to accept `<redacted>` too. That is not a second source of truth: a
+legacy alias is *closed* and dated, whereas two live constants keep diverging.
+
+**3. Make "unclassified" a state the scanner can report.** Redaction is a
+deny-list, so by construction an unenumerated field is recorded verbatim —
+"unseen fields are redacted by default" is not true today and nothing enforces
+it (ADR-0012 §4). The fix is three classes on the reading side: must be masked,
+deliberately kept, and **everything else reported as unclassified until someone
+classifies it**. The cost is one noise event whenever an upstream adds a field;
+the alternative is silent publication.
+
+What that defends against is worth stating precisely, because it changes the
+design: **the risk is changing upstream, not upstreams steadily adding fields.**
+Measured 2026-09-01 — across the 37 committed captures (158 records) the
+Anthropic response header space holds 26 names, and a fresh real Anthropic
+response returned 25 names of which **zero** had never been seen. The one field
+that *was* new arrived by switching upstream: `Set-Cookie`, on the OpenRouter
+path.
+
+**4. The publishing gate and the wider PII sweep.** Redacting the envelope is
+not the same as clearing a trace for publication: bodies carry repository
+contents and whatever the agent typed. The gate is what stands between a scanned
+capture and a HF dataset repo, and it is the part still missing.
+
+- **Acceptance:** one home for the set, the placeholder and the body field list,
+  with `experiments/` importing from `src`; the scanner reports unclassified
+  fields; a publishing path that refuses an unscanned capture or one carrying
+  unclassified fields.
+- **Verification:** unit tests, including one that fails if the two sets diverge
+  again; the scanner run over the committed captures reports **no** false
+  findings.
+- **Dependencies:** [task 10](#task-10-run-the-capture-proxy-inside-the-sandbox)
+  (done — it shipped the write-time redaction this builds on).
+  **Gates:** publishing any proxy-captured trace — not local runs. **Scope:** S
 
 ## Task 10: Run the capture proxy inside the sandbox
 
@@ -293,8 +339,11 @@ new has to be built.
   a **host** temporary directory until teardown, so the agent could not reach it
   at all while it ran; and "as reachable" is not "as sensitive" — the proxy log
   carries HTTP **headers**, which the event stream does not. One real capture
-  held **39** live credentials and operator identifiers where the stream capture
-  held none.
+  held **65** live credentials and operator identifiers across its 13 records
+  where the stream capture held none. (An earlier header-only count of the same
+  file said 39; the scopes differ — the wider one also covers the request body's
+  account id and the rate-limit representative claim — so the two numbers are
+  not comparable.)
 
   What makes it acceptable is therefore a mechanism, not a comparison:
   **redaction at write time**, so an unredacted capture never exists on disk
@@ -305,14 +354,19 @@ new has to be built.
 - **Acceptance:** proxy capture works with **no host firewall rule and no port
   allocation scheme**; `machine-setup` can then drop both `ufw` ranges together
   with their `defaults` variables and the bringup-acceptance row.
-- **Verification:** owned by the implementing PR, and deliberately **not**
-  "one proxy-captured run on a box with the rules removed" — that criterion is
-  weaker than the property it tests (it shows the rules were unused on one run,
-  not that nothing can depend on them) and it is circular here, since removing
-  the rules waits on the very change it would verify. The constructive form —
-  a proxy-captured run that binds **no host port at all**, with the agent
-  dialing container-local loopback — is what the implementer lands and is not
-  claimed as met by this entry.
+- **Verification:** **met, in the constructive form** — a proxy-captured run
+  that binds **no host port at all**, with the agent dialing container-local
+  loopback. Deliberately *not* "one proxy-captured run on a box with the rules
+  removed": that criterion is weaker than the property it tests (it shows the
+  rules went unused on one run, not that nothing can depend on them) and it is
+  circular, since removing the rules waits on the very change it would verify.
+  What was checked: the acceptance rollout bound no host listener of its own
+  (`ss -ltnp`; the sole listener in the old range belonged to another agent's
+  host-side proxy), and **both `ufw` rules were still present at the time** —
+  which is what makes the run evidence that they are not load-bearing rather
+  than evidence that they are gone. The structural half is stronger than the
+  run: the backend publishes no ports at all
+  (`test_up_maps_no_host_gateway`), so there is no host port to bind.
 - **Dependencies:** none. It gates nothing today (the firewall workaround has
   landed), but it removes a required component's dependency on machine-level
   configuration. **Scope:** M

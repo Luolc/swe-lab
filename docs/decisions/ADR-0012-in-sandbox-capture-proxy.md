@@ -186,7 +186,7 @@ cc-reverse-proxy#2. Turning the intended default into a mechanism belongs to
 task 09.
 
 This pulls forward the core of
-[trace-synthesis task 09](../trace-synthesis/plans/README.md#task-09-redact-the-production-proxy-capture),
+[trace-synthesis task 09](../trace-synthesis/plans/README.md#task-09-converge-redaction-onto-one-home-behind-a-publishing-gate),
 whose scope narrows to what is left: the publishing gate and the wider
 PII sweep, not the header redaction itself.
 
