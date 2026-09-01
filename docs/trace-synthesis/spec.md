@@ -1,18 +1,15 @@
 # Spec: Oracle-guided trace synthesis
 
-> **Status: Draft (2026-09-01) · nothing implemented.** No code exists for any
-> phase below; the invariants in [§12](#12-invariants-intended-none-enforced-today)
-> are therefore **intended, not enforced** — each names the test that must land
-> with the task that builds it. The mechanism decisions in
-> [§5](#5-the-mechanism-decisions) were taken by the owner on 2026-08-31 and
-> 2026-09-01 and are the design of record; earlier framings (a `PreToolUse`
-> deny-and-redirect gate, and a phase D that surgically removed the
-> interventions) are superseded and do not appear here.
->
 > **Scope:** a new component, parallel to the [horizontal
 > foundation](../horizontal/) rather than inside it — it consumes the engine,
 > harness and workflow layers but adds a product line of its own (training-data
-> synthesis) rather than shared plumbing.
+> synthesis) rather than shared plumbing. **Status lives only in
+> [`plans/README.md`](plans/README.md)**, this component's task index.
+>
+> The mechanism decisions in [§5](#5-the-mechanism-decisions) were taken by the
+> owner on 2026-08-31 and 2026-09-01 and are the design of record; earlier
+> framings (a `PreToolUse` deny-and-redirect gate, and a phase D that surgically
+> removed the interventions) are superseded and do not appear here.
 
 ## Objective
 
@@ -25,6 +22,15 @@ reasoning in it could have been produced by a model that knew only what the
 trace shows it knowing. A trace that reaches the right answer by a route the
 model could not have derived is worse than no trace: it looks like a good
 example, and what it teaches is confident guessing.
+
+It is a **design target, reached by construction rather than by a checker.**
+The construction argument is [§6](#6-the-trace-is-the-conversation-unedited),
+and it is an argument, not a test: the earlier framing's per-trace inducibility
+checker was dropped *because* of it ([§7](#7-what-that-simplifies)). What
+[§12](#12-invariants-intended-none-enforced-today) can pin is the mechanical
+half — that no intervention the actor received goes missing from the trace —
+and beyond that the check is a human reading a sample
+([§15](#15-success-criteria)).
 
 ## 1. The problem
 
@@ -119,13 +125,17 @@ telling a *future, blind* agent how to solve this task. One entry per stage:
 
 Two rules on the guidebook:
 
-1. **It never says it saw the answer.** It reads as a tutorial, not as a diff
-   summary.
+1. **It should never say it saw the answer.** It reads as a tutorial, not as a
+   diff summary. This is a property of generated prose and **nothing mechanical
+   can check it** — the check is a human reading a sample, so it stays a rule
+   for the Oracle's prompt rather than an invariant.
 2. **Every step carries a derivable justification.** This is not cosmetic. The
    Supervisor in phase C can only produce an honest nudge toward a step if a
    derivable reason for that step exists. A guidebook that says "open
    `foo/bar.py`" with no reachable *why* leaves the Supervisor nothing to say
-   except the answer.
+   except the answer. The schema can enforce that the field **exists**
+   ([task 04](plans/README.md)); whether the reason is genuinely derivable is
+   again a reader's judgement, not a test.
 
 The guidebook is **private**: it is intended never to enter the actor's context
 or the training trace. Nothing enforces that yet — see
@@ -158,7 +168,9 @@ is why that, too, is one of the
 
 The conversation of the phase-C run **is** the training trace. **Nothing is
 removed and nothing is synthesized** — see
-[§6](#6-the-trace-is-the-conversation-unedited). D converts the harness's
+[§6](#6-the-trace-is-the-conversation-unedited); that is an
+[invariant](#12-invariants-intended-none-enforced-today) with a named test, not
+just a statement of intent. D converts the harness's
 `stream-json` into the typed
 [`Conversation`](../horizontal/plans/task-06a-conversation-protocol.md) and
 persists it with the run's records.
@@ -276,7 +288,7 @@ measurement is what is recorded.
 |---|---|---|
 | A hook can fire on **every** tool call (`"matcher": ""`) | measured | Phase C is expressible |
 | Hooks can be injected per-run with `--settings <file-or-json>` plus an isolated `CLAUDE_CONFIG_DIR`; the user's own `~/.claude` hooks did not fire | measured | Fits our sandbox wiring. `--restricted` also isolates but **forbids** `--dangerously-skip-permissions` |
-| The actor's `thinking` blocks are present in full (text + signature) in both `stream-json` and the transcript | measured | The trace carries the model's own reasoning; nothing needs synthesizing |
+| The actor's `thinking` blocks are present in full (text + signature) in the `stream-json` stream | measured | The trace carries the model's own reasoning; nothing needs synthesizing. This is the representation that matters: `convert.py` reads the `stream-json` stream (or the proxy log), **never** the persisted transcript, so no claim about the transcript's `thinking` representation is load-bearing here and none is made |
 | `PreToolUse` **can** replace `tool_input` via `hookSpecificOutput.updatedInput` — whole-object replace, not merge | measured | Available, and deliberately unused ([§5](#5-the-mechanism-decisions)) |
 | After a rewrite, the assistant turn still shows the model's **original** `tool_use` while the result is the **rewritten** call's; nothing tells the actor | measured (`Edit`: model wrote `MODEL_WROTE`, hook wrote `HOOK_WROTE`, file on disk `HOOK_WROTE`, result said only "updated successfully") | The reason rewriting is banned: it desynchronizes the actor's own world model mid-run |
 | `PostToolUse` observes the **rewritten** input, `PreToolUse` the original | measured | If we ever needed to log a triple, this asymmetry is where |
@@ -309,9 +321,13 @@ seam), and re-confirming what `additionalContext` looks like at this version.
 build has to settle.
 
 It has a second half, and it is the more consequential one: even for a shape
-the actor *sees*, our typed `Conversation` conversion must **preserve** it. An
-`attachment` line most likely converts to nothing — and a trace that silently
-drops the hint is exactly the unmotivated-pivot trace that
+the actor *sees*, our typed `Conversation` conversion must **preserve** it —
+and today's converter demonstrably does not. `harnesses/claude_code/convert.py`
+skips every stream event whose `type` is not `user` or `assistant`, and drops
+content-block kinds it does not model. A `PostToolUse` hook's output reaches
+`stream-json` only as a `system` / `hook_response` event (and only under
+`--include-hook-events` at all), so **as the code stands the hint converts to
+nothing, silently** — which is exactly the unmotivated-pivot trace that
 [§6](#6-the-trace-is-the-conversation-unedited) calls worse than useless. If no
 hook output survives conversion as a visible turn, the alternative is to log the
 hint host-side and **materialize** it as a user turn during conversion.
@@ -373,8 +389,12 @@ The rest, in no particular order:
 ## 12. Invariants (intended; none enforced today)
 
 Per `AGENTS.md`, an *always / never* claim needs a named test or it must be
-softened. Nothing below is implemented, so every row is **intended** and names
-the test that must land in the same change as the code it constrains.
+softened. **None of the rows below are enforced today**; each names the test
+that must land in the same change as the code it constrains. Absolute-sounding
+claims elsewhere in this spec that are *not* in this table have been softened
+where they cannot be tested — the guidebook's tone
+([Phase B](#phase-b--the-oracle)) and the honesty of a trace's reasoning
+([Objective](#objective)) are read by a human, not asserted by a checker.
 
 | Intended invariant | Test that must pin it |
 |---|---|
@@ -383,6 +403,8 @@ the test that must land in the same change as the code it constrains.
 | Every phase B / C record carries the oracle-guided policy stamp | a test asserting the stamp is present on the record and that aggregation across differing stamps still errors |
 | A dropped or timed-out Supervisor decision is recorded, never silently ignored | a test asserting the run record shows the drop |
 | A hint lost in conversion is detectable — conversion fails rather than emitting a hint-less trace | a test feeding a run whose hint the converter cannot represent and asserting conversion errors |
+| Conversion neither drops nor synthesizes turns: the training trace is exactly the actor's turns plus the interventions the actor received | a test comparing the converted `Conversation` against the capture and the hint log, asserting equality of the turn sequence — no extra turn, no missing one |
+| No steering mechanism [§5](#5-the-mechanism-decisions) bans is in use: no `updatedInput`, no denial | a test over the injected hook settings asserting neither a rewrite field nor a deny decision is reachable |
 
 ## 13. Where this plugs into swe-lab
 
