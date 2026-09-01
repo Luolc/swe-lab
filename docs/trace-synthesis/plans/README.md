@@ -20,7 +20,7 @@ recorded in [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
 | # | Task | Status |
 |---|---|---|
 | 01 | **One hand-made instance, end to end, by hand** — the cheapest test of the core assumption | ⬜ |
-| 02 | **Measure the injection shape** — can a hook put a *user-role* turn at a tool boundary, and does it survive conversion? | ⬜ |
+| 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ⬜ |
 | 03 | **Hint materialization + conversion guard** (pure, tested) | ⬜ |
 | 04 | **Oracle analysis task + guidebook schema** | ⬜ |
 | 05 | **Supervisor + hook wiring in the sandbox** | ⬜ |
@@ -55,10 +55,13 @@ amount of machinery saves it.
 
 **Description:** Settle the spec's
 [head open question](../spec.md#11-open-questions) by measurement. What shape
-can a hook actually put into the conversation at a tool boundary, and which of
-them is a genuine **user-role** turn? `PostToolUse` `decision: "block"` is
-already measured and is *not* one (it lands as an `attachment`). The remaining
-candidates — `updatedToolOutput`, `PostToolBatch`'s `decision` /
+can a hook actually put into the conversation at a tool boundary, and which
+shapes pass the three tests the question now asks — the actor sees it, it is
+**marked as an external injection**, and our conversion preserves it? (The
+wire-level `role` field is not the criterion; owner, 2026-09-01.) `PostToolUse`
+`decision: "block"` is already measured and fails the third (it lands as an
+`attachment`). The candidates — `updatedToolOutput` carrying a tagged suffix
+appended to the tool's real output, `PostToolBatch`'s `decision` /
 `additionalContext`, and a re-confirmation of `additionalContext` at this
 version — get measured together with the two event-coverage questions
 (`PostToolUseFailure` for the spinning-after-an-error case, `PostToolBatch` for
@@ -67,10 +70,11 @@ the parallel-batch case), because those change what the experiment is asking.
 Each candidate is measured on **two** things: what the actor does with it, and
 what our typed `Conversation` conversion does with it.
 
-- **Acceptance:** a table of candidate → transcript shape → role as the model
-  sees it → whether the converter preserves it; plus a recommendation for the
-  head question and, if no candidate produces a user turn, the evidence the
-  owner needs to rule on materialization.
+- **Acceptance:** a table of candidate → transcript shape → what the model sees
+  it as → whether the converter preserves it → any observation on whether the
+  actor complies; plus a recommendation for the head question and, if no
+  candidate survives with its marker intact, the evidence the owner needs to
+  rule on materialization.
 - **Verification:** an experiment `REPORT.md` with the raw transcripts kept.
 - **Dependencies:** none (runs in parallel with 01). **Scope:** S
 
