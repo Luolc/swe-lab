@@ -1,9 +1,27 @@
 # Pre-registration — reject-then-accept witness
 
-**Committed before any data is collected.** The readings in §4 are fixed here and
-may not be revised after the run. Source: `DEBATE-VERDICT.md` §4 (*the cheapest
-single experiment that discriminates*), which this file implements without
-reinterpreting.
+**This document has two parts with different standing. Read the boundary before
+the content.**
+
+**§1–§8 — original, committed before any data existed.** Merged in
+[#314](https://github.com/Luolc/swe-lab/pull/314) at `2c5f438`, before a single
+API call was made. The readings in §4 are fixed there and may not be revised.
+Source: `DEBATE-VERDICT.md` §4 (*the cheapest single experiment that
+discriminates*), implemented without reinterpreting. **They have not been edited
+since**, and that is checkable: between the merge commit and now, the text above
+`## 9` differs by one trailing blank line.
+
+**§9 — an amendment dated 2026-09-01, written after a result.** It is
+**post-hoc with respect to the witness run**, which had already terminated as
+`material-retired` at `2026-09-01T22:16:20Z` and spent **$0.0107**; that result
+is stated in §9 rather than paraphrased, so a reader can judge what the amendment
+might have been fitted to. It is **prospective with respect to its own data**:
+**no call described in §9 has been made**, and its readings are fixed before any
+of them exist.
+
+The distinction matters because the two cannot be defended the same way. §1–§8
+are unfalsifiable-by-editing because they predate everything. §9 is not, and
+saying so is the only thing that makes its readings worth anything.
 
 ## 1. The question, and what it decides
 
