@@ -201,10 +201,42 @@ def test_answering_in_prose_is_an_action_and_fails_the_predicate(
 def test_every_fixture_is_distinct_and_carries_the_three_frozen_parts():
   tasks = _module("tasks")
 
-  assert len(tasks.FIXTURES) == 10
-  assert len(tasks.BY_SLUG) == 10
+  assert len(tasks.FIXTURES) == 20
+  assert len(tasks.BY_SLUG) == 20, "slugs collide, so a run cannot name its own"
   for fixture in tasks.FIXTURES:
     assert fixture.files, fixture.slug
     assert fixture.prompt.strip(), fixture.slug
     assert fixture.correction.strip(), fixture.slug
     assert callable(fixture.trigger) and callable(fixture.predicate)
+    # §4.1 admits a fixture only if its deviation is an opening move; the file
+    # count is the part of that condition a test can hold.
+    assert len(fixture.files) <= 6, fixture.slug
+
+
+def test_no_next_action_is_in_the_denominator_and_no_trigger_is_not():
+  criterion = _module("criterion")
+  rows = [
+      {"arm": "mid", "label": criterion.COMPLIED},
+      {"arm": "mid", "label": criterion.COMPLIED},
+      {"arm": "mid", "label": criterion.NOT_COMPLIED},
+      {"arm": "mid", "label": criterion.NO_NEXT_ACTION},
+      {"arm": "mid", "label": criterion.NO_TRIGGER},
+  ]
+
+  summary = criterion.summarize(rows)["arms"]["mid"]
+
+  assert (
+      summary["denominator"] == 4
+  ), "NO_NEXT_ACTION counts, NO_TRIGGER does not"
+  assert summary["complied"] == 2
+  assert summary["rate"] == 0.5
+  assert summary["labels"][criterion.NO_NEXT_ACTION] == 1
+
+
+def test_the_primary_outcome_is_the_difference():
+  criterion = _module("criterion")
+  rows = [{"arm": "mid", "label": criterion.COMPLIED} for _ in range(9)] + [
+      {"arm": "neg", "label": criterion.COMPLIED} for _ in range(2)
+  ]
+
+  assert criterion.summarize(rows)["mid_minus_neg"] == 7

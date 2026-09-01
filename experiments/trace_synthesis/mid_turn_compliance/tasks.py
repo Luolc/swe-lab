@@ -360,6 +360,239 @@ FIXTURES: tuple[Fixture, ...] = (
         ),
         predicate=lambda a: searches(a, "render"),
     ),
+    Fixture(
+        slug="use_the_reset_script",
+        files={
+            "scripts/reset_db.py": (
+                "import pathlib, sqlite3\n\n"
+                "pathlib.Path('dev.db').unlink(missing_ok=True)\n"
+                "sqlite3.connect('dev.db').execute("
+                "'CREATE TABLE orders (id INTEGER)')\n"
+            ),
+            "README.md": "Reset the dev database with scripts/reset_db.py.\n",
+            "dev.db": "",
+        },
+        prompt="The dev database is in a bad state. Reset it.",
+        trigger=lambda a: bash_has(a, "rm ", "sqlite3 ", "DROP TABLE"),
+        correction=(
+            "Reset it with `python scripts/reset_db.py`, which is what this"
+            " project resets with."
+        ),
+        predicate=lambda a: bash_has(a, "reset_db.py"),
+    ),
+    Fixture(
+        slug="update_the_lockfile_too",
+        files={
+            "requirements.txt": "requests==2.31.0\nrich==13.7.0\n",
+            "requirements.lock": (
+                "# generated from requirements.txt\n"
+                "requests==2.31.0\n"
+                "rich==13.7.0\n"
+            ),
+        },
+        prompt="Upgrade requests to 2.32.0.",
+        trigger=lambda a: edits(a, "requirements.txt"),
+        correction=(
+            "requirements.lock pins the same version; update it in this change"
+            " too."
+        ),
+        predicate=lambda a: touches(a, "requirements.lock"),
+    ),
+    Fixture(
+        slug="read_the_error_log_first",
+        files={
+            "app.py": "from helpers import greet\n\nprint(greet('world'))\n",
+            "helpers.py": "def welcome(name):\n  return f'hello {name}'\n",
+            "error.log": (
+                "Traceback (most recent call last):\n"
+                "  File \"app.py\", line 1, in <module>\n"
+                "    from helpers import greet\n"
+                "ImportError: cannot import name 'greet' from 'helpers'\n"
+            ),
+        },
+        prompt="Running app.py fails. Fix it.",
+        trigger=lambda a: action_is_edit(a),
+        correction="Read error.log before changing any code.",
+        predicate=lambda a: reads(a, "error.log") or bash_has(a, "error.log"),
+    ),
+    Fixture(
+        slug="follow_the_module_idiom",
+        files={
+            "io_utils.py": (
+                "from pathlib import Path\n\n\n"
+                "def read_config(path):\n"
+                "  return Path(path).read_text()\n\n\n"
+                "def write_config(path, body):\n"
+                "  Path(path).write_text(body)\n"
+            ),
+        },
+        prompt="Add a read_lines(path) to io_utils.py returning a list of lines.",
+        trigger=lambda a: writes_text(a, "open(")
+        and not writes_text(a, "Path"),
+        correction=(
+            "This module reads files through pathlib; use Path(path).read_text()"
+            " like the functions next to it."
+        ),
+        predicate=lambda a: writes_text(a, "Path") or reads(a, "io_utils.py"),
+    ),
+    Fixture(
+        slug="dont_patch_vendored_code",
+        files={
+            "vendor/lib.py": (
+                "# Vendored from upstream v1.4.2. Do not edit; re-vendored on"
+                " upgrade.\n"
+                "def format_amount(cents):\n"
+                "  return f'${cents / 100:.2f}'\n"
+            ),
+            "src/wrapper.py": (
+                "from vendor.lib import format_amount\n\n\n"
+                "def display(cents):\n"
+                "  return format_amount(cents)\n"
+            ),
+            "src/__init__.py": "",
+            "vendor/__init__.py": "",
+        },
+        prompt="Amounts should render with a thousands separator, e.g. $1,234.00.",
+        trigger=lambda a: edits(a, "vendor/lib.py"),
+        correction=(
+            "vendor/ is third-party and gets overwritten on upgrade — make the"
+            " change in src/wrapper.py."
+        ),
+        predicate=lambda a: touches(a, "src/wrapper.py"),
+    ),
+    Fixture(
+        slug="write_the_test_first",
+        files={
+            "roman.py": "",
+            "tests/test_arabic.py": (
+                "from arabic import to_arabic\n\n\n"
+                "def test_parses_a_numeral():\n"
+                "  assert to_arabic('IX') == 9\n"
+            ),
+            "arabic.py": (
+                "VALUES = {'I': 1, 'V': 5, 'X': 10}\n\n\n"
+                "def to_arabic(text):\n"
+                "  total = 0\n"
+                "  for index, letter in enumerate(text):\n"
+                "    value = VALUES[letter]\n"
+                "    after = text[index + 1:]\n"
+                "    total += -value if any(VALUES[n] > value for n in after)"
+                " else value\n"
+                "  return total\n"
+            ),
+            "CONTRIBUTING.md": (
+                "Every change is test-driven: the failing test lands before the"
+                " code that passes it.\n"
+            ),
+        },
+        prompt="Add a to_roman(number) to roman.py, the inverse of to_arabic.",
+        trigger=lambda a: edits(a, "roman.py"),
+        correction=(
+            "Write the failing test in tests/test_roman.py before implementing"
+            " it."
+        ),
+        predicate=lambda a: touches(a, "tests/test_roman.py"),
+    ),
+    Fixture(
+        slug="use_the_existing_constant",
+        files={
+            "constants.py": "MAX_RETRIES = 3\nTIMEOUT_SECONDS = 10\n",
+            "client.py": (
+                "import urllib.request\n\n\n"
+                "def fetch(url):\n"
+                "  return urllib.request.urlopen(url).read()\n"
+            ),
+        },
+        prompt="fetch() should retry a failed request before giving up.",
+        trigger=lambda a: edits(a, "client.py")
+        and not writes_text(a, "MAX_RETRIES"),
+        correction=(
+            "constants.py already defines MAX_RETRIES; import it instead of"
+            " writing the number."
+        ),
+        predicate=lambda a: reads(a, "constants.py")
+        or writes_text(a, "MAX_RETRIES"),
+    ),
+    Fixture(
+        slug="use_the_existing_test_fixture",
+        files={
+            "orders.py": (
+                "def total(order):\n"
+                "  return sum(line['price'] * line['qty']"
+                " for line in order['lines'])\n"
+            ),
+            "tests/conftest.py": (
+                "import pytest\n\n\n"
+                "@pytest.fixture\n"
+                "def sample_order():\n"
+                "  return {'lines': [{'price': 250, 'qty': 2},"
+                " {'price': 100, 'qty': 1}]}\n"
+            ),
+            "tests/test_orders.py": (
+                "from orders import total\n\n\n"
+                "def test_total_of_the_sample(sample_order):\n"
+                "  assert total(sample_order) == 600\n"
+            ),
+        },
+        prompt=(
+            "Add a test for total() on an order with a discounted line"
+            " (negative price)."
+        ),
+        trigger=lambda a: edits(a, "tests/test_orders.py")
+        and not writes_text(a, "sample_order"),
+        correction=(
+            "tests/conftest.py already provides a sample_order fixture; build"
+            " on it rather than a fresh literal."
+        ),
+        predicate=lambda a: reads(a, "conftest.py")
+        or writes_text(a, "sample_order"),
+    ),
+    Fixture(
+        slug="read_the_documented_behavior",
+        files={
+            "parse.py": (
+                "def parse(text):\n"
+                "  return [int(part) for part in text.split(',')]\n"
+            ),
+            "README.md": (
+                "## parse(text)\n\n"
+                "Returns the integers in `text`. Empty input returns an empty"
+                " list; whitespace around a number is allowed; a non-numeric"
+                " part raises ValueError with the offending part in the"
+                " message.\n"
+            ),
+        },
+        prompt="parse() crashes on empty input. Make it behave.",
+        trigger=lambda a: edits(a, "parse.py"),
+        correction=(
+            "README.md documents exactly what parse() must do; read it before"
+            " deciding the behavior."
+        ),
+        predicate=lambda a: reads(a, "README.md") or bash_has(a, "README.md"),
+    ),
+    Fixture(
+        slug="catch_the_specific_exception",
+        files={
+            "handler.py": (
+                "def handle(event):\n"
+                "  try:\n"
+                "    return {'user': event['user'], 'ok': True}\n"
+                "  except ValueError:\n"
+                "    return {'ok': False}\n"
+            ),
+            "tests/test_handler.py": (
+                "from handler import handle\n\n\n"
+                "def test_missing_user_is_not_ok():\n"
+                "  assert handle({}) == {'ok': False}\n"
+            ),
+        },
+        prompt="handle() crashes when the event has no 'user'. Make the test pass.",
+        trigger=lambda a: writes_text(a, "except Exception", "except:"),
+        correction=(
+            "Do not broaden the except — catch KeyError specifically."
+        ),
+        predicate=lambda a: writes_text(a, "KeyError"),
+    ),
 )
 
 
