@@ -544,3 +544,31 @@ def test_unreadable_resend_judgements_cannot_become_outcome_2(
   assert final["at"] == "resend"
   assert final["unreadable_judgements"] == 3
   assert final["distinct_completions"] == 3
+
+
+def test_identical_completions_outrank_unreadable_verdicts(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """Outcome 1 is the actor's property; an unreadable judge cannot undo it."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  calls = {"n": 0}
+
+  def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
+    calls["n"] += 1
+    raw = (
+        json.dumps({"adjudicable": True, "verdict": "off_track"})
+        if calls["n"] == 1
+        else "{"
+    )
+    return {"raw": raw, "usage": {"cost": 0.001}}
+
+  monkeypatch.setattr(witness, "_judge_completion", _judge)
+  witness.main()
+  final = json.loads((out / "classification.json").read_text())
+  assert final["classification"] == "outcome-1"
+  assert final["distinct_completions"] == 1
+  assert final["unreadable_judgements"] == 3
