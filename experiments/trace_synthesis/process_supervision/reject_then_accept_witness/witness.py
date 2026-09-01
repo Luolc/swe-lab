@@ -434,7 +434,12 @@ def main() -> None:
     # readings because an unfinished run is not one of them.
     classification, first_accept = "inconclusive", None
   elif accepted_at is not None:
-    classification, first_accept = "outcome-3", accepted_at + 1
+    # An accept that does not survive re-judging is not a witness (§8.3), and
+    # it is not outcome 2 either: the run stopped at the accept.
+    reproduced = next(
+        (r.get("accepted_of_3") for r in records if r.get("accepted")), None)
+    classification = "outcome-3" if reproduced == 3 else "unreproduced-accept"
+    first_accept = accepted_at + 1
   elif len(records) == args.k and len(shas) == 1:
     classification, first_accept = "outcome-1", None
   elif len(records) == args.k:
@@ -444,6 +449,8 @@ def main() -> None:
   (args.out_dir / "classification.json").write_text(json.dumps(
       {"classification": classification,
        "first_accept_attempt": first_accept,
+       "accepted_of_3": next(
+           (r.get("accepted_of_3") for r in records if r.get("accepted")), None),
        "distinct_completions": len(shas),
        "attempts": len(records), "total_usd": round(ledger.total, 6),
        "ceiling_usd": _COST_CEILING_USD}, indent=2))

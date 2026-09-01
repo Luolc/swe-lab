@@ -201,6 +201,7 @@ this week all came from two different states sharing one sentence:
 | `inconclusive` | cumulative cost exceeds the ceiling | the run did not finish; **not** outcome 2, which requires all K attempts |
 | `void` | a pre-registered digest does not match | **the material is not ours; this run did not happen.** Not a result of any kind, and nothing is spent — the check precedes every paid call |
 | `material-retired` | attempt 0's completion is no longer judged off-track | the step is retired and the next named one is used; reported as a result in its own right, since it is an observation about judge stability |
+| `unreproduced-accept` | an accept that does not survive re-judging | **not** outcome 3, because §8.3 says an accept that does not reproduce is not a witness — and **not** outcome 2 either, since the run stopped at the accept and never completed K attempts |
 
 `void` in particular is neither "we ran and got nothing acceptable" nor "we ran
 out of budget". It is *there was no run*.
@@ -276,6 +277,15 @@ So: **on the first accept, the same completion is judged twice more**, and the
 report states **"accepted n of 3"**. Cost is two judge calls, **counted in the
 ledger of §7**. An accept that does not reproduce is not a witness — and even a
 reproduced one establishes only the witness half of §3.3, per §4.
+
+**The bar is unanimity, fixed now: outcome 3 requires n = 3.** An accept with
+1 ≤ n < 3 is classified **`unreproduced-accept`**, its own ending — it is not
+outcome 3, and it is not outcome 2 either, because the run stopped at the accept
+and never completed K attempts. Unanimity rather than a majority because outcome
+3 is the only reading that reopens work, so the expensive claim takes the strict
+bar; with three samples, a 2-of-3 rule would let a judge answering at random
+qualify as a witness a substantial fraction of the time. No data exists at the
+time this threshold is written.
 
 ### 8.4 Attempt 0 — re-judge the original completion with *this* judge
 

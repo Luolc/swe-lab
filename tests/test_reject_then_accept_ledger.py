@@ -360,3 +360,31 @@ def test_a_first_accept_records_outcome_3_with_its_attempt_number(
   final = json.loads((out / "classification.json").read_text())
   assert final["classification"] == "outcome-3"
   assert final["first_accept_attempt"] == 1
+
+
+def test_an_accept_that_does_not_reproduce_is_not_a_witness(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """One accept and two rejecting repeats is not outcome-3."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  # Reject attempt 0, accept the first resend, then reject both re-judgements.
+  calls = {"n": 0}
+
+  def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
+    calls["n"] += 1
+    verdict = "on_track" if calls["n"] == 2 else "off_track"
+    return {
+        "raw": json.dumps({"adjudicable": True, "verdict": verdict}),
+        "usage": {"cost": 0.001},
+    }
+
+  monkeypatch.setattr(witness, "_judge_completion", _judge)
+  witness.main()
+  final = json.loads((out / "classification.json").read_text())
+  assert final["classification"] == "unreproduced-accept"
+  assert final["accepted_of_3"] == 1
+  assert final["first_accept_attempt"] == 1
