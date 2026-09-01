@@ -477,3 +477,70 @@ def test_an_unreadable_attempt_zero_is_not_material_retired(
   final = json.loads((out / "classification.json").read_text())
   assert final["classification"] == "judge-unparseable"
   assert final["at"] == "attempt-0"
+
+
+def test_unreadable_resend_judgements_cannot_become_outcome_2(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """Outcome 2 needs K readable verdicts, not K unreadable ones."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  calls = {"n": 0}
+
+  def _judge(*_args: object, **_kwargs: object) -> dict[str, object]:
+    calls["n"] += 1
+    raw = (
+        json.dumps({"adjudicable": True, "verdict": "off_track"})
+        if calls["n"] == 1
+        else "{"
+    )
+    return {"raw": raw, "usage": {"cost": 0.001}}
+
+  # Divergent completions, so outcome-1 does not apply and only the judge could
+  # decide -- and it never did.
+  seen = {"n": 0}
+  monkeypatch.setattr(witness, "_judge_completion", _judge)
+  proxy_log = tmp_path / "proxy_log.jsonl"
+
+  class _Diverging:
+
+    def __enter__(self) -> _Diverging:
+      return self
+
+    def __exit__(self, *_exc: object) -> None:
+      return None
+
+    def read(self) -> bytes:
+      seen["n"] += 1
+      with proxy_log.open("a") as handle:
+        _ = handle.write(
+            json.dumps(
+                {
+                    "response": {
+                        "message": {
+                            "content": [
+                                {"type": "text", "text": f"v{seen['n']}"}
+                            ],
+                            "usage": {"cost": 0.001},
+                        },
+                        "headers": {},
+                    }
+                }
+            )
+            + "\n"
+        )
+      return b"data: {}\n"
+
+  def _diverging(*_args: object, **_kwargs: object) -> _Diverging:
+    return _Diverging()
+
+  monkeypatch.setattr(witness.urllib.request, "urlopen", _diverging)
+  witness.main()
+  final = json.loads((out / "classification.json").read_text())
+  assert final["classification"] == "judge-unparseable"
+  assert final["at"] == "resend"
+  assert final["unreadable_judgements"] == 3
+  assert final["distinct_completions"] == 3

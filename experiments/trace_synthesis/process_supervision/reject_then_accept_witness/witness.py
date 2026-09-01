@@ -370,7 +370,8 @@ def main() -> None:
 
       verdict = _judge_completion(message, before, len(steps))
       ledger.record(f"judge:attempt-{attempt + 1}", verdict["usage"])
-      accepted = verdict_of(verdict["raw"]) == "on_track"
+      answer = verdict_of(verdict["raw"])
+      accepted = answer == "on_track"
       records.append({
           "attempt": attempt,
           "sent_body_sha256": payload_sha,
@@ -384,6 +385,7 @@ def main() -> None:
           "cf_ray": headers.get("Cf-Ray"),
           "usage": usage,
           "judge": verdict,
+          "judge_verdict": answer,
           "accepted": accepted,
           "proxy_max_retries": 0,
           "wall_seconds": round(time.time() - started, 2),
@@ -454,6 +456,9 @@ def main() -> None:
   inconclusive = inconclusive or ledger.exhausted
   accepted_at = next(
       (r["attempt"] for r in records if r.get("accepted")), None)
+  unreadable = sum(
+      1 for r in records
+      if not r.get("stopped_before_judging") and r.get("judge_verdict") is None)
   if inconclusive:
     # `void` and `material-retired` return earlier; the ceiling outranks the
     # readings because an unfinished run is not one of them.
@@ -466,7 +471,14 @@ def main() -> None:
     classification = "outcome-3" if reproduced == 3 else "unreproduced-accept"
     first_accept = accepted_at + 1
   elif len(records) == args.k and len(shas) == 1:
+    # Judge-independent: identical completions is a property of the actor, so
+    # this reading survives even if judgements were unreadable.
     classification, first_accept = "outcome-1", None
+  elif unreadable:
+    # Outcome 2 asserts "B samples and does not gate", which needs K *readable*
+    # verdicts. Without them nothing was judged, and silently counting an
+    # unreadable answer as a rejection would manufacture that claim.
+    classification, first_accept = "judge-unparseable", None
   elif len(records) == args.k:
     classification, first_accept = "outcome-2", None
   else:
@@ -477,6 +489,8 @@ def main() -> None:
        "accepted_of_3": next(
            (r.get("accepted_of_3") for r in records if r.get("accepted")), None),
        "distinct_completions": len(shas),
+       "unreadable_judgements": unreadable,
+       "at": "resend" if classification == "judge-unparseable" else None,
        "attempts": len(records), "total_usd": round(ledger.total, 6),
        "ceiling_usd": _COST_CEILING_USD}, indent=2))
   if inconclusive:

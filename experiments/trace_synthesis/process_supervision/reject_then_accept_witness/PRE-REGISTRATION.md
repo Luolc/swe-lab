@@ -118,7 +118,11 @@ Quoted from `DEBATE-VERDICT.md` §4; fixed before the run:
    re-send is deterministic or deduplicated. Adopt A′ (still gated on
    compliance). *This is the only outcome in which a pair study is allowed to
    decide anything; a pass of divergence still decides nothing about cost.*
-2. **Outputs diverge and 0/K accepted** → B samples and does not gate. On a step
+2. **Outputs diverge and 0/K accepted** → B samples and does not gate. *(This
+   requires K **readable** verdicts: an unreadable answer is not a rejection, and
+   a run containing one is `judge-unparseable`, never outcome 2. Outcome 1 is
+   unaffected — identical completions is a property of the actor, not the
+   judge.)* On a step
    that actually needs intervention, B's cost has **no measured finite bound**.
    Stay with A′.
 3. **First accept at attempt *k* ≤ 10** → **B exists.** *k* is the first cost
@@ -201,7 +205,7 @@ this week all came from two different states sharing one sentence:
 | `inconclusive` | cumulative cost exceeds the ceiling | the run did not finish; **not** outcome 2, which requires all K attempts |
 | `void` | a pre-registered digest does not match | **the material is not ours; this run did not happen.** Not a result of any kind, and nothing is spent — the check precedes every paid call |
 | `material-retired` | attempt 0's completion is no longer judged off-track | the step is retired and the next named one is used; reported as a result in its own right, since it is an observation about judge stability |
-| `judge-unparseable` | attempt 0's judge answer cannot be read | distinct from `material-retired`, which asserts the judge now *accepts* the step; an unreadable answer asserts nothing, so the premise cannot be established. #305 measured 2 of 69 judgements unparseable, so this is an ordinary path |
+| `judge-unparseable` | a judge answer cannot be read — at attempt 0, or on any resend | distinct from `material-retired`, which asserts the judge now *accepts* the step; an unreadable answer asserts nothing, so the premise cannot be established. #305 measured 2 of 69 judgements unparseable, so this is an ordinary path |
 | `unreproduced-accept` | an accept that does not survive re-judging | **not** outcome 3, because §8.3 says an accept that does not reproduce is not a witness — and **not** outcome 2 either, since the run stopped at the accept and never completed K attempts |
 
 `void` in particular is neither "we ran and got nothing acceptable" nor "we ran
