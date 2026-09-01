@@ -270,6 +270,17 @@ with the following repo-wide choices and deviations (full plan + rationale:
 - [`README.md`](README.md) is the map (roadmap + status); the
   [workstream docs](workstreams/) carry the detail.
 
+## Writing about downstream use
+
+This repository is public. Where a doc, ADR, plan or commit message needs to
+refer to how the library is used outside it, write the **general** case — "a
+downstream consumer runs the sweep on its own infrastructure", "an internal
+sandbox subclasses `Sandbox`" — rather than attributing a specific
+configuration, scale or number to a specific user. Recording what broke and
+what was reported is ordinary engineering history and stays; the rule is about
+*whose* setup a passage describes. Text already in the repo is not swept
+retroactively (owner's calibration, 2026-09-01).
+
 ## Hazards (learned the hard way)
 
 - **Memory ceiling: MAXJOBS=2.** On the 16 GB dev box, ≥ 6 headless agents (or

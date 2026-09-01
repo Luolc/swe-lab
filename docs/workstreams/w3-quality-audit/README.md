@@ -1,6 +1,13 @@
 # Workstream 3 — Quality auditing / skew
 
-**Status: 📋 Planned** *(first tool falls out of W2).*
+> 📚 **Archive (2026-07) — an intent, never a plan; never started.** No code was
+> ever written for this workstream. The nearest shipped work is
+> **benchmark-integrity detection**, which landed *horizontally* as
+> [`src/swe_lab/integrity/`](../../../src/swe_lab/integrity/)
+> ([ADR-0010](../../decisions/ADR-0010-benchmark-integrity.md)) — not under
+> `pipelines/`, as the "planned directions" below guessed. **Live status lives
+> elsewhere** — the workstream row in [`docs/README.md`](../../README.md). Read
+> this for the framing, not for instructions.
 
 Flag eval instances that no longer measure real capability — "skewed" examples:
 ambiguous specs vs. overly-specific tests, broken environments, contamination,
@@ -26,8 +33,9 @@ dataset defect vs. genuine) → record.
 - Turn the gold-sweep + eval-issue investigations into a **standing audit** that
   classifies every instance (healthy / dataset-defect / environment-broken /
   brittle-grader / contaminated).
-- Land as a sibling task under `src/swe_lab/pipelines/` once the eval pipeline (W2)
-  is running at scale.
+- Where such an audit would live is **open** — the guess recorded here was
+  `src/swe_lab/pipelines/`, and the integrity work that arrived first went
+  horizontal instead.
 
 ## Related experiments
 
