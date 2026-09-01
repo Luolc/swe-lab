@@ -388,3 +388,40 @@ def test_an_accept_that_does_not_reproduce_is_not_a_witness(
   assert final["classification"] == "unreproduced-accept"
   assert final["accepted_of_3"] == 1
   assert final["first_accept_attempt"] == 1
+
+
+def test_a_changed_original_completion_is_also_void(
+    witness: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """The gate binds attempt 0's material, not only the request body."""
+  import json
+
+  out = _arrange(
+      witness, monkeypatch, tmp_path, actor_cost=0.001, judge_cost=0.001
+  )
+  capture = tmp_path / "capture.jsonl"
+  rows = [json.loads(line) for line in capture.read_text().splitlines()]
+  # The body is untouched; only the completion attempt 0 re-judges changes.
+  rows[witness._STEP_INDEX]["response"]["message"]["content"] = [
+      {"type": "text", "text": "swapped"}
+  ]
+  _ = capture.write_text("".join(json.dumps(r) + "\n" for r in rows))
+
+  def _forbidden(*_args: object, **_kwargs: object) -> object:
+    raise AssertionError("a paid or starting call was reached")
+
+  monkeypatch.setattr(witness, "_judge_completion", _forbidden)
+  monkeypatch.setattr(witness, "_start_proxy", _forbidden)
+  monkeypatch.setattr(witness.urllib.request, "urlopen", _forbidden)
+
+  with pytest.raises(SystemExit) as raised:
+    witness.main()
+  assert "void" in str(raised.value)
+  material = json.loads((out / "material.json").read_text())
+  assert material["classification"] == "void"
+  assert material["body_sha256_observed"] == material["body_sha256_expected"]
+  assert (
+      material["original_completion_sha256_observed"]
+      != material["original_completion_sha256_expected"]
+  )
+  assert not (out / "ledger.json").exists()
