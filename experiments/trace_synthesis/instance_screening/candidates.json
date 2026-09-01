@@ -1,0 +1,1292 @@
+[
+  {
+    "rank_in_issue_261": 0,
+    "instance_id": "instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb",
+    "repo": "internetarchive/openlibrary",
+    "language": "python",
+    "verdict": "bad",
+    "category": "misleading_prompt",
+    "confidence": "high",
+    "evidence": "requirements say \"The method\" three times for the same three units the interface types \"Type: Function\"; the two halves of the task statement disagree and the graded tests only accept one placement.",
+    "fail_to_pass": 16,
+    "pass_to_pass": 9,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [
+        {
+          "name": "get_isbn_or_asin",
+          "interface_type": "function",
+          "requirements_noun": "method"
+        },
+        {
+          "name": "is_valid_identifier",
+          "interface_type": "function",
+          "requirements_noun": "method"
+        },
+        {
+          "name": "get_identifier_forms",
+          "interface_type": "function",
+          "requirements_noun": "method"
+        }
+      ],
+      "diagonal_units_compared": 3,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 1,
+    "instance_id": "instance_ansible__ansible-c1f2df47538b884a43320f53e787197793b105e8-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repo": "ansible/ansible",
+    "language": "python",
+    "verdict": "bad",
+    "category": "underspecified_prompt",
+    "confidence": "high",
+    "evidence": "test_api_parameters asserts the destinationAddress->dst_address API field mapping; none of the three prompt fields contains those spellings, no sibling bigip_message_routing_* module exists at base_commit, and the one in-repo precedent (bigiq_application_*.py) maps to destination_address instead.",
+    "fail_to_pass": 4,
+    "pass_to_pass": 0,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "ImportError",
+        "__future__",
+        "__metaclass__",
+        "absolute_import",
+        "admin",
+        "annoying_user",
+        "basic",
+        "blackhole",
+        "destinationAddress",
+        "division",
+        "except",
+        "foobar",
+        "https",
+        "json",
+        "library",
+        "localhost",
+        "ltm",
+        "module_utils",
+        "pass",
+        "password",
+        "peerSelectionMode",
+        "print_function",
+        "provider",
+        "server",
+        "sourceAddress",
+        "try",
+        "user"
+      ],
+      "token_but_present_in_repo": [
+        "ImportError",
+        "__future__",
+        "__metaclass__",
+        "absolute_import",
+        "admin",
+        "basic",
+        "blackhole",
+        "destinationAddress",
+        "division",
+        "except",
+        "foobar",
+        "https",
+        "json",
+        "library",
+        "localhost",
+        "ltm",
+        "module_utils",
+        "pass",
+        "password",
+        "print_function",
+        "provider",
+        "server",
+        "sourceAddress",
+        "try",
+        "user"
+      ],
+      "diagonal": [
+        {
+          "name": "ModuleParameters",
+          "interface_type": "class",
+          "requirements_noun": "module"
+        },
+        {
+          "name": "description",
+          "interface_type": "method",
+          "requirements_noun": "module"
+        },
+        {
+          "name": "src_address",
+          "interface_type": "method",
+          "requirements_noun": "module"
+        }
+      ],
+      "diagonal_units_compared": 3,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 2,
+    "instance_id": "instance_navidrome__navidrome-5001518260732e36d9a42fb8d4c054b28afab310",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "sessionKeyProperty is named in the prompt; the one signature change (sessionKeys.delete drops uid) is stated: \"must automatically derive the current user from the context.Context ... without passing an explicit user ID\".",
+    "fail_to_pass": 4,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [
+        {
+          "name": "DataStore.UserProps",
+          "interface_type": "method",
+          "requirements_noun": "interface"
+        },
+        {
+          "name": "SQLStore.UserProps",
+          "interface_type": "method",
+          "requirements_noun": "interface"
+        }
+      ],
+      "diagonal_units_compared": 2,
+      "uncovered_symbols": [
+        "DefaultGet",
+        "Delete",
+        "Get",
+        "Put",
+        "UserProps",
+        "delete"
+      ],
+      "signature_changes": [
+        {
+          "symbol": "delete",
+          "base": "func (sk *sessionKeys) delete(ctx context.Context, uid string) error {",
+          "gold": "func (sk *sessionKeys) delete(ctx context.Context) error {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 3,
+    "instance_id": "instance_future-architect__vuls-4c04acbd9ea5b073efe999e33381fa9f399d6f27",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "compile gate. base report/util.go:523 is `func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error)`; gold adds two bool parameters AND drops the error return. The graded test assigns one value. No prompt field mentions the return arity, and keeping (result, err) is the conservative choice.",
+    "fail_to_pass": 3,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "diff"
+      ],
+      "signature_changes": [
+        {
+          "symbol": "diff",
+          "base": "func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {",
+          "gold": "func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diffed models.ScanResults) {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 4,
+    "instance_id": "instance_tutao__tutanota-fe240cbf7f0fdd6744ef7bef8cb61676bcdbb621-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+    "repo": "tutao/tutanota",
+    "language": "ts",
+    "verdict": "good_with_caveat",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "checkEventValidity and the four CalendarEventValidity members are declared in the interface and every graded assertion follows from requirements. Caveats: fail_to_pass is 107 whole test suites with pass_to_pass empty, so one unrelated flake fails the instance; and TranslationKeysTest requires en/de/de_sie key sets to be identical, which punishes wiring the new UserErrors unless all three translation files are edited - never stated. Also note requirements give the precedence as invalid > pre-1970 > ordering while gold implements invalid > ordering > pre-1970; no graded case distinguishes them.",
+    "fail_to_pass": 107,
+    "pass_to_pass": 0,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 5,
+    "instance_id": "instance_protonmail__webclients-a6e6f617026794e7b505d649d2a7a9cdf17658c8",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "interface gives file path, function name, input, output and the rule verbatim; one graded test; 22-line gold patch; all five screens silent. NOTE: image family unrunnable (see runnability).",
+    "fail_to_pass": 1,
+    "pass_to_pass": 0,
+    "image_runnable": "unrunnable",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 6,
+    "instance_id": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "test asserts ...apiKey equals the lastFMAPIKey symbol; requirements only say \"fall back to a built-in shared API key\" and never name it (steered-impl's dossier).",
+    "fail_to_pass": 1,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "lastFMAPIKey"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 7,
+    "instance_id": "instance_future-architect__vuls-abd80417728b16c6502067914d27989ee575f0ee",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "test calls o.parseRpmQfLine(line) directly; requirements name only pkgPs/postScan/getOwnerPkgs and never ask for the extraction, and the interface field says \"No new interfaces are introduced\" (steered-impl's dossier).",
+    "fail_to_pass": 6,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "parseRpmQfLine"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "parseRpmQfLine"
+      ],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 8,
+    "instance_id": "instance_gravitational__teleport-b4e7cd3a5e246736d3fe8d6886af55030b232277",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "compile gate. base lib/backend/report.go:294 is `func buildKeyLabel(key []byte, sensitivePrefixes []string) string` and already implements the identical masking; base report_test.go:69-83 already holds the identical expectation table. The whole graded delta is the parameter type []byte -> string, which no prompt field mentions. The interface field pins MaskKeyName while TestBuildKeyLabel grades buildKeyLabel.",
+    "fail_to_pass": 1,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "buildKeyLabel"
+      ],
+      "signature_changes": [
+        {
+          "symbol": "buildKeyLabel",
+          "base": "func buildKeyLabel(key []byte, sensitivePrefixes []string) string {",
+          "gold": "func buildKeyLabel(key string, sensitivePrefixes []string) string {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 9,
+    "instance_id": "instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+    "repo": "qutebrowser/qutebrowser",
+    "language": "python",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "gold only changes the private _parse_value(self, val) -> (self, kind, val); the graded tests call klass().to_py(val) throughout. The observed failure was a genuine regression the agent could have seen by running the existing suite (steered-impl).",
+    "fail_to_pass": 6,
+    "pass_to_pass": 979,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 10,
+    "instance_id": "instance_flipt-io__flipt-3b2c25ee8a3ac247c3fad13ad8d64ace34ec8ee7",
+    "repo": "flipt-io/flipt",
+    "language": "go",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "requirements are unusually exact - the gRPC code Internal and the message \"failed to fetch list of flags\" verbatim, the BOOLEAN/VARIANT+Enabled rule, the default namespace. The interface declares Storer's method signature and New's full new signature, so the one signature change is stated. The four token alarms (ListWithOptions, NewNamespace, Results, FlagType_VARIANT_FLAG_TYPE) are all pre-existing repo API.",
+    "fail_to_pass": 4,
+    "pass_to_pass": 0,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "FlagType_VARIANT_FLAG_TYPE",
+        "ListWithOptions",
+        "NewNamespace",
+        "Results"
+      ],
+      "token_but_present_in_repo": [
+        "FlagType_VARIANT_FLAG_TYPE",
+        "ListWithOptions",
+        "NewNamespace",
+        "Results"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [
+        {
+          "symbol": "New",
+          "base": "func New(logger *zap.Logger, cacheCfg config.CacheConfig, bridge Bridge) *Server {",
+          "gold": "func New(logger *zap.Logger, cacheCfg config.CacheConfig, bridge Bridge, store Storer) *Server {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 11,
+    "instance_id": "instance_element-hq__element-web-b007ea81b2ccd001b00f332bee65070aa7fc00f9-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "arraySmoothingResample and arrayRescale are pure additions; requirements bullets 8-9 spell out the smoothing algorithm (neighbour-pair averaging at alternating interior positions excluding endpoints; repeat until length <= 2*points) and all four graded downsample cases reproduce under that reading. The three arrayFastResample entries in fail_to_pass fail at base only because the test module cannot import the two new names. Token alarms 100/curve/seeing are words in comments.",
+    "fail_to_pass": 7,
+    "pass_to_pass": 0,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 12,
+    "instance_id": "instance_future-architect__vuls-e3c27e1817d68248043bd09d63cc31f3344a6f2c",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "interface field reads \"No new interfaces are introduced\" while fail_to_pass is Test_ensure, which calls a brand-new unexported `ensure(servers, path, scanResults, generateFunc func() (string, error)) (needsOverwrite bool, err error)`. Its name, its parameter order, and the fact that it is separate from EnsureUUIDs are all unstated.",
+    "fail_to_pass": 8,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "generateFunc",
+        "scanResults"
+      ],
+      "token_but_present_in_repo": [
+        "scanResults"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "ensure"
+      ],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 13,
+    "instance_id": "instance_future-architect__vuls-f0b3a8b1db98eb1bd32685f1c36c41a99c3452ed",
+    "repo": "future-architect/vuls",
+    "language": "go",
+    "verdict": "good",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "the whole task is a rename requirements state verbatim (\"Rename the confidence label CpeNameMatch to CpeVersionMatch across all definitions, usages, and string representations\") plus a new CpeVendorProductMatch with the score 10 given. The two graded tests are pre-existing tests re-pointed at the new name.",
+    "fail_to_pass": 2,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 14,
+    "instance_id": "instance_gravitational__teleport-ba6c4a135412c4296dd5551bd94042f0dc024504-v626ec2a48416b10a88641359a169d99e935ff037",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "TestProcessStateGetState grades a newly added unexported processState.getState() and a componentStateEnum; lib/service/state.go exists at base with processState and stateOK but neither getState nor any per-component map. No prompt field gives those names. The interface field declares only SetOnHeartbeat, which the graded tests never touch - the same shape as teleport-b4e7cd3a.",
+    "fail_to_pass": 16,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "componentState",
+        "componentStateEnum",
+        "getState"
+      ],
+      "token_but_present_in_repo": [
+        "getState"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "getState"
+      ],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 15,
+    "instance_id": "instance_flipt-io__flipt-c6a7b1fd933e763b1675281b30077e161fa115a1",
+    "repo": "flipt-io/flipt",
+    "language": "go",
+    "verdict": "bad",
+    "category": "underspecified_prompt",
+    "confidence": "high",
+    "evidence": "tests require `version: 1.0` as the supported document version and assert EqualError(err, \"unsupported version: 5.0\"); the prompt says only \"validate that the document version is supported\" and never gives a version value or an error format.",
+    "fail_to_pass": 6,
+    "pass_to_pass": 0,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "nnamespace"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "NewImporter",
+        "WithNamespace"
+      ],
+      "signature_changes": [
+        {
+          "symbol": "NewImporter",
+          "base": "func NewImporter(store Creator, namespace string, createNS bool) *Importer {",
+          "gold": "func NewImporter(store Creator, opts ...ImportOpt) *Importer {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 16,
+    "instance_id": "instance_protonmail__webclients-cb8cc309c6968b0a2a5fe4288d0ae0a969ff31e1",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "requirements give a worked example for every one of the ten graded cases (drive.env.proton.black -> drive.proton.local:8888 etc.) and the interface declares the file and function. NOTE: image family unrunnable.",
+    "fail_to_pass": 10,
+    "pass_to_pass": 0,
+    "image_runnable": "unrunnable",
+    "screens": {
+      "token": [
+        "proton.local"
+      ],
+      "token_but_present_in_repo": [
+        "proton.local"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "replaceLocalURL"
+      ],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 17,
+    "instance_id": "instance_NodeBB__NodeBB-2657804c1fb6b84dc76ad3b18ecf061aaab5f29f-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "the payload reshape from an array to a single {tid, order} is stated verbatim (\"accepts a single payload containing the topic identifier (tid) and a zero-based target position (order)\"); the three graded behaviours (no-privileges error, no-op on an unpinned topic, relative order preserved) each map to a requirements bullet. All four screens silent. Soft spot, and a useful one: order 0 means the top of the pinned list as displayed (getSortedSetRevRange), the opposite direction from the old score-as-order behaviour - derivable but easy to get backwards.",
+    "fail_to_pass": 3,
+    "pass_to_pass": 169,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 18,
+    "instance_id": "instance_gravitational__teleport-007235446f85b1cbaef92664c3b3867517250f21",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "verdict": "good",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "the exact error text is produced by the test's own fake FileSystem (newErrMissingFile), so the solver only has to propagate it unwrapped, which requirements demand (\"path-qualified error in the exact form\"). Requirements also state explicitly that they do not prescribe internal function names. One graded test, and it is an end-to-end SCP flow.",
+    "fail_to_pass": 1,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 19,
+    "instance_id": "instance_protonmail__webclients-ac23d1efa1a6ab7e62724779317ba44c28d78cfd",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "requirements state the optional cancellation parameter and, bullet by bullet, the exact result object the single graded test asserts. The signature alarm is benign: the added parameter is optional and stated. NOTE: image family unrunnable.",
+    "fail_to_pass": 1,
+    "pass_to_pass": 18,
+    "image_runnable": "unrunnable",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "subscriptionExpires"
+      ],
+      "signature_changes": [
+        {
+          "symbol": "subscriptionExpires",
+          "base": "export function subscriptionExpires(): FreeSubscriptionResult;",
+          "gold": "export function subscriptionExpires(subscription: undefined | null, cancelled?: boolean): FreeSubscriptionResult;"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 20,
+    "instance_id": "instance_gravitational__teleport-2b15263e49da5625922581569834eec4838a9257-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "verdict": "good",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "the interface field is exhaustive (every exported type, constructor and method of the new tokencount.go) and requirements state the two changed signatures verbatim, including `(any, *model.TokenCount, error)`. The expected token totals 721/729/932 rest on perMessage/perRole/perRequest, which already exist at base_commit - the gold diff removes lines that use them.",
+    "fail_to_pass": 14,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "add",
+        "completionStart",
+        "defaultTokenizer",
+        "tokenCount"
+      ],
+      "token_but_present_in_repo": [
+        "add"
+      ],
+      "diagonal": [
+        {
+          "name": "TokenCount",
+          "interface_type": "method",
+          "requirements_noun": "type"
+        }
+      ],
+      "diagonal_units_compared": 1,
+      "uncovered_symbols": [
+        "Complete"
+      ],
+      "signature_changes": [
+        {
+          "symbol": "Complete",
+          "base": "func (chat *Chat) Complete(ctx context.Context, userInput string, progressUpdates func(*model.AgentAction)) (any, error) {",
+          "gold": "func (chat *Chat) Complete(ctx context.Context, userInput string, progressUpdates func(*model.AgentAction)) (any, *model.TokenCount, error) {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 21,
+    "instance_id": "instance_element-hq__element-web-aec454dd6feeb93000380523cbb0b3681c0275fd-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "low",
+    "evidence": "LruCache.values() ordering is asserted as an exact array in about eight graded tests - set a then b gives [\"a value\", \"b value\"], fixing least-recent-first - while requirements say only \"iterates current contents in the cache's internal order\", which fixes no direction at all. Low confidence, and deliberately so: least-recent-first is the more common convention, so a careful solver may well land on it. Note the snapshot screen does NOT condemn this one - its test patch does carry a committed snapshot, but for Pill-test.tsx, which no fail_to_pass entry names; that snapshot is collateral in the same upstream PR, not the grading mechanism.",
+    "fail_to_pass": 36,
+    "pass_to_pass": 164,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "Membership",
+        "RoomMemberEvent",
+        "retrieving"
+      ],
+      "token_but_present_in_repo": [
+        "Membership",
+        "RoomMemberEvent",
+        "retrieving"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "LruCache",
+        "UserProfilesStore"
+      ],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 22,
+    "instance_id": "instance_internetarchive__openlibrary-d40ec88713dc95ea791b252f92d2f7b75e107440-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+    "repo": "internetarchive/openlibrary",
+    "language": "python",
+    "verdict": "good_with_caveat",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "requirements state both renames verbatim (\"The function previously named import_author should be replaced by author_import_record_to_author\", same for build_query -> import_record_to_edition) and the interface declares load_author_import_records and check_cover_url_host. Caveat: 28 required tests over a broad import pipeline, pass_to_pass empty.",
+    "fail_to_pass": 28,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 3,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 23,
+    "instance_id": "instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "verdict": "good_with_caveat",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "the interface declares LocalKeyAgent.ClientCertPool with its full signature and requirements name the assertion the single graded test makes (\"must surface the proxy's 'subsystem request failed' error\"). Caveat: that one test starts real auth and proxy processes and performs an SSO login, so a failure is as likely to be environmental as cognitive; pass_to_pass empty.",
+    "fail_to_pass": 1,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 24,
+    "instance_id": "instance_NodeBB__NodeBB-f2082d7de85eb62a70819f4f3396dd85626a0c0a-vd59a5728dfc977f44533186ace531248c2917516",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "the interface declares postsAPI.getRaw and postsAPI.getSummary with `caller, { pid }` inputs and the \"... or null\" contract, and requirements state the deleted-post rule (admin, moderator or author) that three of the five graded tests turn on.",
+    "fail_to_pass": 5,
+    "pass_to_pass": 111,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [
+        {
+          "name": "getSummary",
+          "interface_type": "method",
+          "requirements_noun": "module"
+        }
+      ],
+      "diagonal_units_compared": 1,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 25,
+    "instance_id": "instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "verdict": "uncertain",
+    "category": "overly_strict_tests",
+    "confidence": "low",
+    "evidence": "the graded response test builds an expected Subsonic Share with Url \"http://localhost/p/ABC123\" and an Expires timestamp, and navidrome compares responses against committed .snapshots/ golden files. Requirements say only \"Response formats must comply with standard Subsonic specifications\" and \"apply reasonable defaults\" without naming a default expiry. Not resolved: whether the golden file is checked out at grading time, which decides whether the byte-exact comparison is actually graded.",
+    "fail_to_pass": 2,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "300",
+        "ABC123",
+        "Check it out!",
+        "Expires",
+        "LastVisited",
+        "Url",
+        "http://localhost/p/ABC123"
+      ],
+      "token_but_present_in_repo": [
+        "300",
+        "Expires",
+        "Url"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [
+        {
+          "symbol": "Share",
+          "base": "func (db *MockDataStore) Share(context.Context) model.ShareRepository {",
+          "gold": "type Share struct {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 26,
+    "instance_id": "instance_qutebrowser__qutebrowser-77c3557995704a683cdb67e2a3055f7547fa22c3-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d",
+    "repo": "qutebrowser/qutebrowser",
+    "language": "python",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "requirements pin both graded tests almost verbatim, including the private attribute name (\"an accessible values._vmap attribute whose iteration order reflects the insertion order; iter(values) must exactly match list(values._vmap.values())\") and the repr shape `odict_values([ScopedValue(...)])`, which also fixes the container as collections.OrderedDict. test_add_url_benchmark is in the test patch but not in fail_to_pass. Caveat: so tightly specified that a hint has little left to teach.",
+    "fail_to_pass": 2,
+    "pass_to_pass": 26,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 27,
+    "instance_id": "instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+    "repo": "flipt-io/flipt",
+    "language": "go",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "TestLoad asserts exact validation error values - errors.New(\"buffer capacity below 2 or above 10\"), errors.New(\"flush period below 2 minutes or greater than 5 minutes\"), errors.New(\"file not specified\"). Requirements state the conditions (\"outside 2-10\", \"outside 2m-5m\", \"enabled without a file\") and never the wording. The token screen surfaced all three literals.",
+    "fail_to_pass": 23,
+    "pass_to_pass": 0,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "AddEvent",
+        "AuditUnaryInterceptor",
+        "RegisterSpanProcessor",
+        "SpanProcessor",
+        "WithAttributes",
+        "above",
+        "below",
+        "buffer capacity below 2 or above 10",
+        "file not specified",
+        "flush period below 2 minutes or greater than 5 minutes",
+        "go.flipt.io/flipt/internal/server/audit",
+        "go.flipt.io/flipt/internal/server/auth",
+        "greater",
+        "minutes",
+        "period",
+        "segment",
+        "specified",
+        "sse",
+        "than"
+      ],
+      "token_but_present_in_repo": [
+        "WithAttributes",
+        "above",
+        "below",
+        "go.flipt.io/flipt/internal/server/auth",
+        "greater",
+        "minutes",
+        "period",
+        "segment",
+        "specified",
+        "than"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "AuditUnaryInterceptor",
+        "Close",
+        "DecodeToAttributes",
+        "RegisterSpanProcessor",
+        "SendAudits"
+      ],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 28,
+    "instance_id": "instance_element-hq__element-web-f63160f38459fb552d00fcc60d4064977a9095a6-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "every graded assertion is toHaveTextContent on a string requirements give verbatim (\"Can't load this message\", \"<displayName> wants to verify\"). Both test helpers wrap the component in TileErrorBoundary, so throwing and rendering the string are equally acceptable; the thrown messages are only console-filtered, never asserted.",
+    "fail_to_pass": 4,
+    "pass_to_pass": 195,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "Attempting",
+        "MatrixClientContext"
+      ],
+      "token_but_present_in_repo": [
+        "Attempting",
+        "MatrixClientContext"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 29,
+    "instance_id": "instance_ansible__ansible-de5858f48dc9e1ce9117034e0d7e76806f420ca8-v1055803c3a812189a1133297f7f5468579283f86",
+    "repo": "ansible/ansible",
+    "language": "python",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "test_missing_cache_dir asserts the cache file's byte-exact content, `actual_cache == '{\"version\": 1}'`. The prompt says only \"storage of a version marker in the cache\" - it never gives the value 1 nor the serialization. The interface field is empty. get_cache_id's exact \"host:port\" form (with a trailing colon when there is no port) is likewise only implied.",
+    "fail_to_pass": 17,
+    "pass_to_pass": 41,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "Galaxy cache has world writable access (%s), ignoring it as a cache source.",
+        "_cache",
+        "cache_dir",
+        "chmod",
+        "st_mode"
+      ],
+      "token_but_present_in_repo": [
+        "_cache",
+        "chmod",
+        "st_mode"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 30,
+    "instance_id": "instance_element-hq__element-web-4fec436883b601a3cac2d4a58067e597f737b817-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "two independent kills. Deductive: the test patch adds committed DOM snapshots for DeviceDetailHeading-test.tsx, DeviceDetails-test.tsx and SessionManagerTab-test.tsx, all three of which fail_to_pass names, so grading fixes every class name and nesting level of the rendered output. Separately underspecified: the graded tests query by exact data-testid values - device-detail-heading, device-heading-rename-cta, device-rename-input, device-rename-submit-cta, device-rename-cancel-cta, device-rename-error - while requirements say only \"should expose stable testing hooks (e.g., data-testid attributes)\" and name none of them.",
+    "fail_to_pass": 16,
+    "pass_to_pass": 35,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "Error setting session display name",
+        "aware",
+        "device-detail-heading",
+        "device-heading-rename-cta",
+        "device-rename-cancel-cta",
+        "device-rename-error",
+        "device-rename-input",
+        "device-rename-submit-cta",
+        "labelledby",
+        "mx_DeviceDetailHeading",
+        "mx_DeviceDetailHeading_renameCta",
+        "mx_DeviceDetailHeading_renameForm",
+        "mx_DeviceDetailHeading_renameFormButtons",
+        "mx_DeviceDetailHeading_renameFormHeading",
+        "mx_DeviceDetailHeading_renameFormInput",
+        "setDeviceDetails"
+      ],
+      "token_but_present_in_repo": [
+        "Error setting session display name",
+        "aware",
+        "labelledby",
+        "setDeviceDetails"
+      ],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": [
+        {
+          "snapshot": "test/components/views/settings/devices/__snapshots__/DeviceDetailHeading-test.tsx.snap",
+          "graded_test_file": "DeviceDetailHeading-test.tsx"
+        },
+        {
+          "snapshot": "test/components/views/settings/devices/__snapshots__/DeviceDetails-test.tsx.snap",
+          "graded_test_file": "DeviceDetails-test.tsx"
+        },
+        {
+          "snapshot": "test/components/views/settings/tabs/user/__snapshots__/SessionManagerTab-test.tsx.snap",
+          "graded_test_file": "SessionManagerTab-test.tsx"
+        }
+      ]
+    }
+  },
+  {
+    "rank_in_issue_261": 31,
+    "instance_id": "instance_gravitational__teleport-d6ffe82aaf2af1057b69c61bf9df777f5ab5635a-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "verdict": "good_with_caveat",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "all four signature changes the screen flags are stated: requirements bullet 35 gives the new callback verbatim as `varValidation(namespace, name string) error`, and MatchExpression plus MatchExpression.Match() are declared in the interface. Caveat: 71 required tests over an expression-language rewrite - determinate on paper, very large in practice.",
+    "fail_to_pass": 71,
+    "pass_to_pass": 43,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "Interpolate",
+        "Match",
+        "NewExpression",
+        "NewMatcher"
+      ],
+      "signature_changes": [
+        {
+          "symbol": "Interpolate",
+          "base": "func (p *Expression) Interpolate(traits map[string][]string) ([]string, error) {",
+          "gold": "func (e *Expression) Interpolate(varValidation func(namespace, name string) error, traits map[string][]string) ([]string, error) {"
+        },
+        {
+          "symbol": "Match",
+          "base": "func (set RuleSet) Match(whereParser predicate.Parser, actionsParser predicate.Parser, resource string, verb string) (bool, error) {",
+          "gold": "func (e *MatchExpression) Match(in string) bool {"
+        },
+        {
+          "symbol": "NewExpression",
+          "base": "func NewExpression(variable string) (*Expression, error) {",
+          "gold": "func NewExpression(value string) (*Expression, error) {"
+        },
+        {
+          "symbol": "NewMatcher",
+          "base": "func NewMatcher(value string) (m Matcher, err error) {",
+          "gold": "func NewMatcher(value string) (*MatchExpression, error) {"
+        }
+      ],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 32,
+    "instance_id": "instance_protonmail__webclients-d494a66038112b239a381f49b3914caf8d2ef3b4",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "requirements give all three warning strings verbatim with their priority order, the disabled-flag formula, and the instruction to move the ResizeObserver mock into the shared jest setup that the test file relies on. Caveat: so tightly specified there is little for a hint to teach. NOTE: image family unrunnable.",
+    "fail_to_pass": 1,
+    "pass_to_pass": 0,
+    "image_runnable": "unrunnable",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 33,
+    "instance_id": "instance_navidrome__navidrome-6bd4c0f6bfa653e9b8b27cfdc2955762d371d6e9",
+    "repo": "navidrome/navidrome",
+    "language": "go",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "the one graded redaction case is stated verbatim (\"to map or other value types after stringification using Go's default formatting before regex replacement\"), and the reverse-proxy bullets give the Remote-User default, the CIDR whitelist semantics and the null auth object. RemoteAddr is a stdlib field.",
+    "fail_to_pass": 3,
+    "pass_to_pass": 2,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "RemoteAddr"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 34,
+    "instance_id": "instance_protonmail__webclients-6e165e106d258a442ae849cdf08260329cb92d39",
+    "repo": "protonmail/webclients",
+    "language": "js",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "the interface field declares getRegularRenewalNoticeText while every graded test imports and calls getCheckoutRenewNoticeText, which no prompt field names - the third instance in this set of the interface pinning one symbol while grading happens on another. NOTE: image family unrunnable.",
+    "fail_to_pass": 7,
+    "pass_to_pass": 6,
+    "image_runnable": "unrunnable",
+    "screens": {
+      "token": [
+        "MaximumRedemptionsPerUser"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [
+        "getCheckoutRenewNoticeText"
+      ],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 35,
+    "instance_id": "instance_element-hq__element-web-880428ab94c6ea98d3d18dcaeb17e8767adcb461-vnan",
+    "repo": "element-hq/element-web",
+    "language": "js",
+    "verdict": "bad",
+    "category": "overly_strict_tests",
+    "confidence": "high",
+    "evidence": "the graded test \"should render as expected\" is expect(renderResult.baseElement).toMatchSnapshot() against a committed __snapshots__/UnverifiedSessionToast-test.tsx.snap that the test patch adds, and fail_to_pass names that test file. A DOM snapshot fixes every class name and nesting level; no prose prompt can pin that, so this is overly strict tests by construction rather than by suspicion.",
+    "fail_to_pass": 4,
+    "pass_to_pass": 64,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [
+        "Action",
+        "ViewUserDeviceSettings",
+        "Yes, it was me",
+        "dis",
+        "dispatch"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": [
+        {
+          "snapshot": "test/toasts/__snapshots__/UnverifiedSessionToast-test.tsx.snap",
+          "graded_test_file": "UnverifiedSessionToast-test.tsx"
+        }
+      ]
+    }
+  },
+  {
+    "rank_in_issue_261": 36,
+    "instance_id": "instance_NodeBB__NodeBB-445b70deda20201b7d9a68f7224da751b3db728c-v4fbcfae8b15e4ce5d132c408bca69ebb9cf146ed",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "verdict": "good",
+    "category": null,
+    "confidence": "high",
+    "evidence": "each guard is stated verbatim with its error string - a call lacking both mid and roomId must fail with [[error:invalid-data]], likewise chats.list without start/stop/page and users.getPrivateRoomId without uid. The tests pass undefined, so the `= {}` default destructuring follows from \"a call without ... must fail with\".",
+    "fail_to_pass": 4,
+    "pass_to_pass": 69,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 37,
+    "instance_id": "instance_NodeBB__NodeBB-cfc237c2b79d8c731bbfc6cadf977ed530bfd57a-v0495b863a912fbff5749c67e860612b91825407c",
+    "repo": "NodeBB/NodeBB",
+    "language": "js",
+    "verdict": "bad",
+    "category": "underspecified_prompt",
+    "confidence": "high",
+    "evidence": "the second graded test sets icon:bgColor to the invalid value 'teal' and requires the returned payload's icon:bgColor to be a member of getIconBackgrounds() - i.e. an invalid stored value must be replaced by a valid one. Nothing in the prompt says so. The requirements field is degenerate: six bullets about Node module-export mechanics (one part-Spanish) instead of the feature.",
+    "fail_to_pass": 2,
+    "pass_to_pass": 193,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "colour",
+        "validBackgrounds"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [
+        {
+          "name": "User.getIconBackgrounds",
+          "interface_type": "function",
+          "requirements_noun": "method"
+        }
+      ],
+      "diagonal_units_compared": 1,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 38,
+    "instance_id": "instance_gravitational__teleport-bb562408da4adeae16e025be65e170959d1ec492-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "repo": "gravitational/teleport",
+    "language": "go",
+    "verdict": "good_with_caveat",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "the interface field is a complete specification of the new package - Config with its three fields and SetDefaults, Buffer[T] with NewBuffer/Append/NewCursor/Close, Cursor[T] with Read/TryRead/Close, and the three error variables - and requirements add the defaults (64, 5m) and the finalizer requirement TestCursorFinalizer grades. Caveat: a from-scratch concurrent data structure, the second slowest in the set. The 78 token alarms were license-header words.",
+    "fail_to_pass": 3,
+    "pass_to_pass": 0,
+    "image_runnable": "proven",
+    "screens": {
+      "token": [
+        "30",
+        "AS IS",
+        "Background",
+        "Done",
+        "Err",
+        "License",
+        "Load",
+        "RLock",
+        "RUnlock",
+        "Second",
+        "append",
+        "buf",
+        "case",
+        "chan",
+        "close",
+        "com",
+        "defer",
+        "github",
+        "github.com/jonboulle/clockwork",
+        "jonboulle",
+        "make",
+        "panic",
+        "ring",
+        "runtime",
+        "select"
+      ],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  },
+  {
+    "rank_in_issue_261": 39,
+    "instance_id": "instance_ansible__ansible-e40889e7112ae00a21a2c74312b330e67a766cc0-v1055803c3a812189a1133297f7f5468579283f86",
+    "repo": "ansible/ansible",
+    "language": "python",
+    "verdict": "good_with_caveat",
+    "category": null,
+    "confidence": "medium",
+    "evidence": "requirements state the four-element requirement tuple (name, version, type, path), the git-URL '#' syntax, the accepted type values and the galaxy.yml check that the graded tests exercise. Caveat: the interface field is empty, there are 18 required tests across 27 touched files, and it is the slowest instance in issue #261.",
+    "fail_to_pass": 18,
+    "pass_to_pass": 191,
+    "image_runnable": "untested",
+    "screens": {
+      "token": [],
+      "token_but_present_in_repo": [],
+      "diagonal": [],
+      "diagonal_units_compared": 0,
+      "uncovered_symbols": [],
+      "signature_changes": [],
+      "graded_snapshots": []
+    }
+  }
+]
