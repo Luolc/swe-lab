@@ -31,7 +31,12 @@ jobs:
         run: uv sync
 
       - name: Tests
-        run: uv run pytest -q
+        # `-rs` lists every skip with its reason. Without it a green run
+        # cannot answer "did the docker-marked tests run?" — `conftest.py`
+        # auto-skips them when no daemon is reachable, so passing and skipped
+        # look identical from the outside and the answer has to be inferred by
+        # subtracting counts.
+        run: uv run pytest -q -rs
 
       # pyink + ruff + isort + basedpyright + uv-lock. basedpyright type-checks
       # against .venv, so this runs after `uv sync`.

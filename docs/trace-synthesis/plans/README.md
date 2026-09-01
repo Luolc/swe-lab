@@ -5,6 +5,15 @@ planning convention: [`spec.md`](../spec.md) = target design, `plans/` = one
 deep design per task, indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L=5–8
 (break down if larger).
 
+> [!WARNING]
+> **Two rows below describe a terminated arm and are pending reconciliation**
+> (2026-09-01): task 01's acceptance and the whole of task 03 are written
+> against hint injection, which was closed by its own pre-registered kill
+> condition ([spec §15.1](../spec.md#15-success-criteria)). **Do not start
+> either** before [Pending reconciliation](#pending-reconciliation-2026-09-01)
+> at the end of this file is resolved. The ordering principle in the next
+> paragraph rests on the same terminated assumption.
+
 **Single source of truth for status:** this table is the *only* live status for
 these tasks. Any `plans/task-NN-*.md` that appears later is a point-in-time
 **design record** — don't read status from it.
@@ -23,9 +32,9 @@ this index is not a task: its results are recorded in
 
 | # | Task | Status |
 |---|---|---|
-| 01 | **One instance, end to end** — an automated walkthrough producing the pipeline's first real artifacts on one real instance | ⬜ |
+| 01 | **One instance, end to end** — an automated walkthrough producing the pipeline's first real artifacts on one real instance | ⚠ ⬜ **pending reconciliation** — its acceptance is the terminated arm's; a rewritten form is proposed [below](#pending-reconciliation-2026-09-01) |
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
-| 03 | **Hint log + conversion guard** (pure, tested) | ⬜ |
+| 03 | **Hint log + conversion guard** (pure, tested) | ⚠ ⬜ **proposed for closure** — the task exists only for the terminated arm; see [below](#pending-reconciliation-2026-09-01) |
 | 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement. Wording follow-up from #276's review (P2, not a task — fold into the next edit of those passages): the design record's rationale and `oracle.py`'s module docstring still use the shorthand "the fix commit is reachable, and the brief says so" / "a run handed the answer" — scoped to phase B, where the purge is off, so consistent with the purge measured in rollouts, but untrue for a dataset that records no fix commit or reference patch, which the task supports — and `datasets/oracle_failures/README.md` lists the delegated gold patch without its when-recorded qualifier |
 | 05 | **Supervisor + hook wiring in the sandbox** | ⬜ |
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
@@ -464,3 +473,123 @@ design record is
   the same two failed tests the experiment's report diagnoses. Follow-ups are
   named in the design record: a blind run of the task — guided or not — must
   run `record.instance`, and the policy stamp on phase-B records is task 07's.
+
+---
+
+## Pending reconciliation (2026-09-01)
+
+**Nothing here is decided.** These are proposals awaiting the owner's ruling,
+recorded in the repo rather than left in a session, because the rows they
+concern are *live* and a reader would otherwise take them as work to start.
+
+### Why this exists at all
+
+[#279](https://github.com/Luolc/swe-lab/pull/279) closed the injection arm on
+its own pre-registered kill condition and reconciled
+[`spec.md`](../spec.md) accordingly. It did **not** reach this index, so the
+component's target design and its task list now disagree — and the task list is
+the one people act on. Three places are affected, and they are three different
+kinds of decay:
+
+| where | what it says | kind |
+|---|---|---|
+| the ordering principle (top of this file) | the pipeline "rests on one assumption — that a supervisor holding a good guidebook can **steer** a blind agent" | a *premise* built on a terminated arm |
+| task 01 (⬜) | acceptance includes the hint texts, where they were injected, and whether hints "stayed directional or drifted into specifics" | a task whose **direction** is wrong |
+| task 03 (⬜) | "a host-side log of every hint the Supervisor injected" plus a guard cross-checking it | a task that **should not be built at all** |
+
+Task 03 is the expensive one. A wrong sentence costs a reader a minute; a queued
+⬜ task costs whatever an agent spends implementing it before anyone notices,
+and that cost is paid on the day someone picks it up, not today.
+
+### 1. The ordering principle — replace the premise
+
+The default arm does not depend on whether an agent can be steered. It depends
+on whether a guidebook can, **after the fact**, separate a solve whose reasoning
+holds from one that does not survive inspection ([spec §15.2](../spec.md#15-success-criteria)).
+So the cheapest falsifier changes with it: not "can a hint land at a tool
+boundary", but "does a guidebook's post-hoc judgement of one real rollout hold
+up when a human reads the same trace". If it does not, collection, scoring and
+batch yield are all downstream of a judgement nobody can trust.
+
+### 2. Task 01 — rewrite, do not delete
+
+Under the new arm, "one instance end to end" becomes the thing this product line
+most needs and currently lacks: an **uninterfered** rollout of one real
+instance, graded afterwards by a guidebook, with that grade confronted by both
+the unit-test verdict and a human reading.
+
+**Proposed description.** Run one real instance (gold self-test validated) with
+no intervention; write a guidebook for it in the [spec's shape](../spec.md#phase-b--the-oracle);
+apply the guidebook as a **post-hoc grader** to the resulting trace; record its
+judgement, the real verdict, and whether the two together survive a human
+reading. Automated, scratch code, nothing wired into a workflow definition.
+
+**Proposed acceptance.**
+
+- The artifacts: the instance, the frozen rollout with its conversation, the
+  guidebook, and the grader's output (per-criterion, plus a keep / discard).
+- The confrontation: the grader's judgement against the unit-test verdict, with
+  the four cells named — resolved+kept, resolved+discarded, unresolved+kept,
+  unresolved+discarded — this instance placed in exactly one, and the reasoning
+  written down.
+- A human reading of the same trace that either endorses or contradicts the
+  grader, quoted rather than summarized.
+- An explicit statement of what one case can and cannot support.
+- **A rollout that resolves and one that fails are both complete results.**
+  What would make it incomplete is a grader judgement nobody can check.
+
+**Its relation to the honesty-scorer pilot, which must be stated in both
+places and duplicated in neither.** The pilot
+([`experiments/trace_synthesis/honesty_scorer/`](../../../experiments/trace_synthesis/honesty_scorer/))
+is the **statistical** form of the same §15.2 question — cells × attempts,
+yield and cost. Task 01 is its **single readable** form. Task 06's build /
+don't-build decision on a trace-quality scorer needs both: numbers from the
+pilot, human-checkable evidence from task 01. Neither restates the other's
+facts; each links.
+
+**The old design record is superseded, not edited.**
+[`task-01-one-instance-end-to-end.md`](task-01-one-instance-end-to-end.md) is
+*forward-looking* design for the terminated arm (its Step 5 is "the steered
+re-run"), so leaving this index pointing at it as "the design record" would
+mislead. Per the repo's convention for superseded material: keep the file, mark
+it superseded at the top with a pointer, and write a new record for the new
+form. Do not rewrite it in place.
+
+Also unchanged on purpose:
+[`experiments/trace_synthesis/steered_rerun/REPORT.md`](../../../experiments/trace_synthesis/steered_rerun/REPORT.md)
+is the record of an arm closed by its own kill condition. **That is a result,
+not a failed draft.** Task 01's new form gets a new experiment directory.
+
+### 3. Task 03 — close it, and say why
+
+Proposed notation, since ✅/⬜ cannot express it: **⛔ closed** in the status
+column, the row kept, and a short "why not" in the section below it. A task that
+quietly disappears and a task that was ruled out are different things to whoever
+reads this next.
+
+Reason to record: task 03 is *entirely* the injection arm — a log of hints that
+are no longer emitted, and a guard that a hint reached a trace that no longer
+carries hints.
+
+**One fact inside it outlives it**, and needs a home before the row is closed:
+`proxy_log_to_conversation` keeps only the last proxy record's thread, so a
+subagent's conversation is silently dropped. That is a **real conversion defect
+independent of hints** — it was found by task 02 and is currently recorded only
+as part of task 03's rationale. It should become its own row (or a spec §10
+hazard). Closing task 03 without rehoming it would delete the finding along with
+the task.
+
+### The completion criterion
+
+Not "the list above is ticked off" — the list is itself one enumeration, and
+this whole entry exists because the first pass only caught the item that had
+been noticed. The criterion is a **search that comes back empty**:
+
+```sh
+grep -rniE "steer|inject|hint" docs/trace-synthesis --include="*.md"
+```
+
+Every surviving hit must either be about the terminated arm *as history*
+(`spec.md`'s struck criteria, task 02's record) or carry a sentence saying why
+it should still be there. Anything else is the same decay in a place nobody
+listed.

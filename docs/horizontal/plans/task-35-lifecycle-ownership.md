@@ -322,7 +322,117 @@ Each invariant gets a named test; none of them needs Docker except where marked:
 Three PRs, split by dependency and not by category:
 
 1. **A + B** — same two files, no dependency between them, one review.
-2. **C** — the shared process-group helper and its two call sites.
+   Shipped in [#288](https://github.com/Luolc/swe-lab/pull/288).
+2. **C** — the shared process-group helper and its two call sites. Shipped in
+   [#290](https://github.com/Luolc/swe-lab/pull/290).
 3. **D** — the reap command, the spawn records, and the pytest fixture; needs
    B's labels. **Leaks ① and ③ are closed here, not in C**, so this is the PR
-   that carries the owner-death test.
+   that carries the owner-death test. **Deferred** — see below.
+
+## D is deferred, and this is what the next pair needs
+
+D was designed, and its implementation was started and then stopped when the
+machine became the binding constraint (2026-09-01). Nothing of it was merged.
+What follows is the part that would otherwise be lost with the session: the two
+corrections the implementation forced, the leak evidence gathered since, and one
+proposal D was asked to carry.
+
+### Two corrections to D's design, found by implementing it
+
+**1. Attribution should not go through the port at all.** The design has the
+reaper resolve a recorded port to a listening pid and then check that pid's
+`SWE_LAB_RUN_ID`. There is a shorter road that removes the port from the
+attribution path entirely: **scan `/proc/*/environ` for the run id**. Reading
+another process's environment is permitted for the same uid, so a spawn's own
+children are exactly what this finds, and it works identically whether or not
+the record's `child_pid` was ever written — which is the incomplete-record case
+the design has to handle anyway.
+
+That makes the port purely diagnostic, and it makes the "foreign listener on a
+recorded port" case vanish rather than be defended against: a process that does
+not carry the stamp is never a candidate. The verification row for the squatter
+stays, and becomes trivially satisfied.
+
+**2. The label constants have to become public.** `host.py`'s `_OWNER_LABEL` and
+friends are read back by the reaper. Import them rather than restating them —
+two spellings of one label is how a reaper ends up looking for something nobody
+sets — which means dropping the leading underscore, since a cross-module
+contract is not private.
+
+### The evidence base is now five instances, and the fifth is the good one
+
+The three at the top of this document plus:
+
+| # | What leaked | How it died | Evidence quality |
+|---|---|---|---|
+| ④ | eight stale worktrees | removed without their branches being reconciled | archaeology |
+| ⑤ | a container orphaned on purpose | `swelab-inproxy-impl` killed the owning process, watched the container survive, and stopped it by hand | **causal chain observed end to end** |
+
+The first four are all *post hoc*: a leak was found and its cause reconstructed.
+⑤ is the only one where the death was chosen, the survival was watched, and the
+recovery was performed — so it is the one to build D's owner-death test from,
+and the one to cite when someone asks whether the leak really follows from the
+death.
+
+### The proposal D was asked to carry: one home for "report rather than tidy"
+
+Three independent arrivals at the same principle are recorded above (task
+screening's *annotate, never suppress*; [ADR-0010](../../decisions/ADR-0010-benchmark-integrity.md)
+§3c's *detection, never a gate*; this design's rule 2). The ask was to propose
+**exactly one** canonical home, citing the first two rather than writing a
+fourth copy.
+
+**The proposal: a new ADR — "Report rather than tidy" — and nothing else.** An
+ADR is the right shape because this is a decision with consequences, not a
+convention or a how-to: it says what a mechanism that *finds* a problem is
+allowed to do about it. `docs/conventions.md` is the wrong home (it is a
+codebase map and a hazard list, and it was held by another PR at the time);
+adding a section to ADR-0010 is worse, since that ADR is accepted and its §3c is
+one of the three arrivals rather than the general rule.
+
+What it should say, in one sentence each:
+
+- **The rule.** A mechanism that observes a problem it did not cause reports
+  it. It may annotate, record, or fail loudly; it may not silently suppress,
+  repair, or drop. Suppression is a separate, explicit, human-invoked act.
+- **Why the asymmetry.** The optimistic direction is the irreversible one:
+  a suppressed alarm, a swept leak and a skipped check each destroy the evidence
+  that anything happened, and nobody audits an alarm that never fired.
+- **Its dual, which cost this project a full day of review rounds.** An
+  observation that cannot change what happens is not a control: a gate that only
+  reports, a `docker ps` read whose value gates nothing, an assertion that cannot
+  go red. State the relation between an observation and an action, then wire it.
+- **Citations, not copies.** The three arrivals are named with links; the
+  paragraphs where they live stay where they are and gain a link back.
+
+### One review pattern worth keeping, from C's five rounds
+
+C ([#290](https://github.com/Luolc/swe-lab/pull/290)) went through four
+CHANGES_REQUESTED rounds on **one** invariant, each round moving it earlier:
+*don't reap before the last signal* → *the last signal was guarded and the
+first was not* → *of the two pre-flight conditions, only one has a seam*. The
+last of those is the form worth learning:
+
+> If the pre-flight quietly stopped handling `ChildProcessError`, **both
+> existing tests would still pass.**
+
+That is not "a case is missing". It is: **two tests cannot distinguish two
+branches of the same gate** — one was decided by `returncode`, the other by the
+drain, and neither pinned the entry check for an externally reaped leader. A
+test that goes red for a reason other than the one it is named for belongs to
+the same family as an assertion that cannot go red at all, and as an
+observation with no causal path to the decision it exists for. All three showed
+up in this task within a day; all three are invisible to a green suite.
+
+The same PR produced the leak-shaped version of it in its own fixture:
+teardown called the code under test, `pytest` finalizes `monkeypatch` *after*
+the fixture, so teardown met a faked `waitid`, correctly refused to signal, and
+leaked the tree it was there to clean up. **A cleanup routine that depends on
+the code it is testing is not a cleanup routine.**
+
+### What is left to build
+
+Everything in D: the spawn records, the reaper, the `swe-lab reap` command
+(named for what it reaps — the design's `containers reap` is now the wrong name,
+since it reaps processes too), the session-scoped pytest fixture, and the
+verification rows above that no test yet covers.
