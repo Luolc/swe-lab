@@ -56,6 +56,7 @@ this one. Each is attributable to a specific run or probe.
 - [7. A correction to the previous round](#7-a-correction-to-the-previous-round)
 - [8. The failure sample is the workflow's input contract](#8-the-failure-sample-is-the-workflows-input-contract)
 - [9. An unresolved verdict does not mean the actor erred](#9-an-unresolved-verdict-does-not-mean-the-actor-erred--three-ways-not-two)
+- [10. What the hints actually said](#10-what-the-hints-actually-said-and-whether-they-stayed-directional)
 - [Settings, and what is comparable to what](#settings-and-what-is-comparable-to-what)
 - [Cost](#cost)
 - [Open questions](#open-questions)
@@ -92,7 +93,25 @@ this one. Each is attributable to a specific run or probe.
    and a screen that fired and found nothing are different results**, and this
    report conflated them in one direction after correctly separating them in the
    other.
-6. **The previous round's "the failure is deterministic, not flaky" was an
+6. **A hint can be lost a second way, and that one takes the log with it.** A
+   `null` message content killed the Supervisor's polling thread mid-run; the
+   remaining boundaries were never judged, and the host-side log — the record
+   the detectability constraint depends on — stops rather than reporting the
+   gap ([§2](#2-the-channel-is-blind-at-edit-boundaries)). Fail-open held and
+   the in-sandbox hook log held. Fixed, and the gap is now counted rather than
+   absent.
+7. **An unresolved verdict has three causes, not two.** A run came back exit 2
+   with `timed_out == 0` and the actor had never started — the image cannot
+   execute the mounted binary. The gate is `timed_out == 0` **and**
+   `agent_complete == 1` **and** `claude_code.exit_code == 0`, and
+   `freeze_sample.py` refuses rather than warns
+   ([§9](#9-an-unresolved-verdict-does-not-mean-the-actor-erred--three-ways-not-two)).
+8. **The failure sample is a contract, not an artifact.** The workflow starts
+   from an already-cached failure, so its input is a self-contained directory —
+   dataset row, typed conversation, verdict, patch, provenance, manifest — and
+   the next pair builds against it
+   ([§8](#8-the-failure-sample-is-the-workflows-input-contract)).
+9. **The previous round's "the failure is deterministic, not flaky" was an
    `n=2` artifact** ([§7](#7-a-correction-to-the-previous-round)).
 
 ## 1. `--bare` disables hooks
@@ -590,6 +609,62 @@ Two things follow that outlive this instance:
 - **A screen that runs before task quality saves the expensive screen.**
   Determinacy analysis on a family whose image cannot host the actor is work
   spent on a task that can never be sampled.
+
+## 10. What the hints actually said, and whether they stayed directional
+
+One of the four questions this round exists to answer is whether hints stay
+**directional** — pointing at something to check — or slide into specifics that
+hand over the answer. It cannot be settled by policy text, only by reading what
+the Supervisor emitted, so here is all of it, verbatim, from the steered run on
+`qutebrowser/9ed748ef`. The guidebook's stage 4 exists to prevent exactly the
+mistake the baseline made: tightening the parser's entry condition so two
+pre-existing invalid strings change which error they raise.
+
+| # | tool | what the Supervisor said |
+|---:|---|---|
+| 6 | `Bash` | "Careful with rounding there — does the conversion you read in the existing parse helper round or truncate, and do your numbers match the values the existing percentage tests already expect?" |
+| 9 | `Read` | "Two of those invalid strings have unbalanced parens inside an otherwise well-formed call — with your stricter gate, do they still take the same path through the parser, or do they now fall through and pick up a different error message?" |
+| 12 | `Bash` | "Worth pausing on where those expected message suffixes came from — for the invalid strings the task never mentions, it'd be safer to check what the code produced *before* your edit (git can show you) than to read the expectation off your own implementation." |
+
+Three observations, and the middle one is the uncomfortable one:
+
+- **All three are questions or checks, not instructions.** None names the fix.
+  Nothing says "keep `value.index('(')`", "don't use a regex", or "the message
+  should be `must be a valid color value`" — each names *an observation to make*
+  and leaves both the diagnosis and the remedy to the actor.
+- **Hint 9 is close to the line.** It names the input class (unbalanced parens),
+  the actor's own choice (the stricter gate), and the symptom to look for (a
+  different error message). An actor that follows it has been handed the failing
+  case; what it has not been handed is what to do about it. Whether that is
+  "directional" or "a specific with a question mark" is the
+  [specificity dial](../../../docs/trace-synthesis/spec.md#8-what-hint-specificity-now-trades)
+  itself, and this report's position is that it is the strongest hint the policy
+  should allow — recorded here so a reviewer can disagree with a concrete text
+  rather than with a principle.
+- **The Supervisor found the trap without being told which boundary it was.**
+  The guidebook names the trap; nothing tells the Supervisor when the actor is
+  at it. It fired at boundary 9, on a `Read`, immediately after the `Edit` where
+  the actor introduced the stricter gate — which is the carry-forward working,
+  not luck (see below).
+
+**And the deferral cost is now measured**, which [§2](#2-the-channel-is-blind-at-edit-boundaries)
+left open. Two of the seven off-track verdicts landed on `Edit` boundaries and
+could not be delivered there:
+
+| | |
+|---|---|
+| off-track verdicts | 7 |
+| hints delivered | 3 |
+| suppressed by cooldown | 2 |
+| **unreachable at an `Edit` boundary** | **2** |
+| **of those, delivered late by carry-forward** | **1**, at the next boundary |
+| **lost permanently** | see `analysis.json` — `deferral.lost_permanently` |
+| carry-forward latency | **1 boundary** |
+
+So the mitigation is not theoretical: the intervention judged at boundary 8, on
+an `Edit`, was carried to boundary 9 and delivered there, one boundary late.
+That is the cheapest possible latency and it is not guaranteed — it happens to
+be cheap here because the actor read a file immediately after editing one.
 
 ## Settings, and what is comparable to what
 
