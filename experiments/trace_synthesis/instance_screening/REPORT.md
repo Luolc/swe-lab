@@ -22,6 +22,7 @@
 - [Runnability comes before task quality](#runnability-comes-before-task-quality)
 - [Per-instance verdicts](#per-instance-verdicts)
 - [What to hand the trace-synthesis line](#what-to-hand-the-trace-synthesis-line)
+- [Defined, not executed: the blind re-judgement](#defined-not-executed-the-blind-re-judgement)
 - [Open questions](#open-questions)
 
 ## Conclusions
@@ -366,7 +367,26 @@ which is the cost side of the asymmetry rule, and cheap.
 screen output was in front of the reader during the hand judgement, so the two
 are not independent and the 16/16 is an upper bound rather than a blind
 measurement. Testing the screens properly needs verdicts formed without seeing
-them — on a different set, since this one is now contaminated.
+them — which means a *judge* who has never seen them, not a different set: the
+contamination is in this reader, not in the instances. That experiment is
+[specified below](#defined-not-executed-the-blind-re-judgement) and was not
+run.
+
+**The same contamination applies to the silent 13, and it bites hardest exactly
+where it matters.** "Every instance no screen touched turned out to be a good
+task" reads like evidence that the screens miss little. It is not: those 13
+verdicts were formed by a reader who had already seen that no screen fired, so
+the row cannot underwrite the screens' recall any more than the 16/16 row can.
+
+That distinction is load-bearing because of one specific known hole. The token
+screen reports a literal only when the graded tests **require** it *and* the
+gold patch **introduces** it, and
+[that second conjunct](#a-miss-that-survived-the-fix-and-why) can only ever
+remove alarms. It demonstrably swallowed one instance in this set —
+`ansible-de5858f4`, recovered by reading the assertion by hand, not by any
+screen. **How many more it swallowed is unknown**, and the silent 13 cannot
+answer that question, because they are the very rows a mechanism-level miss
+would land in.
 
 ## The control: a random 40 from the same corpus
 
@@ -517,6 +537,21 @@ the ordering below is stated explicitly rather than sorted.
 | 8 | `gravitational__teleport-d6ffe82aaf2af1057b69c61bf9df777f5ab5635a-vee9b09fb20c43af7e520f57e9239bbcf46b7113d` | 71 / 43 | determinate — every signature change it makes is stated in the prompt — but 71 required tests over an expression-language rewrite make it the most expensive usable instance here |
 
 Deliberately **not** recommended: `webclients-a6e6f617`, `webclients-ac23d1ef` and `webclients-d494a660` are all determinate and all three sit in the one image family that cannot run the agent; `tutanota-fe240cbf` grades on 107 whole test suites with no regression protection, so any unrelated flake fails it.
+
+## Defined, not executed: the blind re-judgement
+
+The one experiment that would turn this report's self-assessment from an upper
+bound into a measurement, specified here so someone can pick it up rather than
+wish for it.
+
+| | |
+| --- | --- |
+| **Question** | What is the screens' actual recall — how many broken tasks does no screen touch? |
+| **Why it cannot be answered here** | Every verdict above was formed with the screen output visible, so verdicts and screens are not independent. [Both](#against-the-verdicts) the 16/16 and the silent-13 rows are contaminated by it. |
+| **Method** | A judging agent that has never seen `screens.py` or any of its output re-judges the **23 rows the screens disagree with the reader about or are silent on** — the 13 no screen fired on, plus the 10 usable ones that alarmed — against the determinacy criterion alone. Compare its verdicts against this report's. |
+| **What it measures** | A broken task in the silent 13 is a genuine screen miss, and the first real estimate of the [second-conjunct hole](#a-miss-that-survived-the-fix-and-why). A usable task among the 10 alarms confirms the dismissal rate. |
+| **Cost** | One independent agent, no containers, no rollouts — the same pure-text budget as this round. |
+| **Status** | **Not executed.** |
 
 ## Open questions
 
