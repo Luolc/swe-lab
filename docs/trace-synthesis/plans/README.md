@@ -347,8 +347,9 @@ design record is
 - **Acceptance:** `load_dataset("oracle_failures")` yields runnable records
   whose `sandbox_spec` / `prompt` / `gold_patch` / `unit_test_spec` are the
   underlying instance's and whose mounts stage the failure; the builder
-  refuses a timed-out, crashed, unfinished or resolved run and a
-  credential-shaped conversation; one real record exists.
+  refuses a timed-out, crashed, unfinished or resolved run, a run whose
+  persisted grading workspaces disagree with the recorded grade or with each
+  other, and a credential-shaped conversation; one real record exists.
 - **Verification:** unit tests over the record, the loader and the builder;
   the first record built from the qutebrowser/9ed748ef baseline failure
   (PR #265's harvest) with the parquet confirmed untracked.

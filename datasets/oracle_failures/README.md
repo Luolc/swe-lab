@@ -29,9 +29,10 @@ The builder writes `data/oracle_failures.parquet` (creating it on the first
 row) and **replaces** an earlier row for the same instance: one failure per
 instance per file. It refuses — and writes nothing — when the run is not a
 usable failure sample: the actor did not finish, was timed out or crashed, the
-grade resolved, the persisted grading workspace disagrees with the recorded
-grade, or the conversation or patch matches a credential-shaped pattern (the
-refusal names the pattern, never the value). The underlying dataset's data
+grade resolved, a persisted grading workspace disagrees with the recorded
+grade or the grading attempts disagree with each other, or the conversation
+or patch matches a credential-shaped pattern (the refusal names the pattern,
+never the value). The underlying dataset's data
 must be present locally, since the row is validated against it.
 
 Then run the Oracle over a row:

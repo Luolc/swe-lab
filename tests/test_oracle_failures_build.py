@@ -38,6 +38,7 @@ def _metrics(**overrides: float) -> dict[str, dict[str, float]]:
       "patch_is_empty": 0.0,
   }
   grading = {
+      "unit_test.score": 0.0,
       "unit_test.resolved": 0.0,
       "unit_test.passed": 1.0,
       "unit_test.missing": 1.0,
@@ -56,8 +57,23 @@ def _run_dir(
     conversation: str | None = None,
     patch: str = "diff --git a/x b/x\n+fix\n",
     passed: tuple[str, ...] = ("t::a",),
+    earlier_passed: tuple[str, ...] | None = None,
 ) -> Path:
-  """Lay out what `swe-lab run rollout_and_unit_test` leaves behind."""
+  """Lay out what `swe-lab run rollout_and_unit_test` leaves behind.
+
+  Args:
+    tmp_path: Where to lay the run out.
+    metrics: The two entries' recorded metrics (default: a clean failure).
+    succeeded: The workflow's recorded outcome.
+    conversation: The rollout's `conversation.json` text (default: a typed one).
+    patch: The rollout's `patch.diff` text.
+    passed: Which required tests the final grading attempt's output passed.
+    earlier_passed: Which the earlier attempt's output passed (default: the
+      same as the final one — a suite that agreed with itself).
+
+  Returns:
+    The run directory.
+  """
   metrics = metrics or _metrics()
   run = tmp_path / "run"
   rollout_dir = run / STORE_PREFIX / "rollout" / "a0"
@@ -68,14 +84,19 @@ def _run_dir(
       else CONVERSATION.model_dump_json()
   )
   (rollout_dir / "patch.diff").write_text(patch)
-  # The grading entry ran twice; its final attempt's workspace is what the
-  # grader re-reads.
-  workspace = run / "unit_test" / "ws" / "a1"
-  workspace.mkdir(parents=True)
-  (workspace / REQUIRED_TESTS_NAME).write_text(json.dumps(["t::a", "t::b"]))
-  (workspace / "output.json").write_text(
-      json.dumps({"tests": [{"name": t, "status": "PASSED"} for t in passed]})
-  )
+  # The grading entry ran twice; every attempt's workspace persists and the
+  # grader re-reads each of them.
+  for attempt, outcome in enumerate(
+      (passed if earlier_passed is None else earlier_passed, passed)
+  ):
+    workspace = run / "unit_test" / "ws" / f"a{attempt}"
+    workspace.mkdir(parents=True)
+    (workspace / REQUIRED_TESTS_NAME).write_text(json.dumps(["t::a", "t::b"]))
+    (workspace / "output.json").write_text(
+        json.dumps(
+            {"tests": [{"name": t, "status": "PASSED"} for t in outcome]}
+        )
+    )
   record: dict[str, Any] = {
       "sweep_id": "adhoc",
       "instance_id": INSTANCE_ID,
@@ -177,7 +198,33 @@ def test_a_workspace_that_regrades_as_resolved_is_refused(tmp_path: Path):
   # The record says unresolved but the persisted files grade as a pass: they
   # are not the graded files, and a row built on either would be wrong.
   run = _run_dir(tmp_path, passed=("t::a", "t::b"))
-  with pytest.raises(UnusableRunError, match="re-grading .* resolves"):
+  with pytest.raises(UnusableRunError, match="disagrees with the recorded"):
+    _ = build_row(run, dataset="fake")
+
+
+def test_a_workspace_whose_regrade_is_not_the_recorded_grade_is_refused(
+    tmp_path: Path,
+):
+  # Still unresolved, but for the wrong reason: the final workspace lost its
+  # output.json, so it re-grades as "nothing passed" where the run recorded
+  # one pass. Unresolved-ness alone proves nothing; every recorded scalar has
+  # to come back identical, and the refusal says which did not.
+  run = _run_dir(tmp_path)
+  (run / "unit_test" / "ws" / "a1" / "output.json").unlink()
+  with pytest.raises(UnusableRunError, match="disagrees with the recorded"):
+    _ = build_row(run, dataset="fake")
+
+
+def test_grading_attempts_that_regrade_to_different_verdicts_are_refused(
+    tmp_path: Path,
+):
+  # Both attempts are unresolved and the final one matches the record, but the
+  # earlier attempt failed a different set of tests: the suite retried into a
+  # different failure, so which tests fail is the suite's property, not the
+  # patch's — the gate `docs/conventions.md` names, refusing to inherit the
+  # last attempt's privilege.
+  run = _run_dir(tmp_path, passed=("t::a",), earlier_passed=())
+  with pytest.raises(UnusableRunError, match="different verdict"):
     _ = build_row(run, dataset="fake")
 
 

@@ -118,6 +118,10 @@ What it does, in order:
    `agent_complete == 1`; every `*.timed_out == 0` and every
    `*.exit_code == 0` on the rollout entry; every `*.resolved == 0` on the
    grading entry. Any failure **refuses**, names the gate, and writes nothing.
+   These are three of the four conditions the *unresolved verdict has four
+   causes* hazard in [`conventions.md`](../../conventions.md#hazards-learned-the-hard-way) requires before an
+   unresolved run counts as evidence about reasoning; the fourth — the same
+   verdict in every grading attempt — needs the workspaces, and is step 5.
 3. **Reads the artifacts** the record points at (`store/<artifact key>`),
    validates the conversation as a typed `Conversation`, refuses an empty
    patch.
@@ -134,14 +138,26 @@ What it does, in order:
    guard on a deliverable, not a redaction pass — see
    [task 09](README.md#task-09-redact-the-production-proxy-capture) for the
    proxy log, which is not part of a row at all.
-5. **Re-grades the final grading attempt's persisted workspace**
-   (`<run>/<grading key>/ws/a<attempts-1>/`) with the dataset's own grader,
-   obtained through `instance.unit_test_spec(...).grader`. The verdict column
-   is that grader's `resolved` / `score` / `metrics()` / `summary()`. This is
-   what makes the per-test detail dataset-agnostic — SWE-bench Pro's
-   `output.json` and DeepSWE's `ctrf.json` are read by the code that already
-   knows how — and it doubles as a consistency check: a workspace that
-   re-grades as resolved is not the graded one, and the row is refused.
+5. **Re-grades every grading attempt's persisted workspace**
+   (`<run>/<grading key>/ws/a<N>/`, all of them) with the dataset's own
+   grader, obtained through `instance.unit_test_spec(...).grader`. The verdict
+   column is the final attempt's `resolved` / `score` / `metrics()` /
+   `summary()`. This is what makes the per-test detail dataset-agnostic —
+   SWE-bench Pro's `output.json` and DeepSWE's `ctrf.json` are read by the
+   code that already knows how — and it carries two consistency checks,
+   either of which refuses the row:
+   - **The final attempt's re-grade must reproduce every scalar the run
+     recorded** (`<method>.score` / `.resolved` / the verdict's own metrics).
+     Re-grading says what the files grade to *now*; the record says what they
+     graded to *then*. A workspace that lost its `output.json` since still
+     grades unresolved — for the wrong reason — so "still unresolved" proves
+     nothing on its own.
+   - **Every attempt must re-grade to the same verdict.** The suite retries
+     while unresolved and the last attempt alone decides the recorded grade,
+     so attempts that failed *different* tests make "which tests fail" a
+     property of the suite rather than of the patch — the fourth condition in
+     [`conventions.md`](../../conventions.md#hazards-learned-the-hard-way), which refuses to inherit the last
+     attempt's privilege.
 6. **Writes the row**, replacing any earlier row for the same instance —
    from the **same** source dataset. The file is indexed by instance id
    alone, so a same-id row from another source is a collision, refused with
@@ -161,8 +177,10 @@ by the steered re-run experiment (PR #265) —
 `instance_qutebrowser__qutebrowser-9ed748effa8f3bcd804612d9291da017b514e12f-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d`,
 rollout 0, the **baseline** arm (no hints). The gates all pass
 (`agent_complete 1.0`, `claude_code.exit_code 0`, `claude_code.timed_out 0`,
-`unit_test.resolved 0.0`), the credential scan is clean, and the re-graded
-verdict names the same two failed tests the experiment's report diagnoses —
+`unit_test.resolved 0.0`; all three grading attempts re-grade to the same
+verdict, and the final one reproduces the recorded `unit_test.*` scalars),
+the credential scan is clean, and the re-graded verdict names the same two
+failed tests the experiment's report diagnoses —
 `TestQtColor::test_invalid[rgb((1, 2, 3)-must be a valid color value]` and
 `…[rgb(1, 2, 3))-must be a valid color value]` — out of 985 required.
 `git check-ignore` confirms the parquet is untracked. The row's `provenance`
