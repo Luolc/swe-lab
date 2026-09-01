@@ -73,6 +73,7 @@ from .constants import (
 from .convert import (
     event_stream_outcome,
     event_stream_to_conversation,
+    event_stream_usage,
     proxy_log_outcome,
     proxy_log_to_conversation,
 )
@@ -407,6 +408,17 @@ class ClaudeCodeHarness(Harness):
     if self.capture == "proxy":
       return proxy_log_outcome(read_text(sb, PROXY_LOG_NAME))
     return event_stream_outcome(read_text(sb, EVENT_STREAM_NAME))
+
+  @override
+  def usage(self, sb: SandboxFs) -> dict[str, float | int | None]:
+    """Report cost and turns, which only the agent's own trace carries.
+
+    ``PROXY`` capture sees API traffic and not the agent's ``result`` events,
+    so it reports nothing rather than a number it would have to reconstruct.
+    """
+    if self.capture == "proxy":
+      return {}
+    return event_stream_usage(read_text(sb, EVENT_STREAM_NAME))
 
   def _invocation_script(self, workdir: str) -> str:
     """Build the run script for an *unattended* run.

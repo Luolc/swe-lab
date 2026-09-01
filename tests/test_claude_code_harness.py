@@ -22,6 +22,7 @@ from swe_lab.harnesses.claude_code import (
     Effort,
     event_stream_outcome,
     event_stream_to_conversation,
+    event_stream_usage,
 )
 from swe_lab.harnesses.claude_code.constants import (
     AGENT_ENV_NAME,
@@ -416,6 +417,39 @@ def test_to_conversation_empty_text_is_empty():
   # an absent event stream reaches the converter as "" (the harness reads the
   # file and passes its text, or "" when it never landed)
   assert event_stream_to_conversation("") == Conversation(messages=[])
+
+
+def test_event_stream_usage_aggregates_each_figure_its_own_way():
+  # cost is cumulative over the session and turns are per result, so a
+  # segmented run's total is the last cost and the sum of the turns. Summing
+  # the cost would count the earlier segments twice.
+  segmented = _stream_text(
+      [
+          {
+              "type": "result",
+              "subtype": "success",
+              "total_cost_usd": 0.03,
+              "num_turns": 3,
+          },
+          {
+              "type": "result",
+              "subtype": "success",
+              "total_cost_usd": 0.05,
+              "num_turns": 1,
+          },
+      ]
+  )
+
+  assert event_stream_usage(segmented) == {"cost_usd": 0.05, "num_turns": 4}
+
+
+def test_event_stream_usage_reports_absence_rather_than_zero():
+  # a run whose trace never landed did not cost nothing; it is unknown, and a
+  # zero here would average into a cost estimate as if it were measured
+  assert event_stream_usage("") == {"cost_usd": None, "num_turns": None}
+
+  without = _stream_text([{"type": "result", "subtype": "success"}])
+  assert event_stream_usage(without) == {"cost_usd": None, "num_turns": None}
 
 
 def test_event_stream_outcome_reads_the_terminal_result():
