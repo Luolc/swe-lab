@@ -141,6 +141,7 @@ def ensure_proxy_binary(
   """
   root = repo_root or find_repo_root()
   version = proxy_source_version(root)
+  _clear_legacy_cache_entry(root)
   cached = proxy_binary_path(version, repo_root=root)
   if not cached.is_file():
     _build(proxy_source_path(root), cached)
@@ -151,6 +152,32 @@ def ensure_proxy_binary(
   _ = cached.copy(target, overwrite=True)
   os.chmod(target, 0o755)
   return target
+
+
+def _clear_legacy_cache_entry(repo_root: epath.PathLike) -> None:
+  """Remove a pre-sandbox binary squatting on today's cache directory.
+
+  When the proxy ran on the host, the build was cached as a *file* at
+  ``<cache>/bin/cc-reverse-proxy``. The version-keyed layout needs that same
+  path to be a *directory*, so a machine that ever ran the host-side proxy
+  fails its first proxied run in ``mkdir`` with ``NotADirectoryError``.
+
+  Deleting something in the way is only safe when three things hold at once,
+  and they do here: the entry is **ours** (this module is the only writer of
+  this path), it is **regenerable** (the next few lines rebuild it, so nothing
+  is lost), and it is **identified by construction** rather than guessed (the
+  path is one we compute, not one we found and judged). Drop any one and this
+  stops being safe — an orphaned container, for instance, satisfies none of
+  them, which is why the same gesture is wrong there.
+
+  A directory at this path is the current layout and is left alone.
+
+  Args:
+    repo_root: Repo root whose cache to check.
+  """
+  namespace = cache_root(repo_root) / _BIN_SUBDIR / _CACHE_NAMESPACE
+  if namespace.exists() and not namespace.is_dir():
+    namespace.unlink()
 
 
 def _build(source: epath.Path, binary: epath.Path) -> None:

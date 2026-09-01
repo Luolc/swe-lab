@@ -113,3 +113,29 @@ def test_a_dest_gets_its_own_executable_copy(
   assert ensure_proxy_binary(dest=dest, repo_root=tmp_path) == dest
   assert dest.read_text() == "#!/bin/true\n"
   assert dest.stat().st_mode & 0o111  # executable, or the sandbox cannot run it
+
+
+def test_a_pre_sandbox_cache_file_does_not_wedge_the_first_proxied_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  # Before the proxy moved into the sandbox, the build was cached as a *file*
+  # at `<cache>/bin/cc-reverse-proxy`. Today's version-keyed layout needs that
+  # exact path to be a *directory*, so every machine that ran the host-side
+  # proxy had a first proxied run that died in `mkdir` with NotADirectoryError.
+  source = _source(tmp_path, "package main\n")
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
+  legacy = tmp_path / ".cache" / "bin" / "cc-reverse-proxy"
+  legacy.parent.mkdir(parents=True, exist_ok=True)
+  _ = legacy.write_text("a binary built by the pre-#264 host-side proxy\n")
+
+  def _fake_build(_source: object, binary: object) -> None:
+    path = Path(str(binary))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _ = path.write_text("#!/bin/true\n")
+
+  monkeypatch.setattr("swe_lab.harnesses.claude_code.proxy._build", _fake_build)
+
+  built = ensure_proxy_binary(repo_root=tmp_path)
+
+  assert built.read_text() == "#!/bin/true\n"
+  assert legacy.is_dir()  # the squatting file is gone, the namespace is a dir
