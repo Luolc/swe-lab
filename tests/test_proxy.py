@@ -21,6 +21,9 @@ from swe_lab.harnesses.claude_code.proxy import (
     proxy_source_version,
     SANDBOX_PLATFORM,
 )
+from swe_lab.pipelines.related_files.host_proxy import (
+    proxy_binary_path as host_proxy_binary_path,
+)
 
 
 def _source(tmp_path: Path, body: str) -> Path:
@@ -113,3 +116,80 @@ def test_a_dest_gets_its_own_executable_copy(
   assert ensure_proxy_binary(dest=dest, repo_root=tmp_path) == dest
   assert dest.read_text() == "#!/bin/true\n"
   assert dest.stat().st_mode & 0o111  # executable, or the sandbox cannot run it
+
+
+def test_an_existing_host_binary_does_not_wedge_the_first_proxied_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """A file at `<cache>/bin/cc-reverse-proxy` neither blocks nor is disturbed.
+
+  That file is `pipelines.related_files.host_proxy`'s property and may be in
+  use, so this module builds elsewhere and leaves it alone.
+  """
+  source = _source(tmp_path, "package main\n")
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
+  host = Path(str(host_proxy_binary_path(tmp_path)))
+  host.parent.mkdir(parents=True, exist_ok=True)
+  _ = host.write_text("the host-native build\n")
+
+  def _fake_build(_source: object, binary: object) -> None:
+    path = Path(str(binary))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _ = path.write_text("#!/bin/true\n")
+
+  monkeypatch.setattr("swe_lab.harnesses.claude_code.proxy._build", _fake_build)
+
+  built = ensure_proxy_binary(repo_root=tmp_path)
+
+  assert built.read_text() == "#!/bin/true\n"
+  assert host.is_file() and host.read_text() == "the host-native build\n"
+
+
+def test_the_sandbox_cache_never_collides_with_the_host_proxy_binary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """The two proxy artifacts must not share a path.
+
+  `host_proxy` writes a host-native binary as a *file* at
+  `<cache>/bin/cc-reverse-proxy`; this module caches a cross-compiled
+  linux/amd64 build under a versioned *directory* tree. Nesting the second
+  under the first made one component's directory the other's file, so whichever
+  ran second destroyed or was blocked by the first.
+
+  Pinned as a relationship between the two paths rather than as a literal
+  string, so renaming either one cannot quietly recreate the overlap.
+  """
+  source = _source(tmp_path, "package main\n")
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
+  host = Path(str(host_proxy_binary_path(tmp_path)))
+  sandbox = Path(
+      str(proxy_binary_path(proxy_source_version(tmp_path), repo_root=tmp_path))
+  )
+
+  assert sandbox != host
+  assert host not in sandbox.parents
+  assert sandbox not in host.parents
+
+
+def test_building_the_sandbox_binary_leaves_the_host_binary_alone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """A first proxied run must not disturb a host-native build sitting there.
+
+  The concrete failure this pins: W1's pipeline builds the host binary, a
+  sandbox capture starts, and the host binary is gone before `Popen` reaches
+  it.
+  """
+  source = _source(tmp_path, "package main\n")
+  monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))
+  host = Path(str(host_proxy_binary_path(tmp_path)))
+  host.parent.mkdir(parents=True, exist_ok=True)
+  _ = host.write_text("#!/bin/true  <- the host-native build\n")
+
+  cached = proxy_binary_path(proxy_source_version(tmp_path), repo_root=tmp_path)
+  cached.parent.mkdir(parents=True, exist_ok=True)
+  _ = cached.write_text("#!/bin/true\n")
+  _ = ensure_proxy_binary(repo_root=tmp_path)
+
+  assert host.is_file(), "the sandbox path removed the host proxy binary"
+  assert host.read_text() == "#!/bin/true  <- the host-native build\n"

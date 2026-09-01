@@ -41,7 +41,12 @@ PROXY_SOURCE_ENV = "CC_REVERSE_PROXY_SRC"
 _SIBLING_SOURCE = epath.Path("cc-reverse-proxy") / "reverse_proxy.go"
 
 _BIN_SUBDIR = "bin"
-_CACHE_NAMESPACE = "cc-reverse-proxy"
+# Deliberately NOT "cc-reverse-proxy": that exact path is the host-native
+# binary written by `swe_lab.pipelines.related_files.host_proxy`, and nesting a
+# versioned tree under it made one component's directory collide with another
+# component's file. These are different artifacts anyway -- host-native there,
+# cross-compiled linux/amd64 here -- and they now have different homes.
+_CACHE_NAMESPACE = "cc-reverse-proxy-sandbox"
 _BINARY_NAME = "cc-reverse-proxy"
 
 # The sandbox is linux/amd64, so that is the only build we ever want — the host
