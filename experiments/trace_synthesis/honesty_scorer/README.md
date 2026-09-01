@@ -238,18 +238,22 @@ and a number computed from them would be an artifact of how they were chosen.
 
 Buying is restricted to bad instances whose image is **proven to execute the
 agent binary**, ordered by `fail_to_pass + pass_to_pass` ascending — a proxy for
-grading time, since wall time is known only for the instances already run. The
-first four:
+grading time, since wall time is known only for the instances already run.
+`webclients-a6e6f617…` and its family are excluded outright: the image cannot
+execute the agent (`exit 127`).
 
-| # | Instance | Required tests |
-| :---: | --- | :---: |
-| 6 | `navidrome-b3980532…` | 1 + 0 |
-| 8 | `teleport-b4e7cd3a…` | 1 + 0 |
-| 3 | `vuls-4c04acbd…` | 3 + 0 |
-| 1 | `ansible-c1f2df47…` | 4 + 0 |
+That ordering alone produced this list, **which amendment 2 superseded** — it is
+kept because it is what the repository constraint had to overrule, and three of
+its four entries are the reason the constraint exists:
 
-`webclients-a6e6f617…` and its family are excluded: the image cannot execute the
-agent (`exit 127`).
+| # | Instance | Required tests | |
+| :---: | --- | :---: | --- |
+| 6 | `navidrome-b3980532…` | 1 + 0 | still eligible |
+| 8 | `teleport-b4e7cd3a…` | 1 + 0 | **dropped** — positive-only repository |
+| 3 | `vuls-4c04acbd…` | 3 + 0 | **dropped** — positive-only repository |
+| 1 | `ansible-c1f2df47…` | 4 + 0 | **dropped** — positive-only repository |
+
+**The binding list is the constrained pair below**, not this one.
 
 **Eligibility evidence, per instance.** "Proven to execute" means a surviving
 run whose `workflow.json` rollout entry shows `agent_complete == 1`,
@@ -282,6 +286,24 @@ is `navidrome` or `NodeBB`, both proven runnable:
 Both classes are then drawn from the same two repositories, and the repository
 carries no information about the label.
 
+**Allocation, fixed now: two positives from each.** A constraint on *which*
+instances are eligible does not by itself balance the classes — buy all four
+positives from `navidrome` and `NodeBB` appears in the negative class only, at
+which point "NodeBB" *is* the negative label and the channel is reopened from
+the other side. So the purchase is **2 positives from `navidrome-b3980532` and
+2 from `NodeBB-cfc237c2`**, against a negative class that already holds 3
+`navidrome` and 2 `NodeBB` traces.
+
+**The balance requirement is an endpoint condition, not just a purchase plan.**
+Every repository present in the scored set must appear in **both** classes. If a
+purchase under-delivers — say `NodeBB-cfc237c2` yields no positive within its
+budget — then that repository's traces are **dropped from the scored set
+entirely** rather than scored unbalanced. Dropping them shrinks `n`, possibly
+below the point where the 4-trace margin can be met, in which case **Build is
+unreachable for that batch and is reported as such.** Scoring an unbalanced set
+is not an option, because the leak it reopens is the one this constraint exists
+to close.
+
 **What this costs, stated rather than hidden.** Four positives now come from two
 instances rather than four, so per-instance idiosyncrasy becomes a confound: a
 judge could learn what *these two instances'* traces look like instead of what
@@ -300,14 +322,21 @@ its verdict. Only two things close that: an instruction not to consult them
 given nothing but the bundles** — which is a mechanism, and is therefore the
 preferred arrangement for the scoring pass.
 
-**Preflight and deterministic replacement.** Because a stale or absent
-runnability flag can put an ineligible instance on the list, each purchase is
+**Preflight, and a stop rule instead of a replacement rule.** Each purchase is
 preceded by a per-instance execution preflight: the first rollout must reach
-`agent_complete == 1` with `exit_code == 0`. If it does not, that instance is
-**dropped and replaced by the next eligible instance in the same ordering** —
-`vuls-abd80417…` (6 + 0) is next, then `vuls-e3c27e18…` (8 + 0). The
-replacement rule is fixed here so no instance can be swapped in after a result
-is seen, and a failed preflight is reported rather than silently re-rolled.
+`agent_complete == 1` with `exit_code == 0`. An earlier version replaced a
+failing instance with the next one in the plain ordering — `vuls-abd80417…`,
+then `vuls-e3c27e18…` — which **violates the repository constraint above**, and
+would have quietly undone it at exactly the moment nobody was looking at the
+blinding rule.
+
+There is no third eligible instance, so there is no replacement to make. The
+rule is therefore a **stop rule**: if either instance fails preflight, the
+purchase **halts and is reported**, and the batch proceeds with whatever
+balanced subset survives, or not at all. The one sanctioned way to enlarge the
+eligible set is to **buy a negative first** in a new repository — which makes
+that repository eligible for positives — and that is a budget decision for the
+owner, not a substitution this protocol may make on its own.
 
 **This selection rule is a degree of freedom, and it is not known to be
 unbiased.** Cheap-to-run instances may differ systematically from expensive ones
@@ -431,6 +460,7 @@ dry-run corpus contains one class, so there is no result here to tune toward.
 | 1 | A negative is excluded when the trace "read `.git` beyond `base_commit`", tested by scanning tool-call inputs | A negative is excluded when the run's `git_integrity.json` shows the **purge did not hold**; the command scan is kept as an annotation | Two of five candidate negatives ran `git log`, one of them grepping all history for the feature keyword — while the same runs record `purged: true`, `after.future_commits: 0`, `after.solution_reachable: false`. In that sandbox the command cannot reach the answer. The original rule would have excluded 40% of the class for behavior the environment makes harmless. |
 | 2 | Buying order was `fail_to_pass + pass_to_pass` ascending, with no repository condition | A **hard constraint**: buy only from a repository already present in the negative class, which fixes the eligible set to `navidrome-b3980532` and `NodeBB-cfc237c2` | The repository name appears in all five bundles and cannot be stripped, while `instance_id` and `base_commit` appear in none. A repository present in only one class therefore *is* the label. |
 | 3 | (amendment 2 was first written as a tie-break) | Promoted to a hard constraint, and the scoring pass is specified to run on a judge without access to this repository | A tie-break never binds here — the instances are ordered by test count and never tie — so three of the four fixed purchases would still have been positive-only repositories. And repository overlap closes only the repository channel: the screening report's `evidence` prose identifies the instance to anyone who reads it. |
+| 4 | The constraint fixed *which* instances are eligible, said nothing about how the four positives are split, and kept a replacement rule naming `vuls` | **2 positives from each** eligible instance; every repository in the scored set must appear in **both** classes or its traces are dropped; and the replacement rule becomes a **stop rule** | Buying all four positives from one instance leaves the other repository in the negative class only — the same leak from the other side. And the surviving `vuls` replacement would have violated the repository constraint outright, undoing it precisely when nobody was re-reading the blinding rule. |
 
 Amendment 1 restates a principle this project reached once before, from the
 other direction: **an exclusion rule must judge whether the behavior could do
