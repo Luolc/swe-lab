@@ -9,6 +9,30 @@ The mechanism is two halves that only work together, and both belong to the
 *parent*: spawn with ``start_new_session=True``, which makes the child the
 leader of its own process group, and then signal that **group**.
 
+**The invariant that makes the group id safe to signal**, measured on Linux
+6.17 / CPython 3.13 (2026-09-01) and stated here because the code cannot say
+it: a process group exists while **any** of its members is unreaped, and a
+reaped member releases its pid. So:
+
+===============================  ==================  ========================
+state                            ``killpg(pgid,0)``  what holds the number
+===============================  ==================  ========================
+leader exited, not reaped        ok                  the zombie leader
+leader reaped, no member left    ``ProcessLookupError``  nothing — it is free
+leader reaped, grandchild alive  ok                  **a grandchild**
+===============================  ==================  ========================
+
+The third row is the counter-intuitive one, and it is why the rule is written
+over *members* rather than over the leader: the group is not held up by the
+leader, it is held up by whichever member happens to be unreaped. In that row
+the signal still lands, but its correctness now rests on something the code
+does not control — a grandchild that happens to still be running — while the
+leader's pid is already reusable. *Working* and *working for the reason you
+think* are different states, and only the first is visible from the outside.
+
+Hence the invariant, which applies to every member and not just the one held:
+**no member is reaped until the last group-directed signal is complete.**
+
 **This covers the deaths the parent is alive for** — a normal exit, an
 exception, a timeout. It does not cover the parent being killed: the signal
 below is something the parent sends, so a parent that is gone sends nothing
@@ -88,6 +112,11 @@ def _await_exit(process: subprocess.Popen[Any], timeout_s: float) -> None:
   and no other member survives, the same call raises ``ProcessLookupError`` —
   the group number is free, and a later ``killpg`` on it is a lookup of a name
   that may since have been reissued.
+
+  ``WNOHANG`` returns immediately, so this is necessarily a polling loop. Every
+  way out of it — the exit arrives, the deadline passes, the child turns out to
+  be already reaped, or no ``waitid`` exists — leads to the same next step, the
+  unconditional ``SIGKILL``. There is deliberately no path that skips it.
 
   Args:
     process: The group leader.
