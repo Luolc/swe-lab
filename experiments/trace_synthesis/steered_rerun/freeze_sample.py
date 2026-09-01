@@ -136,15 +136,6 @@ def main() -> None:
   summary = json.loads(pathlib.Path(args.summary).read_text())
   instance = load_dataset(args.dataset).require(str(summary["instance_id"]))
 
-  out = pathlib.Path(args.out_root) / str(summary["instance_id"])
-  if out.exists():
-    shutil.rmtree(out)
-  (out / "raw").mkdir(parents=True)
-
-  _ = (out / "instance.json").write_text(
-      json.dumps(instance_fields(instance), indent=2, ensure_ascii=False) + "\n"
-  )
-
   # Three gates before a run is written out as a reasoning failure, because the
   # workflow's own exit code distinguishes none of them: an unresolved verdict
   # is reported the same way whether the actor reasoned badly, was killed at
@@ -167,6 +158,18 @@ def main() -> None:
           " The rollout did not end in the actor finishing its work, so its"
           " unresolved verdict is not evidence the actor erred."
       )
+
+
+  # Only now: a refusal must not leave a directory behind that looks like a
+  # sample. Nothing is created until the run has earned it.
+  out = pathlib.Path(args.out_root) / str(summary["instance_id"])
+  if out.exists():
+    shutil.rmtree(out)
+  (out / "raw").mkdir(parents=True)
+
+  _ = (out / "instance.json").write_text(
+      json.dumps(instance_fields(instance), indent=2, ensure_ascii=False) + "\n"
+  )
 
   conversations = sorted(frozen.glob("rollout/a*/conversation.json"))
   if not conversations:
