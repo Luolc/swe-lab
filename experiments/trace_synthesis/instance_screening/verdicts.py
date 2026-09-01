@@ -63,8 +63,13 @@ V = [
 ]
 RUNNABLE_UNKNOWN = {"element-hq/element-web", "tutao/tutanota"}
 UNRUNNABLE = {"protonmail/webclients"}
+# Repo families with a surviving run whose workflow.json rollout entry shows the
+# agent executed: agent_complete == 1, exit_code == 0, timed_out == 0. Family
+# granularity, as the field has always had — one instance's image is the
+# evidence for its repo.
 PROVEN = {"qutebrowser/qutebrowser", "internetarchive/openlibrary", "future-architect/vuls",
-          "navidrome/navidrome", "gravitational/teleport", "NodeBB/NodeBB"}
+          "navidrome/navidrome", "gravitational/teleport", "NodeBB/NodeBB",
+          "ansible/ansible"}
 
 d = load_dataset('swebench_pro')
 ids = (HERE / 'instances.txt').read_text().split()
@@ -104,3 +109,18 @@ print(Counter(r["verdict"] for r in rows))
 print(Counter(r["category"] for r in rows if r["category"]))
 print("usable now:", [r["rank_in_issue_261"] for r in rows
                       if r["verdict"].startswith("good") and r["image_runnable"] != "unrunnable"])
+
+# Every partition of the instances prints its own total. A stale value at least
+# sits there to be doubted; a *missing* category looks exactly like a category
+# that does not exist, which is how the report's runnability table came to list
+# 34 of 40 instances with nobody noticing. Printing the sum makes the table
+# shout when it stops adding up.
+for name, field in (("verdict", "verdict"), ("runnability", "image_runnable")):
+  tally = Counter(r[field] for r in rows)
+  assert sum(tally.values()) == len(rows), (name, tally, len(rows))
+  print(f"{name} partition ({sum(tally.values())} of {len(rows)}):", dict(tally))
+by_family = Counter((r["repo"], r["image_runnable"]) for r in rows)
+assert sum(by_family.values()) == len(rows), (by_family, len(rows))
+print(f"runnability by family ({sum(by_family.values())} of {len(rows)}):")
+for (repo, status), n in sorted(by_family.items()):
+  print(f"  {repo:30s} {status:10s} {n}")

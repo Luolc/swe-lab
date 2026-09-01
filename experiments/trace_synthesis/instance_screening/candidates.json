@@ -48,7 +48,7 @@
     "evidence": "test_api_parameters asserts the destinationAddress->dst_address API field mapping; none of the three prompt fields contains those spellings, no sibling bigip_message_routing_* module exists at base_commit, and the one in-repo precedent (bigiq_application_*.py) maps to destination_address instead.",
     "fail_to_pass": 4,
     "pass_to_pass": 0,
-    "image_runnable": "untested",
+    "image_runnable": "proven",
     "screens": {
       "token": [
         "ImportError",
@@ -935,7 +935,7 @@
     "evidence": "test_missing_cache_dir asserts the cache file's byte-exact content, `actual_cache == '{\"version\": 1}'`. The prompt says only \"storage of a version marker in the cache\" - it never gives the value 1 nor the serialization. The interface field is empty. get_cache_id's exact \"host:port\" form (with a trailing colon when there is no port) is likewise only implied.",
     "fail_to_pass": 17,
     "pass_to_pass": 41,
-    "image_runnable": "untested",
+    "image_runnable": "proven",
     "screens": {
       "token": [
         "Galaxy cache has world writable access (%s), ignoring it as a cache source.",
@@ -1313,7 +1313,7 @@
     "evidence": "requirements state the four-element requirement tuple (name, version, type, path), the git-URL '#' syntax, the accepted type values and the galaxy.yml check that the graded tests exercise. Caveat: the interface field is empty, there are 18 required tests across 27 touched files, and it is the slowest instance in issue #261.",
     "fail_to_pass": 18,
     "pass_to_pass": 191,
-    "image_runnable": "untested",
+    "image_runnable": "proven",
     "screens": {
       "token": [],
       "token_but_present_in_repo": [],
