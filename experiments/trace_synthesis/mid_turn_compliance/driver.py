@@ -48,6 +48,14 @@ WRAPPER = "<supervisor_note>\n{correction}\n</supervisor_note>"
 
 RUN_TIMEOUT_S = 420.0
 
+# The fixture repository is created OUTSIDE this checkout. Inside it, the actor
+# treats the surrounding repo as part of its workspace — the pilot caught runs
+# whose first action grepped the parent tree — and everything the experiment
+# knows, `tasks.py` included, is then readable by the actor being measured.
+WORKDIR_ROOT = pathlib.Path(
+    os.environ.get("MID_TURN_WORKDIR_ROOT", "/tmp/mid-turn-compliance-workdirs")
+)
+
 
 def materialize(fixture: tasks.Fixture, workdir: pathlib.Path) -> None:
   """Write the fixture's repository into an empty directory."""
@@ -205,7 +213,7 @@ def main() -> int:
   fixture = tasks.BY_SLUG[args.fixture]
   out_dir = pathlib.Path(args.out_dir)
   out_dir.mkdir(parents=True, exist_ok=True)
-  workdir = out_dir / "workdir"
+  workdir = WORKDIR_ROOT / f"{args.phase}-{args.arm}-{fixture.slug}"
   materialize(fixture, workdir)
   session_id = str(uuid.uuid4())
 
@@ -254,13 +262,20 @@ def main() -> int:
   run.send(fixture.prompt)
   mark("sent the task")
 
-  def tripped(event: object) -> bool:
+  def tripped_or_ended(event: object) -> bool:
+    # `result` ends the wait too: stdin is held open, so the process does not
+    # exit when the turn does, and waiting on the trigger alone would idle until
+    # the timeout on every trace that never deviates.
+    if isinstance(event, dict) and event.get("type") == "result":
+      return True
     return any(
         fixture.trigger({"name": b.get("name"), "input": b.get("input", {})})
         for b in tool_uses(event)
     )
 
-  hit = run.wait_for(tripped, timeout=RUN_TIMEOUT_S)
+  seen = run.wait_for(tripped_or_ended, timeout=RUN_TIMEOUT_S)
+  ended = isinstance(seen, dict) and isinstance(seen.get("event"), dict)
+  hit = None if ended and seen["event"].get("type") == "result" else seen
   mark(f"trigger fired: {hit is not None}")
   manifest["trigger_fired"] = hit is not None
   if hit is not None:
