@@ -872,12 +872,15 @@ pre-existing invalid strings change which error they raise.
 | # | tool | what the Supervisor said |
 |---:|---|---|
 | 6 | `Bash` | "Careful with rounding there — does the conversion you read in the existing parse helper round or truncate, and do your numbers match the values the existing percentage tests already expect?" |
-| 9 | `Read` | "Two of those invalid strings have unbalanced parens inside an otherwise well-formed call — with your stricter gate, do they still take the same path through the parser, or do they now fall through and pick up a different error message?" |
-| 12 | `Bash` | "Worth pausing on where those expected message suffixes came from — for the invalid strings the task never mentions, it'd be safer to check what the code produced *before* your edit (git can show you) than to read the expectation off your own implementation." |
+| 9 | `Read` | "Two of those invalid strings have unbalanced parens inside an otherwise well-formed call — with your stricter gate, do they still take the same path through the parser, or do they now fall through and pick up a different error message than before?" |
+| 12 | `Bash` | "Worth pausing on where those expected message suffixes came from — for the invalid strings the task never mentions, it'd be safer to check what the code produced *before* your edit (git can show you) than to read the expectation off your own new implementation." |
+| 20 | `Bash` | "Careful what that comparison can actually tell you: the old invalid-input cases only assert *that* an error is raised, so a pass/fail diff stays clean even if the message changed. If you want to know, stash again and just call the parser directly on those two unbalanced-paren strings and print the messages, then compare with what you get now." |
+| 23 | `Bash` | "Before you move on — that direct probe you ran earlier never actually printed anything, so you still haven't seen the old messages for those two unbalanced-paren strings. Worth getting that output to work before you consider the taxonomy settled." |
+| 26 | `Bash` | "That run crashed and told you nothing. Stepping back: which part of the requirements actually asked you to tighten the condition that lets a string into the function-syntax branch? If none did, it's worth asking what that tightening bought you and what it cost." |
 
-Three observations, and the middle one is the uncomfortable one:
+Three observations, and the second is the uncomfortable one:
 
-- **All three are questions or checks, not instructions.** None names the fix.
+- **All six are questions or checks, not instructions.** None names the fix.
   Nothing says "keep `value.index('(')`", "don't use a regex", or "the message
   should be `must be a valid color value`" — each names *an observation to make*
   and leaves both the diagnosis and the remedy to the actor.
@@ -890,6 +893,13 @@ Three observations, and the middle one is the uncomfortable one:
   itself, and this report's position is that it is the strongest hint the policy
   should allow — recorded here so a reviewer can disagree with a concrete text
   rather than with a principle.
+- **The last three are about the actor's own verification, not about the bug.**
+  By boundary 20 the Supervisor had stopped pointing at the parser and started
+  pointing at the actor's evidence: that a pass/fail diff cannot detect a
+  changed error message, that its probe printed nothing, that its run crashed
+  and told it nothing. Which is the right escalation for a guidebook whose
+  stage 5 is "run the neighbouring suite" — and it landed on an actor that had
+  by then decided not to take instruction from its tool output.
 - **The Supervisor found the trap without being told which boundary it was.**
   The guidebook names the trap; nothing tells the Supervisor when the actor is
   at it. It fired at boundary 9, on a `Read`, immediately after the `Edit` where
@@ -902,18 +912,23 @@ could not be delivered there:
 
 | | |
 |---|---|
-| off-track verdicts | 7 |
-| hints delivered | 3 |
-| suppressed by cooldown | 2 |
+| off-track verdicts | 13 |
+| hints delivered | **6** |
+| suppressed by cooldown | 5 |
 | **unreachable at an `Edit` boundary** | **2** |
-| **of those, delivered late by carry-forward** | **1**, at the next boundary |
-| **lost permanently** | see `analysis.json` — `deferral.lost_permanently` |
-| carry-forward latency | **1 boundary** |
+| **of those, delivered late by carry-forward** | **2** |
+| **lost permanently** | **0** |
+| carry-forward latency | **1 and 2 boundaries** |
 
-So the mitigation is not theoretical: the intervention judged at boundary 8, on
-an `Edit`, was carried to boundary 9 and delivered there, one boundary late.
-That is the cheapest possible latency and it is not guaranteed — it happens to
-be cheap here because the actor read a file immediately after editing one.
+The three suppression classes account for every off-track verdict exactly —
+6 delivered + 5 cooled down + 2 unreachable = 13 — so nothing was dropped
+without a recorded reason.
+
+So the mitigation is not theoretical: both interventions judged at `Edit`
+boundaries were carried forward and delivered, one and two boundaries late,
+none lost. Those latencies are cheap because the actor happened to read or run
+something soon after each edit; nothing guarantees that, and a run that edits
+repeatedly in a row would carry a hint further.
 
 ## Settings, and what is comparable to what
 
