@@ -41,10 +41,9 @@ SandboxRun engine driven by `swe-lab run <workflow>`, three harnesses
 rollout e2e run and a green 113-task gold sweep on Actions: 0 GOLDEN_FAIL / 0
 BASE_UNEXPECTED_PASS). Rollout is proven end-to-end on all three harnesses, and
 a downstream consumer has run it. One P0 is open: task 15, proving the sandbox
-extensibility seam from the outside plus its author guide (ADR-0003 phase 2) —
-there are real out-of-tree users of that seam. Tasks 13 (R2 store) and 24 (the
-portable-bundle wiring) are **deferred by choice**, and tasks 31–33 are newly
-queued → [horizontal task index](horizontal/plans/README.md). The CP1–CP5 human
+extensibility seam from the outside plus its author guide — ADR-0003 phase 2 is
+waiting on it. Tasks 13 (R2 store) and 24 (the portable-bundle wiring) are
+**deferred by choice**, and tasks 31–33 are newly queued → [horizontal task index](horizontal/plans/README.md). The CP1–CP5 human
 checkpoints are **retired**: review happens at PR granularity instead. Patch
 extraction is settled in
 [ADR-0001](decisions/ADR-0001-patch-extraction-and-grading.md) (Accepted).
