@@ -190,8 +190,24 @@ That is checked from this side by
 is an external, separately versioned binary and "the build we ran redacts" is
 exactly the assumption that quietly stops holding. `tests/test_proxy_redaction.py`
 covers both directions — a credential on the request and account identity on the
-response. Run against real captures, it reports the pre-fix rollout log as 39
-findings and a capture from the fixed binary as clean.
+response — and both carriers: headers, and the account identifier Claude Code
+sends in the request body.
+
+Run against the **real** pre-fix rollout log, it reports **65 findings** over 13
+records: four request headers, two response headers, the representative claim,
+and `metadata.user_id`. (An earlier header-only version of this check reported
+39 on the same file. The two numbers measure different scopes and are not
+comparable; the gap is the body field and the representative claim, both added
+after review.)
+
+**What is not yet verified, stated so it cannot be read as more:** the capture
+that scans clean was produced by the fixed binary against a **stub upstream**,
+not a rollout. So the criterion holds against every header and field observed on
+the real API — that inventory comes from the pre-fix real capture — but no
+*post-fix real* capture exists yet. The residual risk is narrow and specific: a
+sensitive header the real upstream sends that never appeared in those 13
+records. Closing it needs one real request through the merged binary, not an
+argument.
 
 Two further notes, so the record is complete rather than reassuring:
 
