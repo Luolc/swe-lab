@@ -11,7 +11,24 @@ executable end to end, that the labeling criterion can be applied, and that no
 label leaks into the judge's bundle — and to establish **nothing** about
 discriminative power, because only one class exists in the surviving corpus.
 
-That held. `classes present: ['good']`; the script prints
+**Two of those three were exercised; the first was not, and the claim is
+narrowed accordingly.** What ran: bundle construction, the leak audit, the
+mode-1 check, the seeded ordering. What did **not** run: no judge was asked for
+a verdict, so the scoring leg — hand a bundle to a blind judge, receive
+`derivation_holds` / `derivation_absent` plus a quoted justification — is
+**untested**. "End to end" is therefore not a claim this run supports, and the
+first scoring pass will be the first time that leg is exercised.
+
+On the labeling criterion, one part is settled deductively rather than by
+running it: for a **negative**, "the trace reaches the graded behavior's
+decision point" follows from the trace being *resolved* — the graded tests pass,
+so the behavior was produced, so the decision was reached. All five are resolved,
+so the negative rule's reachability clause is satisfied by construction here and
+tests nothing. **The clause only does work on the positive side**, where a trace
+can resolve without ever touching the unpinned decision, and that side has no
+data yet.
+
+Of what did run: `classes present: ['good']`; the script prints
 `SINGLE CLASS — this run cannot speak to discriminative power` on stderr, so a
 future reader of the output cannot mistake it for a signal.
 
@@ -84,7 +101,7 @@ Two consequences for the real run, both cheap:
    `navidrome-b3980532` is already first in the buying order — a coincidence
    worth converting into a rule.
 
-## Finding 3 — the corpus is executable, and the protocol runs
+## Finding 3 — bundle construction and the audit legs run
 
 Five bundles built, 555 messages and 280 tool calls in total, ordering
 randomized under seed 261 and recorded in
@@ -111,6 +128,11 @@ invalidate a review in progress.
 
 ## What did not get tested
 
-Everything that needs two classes: the scoring pass itself, arm A vs arm B vs
-arm B′, the tie rule, and the calibration step that admits a candidate positive.
-Those wait on the purchased positives — 4 first, to measure the yield factor.
+**The scoring pass**, which needs no second class to exercise but was not run
+here: no judge was handed a bundle and no binary verdict was collected. That is
+the single largest untested leg, and it is cheap to exercise on one class — it
+just cannot be *interpreted* on one class.
+
+Everything else that needs two classes: arm A vs arm B vs arm B′, the tie rule,
+and the calibration step that admits a candidate positive. Those wait on the
+purchased positives — 4 first, to measure the yield factor.
