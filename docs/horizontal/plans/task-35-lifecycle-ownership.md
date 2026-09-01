@@ -405,6 +405,42 @@ What it should say, in one sentence each:
 - **Citations, not copies.** The three arrivals are named with links; the
   paragraphs where they live stay where they are and gain a link back.
 
+### The rule the three arrivals add up to: prefer a designator that expires
+
+The name-vs-handle rule above got a third, independent instance on 2026-09-01,
+from a context with no production code in it at all — and three is where this
+repo lets a pattern become a rule:
+
+| where | the form it took |
+|---|---|
+| `process_group.py` ([#290](https://github.com/Luolc/swe-lab/pull/290)) | re-resolving a **numeric PGID** after the reap released its reservation |
+| the reaper (D) | attributing a resource by a **port**, or by a pid, rather than by a stamp |
+| an ad-hoc watcher script | **`pkill -f <pattern>`** — late name resolution in its purest form |
+
+The third one is the instructive one. It was armed under rules that had since
+changed, and it **fired**. It did no damage only because it had been written
+*narrowly by accident*: it hard-coded the dead driver's pid instead of a name
+pattern, so it matched nothing. Had it said `pkill -f run_pilot.py`, it would
+have killed the live successor process at the moment the old one finished.
+
+> **A designator that expires beats one that persists.**
+>
+> A pid, a container id, a `pidfd`, a `Popen` handle all become **invalid** when
+> the thing they name dies — so a stale mechanism holding one **disarms itself**.
+> A name pattern, or a number re-resolved after its reservation is gone, always
+> matches *something* — so a stale mechanism **stays armed** and quietly begins
+> matching the wrong thing.
+>
+> Corollary: disarming correctly requires enumerating every armed mechanism.
+> When you cannot enumerate them — and you usually cannot — choose the
+> designator that expires on its own.
+
+This is also *why* D's rule 1 works. The owner stamp (a uuid4 session plus a
+pid) is an expiring designator: it either verifies, or it explicitly fails to
+verify — and **"cannot verify" is itself a usable signal**, the one that makes
+"unknown owner → report, never touch" expressible. A name match never returns
+that signal. It always returns a confident answer.
+
 ### One review pattern worth keeping, from C's five rounds
 
 C ([#290](https://github.com/Luolc/swe-lab/pull/290)) went through four
