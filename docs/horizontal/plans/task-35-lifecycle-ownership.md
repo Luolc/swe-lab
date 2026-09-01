@@ -79,7 +79,9 @@ Add three labels at create time beside the existing `swe-lab` / `swe-lab-instanc
 
 Nothing behavioural depends on them; they exist so that a survivor can be
 attributed. The pid alone is not enough — pids are reused, and a pytest session
-and its subprocesses share none — which is what the session id is for.
+and its subprocesses do not share one — which is what the session id is for.
+**That reasoning goes in the code beside the label**, or the next reader deletes
+the session id as redundant with the pid.
 
 **Test:** the create argv carries all three, and the session id is stable within
 a process and different across processes.
@@ -116,6 +118,30 @@ Two rules that make this safe and honest:
 2. **A leak that is silently cleaned is a leak that repeats.** The test fixture
    reports rather than tidies: today's three leaks were visible only because
    nobody swept them.
+
+**Rule 2 is not new here — it is this project's third independent arrival at the
+same principle**, in three unrelated domains, and it is worth saying so rather
+than presenting it as a fresh idea:
+
+- **Task screening**: *annotate, never suppress*. "A reader given the annotation
+  can reproduce suppression exactly, by ignoring the annotated alarms; a reader
+  given suppression cannot recover what was never printed"
+  ([screening report](../../../experiments/trace_synthesis/instance_screening/REPORT.md)).
+- **[ADR-0010](../../decisions/ADR-0010-benchmark-integrity.md) §3c / §6**:
+  *detection, never a gate* — "shaped as detection precisely because closure
+  cannot be claimed".
+- **Here**: report the leak, do not quietly reclaim it.
+
+The shared shape is that **the irreversible direction is the optimistic one**:
+suppressing an alarm, gating on an incomplete check, or sweeping a leak each
+destroys the evidence that the thing happened, and each is invisible afterwards
+— nobody audits an alarm that never fired or a container that was already gone.
+
+Three independent arrivals is past coincidence, so the principle probably wants
+a canonical home. **That proposal belongs in D's PR, not here**, and it is a
+proposal for exactly one home — a fourth copy of the same rule is the failure
+[`doc-map.md`](../../doc-map.md) exists to prevent. What this design commits to
+is applying it, not owning it.
 
 ## Out of scope
 
