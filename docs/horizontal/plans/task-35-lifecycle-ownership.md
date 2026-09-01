@@ -466,6 +466,32 @@ the fixture, so teardown met a faked `waitid`, correctly refused to signal, and
 leaked the tree it was there to clean up. **A cleanup routine that depends on
 the code it is testing is not a cleanup routine.**
 
+### Two more rules the same day produced
+
+**An invariant binds the apparatus that verifies it.** C's fifth round found the
+group-signal invariant violated inside the *fixture that tests it*: teardown
+signalled the group unconditionally, while one test reaps the leader in its own
+body — so the cleanup became exactly the numeric-reuse kill the helper exists to
+prevent. Test scaffolding is where an invariant is most often silently exempted,
+for three reasons that all feel adequate at the time: it is not production code,
+it is "just cleanup", and the author's attention is on the thing under test.
+
+An unconditional teardown *looks* like responsible cleanup; it was an unchecked
+late resolution. The fix is the tell: the fixture now gates on `returncode is
+None`, **the same condition the helper's own pre-flight uses**. An apparatus
+that does not share the gate with the thing it tests is not verifying it.
+
+**Closing a work item, migrate what inside it is still true.** Task 03 of
+trace-synthesis is closed because the arm it serves is closed — but one finding
+inside it is a real defect independent of that arm (`proxy_log_to_conversation`
+keeps only the last record's thread). Closing the row without rehoming it would
+delete the finding along with the task.
+
+The general form: **a scope judgement does not inherit to every factual finding
+the scope contains. What is obsolete is the scope, not necessarily the
+contents.** This is the dual of deleting a cut point — that one is about
+removing what should not stay; this one is about not removing what should.
+
 ### What is left to build
 
 Everything in D: the spawn records, the reaper, the `swe-lab reap` command
