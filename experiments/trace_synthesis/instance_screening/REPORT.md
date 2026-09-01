@@ -247,8 +247,15 @@ silenced that true positive. **`lastFMAPIKey` is not in the repository at
 `base_commit`** — the gold patch introduces it, in `core/agents/lastfm.go`:
 
 ```go
-+	lastFMAPIKey    = "c2918986bf01b6ba353c0bc1bdd27bea"
++	lastFMAPIKey    = "<32-hex constant, value elided>"
 ```
+
+(The constant's literal value is elided: the argument turns on *a line assigning
+a 32-hex constant to a key name existing in the gold patch*, not on the digits
+themselves. The original is upstream in
+[navidrome](https://github.com/navidrome/navidrome) at `core/agents/lastfm.go`
+— it is that project's own published Last.fm key, so nothing here is lost for
+traceability.)
 
 So suppression would *not* have silenced it, and the example proved nothing.
 It was caught by the repository-token annotation itself, which this report had

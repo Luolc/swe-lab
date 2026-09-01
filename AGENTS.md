@@ -109,6 +109,25 @@ The hooks themselves are listed once, in
 source of truth. Don't restate the list here — three drifting copies of it is
 how it went stale before.
 
+**Credential scanning runs in both places, over different inputs.** The
+`gitleaks` pre-commit hook (first in `.pre-commit-config.yaml`, before any hook
+that rewrites files) scans the **staged diff** — the only input domain that
+contains a secret that has not been committed yet. CI scans the **full history**
+— the only domain that catches one already in. Neither replaces the other.
+
+`--no-verify` skips **all** hooks, gitleaks included. If you must use it, stage
+your files and then run the staged scan by hand before committing:
+
+```sh
+gitleaks git --staged --redact --no-banner --verbose .
+```
+
+Never add a gitleaks allowlist entry to make the gate pass: anything we
+introduced or could remove must be **fixed**. `.gitleaksignore` is only for a
+pre-existing fact we neither introduced nor can remove at acceptable cost, and
+each entry is one immutable fingerprint — never a path, rule or regex. The full
+rule and the reasoning are in that file's header comment.
+
 Scope to what you touched while iterating; run the full set before merge. New
 behavior gets a test; `experiments/` is exempt from the hooks.
 
@@ -140,8 +159,10 @@ test for is a wish, and it silently decays into a lie.
   compiles its record into), or the report contract; re-hosting or renaming the
   HF dataset repos; the deferred `outputs/` restructure; deleting anything under
   `outputs/` (it is a committed deliverable).
-- **Never:** commit secrets / OAuth tokens / `.envrc.local`; commit dataset data
-  files or large trace records (gitignored / off-repo on HF by design); push
+- **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
+  gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));
+  commit dataset data files or large trace records (gitignored / off-repo on HF
+  by design); push
   non-trivial work straight to `main`; present the provisional patch-extraction
   docs as authoritative.
 

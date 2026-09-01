@@ -117,6 +117,16 @@ patch version.
 The full hook set. `.pre-commit-config.yaml` is the source of truth; this is
 the one prose copy of it (`AGENTS.md` links here rather than restating it):
 
+- **gitleaks** — credential scan, deliberately **first** so a leak is caught
+  before any other hook rewrites the staged files. It scans the **staged diff**
+  only; the full-history scan is CI's step of the same name, and the two input
+  domains are complementary (see the comments in both files). `--redact` is
+  spelled out in `args` even though the upstream entry already passes it —
+  inherited it would be invisible here and a `rev` bump could drop it, and an
+  unredacted scanner prints the credential it finds into the terminal and the
+  session transcript. Findings are never silenced with a path or rule
+  exclusion; `.gitleaksignore` holds immutable fingerprints only, under the rule
+  in its header.
 - **pyink** — the formatter (Google's black fork): **line length 80, 2-space
   indent, majority quotes**, `py313`. Not ruff-format (ruff's formatter is
   disabled for `.py` in `pyproject.toml`).

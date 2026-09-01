@@ -1,0 +1,25 @@
+# gitleaks findings that are deliberately not failures. One line per finding,
+# each a FINGERPRINT: <commit>:<path>:<ruleID>:<line>.
+#
+# The rule for what may go in here:
+#
+#   Anything we introduced, or anything we could remove, must be FIXED — never
+#   covered by an entry here. This file is only for a pre-existing fact we
+#   neither introduced nor can remove at acceptable cost.
+#
+# And the shape is load-bearing. Entries are fingerprints and nothing else:
+# never a path exclusion, a rule exclusion or a regex. A fingerprint names one
+# frozen instance in one commit, so it is a RECORD and cannot grow. A path or a
+# rule names a pattern, so it silences that file's or that rule's FUTURE too —
+# that is a hole, and the knob added to make the gate usable is exactly the
+# knob that turns the gate off.
+
+# A third-party key, not ours. The line is a quotation of navidrome's own gold
+# patch (`core/agents/lastfm.go`), i.e. that open-source project's published
+# Last.fm API key — we are not the party who can rotate it, and the commit is
+# already in `main`'s immutable history. The quotation itself was fixed: HEAD
+# now elides the literal value (this scan is what found it). Rewriting `main`'s
+# history is reserved for OUR leaked credentials and for large files, and this
+# is neither. Covers that one historical commit only; the same file will fail
+# the scan again the moment anything new lands in it.
+eafa48d3e8c9131abc801b5b1f3223042cfcd644:experiments/trace_synthesis/instance_screening/REPORT.md:generic-api-key:250
