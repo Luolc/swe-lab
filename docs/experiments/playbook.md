@@ -250,9 +250,9 @@ pilot's twelve amendments.
   making claims smaller: the pass was over magnitude assertions, and no
   direction assertion was re-examined.
 
-  With the two questions above, these are the three review obligations this
-  section asks for — none is machine-checkable, so none is written as an
-  invariant:
+  With the two questions above, these are the three review obligations asked
+  for **up to here** — none is machine-checkable, so none is written as an
+  invariant; the entries below add their own:
 
   > **Restating a number:** what did I add that was not in their words?
   > **Correcting a number:** was the new reference point actually measured?
@@ -382,6 +382,64 @@ pilot's twelve amendments.
   *deleted*, not annotated. The test is whether the replacement rule has **zero**
   free parameters: re-tuning a cut to a safer value relocates the discretion,
   while removing the cut ends it.
+- **Before citing a tool, criterion or dataset: does it exist *for the samples
+  you have*?** Existence is not the question; **scoped** existence is. A
+  criterion can be real, checked in, and referenced by name while covering none
+  of the instances in front of you — and the name reads identically either way,
+  so nothing in the sentence signals the gap. A measurement task whose
+  instrument does not exist for its samples is not an expensive task; it is not
+  a task. **Review obligation:** when a plan names an artifact, confirm its
+  coverage of *this* population before any cost is incurred, not the artifact's
+  existence in general.
+- **When a check reports a violation, suspect the checker first.** The rest of
+  this section is about green lights having several possible causes. This is the
+  mirror: **a red light has several possible causes too, and the checker is
+  usually the newer half** — freshly written for this purpose, while the thing
+  under test has been exercised. A reported violation is therefore an
+  **observation awaiting attribution**, not a finding. Two ways it goes wrong,
+  both cheap to miss: a limit that silently truncates output produces a
+  *directional* selection effect rather than noise, dropping exactly the cases
+  that needed the most room; and an exact-match test against hard-wrapped or
+  marked-up text fails on quotations that are perfectly faithful. **Review
+  obligation:** a violation is not reportable until the checker has been cleared
+  of producing it.
+- **A substitution keeps the proposition only for the question you had in
+  mind.** The costly half of a check gets swapped for a cheap stand-in — a
+  `--help` for a real run, a dry run for a live one — and the swap is judged on
+  the axis that motivated it, which is usually *cost*. What also changes,
+  unwatched, is **which proposition the check still supports**: `--help` and a
+  real invocation are equivalent on *does this command exist and parse its
+  arguments* and not equivalent on *can it find its data at run time*. Here the
+  substitution left the acceptance step blind to the exact defect that round had
+  fixed, and reported success. This is the same **scope** failure as *measured
+  on A, stated about B*, one level up: two actions interchangeable on one
+  question and not on another, with the question never written down. It is the
+  worst of the family to catch because **nothing errors** — the check runs
+  clean and returns a reassuring value. A watcher polling a field this workflow
+  never populates logged forty minutes of `decision=none`, which reads as *no
+  verdict yet* and meant *this instrument cannot observe verdicts*. **Review
+  obligation:** when you substitute, name the proposition the original
+  supported and show the substitute still supports it — a green from an
+  unnamed proposition is not a result.
+- **Verify a documented procedure by extracting and executing it, not by
+  retyping it.** A `Reproduce` block, an install sequence, a runbook: these are
+  instruments for someone else, and the author is the one person who cannot test
+  them by hand. Retyping silently supplies what the reader lacks — the working
+  directory, the environment, the order — so the author's implicit knowledge
+  becomes an invisible input to the check. Extract the commands from the file
+  and run them; a step that only works because you knew something fails here and
+  passes when retyped. Two failures found this way in one sitting were in the
+  *extractor*, not the document, which is the previous entry's obligation
+  arriving from the other side.
+- **A failure you can remove structurally must not be written as a rule for
+  people to follow.** A caveat — "run this from the repo root" — transfers
+  responsibility for the failure to the reader instead of ending it, and every
+  future reader has to be reached. Resolving the same path against the file that
+  needs it deletes the failure mode outright. **Prefer the change that makes the
+  mistake unavailable to the one that documents it**, and treat reaching for a
+  caveat as the signal that a structural fix was available and skipped.
+
+  Instances for all five: [PR #305](https://github.com/Luolc/swe-lab/pull/305).
 - **Label an amendment for what it is.** "Post-hoc but prospective, with an
   empty prior action set" is a real and useful category — a rule changed after
   the run began but before it had ever fired changes nothing that already

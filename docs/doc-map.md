@@ -54,7 +54,7 @@ into three files (they drift):
 | the deep design of a task | that `plans/task-NN.md`; a shipped delta → its dated `## Result` | design record |
 | **task status** | the component's `plans/README.md` (the ONE place) | the index row |
 | **workstream-level status** | `docs/README.md` snapshot (the ONE place) | the snapshot row |
-| a naming / interface-style rule | `docs/conventions.md` (or an ADR — e.g. ADR-0002) | a convention |
+| a naming / interface-style / comment-content rule | `docs/conventions.md` (or an ADR — e.g. ADR-0002) | a convention |
 | an empirical / ML finding | an experiment `REPORT.md` | hypothesis → result |
 | what an **external** source (a paper, a vendor audit, an upstream issue) already established | `docs/research/<topic>.md` | a survey, every claim cited and dated |
 | a change a **consumer** must react to (removed name, changed default, shifted results) | `docs/releases/vX.Y.Z.md` for the version shipping it | what changed / why / what you must do |
