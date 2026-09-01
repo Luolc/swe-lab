@@ -65,8 +65,12 @@ def build_proxy(
   # so this function would hand back a path that is still a directory and the
   # error would surface much later, as PermissionError, when the proxy is
   # spawned.
+  # `missing_ok` because two pipeline runs can reach this together: both see
+  # the directory, one removes it, and the loser must not fail for having been
+  # beaten to a result it wanted. What is asserted on the next line is the
+  # state, not who achieved it.
   if binary.is_dir():
-    binary.rmtree()
+    binary.rmtree(missing_ok=True)
   if binary.is_file() and not force:
     return binary
   if not source.is_file():

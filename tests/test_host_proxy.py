@@ -7,6 +7,7 @@ process on a per-run port. (The engine's rollout path runs both in the sandbox
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import subprocess
 
@@ -138,3 +139,50 @@ def test_the_start_path_spawns_a_file_after_the_residue_is_cleared(
       binary=built,
   ):
     pass  # Popen succeeded: the same start path no longer hits a directory
+
+
+def test_a_peer_clearing_the_same_residue_first_is_not_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """Two runs reach the migration together; the loser must not fail.
+
+  The window is injected rather than raced for. A thread barrier was tried
+  first and did **not** reproduce this reliably -- both threads reached the
+  check, and the removals still serialised -- so a barrier here would have been
+  a test that looks concurrent and passes either way. Injecting the peer's
+  removal into the window makes the interleaving happen on every run.
+
+  Driven through the real `build_proxy`: an earlier version inlined the removal
+  and passed against a non-idempotent implementation, because it was exercising
+  its own copy of the logic rather than the shipped one.
+  """
+  binary = proxy_binary_path(tmp_path)
+  _residue(binary)
+
+  source = tmp_path / "reverse_proxy.go"
+  _ = source.write_text("package main\n")
+  monkeypatch.setenv("CC_REVERSE_PROXY_SRC", str(source))
+
+  def _fake_go(
+      argv: list[str], **_kwargs: object
+  ) -> subprocess.CompletedProcess[str]:
+    out = Path(argv[argv.index("-o") + 1])
+    _ = out.write_text("#!/bin/sh\nexit 0\n")
+    return subprocess.CompletedProcess(argv, 0, "", "")
+
+  monkeypatch.setattr(
+      "swe_lab.pipelines.related_files.host_proxy.subprocess.run", _fake_go
+  )
+
+  real_rmtree = type(epath.Path("/tmp")).rmtree
+
+  def peer_removed_it_first(self: epath.Path, missing_ok: bool = False) -> None:
+    real_rmtree(self, missing_ok=True)  # the peer wins inside the window
+    real_rmtree(self, missing_ok=missing_ok)  # our call now finds nothing
+
+  monkeypatch.setattr(type(epath.Path("/tmp")), "rmtree", peer_removed_it_first)
+
+  _ = build_proxy(tmp_path)  # must not raise
+
+  assert not os.path.isdir(str(binary))
+  assert os.path.isfile(str(binary))
