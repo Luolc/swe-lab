@@ -25,11 +25,13 @@ Two modes, and the mode picks the method:
   planning docs in its own folder** — a workstream (`docs/workstreams/<w>/`) or
   the horizontal `docs/horizontal/` for cross-cutting / foundational work:
   - `spec.md` — the target design (what we're building and why).
-  - `plan.md` — the **strategy** (phases, dependency graph, risks, DoD,
-    checkpoints); it does **not** enumerate tasks.
   - `plans/` — one **deep, source-grounded design per task**; `plans/README.md`
     is the **ordered task index + status** (the checklist). There is **no**
     separate `todo.md`.
+  - `plan.md` — **optional**: a strategy doc (phase order, dependency graph,
+    risks) that earns its keep only for a multi-phase migration, and is deleted
+    when that migration ends. It never enumerates tasks and never carries
+    status; a component without one is normal.
 
   A non-trivial effort starts from `spec.md`; add a missing task to
   `plans/README.md` (and a `plans/task-NN-*.md` when it needs design). A per-task
@@ -90,9 +92,14 @@ in the GitHub UI — do it, and report the PR link. What is specific to this rep
 Before merge, both must be clean (see [`docs/conventions.md`](docs/conventions.md)):
 
 ```sh
-uv run pre-commit run --all-files    # ruff + pyink + isort + basedpyright + uv-lock
-uv run pytest                         # the test suite
+uv run pre-commit run --all-files    # the full hook set — see conventions.md
+uv run pytest                        # the test suite
 ```
+
+The hooks themselves are listed once, in
+[`docs/conventions.md`](docs/conventions.md); `.pre-commit-config.yaml` is the
+source of truth. Don't restate the list here — three drifting copies of it is
+how it went stale before.
 
 Scope to what you touched while iterating; run the full set before merge. New
 behavior gets a test; `experiments/` is exempt from the hooks.
@@ -111,14 +118,20 @@ test for is a wish, and it silently decays into a lie.
   source of truth over a doc flagged *provisional*; keep every fact in **one
   home** (route via [`docs/doc-map.md`](docs/doc-map.md); status lives only in a
   component's `plans/README.md` / the workstream snapshot, never in a plan
-  header); **reconcile a component's `spec.md` at each checkpoint and on any
-  workstream-status change** — the spec has no other forcing function, so it
-  rots without this (fix its Success Criteria, Open Questions, and any body
-  section a landed ADR superseded).
-- **Ask first:** adding a runtime dependency; changing the annotation schema or
-  the `EvalSpec` / report contract; re-hosting or renaming the HF dataset repos;
-  the deferred `outputs/` restructure; deleting anything under `outputs/` (it is a
-  committed deliverable).
+  header); **reconcile a component's `spec.md` in the PR that outdates it** — a
+  spec has no forcing function of its own, so it decays into a lie unless two
+  mechanical triggers are honored:
+  - **An ADR that supersedes a section of a spec rewrites that section in the
+    same PR** (the natural extension of ADR-first-same-PR). If you cannot point
+    at the paragraph you changed, the ADR is not finished.
+  - **A task flipping to ✅ re-checks that spec's Success Criteria and
+    out-of-scope list in the same PR** — shipping the thing the spec calls out
+    of scope is exactly how a spec starts lying.
+- **Ask first:** adding a runtime dependency; changing the annotation schema,
+  the engine's compile contract (`SandboxSpec` / `UnitTestSpec` — what a dataset
+  compiles its record into), or the report contract; re-hosting or renaming the
+  HF dataset repos; the deferred `outputs/` restructure; deleting anything under
+  `outputs/` (it is a committed deliverable).
 - **Never:** commit secrets / OAuth tokens / `.envrc.local`; commit dataset data
   files or large trace records (gitignored / off-repo on HF by design); push
   non-trivial work straight to `main`; present the provisional patch-extraction

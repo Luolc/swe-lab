@@ -1,8 +1,15 @@
 # Workstream 2 — Solve + evaluate pipeline
 
-**Status: 🚧 Active.** The **evaluation** subsystem is built and validated, and
-the **full gold self-test sweep is done** (731/731 golden patches resolve after
-an in-loader fix). **`rollout` (agent sampling) is the current focus.**
+> 📚 **Historical snapshot (2026-07 / 2026-08) — not maintained.** This
+> workstream has been **folded into the horizontal foundation**: the solve + eval
+> loop it set out to build is shipped as the SandboxRun engine + `swe-lab run`,
+> and its two surviving to-dos moved to the horizontal task index. **Live status
+> lives elsewhere** — the workstream row in [`docs/README.md`](../../README.md)
+> and, per task, in
+> [`horizontal/plans/README.md`](../../horizontal/plans/README.md). Everything
+> below is a point-in-time record of how the design looked in July / August 2026;
+> **the code is the source of truth**, and paths, module names and CLI flags
+> quoted below have moved since. Read it for the reasoning, not for instructions.
 
 Started 2026-07-09. Build a **robust, Docker-based pipeline that actually solves
 SWE-Bench Pro tasks** (an agent generates a patch) and **evaluates** them (apply
@@ -97,8 +104,8 @@ subsystems. **General code never learns a dataset's specifics** — each dataset
     `docker run` many instances sequentially (economical for the 731 gold sweep);
     same code path as local; full control of `--platform` / `--network none` /
     `--rm`. golden grading runs on `ubuntu-latest` (native amd64) via `verify-golden.yml`.
-  - **rollout → A (planned).** It is naturally one-instance-per-job (the agent
-    runs minutes → one patch). The Claude Code binary runs in the job shell
+  - **rollout → A (shipped since this was written).** It is naturally
+    one-instance-per-job (the agent runs minutes → one patch). The Claude Code binary runs in the job shell
     (which *is* the sandbox), edits the repo, runs tests, then `git diff` — no
     container-lifecycle juggling. Caveat: the image must be a valid GH job
     container (GH injects node; minimal images can miss libs). "Mount the pinned

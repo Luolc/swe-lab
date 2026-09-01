@@ -10,8 +10,11 @@ elsewhere.
 ## Document map
 
 `<component>` = `docs/horizontal/` (the shared foundation) or a
-`docs/workstreams/<w>/` folder (a vertical). An active component owns its own
-`spec` / `plan` / `plans`.
+`docs/workstreams/<w>/` folder (a vertical). An active component owns a
+`spec.md` and a `plans/` directory whose `README.md` is the ordered task index
+**and the one live status home**; `plan.md` is optional and there is **no**
+`todo.md` (see `AGENTS.md` → How we work). A dormant component is just a
+`README.md`.
 
 | File / dir | Answers | Never put here |
 |---|---|---|
@@ -22,10 +25,10 @@ elsewhere.
 | `docs/decisions/ADR-NNNN-*.md` | Why did we decide X, and what did we reject? | status; how-to; a second copy of the code |
 | `docs/decisions/README.md` | The ADR index + ADR conventions | the ADR bodies |
 | `<component>/spec.md` | What are we building and why? (target design) | status; task breakdown; strategy |
-| `<component>/plan.md` | In what order, with what risks / DoD / checkpoints? (strategy) | per-task design; status |
+| `<component>/plan.md` *(optional)* | In what order, with what risks / DoD? (strategy) — worth writing only for a multi-phase migration, and deleted when it ends | per-task design; task list; status |
 | `<component>/plans/README.md` | The ordered task index — **the one live status home** for that component | design detail |
 | `<component>/plans/task-NN-*.md` | The deep design of one task (point-in-time record) + an optional dated `## Result` | live status |
-| `docs/workstreams/<w>/` | A vertical's design / history (`spec`/`plan`/`todo` when active, `README` when dormant) | horizontal / shared design |
+| `docs/workstreams/<w>/` | A vertical's design / history — the component layout above when active, just a `README` when dormant (most are) | horizontal / shared design |
 | `docs/releases/vX.Y.Z.md` | I depend on swe-lab and am upgrading to this version — what broke, and what do I change? | design (link to the ADR/plan); the exhaustive commit list (the Release's generated notes own that) |
 | `docs/releases/README.md` | The release-note index + what belongs in one | the note bodies |
 | `docs/reviews/` | A dated engineering audit (a snapshot, not a spec) | design; status |
@@ -41,7 +44,7 @@ into three files (they drift):
 |---|---|---|
 | a product / architecture decision (+ what you rejected) | an **ADR** | ADR-first, in the **same PR** as the code |
 | a repo-wide rule for agents | `AGENTS.md` | a rule + how a violation gets noticed |
-| a component- / workstream-local rule | that component's `spec` / `plan` (or workstream `README`) | inline where it applies |
+| a component- / workstream-local rule | that component's `spec.md` (or a dormant workstream's `README`) | inline where it applies |
 | a codebase-map fact (where code lives, a hazard, a command) | `docs/conventions.md` | a map row / hazard note |
 | the deep design of a task | that `plans/task-NN.md`; a shipped delta → its dated `## Result` | design record |
 | **task status** | the component's `plans/README.md` (the ONE place) | the index row |
@@ -65,11 +68,18 @@ where noted — this list only points):
 - **A release note is written before the version bump lands**, not after
   tagging — step 1 of [releasing](conventions.md#releasing). Written from
   memory afterwards, the migration steps are exactly the part that goes wrong.
-- **Every doc needs a re-read trigger, or it rots** — including reconciling a
-  component's `spec.md` at each checkpoint / workstream-status change (see
-  `AGENTS.md` → Boundaries).
+- **Every doc needs a re-read trigger, or it rots.** For a `spec.md` the two
+  triggers are mechanical and both live in the PR that outdates it: an ADR
+  superseding a spec section rewrites that section in the same PR, and a task
+  flipping to ✅ re-checks the spec's Success Criteria and out-of-scope list
+  (see `AGENTS.md` → Boundaries).
 - **An invariant needs a test, or it's downgraded** to "intended / today" (see
   `AGENTS.md` → Quality bar).
 - **Delete guidance that contradicts the repo** — stale guidance is worse than
-  missing, because it gets followed; a pre-commit stale-reference guard backs
-  this up.
+  missing, because it gets followed. **Nothing mechanical enforces this for
+  docs.** The `no-stale-module-refs` pre-commit hook only bans renamed module
+  tokens under `src/` and `tests/`, and it is deliberately blind to `docs/`
+  (point-in-time records — `plans/task-NN-*.md`, `reviews/`, ADRs — are
+  *supposed* to name retired code). Docs stay honest only through the re-read
+  triggers above and review; when in doubt, delete rather than leave a claim you
+  are not re-checking.

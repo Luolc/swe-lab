@@ -31,13 +31,13 @@ specifics (each dataset compiles its record into the engine's general shapes —
 
 Shared-code changes that don't belong to a single vertical — e.g. extracting
 common code out of a workstream into the engine, or hardening a shared backend —
-are **horizontal** work and are planned here (a `spec.md` / `plan.md` / `plans/`
-alongside this README).
+are **horizontal** work and are planned here (a `spec.md` + `plans/` alongside
+this README; see [`doc-map.md`](../doc-map.md) for the component layout).
 
 **The SandboxRun redesign (largely landed):** the execution core is now one
 unified sandboxed-task engine + three plug-in axes (harness / dataset /
 eval-method), so `rollout` and `eval` are configs of one engine. See
-**[spec.md](spec.md)** (approved 2026-07-18), the **[plan](plan.md)** +
-per-task designs in **[plans/](plans/)**, and
+**[spec.md](spec.md)** (approved 2026-07-18), the per-task designs indexed by
+**[plans/README.md](plans/README.md)**, and
 **[workspace-layout.md](workspace-layout.md)** (the concrete per-run file
 inventory every composition is built against).
