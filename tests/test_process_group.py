@@ -75,12 +75,18 @@ def tree() -> Iterator[subprocess.Popen[str]]:
   # these tests monkeypatch the very calls it makes, and pytest finalizes
   # `monkeypatch` after this fixture — so a teardown routed through
   # `end_process_group` met a faked `waitid`, refused to signal (correctly),
-  # and leaked the tree. Signalling the group directly is safe here because
-  # nothing has reaped the leader, so its number is still reserved.
-  with contextlib.suppress(ProcessLookupError, PermissionError):
-    _REAL_KILLPG(process.pid, signal.SIGKILL)
-  with contextlib.suppress(subprocess.TimeoutExpired):
-    _ = process.wait(timeout=5)
+  # and leaked the tree.
+  #
+  # Gated on `returncode`, for the same reason the helper gates on it: once a
+  # test has reaped the leader, this number may name somebody else's group. A
+  # test that reaps it owns its own descendants — see
+  # `test_terminating_only_the_child_is_what_leaked`, which kills the
+  # grandchild it deliberately orphaned.
+  if process.returncode is None:
+    with contextlib.suppress(ProcessLookupError, PermissionError):
+      _REAL_KILLPG(process.pid, signal.SIGKILL)
+    with contextlib.suppress(subprocess.TimeoutExpired):
+      _ = process.wait(timeout=5)
 
 
 def test_the_whole_tree_dies_not_just_the_child(tree: subprocess.Popen[str]):
