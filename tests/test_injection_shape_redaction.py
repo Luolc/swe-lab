@@ -152,3 +152,37 @@ def test_committed_captures_carry_no_secret() -> None:
       if metadata.get("user_id", "<redacted>") != "<redacted>":
         offenders.append(f"{path.name}:{number} request.metadata.user_id")
   assert not offenders, offenders
+
+
+def test_a_timed_out_run_still_records_that_it_timed_out(
+    driver: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  """The one field that says "environment failure" must survive the failure.
+
+  `TimeoutExpired` carries bytes even under `text=True`, so the timeout path —
+  the only path that needs the flag — was the path where writing the capture
+  raised `TypeError` and `meta.json` was never written at all.
+  """
+  monkeypatch.setenv("SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN", "token-for-the-test")
+  # The driver is idempotent against its own runs/ directory; point it at
+  # the temporary one so this test neither skips nor writes into evidence.
+  monkeypatch.setattr(driver, "RUNS", tmp_path / "runs")
+  real_run = driver.subprocess.run
+
+  def fake_run(argv: list[str], **_kwargs: Any) -> Any:
+    if argv[:2] == ["claude", "-p"]:
+      raise driver.subprocess.TimeoutExpired(
+          argv, 600, output=b"partial stream\n", stderr=b"partial stderr\n"
+      )
+    return real_run(["true"], capture_output=True, text=True)
+
+  monkeypatch.setattr(driver.subprocess, "run", fake_run)
+  driver.run_variant("v7-baseline-no-hook-compliance", tmp_path)
+
+  out = tmp_path / "runs" / "v7-baseline-no-hook-compliance"
+  meta = json.loads((out / "meta.json").read_text())
+  assert meta["timeout"] is True
+  assert meta["exit_code"] == -1
+  # …and whatever the run produced before the kill is kept, as text.
+  assert (out / "stream.jsonl").read_text() == "partial stream\n"
+  assert (out / "stderr.txt").read_text() == "partial stderr\n"
