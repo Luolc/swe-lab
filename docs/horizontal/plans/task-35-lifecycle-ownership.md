@@ -438,8 +438,12 @@ designator can come to mean something else**:
 
 A `Popen` object belongs on neither side: it holds a *number* plus bookkeeping,
 not a kernel identity, and the number stays reserved only while the child is
-unreaped. That is precisely why `end_process_group` verifies with
-`_identity_held` before every signal instead of trusting the object it holds.
+unreaped. That is precisely why `end_process_group` re-verifies before each
+send instead of trusting the object it holds — and it is **two distinct
+checks**, one per signal: `_identity_held` at entry guards `SIGTERM`, and
+`_await_exit`'s return value guards `SIGKILL` by reporting whether the leader
+stayed unreaped throughout the drain. Neither is redundant, and removing either
+re-opens the send it covers.
 
 > **Act only through an identity that cannot come to mean something else.**
 > Where no such identity exists, **verify immediately before acting, and treat
@@ -496,8 +500,9 @@ it is "just cleanup", and the author's attention is on the thing under test.
 An unconditional teardown *looks* like responsible cleanup; it was an unchecked
 late resolution. The fixture now gates on `returncode is None` — **one half of
 what the helper's pre-flight checks**, not the same condition: `_identity_held`
-also asks `waitid` and refuses on `ChildProcessError`, an external reap the
-fixture has no way to see. That half is enough *there*, because in a controlled
+also asks `waitid` and refuses on `ChildProcessError` — an external reap the
+fixture simply does not check for; `waitid` is as available to it as to the
+helper. That half is enough *there*, because in a controlled
 test setup the leader can only be reaped by the test itself — which is a
 narrower claim than "it shares the gate", and the narrower claim is the true
 one.
