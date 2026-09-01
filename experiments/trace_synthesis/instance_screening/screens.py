@@ -715,12 +715,16 @@ def main() -> None:
   union = set.union(*hits.values())
   lines.append(f"all five: {len(every)}")
   lines.append(f"any: {len(union)}   none: {len(rows) - len(union)}")
-  contained = [
-      f"{left} < {right}"
-      for left in names
-      for right in names
-      if left != right and hits[left] and hits[left] <= hits[right]
-  ]
+  contained: list[str] = []
+  for index, left in enumerate(names):
+    for offset, right in enumerate(names):
+      if left == right or not hits[left]:
+        continue
+      if hits[left] == hits[right]:
+        if index < offset:
+          contained.append(f"{left} == {right}")
+      elif hits[left] < hits[right]:
+        contained.append(f"{left} < {right}")
   lines.append("containments: " + (", ".join(contained) or "none"))
   print("\n" + "\n".join(lines), file=sys.stderr)
 
