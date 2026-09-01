@@ -19,15 +19,19 @@ from __future__ import annotations
 
 import importlib.util
 import json
+from pathlib import Path
 import sys
 from typing import Any
 
 import pytest
 
-from swe_lab.paths import find_repo_root
-
+# Resolved from this file, not from `find_repo_root()`: that helper prefers the
+# inherited `PROJECT_ROOT`, which in a detached review worktree still names the
+# main checkout — so the test would load a *different* tree's `evidence.py`, or
+# none. Same pattern as the other path-loaded experiment tests.
 EXPERIMENT = (
-    find_repo_root() / "experiments" / "trace_synthesis" / "streamjson_input"
+    Path(__file__).resolve().parents[1]
+    / "experiments/trace_synthesis/streamjson_input"
 )
 
 
@@ -88,9 +92,12 @@ def _quota_record() -> dict[str, object]:
 
 
 def _wire(run: str) -> dict[str, Any]:
+  # A missing artifact is a failure, not a skip: these files are committed, and
+  # skipping is how this guard would silently stop guarding. The skip is also
+  # what hid the path bug below -- five of these went green-by-absence while the
+  # module was being loaded from the wrong worktree.
   path = EXPERIMENT / "runs" / run / "evidence.json"
-  if not path.is_file():
-    pytest.skip(f"{path} is not present in this checkout")
+  assert path.is_file(), f"{path} is committed and must be present"
   return json.loads(path.read_text())["wire"]
 
 
