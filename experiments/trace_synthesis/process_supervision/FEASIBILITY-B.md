@@ -46,13 +46,10 @@ Recorded because the number reached a user before it was checked, and because
 | first restatement | "20 attempts consumed ~⅔ of the weekly window" | **consumption** — a flow, from a stock |
 | second restatement | "we spent ⅔ of the week's budget on a cancelled line" | **attribution** — whose consumption |
 
-**A number becomes more useful with every misreading**: more specific, more
-dramatic, better shaped as a conclusion. That is exactly why the drift is not
-noticed — **each restatement feels like summarizing.** The check that catches
-it is one question, asked of your own sentence:
-
-> **When restating someone else's number, ask what you added that was not in
-> their words.** Here: "consumed", and "by us". Neither was in the reading.
+Nothing was added here that a reader would call an inference: "consumed" and
+"by us" each arrived as part of a restatement. The rule this produced lives in
+the [experiment playbook](../../../docs/experiments/playbook.md); this section
+records only what happened.
 
 ---
 
@@ -353,17 +350,10 @@ proxy" row was in that output. The red-line assertion followed a few lines
 later, by which point the question had become *does B cross a red line?*, under
 which that row is directly on point.
 
-So the accurate description is not that the row was unread, or that the question
-had not yet formed:
-
-> **Change the question and the evidence has to be re-taken.** Readings
-> gathered under question A are **invalid by default** for question B, and must
-> be walked again inside B's frame — most of all when both questions draw on the
-> same material, because that is exactly the case where nothing signals that a
-> re-read is needed.
-
-It is a relative of *measured on A, stated about B*, but harder to see: that
-family misaligns the **object**, this one misaligns the **question**.
+So the accurate description is not that the row was unread, or that the
+question had not yet formed: evidence taken under one question was reused under
+another. The rule drawn from it is in the
+[experiment playbook](../../../docs/experiments/playbook.md).
 
 ### Three of these happened in one document, and they are one class
 
@@ -380,7 +370,8 @@ distinguish them.**
 In all three the sentence stays grammatical and plausible under the wrong
 reading, so nothing downstream trips on it — which is why none was caught by
 re-reading, and all three were caught by someone asking *which quantity is
-this?*
+this?* The obligation that follows is recorded once, in the
+[experiment playbook](../../../docs/experiments/playbook.md), not here.
 
 ## 8. What remains unverified
 
