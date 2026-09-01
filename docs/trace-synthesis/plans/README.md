@@ -26,7 +26,7 @@ this index is not a task: its results are recorded in
 | 01 | **One instance, end to end** — an automated walkthrough producing the pipeline's first real artifacts on one real instance | ⬜ |
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⬜ |
-| 04 | **Oracle analysis task + guidebook schema** | ⬜ |
+| 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement |
 | 05 | **Supervisor + hook wiring in the sandbox** | ⬜ |
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
@@ -123,11 +123,15 @@ which is legitimate but must be recorded rather than assumed.
 
 ## Task 04: Oracle analysis task + guidebook schema
 
-**Description:** Phase B as a `Task`: a sandbox with the golden patch, the
-golden tests and the failed conversation mounted, the **git-history purge
-off**, producing a validated `guidebook.md`. The schema enforces the
+**Description:** Phase B as a `Task`: a sandbox with the grading procedure,
+the failed conversation and — when the dataset records one — the golden patch
+mounted, the **git-history purge off**, producing a validated `guidebook.md`. The schema enforces the
 `justification` field per stage — the field that makes an honest hint possible
-at all.
+at all. The failure arrives as the instance's own mounts — the instance is an
+`oracle_failures` record ([task 11](#task-11-start-from-a-cached-failure)) —
+which is what lets the shipped `oracle_analysis` workflow be a single entry
+run from a name alone. The design record is
+[`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md).
 
 Phase B is independently useful: a guidebook is a readable artifact even
 without phase C.
@@ -137,8 +141,14 @@ without phase C.
   purge-off configuration is explicit rather than incidental.
 - **Verification:** unit tests for the schema; one live run producing a
   guidebook a human judges usable.
-- **Dependencies:** 01 (which shapes what a usable guidebook looks like).
-  **Scope:** M
+- **Dependencies:** 01 (which shapes what a usable guidebook looks like), 11
+  (the input). **Scope:** M
+- **Outcome so far:** the task, the schema check and the workflow are landed
+  with docker-free tests covering the whole composition, and the purge-off
+  configuration is a named test. One live run has been made and is written
+  up against its pre-declared scope in the design record: the path holds
+  end to end, the produced guidebook failed the schema check on one missing
+  field, and no human has judged it — the row above stays 🔶 until one has.
 
 ## Task 05: Supervisor + hook wiring in the sandbox
 
@@ -151,7 +161,7 @@ dropped decision must be **recorded**, never silently skipped.
 
 - **Acceptance:** the guidebook and the belief state are provably absent from
   the actor's context and mounts (named tests, per the spec's
-  [invariants](../spec.md#12-invariants-intended-none-enforced-today)); a
+  [invariants](../spec.md#12-invariants-intended-enforced-where-marked)); a
   dropped or timed-out supervisor decision appears in the run record; the
   Supervisor's hook response can never carry `updatedInput`, a deny decision or
   `additionalContext` — the three channels
@@ -177,7 +187,9 @@ work? **This task starts with the decision, and may end there.**
 
 ## Task 07: The `oracle_guided_trace` workflow + integrity separation
 
-**Description:** Wire A→B→C→D as a registered workflow on the existing
+**Description:** Wire B→C→D — with A ahead of it only for an instance no sweep
+has failed on yet; a cached failure enters as an `oracle_failures` record
+([task 11](#task-11-start-from-a-cached-failure)) — as a registered workflow on the existing
 [workflow layer](../../decisions/ADR-0007-task-and-workflow-layer.md), with the
 edges resolved from the store. The integrity half is not optional: every phase
 B / C record carries the oracle-guided **policy stamp**
