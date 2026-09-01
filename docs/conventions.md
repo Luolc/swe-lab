@@ -311,6 +311,15 @@ retroactively (owner's calibration, 2026-09-01).
   place it is avoided. Nailed down by
   `test_the_repo_scoped_token_is_adopted_under_the_name_a_run_reads` and
   `test_an_existing_canonical_token_is_never_overwritten`.
+- **A fresh git worktree starts empty-handed.** Everything gitignored lives in
+  the checkout it was created in, not in git, so a new worktree has neither
+  [`.envrc.local`](#secrets) nor any dataset's `data/` folder. The dataset half
+  has a **misleading symptom**: every `gold_unit_test` run exits `1` with a
+  `FileNotFoundError`, which reads as "these instances are all broken" rather
+  than "the parquet was never downloaded here" (2026-09-01, four candidates in a
+  row). Both are one command: copy `.envrc.local.example` to `.envrc.local` and
+  `direnv allow`; then re-run the download in the dataset's README
+  ([`datasets/`](../datasets/README.md)). Do both before spending a rollout.
 - **`patches.py` is a stopgap.** The loader corrects 3 upstream dataset rows
   (truncated `fail_to_pass` names) **in memory**; it's a no-op on every other
   row. Retire it once a fixed parquet is published to HF and the loader can
