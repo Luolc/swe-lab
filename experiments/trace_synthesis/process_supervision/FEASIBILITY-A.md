@@ -317,7 +317,12 @@ count — order of magnitude only).
 > taken with `analyze.py --freeze-pilot`, and `analyze.py` reads the snapshot
 > rather than the original. **The pilot's own ledger remains the source of
 > truth**; this is a dated copy of the fields these five statistics need, and
-> the values above are unchanged by it.
+> the values above are unchanged by it. That the analysis needs only this
+> directory is the kind of claim this report is about, so it is a test rather
+> than a sentence:
+> [`tests/test_process_supervision_pilot_snapshot.py`](../../../tests/test_process_supervision_pilot_snapshot.py)
+> runs the whole analysis with the off-repo ledger made unreachable, and fails
+> if a missing snapshot ever goes back to reporting less instead of saying so.
 
 At **6 interventions per rollout** (the [steered re-run](../steered_rerun/REPORT.md)'s
 rate: 6 hints over 27 boundaries):

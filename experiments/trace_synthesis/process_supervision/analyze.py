@@ -163,11 +163,10 @@ def converter_survival() -> dict:
 def freeze_pilot() -> int:
   """Snapshot the off-repo pilot ledger into `runs/`, with its provenance.
 
-  One-shot, and the only mode that reads outside this directory. The source is
-  another component's run ledger on this machine and is in no git repository,
-  so without a snapshot the report's scale figures would be unauditable by
-  anyone else — which is precisely the claim this experiment made and could
-  not keep.
+  One-shot, and the only mode that reads outside this directory. Writes
+  `PILOT_FROZEN` (the `PILOT_FIELDS` columns of every row) and
+  `PILOT_PROVENANCE` (source path, sha256, row counts, kept and dropped
+  fields), so the scale figures are rederivable from this directory alone.
 
   Returns:
     0 on success, 1 when the source ledger is not on this machine.
@@ -224,8 +223,7 @@ def ledger_scale() -> dict:
 
   Raises:
     FileNotFoundError: If the committed snapshot is missing, which is a broken
-      checkout rather than a machine without the pilot — the earlier "skipped"
-      branch made those two look alike.
+      checkout rather than a machine without the pilot.
   """
   if not PILOT_FROZEN.exists():
     raise FileNotFoundError(
