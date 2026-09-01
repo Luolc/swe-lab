@@ -24,6 +24,7 @@ sandbox rollout path is separate — it runs the agent *inside* the container
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import re
 import subprocess
@@ -32,8 +33,11 @@ from etils import epath
 
 from swe_lab.harnesses.claude_code.redaction import (
     BODY_IDENTITY_PATH,
+    kept_headers,
     REDACTED,
+    REDACTED_MARKERS,
     SENSITIVE_HEADERS,
+    Upstream,
 )
 
 # Where the run's trace (the audit record + the ``complete`` signal) comes from,
@@ -326,3 +330,99 @@ def build_exchange_from_stream(
           "extra_info": {"result": result_event},
       }
   )
+
+
+# ── The publication gate ─────────────────────────────────────────────────
+
+
+@dataclasses.dataclass(frozen=True)
+class OperatorIdentity:
+  """The real identity a record must not contain.
+
+  Attributes:
+    home: The operator's home directory path.
+    name: Their git ``user.name``.
+    email: Their git ``user.email``.
+  """
+
+  home: str
+  name: str
+  email: str
+
+  @classmethod
+  def of_this_machine(cls) -> OperatorIdentity:
+    """Read the identity this machine's records would leak."""
+    return cls(
+        home=str(epath.Path("~").expanduser()),
+        name=_git_config("user.name"),
+        email=_git_config("user.email"),
+    )
+
+
+def exchange_publication_blockers(
+    record: dict[str, object],
+    *,
+    identity: OperatorIdentity,
+    upstream: Upstream = "anthropic",
+) -> list[str]:
+  """Return every reason this exchange record must not be published.
+
+  Checks the record that actually gets uploaded rather than the capture it
+  came from. The two are different objects: a raw proxy log can be spotless
+  while the normalized record carries a header nobody classified, and the
+  conversation bodies exist only here.
+
+  Args:
+    record: One decoded ``*.last_exchange.json``.
+    identity: The real identity that must not appear anywhere in it.
+    upstream: Which API served the exchange, selecting the classification
+      vocabulary. Defaults to Anthropic, which is where the W1 proxy points;
+      a wrong value over-reports rather than under-reports, since the other
+      upstream's names simply read as unclassified.
+
+  Returns:
+    One finding per problem, naming the field and the class of the offending
+    value — **never the value itself**, since these strings are printed.
+    Empty means nothing here blocks publication.
+  """
+  findings: list[str] = []
+  extra = record.get("extra_info")
+  extra = extra if isinstance(extra, dict) else {}
+  known = kept_headers(upstream) | SENSITIVE_HEADERS
+  for side in ("request_headers", "response_headers"):
+    headers = extra.get(side)
+    if not isinstance(headers, dict):
+      continue
+    for name, value in headers.items():
+      lowered = str(name).lower()
+      if lowered in SENSITIVE_HEADERS:
+        if value not in REDACTED_MARKERS:
+          findings.append(f"{side} {name}")
+      elif lowered not in known:
+        findings.append(f"{side} {name} (unclassified)")
+  metadata = extra.get("metadata")
+  if isinstance(metadata, dict):
+    account = metadata.get(BODY_IDENTITY_PATH[-1])
+    if account is not None and account not in REDACTED_MARKERS:
+      findings.append(f"metadata {BODY_IDENTITY_PATH[-1]}")
+  return findings + _operator_identity_findings(record, identity)
+
+
+def _operator_identity_findings(
+    record: dict[str, object], identity: OperatorIdentity
+) -> list[str]:
+  """Find the operator's real identity anywhere in the record's values."""
+  markers = (
+      ("operator home path", identity.home),
+      ("operator git name", identity.name),
+      ("operator email", identity.email),
+  )
+  findings: list[str] = []
+  for key, value in record.items():
+    blob = json.dumps(value, ensure_ascii=False)
+    findings += [
+        f"{key} {label}"
+        for label, needle in markers
+        if needle and needle in blob
+    ]
+  return findings

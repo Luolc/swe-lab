@@ -31,7 +31,7 @@ this index is not a task: its results are recorded in
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
-| 09 | **Converge redaction onto one home and publish behind a gate** — the header/body redaction itself shipped with task 10 | ⬜ |
+| 09 | **Converge redaction onto one home and publish behind a gate** — the header/body redaction itself shipped with task 10 | ✅ |
 | 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ✅ |
 | 11 | **Start from a cached failure** — the `oracle_failures` dataset: a record that delegates the instance and stages the failure, plus the builder from a finished run — [`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md) | ✅ First record built locally: the qutebrowser/9ed748ef baseline failure (data gitignored by design) |
 
@@ -300,20 +300,42 @@ not the same as clearing a trace for publication: bodies carry repository
 contents and whatever the agent typed. The gate is what stands between a scanned
 capture and a HF dataset repo, and it is the part still missing.
 
-`publication_blockers` exists but is **not yet wired to the real boundary**, and
-the boundary is now known precisely (traced during the review of the
-convergence work): `push_traces` uploads `*.last_exchange.json`, whereas that
-function reads raw proxy JSONL. So the gate has to run on the **normalized
-exchange record**, not on the capture — and an unclassified raw response header
-can survive into that record, which is exactly the case a capture-side check
-would miss. Wiring it there, with the body sweep, is what closes this task.
+**Both are done.** `refuse_unpublishable_traces` runs inside `push_traces`,
+before it reaches the HF API and with **no bypass flag** — a way to skip a
+safety gate becomes the way it is used. It checks the **normalized exchange
+record** (`*.last_exchange.json`), which is what actually gets uploaded, not
+the capture it came from: a raw log can be spotless while the record built
+from it carries an unclassified header, and the conversation bodies exist only
+in the record.
 
-- **Acceptance:** one home for the set, the placeholder and the body field list,
-  with `experiments/` importing from `src`; the scanner reports unclassified
-  fields; a publishing path that refuses an unscanned capture or one carrying
-  unclassified fields.
+Three classes of blocker, and findings name the field and the *class* of value,
+never the value: an unmasked sensitive header, an unclassified header, and the
+operator's own identity (home path, git name, email) anywhere in the record —
+the body sweep. The identity is read from the same source the builder redacts
+against, so the gate verifies the substitution actually ran rather than
+trusting it.
+
+Still open, and deliberately not claimed: this reasons about identity and the
+envelope. Repository contents in the bodies are a separate judgement nobody has
+specified yet.
+
+- **Acceptance:** met. One home for the set, the placeholder and the body field
+  list, with `experiments/` importing from `src`; the scanner reports
+  unclassified fields; `push_traces` refuses to upload a trace carrying an
+  unmasked secret, an unclassified header, or the operator's identity.
+
+  **Spec re-check** (required when a task flips): no success criterion in
+  [`spec.md`](../spec.md#15-success-criteria) is met or invalidated by this —
+  they concern hint visibility, steering, trace honesty, the policy stamp and
+  cost — and nothing on the out-of-scope list shipped. The spec makes no claim
+  about redaction or publishing, so there is no section to reconcile.
 - **Verification:** unit tests, each observed to fail on a mutant before being
-  trusted — the producer skipping the body identity, the reader forgetting the
+  trusted — including the one that mattered: **removing the gate call from
+  `push_traces` left every gate test passing**, because they exercised the
+  function rather than the call site. The test added in response asserts the
+  fake HF API was never reached, and does fail when the call is removed. Same
+  shape as the placebo regression test in task 10; found here by running the
+  mutation rather than by review — the producer skipping the body identity, the reader forgetting the
   legacy placeholder, and the classification ignoring which upstream it is
   reading. The committed-captures test now runs the shared checker and reports
   no false findings.
