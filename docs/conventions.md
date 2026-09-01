@@ -34,6 +34,8 @@ python -m swe_lab run rollout_and_unit_test <instance_id> \
     --rollout.harness.model opus --unit_test.retries 2     # …solved, graded, adjusted
 python -m swe_lab run unit_test <instance_id> --input ./candidate.diff   # grade a patch you have
 python -m swe_lab run git_integrity_audit <instance_id>     # agent-free: prove the purge held
+python -m swe_lab.datasets.oracle_failures.build \
+    --run-dir .cache/runs/rollout_and_unit_test/<instance_id>  # a finished failure → an oracle_failures row
 python -m swe_lab.datasets.verify --dataset <name> --shard i/N          # golden-sweep one shard
 # W1 annotation keeps its own module entrypoint:
 python -m swe_lab.pipelines.related_files <instance_id> [--model sonnet|opus] [--samples 3]
@@ -237,9 +239,10 @@ with the following repo-wide choices and deviations (full plan + rationale:
 | --- | --- |
 | `src/swe_lab/sandbox/` | The **engine**: `SandboxManager` + lifecycle hooks, the merged lifecycle-bearing `Sandbox` (+ narrow `SandboxFs` view), `Mounts`/`Resource`, backends (`DockerHostSandbox` = A-host, `GitHubJobSandbox` = A-ghjob) selected via an open `build_sandbox` registry, and the shared observers (`diff_extract`, `git_history_purge`, `result_verify`). |
 | `src/swe_lab/harnesses/` | The **harness axis**: `base.py` (the `Harness` ABC) + `registry.py`, then one package per agent — `claude_code/` (invocation, `convert`/`capture`, and the runner utilities `binary`/`proxy`/`errors` — `proxy` *builds* the in-sandbox capture proxy, it no longer runs one), `codex/`, `grok_build/`. |
-| `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus one package per dataset (`swebench_pro/`, `deepswe/`: record, run setup, unit-test compile + grader). `verify.py` is the dataset-agnostic golden sweep (`--dataset <name>`). |
+| `src/swe_lab/datasets/` | The **dataset axis**: `load_dataset` + a name→record registry, plus one package per dataset (`swebench_pro/`, `deepswe/`: record, run setup, unit-test compile + grader; `oracle_failures/`: a cached failure of another dataset's instance, delegating the runnable surface to it and staging the failure through `mounts()`, with `build.py` making rows from finished runs). `verify.py` is the dataset-agnostic golden sweep (`--dataset <name>`). |
 | `src/swe_lab/evaluation/` | The **evaluation axis**: the `verdict` contract + one module per method (`unit_test`). |
 | `src/swe_lab/workflow/` | The **task layer** above the engine ([ADR-0007](decisions/ADR-0007-task-and-workflow-layer.md)): `task.py` (the generic `Task` — one sandbox, three hooks, one `execute`), `workflow.py` (chains tasks by matching output to input store name), `registry.py` + `definitions.py` (the workflows `run` can name: `rollout`, `unit_test`, `rollout_and_unit_test`, `gold_unit_test`, `git_integrity_audit`), `run_task.py` (executes one and writes its record). |
+| `src/swe_lab/trace_synthesis/` | The **trace-synthesis component** ([docs/trace-synthesis/](trace-synthesis/)): `sample.py` names the files a cached failure is staged under — the contract between the `oracle_failures` record, which stages them, and the phase-B task that reads them. |
 | `src/swe_lab/rollout.py` | The **rollout composition** (`CodingAgentTask`): a harness solves the bound instance under the shared observers, with optional proxy capture. Backend-, dataset- and harness-agnostic. |
 | `src/swe_lab/conversation/` | The provider-neutral typed `Conversation` + the shared conversation observer. |
 | `src/swe_lab/cli/` + `__main__.py` | The CLI entry point: one Typer app, one module per subcommand — `run` (any registered workflow, with `--<field>` overrides parsed by `overrides.py`) and `promote`. `host_env.py` hands the repo-scoped OAuth token back to the name a run reads (see [Hazards](#hazards-learned-the-hard-way)). Golden QA is not a subcommand: it is `python -m swe_lab.datasets.verify`. |

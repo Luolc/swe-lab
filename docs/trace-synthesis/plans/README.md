@@ -33,6 +33,7 @@ this index is not a task: its results are recorded in
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
 | 09 | **Converge redaction onto one home and publish behind a gate** — the header/body redaction itself shipped with task 10 | ⬜ |
 | 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ✅ |
+| 11 | **Start from a cached failure** — the `oracle_failures` dataset: a record that delegates the instance and stages the failure, plus the builder from a finished run — [`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md) | ✅ First record built locally: the qutebrowser/9ed748ef baseline failure (data gitignored by design) |
 
 ---
 
@@ -235,18 +236,25 @@ and the request body's `metadata.user_id` are masked there by default, and
 `swe_lab.harnesses.claude_code.redaction` checks a capture from this side. What
 remains is the part that was never about a header list.
 
-**1. Converge the redaction facts onto one home.** The same fact is written down
-twice — in `src` and in
-[`experiments/…/run_experiment.py`](../../../experiments/trace_synthesis/injection_shape/run_experiment.py)
-— and the copies have already drifted twice: once in *membership* (the accepted
-set knew the representative claim and `metadata.user_id`; the `src` set was
-written narrower without consulting it) and once in *representation* (the
-experiment writes `<redacted>`, `src` writes `[REDACTED]`, so the `src` scanner
-calls **every** committed experiment capture dirty — 790 findings, all false).
+**1. Converge the redaction facts onto one home.** The same fact turned out to
+be written down **six** times, not the two this entry first assumed: the
+checker, the experiment's post-run redactor, W1's exchange builder, the inline
+set in the committed-captures test, and two hardcoded placeholders in tests.
+The copies had drifted twice — in *membership* (the accepted set knew the
+representative claim and `metadata.user_id`; the `src` set was written narrower
+without consulting it) and in *representation* (`<redacted>` versus
+`[REDACTED]`, which made the `src` scanner call **every** committed capture
+dirty: 790 findings, all false).
+
+The most consequential copy was the one this entry did not know about:
+**W1's `exchange.py` held the narrowest set of all** — four names, missing
+`Proxy-Authorization`, `Anthropic-Workspace-Id`, the representative claim and
+`Set-Cookie` — and it is the copy whose output a publishing path would ship.
+The narrowest list guarded the most exposed artifact.
+
 `src` owns the canonical set, the placeholder constant and the body field list;
-`experiments/` imports from it and never the reverse, since `experiments/` is
-exempt from the hooks. The superset assertion in
-`tests/test_proxy_redaction.py` is a splint until this lands.
+everything else imports from it, and `experiments/` never the reverse, since
+`experiments/` is exempt from the hooks.
 
 **2. Keep the old placeholder as a named legacy alias, with a date boundary.**
 The 37 committed captures are a **record** and must not be rewritten, so the
@@ -274,13 +282,28 @@ not the same as clearing a trace for publication: bodies carry repository
 contents and whatever the agent typed. The gate is what stands between a scanned
 capture and a HF dataset repo, and it is the part still missing.
 
+`publication_blockers` exists but is **not yet wired to the real boundary**, and
+the boundary is now known precisely (traced during the review of the
+convergence work): `push_traces` uploads `*.last_exchange.json`, whereas that
+function reads raw proxy JSONL. So the gate has to run on the **normalized
+exchange record**, not on the capture — and an unclassified raw response header
+can survive into that record, which is exactly the case a capture-side check
+would miss. Wiring it there, with the body sweep, is what closes this task.
+
 - **Acceptance:** one home for the set, the placeholder and the body field list,
   with `experiments/` importing from `src`; the scanner reports unclassified
   fields; a publishing path that refuses an unscanned capture or one carrying
   unclassified fields.
-- **Verification:** unit tests, including one that fails if the two sets diverge
-  again; the scanner run over the committed captures reports **no** false
-  findings.
+- **Verification:** unit tests, each observed to fail on a mutant before being
+  trusted — the producer skipping the body identity, the reader forgetting the
+  legacy placeholder, and the classification ignoring which upstream it is
+  reading. The committed-captures test now runs the shared checker and reports
+  no false findings.
+
+  **The same standard applies to a number said out loud and a number written
+  down.** One statistic in this line of work was quoted from an impression and
+  measured only when it was time to commit it to a document, by which point the
+  capture it came from had been destroyed. Speaking it was not a check.
 - **Dependencies:** [task 10](#task-10-run-the-capture-proxy-inside-the-sandbox)
   (done — it shipped the write-time redaction this builds on).
   **Gates:** publishing any proxy-captured trace — not local runs. **Scope:** S
@@ -371,3 +394,33 @@ new has to be built.
 - **Dependencies:** none. It gates nothing today (the firewall workaround has
   landed), but it removes a required component's dependency on machine-level
   configuration. **Scope:** M
+
+## Task 11: Start from a cached failure
+
+**Description:** Make phase A skippable. A full eval sweep has already cached
+the failures phase B needs, so the pipeline's input becomes a **dataset of
+cached failures** rather than a fresh rollout: the `oracle_failures` dataset,
+whose record names the underlying instance (dataset + id) and carries the one
+failed attempt — typed conversation, grader's verdict, submitted patch. The
+record **delegates** the whole runnable surface to the underlying dataset's
+record and adds the failure through `TaskInstance.mounts()` (ADR-0007 §2), so
+the compile contract is touched by nothing; a builder turns a finished
+`rollout_and_unit_test` run directory into a row, refusing anything that is
+not a finished actor graded unresolved and anything credential-shaped. The
+design record is
+[`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md).
+
+- **Acceptance:** `load_dataset("oracle_failures")` yields runnable records
+  whose `sandbox_spec` / `prompt` / `gold_patch` / `unit_test_spec` are the
+  underlying instance's and whose mounts stage the failure; the builder
+  refuses a timed-out, crashed, unfinished or resolved run, a run whose
+  persisted grading workspaces disagree with the recorded grade or with each
+  other, and a credential-shaped conversation; one real record exists.
+- **Verification:** unit tests over the record, the loader and the builder;
+  the first record built from the qutebrowser/9ed748ef baseline failure
+  (PR #265's harvest) with the parquet confirmed untracked.
+- **Dependencies:** none. **Scope:** M
+- **Outcome:** landed as designed. The first record's re-graded verdict names
+  the same two failed tests the experiment's report diagnoses. Follow-ups are
+  named in the design record: a blind run of the task — guided or not — must
+  run `record.instance`, and the policy stamp on phase-B records is task 07's.

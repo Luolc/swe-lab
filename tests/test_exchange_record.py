@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import cast
 
+from swe_lab.harnesses.claude_code.redaction import REDACTED
 from swe_lab.pipelines.related_files.exchange import build_exchange_from_proxy
 
 _MESSAGE_KEYS = {"role", "content", "id", "model", "stop_reason", "usage"}
@@ -90,10 +91,10 @@ def test_proxy_exchange_redacts_pii_and_secrets() -> None:
   assert "sk-ant-oat01" not in blob
   extra = cast(dict[str, object], rec["extra_info"])
   req_headers = cast(dict[str, object], extra["request_headers"])
-  assert req_headers["Authorization"] == "<redacted>"
+  assert req_headers["Authorization"] == REDACTED
   assert req_headers["X-App"] == "cli"  # non-sensitive header preserved
   resp_headers = cast(dict[str, object], extra["response_headers"])
-  assert resp_headers["Anthropic-Organization-Id"] == "<redacted>"
+  assert resp_headers["Anthropic-Organization-Id"] == REDACTED
 
   # user_id (device/account ids) dropped from metadata
   assert extra["metadata"] == {}
