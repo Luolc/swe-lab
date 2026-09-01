@@ -694,28 +694,38 @@ mean was **313 s per attempt** — extrapolating to about **2.1 h** and **$12.2*
 nominal for the full 24 — against estimates of 3.6 h and 9.5 h, several of those
 attempts having run at steal ≈ 59%.
 
-**Throttling cannot be the explanation, and what remains is named without
-overclaiming.** The direction settles the first half: CPU steal can only make an
-attempt take *longer*, so it cannot account for an estimate that came out **too
-high** — and several of the measured attempts ran at steal ≈ 59% while still
-averaging 313 s. Whatever produced the 2–4× gap, throttling is not it, and the
-machine-state predicate the earlier argument added — correctly — was therefore
-not addressing the main defect either.
+**No cause is assigned, and the attempt to exclude one failed for the reason
+this section is about.** A first correction argued that throttling could be
+ruled out *by direction*: CPU steal only makes an attempt take longer, so it
+cannot explain an estimate that came out too high, and the measured attempts
+ran at steal ≈ 59% while still averaging 313 s. **That argument is wrong**, and
+its flaw is the same missing predicate the paragraph above is about — it
+silently assumed the **baselines** were unthrottled. Their host state was never
+recorded. If the frozen runs themselves executed under equal or worse steal,
+their ~689 s median is partly a throttling artifact, and throttling becomes a
+live explanation for the gap rather than an excluded one. **Knowing this
+batch's steal says nothing about the baseline's**, and the direction argument
+needs both.
 
-**What remains is a set of candidates, not a cause.** The extrapolation drew its
-per-attempt wall from the **frozen baselines** — `navidrome`'s ~689 s median —
-and those differ from this batch on several axes at once: a different arm,
-different host conditions, and different instances. **Eight attempts with no
-controlled comparison cannot apportion the gap among them**, so this document
-does not claim which one dominates. What it does claim is the structural fault:
-**the reference population was not the population being extrapolated to**, which
-is enough to invalidate the estimate without identifying which difference did
-the work.
+So: **throttling remains an unseparated candidate.** The extrapolation drew its
+per-attempt wall from the frozen baselines, which differ from this batch on
+several axes at once — a different arm, different and *unrecorded* host
+conditions, and different instances — and **eight attempts with no controlled
+comparison cannot apportion the gap among them**. This document claims only the
+structural fault: **the reference population was not the population being
+extrapolated to**, which is enough to invalidate the estimate without
+identifying which difference did the work.
+
+The lesson is sharper than the correction. An unrecorded predicate does not
+merely weaken the estimate that omitted it — **it disqualifies every later
+argument that conditions on the quantity nobody recorded**, including arguments
+built to explain what went wrong. That is the second time in this section that
+finding one defect ended the search for the next.
 
 Which yields the rule this pilot reports instead of an estimate: **the report
 carries the measured total wall and cost, plus one sentence saying the prior
-estimates ran 2–4× high, that throttling is excluded by direction, and that the
-remaining candidates are not separable at this sample size.** An estimate that
+estimates ran 2–4× high and that the candidates — arm, unrecorded host state on
+both sides, and instance mix — are not separable at this sample size.** An estimate that
 is wrong and whose error is characterized as far as the evidence allows is worth
 keeping; one silently replaced by the measurement teaches nothing — and one
 whose error is assigned a single cause the data cannot support has traded a

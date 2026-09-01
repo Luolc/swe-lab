@@ -198,13 +198,19 @@ pilot's twelve amendments.
   wall-clock estimate here was correctly found to be missing its machine-state
   predicate — and that was **not** the main reason it was wrong: it had
   extrapolated from a **different population** (frozen runs on another arm) than
-  the one it predicted, and overshot by 2–4×. Throttling is excluded by
-  direction — steal can only lengthen an attempt, so it cannot explain an
-  estimate that came out too high — but note what that does *not* license: with
-  eight attempts and no controlled comparison, the gap cannot be apportioned
-  among the ways the populations differ. The structural fault is enough to
-  invalidate the estimate; naming a single cause would trade a wrong number for
-  a wrong explanation. **A number having a known problem is not
+  the one it predicted, and overshot by 2–4×. Then the correction itself
+  overreached twice: first assigning the gap to the population difference, and
+  then — when that was withdrawn — arguing that throttling could at least be
+  **excluded by direction**, since steal only lengthens a run and cannot explain
+  an estimate that came out too high. That second argument silently assumed the
+  *baselines* were unthrottled, and their host state was never recorded; if they
+  ran under equal or worse steal, their median is itself inflated and throttling
+  is back in play. **An unrecorded predicate does not merely weaken the estimate
+  that omitted it — it disqualifies every later argument that conditions on the
+  quantity nobody recorded**, the arguments explaining the failure included. With
+  eight attempts and no controlled comparison the gap cannot be apportioned at
+  all. The structural fault is enough to invalidate the estimate; naming a cause
+  trades a wrong number for a wrong explanation. **A number having a known problem is not
   evidence that it has only one**, and repairing the found one is what makes it
   look reviewed. When you fix a defect in an estimate, **re-derive the estimate
   rather than patching the defect** — and the reason that works is mechanical
