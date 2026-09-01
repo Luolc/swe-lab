@@ -10,7 +10,7 @@
 | Actor model | `anthropic/claude-sonnet-5` via OpenRouter (`https://openrouter.ai/api`) |
 | Supervisor model | `anthropic/claude-opus-5` via OpenRouter |
 | Box | 4 vCPU / 15 GB linux-x64 dev workstation |
-| Ran | 2026-09-01 02:00–04:00 PDT |
+| Ran | 2026-09-01 02:00–05:10 PDT |
 | Repo commit | see each frozen tree's `PROVENANCE.json` |
 | Regenerate | `uv run python experiments/trace_synthesis/steered_rerun/analyze.py` |
 
@@ -34,8 +34,9 @@ verdict they got wrong. The sample the round was looking for is found —
 the actor passed all six `fail_to_pass` tests and broke two `pass_to_pass` ones,
 identically in all three grading attempts. It did what the task asked and broke
 existing behavior doing it, in a way it could have seen by running the tests
-already in the repo. The steered arm runs against a five-stage Oracle guidebook
-whose stage 4 is that exact trap.
+already in the repo. The steered arm ran against a five-stage Oracle guidebook
+whose stage 4 is that exact trap, and
+[its result is the first section below](#the-steered-arm--the-hints-arrived-and-the-actor-refused-them-on-provenance).
 
 > **Read this one first if you read nothing else.** The rule this pipeline is
 > built on was *exit 2 is a reasoning failure, exit 1 is infrastructure, and
