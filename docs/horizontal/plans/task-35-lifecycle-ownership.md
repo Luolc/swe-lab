@@ -405,7 +405,7 @@ What it should say, in one sentence each:
 - **Citations, not copies.** The three arrivals are named with links; the
   paragraphs where they live stay where they are and gain a link back.
 
-### The rule the three arrivals add up to: prefer a designator that expires
+### The rule the three arrivals add up to: identity, not resolution
 
 The name-vs-handle rule above got a third, independent instance on 2026-09-01,
 from a context with no production code in it at all — and three is where this
@@ -418,28 +418,45 @@ repo lets a pattern become a rule:
 | an ad-hoc watcher script | **`pkill -f <pattern>`** — late name resolution in its purest form |
 
 The third one is the instructive one. It was armed under rules that had since
-changed, and it **fired**. It did no damage only because it had been written
-*narrowly by accident*: it hard-coded the dead driver's pid instead of a name
-pattern, so it matched nothing. Had it said `pkill -f run_pilot.py`, it would
-have killed the live successor process at the moment the old one finished.
+changed, and it **fired**. It did no damage only because of what it happened to
+name: a hard-coded pid belonging to a driver that was already dead, which
+matched nothing. Had it said `pkill -f run_pilot.py`, the pattern would have
+matched the *successor* — by construction, since that is what a pattern is for
+— and killed the live run at the moment the old one finished.
 
-> **A designator that expires beats one that persists.**
->
-> A pid, a container id, a `pidfd`, a `Popen` handle all become **invalid** when
-> the thing they name dies — so a stale mechanism holding one **disarms itself**.
-> A name pattern, or a number re-resolved after its reservation is gone, always
-> matches *something* — so a stale mechanism **stays armed** and quietly begins
-> matching the wrong thing.
->
-> Corollary: disarming correctly requires enumerating every armed mechanism.
-> When you cannot enumerate them — and you usually cannot — choose the
-> designator that expires on its own.
+So the axis is not how long a designator lives. It is **whether the same
+designator can come to mean something else**:
 
-This is also *why* D's rule 1 works. The owner stamp (a uuid4 session plus a
-pid) is an expiring designator: it either verifies, or it explicitly fails to
-verify — and **"cannot verify" is itself a usable signal**, the one that makes
-"unknown owner → report, never touch" expressible. A name match never returns
-that signal. It always returns a confident answer.
+| designator | can it be re-bound? |
+|---|---|
+| a `pidfd` | **no** — it refers to that process and never to a successor |
+| a container id | **no** — Docker does not recycle ids; it keeps naming the same container, alive, stopped or gone |
+| an approved commit SHA | **no** — the content *is* the name |
+| a bare pid, a numeric pgid | **yes**, once released — the #290 hazard exactly |
+| a name pattern (`pkill -f`) | **yes, by design** — matching a successor is the feature |
+| a branch name, a port | **yes** — both are rendezvous, not identities |
+
+A `Popen` object belongs on neither side: it holds a *number* plus bookkeeping,
+not a kernel identity, and the number stays reserved only while the child is
+unreaped. That is precisely why `end_process_group` verifies with
+`_identity_held` before every signal instead of trusting the object it holds.
+
+> **Act only through an identity that cannot come to mean something else.**
+> Where no such identity exists, **verify immediately before acting, and treat
+> "cannot verify" as *unknown* — which is a refusal, not a fallback.**
+
+The stale-mechanism case is a consequence rather than a separate rule: a
+mechanism that outlives its rules is dangerous in proportion to how confidently
+its designator still resolves. Disarming correctly means enumerating every
+armed mechanism; where that is not possible, the damage is bounded by having
+chosen a designator that cannot silently acquire a new referent.
+
+This is also *why* D's rule 1 works — though the stamp is a **verifier, not a
+handle**, and the distinction matters. A uuid4 session plus a pid does not
+expire on its own; what it does is answer *verifies* / *fails to verify*, and
+**"cannot verify" is itself a usable signal** — the one that makes "unknown
+owner → report, never touch" expressible at all. A name match never yields that
+signal: it always returns a confident answer.
 
 ### One review pattern worth keeping, from C's five rounds
 
@@ -477,9 +494,19 @@ for three reasons that all feel adequate at the time: it is not production code,
 it is "just cleanup", and the author's attention is on the thing under test.
 
 An unconditional teardown *looks* like responsible cleanup; it was an unchecked
-late resolution. The fix is the tell: the fixture now gates on `returncode is
-None`, **the same condition the helper's own pre-flight uses**. An apparatus
-that does not share the gate with the thing it tests is not verifying it.
+late resolution. The fixture now gates on `returncode is None` — **one half of
+what the helper's pre-flight checks**, not the same condition: `_identity_held`
+also asks `waitid` and refuses on `ChildProcessError`, an external reap the
+fixture has no way to see. That half is enough *there*, because in a controlled
+test setup the leader can only be reaped by the test itself — which is a
+narrower claim than "it shares the gate", and the narrower claim is the true
+one.
+
+The rule that generalizes is therefore about the invariant, not about copying a
+condition: **the apparatus must preserve the invariant across the identity
+boundary that actually applies to it.** Sharing the production gate verbatim is
+one way; covering the boundary a test can actually reach is another. What is
+never acceptable is exempting the apparatus because it is "only cleanup".
 
 **Closing a work item, migrate what inside it is still true.** Task 03 of
 trace-synthesis is closed because the arm it serves is closed — but one finding
@@ -503,13 +530,12 @@ evidence rather than at a process that no longer exists. (A PR description's
 `Pair:` line is the exception — it is written *into* the PR and becomes history
 along with it.)
 
-This is the deliberate **converse** of the expiring-designator rule above, and
-the two do not conflict because their purposes are opposite: when naming a
-*process to act on*, choose a designator that goes invalid when the thing dies,
-so a stale mechanism disarms itself. When naming *evidence to look up*, choose
-one that never goes invalid. A permanent document citing a run-time identifier
-gets the worst of both — a designator guaranteed to expire, pointing at
-something that was supposed to stay checkable.
+It is the same rule as the one above, applied to a different object. There, a
+designator must not be able to acquire a **new referent** — that is what makes
+it safe to act through. Here, a designator must not be able to **lose its
+referent** — that is what makes it useful to look up. A run-time agent slug
+fails both at once: it stops resolving when the process closes, and the same
+slug is handed to the next agent that takes that role.
 
 ### When an argument rests on an absence, look for the exclusive branch
 
