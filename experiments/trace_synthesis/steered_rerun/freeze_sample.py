@@ -123,6 +123,64 @@ def manifest(root: pathlib.Path) -> str:
   return "\n".join(lines) + "\n"
 
 
+def check_gates(
+    metrics: dict[str, float], decision: dict[str, object]
+) -> None:
+  """Refuse a run that is unresolved for any reason other than reasoning.
+
+  The workflow's own exit code distinguishes none of these: an unresolved
+  verdict is reported the same way whether the actor reasoned badly, was killed
+  at its timeout, never started, or was graded by a suite that disagreed with
+  itself.
+
+  Args:
+    metrics: The rollout entry's metrics.
+    decision: The verdict record from ``verdict``.
+
+  Raises:
+    SystemExit: If the run is not attributable to the actor's reasoning.
+  """
+  # The first three are about the actor's own process. Measured 2026-09-01 —
+  # the protonmail/webclients image cannot execute the mounted linux-x64 binary
+  # (`cannot execute: required file not found`, exit 127 after 0.7 s), and the
+  # run still came back unresolved with `timed_out == 0`.
+  for name, want in (
+      ("claude_code.timed_out", 0.0),
+      ("agent_complete", 1.0),
+      ("claude_code.exit_code", 0.0),
+  ):
+    if metrics.get(name) != want:
+      raise SystemExit(
+          f"refusing to freeze: {name} is {metrics.get(name)!r}, not {want!r}."
+          " The rollout did not end in the actor finishing its work, so its"
+          " unresolved verdict is not evidence the actor erred."
+      )
+
+  # The fourth is about the *grader*, and the three above cannot see it: the
+  # actor finished, the suite ran, and the suite disagreed with itself. The
+  # entry retries, so an unresolved last attempt can sit next to an attempt
+  # that resolved, or that failed an entirely different required set — a flaky
+  # suite, not a wrong patch. `verdict()` has always computed this; refusing on
+  # it is what makes computing it worth anything.
+  attempts = decision["attempts"]
+  if not attempts:
+    raise SystemExit(
+        "refusing to freeze: no grading attempt left an output file, so there"
+        " is no verdict to attribute to anything."
+    )
+  if not decision["stable_across_attempts"]:
+    per_attempt = {
+        name: sorted(attempt["failed"]) + sorted(attempt["missing"])
+        for name, attempt in attempts.items()  # pyright: ignore[reportAttributeAccessIssue]
+    }
+    raise SystemExit(
+        "refusing to freeze: the grading attempts disagree about which"
+        f" required tests failed — {per_attempt}. An unstable verdict is a"
+        " property of the suite, not of the patch, so this is not a reasoning"
+        " failure however the last attempt happened to land."
+    )
+
+
 def main() -> None:
   """Write one sample directory."""
   parser = argparse.ArgumentParser(description=__doc__)
@@ -136,29 +194,12 @@ def main() -> None:
   summary = json.loads(pathlib.Path(args.summary).read_text())
   instance = load_dataset(args.dataset).require(str(summary["instance_id"]))
 
-  # Three gates before a run is written out as a reasoning failure, because the
-  # workflow's own exit code distinguishes none of them: an unresolved verdict
-  # is reported the same way whether the actor reasoned badly, was killed at
-  # its timeout, or never started. Measured 2026-09-01 — the
-  # protonmail/webclients image cannot execute the mounted linux-x64 binary
-  # (`cannot execute: required file not found`, exit 127 after 0.7 s), and the
-  # run still came back unresolved with `timed_out == 0`.
   metrics = {
       name: value
       for name, value in (summary["entries"]["rollout"]["metrics"] or {}).items()
   }
-  for name, want in (
-      ("claude_code.timed_out", 0.0),
-      ("agent_complete", 1.0),
-      ("claude_code.exit_code", 0.0),
-  ):
-    if metrics.get(name) != want:
-      raise SystemExit(
-          f"refusing to freeze: {name} is {metrics.get(name)!r}, not {want!r}."
-          " The rollout did not end in the actor finishing its work, so its"
-          " unresolved verdict is not evidence the actor erred."
-      )
-
+  decision = verdict(frozen, instance)
+  check_gates(metrics, decision)
 
   # Only now: a refusal must not leave a directory behind that looks like a
   # sample. Nothing is created until the run has earned it.
@@ -180,9 +221,7 @@ def main() -> None:
     )
   _ = (out / "failed_conversation.json").write_text(conversations[0].read_text())
 
-  _ = (out / "verdict.json").write_text(
-      json.dumps(verdict(frozen, instance), indent=2) + "\n"
-  )
+  _ = (out / "verdict.json").write_text(json.dumps(decision, indent=2) + "\n")
   _ = shutil.copy(frozen / "rollout/a0/patch.diff", out / "patch.diff")
 
   # The unconverted trace, as corroboration for the typed conversation. Already

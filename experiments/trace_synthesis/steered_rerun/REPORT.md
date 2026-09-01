@@ -240,36 +240,31 @@ operator. Task 02's finding that the neutral `<oracle_hint>` body "drew no
 objection" is true and was measured over three calls; it does not survive
 contact with a real rollout.
 
-**Two readings, and they are not the same finding.** This report cannot
-distinguish them, and they point at different fixes:
+**What is identified, and what is not.** The identified result is narrow and
+worth stating on its own: **repeated in-band hints were rejected by the second
+observation** in this run, and the rejection persisted and escalated for the
+rest of it.
 
-| reading | what happened | what it would take to fix |
+What is *not* identified is why. Two mechanisms fit, and this trace cannot
+separate them because **elapsed time and number of repeated injections are
+perfectly confounded in it** — every additional hint is also more session:
+
+| mechanism | what it would mean | what would fix it |
 |---|---|---|
-| **the guard hardens over time** | the harness's injection defence accumulates suspicion across a session, so a long rollout eventually trips it regardless of how few hints there are | reduce the *rate* — fewer hints, longer cooldowns, intervene only at the decisive boundary |
-| **the sample size gave the pattern away** | appending to a tool's output *is* the textbook shape of prompt injection; given six examples any competent model recognizes it, and nothing about it is time-dependent | change the *channel* — no in-band append can survive being seen enough times |
+| the guard hardens over a session | the harness's injection defence accumulates suspicion with time or turns, largely independent of how many hints there are | lower the *rate* — fewer hints, longer cooldowns, intervene only at the decisive boundary |
+| ordinary pattern recognition | appending to tool output *is* the textbook shape of prompt injection, and repeated instances make it recognizable; nothing here is time-dependent | change the *channel* — no in-band append survives being seen enough times |
 
-The trace supports both: the first objection comes after **two** hints, which
-favours the second reading, and the language escalates across the session, which
-favours the first. Separating them needs a run with one hint, and a run with six
-hints compressed into a short horizon. Neither exists.
+An earlier draft of this section read the escalating language as evidence for
+the first. **It is not.** Later, stronger language is equally consistent with a
+model that has simply accumulated more instances of the same pattern, and the
+first objection lands after **two** hints — so the second mechanism does not
+require six examples either. Treating escalation as evidence for time would
+hand the channel debate a tilt the data does not support.
 
-**The refusal is partly a pose, which makes it worse rather than better.** The
-actor claims it did the checks anyway, "not because the injected text told me
-to" — and it did run some of them. But it kept the stricter regex, and its final
-summary asserts as a *feature* the exact behavior the hidden tests reject:
-
-> anything that doesn't fullmatch falls through to the `QColor(value)` fallback,
-> which **correctly** rejects things like `rgb(1, 2, 3))`, `rgb((1, 2, 3)` … with
-> `"must be a valid color"`.
-
-Hint 9 named that input class and asked whether it now picks up a different
-error message. Hint 12 said, in as many words, to check what the code produced
-*before* the edit rather than read the expectation off the new implementation.
-The actor did neither conclusion, edited the test file to encode its own
-reading, and reported success. **A hint that is read, understood, and
-discredited by its channel is worse than a hint that never arrives**: it is a
-delivered intervention that leaves no mark on behavior, and a compliance rate
-computed over "hints delivered" would count all six.
+Separating them takes arms this round does not have: a **one-hint** run, and a
+**compressed-horizon** run with the same number of hints over far fewer
+boundaries. Until those exist, the mechanism is unidentified and the finding is
+the rejection itself.
 
 ### What this does and does not license
 
@@ -1062,7 +1057,8 @@ makes it.
   edit *before* it happens, which is where the intervention wants to be — and
   §4/§5 of the spec rule it out for reasons that predate this finding. Worth
   re-examining rather than re-litigating, and it belongs in an ADR if it moves.
-- **Everything step 5 was actually for.** Whether hints steer a blind actor over
-  a 20–50 call horizon, whether they stay directional, and whether the harness's
-  injection guard hardens over a long rollout — all still unanswered, all
-  gated on the firewall change.
+- **Why the hints were rejected.** Answered only as far as *that* they were,
+  by the second observation. The mechanism is unidentified and needs two arms
+  this round does not have: a one-hint run, and the same six hints compressed
+  into far fewer boundaries. Everything downstream — the hint rate, the tag, the
+  channel — is being decided against an unidentified cause until those exist.

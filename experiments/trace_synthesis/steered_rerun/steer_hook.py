@@ -175,11 +175,20 @@ def main() -> None:
   event = hook_payload.get("hook_event_name", "")
   tool_name = hook_payload.get("tool_name", "")
   tool_response = hook_payload.get("tool_response")
+  # The one identifier that is the *same value* in all three records of a run.
+  # Every `tool_result` in the converted conversation carries `tool_use_id`, so
+  # recording it here (and passing it to the Supervisor) turns the three-way
+  # reconciliation from a positional join into an exact one — a converted
+  # boundary that was dropped or duplicated cannot then hide behind matching
+  # counts. Optional on purpose: if the harness stops sending it, the value is
+  # `None` and `reconcile.py` says it fell back to position.
+  tool_use_id = hook_payload.get("tool_use_id")
   record: dict[str, object] = {
       "t": time.time(),
       "pid": os.getpid(),
       "event": event,
       "tool": tool_name,
+      "tool_use_id": tool_use_id,
   }
 
   # Whether this boundary can carry a hint at all, decided by the same function
@@ -200,6 +209,7 @@ def main() -> None:
             "event": event,
             "appendable": appendable,
             "tool_name": tool_name,
+            "tool_use_id": tool_use_id,
             "tool_input": excerpt(hook_payload.get("tool_input"), 1200, 300),
             "tool_response": excerpt(tool_response),
         },

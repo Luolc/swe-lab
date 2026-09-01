@@ -239,18 +239,21 @@ every captured proxy log in place before the run is frozen, reusing
 [`../injection_shape/run_experiment.py`](../injection_shape/run_experiment.py)
 (pinned by [`tests/test_injection_shape_redaction.py`](../../../tests/test_injection_shape_redaction.py)).
 
-**That is a cleanup, not a fix, and it does not meet the standard.** An
-unredacted file *does* exist on disk for the length of the run, and anything
-that reads or copies it in that window — a crash dump, a backup, another
-process, an operator debugging — sees live credentials. **Redaction belongs at
-write time so a raw artifact never exists**; that is
-[PR #264's P0-3](https://github.com/Luolc/swe-lab/pull/264), ruled and
-authorized, and it is not landed yet. Until it is, these captures **must not
-leave this machine** — not into the repo, not into a PR, not quoted in a
-message. Don't cite this paragraph as precedent that post-hoc redaction is
-sufficient; it is the gap, described honestly.
+**That is a cleanup, not a fix, and it does not meet the standard.** The rule,
+stated here so this file does not depend on anything to state it: **redaction
+belongs at write time, so that an unredacted capture never exists on disk**, and
+**no unredacted capture may enter a collected artifact.** Post-hoc rewriting
+does not satisfy it — an unredacted file exists for the length of the run, and
+anything reading or copying it in that window (a crash dump, a backup, another
+process, an operator debugging) sees live credentials.
 
-The production capture path is unredacted even after the fact —
+This rig does the post-hoc thing, so it is **out of compliance** and the
+captures it makes **must not leave this machine** — not into the repo, not into
+a PR, not quoted in a message. Don't cite this paragraph as precedent that
+post-hoc redaction is sufficient; it is the gap, described honestly. The
+canonical home for the rule and its acceptance is
+[task 10](../../../docs/trace-synthesis/plans/README.md); the production capture
+path is unredacted even after the fact —
 [task 09](../../../docs/trace-synthesis/plans/README.md).
 
 ## Limits

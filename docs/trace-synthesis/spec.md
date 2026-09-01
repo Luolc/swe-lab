@@ -525,15 +525,20 @@ The rest, in no particular order:
   failed on. n=1, one actor model, one tag, one hint style.
 
   **What that does and does not settle.** Delivery is settled: the same run
-  reconciles 27 = 27 = 27 across the host log, the in-sandbox hook log and the
-  converted `Conversation`, with 6 of 6 hints present and every tool's own
-  output intact. **Credibility is now the open question in its place**, and two
-  readings of the same evidence survive — that the guard accumulates suspicion
-  over a session (fix: lower the hint rate), or that six examples of appending
-  to tool output are simply enough for any competent model to recognize the
-  shape (fix: a different channel). Distinguishing them needs a one-hint run and
-  a compressed-horizon run; neither exists. Which channel replaces or repairs
-  this one is a live design decision and is not settled here.
+  reconciles across the host log, the in-sandbox hook log and the converted
+  `Conversation` — a per-boundary join, not equal counts — with 6 of 6 hints
+  present and every tool's own output intact. **Credibility is now the open
+  question in its place.**
+
+  The **identified** result is narrow: *repeated in-band hints were rejected by
+  the second observation in this run.* The **mechanism is not identified** —
+  elapsed session and number of repeated injections are perfectly confounded in
+  a single trace, so "the guard hardens over a session" (fix: lower the hint
+  rate) and "repetition makes a textbook injection pattern recognizable" (fix:
+  a different channel) both fit, including the escalating language. Separating
+  them needs a one-hint run and a compressed-horizon run; neither exists. Which
+  channel replaces or repairs this one is a live design decision and is not
+  settled here.
 
   A second effect is recorded there and matters independently of the channel
   chosen: the actor's objections are **in the trace**. Three assistant turns

@@ -250,6 +250,10 @@ class Supervisor:
         "seq": seq,
         "event": event,
         "tool": tool,
+        # Carried through from the hook so the host's record and the converted
+        # conversation share an identity, not just an ordering — see
+        # `reconcile.py`.
+        "tool_use_id": request.get("tool_use_id"),
         "tool_input": _one_line(str(request.get("tool_input", "")), 400),
         "stage": verdict.get("stage"),
         "on_track": verdict.get("on_track"),
