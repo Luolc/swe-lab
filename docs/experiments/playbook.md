@@ -443,6 +443,36 @@ pilot's twelve amendments.
   caveat as the signal that a structural fix was available and skipped.
 
   Instances for all five: [PR #305](https://github.com/Luolc/swe-lab/pull/305).
+- **A result of "we did not observe X" must say how large an X it can exclude —
+  and a bound is itself a claim with premises.** Without any bound, a negative
+  reads exactly like *X does not happen*, and those are not the same sentence.
+  But the familiar repair carries a hidden model: with no occurrences in *n*
+  tries the 95% upper bound is about **3/n** *only if the trials are independent
+  and identically distributed at a stationary rate*. A design that leaves the
+  serving path free — routing, model version, cache state recorded but not held
+  fixed — **does not establish that**, and quoting the bound anyway swaps an
+  unearned statistical claim for the honest one. Then the reportable result is
+  the raw count, `observed 0 in 20`, with the bound quoted only as an explicit
+  conditional if at all. **Still choose n before running, from what the quiet
+  outcome would need to carry**, because afterwards it is the one nobody
+  re-examines — but note that *more trials help more often* is also a claim
+  about a process: when the varying thing is fixed for the duration of a run,
+  extra calls within that run are extra observations and not extra chances. The same asymmetry decides what a one-directional check may be
+  cited for: sharp when it fires, empty when it does not, said where it is
+  defined, or its silence gets read as its verdict — and note that the firing
+  direction usually needs **no** distributional assumption at all, since one
+  counterexample is one counterexample.
+- **A call whose result will be cited as evidence records what answered it and
+  how.** Two things are absent by default and unrecoverable afterwards: the model
+  id the **response** reports — never the alias in the request, since an alias
+  re-pointed upstream leaves the request looking correct — and the sampling
+  parameters actually sent, **including the ones that were not**, because an
+  unset parameter is invisible unless absence is written down as absence.
+  Without the first, *the same model disagreed with itself* and *the alias moved*
+  cannot be separated. Without the second, disagreement between runs cannot be
+  told from ordinary sampling, and a stochastic component gets written up as an
+  instability discovery. **Adding one of them later does not bring the other
+  back**, so the whole comparison is lost at the call site or nowhere.
 - **A sentence saying you checked is itself a claim — and the most trusted kind,
   because it looks like diligence.** "Every link resolves", "each row carries
   its domain", "I searched for a sibling implementation": each asserts the

@@ -75,6 +75,25 @@ def key_pool() -> list[str]:
   return keys
 
 
+# The parameters that decide whether a call is reproducible. Recorded whether or
+# not they are sent: a default that was never set must be readable as *not set*,
+# not as an absence that looks like nothing happened.
+SAMPLING_KEYS = ("temperature", "top_p", "top_k", "seed")
+
+
+def sampling_sent(payload: dict) -> dict:
+  """Report which sampling parameters a request actually carried.
+
+  Args:
+    payload: The request body about to be sent.
+
+  Returns:
+    A mapping from every sampling parameter to the value sent, or None when the
+    request left it to the provider's default.
+  """
+  return {key: payload.get(key) for key in SAMPLING_KEYS}
+
+
 def call(payload: dict) -> dict:
   request = urllib.request.Request(
       ENDPOINT,
@@ -129,20 +148,25 @@ def main() -> None:
             "max_tokens": args.max_tokens,
             "judged_at": time.strftime("%FT%TZ", time.gmtime()),
         }
+        payload = {
+            "model": MODEL,
+            "max_tokens": args.max_tokens,
+            "messages": [
+                {"role": "system", "content": INSTRUCTIONS},
+                {"role": "user", "content": user},
+            ],
+        }
         try:
-          response = call({
-              "model": MODEL,
-              "max_tokens": args.max_tokens,
-              "messages": [
-                  {"role": "system", "content": INSTRUCTIONS},
-                  {"role": "user", "content": user},
-              ],
-          })
+          response = call(payload)
         except Exception as error:  # noqa: BLE001 - recorded, not swallowed
           record["error"] = str(error)
         else:
           record["raw"] = response["choices"][0]["message"]["content"]
           record["usage"] = response.get("usage") or {}
+          # The id the response reports, not the alias we sent: an alias
+          # re-pointed upstream still looks correct in the request.
+          record["response_model"] = response.get("model")
+          record["sampling_sent"] = sampling_sent(payload)
           record["wall_seconds"] = round(time.time() - started, 2)
         out.write(json.dumps(record) + "\n")
         out.flush()

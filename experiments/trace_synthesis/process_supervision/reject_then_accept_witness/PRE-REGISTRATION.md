@@ -1,9 +1,32 @@
 # Pre-registration — reject-then-accept witness
 
-**Committed before any data is collected.** The readings in §4 are fixed here and
-may not be revised after the run. Source: `DEBATE-VERDICT.md` §4 (*the cheapest
-single experiment that discriminates*), which this file implements without
+**This document has two parts with different standing. Read the boundary before
+the content.**
+
+**§1–§8 — original, committed before any data existed.** Reviewed in
+[#314](https://github.com/Luolc/swe-lab/pull/314) at approved head `2c5f438` and
+merged to `main` as `7af59fe`, before a single API call was made. The readings in
+§4 are fixed there and may not be revised. Source: `DEBATE-VERDICT.md` §4 (*the
+cheapest single experiment that discriminates*), implemented without
 reinterpreting.
+
+**They have not been edited since, and the claim is bounded exactly.** The
+unchanged region is **from the heading `## 1.` to the start of `## 9.`** — not
+"everything above §9", because **this preamble is itself part of the amendment
+and was written today**. Over that region the text is identical to both
+`2c5f438` and `7af59fe` apart from whitespace at the §8/§9 boundary.
+
+**§9 — an amendment dated 2026-09-01, written after a result.** It is
+**post-hoc with respect to the witness run**, which had already terminated as
+`material-retired` at `2026-09-01T22:16:20Z` and spent **$0.0107**; that result
+is stated in §9 rather than paraphrased, so a reader can judge what the amendment
+might have been fitted to. It is **prospective with respect to its own data**:
+**no call described in §9 has been made**, and its readings are fixed before any
+of them exist.
+
+The distinction matters because the two cannot be defended the same way. §1–§8
+are unfalsifiable-by-editing because they predate everything. §9 is not, and
+saying so is the only thing that makes its readings worth anything.
 
 ## 1. The question, and what it decides
 
@@ -309,3 +332,79 @@ module and guidebook this run uses:
   is reserved for a digest mismatch): stop, move to the next step named in §2,
   and report this as a result in its own right, since it is an observation about
   judge stability.
+
+## 9. Judge flip rate — a characterisation, superseding this section's first form
+
+Attempt 0 returned **on_track** on the completion #305 judged **off_track**, with
+both material digests matching, so the input was byte-identical.
+
+**The premise that made this look like a defect is withdrawn.** Whether a
+guidebook adjudicates a step is a **reasoned, subjective call**: more than one
+reading can be defensible, and the two verdicts here are a case in point — both
+cite stage 5, one reading *"run it **before** editing anything"* and the other
+reading the command form, and **the guidebook says both**. A judge is not
+required to answer identically across runs, and its not doing so is **not a
+defect to be repaired**. The stage-5 clause split stays in the report as an
+**observation**, not as a bug with a fix pending.
+
+**What this section asserted before, and no longer does.** It argued that a
+stochastic gate blocks the witness, because a reject→accept transition could come
+from the judge landing the other way rather than from a better completion. That
+argument required the gate to be a deterministic function of its input. With that
+requirement withdrawn, the argument does not apply: the question B has to answer
+is **distributional** — does B push the quality distribution of traces up? — and
+no single witness settles a distribution either way. **The witness experiment is
+therefore paused pending a redesign**, and this pre-registration's §1–§8 stand as
+the record of what was built, not as a plan awaiting execution.
+
+**Recorded rather than deleted** because it was reviewed, merged, and acted on:
+the material-retired result and its $0.0107 were produced under it.
+
+### What remains, and it blocks nothing
+
+A **cheap characterisation**: how often does the verdict flip on a byte-identical
+input? Useful as a number to carry into later work, and not a gate on anything.
+
+**20 calls at `max_tokens = 2000`, provider default sampling** — the gate as it
+runs. About twenty cents. 20 buys 20 observations and nothing more: **no
+confidence bound and no detection claim**, since routing and the served model are
+recorded but not controlled.
+
+**No `temperature = 0` arm.** It existed to attribute variance and to test
+whether pinning sampling would repair the gate. Under the withdrawn premise there
+is nothing to repair, so an arm serving no decision is only cost.
+
+### The judge's whole input stays bound
+
+The material digests in §2 cover the request body and the original completion.
+They do **not** cover the other two things the judge's prompt is built from: the
+**guidebook** and the **preceding-steps rendering**. Either can drift while both
+material digests still match, and the run would then spend money on results that
+look ordinary and are about different material.
+
+So the entire judge input — instructions, guidebook, preceding steps and the
+completion summary, exactly as sent — is pinned and asserted **before any paid
+call**, in this measurement and in the witness's attempt 0 alike:
+
+| | canonical sha256 |
+|---|---|
+| judge input (system + user) | `57d9cb24dc0b220fe366377e8d6757aa15843679da6af5a374311f77f5fbb661` |
+
+A mismatch is `void`: there was no run. Both scripts render that prompt through
+**one implementation**, so the digest cannot bind text a script no longer sends.
+
+### Reporting discipline, which is the durable part
+
+> **A quiet result is `observed 0 disagreements in 20 calls`, and nothing
+> further.** It is not "the gate is stable".
+
+The familiar ≈ 3/n bound needs **independent, identically distributed trials at a
+stationary rate**, which this design does not establish. It may be quoted only as
+an explicit conditional, never as a property of this run.
+
+### Not repaired here
+
+The guidebook is not edited to make the judge steadier. The user's direction is
+explicit that judgements of this kind are subjective and that a defensible
+reading suffices; and making the guidebook steadier in order to measure
+steadiness would be circular in any case.
