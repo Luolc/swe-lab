@@ -24,6 +24,7 @@ import polars as pl
 from ..paths import datasets_root
 from .deepswe.fetch import ensure_deepswe_parquet
 from .deepswe.record import DeepSweInstance
+from .oracle_failures import OracleFailureInstance
 from .swebench_pro import SweBenchProInstance
 
 
@@ -48,6 +49,7 @@ class DatasetRecord(Protocol):
 # record type (see ``swebench_pro``) and registering it here.
 _DATASET_RECORDS: dict[str, type[DatasetRecord]] = {
     "deepswe": DeepSweInstance,
+    "oracle_failures": OracleFailureInstance,
     "swebench_pro": SweBenchProInstance,
 }
 
