@@ -3,19 +3,23 @@
 | Field | Value |
 | --- | --- |
 | Author | swelab-handmade-impl (Claude Opus 5) |
-| Task | trace-synthesis [task 01](../../../docs/trace-synthesis/plans/task-01-one-instance-end-to-end.md), steps 0–3 |
+| Task | trace-synthesis [task 01](../../../docs/trace-synthesis/plans/task-01-one-instance-end-to-end.md), steps 0–4 (step 5 pending) |
 | Design | [`README.md`](README.md) |
 | Corpus | SWE-bench Pro (public test split, 731 rows) |
-| Actor harness | `claude_code`, default `STREAM` capture |
+| Actor harness | `claude_code` (Claude Code 2.1.212), default `STREAM` capture |
+| Actor model | `claude-sonnet-5` (workflow default); `claude-haiku-4-5-20251001` for the CLI's own side calls |
 | Box | 4 vCPU / 15 GB linux-x64 dev workstation |
 | Started | 2026-09-01 01:07 PDT |
 | Last updated | 2026-09-01 01:23 PDT |
 
-**Scope of this round.** Steps 0–3 only: candidate selection, environment
-validation, harvesting one genuine failure, and freezing it. Steps 4 (the
-Oracle's guidebook) and 5 (the steered re-run) are `swelab-orchestra`'s and are
-**not** covered here — so this report deliberately answers nothing about whether
-hints steer an actor.
+**Scope of this round.** Steps 0–4: candidate selection, environment validation,
+harvesting one genuine failure, freezing it, and the Oracle's guidebook
+(written by `swelab-orchestra`, [`guidebook/openlibrary-from-isbn.md`](guidebook/openlibrary-from-isbn.md)).
+
+**Step 5 — the steered re-run — is pending**, gated on
+[task 02](../../../docs/trace-synthesis/plans/README.md) settling the injection
+shape. So this report answers nothing about whether hints actually steer an
+actor; it establishes the failure they would be steering *from*.
 
 ## Contents
 
@@ -24,6 +28,7 @@ hints steer an actor.
 - [Step 1 — the gold gate](#step-1--the-gold-gate)
 - [Step 2 — harvesting a failure](#step-2--harvesting-a-failure)
 - [Step 3 — the freeze](#step-3--the-freeze)
+- [Step 4 — the guidebook, and why this instance failed](#step-4--the-guidebook-and-why-this-instance-failed)
 - [Cost](#cost)
 - [Open questions](#open-questions)
 
@@ -48,6 +53,12 @@ hints steer an actor.
    in issue #261 but **0/2 here**. `n=2` supports no claim about its true
    pass-rate; it is a caution against reading #261's ratios as portable to this
    box, not evidence that they are wrong.
+6. **The failure is a placement error, not an algorithm error**, and the agent
+   could not have caught it with the tests it had — they are installed only at
+   grading time. See [step 4](#step-4--the-guidebook-and-why-this-instance-failed).
+   That makes it good raw material *and* raises a caveat about how much of this
+   corpus fails this way for reasons a hint would have to work around rather
+   than through.
 
 ## Method
 
@@ -187,6 +198,7 @@ sample 0's `unit_test/`, `edges/` and `store/` were gone.
 | run record | `store/adhoc/<instance_id>/r0/workflow.json` |
 | integrity | `rollout/a0/git_integrity.json`, `rollout/a0/verifier.json` |
 | the actor's prompt | `rollout/ws/a0/prompt.md` |
+| cost / model / turns | the `result` event in `claude_code.event_stream.jsonl` |
 | provenance | `PROVENANCE.json` — instance id, rollout id, exact command, git commit, capture mode |
 
 ### Acceptance: does it survive the next run?
@@ -207,6 +219,99 @@ step 3's acceptance names exactly this check. Its own output also exited `2` and
 free byproduct; step 4 should use **rollout 0** unless orchestra decides
 otherwise.
 
+## Step 4 — the guidebook, and why this instance failed
+
+The guidebook is [`guidebook/openlibrary-from-isbn.md`](guidebook/openlibrary-from-isbn.md),
+written by `swelab-orchestra` playing the Oracle with the privileged access
+[spec phase B](../../../docs/trace-synthesis/spec.md#phase-b--the-oracle) grants:
+the frozen conversation, the gold patch, the gold test patch, and the repo. Five
+stages, each carrying the `justification` field the spec requires.
+
+The diagnosis below is orchestra's; every claim in it was **re-verified against
+the frozen artifacts and the dataset row** before being written here, and one
+was found wrong — see [the correction](#a-correction-to-the-stage-2-justification).
+
+### The mechanism
+
+The agent's three functions are behaviorally near-identical to gold. The
+difference is **where they live**:
+
+| | placement |
+| --- | --- |
+| gold patch | `@staticmethod` inside `class Edition` |
+| agent patch | module-level functions in `openlibrary/core/models.py` |
+
+All 16 grading tests reach them as `e.get_isbn_or_asin(...)` — through an
+`Edition`. Module-level definitions are unreachable by that path, so all 16 fail
+and the 9 pre-existing tests pass. **A placement error, not an algorithm error.**
+
+### Why the agent could not see it
+
+**The grading tests are not in the working tree during the rollout.** Verified
+two independent ways from the frozen trace:
+
+- **Tool call 8** — `cat /app/openlibrary/tests/core/test_models.py`. The
+  captured `tool_result` contains none of `get_isbn_or_asin`,
+  `is_valid_identifier`, `get_identifier_forms`; it defines 9 tests, none of them
+  the graded ones.
+- **Tool call 19** — `pytest test_models.py test_vendors.py` returns
+  `collected 24 items`, with `test_models.py .........` (9 dots) and
+  `24 passed in 0.35s`.
+
+The mechanism is in the dataset row's `before_repo_set_cmd`, which runs at
+**grading** time:
+
+```sh
+git reset --hard 5f7d8d19…          # base_commit
+git clean -fd
+git checkout 5f7d8d19…
+git checkout 5de7de19… -- openlibrary/tests/core/test_models.py   # the graded tests, from the solution sha
+```
+
+So the rollout sees the repo at `base_commit` and the graded tests arrive only
+afterwards. The agent searched for them (tool calls 5, 7, 8) — this is not
+laziness; they genuinely were not there.
+
+Worse, its self-check was **self-consistent with its own mistake**: tool call 18
+runs `from openlibrary.core.models import get_isbn_or_asin, …`, which succeeds
+*because* they are module-level. It then signed off with a green suite that
+exercised none of its new code.
+
+This is structural to the corpus, not particular to this instance, and it is why
+the guidebook's stage 5 is about knowing what a green suite cannot tell you.
+
+### A correction to the stage-2 justification
+
+The guidebook's stage 2 says the interface block "gives a path, it does not give
+a container" and is "silent about the container". **It is not silent.** The
+dataset row's `interface` field says, three times:
+
+```
+- Type: Function
+- Name: get_isbn_or_asin
+- Path: openlibrary/core/models.py
+```
+
+The `requirements` field does say "**The method** `get_isbn_or_asin(...)`" three
+times, as the guidebook states — but the interface block explicitly says
+**Function**, and it points the *wrong* way.
+
+So the task statement **contradicts itself**, and the agent followed one of its
+two halves. That changes the reading in two ways worth carrying into step 5:
+
+1. The agent's choice was a **defensible reading of a self-contradictory spec**,
+   not carelessness. Any honest hint has to acknowledge that the text supports
+   both readings and give a reason to prefer "method" — it cannot claim the
+   interface block is silent, because an actor that re-reads it will find
+   otherwise, and a hint that loses that argument is worse than none.
+2. It makes stage 5 the load-bearing stage rather than stage 2. Stage 5's
+   observation — *no test in the tree names your new units, so its green proves
+   nothing* — is derivable, true, and independent of the contradiction. Stage 2's
+   is not, as written.
+
+Left for orchestra to resolve before step 5; the guidebook is committed as the
+step-4 artifact of record, unedited.
+
 ## Cost
 
 Wall clock, 2026-09-01 01:07–01:23 PDT (~16 min end to end):
@@ -216,10 +321,22 @@ Wall clock, 2026-09-01 01:07–01:23 PDT (~16 min end to end):
 | gold gate (agent-free) | 4 | 593 s, mostly first-time image pulls |
 | rollouts | 2 | 291 s (224 s of it agent time) |
 
-Token/dollar cost is not broken out: these runs authenticate with the
-subscription OAuth token and the CLI does not surface a per-run price. Two
-rollouts of ~2 min each is the number that matters for planning the batch in
-task 08 — on *this* box, on *this* instance.
+Dollar cost per rollout, from each run's `result` event in the frozen
+`event_stream.jsonl` (`total_cost_usd`):
+
+| rollout | turns | agent duration | cost |
+| ---: | ---: | ---: | ---: |
+| 0 | 22 | 86.9 s | **$0.5659** |
+| 1 | 36 | 133.8 s | **$0.8442** |
+
+**$1.41 for two rollouts**, ~$0.70 each, dominated by `claude-sonnet-5`
+(918 k cache-read + 27.6 k cache-creation input tokens, 8.2 k output on rollout
+0). The gold gate is free of model cost by construction — no agent runs in it.
+
+The number task 08 should carry forward: on this instance and box, **one
+harvested failure cost one rollout, ~$0.57 and ~2 minutes**. That is the lucky
+end of the range — an instance that resolves on early samples costs a rollout
+per attempt with nothing to show.
 
 ## Open questions
 
@@ -233,6 +350,15 @@ task 08 — on *this* box, on *this* instance.
 - **Proxy capture is untested.** This round used `STREAM`. `PROXY` needs a
   `go build` of `cc-reverse-proxy` and Go is not installed on this box, so
   whether the proxy log is a better phase-B input is unanswered.
-- **Steps 4 and 5 are open by design** — the guidebook and the steered re-run
-  are `swelab-orchestra`'s. Nothing in this round speaks to whether hints steer
-  an actor.
+- **Step 5 is pending**, gated on task 02's injection shape. Nothing in this
+  round speaks to whether hints steer an actor — only to what they would steer
+  from.
+- **How much of SWE-bench Pro fails this way?** The graded tests being absent
+  during the rollout is a property of `before_repo_set_cmd`, not of this
+  instance. If placement/contract-guessing failures are common across the
+  corpus, a directional hint has to compensate for missing information rather
+  than for bad reasoning — which is a different, and weaker, claim for the
+  pipeline than "the actor reasoned poorly".
+- **The stage-2 contradiction is unresolved** (above). Whether an honest hint
+  can prefer "method" over "Function" on derivable grounds is exactly the kind
+  of question the spec's `justification` field exists to force, and it is open.
