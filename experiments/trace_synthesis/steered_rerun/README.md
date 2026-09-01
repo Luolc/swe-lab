@@ -233,11 +233,24 @@ previous round's frozen tree was gitignored *inside* a worktree and
 ([hazards](../../../docs/conventions.md#hazards-learned-the-hard-way)).
 
 **The proxy log carries credentials and operator identity until it is
-redacted.** `run_steered.py` redacts every captured proxy log in place before
-the run is frozen, reusing `redact_proxy_log` from
+redacted, and this rig redacts it *after the fact*.** `run_steered.py` rewrites
+every captured proxy log in place before the run is frozen, reusing
+`redact_proxy_log` from
 [`../injection_shape/run_experiment.py`](../injection_shape/run_experiment.py)
 (pinned by [`tests/test_injection_shape_redaction.py`](../../../tests/test_injection_shape_redaction.py)).
-The production capture path is still unredacted —
+
+**That is a cleanup, not a fix, and it does not meet the standard.** An
+unredacted file *does* exist on disk for the length of the run, and anything
+that reads or copies it in that window — a crash dump, a backup, another
+process, an operator debugging — sees live credentials. **Redaction belongs at
+write time so a raw artifact never exists**; that is
+[PR #264's P0-3](https://github.com/Luolc/swe-lab/pull/264), ruled and
+authorized, and it is not landed yet. Until it is, these captures **must not
+leave this machine** — not into the repo, not into a PR, not quoted in a
+message. Don't cite this paragraph as precedent that post-hoc redaction is
+sufficient; it is the gap, described honestly.
+
+The production capture path is unredacted even after the fact —
 [task 09](../../../docs/trace-synthesis/plans/README.md).
 
 ## Limits

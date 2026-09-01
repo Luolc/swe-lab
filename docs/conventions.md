@@ -334,8 +334,12 @@ retroactively (owner's calibration, 2026-09-01).
   path outside every checkout (this box uses
   `/home/ubuntu/dev/swe-lab-artifacts/`) and commit a pointer plus a sha256
   manifest instead.
-- **`capture="proxy"` has host prerequisites, and two of them fail silently.**
-  The agent reaches the recorder at `host.docker.internal:<port>`, so:
+- **While the capture proxy runs host-side, `capture="proxy"` has host
+  prerequisites, and two of them fail silently.** Every item below follows from
+  that one premise — the proxy is a process on the host, bound to a host port,
+  that the container dials outward. Change the premise and the list stops
+  applying rather than becoming wrong in place. The agent reaches the recorder
+  at `host.docker.internal:<port>`, so:
   (a) the host firewall must let the Docker bridge in — this box's `ufw`
   default-denies incoming, which blocked proxy capture outright until
   `machine-setup` PR #138 opened `20000:20999` and `25000:25999` (2026-09-01);

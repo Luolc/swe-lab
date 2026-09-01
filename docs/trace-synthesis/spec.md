@@ -311,6 +311,30 @@ string is marked **not measured** and its claim stays a wish — the same rule
 Where a row has both, **the measurement came first and the schema is
 independent corroboration**, never the other way round.
 
+**Use `grep -a` on the raw bytes, never `strings`** — a lesson from getting it
+wrong on 2026-09-01. `ERR_HTTP_HOOK_BLOCKED_ADDRESS` (below) was first recorded
+here as *"reported, not verified — `strings` does not surface it"*. It is in the
+binary. `strings -n 6` misses it and `grep -a` finds it twice, along with the
+full message and the function that raises it; the same is true of
+`Replaces the tool output`, which `strings` also misses and `grep -a` finds four
+times. The bundle's literals sit next to non-printable bytes, so `strings`'s
+run-length heuristic cuts them apart.
+
+The consequence for reading this table: **a negative result is only as good as
+the extraction, and `strings` is not good enough.** A raw-byte miss is
+meaningful; a `strings` miss is nothing. The first attempt at that row asserted
+"unverified" when the evidence was sitting in the file — the wrong tool
+manufactured a false unknown, which is the same error shape as measuring what
+is easy and calling it what you care about.
+
+**Always name the build.** Every row below is read from **2.1.212** unless it
+says otherwise, and one says otherwise: the `--bare` help text *"hooks are
+disabled in this mode"* is from **2.1.220** and is confirmed **absent** from
+2.1.212 by raw-byte grep — 2.1.212 wires `--bare` to `CLAUDE_CODE_SIMPLE` with
+no such help string. Strings move between releases, so an identical grep on
+another build can legitimately disagree; the version is what tells a future
+reader that is what happened rather than a mis-recorded result.
+
 | Fact | Status | Consequence here |
 |---|---|---|
 | A hook can fire on **every** tool call (`"matcher": ""`) | measured | Phase C is expressible |
@@ -336,7 +360,7 @@ independent corroboration**, never the other way round.
 | `PostToolUse` does not fire on a failed tool call; `PostToolUseFailure` does | measured | A `PostToolUse`-only design is blind exactly when the actor is spinning after an error |
 | Two reminders reach the actor that are in **no** client request body: a token-usage `<system_warning>` and a `PROMPT INJECTION WARNING` naming *"impersonating a user message"* as the pattern | measured (quoted verbatim by the actor; absent from every proxy-captured request) | A proxy capture is ground truth for what the **client sent**, not for what the model saw. Our hint provokes a warning the actor then reasons about in `thinking` while it appears in no visible turn |
 | `proxy_log_to_conversation` keeps only the **last** proxy record's thread | measured (a subagent run: stream conversion kept 3 hints over 18 turns, proxy conversion emitted 7 turns and 0 hints) | A defect in the proxy capture path, and a live way to lose a hint silently — part of why the [conversion guard](plans/README.md) stays required |
-| An `http` hook is refused for a **private or link-local** address — only loopback is allowed (`ERR_HTTP_HOOK_BLOCKED_ADDRESS`) | **reported, not verified here** — passed on from the hook-transport debate; `strings` over the pinned 2.1.212 binary does not surface `ERR_HTTP_HOOK_BLOCKED_ADDRESS`, `169.254` or any hook/address guard text, which neither confirms nor refutes it (the binary embeds a compiled bundle) | If it holds, an `http` hook can never dial the host by its bridge IP, independently of any firewall — `127.0.0.1` or a `command` hook is unaffected. It does **not** touch the current rig, whose transport is a bind-mounted file drop; it constrains the *production* form, which the debate settled as a public HTTPS service outside the sandbox. Verify before relying on it |
+| An `http` hook is refused for a **private, link-local or cloud-metadata** address; **only loopback is allowed**. Verbatim: *"HTTP hook blocked: `${e}` resolves to `${t}` (private/link-local address). **Loopback (127.0.0.1, ::1) is allowed for local dev.**"*, thrown with `code: "ERR_HTTP_HOOK_BLOCKED_ADDRESS"`. The guard resolves the hostname by DNS first and rejects on the *resolved* address (`"is in a private, link-local, or cloud-metadata range"`), so a public name pointing inward does not evade it | first-party schema (2.1.212, raw-byte grep at offsets 116070240 and 244930466), **not measured** — no `http` hook has been run here | If it holds, an `http` hook can never dial the host by its bridge IP, independently of any firewall — `127.0.0.1` or a `command` hook is unaffected. It does **not** touch the current rig, whose transport is a bind-mounted file drop; it constrains the *production* form, which the debate settled as a public HTTPS service outside the sandbox. Verify before relying on it |
 | A built-in `type: "prompt"` / `"agent"` hook can only allow or deny | documented | The Supervisor must be our own `command` / `http` handler calling the API |
 | Spawning `claude` inside a hook is blocked by the `CLAUDECODE=1` nesting guard, and there are recorded recursive cost-explosion incidents on `Stop` / `SessionEnd` | documented + measured (`CLAUDECODE=1` present in the hook environment) | Never nest the CLI; call the API |
 | The hook subprocess does **not** inherit `CLAUDE_CODE_OAUTH_TOKEN` / `ANTHROPIC_API_KEY` | measured | The Supervisor needs its own credential passed in explicitly |
