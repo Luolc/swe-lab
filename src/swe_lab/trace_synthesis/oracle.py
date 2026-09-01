@@ -53,7 +53,8 @@ from .sample import (
 
 _logger = logging.getLogger(__name__)
 
-# The reference solution, staged for the Oracle alone.
+# The reference solution, staged for the Oracle alone — when the dataset
+# records one; a dataset without it is a supported input, briefed as such.
 GOLD_PATCH_NAME = "gold_patch.diff"
 
 # Metric names, unqualified by any harness: one run has one guidebook.
@@ -360,8 +361,10 @@ class OracleAnalysisTask(Task):
 
   Composes the harness's own mounts, observers and assets around one main
   action, exactly as the rollout does, but with a different set of extras:
-  the instance's failure material (its own mounts), the reference patch and
-  the grading procedure (``privileged_mounts``), and a ``GuidebookObserver``
+  the instance's failure material (its own mounts), the grading procedure and
+  — when the dataset records one — the reference patch (``privileged_mounts``;
+  a dataset without one is supported and briefed as such), and a
+  ``GuidebookObserver``
   in place of the diff extractor. **No git-history purge and no result
   verifier** — see the module docstring, and the named test that pins it.
 

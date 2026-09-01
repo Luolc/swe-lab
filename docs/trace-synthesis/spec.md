@@ -76,7 +76,7 @@ and the pipeline starts at B.
 flowchart TD
   A["<b>A.</b> baseline rollout + eval<br/><i>keep: failed, but the task is solvable</i>"]
   F[("<b>A′.</b> a cached failure<br/><i>an oracle_failures record:<br/>conversation + verdict + patch</i>")]
-  G["golden patch + golden tests<br/>+ repo at base_commit"]
+  G["golden tests + repo at base_commit<br/>+ golden patch <i>when the dataset records one</i>"]
   B["<b>B.</b> Oracle<br/><i>privileged</i>"]
   GB[["guidebook.md<br/><i>private — never enters the actor's context</i>"]]
   C["<b>C.</b> fresh env, same prompt, <b>blind</b> actor"]
@@ -137,15 +137,19 @@ it is a contract, and the workflow that mounts it is built against it.
 A fresh agent with **privileged access** to:
 
 - the full conversation of the failed rollout — what went wrong, in detail,
-- the golden patch and the golden test patch,
+- the golden test patch — and the golden patch **when the dataset records
+  one**; a dataset without a reference patch is a supported input, and the
+  Oracle is then briefed without it,
 - the repository at `base_commit`.
 
 In the shipped form this is `OracleAnalysisTask`
 ([task 04](plans/task-04-oracle-analysis-task.md)), registered as the
 one-entry `oracle_analysis` workflow: the failure arrives as the
-`oracle_failures` record's own mounts, the golden patch and the grading
-procedure — compiled to apply the failed patch, so the verdict can be
-reproduced in place — as the task's, and the git history is left unpurged.
+`oracle_failures` record's own mounts; the task adds the grading procedure —
+compiled to apply the failed patch, so the verdict can be reproduced in
+place — and, when the dataset records one, the golden patch; the git history
+is left unpurged. Without a reference patch the brief says so and drops every
+instruction that would read one — that branch is tested, not tolerated.
 
 It produces one artifact: a **guidebook** — a staged, step-by-step document
 telling a *future, blind* agent how to solve this task. One entry per stage:
@@ -637,15 +641,15 @@ from the store — so this is a workflow, not a new subsystem.
 | Phase | Reuses | New |
 |---|---|---|
 | A | `rollout_and_unit_test`, unchanged — or **skipped**: a cached failure enters as an `oracle_failures` record | the `oracle_failures` dataset and its builder ([task 11](plans/task-11-oracle-failures-dataset.md)) |
-| B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): golden patch and grading procedure staged, git-history purge **off**, declared output `guidebook.md` |
+| B | the `Task` layer; the record's mounts carry the failure | `OracleAnalysisTask` + the one-entry `oracle_analysis` workflow ([task 04](plans/task-04-oracle-analysis-task.md)): grading procedure staged, and the golden patch when the dataset records one; git-history purge **off**, declared output `guidebook.md` |
 | C | the rollout composition | hook settings injected into the sandbox (`--settings` + `CLAUDE_CONFIG_DIR`); a host-side Supervisor; declared intervention records |
 | D | the `Conversation` converter + `Store` | — |
 | all | `register_workflow(...)` | the A→B→C→D edges |
 
 ## 14. Integrity red lines
 
-**Phases B and C are deliberately contaminated.** B mounts the golden patch and
-tests; the git-history purge
+**Phases B and C are deliberately contaminated.** B mounts the graded tests
+and, when the dataset records one, the golden patch; the git-history purge
 ([task 25](../horizontal/plans/task-25-git-history-purge.md),
 [ADR-0010](../decisions/ADR-0010-benchmark-integrity.md) §3b) must be **off**
 for it. Two consequences, and neither is negotiable:

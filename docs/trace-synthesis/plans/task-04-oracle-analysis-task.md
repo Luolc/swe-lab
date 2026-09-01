@@ -38,6 +38,15 @@ set of extras:
 | the harness's own files | `harness.mounts(workdir)` | — |
 | `prompt.md` | the task's `inputs_builder` (`oracle_prompt`), in-session | the brief |
 
+A dataset without a reference patch is a **supported input, not a degraded
+one**: `gold_patch()` returning `None` drops the `gold_patch.diff` row from the mounts
+and, in the brief, drops the reference from what the Oracle is told it has
+and from the diagnosis step
+(`test_a_dataset_without_a_fix_commit_or_a_reference_is_briefed_honestly`
+checks the prose, not only the table; its counterpart pins the branch with
+a reference). Phase B requires the grading procedure; it does not require
+an answer file.
+
 Compiling the grading procedure for the Oracle is what makes "the golden
 tests" dataset-agnostic: SWE-bench Pro checks its held-out tests out of the
 solution commit inside that script, DeepSWE ships them as a patch in the
@@ -87,8 +96,8 @@ learned by getting it wrong once:
 
 The rest of the brief: what is in the workspace and where (`$SANDBOX_WORKSPACE`,
 the repo at `base_commit`, the reachable fix commit when the dataset records
-one); a method (diagnose first — verdict, patch against reference, then the
-conversation; reproduce with the grading procedure when in doubt); the exact
+one); a method (diagnose first — verdict, then the failed patch — against the
+reference when there is one — then the conversation; reproduce with the grading procedure when in doubt); the exact
 output shape; and the spec's rules (never say you saw the answer; every
 justification derivable from the statement, the repo at `base_commit` and
 earlier stages only; make the failing stage a decision, not a formality;
@@ -124,8 +133,8 @@ run over the first `oracle_failures` record (qutebrowser/9ed748ef, baseline
 rollout 0) on the real image with the real harness shows exactly:
 
 - **The path is real, end to end.** Loader → delegated record → mounts (the
-  failure files, the compiled grading procedure with the failed patch, the
-  gold patch) → Claude Code in the sandbox → `guidebook.md` → schema
+  failure files, the compiled grading procedure with the failed patch, and —
+  this dataset records one — the gold patch) → Claude Code in the sandbox → `guidebook.md` → schema
   validation → the run record's `guidebook.*` metrics. Everything before the
   agent call was already exercised over a `FakeSandbox`; the run adds the
   image, the harness and the token.
@@ -177,7 +186,8 @@ field`. The entry has no retries, so that was the run.
 Against the declaration above:
 
 - **The path is real, end to end** — shown: loader, delegated record, the
-  three failure mounts plus the grading procedure and gold patch, Claude Code
+  three failure mounts plus the grading procedure and, this dataset recording
+  one, the gold patch; Claude Code
   in the sandbox, the guidebook collected, validated and recorded as metrics.
 - **The brief elicits the shape at least once** — **not shown.** Four of five
   stages carry all five fields; stage 3 lacks one. n = 1.

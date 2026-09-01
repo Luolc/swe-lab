@@ -123,9 +123,9 @@ which is legitimate but must be recorded rather than assumed.
 
 ## Task 04: Oracle analysis task + guidebook schema
 
-**Description:** Phase B as a `Task`: a sandbox with the golden patch, the
-grading procedure and the failed conversation mounted, the **git-history purge
-off**, producing a validated `guidebook.md`. The schema enforces the
+**Description:** Phase B as a `Task`: a sandbox with the grading procedure,
+the failed conversation and — when the dataset records one — the golden patch
+mounted, the **git-history purge off**, producing a validated `guidebook.md`. The schema enforces the
 `justification` field per stage — the field that makes an honest hint possible
 at all. The failure arrives as the instance's own mounts — the instance is an
 `oracle_failures` record ([task 11](#task-11-start-from-a-cached-failure)) —
