@@ -54,6 +54,19 @@ def build_proxy(
   root = repo_root or find_repo_root()
   binary = proxy_binary_path(root)
   source = proxy_source_path(root)
+  # A *directory* here is residue from the in-sandbox proxy cache, which for a
+  # while nested its versioned tree under this exact path. This function only
+  # ever writes a file here, and nothing else in the repo names this path, so a
+  # directory can only have that one origin -- and it is a regenerable build
+  # cache, not anyone's working file.
+  #
+  # It has to go before the build rather than being reported, because `go build
+  # -o <dir>` does not fail: it writes *into* the directory and reports success,
+  # so this function would hand back a path that is still a directory and the
+  # error would surface much later, as PermissionError, when the proxy is
+  # spawned.
+  if binary.is_dir():
+    binary.rmtree()
   if binary.is_file() and not force:
     return binary
   if not source.is_file():
