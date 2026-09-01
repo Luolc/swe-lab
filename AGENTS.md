@@ -93,8 +93,16 @@ Before merge, both must be clean (see [`docs/conventions.md`](docs/conventions.m
 
 ```sh
 uv run pre-commit run --all-files    # the full hook set — see conventions.md
-uv run pytest                        # the test suite
+uv run pytest -m 'not docker'        # the test suite, minus the container tests
 ```
+
+The **docker-marked tests are CI's job**, and CI is the required check that runs
+them — they must be green before merge, but locally they start containers of
+their own and collide with the one-container-at-a-time rule the moment two
+agents share a box. Run them locally *only* when the change touches sandbox,
+container or harness-capture paths, and then serially. The full rule, its
+exception, and how to read a local failure are in
+[`docs/conventions.md`](docs/conventions.md#hazards-learned-the-hard-way).
 
 The hooks themselves are listed once, in
 [`docs/conventions.md`](docs/conventions.md); `.pre-commit-config.yaml` is the

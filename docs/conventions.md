@@ -287,6 +287,60 @@ retroactively (owner's calibration, 2026-09-01).
 
 ## Hazards (learned the hard way)
 
+- **The local suite and CI have different jurisdictions.** Two halves, and both
+  are load-bearing when several agents share this box.
+
+  *What to run.* The default local gate is `uv run pytest -m 'not docker'`. The
+  docker-marked tests start containers of their own, which collides head-on with
+  the one-container-at-a-time rule the moment two agents work in parallel:
+  2026-09-01 had two leaked producer containers (`pytest-309`, `pytest-323`)
+  live at once and a third agent's `test_live_two_container_chain` failing for
+  want of a sandbox — while that same test was green three runs running on CI.
+  So **the docker-marked tests are CI's job**; "docker tests green before merge"
+  is unchanged, but CI is the required check that guarantees it. *Exception:* a
+  change touching sandbox, container or harness-capture paths runs them locally
+  too — **serially**, with `docker ps -q | wc -l` equal to 0 before starting and
+  a check for leftovers after. Fast feedback is worth the interference there and
+  nowhere else.
+
+  *How to read a local failure.* Machine state does move the local suite — the
+  same `uv run pytest` measured **220 s** while the host was CPU-throttled and
+  **24.5 s** once it recovered. But the mechanical criteria for "environment,
+  not result" (`claude_code.timed_out == 1`, or wall far past the p90 of
+  comparable runs) are defined for **rollouts**, and neither quantity exists for
+  a local test run — so that rule is **inapplicable here, not unmet**. Asking
+  "were its criteria met?" quietly pulls an out-of-scope case into a rule's
+  jurisdiction, where it is either misjudged or the rule gets stretched to
+  swallow it. Instead: **re-run the affected test in isolation and take the
+  required CI check as the verdict.** Isolated pass + green CI → proceed, and
+  say in the PR description that the full local suite did not stabilize and
+  where. Isolated failure → a real failure, independent of machine state. Never
+  skip the isolated re-run because the box is busy: it costs one test, and
+  skipping it is what turns "the machine was loaded" into an all-purpose excuse.
+- **A check that guards a committed artifact belongs under `tests/`, even when
+  it lives in `experiments/`.** `experiments/` is exempt from the code-quality
+  hooks and is not an importable package, so a check written inside an
+  experiment script runs only when a human runs that script — which means it
+  gates nothing, and a later docs-only PR can break what it guards and still go
+  out green. The line is not "experiment code vs product code", it is **what
+  the check protects**: a check over throwaway scratch stays where it is, but a
+  check over something *committed* — a report table, a manifest, a `.json`
+  deliverable — has to be reachable from `uv run pytest`. Make it reachable by
+  splitting the pure part into its own module beside the experiment and adding
+  a test under `tests/` that loads it by path
+  (`importlib.util.spec_from_file_location`) and feeds it the **committed**
+  artifacts, so the test needs neither the dataset nor a container; the script
+  then calls the same function. Precedent:
+  `tests/test_injection_shape_redaction.py`, and the one that prompted the rule
+  — the screening report's runnability table, whose exact-once check shipped
+  reachable only by hand after the table had already gone out naming 34 of 40
+  instances. Two failures make an unreachable check *worse* than no check: a
+  green tautological assertion is itself a claim that the artifact **was**
+  verified, which is precisely the condition under which nobody verifies it by
+  hand again; and a stale explanation of a fixed mechanism is indistinguishable,
+  to a reader, from a working one. Both read as coverage. So specify the
+  **failure condition** a check must produce — "deleting a row turns it red" —
+  rather than the shape of the assertion.
 - **Memory ceiling: MAXJOBS=2.** On the 16 GB dev box, ≥ 6 headless agents (or
   MAXJOBS=4 → 12 agents) swap-thrash. Streaming subprocess stdout to a file (not
   `capture_output=True`) and `killpg`-on-timeout are load-bearing — an early run
