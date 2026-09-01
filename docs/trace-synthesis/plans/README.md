@@ -210,24 +210,21 @@ versus the cheap "failed once, gold self-test passes" proxy.
 
 **Description:** `ClaudeCodeHarness(capture="proxy")` declares
 `claude.proxy.jsonl` as a native output, so the proxy log is a registered run
-artifact. That log is written by the same `cc-reverse-proxy` binary
-[task 02](#task-02-measure-the-injection-shape) used, and the binary records the
-headers it forwards: its `excludedRequestHeaders` drops only `host` and
-`accept-encoding`, and its response `excludedHeaders` only the hop-by-hop four.
-So **every proxy-captured run stores the run's `Authorization` bearer token and
-the operator's `anthropic-organization-id` / `anthropic-workspace-id`
-verbatim**, and nothing under `harnesses/claude_code/` redacts anything —
-`convert.py`'s "No PII redaction is needed here" reasons about the agent's
-identity *inside the container*, which is a different question from what the
-proxy wrote down.
+artifact.
 
-**This is latent, not live.** Today those artifacts land in `.cache/` and in the
-cache-backed T1 store, and no running path publishes a rollout artifact. But
+**The disclosure this task opened for is fixed** (see below); what opened it is
+kept here because it explains the shape of the work that is left. The proxy
+recorded the headers it forwarded — its `excludedRequestHeaders` dropped only
+`host` and `accept-encoding`, its response `excludedHeaders` only the hop-by-hop
+four — so **every proxy-captured run stored the run's `Authorization` bearer
+token and the operator's account identifiers verbatim**, and nothing under
+`harnesses/claude_code/` redacted anything. It was **latent rather than live**:
+those artifacts land in `.cache/` and the cache-backed T1 store, and no running
+path publishes a rollout artifact — but
 [`.gitignore`](../../../.gitignore) states that full-conversation trace records
-live off-repo in a HF dataset repo — publishing traces is the intent — so
-whoever first publishes a proxy-captured trace publishes a credential and the
-operator's account identifiers with it. Task 02 put proxy capture near this
-pipeline's critical path, which is why the task is filed here.
+live off-repo in a HF dataset repo, so whoever first published a proxy-captured
+trace would have published a credential with it. Task 02 put proxy capture near
+this pipeline's critical path, which is why the task is filed here.
 
 **The header and body redaction itself shipped with
 [task 10](#task-10-run-the-capture-proxy-inside-the-sandbox)**, because once the
