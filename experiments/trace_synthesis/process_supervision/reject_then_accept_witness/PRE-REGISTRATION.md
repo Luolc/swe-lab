@@ -3,13 +3,18 @@
 **This document has two parts with different standing. Read the boundary before
 the content.**
 
-**§1–§8 — original, committed before any data existed.** Merged in
-[#314](https://github.com/Luolc/swe-lab/pull/314) at `2c5f438`, before a single
-API call was made. The readings in §4 are fixed there and may not be revised.
-Source: `DEBATE-VERDICT.md` §4 (*the cheapest single experiment that
-discriminates*), implemented without reinterpreting. **They have not been edited
-since**, and that is checkable: between the merge commit and now, the text above
-`## 9` differs by one trailing blank line.
+**§1–§8 — original, committed before any data existed.** Reviewed in
+[#314](https://github.com/Luolc/swe-lab/pull/314) at approved head `2c5f438` and
+merged to `main` as `7af59fe`, before a single API call was made. The readings in
+§4 are fixed there and may not be revised. Source: `DEBATE-VERDICT.md` §4 (*the
+cheapest single experiment that discriminates*), implemented without
+reinterpreting.
+
+**They have not been edited since, and the claim is bounded exactly.** The
+unchanged region is **from the heading `## 1.` to the start of `## 9.`** — not
+"everything above §9", because **this preamble is itself part of the amendment
+and was written today**. Over that region the text is identical to both
+`2c5f438` and `7af59fe` apart from whitespace at the §8/§9 boundary.
 
 **§9 — an amendment dated 2026-09-01, written after a result.** It is
 **post-hoc with respect to the witness run**, which had already terminated as
