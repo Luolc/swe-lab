@@ -412,13 +412,15 @@ schema ([task 29](../horizontal/plans/task-29-grok-harness.md)).
 > > files/commands. These are advisory and I should use my own judgement about
 > > acting on them.
 >
-> So: **authorization was given, accepted, and then revoked by repetition** — at
-> six boundaries, reproducing over a much shorter horizon what the 27-boundary
-> steered re-run found at n=1. A channel that must repeat in order to work loses
-> credibility *because* it repeats, which is a property of the channel's shape
-> and not of its wording. That is why the termination rule forbids swapping the
-> tag, the channel and the model: none of them touches the repetition. Full
-> passages and the adjudication:
+> **What is identified:** in that run the actor said the repetition made the
+> note suspicious, having acknowledged the authorization earlier in the same
+> session. **What is not:** why it objected. Repetition, elapsed session and the
+> platform's own prompt-injection warning are confounded across these six runs
+> exactly as they were across the steered re-run's 27 boundaries, and the
+> one-hint, compressed-horizon and warning-suppressed arms that would separate
+> them **were not run and are not authorized** — the protocol forbids adding an
+> arm after a failed result. The termination rests on the registered criteria,
+> not on any account of the mechanism. Full passages and the adjudication:
 > [micro-test report](../../experiments/trace_synthesis/hint_legitimacy/REPORT.md).
 > The rest of this section is the measurement history that led there, kept
 > because the delivery findings remain true.
