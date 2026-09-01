@@ -33,6 +33,7 @@ from swe_lab.harnesses.claude_code.proxy import (
     proxy_source_path,
 )
 from swe_lab.paths import cache_root, find_repo_root
+from swe_lab.process_group import end_process_group
 
 DEFAULT_BASE_PORT = 20000
 _ANTHROPIC_API = "https://api.anthropic.com"
@@ -122,6 +123,9 @@ class ReverseProxy:
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        # The proxy is the leader of its own process group, so `__exit__` can
+        # end everything it started rather than the one pid we hold.
+        start_new_session=True,
     )
     self._wait_until_listening()
     return self
@@ -134,12 +138,7 @@ class ReverseProxy:
   ) -> None:
     if self._process is None:
       return
-    self._process.terminate()
-    try:
-      _ = self._process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-      self._process.kill()
-      _ = self._process.wait(timeout=5)
+    end_process_group(self._process)
     self._process = None
 
   def _wait_until_listening(self) -> None:
