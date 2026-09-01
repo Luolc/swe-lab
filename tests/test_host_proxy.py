@@ -44,12 +44,7 @@ def test_build_proxy_skips_when_binary_exists(tmp_path: Path) -> None:
 
 
 def _residue(binary: object) -> None:
-  """Leave the state a machine has after running the old sandbox cache layout.
-
-  That layout nested `<version>/<platform>/cc-reverse-proxy` under this exact
-  path, so what is left behind is a *directory* where this pipeline needs a
-  file.
-  """
+  """Put an incompatible residue at the binary path: a directory, not a file."""
   path = Path(str(binary)) / "abc123" / "linux-amd64"
   path.mkdir(parents=True, exist_ok=True)
   _ = (path / "cc-reverse-proxy").write_text("#!/bin/true\n")
@@ -91,11 +86,11 @@ def test_build_proxy_clears_a_sandbox_cache_directory_left_at_its_path(
 def test_the_start_path_spawns_a_file_after_the_residue_is_cleared(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-  """Pinned where the failure actually appears: `Popen`, not the build.
+  """Pinned where the failure appears: `Popen`, not the build.
 
-  Handed a directory, `ReverseProxy.__enter__` raises `PermissionError` far
-  from the cache layout that caused it. Both halves are asserted here — the
-  raw failure, and that the built path no longer produces it.
+  Handed a directory, `ReverseProxy.__enter__` raises `PermissionError`, far
+  from the cache layout responsible. Both halves are asserted: that raw
+  failure, and that a built path spawns.
   """
   binary = proxy_binary_path(tmp_path)
   _residue(binary)
@@ -146,15 +141,9 @@ def test_a_peer_clearing_the_same_residue_first_is_not_an_error(
 ) -> None:
   """Two runs reach the migration together; the loser must not fail.
 
-  The window is injected rather than raced for. A thread barrier was tried
-  first and did **not** reproduce this reliably -- both threads reached the
-  check, and the removals still serialised -- so a barrier here would have been
-  a test that looks concurrent and passes either way. Injecting the peer's
-  removal into the window makes the interleaving happen on every run.
-
-  Driven through the real `build_proxy`: an earlier version inlined the removal
-  and passed against a non-idempotent implementation, because it was exercising
-  its own copy of the logic rather than the shipped one.
+  The peer's removal is injected into the window rather than raced for, so the
+  interleaving occurs on every run, and it is driven through `build_proxy` so
+  the shipped call site is what gets exercised.
   """
   binary = proxy_binary_path(tmp_path)
   _residue(binary)

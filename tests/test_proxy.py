@@ -121,15 +121,10 @@ def test_a_dest_gets_its_own_executable_copy(
 def test_an_existing_host_binary_does_not_wedge_the_first_proxied_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-  """A file at `<cache>/bin/cc-reverse-proxy` must neither block nor be blocked.
+  """A file at `<cache>/bin/cc-reverse-proxy` neither blocks nor is disturbed.
 
-  It used to do both, in both directions: the sandbox cache wanted that exact
-  path as a directory, so a machine that had ever built the host-native proxy
-  died here with `NotADirectoryError`, and a machine that had run the sandbox
-  proxy first left a directory where the host build needed a file.
-
-  The file is left in place, because it is not ours: it belongs to
-  `pipelines.related_files.host_proxy` and may be in use right now.
+  That file is `pipelines.related_files.host_proxy`'s property and may be in
+  use, so this module builds elsewhere and leaves it alone.
   """
   source = _source(tmp_path, "package main\n")
   monkeypatch.setenv(PROXY_SOURCE_ENV, str(source))

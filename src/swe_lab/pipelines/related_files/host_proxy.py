@@ -54,21 +54,14 @@ def build_proxy(
   root = repo_root or find_repo_root()
   binary = proxy_binary_path(root)
   source = proxy_source_path(root)
-  # A *directory* here is residue from the in-sandbox proxy cache, which for a
-  # while nested its versioned tree under this exact path. This function only
-  # ever writes a file here, and nothing else in the repo names this path, so a
-  # directory can only have that one origin -- and it is a regenerable build
-  # cache, not anyone's working file.
+  # This path is this module's property, and only a file belongs at it. A
+  # directory here is an incompatible residue: it must be removed rather than
+  # reported, because `go build -o <dir>` writes *into* a directory and reports
+  # success, so the caller would receive a path that is still a directory and
+  # fail much later, at spawn.
   #
-  # It has to go before the build rather than being reported, because `go build
-  # -o <dir>` does not fail: it writes *into* the directory and reports success,
-  # so this function would hand back a path that is still a directory and the
-  # error would surface much later, as PermissionError, when the proxy is
-  # spawned.
-  # `missing_ok` because two pipeline runs can reach this together: both see
-  # the directory, one removes it, and the loser must not fail for having been
-  # beaten to a result it wanted. What is asserted on the next line is the
-  # state, not who achieved it.
+  # Idempotent because two runs can reach this together; what matters is the
+  # resulting state, not which of them produced it.
   if binary.is_dir():
     binary.rmtree(missing_ok=True)
   if binary.is_file() and not force:
