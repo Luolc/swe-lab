@@ -135,10 +135,33 @@ def test_pass_env_inherits_by_reference(
   monkeypatch.setenv("SECRET_TOKEN", "s3cr3t")
   ws = _workspace(tmp_path)
   sandbox = GitHubJobSandbox(
-      spec=SPEC, workspace=epath.Path(ws), pass_env=["SECRET_TOKEN"]
+      spec=SPEC,
+      workspace=epath.Path(ws),
+      pass_env={"SECRET_TOKEN": "SECRET_TOKEN"},
   )
   sandbox.up()
   _ = (ws / "main.sh").write_text('echo "tok=$SECRET_TOKEN"\n')
+  result = sandbox.run_script("main.sh", timeout=5.0)
+  assert "tok=s3cr3t" in result.stdout
+
+
+def test_pass_env_renames_the_job_variable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+  # Here the job IS the container, so the run already inherits the job's
+  # whole environment — the rename is the entire job of `pass_env` on this
+  # backend, and without it the agent would find nothing under the name it
+  # reads.
+  monkeypatch.setenv("SWE_LAB_TOKEN", "s3cr3t")
+  monkeypatch.delenv("AGENT_TOKEN", raising=False)
+  ws = _workspace(tmp_path)
+  sandbox = GitHubJobSandbox(
+      spec=SPEC,
+      workspace=epath.Path(ws),
+      pass_env={"AGENT_TOKEN": "SWE_LAB_TOKEN"},
+  )
+  sandbox.up()
+  _ = (ws / "main.sh").write_text('echo "tok=$AGENT_TOKEN"\n')
   result = sandbox.run_script("main.sh", timeout=5.0)
   assert "tok=s3cr3t" in result.stdout
 

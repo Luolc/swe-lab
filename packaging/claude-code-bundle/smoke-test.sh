@@ -4,8 +4,11 @@
 #   ./smoke-test.sh dist/claude-2.1.220-linux-x64.tar.gz
 #
 # Checks that need a live agent (a real `claude -p` run) need credentials and
-# egress; they are skipped unless CLAUDE_CODE_OAUTH_TOKEN is set, and the skip
-# is reported, never silently passed.
+# egress; they are skipped unless SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN is set, and the
+# skip is reported, never silently passed. That host-side name is deliberately
+# not CLAUDE_CODE_OAUTH_TOKEN (docs/conventions.md → Hazards); each `docker run`
+# below renames it back for the agent through the CLI's own environment, so the
+# value never reaches an argv.
 #
 # Design: docs/horizontal/plans/task-24-claude-code-portable-bundle.md §7
 set -euo pipefail
@@ -121,11 +124,12 @@ EOF
   fi
 
   # 4/6. Live-agent checks: subprocess sanity and stream integrity.
-  if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-    record "$image" "subprocess-sanity" SKIP "no CLAUDE_CODE_OAUTH_TOKEN"
-    record "$image" "stream-integrity" SKIP "no CLAUDE_CODE_OAUTH_TOKEN"
+  if [ -z "${SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+    record "$image" "subprocess-sanity" SKIP "no SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN"
+    record "$image" "stream-integrity" SKIP "no SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN"
   else
-    out=$(docker run --rm --platform linux/amd64 \
+    out=$(CLAUDE_CODE_OAUTH_TOKEN="$SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN" \
+      docker run --rm --platform linux/amd64 \
         -v "$tarball:/bundle.tar.gz:ro" -e "BDIR=$bundle_dir" \
         -e CLAUDE_CODE_OAUTH_TOKEN "$image" sh -c '
           set -e
@@ -141,7 +145,8 @@ EOF
       record "$image" "subprocess-sanity" FAIL "rc=$rc $(printf '%s' "$out" | tail -1)"
     fi
 
-    out=$(docker run --rm --platform linux/amd64 \
+    out=$(CLAUDE_CODE_OAUTH_TOKEN="$SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN" \
+      docker run --rm --platform linux/amd64 \
         -v "$tarball:/bundle.tar.gz:ro" -e "BDIR=$bundle_dir" \
         -e CLAUDE_CODE_OAUTH_TOKEN "$image" sh -c '
           set -e
@@ -197,4 +202,4 @@ printf '%s\n' "${results[@]}"
 echo
 echo "pass=${pass} fail=${fail} skip=${skip}"
 [ "$fail" -eq 0 ] || { echo "SMOKE TEST FAILED" >&2; exit 1; }
-[ "$skip" -eq 0 ] || echo "NOTE: ${skip} checks skipped (set CLAUDE_CODE_OAUTH_TOKEN for the live-agent ones)"
+[ "$skip" -eq 0 ] || echo "NOTE: ${skip} checks skipped (set SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN for the live-agent ones)"

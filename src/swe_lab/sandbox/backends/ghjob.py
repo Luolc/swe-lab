@@ -46,9 +46,14 @@ class GitHubJobSandbox(Sandbox):
     shell: The interpreter each ``run_script`` / ``run_command`` uses (default
       ``/bin/bash``; set to ``/bin/sh`` for an image without bash).
     env: Variables set on each exec as ``KEY=VALUE``.
-    pass_env: Names of variables inherited by reference from the job's own
-      environment (e.g. a token), so a secret's value is read from the ambient
-      process, never rebuilt onto a command line.
+    pass_env: Variables inherited by reference from the job's own environment
+      (e.g. a token): each key is the name the run sees, each value the job
+      variable it is read from. The job *is* the container here, so the run
+      already inherits the job's environment wholesale — what this field adds
+      is the **rename**, which is the only way a variable the job carries
+      under a repo-scoped name reaches the agent under the name it reads. The
+      value is read from the ambient process, never rebuilt onto a command
+      line.
     reuse: Allow ``up`` to run in a non-empty workspace.
   """
 
@@ -56,7 +61,7 @@ class GitHubJobSandbox(Sandbox):
   workspace: epath.Path
   shell: str = "/bin/bash"
   env: Mapping[str, str] = field(default_factory=dict)
-  pass_env: Sequence[str] = ()
+  pass_env: Mapping[str, str] = field(default_factory=dict)
   reuse: bool = False
 
   # --- lifecycle -----------------------------------------------------------
@@ -238,12 +243,12 @@ class GitHubJobSandbox(Sandbox):
   def _exec_env(self, extra: Mapping[str, str] | None) -> dict[str, str]:
     """Build the exec environment: inherit the job's, then layer our own."""
     run_env = dict(os.environ)
-    for key in self.pass_env:
-      value = os.environ.get(key)
+    for name, source in self.pass_env.items():
+      value = os.environ.get(source)
       if value is None:
-        _logger.warning("pass_env variable %s is not set in the job", key)
+        _logger.warning("pass_env variable %s is not set in the job", source)
       else:
-        run_env[key] = value
+        run_env[name] = value
     run_env.update(self.env)
     run_env.update(extra or {})
     run_env[WORKSPACE_ENV] = str(self.workspace)

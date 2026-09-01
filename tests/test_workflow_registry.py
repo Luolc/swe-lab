@@ -18,6 +18,10 @@ import pytest
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import SweBenchProVerdict
 from swe_lab.evaluation.verdict import UnitTestSpec
+from swe_lab.harnesses.claude_code.constants import (
+    HOST_OAUTH_TOKEN_ENV,
+    SANDBOX_OAUTH_TOKEN_ENV,
+)
 from swe_lab.rollout import PROMPT_NAME
 from swe_lab.sandbox import (
     ArtifactSchema,
@@ -154,6 +158,27 @@ def test_the_built_ins_register_at_import():
   )
 
 
+def test_the_agent_token_is_host_scoped_and_sandbox_named():
+  # The invariant the rename exists for, in both directions:
+  #
+  # - **on the host** the token is never called CLAUDE_CODE_OAUTH_TOKEN. That
+  #   name in a login shell hijacks the developer's / agent's own `claude`
+  #   login with an inference-only token, and Remote Control then refuses to
+  #   start. `.envrc.local` exports it into every shell under this directory,
+  #   so "just don't set it" is not a control that holds.
+  # - **inside the sandbox** it is called exactly CLAUDE_CODE_OAUTH_TOKEN,
+  #   because that is the name Claude Code itself reads. A rename here would
+  #   leave the agent unauthenticated.
+  #
+  # docs/conventions.md → Hazards carries the story.
+  assert SANDBOX_OAUTH_TOKEN_ENV == "CLAUDE_CODE_OAUTH_TOKEN"
+  assert HOST_OAUTH_TOKEN_ENV != SANDBOX_OAUTH_TOKEN_ENV
+  (rollout,) = workflow_definition("rollout")
+  assert rollout.sandbox.pass_env == {
+      SANDBOX_OAUTH_TOKEN_ENV: HOST_OAUTH_TOKEN_ENV
+  }
+
+
 def test_the_shipped_chain_grades_what_the_agent_produced():
   # The definition is what a `swe-lab run rollout_and_unit_test` invocation
   # gets: the agent's entry declares the credential it inherits, and the two
@@ -161,9 +186,11 @@ def test_the_shipped_chain_grades_what_the_agent_produced():
   rollout, evaluation = workflow_definition("rollout_and_unit_test")
   assert (rollout.key, evaluation.key) == ("rollout", "unit_test")
   assert rollout.sandbox.network is True
-  assert rollout.sandbox.pass_env == ("CLAUDE_CODE_OAUTH_TOKEN",)
+  assert rollout.sandbox.pass_env == {
+      "CLAUDE_CODE_OAUTH_TOKEN": "SWE_LAB_CLAUDE_CODE_OAUTH_TOKEN"
+  }
   # Grading inherits no credential — only the agent needs one.
-  assert evaluation.sandbox.pass_env == ()
+  assert evaluation.sandbox.pass_env == {}
   assert evaluation.retries == 2  # a flaky suite gets two more tries
   # the edge that makes it a chain: the agent's patch is the grader's input
   assert [s.name for s in evaluation.task.input_schema()] == [PATCH_NAME]
