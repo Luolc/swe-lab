@@ -279,6 +279,29 @@ def start_proxy(out_path: Path) -> subprocess.Popen[bytes]:
   sys.exit(f"reverse proxy did not come up on port {PROXY_PORT}")
 
 
+def as_text(captured: str | bytes | None) -> str:
+  """Return a captured stream as text, whatever the exception handed us.
+
+  ``TimeoutExpired`` carries **bytes** even when ``subprocess.run`` was called
+  with ``text=True`` (verified on this repo's 3.13.15), so the one path that has
+  to persist a partial capture is the one path where it is not a string. Writing
+  it straight out raises ``TypeError`` and takes ``meta.json`` down with it —
+  losing the timeout flag exactly when a run timed out.
+
+  Args:
+    captured: Whatever the process produced before it was killed.
+
+  Returns:
+    The text, decoded permissively, or the empty string when nothing was
+    captured.
+  """
+  if captured is None:
+    return ""
+  if isinstance(captured, bytes):
+    return captured.decode("utf-8", "replace")
+  return captured
+
+
 def build_settings(events: tuple[str, ...]) -> str:
   entry = [{
       "matcher": "",
@@ -358,9 +381,22 @@ def run_variant(variant: str, workspace_root: Path, replicate: int = 0) -> None:
 
   started = time.time()
   print(f"[run ] {run_name} (mode={mode})")
+  # A timeout used to raise straight past the `meta.json` write, so the one
+  # signal that says "this run is an environment failure, not a result" was
+  # missing exactly when it mattered. Catch it, keep whatever the process had
+  # already produced, and record it like any other ending.
+  timed_out = False
   try:
     proc = subprocess.run(
         argv, cwd=workspace, env=env, capture_output=True, text=True, timeout=600
+    )
+  except subprocess.TimeoutExpired as expired:
+    timed_out = True
+    proc = subprocess.CompletedProcess(
+        argv,
+        returncode=-1,
+        stdout=as_text(expired.stdout),
+        stderr=as_text(expired.stderr),
     )
   finally:
     if proxy_proc is not None:
@@ -386,6 +422,9 @@ def run_variant(variant: str, workspace_root: Path, replicate: int = 0) -> None:
       "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(started)),
       "duration_s": round(time.time() - started, 1),
       "exit_code": proc.returncode,
+      # False on every ending that is not the 600 s cap. The micro-test's
+      # environment-failure rule reads this field and nothing else.
+      "timeout": timed_out,
   }, indent=2) + "\n")
   print(f"[done] {run_name}: exit={proc.returncode} "
         f"{len(proc.stdout.splitlines())} stream lines, "
