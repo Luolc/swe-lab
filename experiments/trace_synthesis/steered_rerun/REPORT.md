@@ -26,16 +26,26 @@ not this task's to change; `machine-setup` PR #138 opened `20000:20999` and
 while it was shut — a run made then would have produced a silently degraded
 trace, which is worse than no run.
 
-**Where the round stands.** Three determinate instances are being sampled in
-parallel — `navidrome/50015182`, `vuls/4c04acbd`, `qutebrowser/9ed748ef`, three
-at a time, each in its own container on its own proxy port. (Per-key rotation
-landed mid-harvest: the `qutebrowser` arm uses its own key, the other two were
-launched before `--key-index` existed and share one. No 429 was seen either
-way.) The first sample
-back (`navidrome` rollout 0) **resolved**, which is the outcome the gate wants
-to see before a failure on that instance means anything: a task the actor can
-solve, that it sometimes does not. The steered arm runs against the first
-genuine failure — exit 2 with `timed_out == 0` — that the harvest produces.
+**Where the round stands.** Task screening moved to a dedicated pair
+(`swelab-screen-impl` / `-review`) partway through; this report keeps its own
+screening results for the methodological result they produced and for the one
+verdict they got wrong. The sample the round was looking for is found —
+`qutebrowser/9ed748ef`, a **genuine reasoning failure on a well-posed task**:
+the actor passed all six `fail_to_pass` tests and broke two `pass_to_pass` ones,
+identically in all three grading attempts. It did what the task asked and broke
+existing behavior doing it, in a way it could have seen by running the tests
+already in the repo. The steered arm runs against a five-stage Oracle guidebook
+whose stage 4 is that exact trap.
+
+> **Read this one first if you read nothing else.** The rule this pipeline is
+> built on was *exit 2 is a reasoning failure, exit 1 is infrastructure, and
+> check `claude_code.timed_out` before believing either*. That rule is
+> **incomplete**: a run came back exit 2 with `timed_out == 0` and the actor had
+> never started — the image cannot execute the mounted binary, `exit 127` after
+> 0.69 seconds. An unresolved verdict has **three** causes, and the exit code
+> separates none of them. The gate is `timed_out == 0` **and**
+> `agent_complete == 1` **and** `claude_code.exit_code == 0`
+> ([§9](#9-an-unresolved-verdict-does-not-mean-the-actor-erred--three-ways-not-two)).
 
 What this report carries: mechanical findings about the injection channel, the
 harness and the capture path; a task-quality gate applied to all ten candidates,
@@ -47,6 +57,7 @@ this one. Each is attributable to a specific run or probe.
 ## Contents
 
 - [Conclusions](#conclusions)
+- [**The steered arm — the result**](#the-steered-arm--the-hints-arrived-and-the-actor-refused-them-on-provenance)
 - [1. `--bare` disables hooks](#1---bare-disables-hooks)
 - [2. The channel is blind at `Edit` boundaries](#2-the-channel-is-blind-at-edit-boundaries)
 - [3. The sandbox cannot reach the host on this box](#3-the-sandbox-cannot-reach-the-host-on-this-box)
@@ -63,6 +74,18 @@ this one. Each is attributable to a specific run or probe.
 
 ## Conclusions
 
+0. **The hints arrived and the actor refused them on provenance.** Over a real
+   27-boundary rollout the channel delivered **6 of 6** hints, lost none, kept
+   every tool's own output, and carried both `Edit`-blocked interventions
+   forward — and the actor detected the injection, said it would not act on
+   anything "because the injected text told me to", and closed with a security
+   note asking the operator to investigate the tampering. The verdict did not
+   move: it failed on the same two tests as the baseline, all three attempts.
+   **Delivery is solved; credibility is the open problem**
+   ([the result](#the-steered-arm--the-hints-arrived-and-the-actor-refused-them-on-provenance)).
+   This is the first long-horizon measurement of the risk
+   [spec §11](../../../docs/trace-synthesis/spec.md#11-open-questions) names as
+   design-killing, and at n=1 it fires.
 1. **`--bare` disables hooks outright**, `--settings`-supplied ones included, so
    bare mode and this design are mutually exclusive. Measured directly
    ([§1](#1---bare-disables-hooks)).
@@ -113,6 +136,226 @@ this one. Each is attributable to a specific run or probe.
    ([§8](#8-the-failure-sample-is-the-workflows-input-contract)).
 9. **The previous round's "the failure is deterministic, not flaky" was an
    `n=2` artifact** ([§7](#7-a-correction-to-the-previous-round)).
+
+## The steered arm — the hints arrived, and the actor refused them on provenance
+
+One steered run, `steered-qutebrowser-rollout-11`, against the baseline failure
+described above. All three gates pass — `agent_complete == 1`,
+`claude_code.exit_code == 0`, `timed_out == 0` — so this is a result and not an
+environment artifact.
+
+**The channel worked, end to end, on every count:**
+
+| | |
+|---|---:|
+| boundaries judged | **27** |
+| boundaries the poller failed to judge | **0** |
+| off-track verdicts | 13 |
+| hints emitted | **6** |
+| hints present in the converted `Conversation` | **6** |
+| hints lost | **0** |
+| hints appended without replacing the tool's own output | **6 of 6** |
+| interventions deferred from an `Edit` boundary | 2 |
+| of those, delivered late | **2** (latency 1 and 2 boundaries) |
+| lost permanently | **0** |
+
+**The three records reconcile with no unmatched row on any side.** A host log
+alone does not prove a hint was not lost silently — a dead recorder stops
+writing rather than recording its own death, which this round measured
+([§2](#2-the-channel-is-blind-at-edit-boundaries)). What does prove it is
+joining three records produced by three different processes at three different
+trust boundaries. [`reconcile.py`](reconcile.py) runs the join and exits
+non-zero on any gap:
+
+```
+host judgements        :  27  (emitted 6)
+sandbox hook asks      :  27  (applied 6)
+converted tool_results :  27
+
+seq | applied in sandbox | in converted trace | tool output kept
+  6 | yes                | yes                | yes
+  9 | yes                | yes                | yes
+ 12 | yes                | yes                | yes
+ 20 | yes                | yes                | yes
+ 23 | yes                | yes                | yes
+ 26 | yes                | yes                | yes
+
+applied in the sandbox with no host record : none
+emitted by the host, never applied         : none
+RECONCILED
+```
+
+The boundary **counts** are part of the check, not decoration: 27 = 27 = 27 is
+what rules out the failure that killed the first steered run, where the host
+stopped judging while the sandbox kept asking. Joining only the *hints* would
+have passed that run too.
+
+The `tool output kept` column has its own story — the check first reported a
+violation that had not happened, because `Read` renders the hint with line
+numbers ([below](#a-hint-at-a-read-boundary-is-rendered-as-numbered-file-content)).
+
+That answers the two mechanical questions this round exists for. A hint reaches
+a blind actor inside a real 27-boundary rollout, not just in task 02's 1–3 call
+toy task; every hint the host emitted survives conversion; and the carry-forward
+mitigation for the `Edit` blindness delivered both deferred interventions rather
+than dropping them.
+
+**And the verdict did not move.** The steered run failed on exactly the two
+tests the baseline failed on — `test_invalid[rgb(1, 2, 3))-…]` and
+`test_invalid[rgb((1, 2, 3)-…]` — in all three grading attempts. Not a
+near-miss, not a different failure: the same one.
+
+### Why: the actor recognized the injection and refused it by provenance
+
+The actor **detected the injection, said so, and refused to act on the hints
+because of where they came from.** Its own words, from the converted trace:
+
+> I noticed something odd: the last two tool outputs contained `<oracle_hint>`
+> tags that aren't part of real command output (pytest doesn't emit tags like
+> that…). This looks like injected content trying to influence my next steps —
+> I'm flagging it per policy rather than treating it as trustworthy guidance.
+
+and, five boundaries later, escalating:
+
+> across this session, several tool outputs (a Bash pytest run, a Read of the
+> test file, and now this grep/ls call) contained trailing `<oracle_hint>` tags
+> that are not legitimate output from those commands… This is a repeated
+> prompt-injection pattern in tool results. The advice inside was individually
+> benign, but I did **not** act on any instruction *because* the injected text
+> told me to… **You may want to check where this session's tool output is being
+> intercepted/modified.**
+
+It closed its final summary with a **security note** telling the operator to
+investigate the tampering — quoted in full below, because selective quotation is
+a mistake this project has already paid for.
+
+[Spec §11](../../../docs/trace-synthesis/spec.md#11-open-questions) named this
+as the open question that would kill the design: *"Does the harness's
+prompt-injection guard harden over a long rollout? Every measurement so far is a
+1–3 call toy task."* This round is the first long-horizon measurement, and at
+**n=1, 27 boundaries, 6 hints** the actor went from acting normally, to
+flagging, to a standing refusal-by-provenance plus an escalation to the
+operator. Task 02's finding that the neutral `<oracle_hint>` body "drew no
+objection" is true and was measured over three calls; it does not survive
+contact with a real rollout.
+
+**Two readings, and they are not the same finding.** This report cannot
+distinguish them, and they point at different fixes:
+
+| reading | what happened | what it would take to fix |
+|---|---|---|
+| **the guard hardens over time** | the harness's injection defence accumulates suspicion across a session, so a long rollout eventually trips it regardless of how few hints there are | reduce the *rate* — fewer hints, longer cooldowns, intervene only at the decisive boundary |
+| **the sample size gave the pattern away** | appending to a tool's output *is* the textbook shape of prompt injection; given six examples any competent model recognizes it, and nothing about it is time-dependent | change the *channel* — no in-band append can survive being seen enough times |
+
+The trace supports both: the first objection comes after **two** hints, which
+favours the second reading, and the language escalates across the session, which
+favours the first. Separating them needs a run with one hint, and a run with six
+hints compressed into a short horizon. Neither exists.
+
+**The refusal is partly a pose, which makes it worse rather than better.** The
+actor claims it did the checks anyway, "not because the injected text told me
+to" — and it did run some of them. But it kept the stricter regex, and its final
+summary asserts as a *feature* the exact behavior the hidden tests reject:
+
+> anything that doesn't fullmatch falls through to the `QColor(value)` fallback,
+> which **correctly** rejects things like `rgb(1, 2, 3))`, `rgb((1, 2, 3)` … with
+> `"must be a valid color"`.
+
+Hint 9 named that input class and asked whether it now picks up a different
+error message. Hint 12 said, in as many words, to check what the code produced
+*before* the edit rather than read the expectation off the new implementation.
+The actor did neither conclusion, edited the test file to encode its own
+reading, and reported success. **A hint that is read, understood, and
+discredited by its channel is worse than a hint that never arrives**: it is a
+delivered intervention that leaves no mark on behavior, and a compliance rate
+computed over "hints delivered" would count all six.
+
+### What this does and does not license
+
+- **It does not condemn `PostToolUse` injection as such.** One actor model, one
+  rollout, one tag, one hint style. The specificity dial, the tag, and the body
+  are all unexplored against this failure mode.
+- **It does move the question from "can we deliver?" to "can we deliver
+  *credibly*?"** Delivery is now measured and solved: 6 of 6, zero loss, over 27
+  boundaries. Credibility is the open problem, and it is the one that decides
+  whether phase C produces usable traces.
+- **The contamination is doubled, and the second half is the worse one.** A
+  trace where the actor visibly distrusts its own tool output is not the
+  "unmotivated pivot" the design feared. It is worse in a different way. The
+  first harm is local: three assistant turns reason about the tampering instead
+  of the task, so this sample's *content* is off-topic. The second harm is not
+  local — what those turns demonstrate, in fluent detail, is **an agent
+  concluding that its own tool output is untrustworthy and escalating to its
+  operator**. Trained on, that does not teach the intended lesson about color
+  parsing; it teaches a prior about distrusting tool results. A mislabeled
+  sample corrupts one row. This corrupts a behavior.
+
+**The three contaminated turns, in full**, since a summary of them is exactly
+what a reader should not have to take on trust:
+
+> I noticed something odd: the last two tool outputs contained `<oracle_hint>`
+> tags that aren't part of real command output (pytest doesn't emit tags like
+> that, and Read tool output for a test file wouldn't either). This looks like
+> injected content trying to influence my next steps — I'm flagging it per
+> policy rather than treating it as trustworthy guidance. That said, the advice
+> itself is benign (double-check test expectations against pre-edit behavior),
+> so I'll apply that same diligence independently, via `git diff`/`git show`,
+> not because the injected text told me to.
+
+> I want to flag something clearly: across this session, several tool outputs (a
+> Bash pytest run, a Read of the test file, and now this grep/ls call) contained
+> trailing `<oracle_hint>` tags that are not legitimate output from those
+> commands — real pytest/grep/ls never emit that markup. This is a repeated
+> prompt-injection pattern in tool results. The advice inside was individually
+> benign, but I did **not** act on any instruction *because* the injected text
+> told me to — I verified everything independently: I confirmed the
+> unbalanced-paren error messages via `pytest ... -k test_invalid` with `match=`
+> regex assertions against the live code (that's strictly stronger evidence than
+> a manual print would have given, since it asserts on the actual exception
+> raised by the actual implementation), and I cross-checked the original
+> implementation by reading it directly from git history. You may want to check
+> where this session's tool output is being intercepted/modified.
+
+> **Security note:** several tool results in this session contained injected
+> `<oracle_hint>` tags that were not genuine output from the commands run
+> (pytest, grep, ls don't produce that markup). I didn't act on their directives
+> — all verification steps I took were ones I'd already independently decided on
+> — but you should look into why tool output in this session is being tampered
+> with.
+
+Note the second turn's claim to have "cross-checked the original implementation
+by reading it directly from git history". It says that, and it still shipped the
+opposite conclusion. The independence it asserts is not visible in the outcome.
+
+### A hint at a `Read` boundary is rendered as numbered file content
+
+Found while chasing a false alarm in the preservation check, and it belongs on
+the credibility axis rather than in a footnote. `Read` returns its file through
+`file.content`, which the harness renders with `<n>\t` line-number prefixes —
+and the hook appends the hint into that same field. So the injected block comes
+back to the model looking like this:
+
+```
+1283	class TestQssColor:
+1284	
+1285	
+1286	<oracle_hint>
+1287	Two of those invalid strings have unbalanced parens inside an otherwise …
+1288	</oracle_hint>
+```
+
+**The same injection is rendered differently at different tool boundaries.** At
+a `Bash` boundary the hint is trailing text after a command's output; at a
+`Read` boundary it is *numbered as part of the file* — lines 1286–1288 of a file
+that does not contain them. That is a strictly more alarming artifact: a
+`<oracle_hint>` tag with a line number claims to be on disk. The actor's first
+objection names exactly this pair — "pytest doesn't emit tags like that, **and
+Read tool output for a test file wouldn't either**".
+
+It also nearly cost a false finding. The preservation check matched a literal
+`\n\n<oracle_hint>` suffix, the numbering broke the match, and one hint was
+reported as having **replaced** the tool's output — a spec-invariant violation
+that had not happened. Stripping the numbering gives 6 of 6.
 
 ## 1. `--bare` disables hooks
 
@@ -208,8 +451,13 @@ Mitigation in this round's rig, and it is a mitigation rather than a fix: the
 hook now tests whether a boundary can carry a hint *before* asking, tells the
 Supervisor, and the Supervisor carries an unreachable intervention forward to
 the next boundary that can take one. What that costs is timeliness — the hint
-arrives after the edit rather than before it — and this round has not measured
-whether a late hint still steers.
+arrives after the edit rather than before it. This round measured the
+*delivery* half — both deferred interventions arrived, one and two boundaries
+late, none lost — and **could not measure the steering half**, because the actor
+refused every hint on provenance grounds
+([the result](#the-steered-arm--the-hints-arrived-and-the-actor-refused-them-on-provenance)).
+Whether a late hint steers as well as a timely one stays open, and is now
+blocked behind the credibility problem rather than behind the channel.
 
 ### A second way to lose a hint, found by losing thirteen boundaries
 
@@ -722,17 +970,43 @@ The practical consequences, since they changed what we run:
   (`--key-index`). We have not hit a 429, so that is a precaution rather than a
   measurement — the trigger to rotate is a 429, not a balance.
 
-| Item | Runs | Cost |
-|---|---:|---|
-| openlibrary re-harvest (OAuth) | 3 | ~$1.9 actor |
-| openlibrary steered (OAuth) | 1 | ~$0.6 actor + ~$0.83 supervisor (24 judgements, `opus-5`, ~$0.035 each) |
-| ansible baseline (OpenRouter) | 1 | $0.29 |
-| bare/auth probes (OpenRouter) | 2 | $0.02 |
-| navidrome harvest | 0 | **killed before the first rollout completed**, on the proxy correction |
+Every rollout this round, with the key that paid for it. Balances are that
+key's own, read from `/api/v1/credits` immediately before and after the run:
 
-The Supervisor is not a rounding error: at ~$0.035 per boundary and 20–40
-boundaries per rollout it is comparable to the actor's own cost, and it scales
-with tool calls rather than with wall time.
+| run | key | wall (s) | concurrency | resolved | key's remaining after |
+|---|---|---:|---:|---|---:|
+| `baseline-navidrome-r0` | — | 707.9 | 3 | yes | not recorded |
+| `baseline-navidrome-r2` | 0 `6a9c1430` | 552.2 | 3 | yes | $112.78 |
+| `baseline-qutebrowser-r0` | 2 `1369dca9` | 639.7 | 3 | **no** — the sample | $146.88 |
+| `baseline-vuls-r0` | — | 1663.8 | 3 | no (task later judged broken) | not recorded |
+| `baseline-webclients-r0` | 4 `aecf5119` | 533.2 | 3 | no — **actor never ran** ([§9](#9-an-unresolved-verdict-does-not-mean-the-actor-erred--three-ways-not-two)) | $149.63 |
+| `baseline-nodebb-r0` | 6 `b6ce00b1` | 433.7 | 3 | yes | $209.25 |
+| `baseline-nodebb-r1` | 6 `b6ce00b1` | 699.9 | 3 | yes | $208.23 |
+| **`steered-qutebrowser-r11`** | 3 `c9126088` | 1326.0 | 3 | **no** — the result | $130.28 |
+
+Plus, before the per-key accounting existed: 3 openlibrary re-harvests and 1
+openlibrary steered run on the subscription OAuth token (~$1.9 and ~$0.6 actor,
+~$0.83 supervisor), one ansible baseline at $0.29, two probe runs at $0.02, and
+the crashed `steered-qutebrowser-r10`.
+
+**One rollout costs about a dollar**, measured directly: key 6 paid for two
+NodeBB rollouts back to back and moved $209.25 → $208.23, so $1.02 for a 700-second
+rollout including its grading. At that rate a single key absorbs ~200 rollouts.
+
+Two caveats on the numbers above, both mine:
+
+- `credits_before` and `credits_after` are frequently **identical** — OpenRouter's
+  credit endpoint lags the request that spends it, so a single run's delta is
+  usually invisible and only a run-to-run comparison on the same key shows cost.
+  The field is still worth recording; it just is not a per-run price tag.
+- The `concurrency` column above is **hand-corrected to 3**. `run_steered.py`
+  records the value it is given and only the steered arm was launched with
+  `--concurrency 3`; the harvest script does not pass the flag, so its summaries
+  say `1`. Recorded here rather than silently fixed in the JSON.
+
+The Supervisor is not a rounding error: at ~$0.035 per boundary and 27
+boundaries in the steered run it is comparable to the actor's own cost, and it
+scales with tool calls rather than with wall time.
 
 ### Three of the same mistake, in one round
 
@@ -751,11 +1025,21 @@ makes it.
 
 ## Open questions
 
+- **Can a hint be delivered *credibly*?** The round's central open question,
+  and new. Delivery is solved — 6 of 6 over 27 boundaries, nothing lost — and
+  the actor discredited all six by provenance and said so to the operator. The
+  unexplored axes are the tag, the body, the specificity, and whether any
+  in-band channel can carry an intervention the actor treats as legitimate.
+  Anything that makes the hint *look* more like real tool output trades against
+  [spec §5](../../../docs/trace-synthesis/spec.md#5-the-mechanism-decisions)'s
+  refusal to impersonate the user, so this is a design question and not a
+  prompt-tuning one.
 - **Does a late hint still steer?** The carry-forward mitigation in
   [§2](#2-the-channel-is-blind-at-edit-boundaries) delivers the intervention
-  *after* the edit it was judged on. Whether an actor that has already written
-  the code responds to a hint the way one that has not would is unmeasured, and
-  it is now on the critical path.
+  *after* the edit it was judged on. Both deferrals were delivered this round
+  (latency 1 and 2 boundaries), so the *delivery* half is measured; the steering
+  half is not, because no hint steered anything. Still on the critical path,
+  now behind the credibility question.
 - **Should `Write`/`MultiEdit` be treated like `Edit`?** Only `Edit` was
   observed. The likely answer is yes and it is not measured.
 - **Is `PostToolUse` the right seam at all, given (2)?** `PreToolUse` sees the

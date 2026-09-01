@@ -15,15 +15,24 @@ complete result and feeds task 06 and the specificity dial
 What this round can actually answer:
 
 1. Can a hint reach a blind actor **inside a real rollout**, over a 20–50 call
-   horizon, rather than in task 02's 1–3 call toy task?
+   horizon, rather than in task 02's 1–3 call toy task? — **yes**, 6 of 6 over
+   27 boundaries.
 2. Does **every** hint the host emitted survive into the converted trace — and
    when one does not, is the loss detectable? (The spec's one fatal failure
-   mode.)
-3. Do the hints stay **directional**, or slide into specifics?
+   mode.) — **yes**, and the proof is a three-way join, not a log
+   ([`reconcile.py`](reconcile.py)).
+3. Do the hints stay **directional**, or slide into specifics? — they stayed
+   directional; all six are quoted in the report so a reviewer can disagree.
 4. Is the instance a **genuine reasoning failure** at all, or a broken task?
    ~30% of SWE-bench Pro public is broken
    ([survey](../../../docs/research/swebench-pro-task-quality.md)), so this is
-   a gate on the other three, not a footnote.
+   a gate on the other three, not a footnote. — **yes**, and the gate turned out
+   to need a third check nobody had: whether the actor ran at all.
+
+The question it could **not** answer, and the one that now matters most: the
+actor recognized the injection, refused all six hints on provenance, and told
+the operator its tool output was being tampered with. Delivery is solved;
+**credibility is the open problem** ([`REPORT.md`](REPORT.md)).
 
 ## Method
 
@@ -200,6 +209,7 @@ run_steered.py    one run end to end: supervisor up, rollout, grade, freeze
 validate_task.py  the task-quality gate: determinacy evidence + token screen
 freeze_sample.py  a harvested failure -> the workflow's self-contained input
 analyze.py        raw runs -> analysis.json (hint survival is the load-bearing check)
+reconcile.py      the three-way join: host log / sandbox hook log / converted trace
 manifest.sh       regenerates MANIFEST.md over the frozen artifacts
 guidebook/        one Oracle guidebook per instance; `--steer` refuses without one
 runs/<label>/     hint_log.jsonl (host-side, every judgement) + summary.json

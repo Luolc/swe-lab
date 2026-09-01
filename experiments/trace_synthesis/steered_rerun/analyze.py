@@ -109,6 +109,27 @@ def hook_records(frozen: pathlib.Path) -> list[dict[str, object]]:
   return []
 
 
+# `Read` renders its file with `<n>\t` line-number prefixes, and the hint is
+# appended into that same field — so the injected block comes back numbered as
+# though it were part of the file. Stripping the prefixes before matching is
+# what stops the preservation check from reporting a false violation; that the
+# hint *is* numbered like file content is a finding in its own right, recorded
+# in REPORT.
+_NUMBERED = re.compile(r"^\s*\d+\t", re.M)
+
+
+def _unnumbered(content: str) -> str:
+  """Return a tool result with `Read`'s line-number prefixes removed.
+
+  Args:
+    content: The rendered tool result.
+
+  Returns:
+    The same text with any leading ``<n>\t`` per line stripped.
+  """
+  return _NUMBERED.sub("", content)
+
+
 def survival(
     conversation: dict[str, object] | None, hints: list[str]
 ) -> list[dict[str, object]]:
@@ -137,7 +158,7 @@ def survival(
         "tool_output_kept": False,
     }
     for block in blocks:
-      content = str(block.get("content", ""))
+      content = _unnumbered(str(block.get("content", "")))
       if hint not in content:
         continue
       row["in_conversation"] = True
