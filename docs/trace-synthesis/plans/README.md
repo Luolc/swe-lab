@@ -33,6 +33,7 @@ this index is not a task: its results are recorded in
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
 | 09 | **Converge redaction onto one home and publish behind a gate** — the header/body redaction itself shipped with task 10 | ⬜ |
 | 10 | **Run the capture proxy inside the sandbox** — removes the host port scheme, the firewall dependency and the tailnet exposure | ✅ |
+| 11 | **Start from a cached failure** — the `oracle_failures` dataset: a record that delegates the instance and stages the failure, plus the builder from a finished run — [`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md) | ✅ First record built locally: the qutebrowser/9ed748ef baseline failure (data gitignored by design) |
 
 ---
 
@@ -371,3 +372,33 @@ new has to be built.
 - **Dependencies:** none. It gates nothing today (the firewall workaround has
   landed), but it removes a required component's dependency on machine-level
   configuration. **Scope:** M
+
+## Task 11: Start from a cached failure
+
+**Description:** Make phase A skippable. A full eval sweep has already cached
+the failures phase B needs, so the pipeline's input becomes a **dataset of
+cached failures** rather than a fresh rollout: the `oracle_failures` dataset,
+whose record names the underlying instance (dataset + id) and carries the one
+failed attempt — typed conversation, grader's verdict, submitted patch. The
+record **delegates** the whole runnable surface to the underlying dataset's
+record and adds the failure through `TaskInstance.mounts()` (ADR-0007 §2), so
+the compile contract is touched by nothing; a builder turns a finished
+`rollout_and_unit_test` run directory into a row, refusing anything that is
+not a finished actor graded unresolved and anything credential-shaped. The
+design record is
+[`task-11-oracle-failures-dataset.md`](task-11-oracle-failures-dataset.md).
+
+- **Acceptance:** `load_dataset("oracle_failures")` yields runnable records
+  whose `sandbox_spec` / `prompt` / `gold_patch` / `unit_test_spec` are the
+  underlying instance's and whose mounts stage the failure; the builder
+  refuses a timed-out, crashed, unfinished or resolved run, a run whose
+  persisted grading workspaces disagree with the recorded grade or with each
+  other, and a credential-shaped conversation; one real record exists.
+- **Verification:** unit tests over the record, the loader and the builder;
+  the first record built from the qutebrowser/9ed748ef baseline failure
+  (PR #265's harvest) with the parquet confirmed untracked.
+- **Dependencies:** none. **Scope:** M
+- **Outcome:** landed as designed. The first record's re-graded verdict names
+  the same two failed tests the experiment's report diagnoses. Follow-ups are
+  named in the design record: a blind run of the task — guided or not — must
+  run `record.instance`, and the policy stamp on phase-B records is task 07's.
