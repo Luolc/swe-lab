@@ -1,0 +1,323 @@
+{
+  "run": "control",
+  "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+  "meta": {
+    "scenario": "control",
+    "session_id": "37142a9b-0c15-49dd-a4fc-8f9d74e5ec4b",
+    "argv": [
+      "claude",
+      "-p",
+      "--input-format",
+      "stream-json",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--model",
+      "sonnet",
+      "--session-id",
+      "37142a9b-0c15-49dd-a4fc-8f9d74e5ec4b",
+      "--dangerously-skip-permissions"
+    ],
+    "env": {},
+    "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
+    "started_at": "2026-09-01T19:38:01.017019+00:00",
+    "claude_version": "2.1.257 (Claude Code)",
+    "exit_code": 0,
+    "ended_at": "2026-09-01T19:38:37.457990+00:00",
+    "timeline": [
+      "0.001s sent task",
+      "36.162s saw result"
+    ]
+  },
+  "sources": {
+    "events.jsonl": {
+      "sha256": "9569530aeffec26a196a3be349bbfdbd2420c34d72b3559d6846e39833211c0f",
+      "bytes": 13334
+    },
+    "transcript.jsonl": {
+      "sha256": "2abdf64edd1acdbdb92a62a6082e3b9954a404e111a626130c9238c5342e9a0f",
+      "bytes": 23377
+    }
+  },
+  "transcript_source": "snapshot",
+  "artifact_greps": {
+    "<system-reminder>": {
+      "transcript": false,
+      "stream": false,
+      "wire": null
+    },
+    "Continue from where you left off.": {
+      "transcript": false,
+      "stream": false,
+      "wire": null
+    },
+    "No response requested.": {
+      "transcript": false,
+      "stream": false,
+      "wire": null
+    }
+  },
+  "stdout_events": [
+    {
+      "dt": 0.001,
+      "dir": "in",
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+      ],
+      "message_id": null
+    },
+    {
+      "dt": 1.187,
+      "dir": "out",
+      "type": "system",
+      "subtype": "init"
+    },
+    {
+      "dt": 2.127,
+      "dir": "out",
+      "type": "rate_limit_event"
+    },
+    {
+      "dt": 2.67,
+      "dir": "out",
+      "type": "system",
+      "subtype": "thinking_tokens"
+    },
+    {
+      "dt": 2.67,
+      "dir": "out",
+      "type": "system",
+      "subtype": "thinking_tokens"
+    },
+    {
+      "dt": 2.672,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "thinking"
+      ],
+      "texts": [],
+      "message_id": "msg_011CedHSyRcv5ffsAF1DpBch"
+    },
+    {
+      "dt": 3.236,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Read"
+      ],
+      "texts": [
+        "{\"file_path\": \"notes.txt\"}"
+      ],
+      "message_id": "msg_011CedHSyRcv5ffsAF1DpBch"
+    },
+    {
+      "dt": 3.281,
+      "dir": "out",
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"1\\tThe secret color is teal.\\n2\\t\""
+      ],
+      "message_id": null
+    },
+    {
+      "dt": 4.826,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Bash"
+      ],
+      "texts": [
+        "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep for 30 seconds then print\", \"timeout\": 40000}"
+      ],
+      "message_id": "msg_011CedHT88FUFbULiSBwVCLf"
+    },
+    {
+      "dt": 8.057,
+      "dir": "out",
+      "type": "system",
+      "subtype": "task_started"
+    },
+    {
+      "dt": 34.897,
+      "dir": "out",
+      "type": "tool_progress"
+    },
+    {
+      "dt": 35.087,
+      "dir": "out",
+      "type": "system",
+      "subtype": "task_notification"
+    },
+    {
+      "dt": 35.098,
+      "dir": "out",
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"slept\""
+      ],
+      "message_id": null
+    },
+    {
+      "dt": 36.096,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "notes.txt says the secret color is teal."
+      ],
+      "message_id": "msg_011CedHVUAKP4spqswBaSnvr"
+    },
+    {
+      "dt": 36.113,
+      "dir": "out",
+      "type": "result",
+      "subtype": "success",
+      "num_turns": 3,
+      "result": "notes.txt says the secret color is teal."
+    },
+    {
+      "dt": 36.162,
+      "dir": "in",
+      "type": null
+    }
+  ],
+  "transcript_records": [
+    {
+      "type": "queue-operation",
+      "operation": "enqueue"
+    },
+    {
+      "type": "queue-operation",
+      "operation": "dequeue"
+    },
+    {
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "In the current directory, read notes.txt. Then run this exact command with Bash, in the foreground (do NOT background it): python3 -c \"import time; time.sleep(30); print('slept')\" . Then tell me in one sentence what notes.txt says."
+      ],
+      "promptSource": "sdk",
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "attachment",
+      "attachment": "deferred_tools_delta"
+    },
+    {
+      "type": "attachment",
+      "attachment": "agent_listing_delta"
+    },
+    {
+      "type": "attachment",
+      "attachment": "skill_listing"
+    },
+    {
+      "type": "attachment",
+      "attachment": "total_tokens_reminder"
+    },
+    {
+      "type": "ai-title"
+    },
+    {
+      "type": "atis-latch"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "thinking"
+      ],
+      "texts": [],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Read"
+      ],
+      "texts": [
+        "{\"file_path\": \"notes.txt\"}"
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"1\\tThe secret color is teal.\\n2\\t\""
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "attachment",
+      "attachment": "total_tokens_reminder"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Bash"
+      ],
+      "texts": [
+        "{\"command\": \"python3 -c \\\"import time; time.sleep(30); print('slept')\\\"\", \"description\": \"Sleep for 30 seconds then print\", \"timeout\": 40000}"
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"slept\""
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "attachment",
+      "attachment": "total_tokens_reminder"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "notes.txt says the secret color is teal."
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "last-prompt"
+    }
+  ]
+}

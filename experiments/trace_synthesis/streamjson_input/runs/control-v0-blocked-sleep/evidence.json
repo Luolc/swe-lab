@@ -1,0 +1,420 @@
+{
+  "run": "control-v0-blocked-sleep",
+  "note": "Redacted evidence for REPORT.md. The raw captures this is built from are gitignored: they carry operator-home paths and the operator's global CLAUDE.md. Rebuild with `uv run python evidence.py <run-dir>` after re-running the scenario; the sha256s below identify the exact inputs used here.",
+  "meta": {
+    "scenario": "control",
+    "session_id": "eabd96be-377e-4a8e-8c75-97b0a1725159",
+    "argv": [
+      "claude",
+      "-p",
+      "--input-format",
+      "stream-json",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--model",
+      "sonnet",
+      "--session-id",
+      "eabd96be-377e-4a8e-8c75-97b0a1725159",
+      "--dangerously-skip-permissions"
+    ],
+    "env": {},
+    "workdir": "/tmp/claude-1000/<HOME-SLUG>-dev-swe-lab-streamjson/13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463/scratchpad/wd",
+    "started_at": "2026-09-01T19:37:15.874813+00:00",
+    "claude_version": "2.1.257 (Claude Code)",
+    "exit_code": 0,
+    "ended_at": "2026-09-01T19:37:31.047961+00:00",
+    "timeline": [
+      "0.001s sent task",
+      "9.958s saw result"
+    ]
+  },
+  "sources": {
+    "events.jsonl": {
+      "sha256": "512515684d3f8b91ff7673618d198f8d71b77d0ed1e72ff55cb7f5a2ec45ec79",
+      "bytes": 18298
+    },
+    "transcript.jsonl": {
+      "sha256": "e1bad6b44c76166149eb222f54be212c95e9d16b5bdcf33a198f55871cf8ff62",
+      "bytes": 28736
+    }
+  },
+  "transcript_source": "snapshot",
+  "artifact_greps": {
+    "<system-reminder>": {
+      "transcript": false,
+      "stream": false,
+      "wire": null
+    },
+    "Continue from where you left off.": {
+      "transcript": false,
+      "stream": false,
+      "wire": null
+    },
+    "No response requested.": {
+      "transcript": false,
+      "stream": false,
+      "wire": null
+    }
+  },
+  "stdout_events": [
+    {
+      "dt": 0.001,
+      "dir": "in",
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "In the current directory, read notes.txt, then run `sleep 25` with Bash, then tell me in one sentence what notes.txt says. Do not skip the sleep."
+      ],
+      "message_id": null
+    },
+    {
+      "dt": 1.375,
+      "dir": "out",
+      "type": "system",
+      "subtype": "init"
+    },
+    {
+      "dt": 2.464,
+      "dir": "out",
+      "type": "rate_limit_event"
+    },
+    {
+      "dt": 3.931,
+      "dir": "out",
+      "type": "system",
+      "subtype": "thinking_tokens"
+    },
+    {
+      "dt": 3.932,
+      "dir": "out",
+      "type": "system",
+      "subtype": "thinking_tokens"
+    },
+    {
+      "dt": 3.934,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "thinking"
+      ],
+      "texts": [],
+      "message_id": "msg_011CedHPezmCyZCq17RvUBHv"
+    },
+    {
+      "dt": 4.5,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Read"
+      ],
+      "texts": [
+        "{\"file_path\": \"notes.txt\"}"
+      ],
+      "message_id": "msg_011CedHPezmCyZCq17RvUBHv"
+    },
+    {
+      "dt": 4.52,
+      "dir": "out",
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"1\\tThe secret color is teal.\\n2\\t\""
+      ],
+      "message_id": null
+    },
+    {
+      "dt": 5.801,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Bash"
+      ],
+      "texts": [
+        "{\"command\": \"sleep 25\", \"description\": \"Sleep for 25 seconds\"}"
+      ],
+      "message_id": "msg_011CedHPtS9nuuGE9toeXBBB"
+    },
+    {
+      "dt": 5.81,
+      "dir": "out",
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"<tool_use_error>Blocked: standalone sleep 25. To wait for a condition, use Monitor with an until-loop (e.g. `until <check>; do sleep 2; done`). To wait for a command you started, use run_in_backgroun… (+81 chars)"
+      ],
+      "message_id": null
+    },
+    {
+      "dt": 8.061,
+      "dir": "out",
+      "type": "system",
+      "subtype": "thinking_tokens"
+    },
+    {
+      "dt": 8.061,
+      "dir": "out",
+      "type": "system",
+      "subtype": "thinking_tokens"
+    },
+    {
+      "dt": 8.062,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "thinking"
+      ],
+      "texts": [],
+      "message_id": "msg_011CedHPytZywqM9eBzQfoz8"
+    },
+    {
+      "dt": 8.336,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Bash"
+      ],
+      "texts": [
+        "{\"command\": \"sleep 25\", \"description\": \"Sleep for 25 seconds\", \"run_in_background\": true}"
+      ],
+      "message_id": "msg_011CedHPytZywqM9eBzQfoz8"
+    },
+    {
+      "dt": 8.823,
+      "dir": "out",
+      "type": "system",
+      "subtype": "background_tasks_changed"
+    },
+    {
+      "dt": 8.824,
+      "dir": "out",
+      "type": "system",
+      "subtype": "task_started"
+    },
+    {
+      "dt": 8.835,
+      "dir": "out",
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"Command running in background with ID: bowowpeao. Output is being written to: /tmp/claude-1000/-tmp-claude-1000-<HOME-SLUG>-dev-swe-lab-streamjson-13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463-scratchpad-wd/e… (+153 chars)"
+      ],
+      "message_id": null
+    },
+    {
+      "dt": 9.913,
+      "dir": "out",
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "I'll wait for the sleep to finish before replying with the summary."
+      ],
+      "message_id": "msg_011CedHQCuesGNfNeivmyYRK"
+    },
+    {
+      "dt": 9.925,
+      "dir": "out",
+      "type": "result",
+      "subtype": "success",
+      "num_turns": 4,
+      "result": "I'll wait for the sleep to finish before replying with the summary."
+    },
+    {
+      "dt": 9.958,
+      "dir": "in",
+      "type": null
+    },
+    {
+      "dt": 15.094,
+      "dir": "out",
+      "type": "system",
+      "subtype": "background_tasks_changed"
+    },
+    {
+      "dt": 15.094,
+      "dir": "out",
+      "type": "system",
+      "subtype": "task_updated"
+    },
+    {
+      "dt": 15.094,
+      "dir": "out",
+      "type": "system",
+      "subtype": "task_notification"
+    }
+  ],
+  "transcript_records": [
+    {
+      "type": "queue-operation",
+      "operation": "enqueue"
+    },
+    {
+      "type": "queue-operation",
+      "operation": "dequeue"
+    },
+    {
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "In the current directory, read notes.txt, then run `sleep 25` with Bash, then tell me in one sentence what notes.txt says. Do not skip the sleep."
+      ],
+      "promptSource": "sdk",
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "attachment",
+      "attachment": "deferred_tools_delta"
+    },
+    {
+      "type": "attachment",
+      "attachment": "agent_listing_delta"
+    },
+    {
+      "type": "attachment",
+      "attachment": "skill_listing"
+    },
+    {
+      "type": "attachment",
+      "attachment": "total_tokens_reminder"
+    },
+    {
+      "type": "ai-title"
+    },
+    {
+      "type": "atis-latch"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "thinking"
+      ],
+      "texts": [],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Read"
+      ],
+      "texts": [
+        "{\"file_path\": \"notes.txt\"}"
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"1\\tThe secret color is teal.\\n2\\t\""
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "attachment",
+      "attachment": "total_tokens_reminder"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Bash"
+      ],
+      "texts": [
+        "{\"command\": \"sleep 25\", \"description\": \"Sleep for 25 seconds\"}"
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"<tool_use_error>Blocked: standalone sleep 25. To wait for a condition, use Monitor with an until-loop (e.g. `until <check>; do sleep 2; done`). To wait for a command you started, use run_in_backgroun… (+81 chars)"
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "attachment",
+      "attachment": "total_tokens_reminder"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "thinking"
+      ],
+      "texts": [],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "tool_use:Bash"
+      ],
+      "texts": [
+        "{\"command\": \"sleep 25\", \"description\": \"Sleep for 25 seconds\", \"run_in_background\": true}"
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "user",
+      "role": "user",
+      "blocks": [
+        "tool_result"
+      ],
+      "texts": [
+        "\"Command running in background with ID: bowowpeao. Output is being written to: /tmp/claude-1000/-tmp-claude-1000-<HOME-SLUG>-dev-swe-lab-streamjson-13c2261e-5a8c-4aa3-b0e6-8a6df7eaa463-scratchpad-wd/e… (+153 chars)"
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "attachment",
+      "attachment": "total_tokens_reminder"
+    },
+    {
+      "type": "assistant",
+      "role": "assistant",
+      "blocks": [
+        "text"
+      ],
+      "texts": [
+        "I'll wait for the sleep to finish before replying with the summary."
+      ],
+      "entrypoint": "sdk-cli"
+    },
+    {
+      "type": "last-prompt"
+    }
+  ]
+}

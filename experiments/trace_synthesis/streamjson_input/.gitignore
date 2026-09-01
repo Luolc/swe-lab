@@ -1,0 +1,20 @@
+# Raw captures never enter the repo. They carry operator-home paths, the
+# operator's global CLAUDE.md (which names them and carries their email) and
+# the machine's skill/agent listings — `AGENTS.md` says to redact operator PII
+# in any trace record and never to commit raw trace records.
+#
+# What is committed is `runs/*/evidence.json`, built by `evidence.py`: the
+# record shapes, provenance fields, marker counts and short quotations the
+# report asserts, redacted and re-scanned before writing, with a sha256 of each
+# raw input so a re-run can be matched to what was published.
+runs/*/events.jsonl
+runs/*/phase*/events.jsonl
+runs/*/transcript.jsonl
+runs/*/transcript.provenance.json
+runs/*/proxy.jsonl
+runs/*/proxy.stderr.log
+runs/*/stderr.log
+runs/*/phase*/stderr.log
+# meta.json records the resolved workdir, which is an absolute operator path.
+# Its redacted copy is inside evidence.json.
+runs/*/meta.json
