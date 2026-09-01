@@ -376,6 +376,22 @@ retroactively (owner's calibration, 2026-09-01).
   target *also* silently drops the `X-Anthropic-Beta` mirroring and `provider`
   injection that OpenRouter needs for interleaved thinking. Verify a proxied run
   by its log, never by its exit code.
+- **Agreement can qualify evidence; it cannot establish that there is any.**
+  When a consistency check is used as evidence for a claim that *presupposes*
+  eligible, non-empty evidence, validate that premise **separately, and first**.
+  Measured 2026-09-01, and it nearly voided a deliverable: `freeze_sample`'s
+  stability gate compared the set of failing required tests across a run's
+  grading attempts, and a run that **resolved on its first attempt** leaves one
+  such set, empty. Agreement holds, so the strictest gate in the program cleared
+  the one input that contradicted the sample's whole claim — that the actor had
+  failed here. Note what did *not* go wrong: the set compared was real, and its
+  self-equality is a correct answer to the question the gate was asked. What was
+  missing is the premise the gate was silently trusted to carry. Stability
+  qualifies a validity established some other way; it never establishes one. (This is not "every agreement predicate must reject
+  emptiness": `len({...}) == 1` rejects zero observations, and an API may define
+  agreement over nothing as a valid neutral answer. The rule is about what you
+  are entitled to *conclude* from agreement, not about how the predicate is
+  written.)
 - **An unresolved workflow verdict has four causes, not two.** Exit 2 means the
   grading suite did not resolve the instance; whether the *actor* erred is a
   separate question, and neither the workflow's exit code nor
