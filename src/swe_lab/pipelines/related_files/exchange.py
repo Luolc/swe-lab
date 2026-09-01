@@ -30,6 +30,11 @@ import subprocess
 
 from etils import epath
 
+from swe_lab.harnesses.claude_code.redaction import (
+    REDACTED,
+    SENSITIVE_HEADERS,
+)
+
 # Where the run's trace (the audit record + the ``complete`` signal) comes from,
 # named by the shared ``Capture`` enum:
 # ``PROXY``  — a ``cc-reverse-proxy`` in front of the API logs the raw wire
@@ -130,9 +135,12 @@ def _last_proxy_raw(proxy_log: epath.PathLike) -> dict[str, object]:
 # --- Unified exchange record -------------------------------------------------
 
 _MESSAGE_FIELDS = ("role", "content", "id", "model", "stop_reason", "usage")
-_SENSITIVE_HEADERS = frozenset(
-    {"authorization", "x-api-key", "cookie", "anthropic-organization-id"}
-)
+# Which headers are sensitive is owned by `harnesses.claude_code.redaction`,
+# not restated here. This file used to carry the narrowest of the repo's copies
+# — four names — and it is the one that matters most, because these records are
+# what a publishing path would ship. It was missing `Proxy-Authorization`,
+# `Anthropic-Workspace-Id`, the rate-limit representative claim and
+# `Set-Cookie`.
 # PII Claude Code injects into the system prompt / tool-call paths. It is
 # swapped for a stable placeholder identity (matching the migrated historical
 # records) so future runs never re-leak the operator's real identity while the
@@ -162,15 +170,25 @@ def _normalize_message(message: object) -> dict[str, object]:
 
 
 def _scrub_headers(headers: object) -> object:
+  """Mask the sensitive headers in one recorded header map."""
   if not isinstance(headers, dict):
     return headers
   return {
-      key: ("<redacted>" if key.lower() in _SENSITIVE_HEADERS else value)
+      key: (REDACTED if str(key).lower() in SENSITIVE_HEADERS else value)
       for key, value in headers.items()
   }
 
 
 def _scrub_metadata(metadata: object) -> object:
+  """Remove the account id from a recorded request body's ``metadata``.
+
+  Deliberately **drops** rather than masks, unlike every other field here and
+  unlike the capture-side redactor. That inconsistency is left alone on
+  purpose: the exchange record is a published schema, and putting back a key
+  that has been absent for the whole history of these records changes what
+  downstream audit tooling reads. Changing it is an annotation-schema
+  decision, not a redaction cleanup.
+  """
   if not isinstance(metadata, dict):
     return metadata
   return {key: value for key, value in metadata.items() if key != "user_id"}

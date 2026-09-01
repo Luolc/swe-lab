@@ -21,6 +21,11 @@ from typing import Any
 
 import pytest
 
+from swe_lab.harnesses.claude_code.redaction import (
+    REDACTED,
+    unredacted_fields,
+)
+
 _DRIVER = (
     Path(__file__).resolve().parents[1]
     / "experiments/trace_synthesis/injection_shape/run_experiment.py"
@@ -77,24 +82,21 @@ def _record() -> dict[str, Any]:
 
 def test_redacts_request_credentials(driver: ModuleType) -> None:
   headers = driver.redact_record(_record())["request"]["headers"]
-  assert headers["Authorization"] == driver.REDACTED
-  assert headers["X-Api-Key"] == driver.REDACTED
+  assert headers["Authorization"] == REDACTED
+  assert headers["X-Api-Key"] == REDACTED
 
 
 def test_redacts_response_operator_identity(driver: ModuleType) -> None:
   """The half the first version of the redactor missed."""
   headers = driver.redact_record(_record())["response"]["headers"]
-  assert headers["Anthropic-Organization-Id"] == driver.REDACTED
-  assert headers["anthropic-workspace-id"] == driver.REDACTED
-  assert (
-      headers["Anthropic-Ratelimit-Unified-Representative-Claim"]
-      == driver.REDACTED
-  )
+  assert headers["Anthropic-Organization-Id"] == REDACTED
+  assert headers["anthropic-workspace-id"] == REDACTED
+  assert headers["Anthropic-Ratelimit-Unified-Representative-Claim"] == REDACTED
 
 
 def test_redacts_account_id_in_request_body(driver: ModuleType) -> None:
   body = driver.redact_record(_record())["request"]["body"]
-  assert body["metadata"]["user_id"] == driver.REDACTED
+  assert body["metadata"]["user_id"] == REDACTED
 
 
 def test_keeps_everything_that_is_not_a_secret(driver: ModuleType) -> None:
@@ -119,36 +121,26 @@ def test_redact_proxy_log_rewrites_the_file(
   assert len(lines) == 2
   for line in lines:
     record = json.loads(line)
-    assert record["request"]["headers"]["Authorization"] == driver.REDACTED
+    assert record["request"]["headers"]["Authorization"] == REDACTED
     assert (
-        record["response"]["headers"]["Anthropic-Organization-Id"]
-        == driver.REDACTED
+        record["response"]["headers"]["Anthropic-Organization-Id"] == REDACTED
     )
 
 
 def test_committed_captures_carry_no_secret() -> None:
-  """Check the artifacts in the repo, not just the function that cleans them."""
+  """Check the artifacts in the repo, not just the function that cleans them.
+
+  Through the shared checker rather than a local copy of the rules. A previous
+  version of this test enumerated the sensitive names and compared against the
+  literal ``"<redacted>"``, which made it the fifth place one fact was written
+  down — and the one most likely to go stale, since it guards committed files
+  that nobody re-reads.
+  """
   runs = _DRIVER.parent / "runs"
-  sensitive = {
-      "authorization",
-      "x-api-key",
-      "cookie",
-      "proxy-authorization",
-      "anthropic-organization-id",
-      "anthropic-workspace-id",
-      "anthropic-ratelimit-unified-representative-claim",
-  }
   offenders: list[str] = []
   for path in sorted(runs.rglob("proxy.jsonl")):
-    for number, line in enumerate(path.read_text().splitlines(), start=1):
-      if not line.strip():
-        continue
-      record = json.loads(line)
-      for side in ("request", "response"):
-        for name, value in record.get(side, {}).get("headers", {}).items():
-          if name.lower() in sensitive and value != "<redacted>":
-            offenders.append(f"{path.name}:{number} {side}.{name}")
-      metadata = record.get("request", {}).get("body", {}).get("metadata", {})
-      if metadata.get("user_id", "<redacted>") != "<redacted>":
-        offenders.append(f"{path.name}:{number} request.metadata.user_id")
+    offenders += [
+        f"{path.parent.name}/{path.name} {finding}"
+        for finding in unredacted_fields(path.read_text())
+    ]
   assert not offenders, offenders

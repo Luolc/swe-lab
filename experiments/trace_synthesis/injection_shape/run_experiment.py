@@ -205,52 +205,25 @@ WORKSPACE_FILES = {
 }
 
 
-# Headers to strip from a captured proxy log. The proxy records every header
-# verbatim on **both** sides, so a raw proxy.jsonl carries the run's OAuth
-# bearer token on the way out and the operator's organization / workspace ids
-# on the way back. Both are redacted the moment a run ends, before anything can
-# commit them.
+# Which fields are sensitive, and what replaces them, is **owned by `src`** —
+# `swe_lab.harnesses.claude_code.redaction`. This file used to carry its own
+# copy, and the two drifted twice: in membership (this one knew the
+# representative claim and `metadata.user_id` before `src` did) and in
+# representation (this one wrote `<redacted>`, `src` wrote `[REDACTED]`, so
+# `src`'s scanner called every capture committed from here dirty). The
+# dependency points this way and never the other, because `experiments/` is
+# exempt from the quality hooks and cannot be the place a security-relevant
+# fact is maintained.
 #
-# Compared by lowercased name, because the two sides do not agree on casing.
-SECRET_HEADERS = frozenset({
-    # request — credentials
-    "authorization",
-    "x-api-key",
-    "cookie",
-    "proxy-authorization",
-    # response — operator identity
-    "anthropic-organization-id",
-    "anthropic-workspace-id",
-    "anthropic-ratelimit-unified-representative-claim",
-})
-
-REDACTED = "<redacted>"
-
-
-def redact_record(record: dict) -> dict:
-  """Strip credentials and operator identity from one proxy record, in place.
-
-  Args:
-    record: One decoded proxy log record (``request`` / ``response``).
-
-  Returns:
-    The same record, redacted.
-  """
-  for side in ("request", "response"):
-    headers = record.get(side, {}).get("headers")
-    if not isinstance(headers, dict):
-      continue
-    for key in list(headers):
-      if key.lower() in SECRET_HEADERS:
-        headers[key] = REDACTED
-  metadata = record.get("request", {}).get("body", {}).get("metadata")
-  if isinstance(metadata, dict) and "user_id" in metadata:
-    metadata["user_id"] = REDACTED
-  return record
+# Captures committed before 2026-09-01 hold the old `<redacted>`; readers
+# accept it through `LEGACY_REDACTED`, and nothing writes it any more.
+from swe_lab.harnesses.claude_code.redaction import (  # noqa: E402
+    redact_record,
+)
 
 
 def redact_proxy_log(path: Path) -> None:
-  """Redact a captured proxy log in place (see :data:`SECRET_HEADERS`)."""
+  """Redact a captured proxy log in place (see `src`'s redaction module)."""
   if not path.exists():
     return
   lines = [
