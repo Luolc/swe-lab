@@ -22,6 +22,7 @@ direnv allow                         # auto-activate venv on cd (or: source .ven
 uv run pre-commit install            # install the hooks (once)
 
 uv run pytest                        # run the test suite
+git add -A                           # --all-files means all TRACKED files
 uv run pre-commit run --all-files    # the full hook set — see Formatting & lint
 
 # The engine CLI — one entry point, per-subcommand modules (cli/<name>.py).
@@ -113,6 +114,13 @@ A PyPI version is **immutable** — never reuse a number; a bad publish needs a 
 patch version.
 
 ## Formatting & lint (enforced by pre-commit)
+
+**Stage before you run the hooks.** `--all-files` means all files *git tracks*;
+an untracked one is skipped in silence, so a brand-new module and its tests can
+pass the gate without being looked at — and new files are the category that most
+needs looking at. Measured 2026-09-02: a new module and test file passed
+`--all-files` cleanly, and the commit hooks failed on those same two files
+immediately afterwards. `git add` first, even when you are not ready to commit.
 
 The full hook set. `.pre-commit-config.yaml` is the source of truth; this is
 the one prose copy of it (`AGENTS.md` links here rather than restating it):
