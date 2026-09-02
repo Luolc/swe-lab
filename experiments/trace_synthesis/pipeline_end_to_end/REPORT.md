@@ -1,14 +1,12 @@
 # First e2e supervised rollout — report
 
-**Status: skeleton. Written 2026-09-02, before the run's data existed, and
-deliberately empty of findings.**
+**Status: skeleton. Every slot is `___`; it carries no findings.**
 
-Every slot below is `___` until something fills it from this run's own
-record. The reason the shape comes first is the one this experiment is
-otherwise about: **the person inventing a reading at the moment the data
-lands is the person who wants it to say something.** So the readings are
-fixed here, in advance, and the fill-in step is only allowed to answer
-questions this file already asks.
+It is a **specification of what the report must contain** — which slots exist,
+what each one has to say, and which of them may not be merged into another —
+and it is reviewed as that, on its own. The values land in a second PR and are
+reviewed against this one, so a filled slot that answers a question this file
+never asked shows up as a diff against it.
 
 **The criteria are not here.** They are frozen in
 [`PREREGISTRATION.md`](PREREGISTRATION.md) and are linked, never copied — a
@@ -25,17 +23,14 @@ Three slots each, and none of them may be merged:
 
 - **Evidence from this run** — the artifact and the field, with the value.
   Not "the record shows it"; the file, the key, the number.
-- **Verdict** — `closed` / `not closed` / `left open`. `left open` is a real
-  verdict, not a soft `not closed`: §4 fixes that a run which produced zero
-  corrections leaves **point 3 open** rather than closing it negative, since
-  a silent real run says nothing either way.
+- **Verdict** — one of `closed` / `not closed` / `left open`. Three distinct
+  values, and `left open` is not a soft `not closed`; which one a given
+  record earns is fixed by §4, not here.
 - **Assertion relied on** — `A` (the actor's own native session transcript),
-  `B` (`proxy_log.jsonl`'s wire capture), or `none`. §4 and
-  [§5](PREREGISTRATION.md#5-evidence-for-points-1-3-and-4--two-assertions-not-one-on-two-different-bases)
-  fix that points **1, 3 and 4** require A or B unconditionally, that point 4
-  rests on B alone and is therefore **weaker** than point 3, and that if the
-  native transcript is unavailable for this run, all three are **not closed**
-  regardless of what `proxy_log.jsonl` alone shows.
+  `B` (`proxy_log.jsonl`'s wire capture), or `none`. Which points require an
+  assertion, and how the two rank, is fixed by §4 and
+  [§5](PREREGISTRATION.md#5-evidence-for-points-1-3-and-4--two-assertions-not-one-on-two-different-bases),
+  not here.
 
 | # | Claim | Evidence from this run | Verdict | Assertion |
 |---|---|---|---|---|
@@ -184,8 +179,8 @@ point: a report that can only record what its criteria anticipated cannot
 learn anything a script could not have told us, and a report with nowhere to
 put a surprise does one of two things with it — drops it, or bends a closure
 criterion to make room. The second is what a pre-registration exists to
-prevent, so a standing slot for the unanticipated is part of the
-pre-registered shape rather than a door opened once something turned up.
+prevent, so the slot stands on every run — not a door opened once something
+turned up. `PREREGISTRATION.md` does not ask for it; this file does.
 
 Nothing here is frozen by `PREREGISTRATION.md` and nothing here may close,
 weaken or strengthen one of the seven points: evidence for a point goes in
