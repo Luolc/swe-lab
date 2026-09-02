@@ -130,12 +130,13 @@ SUPERVISOR_BUDGET = 3
 # The control arm's budget. Zero rather than a silent policy, because
 # `SpeakWhenOffTrack` gates *speech* on the budget and never gates judgement:
 # it consults the judge on every boundary and records what it would have said
-# before the budget is looked at. So the arms pay the same judge calls, wait
-# the same waits and cost the same on the judging side, and differ only in
-# whether anything was delivered. A policy that returns early instead — one
-# that never consults a judge at all — would move latency and cost between the
-# arms and make a later paired comparison attribute that difference to the
-# corrections.
+# before the budget is looked at. So the arms are matched on the *judging*
+# side — same calls, same waits, same cost per boundary — and differ on the
+# writing side, where a call is what a delivered correction is: the treatment
+# pays for the ones it makes and the control for none. That difference is the
+# treatment itself. A policy that returned early instead, consulting no judge
+# at all, would move the per-boundary calls too, and a paired comparison would
+# credit that to the corrections.
 CONTROL_BUDGET = 0
 
 
