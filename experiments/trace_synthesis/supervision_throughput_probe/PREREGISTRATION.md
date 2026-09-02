@@ -55,10 +55,14 @@ rollout and will not get another under this probe, so it contributes a *point*
 where the two probe instances contribute *intervals*. Every within-instance
 statement below therefore rests on two instances, not three, and run 1's point
 enters the between-instance comparison as though it had no scatter — which it
-certainly has, and which nothing here measures. The consequence runs one
-direction and is stated in §5 where it bites: the observed scatter is an
-**under**estimate, so the between-instance verdict is correspondingly
-**over**confident, most of all about run 1's instance. The cheapest single
+certainly has, and which nothing here measures. **The consequence does not run
+one direction, and §5 works it out with a counterexample**: the missing
+replication makes `W` an underestimate, which loosens one of V2's two
+conditions — but run 1 also enters `B` as an unreplicated point, where its
+effect has no fixed sign, and a valid data shape exists in which the missing
+replication *suppresses* a separation rather than creating one. So the direction
+is claimed for `W` alone and the combined verdict is left undirected. The
+cheapest single
 improvement available to a follow-up is a second rollout of run 1's instance;
 this probe does not buy it, because that would make three instances and §1
 freezes two.
@@ -264,29 +268,68 @@ would change the comparison without changing this table. Checked at the time of
 writing —
 
 ```sh
-git log --oneline 3e97442..origin/main -- \
-  src/swe_lab/workflow/definitions.py \
-  src/swe_lab/trace_synthesis/channel.py \
-  src/swe_lab/harnesses/claude_code/constants.py
+git log --oneline 3e97442..origin/main -- src/swe_lab/
 ```
 
-— which is empty at `origin/main` = `62f6bb5`: no commit has touched those three
-files since run 1. **Re-run that command at launch** with the then-current
-`origin/main`, and if it is non-empty, say which constant moved and whether it
-is one of the thirteen above. Two cases, and they are not the same size:
+**It is not empty**, and the correction is worth more than the clean claim it
+replaces. The narrow three-file version of this command was empty, and an
+earlier draft of this paragraph said so about the package as a whole — an
+inference from the narrow check, written as a reading of the broad one. Widened,
+the gate catches one commit at `origin/main` = `62f6bb5`:
 
-- **A moved non-supervision constant** (grading retries, a timeout the run does
-  not reach) does not void the probe. It becomes a stated difference in the
-  report, and the launch proceeds.
-- **A moved supervision constant** — model, policy, budget, cooldown, window,
-  poll interval — breaks the premise the whole probe rests on: §5 would then be
-  comparing two configurations, not two instances, and no verdict it produces
-  answers the transferability question. **Do not launch. Put it to the user**,
-  with what moved, and let them decide whether to spend the four rollouts
-  anyway, revert to run 1's configuration, or re-register the probe. Spending
-  the budget on a question that can no longer be answered is a decision about
-  their quota and their instance ceiling; whoever happens to be running the
-  command does not own it, and neither does any orchestrating agent.
+```
+f1257c9 docs(trace-synthesis): finish the lapse rename where it was left behind (#358)
+```
+
+**Re-run that command at launch** against the then-current `origin/main`.
+
+**The gate is a criterion, not a list of files, and the burden of proof is on
+proceeding.** Three rounds of review found three different holes in a
+file-by-file version of this check — an unwatched path (`binary.py`, which
+holds the actor-version pin this document cites), an auto-proceed branch that
+waved through the actor's own model, and the capture, channel and timeout
+settings that shape event production. A category that has produced three
+instances will produce a fourth, so the enumeration is replaced by a default:
+
+> **Any commit in `src/swe_lab/` since run 1 stops the launch and goes to the
+> user — unless it is shown that the change cannot affect anything R1–R12
+> reads.** The demonstration is written down, names the commits, and is the
+> launcher's to produce; absence of a demonstration is a stop, not a proceed.
+
+**Two categories qualify, and each names the demonstration that admits it** —
+naming them is what keeps the criterion usable rather than a blanket halt:
+
+1. **No executable change.** The commit's diff under `src/swe_lab/` touches
+   only comment and docstring lines. Mechanically checkable, and the check is
+   the demonstration.
+2. **Grading-side only.** The change is confined to the `unit_test` entry — its
+   retries, timeout, or own record — which the rollout entry has finished
+   producing before grading begins, so R1–R12 cannot read it.
+
+Everything else stops: the actor's model, pin, harness, invocation script,
+capture mode or correction channel; the supervisor's model, policy, budget,
+cooldown, window or poll interval; the agent timeout; the row-stamping in
+`supervisor.py`; anything that changes what is recorded, when, or whether. **A
+change of unclear category is a stop** — that is the point of putting the burden
+on proceeding.
+
+**The gate's first firing, worked here rather than left as a rule nobody has
+run.** `f1257c9` is admitted under category 1, and the demonstration is the
+diff, not a description of it: it changes 6 lines across
+`trace_synthesis/criterion.py` and `trace_synthesis/judge.py`, and every one is
+inside a docstring — `git show f1257c9 -U0 -- src/swe_lab/` prints them, and
+none is a statement. Two of the three files the old narrow check watched are
+untouched by it. **A launch today would proceed on that demonstration**; a
+launch tomorrow re-runs the command, because this sentence does not update
+itself when `main` moves.
+
+**Why a stop is the user's call and not the launcher's.** If a load-bearing
+constant moved, §5 compares two configurations rather than two instances and no
+verdict it produces answers the transferability question. Spending four rollouts
+on a question that can no longer be answered is a decision about the user's
+quota and their instance ceiling. Put it to them, with what moved: they may
+choose to spend it anyway, to revert to run 1's configuration, or to
+re-register. No orchestrating agent owns that decision either (§8).
 
 The actor version is also read from the container's own `--version` at report
 time (`claude.info`), the way run 1 read it — not assumed from the pin.
@@ -311,7 +354,7 @@ them, since the gap between them is what V2 reads.
 | R7 | native-transcript verbatim check | each R6 text located in `claude_code.native_transcript.tar.gz` → `projects/-app/*.jsonl`, by line number and `type`; this is run 1's Assertion A, and the count of texts found is reported against the count delivered |
 | R8 | terminal state without intervention | `run.json` → `extra["rollout_outcome"]`; `complete.json` → `outcome`; `metrics["claude_code.exit_code"]`, `metrics["claude_code.timed_out"]`, `metrics["agent_complete"]`; whether `metrics` carries a `supervision.unhealthy` key at all; and a yes/no on whether a human touched the run after the command was issued |
 | R9 | actor event volume | `claude_code.event_stream.jsonl` → line count, count carrying a `timestamp`, and the last stamped `timestamp` |
-| R10 | `tail_s`, `tail_fraction` | derived: `tail_s` = last `supervisor.jsonl` row's `at` − R9's last stamped actor timestamp (an **upper bound**, for the reason run 1 gives); `tail_fraction = tail_s / span_s` |
+| R10 | `tail_s`, `tail_fraction` | derived: `tail_s` = last `supervisor.jsonl` row's `at` − R9's last stamped actor timestamp (an **upper bound**, for the reason run 1 gives); `tail_fraction = tail_s / span_s`. **Descriptive only** — it enters no verdict and licenses no inference about backlog, waiting or latency (§5) |
 | R11 | rollout wall clock | `run.json` → `metrics["claude_code.wall_seconds"]` |
 | R12 | actor cost | `claude_code.event_stream.jsonl` → terminal `result` event's `total_cost_usd`, `num_turns`, `duration_ms`, `usage` |
 | R13 | grading, reported not claimed | `unit_test/a*/run.json` → `metrics["unit_test.required" / "passed" / "missing" / "resolved"]`, and how many attempts ran |
@@ -357,17 +400,76 @@ readout** — the same gap run 1 reported
 [`witness.py`](../pipeline_end_to_end/witness.py) computes most of the above but
 assumes artifacts a differently-shaped run may not have — a terminal `result`
 event, at least one lapse row, a third grading attempt, a native-transcript
-archive. A probe-specific witness will be written from it. **Making the script
-tolerate a missing artifact is operational and permitted at any time; adding a
-row to the table above is not.** A run that lacks the artifact behind a readout
-reports that readout as *absent*, with the absence named.
+archive. A probe-specific witness will be written from it.
+
+**What the script may and may not be changed to do**, because "tolerate a
+missing artifact" was too wide a permission: it may be edited to *read* an
+artifact that is shaped differently or to print `absent` where one is missing,
+at any time. It may **not** decide anything §5 decides — which invocations
+contribute an `m`, which reason code an excluded one gets, or which verdict
+branch is taken. Those are fixed in §5.0 and the script implements them as
+written; a script edit that changes an inclusion is an amendment to the
+protocol, not a fix to the reader. Adding a row to the table above remains
+forbidden either way.
 
 ## 5. The verdict rule — written before the numbers exist
 
-The measured quantity, per rollout, is R3: `span_s / boundaries`, dividing by
-the row count and **not** by `boundaries − 1`. Every value below is built that
-way, including run 1's `m_1 = 6.58`, because the number under test is run 1's
-and a differently-constructed mean would not be a test of it.
+### 5.0 What `m` is, and which invocations contribute one
+
+**The quantity.** `m = span_s / boundaries` — the last supervisor row's `at`
+minus the first, divided by the **row count**, not by `boundaries − 1`. Every
+value below is built that way, including run 1's `m_1 = 6.58`, because the
+number under test is run 1's and a differently-constructed mean would not be a
+test of it.
+
+**What `m` is not, stated because an earlier draft of this document got it
+backwards.** `at` is stamped *after* `policy.consider` returns
+(`src/swe_lab/trace_synthesis/supervisor.py`, `_row`), so the span spans the
+**second through last** calls: for `N` synchronous calls of equal duration `d`,
+`m = d(N−1)/N < d`, and `m = 0` at `N = 1`. So `m` is **not** an upper bound on
+judge latency; under a continuous backlog it is a slight **under**estimate of
+per-call duration, and it is not an estimator of latency in either direction.
+It is a **comparison quantity**: the same arithmetic on the same artifact
+across rollouts, which is all V1 needs and all it claims.
+
+The `(N−1)/N` factor differs between rollouts of different length — 0.900 at
+`N = 10`, 0.994 at `N = 170` — so `m` carries a length-dependent bias of up to
+10% for `N ≥ 10`, and more below that. It is small against the 2× thresholds
+below and it is **not** corrected for; instead **`N` is reported beside every
+`m`**, so a reader can see when two values being compared came from very
+different lengths.
+
+**When an invocation contributes an `m`.** An *invocation* is one execution of
+the workflow on one instance under one rollout id. It contributes an `m` if and
+only if **all** of:
+
+- **a.** `supervisor.jsonl` exists and every line parses as JSON;
+- **b.** it has **at least 2 rows** (a span needs two ends);
+- **c.** its row count equals `metrics["supervision.boundaries"]`;
+- **d.** the last row's `at` is strictly later than the first's.
+
+**"Usable rollout" is shorthand, used throughout this document, for exactly
+this: an invocation that contributes an `m`.** Otherwise it contributes **no
+`m`**, and the report prints exactly one code from this closed list: `no-log`, `unparsable-log`, `fewer-than-2-rows`,
+`count-mismatch`, `zero-span`. The row count of `supervisor.jsonl` is the
+denominator, because it is the same artifact the span comes from; the metric is
+the cross-check, and a disagreement between them **disqualifies the invocation
+under (c)** rather than being settled by picking one — the two numbers
+disagreeing means the account being measured is not internally consistent, and
+choosing a side would be the discretion this rule exists to remove.
+
+**Inclusion is independent of how the rollout ended.** `rollout_outcome` plays
+no part in (a)–(d). A `TIMED_OUT`, `SUPERVISION_FAILED`, `NO_PATCH` or
+host-failed invocation contributes its `m` whenever its log meets them, however
+extreme that `m` looks. Excluding on the outcome word is precisely the knob the
+playbook warns about, and its direction flatters: the runs that would be
+dropped are the ones whose numbers are inconvenient.
+
+**Every qualifying invocation contributes — including a replaced one.** If the
+user authorizes a replacement (§1) and the failed predecessor's log meets
+(a)–(d), **both** values enter, and instance `i`'s `W_i` is `max/min` over
+**all** of that instance's contributing values, not over a chosen two. A
+replacement is not a second chance at a number.
 
 Five values are expected: `m_1` (run 1, one rollout), `m_P1a`, `m_P1b`,
 `m_P2a`, `m_P2b`. **Two verdicts, computed in this order, each pinned here
@@ -381,13 +483,39 @@ neither may be reported without the other.
 - `R ≤ 2` → **`consistent-within-2x`**
 - `R > 2` → **`not-consistent-within-2x`**
 
-No third value and no "inconclusive" branch — an escape hatch here is the whole
-of what this section exists to prevent. `R` is taken over **every** usable
-rollout, run 1's included, and deliberately **not** over per-instance
-summaries: a downstream planner faces the spread of individual runs, not the
-spread of their averages, and averaging inside an instance would hide exactly
-the run-to-run component V2 exists to measure. The report states the count it
-was computed over (`R over 5 runs`, or fewer, never `R` unqualified).
+Two values, and no "inconclusive" third — the escape hatch is the whole of what
+this section exists to prevent. What *can* happen instead of a verdict is that
+the rule's coverage condition is unmet, which is a different thing and is
+defined just below.
+
+`R` is taken over **every contributing `m`** (§5.0), run 1's included, and
+deliberately **not** over per-instance summaries: a downstream planner faces the
+spread of individual runs, not the spread of their averages, and averaging
+inside an instance would hide exactly the run-to-run component V2 exists to
+measure. The report states the count it was computed over (`R over 5 runs`, or
+fewer, never `R` unqualified).
+
+**Minimum coverage, without which V1 is not computed at all.** V1 requires
+contributing values from **at least two distinct instances, at least one of
+them a probe instance**. Otherwise the report says exactly:
+
+> `V1: rule does not apply — contributing m from <n> instance(s): <which>.`
+
+**Why this is here, and it is not a hedge.** Without it, four failed probe
+rollouts leave `R = max/min` over run 1's single value — `R = 1.0` — and V1
+emits `consistent-within-2x`: **total failure rendered as an affirmative
+result**, produced by the very rule written to stop post-hoc reinterpretation.
+The general lesson is wider than the patch: **a hard rule with no escape hatch
+can still manufacture a false positive at its boundary**, and "no inconclusive
+branch" is only safe when paired with a coverage condition.
+
+**`rule does not apply` is not `inconclusive`, and the difference is
+mechanical.** An inconclusive verdict is one the data could have avoided and is
+therefore available whatever the numbers say — which is what makes it an escape
+hatch. `rule does not apply` is reachable **only** by counting instances that
+produced a contributing `m`, is announced with that count and their names, and
+takes no argument from any observed value. The same distinction governs V2's
+uncomputable branch below.
 
 **What each verdict licenses:**
 
@@ -425,61 +553,97 @@ Two quantities, both ratios, both from the same five values:
         where c_i = the geometric mean of instance i's usable rollouts
         (for run 1, c_1 = m_1, its single value)
 
-**Verdict:**
+**Verdict — `separated` requires `B > W` *and* `B > 2`; every other case is a
+`not-separated`, split by *which* condition failed.** The split is not
+decoration: `not-separated` is the negation of a conjunction, so it is reached
+three different ways, and one licensed sentence cannot cover them.
 
-- **`separated`** if `B > W` **and** `B > 2`
-- **`not-separated`** otherwise
+| | condition | verdict |
+|---|---|---|
+| | `B > W` and `B > 2` | **`separated`** |
+| | `B ≤ W` and `B > 2` | **`not-separated (within scatter)`** |
+| | `B > W` and `B ≤ 2` | **`not-separated (below floor)`** |
+| | `B ≤ W` and `B ≤ 2` | **`not-separated (both)`** |
 
-Both conditions, joined by `and`, and each carries its own job: `B > W` asks
-whether the between-instance difference is larger than run-to-run scatter as
-this probe actually saw it, and `B > 2` is the same materiality floor V1 uses,
-so a difference that is real but too small to move a headroom figure is not
-reported as a separation. Neither condition alone is the verdict.
+Each condition has its own job: `B > W` asks whether the between-instance
+difference is larger than run-to-run scatter as this probe actually saw it, and
+`B > 2` is the same materiality floor V1 uses, so a difference that is real but
+too small to move a headroom figure is not reported as a separation.
 
-**What each verdict licenses, and what neither does:**
+**The exact sentence each branch licenses:**
 
-- `separated` licenses: *the instances differed by more than the run-to-run
-  scatter observed here, and by more than a factor of 2.* It does **not**
-  license "per-boundary cost is a property of the instance" — with two draws
-  per instance, `W` is a bound, not an estimate.
-- `not-separated` licenses: *the differences seen are not larger than this
-  probe's own run-to-run scatter.* It is **not** evidence that the instances
-  are alike; two draws cannot exclude a difference smaller than the scatter
-  they showed, and this verdict may never be cited as if they could.
-- **Neither verdict names a cause.** No claim that a repository, a language, an
-  event volume or a task shape explains a difference is licensed by this probe
-  under either branch.
+- `separated` — *the instances differed by more than the run-to-run scatter
+  observed here **and** by more than a factor of 2.* It does **not** license
+  "per-boundary cost is a property of the instance": with two draws per
+  instance, `W` is a bound, not an estimate.
+- `not-separated (within scatter)` — *the between-instance difference was
+  material (over 2×) but **did not exceed** this probe's own observed
+  run-to-run scatter.*
+- `not-separated (below floor)` — *the between-instance difference exceeded the
+  observed run-to-run scatter but was **under** the 2× materiality floor.*
+  Note what this branch is not: it is **not** a statement that the difference
+  was within scatter, and saying so would be false — row B of the table below
+  is exactly this case, with `B > W`.
+- `not-separated (both)` — *the difference was neither material nor larger than
+  the observed scatter.*
+- **None of the four is evidence that the instances are alike.** Two draws
+  cannot exclude a difference smaller than the scatter they showed, and no
+  branch may be cited as if they could.
+- **None of the four names a cause.** No claim that a repository, a language, an
+  event volume or a task shape explains a difference is licensed here.
 
 **Three properties of `W` that are pre-registered as limitations, not
-discovered as findings.** They run in known directions, which is why they can be
-written down before the data:
+discovered as findings** — and only the first two have a known direction:
 
-1. **`W` is built from two instances, not three.** Run 1 has one rollout and
+1. **`W` is built from the probe instances only.** Run 1 has one rollout and
    contributes to `B` as a point and to `W` not at all (§0).
-2. **The range of two draws understates the spread of their distribution**, and
-   understating `W` makes `separated` *easier* to reach. So `separated` is the
-   optimistic branch of this rule, and the report says so wherever it appears.
-3. **`W` can come out small by luck.** Two draws landing close is an ordinary
+2. **The range of a few draws understates the spread of their distribution**,
+   so `W` is an underestimate, which makes the `B > W` condition **easier** to
+   satisfy. That direction is stated about `W` and about nothing else.
+3. **`W` can come out small by luck.** Draws landing close is an ordinary
    outcome, not evidence of stability. This is why `B > 2` is joined to
-   `B > W` rather than replaced by it: the materiality floor is what stops a
-   lucky-small `W` from manufacturing a separation on its own.
+   `B > W` rather than replacing it: the floor is what stops a lucky-small `W`
+   from manufacturing a separation on its own.
 
-**The rule was run against the two defects it was written for, before being
-called a rule** — on invented values, since no real ones exist, and recorded
-here so a reader can see the branches are reachable rather than take it on
-trust:
+**What the missing replication of run 1 does to the *combined* verdict is
+unknown, and the earlier claim that it ran one way was wrong.** Point 1 makes
+`W` optimistic, but run 1 also enters `B` as an unreplicated point, and there
+its effect has no fixed sign — a counterexample: probe centres 3.5 and 4.0 with
+`W = 1` give `B = 1.88` against run 1's 6.58 and a `not-separated`; had run 1
+drawn a second value of 8.0, `c_1 = 7.26`, `W = 1.216`, `B = 2.073` and the
+verdict is `separated`. There the missing replication **suppressed** a
+separation rather than manufacturing one. So: the direction is stated for `W`
+alone, and the combined V2 classification is left with **unknown direction**.
 
-| scenario (invented `m` values) | V1 | `W` | `B` | V2 |
-|---|---|---|---|---|
-| O `6.58`; P1 `3.0, 12.0`; P2 `4.0, 11.0` — spread is run-to-run | `not-consistent-within-2x` | 4.00 | 1.11 | `not-separated` |
-| O `6.58`; P1 `6.50, 6.55`; P2 `8.0, 8.1` — lucky-tight `W` | `consistent-within-2x` | 1.01 | 1.23 | `not-separated` |
-| O `6.58`; P1 `6.2, 7.0`; P2 `20.0, 21.0` — instance really differs | `not-consistent-within-2x` | 1.13 | 3.11 | `separated` |
+**The rule was run against the defects it was written for before being called a
+rule** — on invented values, since no real ones exist, and **checked against the
+sentence each branch licenses, not only against the branch label.** That last
+part is the method, and it is registered as a standing obligation: *a verdict's
+invented-value check reads the licensed prose aloud against the numbers.* An
+earlier draft of this section passed the label check and shipped a licensed
+sentence that row B falsifies — the labels were right and the English was
+wrong, which no comparison of labels can catch.
 
-Row 1 is the defect `B > W` exists for: a large `R` that is entirely
-run-to-run must not read as a difference between instances. Row 2 is the defect
-the `B > 2` floor exists for: `B > W` alone would have fired there on a
-1.23× difference, because `W` happened to come out tiny. Both branches stay
-shut, and row 3 shows the rule is still able to fire.
+| # | invented `m` values | V1 | `W` | `B` | V2 |
+|---|---|---|---|---|---|
+| A | O `6.58`; P1 `3.0, 12.0`; P2 `4.0, 11.0` | `not-consistent-within-2x` | 4.0000 | 1.1055 | `not-separated (both)` |
+| B | O `6.58`; P1 `6.50, 6.55`; P2 `8.0, 8.1` | `consistent-within-2x` | 1.0125 | 1.2337 | `not-separated (below floor)` |
+| C | O `6.58`; P1 `6.2, 7.0`; P2 `20.0, 21.0` | `not-consistent-within-2x` | 1.1290 | 3.1146 | `separated` |
+| D | O `6.58`; P1 `1.0, 9.0`; P2 `20.0, 25.0` | `not-consistent-within-2x` | 9.0000 | 7.4536 | `not-separated (within scatter)` |
+
+- **A** is the defect `B > W` exists for: an `R` of 4 that is entirely
+  run-to-run must not read as a difference between instances. Licensed prose
+  reads true — neither material nor larger than the observed scatter.
+- **B** is the defect the `B > 2` floor exists for: `B > W` alone would have
+  fired on a 1.23× difference because `W` came out tiny. **This row is also why
+  the licensing was split.** Here `B > W`, so the old single sentence — "the
+  differences seen are not larger than this probe's own run-to-run scatter" —
+  would have been **false** while the label was right. The `below floor`
+  sentence reads true.
+- **C** shows the rule can still fire, and its prose reads true on both clauses.
+- **D** exercises the fourth branch, which nothing else reaches: a material
+  `B` of 7.45 that is nonetheless inside a `W` of 9. `within scatter` reads
+  true; `below floor` would have been false.
 
 ### What the reduced design does to V1 and V2
 
@@ -518,31 +682,42 @@ easier to reach** — it is the optimistic branch under degradation, the way
 `consistent-within-2x` reported over fewer than five rollouts says so in the
 same sentence as the verdict.
 
-**The quantity check, and it qualifies the verdict rather than replacing it.**
-`span_s / boundaries` is not the judge's latency; it is the *interval between
-consecutive supervisor rows*, which equals judge latency only while the
-supervisor has a backlog. On a run where the actor is slower than the
-supervisor, the same arithmetic measures how fast the actor emitted events —
-a different quantity in identical units. R10 is the discriminator, and it is
-one-directional:
+### There is no saturation discriminator, and R10 carries no inference
 
-- `tail_fraction < 0.10` **establishes** that the supervisor overlapped the
-  actor for more than 90% of its span, so that run's `m` is an **upper bound on
-  judge latency, diluted by waiting** — not a measurement of it. The report
-  must say so for that run.
-- `tail_fraction ≥ 0.10` **establishes nothing**, because `tail_s` is an upper
-  bound; it is compatible with a saturated supervisor and with an idle one, and
-  may not be cited as evidence that the supervisor was the bottleneck.
+An earlier draft of this document registered a "quantity check": that
+`tail_fraction < 0.10` established the supervisor had kept pace, making that
+run's `m` a waiting-diluted upper bound on judge latency. **That branch is
+removed, not softened.** Both of its steps are false, and each was shown false
+by a counterexample rather than argued down:
 
-Run 1 does not fire the first branch (`tail_fraction ≤ 85.4%`, itself an upper
-bound). A run that does fires it **without changing `R`, `W` or `B`**: its `m`
-enters every one of them, with no discretion available. If a spread is driven
-by a run that fired it, the report's reading is *these did not agree and at
-least one of the means is a different quantity* — which is a stronger answer to
-the open question than a bare disagreement, not a weaker one. It also bounds
-V2: a `W` computed across two runs of which one fired this branch is a spread
-between two different quantities, and `separated` may not be reported without
-saying so.
+- **Small tail does not establish no backlog.** A supervisor continuously
+  backlogged from 0 s to 100 s, with the actor's last stamped event at 95 s,
+  registers `tail_s = 5`, `tail_fraction = 0.05` — the branch fires while
+  waiting is exactly zero.
+- **`m` is not an upper bound on judge latency in the first place.** §5.0: `at`
+  is stamped after `policy.consider`, so `m = d(N−1)/N < d` for `N`
+  synchronous calls of duration `d`. Under the very backlog the branch claimed
+  to detect the absence of, `m` runs *below* per-call duration, not above it.
+
+**Nothing replaces it.** This probe instruments no per-call duration and no
+wait, so it has no discriminator between "the supervisor was the bottleneck"
+and "the actor was", and it does not claim one. Adding such an instrument is a
+code change with its own rule to register before running, not something this
+document can assert its way to.
+
+**R10 (`tail_s`, `tail_fraction`) stays a raw readout and gains no role.** It is
+reported per rollout because run 1 reported it and the series should stay
+comparable; it enters no verdict, qualifies no verdict, and licenses no
+sentence about backlog, waiting, dilution or latency. Recording the removed
+branch here rather than deleting it silently is deliberate: the next reader to
+notice that `tail_fraction` looks like a saturation signal should find the two
+counterexamples before rebuilding it.
+
+**Why the wording was not merely weakened.** Replacing "establishes" with
+something softer would have kept an absent discriminator in the design while
+making its absence harder to see — and if the chain had been sound, softening
+would have thrown away a true conclusion. Either way softening is the wrong
+move; the chain broke at its first step, so the branch goes.
 
 **Secondary readouts that may never flip either verdict:** R4's median and
 percentiles, R5, R6, R9, R11, R12. They are reported on every run. The median
@@ -557,15 +732,37 @@ event volume" claim. This is pre-registered precisely because such a story will
 be available and tempting once five points exist — more available at five than
 it was at three.
 
-**The robustness verdict, per run, three values:**
+**The robustness verdict — an ordered mapping to exactly one word.** The three
+earlier words overlapped: a no-human `TIMED_OUT` satisfied both
+`unattended-terminal` and `did-not-terminate`, leaving the author free to pick
+the flattering one after the fact. The words below are decided by taking the
+**first** matching row, which makes them mutually exclusive, and the last row is
+the complement of the others, which makes them exhaustive.
 
-- **`unattended-terminal`** — the rollout entry reached a terminal state with no
-  human action after the command was issued (R8).
-- **`attended`** — it reached a terminal state, but a human intervened; the
-  report states what the intervention was.
-- **`did-not-terminate`** — the wall clock or the harness ended it.
+| order | condition | word |
+|---|---|---|
+| 1 | a human intervened (defined below) | **`attended`** |
+| 2 | no intervention, and `run.json` records a `rollout_outcome` | **`unattended-terminal`** |
+| 3 | otherwise (no intervention, no recorded outcome) | **`no-terminal-record`** |
 
-This is a per-run reading, reported as two words, never aggregated into a rate.
+Row 2 covers **every** member of `RolloutOutcome`, `TIMED_OUT`,
+`SUPERVISION_FAILED`, `OOM_KILLED`, `SYSTEM_FAILED`, `NO_PATCH` and
+`PATCH_PRODUCED` alike: the word answers *did the pipeline reach an end and
+classify it without us*, which a recorded timeout does. **The outcome word
+itself is always reported beside it** — `unattended-terminal (timed_out)` — so
+nothing the old `did-not-terminate` conveyed is lost, and the overlap that let
+it be chosen is gone. Row 3 is the case with no classification at all: the
+harness died, the host died, or `run.json` was never written.
+
+**Human intervention, defined so row 1 is decidable.** Any action after the
+launch command is issued and before the workflow process exits that touches the
+run, its container, its output directory, the host's Docker state, or the
+checkout it runs from — killing, restarting, freeing memory, pulling an image,
+editing a file, `docker rm`. **Read-only observation is not intervention**:
+reading logs, `docker ps`, `gh` queries, watching the pane. If an intervention
+occurred, the report states what it was and when.
+
+This is a per-rollout reading, never aggregated into a rate.
 **Grading is scored separately from the rollout.** A grading failure or timeout
 — foreseeable for P2, whose screening record lists 979 `pass_to_pass` tests
 against `_UNIT_TEST_TIMEOUT_S = 1800.0` — does not touch the rollout's
@@ -576,9 +773,11 @@ claim.
 ## 6. Failure handling, decided before it happens
 
 **A failed rollout is a result by default.** The robustness question's answer
-for an instance is allowed to be "no", and `did-not-terminate` is that answer,
-not a broken run to be discarded. Anything else lets the excluded set grow in
-the direction that flatters the result.
+for an instance is allowed to be "no" — `no-terminal-record`, or an
+`unattended-terminal` carrying a failure outcome word (§5) — and that is the
+answer, not a broken run to be discarded. Its `m` still enters V1 and V2
+whenever §5.0's (a)–(d) hold, whatever the outcome word says. Anything else
+lets the excluded set grow in the direction that flatters the result.
 
 **The closed list of causes for which a replacement may be *requested*.** Per
 §1, the planned 2 rollouts per instance already sit on the ask-first ceiling, so
@@ -645,9 +844,14 @@ copy it.
 - **Not an attribution of any disagreement.** §0 and V2's licensed sentences:
   the second rollout per instance bounds run-to-run scatter crudely, it does
   not explain a difference. Neither V2 branch names a cause.
-- **Not a measurement of judge latency.** Nothing instruments a per-call
-  duration; §5's quantity check is what stands in for one, in one direction
-  only.
+- **Not a measurement of judge latency, and nothing stands in for one.** No
+  per-call duration and no wait is instrumented. `m` is a comparison quantity
+  and is not an estimator of latency in either direction (§5.0); the
+  `tail_fraction` branch that once claimed to bound it is removed, with the two
+  counterexamples that killed it recorded in §5.
+- **Not a claim about whether the supervisor or the actor was the bottleneck.**
+  This probe has no discriminator for that and does not acquire one by having
+  more rollouts.
 - **Not a re-closing of the seven acceptance points.** Those closed on run 1
   ([`REPORT.md` §1](../pipeline_end_to_end/REPORT.md#1-the-seven-points)). R7
   re-checks Assertion A because the throughput reading needs the deliveries to
@@ -663,9 +867,16 @@ sitting on it (§1), the selection rule and the two instance ids (§2) together
 with the data copy its verification read (§2a), the fixed configuration and the
 drift check (§3), the readout list (§4) and the state every count is reported
 with (§4a), **both verdicts V1 and V2 — their thresholds, the definitions of
-`R`, `W` and `B`, the sentences each branch licenses, the quantity check that
-qualifies them, and what a reduced design does to each** (§5), the failure
-handling and its closed cause list (§6), the exclusions (§7).
+`R`, `W` and `B`, the four V2 branches and the exact sentence each licenses,
+the contribution rule and reason codes of §5.0, the minimum-coverage conditions,
+and what a reduced design does to each** (§5), the failure handling and its
+closed cause list (§6), the exclusions (§7).
+
+**Also frozen: the two obligations this document owes its own report.** Every
+invented-value check of a verdict reads the **licensed prose** against the
+numbers, not only the branch label — the defect that shipped once here was a
+correct label under a false sentence. And every count is reported with the state
+that produced it (§4a).
 
 **Not this document's to change at all** — frozen is the wrong word, because
 freezing implies it was ours to set: anything across `AGENTS.md`'s ask-first
