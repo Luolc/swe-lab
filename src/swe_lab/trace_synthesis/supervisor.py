@@ -10,9 +10,13 @@ Three properties are structural rather than advisory, and each has a test:
 - **The information barrier is this module's constructor.** :class:`Observation`
   has no field that can carry the gold patch, the reference or test patch, or
   the hidden tests, and its evidence is built only from records the actor
-  produced. The barrier is *not* information-theoretic: the guidebook is
-  distilled from privileged material in phase B, and the supervisor does see the
-  guidebook. What it never sees is the solution itself.
+  produced. There is no field for a phase-B guidebook either, and that absence
+  is deliberate: the Oracle writes a guidebook with the reference patch, the
+  grading procedure and the unpurged history in hand, so a supervisor reading
+  one would be steering by the answer without ever quoting it. The judge
+  measures against a criterion that is identical for every instance, which is
+  what makes this half of the barrier information-theoretic rather than a
+  promise about anyone's care.
 - **When to speak is a seam.** It is the open variable of the design, so a
     :class:`SpeakPolicy` is replaceable without touching the consumer, the
     intervention, or the log.
@@ -93,7 +97,12 @@ class Observation:
   """Everything a policy is allowed to see.
 
   The field list *is* the information barrier: there is no field for the gold
-  patch, the reference or test patch, or the hidden tests, and
+  patch, the reference or test patch, the hidden tests, or a **phase-B
+  guidebook** — the Oracle writes that one with the reference patch, the exact
+  grading procedure and the repository's unpurged history in hand
+  (:mod:`swe_lab.trace_synthesis.oracle`), so handing it to a judge would walk
+  the answer through a second door. What the judge measures against is the
+  pinned criterion it is built with, not anything travelling this channel. And
   ``test_supervisor_input_carries_no_privileged_field`` asserts the list against
   an exact allowlist so that adding one fails.
 
@@ -106,7 +115,6 @@ class Observation:
       the results of its own tool calls.
     cursor: How many stream events have been consumed, including those that
       carried no message. Identifies where a decision was taken.
-    guidebook: Phase B's artifact, the criterion to judge against.
     said: What this supervisor has already said in this run — its **memory**,
       a separate channel from its evidence. Its own words never come back as
       observations, so without this a policy has nothing to check against and
@@ -116,7 +124,6 @@ class Observation:
   task: str
   evidence: tuple[Message, ...]
   cursor: int
-  guidebook: str
   said: tuple[Intervention, ...]
 
 
@@ -228,7 +235,7 @@ class Writer(Protocol):
 class WouldHaveSpoken:
   """A deviation the judge found, recorded whether or not speech followed.
 
-  This is what the control arm produces. ``GuidebookPolicy(budget=0)`` judges
+  This is what the control arm produces. ``SpeakWhenOffTrack(budget=0)`` judges
   every boundary and speaks at none, so its markers are the points at which the
   treatment arm would have intervened — which is what lets the two arms be
   compared at matched deviation points rather than only at their endpoints.
@@ -282,7 +289,7 @@ class SpeakAt:
 
 
 @dataclasses.dataclass
-class GuidebookPolicy:
+class SpeakWhenOffTrack:
   """Judges every boundary; speaks when off track, unrecovering and affordable.
 
   **The budget gates speech, not judgement.** ``consider`` returns ``None``
@@ -302,8 +309,13 @@ class GuidebookPolicy:
   pay the same judge calls. That is the price of a paired comparison, and
   paying it is the point.
 
+  The criterion it judges against is not a field here and not a field on
+  :class:`Observation`: it is built into the ``judge``, which is where the
+  pinned artifact and its hash check belong. A field nobody may fill is a hole
+  waiting for someone who sees the type line up and nothing stopping them.
+
   Attributes:
-    judge: The off-track / self-correcting call.
+    judge: The off-track / self-correcting call, carrying its own criterion.
     writer: The line-writing call.
     budget: How many interventions a whole run may carry. **No default**: a
       policy that may speak must state how often. Unmeasured — 3 is proposed,
@@ -330,9 +342,9 @@ class GuidebookPolicy:
     """Return the policy's name.
 
     Returns:
-      ``"guidebook"``.
+      ``"speak-when-off-track"``.
     """
-    return "guidebook"
+    return "speak-when-off-track"
 
   @property
   def markers(self) -> tuple[WouldHaveSpoken, ...]:
@@ -445,7 +457,6 @@ class Supervisor:
   Attributes:
     policy: When to speak.
     task: What the actor was asked to do; see :class:`Observation`.
-    guidebook: The criterion handed to the policy.
     sink: Where a correction is written. Borrowed: never closed here.
     log: Where the account of the run is written, one row per event consumed.
     now: Clock, injected so the log is testable.
@@ -453,7 +464,6 @@ class Supervisor:
 
   policy: SpeakPolicy
   task: str
-  guidebook: str
   sink: Sink
   log: LogWriter
   now: Callable[[], datetime.datetime] = lambda: datetime.datetime.now(
@@ -489,7 +499,6 @@ class Supervisor:
         task=self.task,
         evidence=tuple(self._evidence),
         cursor=self._cursor,
-        guidebook=self.guidebook,
         said=tuple(self._said),
     )
     try:

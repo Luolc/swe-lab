@@ -3,7 +3,7 @@
 Each test pins a sentence from §4 of the plan
 (``docs/trace-synthesis/plans/task-05-supervisor-the-component.md``). The order
 of the gates is itself an invariant: judging before budgeting is what makes
-``GuidebookPolicy(budget=0)`` a matched control rather than a cheaper run.
+``SpeakWhenOffTrack(budget=0)`` a matched control rather than a cheaper run.
 """
 
 from __future__ import annotations
@@ -14,12 +14,12 @@ import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock
 from swe_lab.trace_synthesis.supervisor import (
-    GuidebookPolicy,
     Intervention,
     InterventionTooLongError,
     MAX_INTERVENTION_CHARS,
     Observation,
     SpeakAt,
+    SpeakWhenOffTrack,
     Verdict,
 )
 
@@ -44,7 +44,6 @@ def observation(cursor: int, *, records: int = 0) -> Observation:
           for index in range(records)
       ),
       cursor=cursor,
-      guidebook="the criterion",
       said=(),
   )
 
@@ -113,7 +112,7 @@ def policy(
     budget: int = 3,
     cooldown: int = 0,
     window: int = 8,
-) -> tuple[GuidebookPolicy, CountingJudge, CountingWriter]:
+) -> tuple[SpeakWhenOffTrack, CountingJudge, CountingWriter]:
   """Build a policy over a fixed-answer judge.
 
   Args:
@@ -129,7 +128,7 @@ def policy(
   judge = CountingJudge(verdict=verdict)
   writer = CountingWriter()
   return (
-      GuidebookPolicy(
+      SpeakWhenOffTrack(
           judge=judge,
           writer=writer,
           budget=budget,
@@ -149,7 +148,7 @@ def test_a_policy_that_may_speak_must_state_a_budget() -> None:
   """
   budget = next(
       field
-      for field in dataclasses.fields(GuidebookPolicy)
+      for field in dataclasses.fields(SpeakWhenOffTrack)
       if field.name == "budget"
   )
   assert budget.default is dataclasses.MISSING
@@ -261,7 +260,7 @@ def test_an_unusable_line_is_a_gap_and_is_never_retried() -> None:
     del observation
     return "   "
 
-  speaker = GuidebookPolicy(
+  speaker = SpeakWhenOffTrack(
       judge=CountingJudge(verdict=OFF_TRACK),
       writer=empty_writer,
       budget=1,
@@ -281,7 +280,7 @@ def test_an_over_long_line_is_a_gap_and_is_never_truncated() -> None:
     del observation
     return "x" * (MAX_INTERVENTION_CHARS + 1)
 
-  speaker = GuidebookPolicy(
+  speaker = SpeakWhenOffTrack(
       judge=CountingJudge(verdict=OFF_TRACK),
       writer=long_writer,
       budget=1,
