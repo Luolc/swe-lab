@@ -22,9 +22,12 @@ from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.rollout import (
     CodingAgentTask,
     conversation_of,
+    OOM_METRIC,
     outcome_of,
     patch_of,
     PROMPT_NAME,
+    rollout_outcome,
+    RolloutOutcome,
 )
 from swe_lab.sandbox import (
     ArtifactSchema,
@@ -229,6 +232,72 @@ def test_the_agent_outcome_lands_on_the_record():
   # The retry decision is a function of this value, so it has to be auditable
   # from the manifest afterwards rather than by re-parsing every trace.
   task = CodingAgentTask(harness=ClaudeCodeHarness())
+  # Two words, because they answer different questions: `agent_outcome` is what
+  # the trace says the loop did, `rollout_outcome` is what the stage produced.
+  # Here the actor spent its own turn budget and left no patch behind.
   assert task.record_extra(_attempt(AgentOutcome.MAX_TURNS)) == {
-      "agent_outcome": "max_turns"
+      "agent_outcome": "max_turns",
+      "rollout_outcome": "no_patch",
   }
+
+
+# ─── the four endings, and which of them are ours (ADR-0015) ─────────────────
+
+
+def test_a_system_failure_is_not_graded_and_leaves_the_denominator():
+  """Our breakage must not be spent on a grading container, nor counted.
+
+  Measured 2026-09-01: an agent that died in 1.4 s still spent the full 1800 s
+  grading budget, and the result was rendered as a zero — indistinguishable
+  from a hard task.
+  """
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  # A crash is one the agent did not choose, so the ending is ours.
+  crashed = _attempt(AgentOutcome.TRUNCATED)
+  assert rollout_outcome(crashed) is RolloutOutcome.SYSTEM_FAILED
+  assert rollout_outcome(crashed).counts_in_denominator is False
+  # …and that is what stops the grading entry: a failed entry blocks the rest.
+  assert task.outputs_valid(crashed) is False
+
+
+def test_an_out_of_memory_kill_is_its_own_word():
+  """A box too small says nothing about the task, so it cannot read as one."""
+  killed = _attempt(AgentOutcome.TRUNCATED)
+  killed.run.metrics[OOM_METRIC] = 1.0
+  assert rollout_outcome(killed) is RolloutOutcome.OOM_KILLED
+  assert rollout_outcome(killed).counts_in_denominator is False
+  # Distinct from the plain crash above even though both are ours: an OOM is
+  # a capacity fact, and pooling it into `system_failed` would hide it.
+  assert rollout_outcome(killed) is not RolloutOutcome.SYSTEM_FAILED
+
+
+def test_a_clean_run_that_produced_nothing_stays_in_the_denominator():
+  """Giving up cheaply is a result, not an excuse to leave the accounting.
+
+  The mirror of the bug this whole split exists to fix: excluding it would
+  raise the measured success rate, and raise it most for the weakest actor.
+  """
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  gave_up = _attempt(AgentOutcome.FINISHED)
+  assert rollout_outcome(gave_up) is RolloutOutcome.NO_PATCH
+  assert rollout_outcome(gave_up).counts_in_denominator is True
+  # It is a real result, so it is not refused here — the empty patch it left
+  # is stopped by the edge one step later, which costs no container.
+  assert task.outputs_valid(gave_up) is True
+
+
+def test_an_unclassifiable_ending_stays_in_the_denominator():
+  """Pins the default direction, so nobody later flips it to "exclude".
+
+  An ending nobody classified can only understate a rate by staying in. The
+  opposite default lets the excluded set grow unwatched, in the direction that
+  makes results look better.
+  """
+  assert all(
+      outcome.counts_in_denominator
+      for outcome in RolloutOutcome
+      if outcome
+      not in (RolloutOutcome.OOM_KILLED, RolloutOutcome.SYSTEM_FAILED)
+  )
+  # A budget the actor spent is the actor's, per ADR-0011.
+  assert RolloutOutcome.TIMED_OUT.counts_in_denominator is True

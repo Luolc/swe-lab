@@ -133,6 +133,16 @@ yourself. Hold to these:
   thresholds fit to one datapoint.
 - **State the sample's limits.** "`n=3`, one instance per language" is enough to
   steer a prompt and too small for firm per-file claims — say so in the report.
+- **Report every rate with the count it excluded.** `resolved 12 / 40 (3 system
+  failures excluded)`, never `12/40` — an unstated exclusion set is an invisible
+  knob on the result. And **default to keeping a run in**: exclude only what is
+  positively identified as your own breakage, so an unclassified ending can only
+  *understate* the rate. The opposite default lets the excluded set grow
+  unwatched, in the direction that flatters the result
+  ([ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md)).
+- **A broken system and a hard task look identical in the data** unless you
+  spend a word separating them. Both arrive as a zero. Give the infrastructure
+  failure its own name at the point it happens, or it is counted as difficulty.
 - **Negative and null results are results.** "v2 was a net wash," "v2 aggregator
   rejected," "the 3 fails were dataset defects, not our bug" are first-class
   outcomes. Record them; they save the next round.

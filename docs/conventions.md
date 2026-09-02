@@ -527,6 +527,29 @@ retroactively (owner's calibration, 2026-09-01).
   the side is what enumerated cases are for. So specify the **failure condition**
   a check must produce ("deleting a row turns it red"), never the shape of the
   assertion — and produce each failure deliberately before relying on the check.
+- **A fact that is recorded but never consumed is decoration, not a
+  safeguard.** Three instances in one day, none of them an oversight:
+  `sandbox.oom_kills` is written on every run from the cgroup counter (with
+  `docker inspect`'s `State.OOMKilled` folded in as a floor) and **read by
+  nothing**; `patch_baseline` shipped alongside an ADR-0001 amendment that
+  described the exact failure it prevents, **default off**, so a NodeBB image
+  produced a 166 KB patch from an agent that ran nothing; and `total_cost_usd`
+  was already parsed out of every trace and **never persisted** (F5 of the
+  2026-07-29 review). In each, the knowledge was already in the system and had
+  **no consequence** — so what is missing is not the metric, it is **making the
+  metric load-bearing**. The test: **name the branch it changes.** If you
+  cannot, it is not yet load-bearing — and *"which branch does this change?"* is
+  therefore a question worth asking in review of any new metric, field, flag or
+  recorded fact, where a plausible-looking answer is what these three lacked.
+  The general shape, which the two entries above are also instances of:
+  **an artifact being present gets taken for a function being present** — the
+  file exists, the field is recorded, the limitation is listed, the switch is
+  there; every one of them real, and not one of them changing any outcome. It
+  is also the usual reason a failure arrives rendered as a normal result: the
+  fact that separates the red light from the green one has already been written
+  down, and nothing reads it. Worked example:
+  [ADR-0015](decisions/ADR-0015-four-words-for-how-a-rollout-ends.md), which
+  turns `oom_kills` from a number into a gate.
 - **Evidence can exist and still not be about the thing you are claiming.** Three
   instances, same week: a PR body said the quality bar was green "at this head"
   while the run in hand came from the pre-rebase SHA on an older base; a run read
