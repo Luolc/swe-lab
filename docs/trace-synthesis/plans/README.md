@@ -267,9 +267,12 @@ and tagged**, with every intervention logged.
 - **Verification:** unit tests over a **recorded** event stream with a stub
   sink, plus the single in-sandbox delivery. No live rollout is part of this
   task's acceptance — that budget belongs to the measurement rig.
-- **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md);
-  task 04 for the guidebook. **Not** blocked on task 16 — the supervisor writes
-  into a sink it is handed and never opens or closes the channel.
+- **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md).
+  **No longer** task 04: the judge measures against a criterion pinned to one
+  committed artifact, not against phase B's guidebook, which is written with the
+  reference patch and the unpurged history in hand. **Not** blocked on task 16
+  either — the supervisor writes into a sink it is handed and never opens or
+  closes the channel.
   **Scope:** M
 
 ## Task 06: Trace-quality scorer (decide whether to build)

@@ -104,21 +104,28 @@ Two inputs, and they are different in kind:
   would let it read its output as the actor's behaviour. The filter is
   **stateless**, so where a supervisor attached cannot change its verdict on a
   message.
-- **Criterion — the guidebook.** The phase-B artifact, host-side, validated by
-  **[C]** `validate_guidebook`
-  ([`guidebook.py:41`](../../../src/swe_lab/trace_synthesis/guidebook.py)).
+- **Criterion — the pinned artifact**, built into the judge rather than
+  travelling this channel; see [§3.1](#31-the-barriers-second-half-what-the-judge-may-reason-from).
+  **Not** phase B's guidebook: `oracle.py` writes that one with the reference
+  patch, the exact grading procedure and the repository's unpurged history in
+  hand, so a supervisor reading it would steer down the fix's path without ever
+  quoting it. `Observation` has no field for it —
+  **[C]** `test_supervisor_input_carries_no_privileged_field` asserts the field
+  set against an exact allowlist, and the field was **deleted** rather than left
+  unused, because a field nobody may fill is a hole waiting for the next
+  person.
 
-**And here is the honest limit of the barrier, stated plainly because a barrier
-described more strongly than it is, is worse than none.** The guidebook is
-*distilled from* privileged material in phase B — that is what phase B is. So
-the claim is **not** that the supervisor is information-theoretically isolated
-from the fix. The claim is narrower and checkable:
+**The barrier's claim, stated plainly because one described more strongly than
+it is, is worse than none:**
 
 > The supervisor never receives the gold patch, the reference patch, the test
-> patch, or the hidden tests — there is no field on its input that can carry
-> them, and no code path that fills one. What it receives about the intended
-> solution is the guidebook, and the guidebook's own content rules are phase B's
-> problem, not this component's.
+> patch, the hidden tests, or a phase-B guidebook — there is no field on its
+> input that can carry them, and no code path that fills one. What it measures
+> against is one pinned criterion, so **no run selects a different criterion per
+> instance**. What remains outside the claim: whether that shared text is itself
+> free of solution knowledge is settled by reviewing the artifact, not by the
+> digest; and the judge and the writer are model calls, with nothing here
+> bounding what a model infers from the actor's own records.
 
 ### 3.1 The barrier's second half: what the *judge* may reason from
 
@@ -139,18 +146,36 @@ channel.**
 > **The judge's criterion is a named, committed artifact that is byte-identical
 > for every instance.**
 
-**Instance-independence is the operationalization of "general engineering
-practice, not this instance's solution path"** — a material that is the same for
-every instance cannot encode instance-specific knowledge, and that is an
-information-theoretic fact rather than an assurance about anybody's care. It
-gives the barrier's second half the four things its first half already has:
+**What byte-identity buys, exactly.** It removes *per-instance selection*: no
+run can be handed a criterion written for the instance in front of it. It does
+**not** prove the shared artifact is free of solution knowledge — one committed
+criterion could carry the fixes for every instance and still be byte-identical
+everywhere, and the redundant path/n-gram check is neither exhaustive nor always
+runnable. **The content question is a review and provenance question**, answered
+once by reading the artifact in its pull request; the digest's job is to keep
+that reviewed text in force until someone re-pins it deliberately. With that
+scope, the second half has the same four parts as the first:
 
 | | |
 | --- | --- |
 | **artifact** | the criterion file, in the repository |
-| **check** | each run asserts `sha256(criterion)` equals the pinned constant — and, redundantly but cheaply, that the criterion shares no file path and no 8-gram with this instance's gold patch |
-| **rejection** | on mismatch the **run refuses to start**. Not a recorded gap: with the barrier broken there is no experiment left to run |
+| **check** | `sha256(criterion)` equals the pinned constant — and, redundantly but cheaply, no shared file path and no shared 8-gram with this instance's gold patch |
+| **rejection** | `CriterionRejectedError`. Not a recorded gap: a criterion that is not the reviewed one leaves nothing to judge against |
 | **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
+
+**[U] The startup gate is not wired yet, and this row says so rather than
+implying otherwise.** `load_criterion` has no production caller: the criterion
+is consumed by the *judge*, which is not implemented, so that is where the
+run-level refusal belongs. What is enforced today is narrower and is the whole
+of the current claim: **`SpeakWhenOffTrack` refuses to construct unless its
+criterion's digest is the pinned one, and passes that criterion to the judge on
+every call.** Hand-off is the whole of it — a protocol cannot compel an
+implementation to use a parameter, so *what the judge measures against* is a
+judge-implementation invariant whose named behavioural test belongs to that PR.
+`SpeakAt` takes none and judges nothing — it is the timing knob, and applying a
+criterion gate to a policy with no judgement would be theatre. **The judge's PR
+discharges this**, with a named test that a forged artifact prevents the run
+from starting.
 
 **What the criterion being constant does *not* mean.** The judge's *prompt* is
 still instance-specific — it carries the task statement and the actor's own
@@ -184,8 +209,14 @@ test or the sentence is downgraded):
   of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
   pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
   catches the one we did not.
-- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half,
-  with the run refusing to start rather than recording a gap.
+- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half:
+  the loader rejects rather than recording a gap. **This is a loader test, not
+  a run-level one** — the startup gate is `[U]` and lands with the judge.
+- `test_a_forged_criterion_cannot_build_the_policy` and
+  `test_the_judge_is_handed_the_canonical_criterion_every_call` — what *is*
+  enforced today: `SpeakWhenOffTrack` refuses any criterion whose digest is not
+  the pinned one, and passes it to the judge on every call rather than storing
+  it beside one — **hand-off, not consumption**.
 - `test_the_task_is_given_not_read_off_the_stream` — the goal reaches the
   policy without any message having to be guessed to *be* the brief.
 - `test_a_supervisor_attached_mid_run_admits_no_user_text` — where the
@@ -220,10 +251,10 @@ run.** Returning `None` is the ordinary case and is not an error.
 ### 4.1 What "off track" means, and why the bar is not a delay
 
 A policy that speaks needs a judgement, and the judgement is a model call over
-the `Observation`: the task, the guidebook, a window of the actor's own records,
+the `Observation`: the task, a window of the actor's own records,
 and what has already been said. **It asks two questions, not one:**
 
-1. **Is the actor off the guidebook's path?**
+1. **Is the actor off the criterion's path?**
 2. **Left alone, would it come back by itself?**
 
 Only *off-track **and** not self-correcting* speaks. The second question is
@@ -268,7 +299,7 @@ number nobody chose ends up in a result.
 
 **The budget gates speech, not judgement**, and the order follows from that —
 an earlier draft of this section put budget first, which would have made
-`GuidebookPolicy(budget=0)` skip the judge entirely and quietly destroy the
+`SpeakWhenOffTrack(budget=0)` skip the judge entirely and quietly destroy the
 matched control §4.4 depends on. `consider()` returns `None` unless every gate
 passes, in this order:
 
@@ -302,12 +333,12 @@ marker count is what proves the judge still ran; and `budget=k` yields at most
    at all. This is the **timing knob in isolation**: it varies *when* while
    holding *what* and *whether* constant, which is the one comparison the graded
    batch could not make because its trigger was entangled with its criterion.
-3. **`GuidebookPolicy(judge, writer, budget, cooldown, window)`** — the real
+3. **`SpeakWhenOffTrack(judge, writer, criterion, budget, cooldown, window)`** — the real
    one, as designed above.
 
 **A fourth class was considered and is not needed.** The paired control wants a
 supervisor that *judges but never speaks* — same calls, same cost, same
-cadence, zero corrections — and that is exactly `GuidebookPolicy(budget=0)`,
+cadence, zero corrections — and that is exactly `SpeakWhenOffTrack(budget=0)`,
 **which works only because §4.3 consults the budget after the judgement rather
 than before it.** Reverse those two and the control silently stops paying for
 its judge, at which point it is no longer the same run minus the corrections.
@@ -339,7 +370,7 @@ failures a length cap does not:
 | Writer check | What it actually rules out |
 | --- | --- |
 | no fenced code block and no diff hunk header | the most literal form of handing over the answer |
-| no verbatim n-gram shared with the guidebook (n≈8 words) | the guidebook being **pasted through** the channel into the actor's context |
+| no verbatim n-gram shared with the criterion (n≈8 words) | the criterion being **pasted through** the channel into the actor's context |
 
 A third property — *not a repeat of what it already said* — belongs to the
 policy rather than the writer: `said` is in the `Observation` precisely so the
@@ -348,7 +379,7 @@ it would be the wrong layer.
 
 **The n-gram guard is a floor, not a proof.** A paraphrase defeats it, and it is
 worth having anyway: it catches the failure that would actually happen, which is
-a writer quoting the guidebook because the guidebook is the most relevant text
+a writer quoting the criterion because the criterion is the most relevant text
 in its context.
 
 **What a policy can actually see about timing** is bounded by the channel, and
@@ -534,7 +565,7 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
   which remains design-only.
 - **Not the experiment.** Task selection, the baseline sweep and the paired arms
   belong to the rig; this component is what the rig consumes.
-- **Not a judge-quality study.** Whether the guidebook judge is any good is
+- **Not a judge-quality study.** Whether the judge is any good is
   [task 06](README.md) and the rig's problem.
 - **Not an authorization to produce traces for training.** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
   moves the *attribution* decision; what a shippable trace is remains
@@ -559,6 +590,8 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
 ## 10. Dependencies and scope
 
 **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
-(this PR) for the attribution; [task 04](task-04-oracle-analysis-task.md) for the
-guidebook it judges against. **Not** blocked on task 16, by §1's seam.
+(this PR) for the attribution. **No longer** dependent on
+[task 04](task-04-oracle-analysis-task.md): the judge measures against the
+pinned criterion, not against phase B's guidebook. **Not** blocked on task 16,
+by §1's seam.
 **Scope:** M.

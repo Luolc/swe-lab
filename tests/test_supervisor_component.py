@@ -25,7 +25,7 @@ from swe_lab.trace_synthesis.supervisor import (
 # Exactly what a policy may see. Adding a field to Observation must fail this
 # test, which is the point: a denylist catches the names we thought of, an
 # allowlist catches the one we did not.
-ALLOWED_OBSERVATION_FIELDS = {"task", "evidence", "cursor", "guidebook", "said"}
+ALLOWED_OBSERVATION_FIELDS = {"task", "evidence", "cursor", "said"}
 
 PRIVILEGED_NAMES = (
     "gold_patch",
@@ -192,7 +192,6 @@ def test_the_task_is_given_not_read_off_the_stream() -> None:
   supervisor = Supervisor(
       policy=ReadsTheTask(),
       task="Fix the failing colour test in qutebrowser",
-      guidebook="g",
       sink=lambda _: None,
       log=lambda _: None,
   )
@@ -210,7 +209,6 @@ def test_a_supervisor_attached_mid_run_admits_no_user_text() -> None:
   supervisor = Supervisor(
       policy=NeverSpeak(),
       task="the real task",
-      guidebook="g",
       sink=lambda _: None,
       log=lambda _: None,
   )
@@ -265,7 +263,6 @@ def test_every_event_is_dispositioned_in_the_record() -> None:
   supervisor = Supervisor(
       policy=NeverSpeak(),
       task="the task",
-      guidebook="g",
       sink=lambda _: None,
       log=lambda row: rows.append(dict(row)),
   )
@@ -321,7 +318,6 @@ def test_what_it_said_is_remembered_outside_the_evidence() -> None:
   supervisor = Supervisor(
       policy=Records(),
       task="the task",
-      guidebook="g",
       sink=lambda _: None,
       log=lambda _: None,
   )
@@ -360,7 +356,6 @@ def test_the_supervisor_emits_only_its_own_message() -> None:
   supervisor = Supervisor(
       policy=Speaks(),
       task="the task",
-      guidebook="g",
       sink=written.append,
       log=lambda row: rows.append(dict(row)),
   )
@@ -408,7 +403,6 @@ def test_a_policy_that_raises_is_recorded_as_a_gap() -> None:
   supervisor = Supervisor(
       policy=Raises(),
       task="the task",
-      guidebook="g",
       sink=lambda _: None,
       log=lambda row: rows.append(dict(row)),
   )
@@ -431,7 +425,6 @@ def test_a_failing_sink_mutes_but_never_ends_the_run() -> None:
   supervisor = Supervisor(
       policy=Speaks(),
       task="the task",
-      guidebook="g",
       sink=broken,
       log=lambda row: rows.append(dict(row)),
   )
@@ -448,7 +441,6 @@ def test_the_log_accounts_for_every_event() -> None:
   supervisor = Supervisor(
       policy=NeverSpeak(),
       task="the task",
-      guidebook="g",
       sink=lambda _: None,
       log=lambda row: rows.append(dict(row)),
   )
@@ -468,7 +460,6 @@ def test_a_policy_is_replaceable_without_touching_anything_else() -> None:
     supervisor = Supervisor(
         policy=policy,
         task="the task",
-        guidebook="g",
         sink=sink.append,
         log=lambda _: None,
     )
