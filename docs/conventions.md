@@ -535,6 +535,21 @@ retroactively (owner's calibration, 2026-09-01).
   the side is what enumerated cases are for. So specify the **failure condition**
   a check must produce ("deleting a row turns it red"), never the shape of the
   assertion — and produce each failure deliberately before relying on the check.
+- **A reverse-verification can break the subject instead of removing the
+  property** — and then the reading is about the mutation, not about the
+  property. It goes both ways: a red that proves nothing, and a green that says
+  the property was never load-bearing. The test: **the mutation is the smallest
+  edit that removes the property, and the subject is asserted to have actually
+  run before the red or green is read** — the script parses, the children
+  started, execution reached the line under test. Three instances, one day, two
+  agents: two attempts to undo the harness's `kill -9` escalation mangled the
+  `EXIT` trap instead, both "passed", and the escalation was briefly written off
+  as unnecessary — the mutation that worked replaced `kill -9` with `true` and
+  left every other character alone; a probe reported both background children
+  gone when a missing `' EXIT` had made the script unparseable, so neither child
+  ever started; and a classifier fix verified by reverting it produced a crash
+  rather than a different classification, which is the expected red arriving
+  from the wrong cause.
 - **A fact that is recorded but never consumed is decoration, not a
   safeguard.** Three instances in one day, none of them an oversight:
   `sandbox.oom_kills` is written on every run from the cgroup counter (with

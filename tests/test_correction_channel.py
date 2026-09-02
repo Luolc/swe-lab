@@ -340,9 +340,8 @@ def test_a_channel_that_closed_on_its_own_produces_it_too(tmp_path: Path):
 def test_the_channel_works_in_a_real_container(tmp_path: Path):
   """The parts no shape test can reach: FIFO, blocking open, reaping.
 
-  Everything else in this file runs on the host. Three properties only exist
-  inside the container, and two defects of exactly this kind were found in the
-  generated script by reading it rather than running it:
+  Everything else in this file runs on the host. Three properties exist only
+  inside the container, where a real FIFO and real processes do:
 
   - the relay's ``exec 3>`` blocks until the reader opens the FIFO, so the
     order the script starts things in is load-bearing;

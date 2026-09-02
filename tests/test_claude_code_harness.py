@@ -728,11 +728,11 @@ def test_the_channel_closes_only_on_the_sentinel_and_says_so_when_it_does_not():
   )._invocation_script("/app")
   assert f'touch "$SANDBOX_WORKSPACE"/{CORRECTION_UNCLEAN_NAME}' in script
   # Exactly one path clears the marker, and it runs *before* the close.
-  # Ordering measured, not preferred: closing makes the reader see EOF, the
-  # script then exits, and its EXIT trap kills the relay — which races a
-  # removal placed after the close and leaves the marker behind on an
-  # ordinary ending. The marker means "the relay never saw a deliberate end",
-  # so the sentinel is the moment it stops being true.
+  # The ordering is load-bearing: closing makes the reader see EOF, the script
+  # then exits, and its EXIT trap kills the relay — so a removal placed after
+  # the close races that kill and leaves the marker behind on an ordinary
+  # ending. The marker means "the relay never saw a deliberate end", so the
+  # sentinel is the moment it stops being true.
   clears = [
       line
       for line in script.splitlines()
@@ -769,13 +769,12 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
   first entry, or if a later change registered a pid the loop never reads. This
   runs the real lines from the harness against two live processes and requires
   **both** to be gone afterwards — so removing either reaper, or letting two
-  traps overwrite each other again, turns it red.
+  traps overwrite each other, turns it red.
 
   One child is **stopped**, so TERM is never delivered to it and only the KILL
   escalation removes it. Without that escalation the script returns after its
-  grace period with the child still alive — the silent escape — and this test
-  goes red. It costs that grace period once, which is what the guarantee is
-  worth.
+  grace period with the child still alive, and this test goes red. It costs
+  that grace period once, which is what the guarantee is worth.
 
   The children sleep far longer than the timeout, so they cannot die of old age
   and pass this by accident; and the pids travel through a file rather than a
@@ -795,11 +794,9 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
           _reap("relay_pid"),
           # A **stopped** child, which is the reliable way to model one that
           # does not die on TERM: the signal stays pending and is never
-          # delivered, so only the KILL escalation removes it. (A child that
-          # merely traps TERM is not enough — the shell execs the trailing
-          # command and the trap goes with it, measured.) Without escalation
-          # this one outlives the script, which is the five-second silent
-          # escape, and the test pays that grace period once to prove it.
+          # delivered, so only the KILL escalation removes it. `bash -c 'trap
+          # "" TERM; sleep 300'` does not model it — the shell execs the
+          # trailing command and the trap goes with it.
           "sleep 300 >/dev/null 2>&1 &",
           "stubborn_pid=$!",
           'kill -STOP "$stubborn_pid"',
