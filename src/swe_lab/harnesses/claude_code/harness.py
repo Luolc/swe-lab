@@ -124,20 +124,26 @@ def _reaper_lines() -> list[str]:
   """
   return [
       f"{_REAPED_PIDS_VAR}=",
-      # Signal everything, then **poll** until it is gone. `wait` is not
+      # TERM, a bounded grace, then KILL whatever is left. `wait` is not
       # used: `kill "$p"; wait "$p"` per pid deadlocks with more than
       # one background job, and a bare `wait` proved non-terminating in
-      # some environments too. A bounded poll is the only form measured to
-      # both reap and return, and it still gives the guarantee the wait was
-      # there for — the children are gone before the script exits, so the
-      # capture log is closed before anything converts it.
+      # some environments. The escalation is what makes the guarantee
+      # true rather than likely — a child that ignores or delays TERM
+      # would otherwise outlive the grace period silently, and `run`
+      # would return while the capture log was still being written.
+      # A KILLed proxy truncates its log at a line boundary (each record
+      # is written and closed), so the cost of escalating is partial
+      # capture, never a corrupt file.
       "trap '"
       f'for _pid in ${_REAPED_PIDS_VAR}; do kill "$_pid" 2>/dev/null;'
       " done; _left=50;"
       ' while [ "$_left" -gt 0 ]; do _any=;'
       f" for _pid in ${_REAPED_PIDS_VAR}; do"
       ' kill -0 "$_pid" 2>/dev/null && _any=1; done;'
-      ' [ -n "$_any" ] || break; _left=$((_left-1)); sleep 0.1; done'
+      ' [ -n "$_any" ] || break; _left=$((_left-1)); sleep 0.1; done;'
+      f" for _pid in ${_REAPED_PIDS_VAR}; do"
+      ' kill -0 "$_pid" 2>/dev/null && kill -9 "$_pid" 2>/dev/null;'
+      " done"
       "' EXIT",
   ]
 

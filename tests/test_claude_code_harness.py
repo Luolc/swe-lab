@@ -771,6 +771,12 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
   **both** to be gone afterwards — so removing either reaper, or letting two
   traps overwrite each other again, turns it red.
 
+  One child is **stopped**, so TERM is never delivered to it and only the KILL
+  escalation removes it. Without that escalation the script returns after its
+  grace period with the child still alive — the silent escape — and this test
+  goes red. It costs that grace period once, which is what the guarantee is
+  worth.
+
   The children sleep far longer than the timeout, so they cannot die of old age
   and pass this by accident; and the pids travel through a file rather than a
   pipe, so nothing here waits on a descriptor a child might hold open.
@@ -787,7 +793,19 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
           "sleep 300 >/dev/null 2>&1 &",
           "relay_pid=$!",
           _reap("relay_pid"),
-          f'printf "%s %s" "$proxy_pid" "$relay_pid" > {pid_file}',
+          # A **stopped** child, which is the reliable way to model one that
+          # does not die on TERM: the signal stays pending and is never
+          # delivered, so only the KILL escalation removes it. (A child that
+          # merely traps TERM is not enough — the shell execs the trailing
+          # command and the trap goes with it, measured.) Without escalation
+          # this one outlives the script, which is the five-second silent
+          # escape, and the test pays that grace period once to prove it.
+          "sleep 300 >/dev/null 2>&1 &",
+          "stubborn_pid=$!",
+          'kill -STOP "$stubborn_pid"',
+          _reap("stubborn_pid"),
+          f'printf "%s %s %s" "$proxy_pid" "$relay_pid" "$stubborn_pid"'
+          f" > {pid_file}",
       ]
   )
   # Staged as a file and run like the harness runs its own script, rather than
@@ -803,7 +821,7 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
         ["bash", str(script_file)],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        timeout=10,
+        timeout=30,
         check=True,
     )
   except subprocess.TimeoutExpired:
@@ -811,7 +829,7 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
 
   survivors: list[str] = []
   for name, pid in zip(
-      ("proxy", "relay"),
+      ("proxy", "relay", "stopped"),
       (int(p) for p in pid_file.read_text().split()),
       strict=True,
   ):
