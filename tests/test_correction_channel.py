@@ -897,8 +897,23 @@ def test_a_stream_that_yielded_no_usable_event_is_not_supervised_either(
   parse rather than raising, so a stream that exists and yields nothing looks
   exactly like a calm run — and reading the *file's* existence as the signal
   puts a zero-boundary run back on the healthy path, which is the absorption
-  the missing-file case above exists to stop. Found in review of the PR that
-  added that case.
+  the missing-file case above exists to stop.
+
+  **The empty case is the main one, not an edge.** A supervised run redirects
+  the actor's stdout with `> "$SANDBOX_WORKSPACE"/…` (`claude_code/harness.py`,
+  the `capture != "proxy" or correction_channel` branch), and a truncating
+  shell redirect creates that file when the command *starts* — zero bytes,
+  before the agent has written anything. So an empty stream is the initial
+  state of **every** supervised run, and a run whose actor never started, or
+  died immediately, simply stays there. Reading existence as the signal made it
+  true on the first poll of every real run, which is a signal carrying no
+  information at all.
+
+  That also splits the two failures this pair now covers, which are not the
+  same fault: **no file** means the wiring was never connected; **a file with
+  nothing usable in it** means the wiring was connected and the actor produced
+  nothing. Only the second is what a correctly wired but failed run looks like
+  — the shape a first live run is most likely to meet.
   """
   events = epath.Path(tmp_path) / EVENT_STREAM_NAME
   run = _supervised(tmp_path)
