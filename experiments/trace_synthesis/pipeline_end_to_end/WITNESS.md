@@ -163,37 +163,41 @@ a summary would drop:
   zero: the channel leaves no key rather than a zero, so this line says the
   metric was never emitted.
 
-## The gap: this corpus has no home, and a copy is not one
+## Where the corpus lives
 
-**The corpus exists only on the machine that ran it**, now in two directories
-there:
+**Kept on the machine that ran it, and not uploaded.** That is the standing
+decision, made by the repository's owner on 2026-09-02 — not an open question
+and not a risk awaiting a ruling.
 
 | | |
 | --- | --- |
-| The run tree | `<runs-root>/supervised_rollout_and_unit_test/instance_…/r0/` |
-| A copy taken by the run's owner on 2026-09-02 | `~/swe-lab-run-corpus/first-e2e-2026-09-02/r0/` |
+| The run tree, as the pipeline wrote it | `<runs-root>/supervised_rollout_and_unit_test/instance_…/r0/` |
+| The kept copy | `~/corpora/swe-lab/first-e2e-2026-09-02/r0/` |
 
-**The copy is a copy, not an agreed home.** Nothing refers to it, nothing keeps
-it, no second machine has it, and no convention says a run's corpus goes there.
-It was taken because the run tree is exposed: it is gitignored, so
-`git worktree remove` deletes it without asking, and a re-run of the same
-rollout id without `--resume` deletes the whole output directory outright. That
-removes the immediate hazard and changes nothing about the rule.
+The run tree is not the copy's equal: it is gitignored, so `git worktree remove`
+deletes it without asking, and re-running the same rollout id without
+`--resume` deletes the whole output directory. The kept copy is what survives
+those, and `~/corpora/<repo>/<run>/` is where a run's corpus goes.
 
-It is, at least, checked rather than assumed: all **122** files match by path
-and sha256, and the script above produces byte-identical output from either
-directory (`$ATTEMPT` is the `r0/` under whichever one is at hand).
+The name is the rule's own word — *the corpus is off-repo, the witness is
+in-repo* — rather than a container word like `data` that would hold anything.
+
+It is checked rather than assumed: all **122** files match by path and sha256,
+and the script above produces byte-identical output from either directory
+(`$ATTEMPT` is the `r0/` under whichever one is at hand).
 
 ```sh
 diff <(cd "$RUN_TREE" && find . -type f -exec sha256sum {} \; | sort -k2) \
      <(cd "$COPY"     && find . -type f -exec sha256sum {} \; | sort -k2)
 ```
 
-There is no convention in this repository for where a rollout run's corpus
-goes. What exists is HF publishing for *dataset products* — `HF_TOKEN` is
-documented for `pipelines/related_files/traces.py` and
-`datasets/deepswe/build_parquet.py --upload` — and neither is a home for a
-run's artifacts. **This file does not invent one.** Until one is chosen, the
-honest statement of the situation is the rule's own fallback: the numbers above
-are rederivable only with the corpus in hand, and the command that does it is
-named above.
+**Nothing is published.** The repository's HF publishing is for *dataset
+products* (`HF_TOKEN` is documented for `pipelines/related_files/traces.py` and
+`datasets/deepswe/build_parquet.py --upload`); a run's corpus is not one of
+those and is deliberately not uploaded.
+
+What follows is the rule's own fallback, and it is the whole reason this file
+exists: **the numbers above are rederivable only with the corpus in hand.** The
+command that rederives them is named, the corpus it needs is identified by
+digest, and a reader without that machine has the numbers and their provenance
+rather than an assertion.
