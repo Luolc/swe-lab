@@ -118,8 +118,10 @@ requires these as **three lines, never merged into fewer**.
    15,438}` and `num_turns = 32`. **One run is one point, not a range**: the
    two prior points in
    [`downstream-scale-note.md`](../../../docs/trace-synthesis/downstream-scale-note.md)
-   spread $2.04–$4.17, and this run sits below both. Three points do not make
-   a distribution; the spread is still what a reader should carry.
+   are both higher than this one — read them there, not here; two dollar
+   figures copied into this file are two more numbers that can drift from the
+   document that owns them. Three points do not make a distribution; the
+   spread is still what a reader should carry.
 2. **Supervision-side call counts — counts, not a rate.**
    `metrics["supervision.boundaries"] = 170`,
    `metrics["supervision.corrections"] = 3`,
@@ -218,7 +220,7 @@ it closes or fails none of the seven points.
   bound, since the wall clock includes setup the actor's duration does not.
 
   **The supervisor's 1118.9 s span is not a fourth reading of the same
-  thing** — it is how long the supervisor worked, including the ~164 s while
+  thing** — it is how long the supervisor worked, including the 163.8 s while
   the actor was still going. The same 955.1 s over *that* denominator is
   85.4%, which is a true statement about the supervisor rather than about
   what the run cost; this line uses the wall clock because the claim it
@@ -265,9 +267,9 @@ weaken or strengthen one of the seven points.
 
 ### 7a. The supervisor runs an order of magnitude slower than the actor
 
-    supervisor.jsonl  first row  07:23:35.650  (cursor 1)
-    supervisor.jsonl  last row   07:42:14.572  (cursor 170)
-    → 1118.9 s / 170 boundaries = 6.6 s per boundary   (measured)
+    supervisor.jsonl  first row  07:23:35.650499  (cursor 1)
+    supervisor.jsonl  last row   07:42:14.572388  (cursor 170)
+    → 1118.9 s / 170 boundaries = 6.58 s per boundary  (measured)
     → ≤ 955.1 s with the actor finished and waiting    (at most)
     → ≤ 84.9% of the rollout's 1124.47 s wall clock    (at most)
 
@@ -286,7 +288,7 @@ crossed the channel the actor had moved on. This is not a judge error rate;
 it is structural. A judgment costs a model call, and the actor does not wait
 during it.
 
-**The wall clock is spent on supervision and charged to the actor.** At 6.6 s
+**The wall clock is spent on supervision and charged to the actor.** At 6.58 s
 per boundary, `_AGENT_TIMEOUT_S = 3600.0`
 (`src/swe_lab/workflow/definitions.py`) admits roughly **547 boundaries**;
 this run had 170. A more eventful instance can therefore hit the wall clock
@@ -359,7 +361,7 @@ against each other**, and only a real run puts them in the same room.
 
 ## 8. Open questions
 
-- Does the 6.6 s per boundary hold at other instances and event volumes, or
+- Does the 6.58 s per boundary hold at other instances and event volumes, or
   is it particular to this one? A single point cannot say, and §7a's
   consequence scales with it.
 - Do the 16 unusable judge answers cluster after cursor 87 because of
