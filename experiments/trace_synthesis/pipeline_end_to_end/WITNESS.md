@@ -251,10 +251,23 @@ those and is deliberately not uploaded.
 
 **Every number in `REPORT.md` that is a reading of the run's record is printed
 above.** Two kinds of number in that file are not, and they are enumerated
-rather than gestured at: numbers that are not claims about the run — section,
-ADR, task and PR ids, dates, identifiers, `file:line` citations — and the one
-pair read from the checkout instead of the record, `_AGENT_TIMEOUT_S = 3600.0`
-and the boundary count derived from it, whose witness is the cited source file.
+rather than gestured at.
+
+The first is anything that is not a claim about the run: section, ADR, task and
+PR ids, dates, identifiers, `file:line` citations.
+
+The second has exactly two members — `_AGENT_TIMEOUT_S = 3600.0` and the
+**547 boundaries** derived from it — and a name, because "the witness cannot
+print it" describes a defect and this is a design: **read from the checkout at
+report time, by path — not reproducible from the corpus, and not intended to
+be.** A corpus witness prints what a past run recorded; printing today's
+constant beside it would be the wrong reading, not a better one. What such a
+number owes instead is a coordinate, and the report gives it one:
+`src/swe_lab/workflow/definitions.py:63` as of `main` =
+`91846dd595fa4e64ed2cd3a71a2c6e41709e1a53`. `547` is a **mixed derivation** —
+6.58 s per boundary is fixed by the corpus, `3600.0` changes the day someone
+edits it — and without the coordinate it would go quietly false with nothing
+failing.
 
 The check is a **census of every numeric token in the report**, not a search
 for the ones that look unwitnessed. Three review rounds of "a few more are
