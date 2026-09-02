@@ -328,6 +328,14 @@ class CodingAgentTask(Task):
     # The stage's own word, so a reader can tell our breakage from the
     # actor's result without re-deriving it from three other fields.
     extra["rollout_outcome"] = rollout_outcome(result).value
+    # Which actor produced this. Without it the model is recoverable only by
+    # grepping the trace, so a run whose trace is gone cannot be compared with
+    # a later batch at all — and comparability is the whole point of a
+    # measured rate. `getattr` because a harness need not have a model (a
+    # scripted stub does not), and one that has none records none.
+    model = getattr(self.harness, "model", "")
+    if model:
+      extra["agent_model"] = model
     observer = outcome_of(result)
     if observer is not None:
       extra["agent_outcome"] = observer.outcome.value

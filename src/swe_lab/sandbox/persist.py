@@ -67,7 +67,9 @@ class AttemptRecord:
       in-tree sets it**: a model is a per-task fact (one entry runs an agent,
       the next grades and has no model at all), so no workflow-level value
       could be right, and the workflow layer no longer carries one. Left
-      settable for a caller building records itself (``new_record``).
+      settable for a caller building records itself (``new_record``). An
+      in-tree rollout records its actor as ``extra["agent_model"]``, beside
+      the other ``agent_*`` facts — look there, not here.
     artifact_keys: Object name → its full store key (filled by :func:`persist`).
     metrics: Scalar metrics from the run.
     extra: Any other run facts (e.g. ``is_empty_patch``, an error repr).
