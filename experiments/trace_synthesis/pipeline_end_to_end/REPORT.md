@@ -150,6 +150,13 @@ rather than as a promise made once:
     from it is a **bound**, not a point, and is written as one. Carry the
     same `(measured)` / `(at least)` / `(at most)` markers the witness script
     prints: **the report may not be more certain than the script it quotes.**
+  - **a percentage without its denominator is not a reading.** Write it as
+    `N% (denominator = …)`. The same catch-up span over the rollout's wall
+    clock and over the supervisor's own span are two different statements —
+    one about what the run cost, one about how long the supervisor worked
+    alone — and side by side, unlabelled, two true readings read as one
+    contradiction. This slot wants the **rollout's wall clock**, because the
+    claim it supports is what that hour bought.
 
   **Recorded on every run, not only when something looks wrong:** a number
   first computed after an incident has no baseline to be read against. This
