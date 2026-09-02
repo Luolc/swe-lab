@@ -22,7 +22,8 @@ shown.
 |---|---|
 | Run | `run_ts = 20260902-072316`, backend `host`, one attempt (`a0`) |
 | Instance | `instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb` |
-| Record root | `.cache/runs/supervised_rollout_and_unit_test/<instance>/r0/store/adhoc/<instance>/r0/` — `rollout/a0/` below |
+| Record root, as read | `.cache/runs/supervised_rollout_and_unit_test/<instance>/r0/store/adhoc/<instance>/r0/` in the main checkout — `rollout/a0/` below |
+| Record root, to check against later | `~/corpora/swe-lab/first-e2e-2026-09-02/r0/` — 122 files, the same run kept off the checkout. The `.cache` copy is keyed by instance, so a rerun overwrites it, and a worktree removal deletes it silently; the corpus copy is what these citations remain checkable against. Machine-local, not uploaded (owner ruling, 2026-09-02). |
 | Actor | Claude Code **2.1.212** — `claude.info`'s verbatim `/opt/claude-code/claude --version`, matching `PINNED_CLAUDE_CODE_VERSION` (`src/swe_lab/harnesses/claude_code/binary.py:45`) |
 | Actor model | `claude-sonnet-5` (`run.json` → `extra.agent_model`) |
 | Supervisor model | `SUPERVISOR_MODEL` (`src/swe_lab/workflow/definitions.py`), one judge call and one writer call per intervention |
@@ -232,7 +233,9 @@ it closes or fails none of the seven points.
 
 ## 6. Artifacts
 
-Under `<record root>/rollout/a0/`:
+Under `<record root>/rollout/a0/` — in `.cache` as read, and under
+`~/corpora/swe-lab/first-e2e-2026-09-02/r0/rollout/a0/` for anyone checking
+these numbers after the `.cache` copy is gone:
 
 - Rollout record: `run.json` (and `../complete.json`, `outcome: succeeded`)
 - `supervisor.jsonl` — 170 rows, 27,340 bytes
