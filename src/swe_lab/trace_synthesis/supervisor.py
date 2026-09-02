@@ -172,11 +172,14 @@ class SpeakPolicy(Protocol):
 
 @dataclasses.dataclass(frozen=True)
 class NeverSpeak:
-  """A policy that never speaks.
+  """A policy that consults nothing and never speaks.
 
-  Not padding: the control arm has to run *the same* supervisor with speech
-  disabled, or the arms differ by the judge calls, their latency and their cost
-  as well as by the corrections, and the comparison stops being paired.
+  For plumbing: it exercises the channel, the pump and the record without a
+  model behind them. It is **not** the paired control — the arm the treatment
+  is compared against has to run *the same* supervisor with speech disabled, or
+  the arms differ by the judge calls, their latency and their cost as well as
+  by the corrections. That arm is `SpeakWhenOffTrack` with a budget of zero,
+  which judges every boundary and has nothing left to spend.
   """
 
   @property

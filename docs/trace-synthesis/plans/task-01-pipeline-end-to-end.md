@@ -49,12 +49,15 @@ stage having run, which is the whole of what task 01 still owes.
 
 **4b is a prerequisite, not a detail of 4.** The policy that speaks on a
 deviation is `SpeakWhenOffTrack`, built by `supervising_policy` over a
-`ModelJudge` and a `ModelWriter`. Which policy an arm gets is the *only*
-difference between the two shipped supervised definitions: the control runs the
-same harness, the same channel and the same pump with `NeverSpeak`, so what
-separates the arms is what was said rather than whether the machinery was
-there. `SpeakAt` remains a knob for tests — a run whose utterances are
-scheduled cannot satisfy acceptance point 3.
+`ModelJudge` and a `ModelWriter`. The two shipped supervised definitions run
+the *same* policy on the same criterion and differ in one number: the control's
+budget is zero. The budget gates speech and never gates judgement
+([task 05 §4.4](task-05-supervisor-the-component.md)), so both arms consult the
+judge at every boundary and record what they would have said — and they differ
+in what was delivered, not in what was spent. A control that consulted nothing
+would move model calls, latency and cost between the arms, and a paired
+comparison would credit that to the corrections. `SpeakAt` remains a knob for
+tests — a run whose utterances are scheduled cannot satisfy acceptance point 3.
 
 ### Stage 3 — reading the live stream
 
@@ -90,9 +93,10 @@ consequences the wiring must respect, both already stated by the component:
 1. Pick the instance from the candidates measured in
    [issue #261](https://github.com/Luolc/swe-lab/issues/261) — the one piece of
    the superseded record that carries over unchanged.
-2. Run `swe-lab run rollout_and_unit_test` for that instance with the supervisor
-   configured and a policy that can actually fire (`NeverSpeak` proves the
-   plumbing and **fails point 3** by construction).
+2. Run `swe-lab run supervised_rollout_and_unit_test` for that instance;
+   `control_rollout_and_unit_test` is the paired arm, and a run of it **fails
+   point 3** by construction — it judges every boundary and has nothing left to
+   spend.
 3. Read the seven points off the persisted record and artifacts. Each is a check
    against a file on disk, not a judgement about the run.
 4. Write the [experiment](../../experiments/playbook.md) `REPORT.md`.

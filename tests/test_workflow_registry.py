@@ -32,6 +32,12 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
+from swe_lab.trace_synthesis.criterion import load_criterion
+from swe_lab.trace_synthesis.supervisor import (
+    Observation,
+    SpeakWhenOffTrack,
+    Verdict,
+)
 from swe_lab.workflow import (
     register_workflow,
     registered_workflows,
@@ -360,15 +366,18 @@ def test_the_two_arms_differ_only_in_what_the_policy_says():
   assert supervised.task.harness == control.task.harness
   assert supervised.timeout == control.timeout
   assert supervised.sandbox == control.sandbox
-  # The control is attached and silent, not detached.
-  from swe_lab.trace_synthesis.channel import SupervisedRun
-  from swe_lab.trace_synthesis.supervisor import NeverSpeak
-
-  factory = control.task.supervision_factory
-  assert factory is not None
-  built = factory("solve it")
-  assert isinstance(built, SupervisedRun)
-  assert isinstance(built.policy, NeverSpeak)
+  # …and the policies are the same policy, on the same criterion, with the
+  # same window and cooldown. Only the budget differs, which is what "differ
+  # only in what was said" has to mean at the object level.
+  treatment_policy = _policy_of(supervised)
+  control_policy = _policy_of(control)
+  assert type(treatment_policy) is type(control_policy)
+  assert treatment_policy.criterion == control_policy.criterion
+  assert (treatment_policy.window, treatment_policy.cooldown) == (
+      control_policy.window,
+      control_policy.cooldown,
+  )
+  assert (treatment_policy.budget, control_policy.budget) == (3, 0)
 
 
 def test_the_shipped_supervised_arm_carries_the_pinned_criterion():
@@ -395,3 +404,83 @@ def test_the_shipped_supervised_arm_carries_the_pinned_criterion():
   policy = watchers[0].policy
   assert isinstance(policy, SpeakWhenOffTrack)
   assert policy.criterion.digest == CRITERION_SHA256
+
+
+def _policy_of(entry: WorkflowEntry) -> SpeakWhenOffTrack:
+  """Return the policy the entry's supervision builds.
+
+  Args:
+    entry: A supervised rollout entry.
+
+  Returns:
+    Its policy.
+  """
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.trace_synthesis.channel import SupervisedRun
+
+  assert isinstance(entry.task, CodingAgentTask)
+  factory = entry.task.supervision_factory
+  assert factory is not None
+  built = factory("solve it")
+  assert isinstance(built, SupervisedRun)
+  policy = built.policy
+  assert isinstance(policy, SpeakWhenOffTrack)
+  return policy
+
+
+def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
+  """A control that skips the judge is not paired with anything.
+
+  The budget gates *speech* and never gates judgement: the policy consults the
+  judge at every boundary and records what it would have said before the
+  budget is consulted. A control that returned early instead would move model
+  calls, their latency and their cost between the arms, and a later paired
+  comparison would credit that difference to the corrections. Asserted over
+  behaviour rather than over fields, because "same type, different budget"
+  does not by itself say the judge still runs.
+  """
+  readings: dict[int, tuple[int, int, int, int]] = {}
+  for budget in (3, 0):
+    counted = {"judge": 0, "writer": 0}
+
+    def judge(
+        observation: Observation, criterion: Any, counted: Any = counted
+    ) -> Verdict:
+      del observation, criterion
+      counted["judge"] += 1
+      return Verdict(off_track=True, self_correcting=False, reason="drifting")
+
+    def writer(
+        observation: Observation, criterion: Any, counted: Any = counted
+    ) -> str:
+      del observation, criterion
+      counted["writer"] += 1
+      return "worth another look at the failing test"
+
+    policy = SpeakWhenOffTrack(
+        judge=judge,
+        writer=writer,
+        criterion=load_criterion(),
+        budget=budget,
+    )
+    spoke = sum(
+        policy.consider(
+            Observation(task="t", evidence=(), cursor=cursor, said=())
+        )
+        is not None
+        for cursor in range(1, 13)
+    )
+    readings[budget] = (
+        counted["judge"],
+        counted["writer"],
+        spoke,
+        len(policy.markers),
+    )
+
+  treatment, control = readings[3], readings[0]
+  # Same judge calls and the same would-have-spoken markers…
+  assert treatment[0] == control[0] == 12
+  assert treatment[3] == control[3] == 12
+  # …and the difference is only what was delivered.
+  assert (treatment[1], treatment[2]) == (3, 3)
+  assert (control[1], control[2]) == (0, 0)

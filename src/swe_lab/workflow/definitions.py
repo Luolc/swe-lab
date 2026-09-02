@@ -32,10 +32,9 @@ import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
 from swe_lab.rollout import CodingAgentTask, SupervisionFactory
 from swe_lab.sandbox import DockerHostSandboxConfig
-from swe_lab.trace_synthesis.channel import SupervisedRun, supervision
+from swe_lab.trace_synthesis.channel import supervision
 from swe_lab.trace_synthesis.judge import openrouter_transport
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
-from swe_lab.trace_synthesis.supervisor import NeverSpeak
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
@@ -128,6 +127,16 @@ SUPERVISOR_MODEL = "anthropic/claude-sonnet-5"
 # How many corrections one run may carry. No measured value — task 05 owns that
 # question — so it is stated rather than derived, and stated once.
 SUPERVISOR_BUDGET = 3
+# The control arm's budget. Zero rather than a silent policy, because
+# `SpeakWhenOffTrack` gates *speech* on the budget and never gates judgement:
+# it consults the judge on every boundary and records what it would have said
+# before the budget is looked at. So the arms pay the same judge calls, wait
+# the same waits and cost the same on the judging side, and differ only in
+# whether anything was delivered. A policy that returns early instead — one
+# that never consults a judge at all — would move latency and cost between the
+# arms and make a later paired comparison attribute that difference to the
+# corrections.
+CONTROL_BUDGET = 0
 
 
 def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
@@ -169,23 +178,6 @@ def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
   )
 
 
-def _control_supervision(task: str) -> SupervisedRun:
-  """Build the control arm's supervision: attached, and silent by construction.
-
-  Not "no supervision": the channel, the relay and the pump all run, so the
-  actor's environment is the treatment arm's. `NeverSpeak` is what makes the
-  arm a control, and it is why this run cannot satisfy task 01's acceptance
-  point 3 — by construction it has nothing to say.
-
-  Args:
-    task: What the actor was asked to do.
-
-  Returns:
-    The run's supervision.
-  """
-  return SupervisedRun(policy=NeverSpeak(), task=task)
-
-
 SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
     supervision(
         model=SUPERVISOR_MODEL,
@@ -194,7 +186,16 @@ SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
     )
 )
 
-CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(_control_supervision)
+# The same policy, the same criterion, the same judge on every boundary — with
+# nothing left to spend. What the actor experiences differs by the corrections
+# alone, which is the whole of what a paired arm is for.
+CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
+    supervision(
+        model=SUPERVISOR_MODEL,
+        transport=openrouter_transport,
+        budget=CONTROL_BUDGET,
+    )
+)
 
 SUPERVISED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
     *SUPERVISED_ROLLOUT,
