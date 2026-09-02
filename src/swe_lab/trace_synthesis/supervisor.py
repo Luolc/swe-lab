@@ -13,10 +13,9 @@ Three properties are structural rather than advisory, and each has a test:
   produced. The barrier is *not* information-theoretic: the guidebook is
   distilled from privileged material in phase B, and the supervisor does see the
   guidebook. What it never sees is the solution itself.
-- **When to speak is a seam.** It is the measured unknown — 8 of 8
-  non-compliances in the one graded batch arrived too late — so a
-  :class:`SpeakPolicy` is replaceable without touching the consumer, the
-  intervention, or the log.
+- **When to speak is a seam.** It is the open variable of the design, so a
+    :class:`SpeakPolicy` is replaceable without touching the consumer, the
+    intervention, or the log.
 - **The sink is borrowed, never owned.** The CLI exits when its stdin reaches
   EOF, so closing the sink *is* the termination mechanism and belongs to
   whoever owns the process. This component only writes.
@@ -33,14 +32,14 @@ from typing import Any, Protocol
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.harnesses.claude_code.convert import event_to_message
 
-# The cap is enforced; "short, directional, not a solution" is not. A
-# machine-checkable version of that property is what reshaped the intervention
-# into one naming a concrete next action in the graded batch, which is the
-# mistake this module declines to repeat one layer down.
+# The cap is the enforceable part of the intervention's shape. "Short,
+# directional, not a solution" is read by a human and deliberately not asserted
+# here: a predicate that can check it forces the correction to name a concrete
+# action, which is most of the way to handing over the answer.
 MAX_INTERVENTION_CHARS = 400
 
-# The provenance marker. Measured: 0 of 37 interventions carrying it were
-# challenged by the actor as unattributed.
+# The provenance marker: what makes an intervention identifiable as external,
+# so the actor can mistake it neither for its own output nor for a tool's.
 INTERVENTION_TAG = "supervisor_note"
 
 #: Where a correction is written. A borrowed callable — see the module note.
@@ -99,10 +98,12 @@ class Observation:
   an exact allowlist so that adding one fails.
 
   Attributes:
-    evidence: What the supervisor may read, in order: the **task statement**,
-      the actor's assistant messages, and the results of the tools it called.
-      The barrier keeps out the solution, not the goal — a supervisor blind to
-      what was asked can only object to style.
+    task: What the actor was asked to do, handed over at construction by
+      whoever wrote the prompt. The barrier keeps out the solution, not the
+      goal: a supervisor blind to what was asked cannot tell deviation from
+      progress, and can only object to style.
+    evidence: What the actor produced, in order — its assistant messages and
+      the results of its own tool calls.
     cursor: How many stream events have been consumed, including those that
       carried no message. Identifies where a decision was taken.
     guidebook: Phase B's artifact, the criterion to judge against.
@@ -112,6 +113,7 @@ class Observation:
       can repeat itself indefinitely.
   """
 
+  task: str
   evidence: tuple[Message, ...]
   cursor: int
   guidebook: str
@@ -176,7 +178,6 @@ class NeverSpeak:
 
 # How a message was dispositioned, recorded so the account of a run says why
 # something was not judged rather than leaving it missing.
-ADMITTED_TASK_STATEMENT = "task-statement"
 ADMITTED_ASSISTANT = "assistant"
 ADMITTED_TOOL_RESULT = "tool-result"
 EXCLUDED_OWN_INTERVENTION = "excluded-own-intervention"
@@ -188,18 +189,20 @@ EXCLUDED_NOTHING_TO_KEEP = "excluded-nothing-to-keep"
 class EvidenceFilter:
   """Decides what reaches the supervisor — by **origin**, not by role.
 
-  The barrier keeps out the *solution*, not the *goal*. A supervisor that
-  cannot see what the task asked for cannot tell deviation from progress; all
-  it can do is object to style. So the task statement is admitted, and what is
-  kept out is what the supervisor itself put into the conversation.
+  The barrier keeps out the solution, not the goal. The goal does not travel
+  this path at all: the task statement is handed to the supervisor at
+  construction, by whoever wrote the prompt, so it needs no rule here and
+  cannot be confused with anything else on the stream.
 
-  Role is the wrong axis to cut on, and cutting on it was this filter's first
-  form: the task statement and a supervisor correction are both ``user``
-  messages, and they differ in where they came from.
+  What this filter admits is therefore exactly what the *actor* produced — its
+  assistant messages and the results of its own tool calls. Every user text is
+  excluded, distinguished only so the record can say which kind it was: text
+  carrying the intervention tag came from this supervisor, and anything else is
+  an outside interjection. Neither is an observation of what the actor did.
+
+  Stateless by construction: a supervisor attached mid-run reaches the same
+  verdict on a message as one that watched from the first event.
   """
-
-  _task_statement_open: bool = True
-  _task_statement_seen: bool = False
 
   def admit(self, message: Message | None) -> tuple[Message | None, str]:
     """Decide whether one message becomes evidence.
@@ -214,9 +217,6 @@ class EvidenceFilter:
       return None, EXCLUDED_NOTHING_TO_KEEP
 
     if message.role == Role.ASSISTANT:
-      # The actor has started answering, so any later user text is an
-      # interjection rather than the brief.
-      self._task_statement_open = False
       return message, ADMITTED_ASSISTANT
 
     results = [b for b in message.content if isinstance(b, ToolResultBlock)]
@@ -229,12 +229,7 @@ class EvidenceFilter:
     if not text:
       return None, EXCLUDED_NOTHING_TO_KEEP
     if f"<{INTERVENTION_TAG}>" in text:
-      # Our own words, arriving back on the stream. They belong in the
-      # supervisor's memory, never in its evidence.
       return None, EXCLUDED_OWN_INTERVENTION
-    if self._task_statement_open and not self._task_statement_seen:
-      self._task_statement_seen = True
-      return message, ADMITTED_TASK_STATEMENT
     return None, EXCLUDED_EXTERNAL_TEXT
 
 
@@ -244,6 +239,7 @@ class Supervisor:
 
   Attributes:
     policy: When to speak.
+    task: What the actor was asked to do; see :class:`Observation`.
     guidebook: The criterion handed to the policy.
     sink: Where a correction is written. Borrowed: never closed here.
     log: Where the account of the run is written, one row per event consumed.
@@ -251,6 +247,7 @@ class Supervisor:
   """
 
   policy: SpeakPolicy
+  task: str
   guidebook: str
   sink: Sink
   log: LogWriter
@@ -284,6 +281,7 @@ class Supervisor:
       self._evidence.append(record)
 
     observation = Observation(
+        task=self.task,
         evidence=tuple(self._evidence),
         cursor=self._cursor,
         guidebook=self.guidebook,

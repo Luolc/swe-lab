@@ -79,22 +79,31 @@ by one named test.
 
 Two inputs, and they are different in kind:
 
-- **Evidence — admitted by origin, not by role.** The **task statement**, the
-  actor's assistant messages, and the tool results its own calls returned, in
-  order, with the cursor that identifies where in the stream the supervisor is.
-  **[C]** These are the record types `event_stream_to_conversation` already
-  parses ([`convert.py:51`](../../../src/swe_lab/harnesses/claude_code/convert.py)),
+- **The task statement — handed over, not observed.** What the actor was asked
+  to do, given at construction by whoever wrote the prompt. **The barrier keeps
+  out the solution, not the goal**: a supervisor that cannot see what was asked
+  cannot tell deviation from progress, and is left objecting to style.
+
+  It arrives this way rather than being read off the stream because *which
+  message is the brief* is a fact about **origin**, and position is only a
+  proxy for it. A filter that promoted "the first user text I have seen" would
+  admit an outside interjection as the task whenever the supervisor attached
+  after the actor had already spoken — the proxy fails exactly where the
+  supervisor is most likely to be attached late.
+- **Evidence — what the actor produced.** Its assistant messages and the
+  results of its own tool calls, in order, with the cursor that identifies
+  where in the stream the supervisor is. **[C]** These are the record types
+  `event_stream_to_conversation` already parses
+  ([`convert.py:51`](../../../src/swe_lab/harnesses/claude_code/convert.py)),
   which is where the shapes are defined rather than re-derived here.
 
-  **The task statement is admitted deliberately, and the axis matters.** An
-  earlier form of this rule cut on the `user` role and excluded every user text
-  — which threw out the brief along with the interjections. The barrier exists
-  to keep out the **solution**, not the **goal**: a supervisor that cannot see
-  what was asked cannot tell deviation from progress, and is left objecting to
-  style. What is excluded is what did not come from the actor *or* the task:
-  **this supervisor's own corrections**, which arrive back on the same stream as
-  `user` messages, and any later external user text. The task statement and a
-  correction are both `user` messages; they differ in where they came from.
+  **Every user text is excluded**, and the two kinds are distinguished only so
+  the record can say which it was: text carrying the intervention tag came from
+  this supervisor, anything else is an outside interjection. Neither is an
+  observation of what the actor did, and admitting the supervisor's own words
+  would let it read its output as the actor's behaviour. The filter is
+  **stateless**, so where a supervisor attached cannot change its verdict on a
+  message.
 - **Criterion — the guidebook.** The phase-B artifact, host-side, validated by
   **[C]** `validate_guidebook`
   ([`guidebook.py:41`](../../../src/swe_lab/trace_synthesis/guidebook.py)).
@@ -120,12 +129,15 @@ test or the sentence is downgraded):
   of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
   pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
   catches the one we did not.
-- `test_the_task_statement_reaches_the_supervisor` — the goal gets through.
+- `test_the_task_is_given_not_read_off_the_stream` — the goal reaches the
+  policy without any message having to be guessed to *be* the brief.
+- `test_a_supervisor_attached_mid_run_admits_no_user_text` — where the
+  supervisor started cannot change what counts as evidence.
 - `test_the_supervisors_own_words_never_come_back_as_evidence` — its own
   correction is **memory, not observation**. Admitted as evidence, the
   supervisor would be reading its own output as something the actor did.
-- `test_later_external_user_text_is_excluded` — the brief is the first user
-  message; a later interjection is not the actor's doing.
+- `test_no_user_text_is_evidence_whoever_wrote_it` — the exclusion is by
+  origin, and covers the outside interjection as well as our own.
 - `test_every_event_is_dispositioned_in_the_record` — the log says *why* a
   message was not judged rather than omitting it, so a reader can tell an
   exclusion from a gap.

@@ -25,7 +25,7 @@ from swe_lab.trace_synthesis.supervisor import (
 # Exactly what a policy may see. Adding a field to Observation must fail this
 # test, which is the point: a denylist catches the names we thought of, an
 # allowlist catches the one we did not.
-ALLOWED_OBSERVATION_FIELDS = {"evidence", "cursor", "guidebook", "said"}
+ALLOWED_OBSERVATION_FIELDS = {"task", "evidence", "cursor", "guidebook", "said"}
 
 PRIVILEGED_NAMES = (
     "gold_patch",
@@ -155,19 +155,70 @@ def test_supervisor_input_carries_no_privileged_field() -> None:
   assert not fields.intersection(PRIVILEGED_NAMES)
 
 
-def test_the_task_statement_reaches_the_supervisor() -> None:
-  """The barrier keeps out the solution, not the goal.
+def test_the_task_is_given_not_read_off_the_stream() -> None:
+  """The goal reaches the policy, and does not depend on watching from event 0.
 
-  A supervisor that cannot see what the task asked for cannot tell deviation
-  from progress — it can only object to style.
+  The barrier keeps out the solution, not the goal: a supervisor that cannot
+  see what was asked cannot tell deviation from progress. Taking it at
+  construction means no message on the stream has to be guessed to *be* the
+  brief.
   """
-  events = [
-      user_text_event("Fix the failing colour test in qutebrowser"),
-      assistant_event("I will run the tests"),
-  ]
-  evidence = evidence_of(events)
-  assert [m.role for m in evidence] == [Role.USER, Role.ASSISTANT]
-  assert "qutebrowser" in text_of(evidence)
+  seen: list[str] = []
+
+  class ReadsTheTask:
+    """A policy that records the task it was shown."""
+
+    @property
+    def name(self) -> str:
+      """Return the policy's name.
+
+      Returns:
+        ``"reads-the-task"``.
+      """
+      return "reads-the-task"
+
+    def consider(self, observation: Observation) -> None:
+      """Record the task, say nothing.
+
+      Args:
+        observation: What the supervisor offers.
+
+      Returns:
+        ``None``.
+      """
+      seen.append(observation.task)
+      return None
+
+  supervisor = Supervisor(
+      policy=ReadsTheTask(),
+      task="Fix the failing colour test in qutebrowser",
+      guidebook="g",
+      sink=lambda _: None,
+      log=lambda _: None,
+  )
+  _ = supervisor.observe(assistant_event("I will run the tests"))
+  assert seen == ["Fix the failing colour test in qutebrowser"]
+
+
+def test_a_supervisor_attached_mid_run_admits_no_user_text() -> None:
+  """Where the supervisor started must not change what counts as evidence.
+
+  A filter that promoted "the first user text I happened to see" to the brief
+  would admit an outside interjection as the task whenever it attached after
+  the actor had already spoken — or after an event it could not represent.
+  """
+  supervisor = Supervisor(
+      policy=NeverSpeak(),
+      task="the real task",
+      guidebook="g",
+      sink=lambda _: None,
+      log=lambda _: None,
+  )
+  rows: list[dict[str, object]] = []
+  supervisor.log = lambda row: rows.append(dict(row))
+  _ = supervisor.observe(user_text_event("actually, try the other file"))
+  assert evidence_of([user_text_event("actually, try the other file")]) == ()
+  assert rows[0]["evidence"] == "excluded-external-text"
 
 
 def test_the_supervisors_own_words_never_come_back_as_evidence() -> None:
@@ -188,21 +239,24 @@ def test_the_supervisors_own_words_never_come_back_as_evidence() -> None:
   assert "check the ordering" not in text_of(evidence)
 
 
-def test_later_external_user_text_is_excluded() -> None:
-  """Only the first user message is the brief; later text is an interjection.
+def test_no_user_text_is_evidence_whoever_wrote_it() -> None:
+  """Evidence is what the actor produced; the brief arrives by another route.
 
-  The rule cuts on **origin**, not on the ``user`` role — the task statement
-  and an interjection are both user messages and differ in where they came
-  from.
+  The rule cuts on **origin**: a correction this supervisor wrote and an
+  outside interjection are both user messages, neither is an observation of
+  what the actor did, and the task statement does not need this path because it
+  is handed over at construction.
   """
   events = [
       user_text_event("Fix the failing colour test"),
       assistant_event("working on it"),
+      tool_result_event("3 failed"),
+      user_text_event(Intervention(text="check the ordering").rendered()),
       user_text_event("actually, try the other file"),
   ]
   evidence = evidence_of(events)
-  assert "other file" not in text_of(evidence)
-  assert "colour test" in text_of(evidence)
+  assert [m.role for m in evidence] == [Role.ASSISTANT, Role.USER]
+  assert text_of(evidence) == "working on it 3 failed"
 
 
 def test_every_event_is_dispositioned_in_the_record() -> None:
@@ -210,6 +264,7 @@ def test_every_event_is_dispositioned_in_the_record() -> None:
   rows: list[dict[str, object]] = []
   supervisor = Supervisor(
       policy=NeverSpeak(),
+      task="the task",
       guidebook="g",
       sink=lambda _: None,
       log=lambda row: rows.append(dict(row)),
@@ -223,7 +278,7 @@ def test_every_event_is_dispositioned_in_the_record() -> None:
   ):
     _ = supervisor.observe(event)
   assert [r["evidence"] for r in rows] == [
-      "task-statement",
+      "excluded-external-text",
       "assistant",
       "tool-result",
       "excluded-own-intervention",
@@ -264,7 +319,11 @@ def test_what_it_said_is_remembered_outside_the_evidence() -> None:
       return Intervention(text=f"nudge {len(observation.said)}")
 
   supervisor = Supervisor(
-      policy=Records(), guidebook="g", sink=lambda _: None, log=lambda _: None
+      policy=Records(),
+      task="the task",
+      guidebook="g",
+      sink=lambda _: None,
+      log=lambda _: None,
   )
   _ = supervisor.observe(assistant_event("one"))
   _ = supervisor.observe(assistant_event("two"))
@@ -300,6 +359,7 @@ def test_the_supervisor_emits_only_its_own_message() -> None:
   rows: list[dict[str, object]] = []
   supervisor = Supervisor(
       policy=Speaks(),
+      task="the task",
       guidebook="g",
       sink=written.append,
       log=lambda row: rows.append(dict(row)),
@@ -312,8 +372,9 @@ def test_the_supervisor_emits_only_its_own_message() -> None:
 def test_a_policy_that_raises_is_recorded_as_a_gap() -> None:
   """A dropped decision appears in the record, never silently skipped.
 
-  Measured precedent: a polling supervisor died at boundary 13 of the steered
-  re-run and every later boundary went unjudged with nothing saying so.
+  A judge that fails leaves the boundary unjudged either way; what must not
+  happen is that the record looks the same as one where the supervisor chose
+  silence.
   """
 
   class Raises:
@@ -346,6 +407,7 @@ def test_a_policy_that_raises_is_recorded_as_a_gap() -> None:
   rows: list[dict[str, object]] = []
   supervisor = Supervisor(
       policy=Raises(),
+      task="the task",
       guidebook="g",
       sink=lambda _: None,
       log=lambda row: rows.append(dict(row)),
@@ -368,6 +430,7 @@ def test_a_failing_sink_mutes_but_never_ends_the_run() -> None:
   rows: list[dict[str, object]] = []
   supervisor = Supervisor(
       policy=Speaks(),
+      task="the task",
       guidebook="g",
       sink=broken,
       log=lambda row: rows.append(dict(row)),
@@ -384,6 +447,7 @@ def test_the_log_accounts_for_every_event() -> None:
   rows: list[dict[str, object]] = []
   supervisor = Supervisor(
       policy=NeverSpeak(),
+      task="the task",
       guidebook="g",
       sink=lambda _: None,
       log=lambda row: rows.append(dict(row)),
@@ -402,7 +466,11 @@ def test_a_policy_is_replaceable_without_touching_anything_else() -> None:
   silent: list[str] = []
   for policy, sink in ((Speaks(), spoken), (NeverSpeak(), silent)):
     supervisor = Supervisor(
-        policy=policy, guidebook="g", sink=sink.append, log=lambda _: None
+        policy=policy,
+        task="the task",
+        guidebook="g",
+        sink=sink.append,
+        log=lambda _: None,
     )
     supervisor.observe(assistant_event("same event"))
   assert len(spoken) == 1
