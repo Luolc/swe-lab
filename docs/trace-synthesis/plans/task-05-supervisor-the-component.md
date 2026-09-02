@@ -120,6 +120,61 @@ from the fix. The claim is narrower and checkable:
 > solution is the guidebook, and the guidebook's own content rules are phase B's
 > problem, not this component's.
 
+### 3.1 The barrier's second half: what the *judge* may reason from
+
+**`Observation` guards one entrance, and it is the one facing the actor. The
+judge has a second one — its criterion — and material derived from the answer
+pierces the barrier from behind.**
+
+The concrete case is not hypothetical. SWE-bench instances carry **no
+per-instance guidebook**. If one is written for an instance by someone who has
+read the gold patch, the supervisor is *paraphrasing the answer*: it will never
+say "the fix is X", and it will still push the actor down X's path. That is the
+leak the whole design exists to prevent, arriving through a different door — and
+**no field test on `Observation` can see it, because it never travels that
+channel.**
+
+**The rule, in the form that can be checked:**
+
+> **The judge's criterion is a named, committed artifact that is byte-identical
+> for every instance.**
+
+**Instance-independence is the operationalization of "general engineering
+practice, not this instance's solution path"** — a material that is the same for
+every instance cannot encode instance-specific knowledge, and that is an
+information-theoretic fact rather than an assurance about anybody's care. It
+gives the barrier's second half the four things its first half already has:
+
+| | |
+| --- | --- |
+| **artifact** | the criterion file, in the repository |
+| **check** | each run asserts `sha256(criterion)` equals the pinned constant — and, redundantly but cheaply, that the criterion shares no file path and no 8-gram with this instance's gold patch |
+| **rejection** | on mismatch the **run refuses to start**. Not a recorded gap: with the barrier broken there is no experiment left to run |
+| **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
+
+**What the criterion being constant does *not* mean.** The judge's *prompt* is
+still instance-specific — it carries the task statement and the actor's own
+records, which is the whole point of §3. What is pinned is the **standard** it
+measures against, not the material it measures.
+
+**The redundant half degrades honestly.** The path- and n-gram-overlap check
+needs the gold patch to be available where the check runs; for a dataset that
+records none, it cannot run and the hash equality carries the invariant alone.
+That is a weaker state and the run should say so rather than reporting a check
+it did not perform.
+
+**When this check fires, that is the design working.** The day someone genuinely
+needs a per-instance criterion, the hash stops matching and the run stops. That
+is the moment the barrier has to be re-examined by a person — **not an obstacle
+to route around**, and the rejection path is deliberately loud so that routing
+around it takes a visible decision rather than a quiet edit.
+
+**The provenance statement survives as rationale, not as a guarantee.** *"Its
+author must not have read the fix"* is a claim about a person; nothing can test
+it, and by this repo's own rule an untestable *must* is either given a test or
+downgraded. It is kept here because it says **why** the artifact is pinned, and
+it no longer does any of the load-bearing work.
+
 **Tests that must land with the code** (per `AGENTS.md`: an invariant needs a
 test or the sentence is downgraded):
 
@@ -129,6 +184,8 @@ test or the sentence is downgraded):
   of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
   pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
   catches the one we did not.
+- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half,
+  with the run refusing to start rather than recording a gap.
 - `test_the_task_is_given_not_read_off_the_stream` — the goal reaches the
   policy without any message having to be guessed to *be* the brief.
 - `test_a_supervisor_attached_mid_run_admits_no_user_text` — where the
@@ -149,7 +206,7 @@ already said — and would otherwise be free to say the same thing three times i
 a row. That list is handed to the policy beside the evidence, never mixed into
 it (`test_what_it_said_is_remembered_outside_the_evidence`).
 
-## 4. When it speaks: a policy seam, and exactly two implementations
+## 4. When it speaks, and what it says
 
 ```
 SpeakPolicy:  consider(observation) -> Intervention | None
@@ -160,17 +217,139 @@ run state (what it has already said, and where). **The policy decides whether
 and when; it does not decide the channel, does not write, and cannot end the
 run.** Returning `None` is the ordinary case and is not an error.
 
-**Two implementations ship, and the second one is not padding:**
+### 4.1 What "off track" means, and why the bar is not a delay
 
-1. **The real policy** — one, whichever the rig's first arm needs.
-2. **`NeverSpeak`** — because the control arm must run *the same supervisor*
-   with speech disabled, not *no supervisor*. If the control arm simply omits
-   the component, the arms differ by the judge calls, their latency and their
-   cost as well as by the corrections, and the comparison stops being paired.
+A policy that speaks needs a judgement, and the judgement is a model call over
+the `Observation`: the task, the guidebook, a window of the actor's own records,
+and what has already been said. **It asks two questions, not one:**
 
-Beyond those two, **no policy library.** The repo's rule is that the third
-repetition earns the abstraction; the seam here is earned by the measured fact
-in §2, not by anticipated variety.
+1. **Is the actor off the guidebook's path?**
+2. **Left alone, would it come back by itself?**
+
+Only *off-track **and** not self-correcting* speaks. The second question is
+where the restraint lives — an actor that has just said "that didn't work, let
+me reconsider" is already doing the thing an intervention would ask for, and
+speaking there is the redundancy the graded batch measured (roughly half its
+interventions).
+
+**Precision comes from the bar; restraint comes from the budget; neither may
+come from delay.** The obvious way to buy precision is to debounce — require
+the deviation to persist across two judgements before speaking. **This design
+rejects that**, and the reason is the one measurement we have: 8 of 8
+non-compliances arrived *too late*
+([report §6.2](../../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)).
+Debouncing buys precision with exactly the currency we are already short of. So
+the first intervention is never delayed by design; what is limited is **how
+often** the supervisor may speak, not **how long it waits** before it may.
+
+**The judgement is subjective, and the design says so.** The owner's ruling
+stands: this is a language model deciding on-track or off-track, so it is
+probabilistic and a defensible reading suffices. The policy therefore must not
+be built as though the judge were an oracle — no retry-until-agreement, no
+second call to break a tie. One call, one verdict, recorded.
+
+### 4.2 The three parameters a sweep needs, and their honest status
+
+The parameters are named here so they can be varied without editing the policy,
+because **timing is the variable we have never been able to turn**:
+
+| Parameter | What it controls | Status |
+| --- | --- | --- |
+| `budget` | how many interventions a whole run may carry | **[U]** proposed 3; no measurement supports any number |
+| `cooldown` | how many boundaries must pass **between** interventions — it never delays the *first* one | **[U]** proposed 4 |
+| `window` | how many of the actor's records the judge sees | **[U]** proposed 8. **[C]** is what `judge_steps.py` used, which is *provenance, not evidence*: 8 was never tested against 4 or 16 |
+
+**None of these three has a measured value, and the plan will not pretend
+otherwise.** They are written as parameters precisely so the rig can sweep them;
+a default that arrived by taste and then hardened into a constant is how a
+number nobody chose ends up in a result.
+
+### 4.3 Silence is structural, not hoped for
+
+**The budget gates speech, not judgement**, and the order follows from that —
+an earlier draft of this section put budget first, which would have made
+`GuidebookPolicy(budget=0)` skip the judge entirely and quietly destroy the
+matched control §4.4 depends on. `consider()` returns `None` unless every gate
+passes, in this order:
+
+1. the judge says off-track, else silent;
+2. the judge says it will not self-correct, else silent;
+3. **the would-have-spoken marker is recorded here**, before any budget is
+   consulted — this is what the control arm produces and what lets the two arms
+   be compared at matched deviation points;
+4. budget remaining, else silent (with the marker already recorded);
+5. cooldown elapsed since the last intervention, else silent (likewise);
+6. the writer produces a usable line, else **a recorded gap** — never a retry.
+
+The cost of this ordering is stated rather than hidden: **the judge runs on
+every boundary even after the budget is spent**, so a treatment run and a
+control run pay the same judge calls. That is the price of a paired comparison,
+and paying it is the point.
+
+A policy that speaks by default cannot be produced by omitting a parameter,
+because **`budget` has no default**: a policy that may speak must state how
+often. The guarantee is tested three ways: a judge that always says on-track
+yields zero interventions; `budget=0` yields zero **interventions and a non-zero
+count of would-have-spoken markers** when the judge always says off-track — the
+marker count is what proves the judge still ran; and `budget=k` yields at most
+`k` on a trace where it always says off-track.
+
+### 4.4 The implementations, and why `budget=0` replaces a second control
+
+1. **`NeverSpeak`** — already shipped. No judge, no speech; the trivial control
+   and the test double.
+2. **`SpeakAt(cursors)`** — speaks a fixed line at fixed cursors, with no judge
+   at all. This is the **timing knob in isolation**: it varies *when* while
+   holding *what* and *whether* constant, which is the one comparison the graded
+   batch could not make because its trigger was entangled with its criterion.
+3. **`GuidebookPolicy(judge, writer, budget, cooldown, window)`** — the real
+   one, as designed above.
+
+**A fourth class was considered and is not needed.** The paired control wants a
+supervisor that *judges but never speaks* — same calls, same cost, same
+cadence, zero corrections — and that is exactly `GuidebookPolicy(budget=0)`,
+**which works only because §4.3 consults the budget after the judgement rather
+than before it.** Reverse those two and the control silently stops paying for
+its judge, at which point it is no longer the same run minus the corrections.
+It also produces something more useful than silence: a record of **where it
+would have spoken** on control traces, which is what lets the two arms be
+compared at matched deviation points rather than only at their endpoints.
+
+### 4.5 What it writes
+
+A second model call, given the same `Observation` and nothing else. The shape is
+the user's, quoted because paraphrasing it loses the thing that matters:
+
+> "不对不对，你不太应该看那些 fail，我觉得看这些是更相关一点的" — a person
+> watching over your shoulder, hedged and offhand.
+>
+> **Not**: "ok the right answer is X, go do that."
+
+So the writer is instructed to produce one short line that **hedges** ("I don't
+think…", "I'd look at…"), **points at a direction** already visible in the
+actor's own work, and **names no fix**. Three of those are prose properties. The
+checkable ones are stated as checks and the rest is stated as unenforced:
+
+§5 already fixes what *any* intervention must satisfy — the length cap, the
+tag, and the ban on fabricating an observation — and those are properties of the
+`Intervention` type, not of this writer. **What the writer adds are two checks
+of its own**, and they are the only two worth adding because they rule out
+failures a length cap does not:
+
+| Writer check | What it actually rules out |
+| --- | --- |
+| no fenced code block and no diff hunk header | the most literal form of handing over the answer |
+| no verbatim n-gram shared with the guidebook (n≈8 words) | the guidebook being **pasted through** the channel into the actor's context |
+
+A third property — *not a repeat of what it already said* — belongs to the
+policy rather than the writer: `said` is in the `Observation` precisely so the
+judgement can decline to speak again, and rejecting a duplicate after paying for
+it would be the wrong layer.
+
+**The n-gram guard is a floor, not a proof.** A paraphrase defeats it, and it is
+worth having anyway: it catches the failure that would actually happen, which is
+a writer quoting the guidebook because the guidebook is the most relevant text
+in its context.
 
 **What a policy can actually see about timing** is bounded by the channel, and
 the plan says so rather than letting an implementer discover it: **[M]** the
@@ -184,6 +363,92 @@ neither side arbitrates
 policy can therefore *guarantee* it speaks before an action; it can only shorten
 the distance. A plan that promised otherwise would be promising something the
 channel does not sell.
+
+### 4.6 The leak audit is a human's, and the record has to support it
+
+The two writer checks in 4.5 are automatic and shallow by construction. **The
+real guard on leakage is that a person can go back and read what happened**, so
+every intervention is recorded together with **the judge's input and its stated
+reason** — not only the line that was sent. Without the input, an audit can see
+that a nudge looked innocuous and cannot see that the judgement behind it was
+made from material it should never have had.
+
+This is also what makes §3.1 reviewable after the fact rather than only at
+design time: a criterion that quietly acquired instance-specific knowledge shows
+up in the judge's reasoning long before it shows up in the text of a nudge.
+
+### 4.7 A retrospective check that costs no rollouts, and its ceiling
+
+**The graded batch's interventions are on disk, so gate (a) can be replayed
+against them before any parameter is chosen.** The correction the design claims
+to make is precisely the defect that batch exposed: its trigger was syntactic
+and **never asked whether there was anything left to ask for**.
+
+**The set, counted from the committed evidence rather than from memory:** of the
+20 `mid` runs, 3 produced no trigger and **17 were interventions**; of those,
+**14 had the predicate already satisfied at the moment the trigger fired**
+(`predicate_already_true.at_trigger`), leaving **3 valid triggers**. This
+matches [the report's](../../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)
+own "fourteen of 17".
+
+**Worth stating plainly, because it changes how much that batch is owed:** under
+that rule the graded arm contained **3** interventions that still had something
+to ask for. Whatever `BELOW_BAR` measured, it measured it over that.
+
+**The question is paired to the fixture, and getting this wrong would
+manufacture a false refutation.** Gate (a) judges *deviation from general
+engineering practice*; the flag records whether *that fixture's predicate* was
+already satisfied. They are not the same thing, and a record whose predicate was
+satisfied can still be genuinely off track **on some other axis**. So the replay
+asks the matched question:
+
+> *On the dimension this fixture's correction addressed, is the actor deviating
+> at this moment?*
+
+**Not** "is anything wrong here". A gate (a) that answers "deviating" about a
+different axis is **right**, and scoring it as a miss would refute the design
+with an answer to a question nobody asked.
+
+**The reading, fixed here before the replay runs:**
+
+- On the **14**, gate (a) asked the paired question should answer *not
+  deviating* — the work was already done, and a judge that says otherwise has
+  reproduced the defect.
+- On the **3**, the counts are reported and **decide nothing**: n=3 is far under
+  that experiment's own pre-registered floor of 12.
+
+**Three limits carried over from the source, each sufficient on its own** — the
+validity split is exploratory rather than pre-registered, its partition was
+drawn after seeing which runs failed, and the fixtures have **no guidebook**, so
+what is being exercised is the *general-practice* criterion of
+[§3.1](#31-the-barriers-second-half-what-the-judge-may-reason-from), not the
+phase-B pipeline. **This replay can therefore falsify the gate and cannot
+validate it — and it can falsify it only on the paired dimension above.** If gate (a) calls the 14 deviations, the design is wrong in the
+way that matters; if it does not, we have removed one known failure and learned
+nothing about the rest.
+
+**Gate (a) alone is the whole check.** Gate (b) — *would it self-correct* — has
+**no** supporting evidence at all, so it must not be tuned to carry weight here;
+already-finished work is not a deviation under (a), and reaching for (b) to
+explain that would be fitting a second knob to the same data.
+
+**The inputs are read-only and carry operator PII, which constrains what the
+replay may emit.** The committed evidence carries each row's action, correction
+and validity flags, but **not the conversation prefix** the judge needs; those
+raw captures are off-repo, gitignored for that reason, and owned by another
+component. The terms this replay works under:
+
+- **Read only** — nothing modified, moved, or copied into another worktree.
+- **Only aggregate counts and classification labels may be derived.** No
+  verbatim fragment, path, or username reaches a commit, a PR description, or a
+  message between agents.
+- **A record is cited by its index**, never by its content.
+
+These are the same redaction terms the repo already applies to trace records
+([`AGENTS.md`](../../../AGENTS.md) — *redact operator PII in any trace record*);
+they are restated here because this replay reads a corpus that never enters the
+repository, where the usual reviewer's check on a diff cannot see what was
+quoted.
 
 ## 5. What it may say
 
@@ -235,7 +500,9 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
   one we ship. This is on the critical path either way — the rollouts that will
   use this channel run in containers, and every measurement of the channel so
   far is host-side.
-- The six named tests above exist and fail when their invariant is violated.
+- **Every named test above exists and fails when its invariant is violated.**
+  The count is deliberately not written here: it has grown twice already, and a
+  number in this line would be wrong before the code lands.
 - A `SpeakPolicy` can be replaced without touching the stream consumer, the
   intervention type, or the log — demonstrated by `NeverSpeak` and the real
   policy sharing every other line.
