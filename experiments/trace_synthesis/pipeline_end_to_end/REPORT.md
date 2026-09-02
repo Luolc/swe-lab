@@ -28,12 +28,6 @@ shown.
 | Supervisor model | `SUPERVISOR_MODEL` (`src/swe_lab/workflow/definitions.py`), one judge call and one writer call per intervention |
 | Read at | 2026-09-02, after the run ended and the container was gone; every file below is final, not growing |
 
-The version line is worth its row: an earlier account of this run named
-2.1.220, which appears only in *comments* describing probes
-(`constants.py:49`, `harness.py:351/367/738`). The pinned constant and the
-container's own `--version` both say 2.1.212. A version always has a runtime
-reading; a comment about a version is not one.
-
 ## 1. The seven points
 
 One row per point of
@@ -58,7 +52,7 @@ Three slots each, and none of them may be merged:
 | 2a | Barrier holds: no gold patch, no hidden tests in the supervisor's input | Consumed as-is per §4, not re-verified here; `test_supervisor_input_carries_no_privileged_field` is where it lives. This run adds a *different* fact, not a substitute: the three delivered corrections carry no answer either (§1a). | consumed, **not re-verified** | none |
 | 2b | Criterion sha verified, mismatch refuses **the run** | Closed by the suite, not by this run: `test_a_forged_criterion_stops_the_run_before_a_sandbox_exists` (`tests/test_rollout.py`) and `test_the_shipped_supervised_arm_carries_the_pinned_criterion` (`tests/test_workflow_registry.py`), both on `main`. A run against a *correct* criterion says nothing about a forged one. | **closed** by the suite | none |
 | 3 | Policy speaks at least once **because of a real deviation** | Three `kind: "spoke"` rows, cursors **4 / 8 / 12**, `at` 07:23:47.541 / 07:24:04.404 / 07:24:23.080, `policy: "speak-when-off-track"` on all 170 rows (never `speak-at`); `metrics["supervision.corrections"] = 3`. **Assertion A:** all three texts appear in the actor's own native session transcript — `claude_code.native_transcript.tar.gz` → `projects/-app/f4ddae90-a7d2-440a-9e56-36e8a90c08ce.jsonl`, 122 lines, `supervisor_note` on lines **32 / 51 / 57** (1-indexed), `type: attachment`. That file is written by Claude Code for its own resume, by nothing of ours. | **closed** | A |
-| 4 | Correction arrives **mid-turn**, matching the measured wire shape | `claude_code.proxy_log.jsonl` (3,064,215 bytes, final): 33 requests carry a `messages` array, **24** carry the block, **63** occurrences of `<supervisor_note>` in total, of which **3 sit in the last message** — one per intervention — and **0 appear in any response**. The carrying message is `role: "system"` with one `type: "text"` block wrapping `<system-reminder>The user sent a new message while you were working: <supervisor_note>…</supervisor_note>…</system-reminder>`. **Structural agreement** with `experiments/trace_synthesis/sandbox_fold_check/` — role, wrapper and position — and deliberately **not** byte-identity: that measurement is about *its own probe text*, and this run's injected text is different. | **closed on B**, with the trust assumption below | B |
+| 4 | Correction arrives **mid-turn**, matching the measured wire shape | `claude_code.proxy_log.jsonl` (3,064,215 bytes, final): 33 requests carry a `messages` array, **24** carry the block, **63** occurrences of `<supervisor_note>` in total, of which **3 sit in the last message** — one per intervention — and **0 appear in any response**. The carrying message is `role: "system"` with one `type: "text"` block wrapping `<system-reminder>The user sent a new message while you were working: <supervisor_note>…</supervisor_note>…</system-reminder>`. **Structural agreement** with `experiments/trace_synthesis/sandbox_fold_check/` — role, wrapper and position — and deliberately **not** byte-identity: that measurement is about *its own probe text*, and this run's injected text is different, which is the whole of why it is not borrowable. | **closed on B**, with the trust assumption below | B |
 | 5 | Rollout completes, patch taken **against the pre-agent baseline**, grading runs | `run.json` → `extra.patch_base_ref = 64501d9b938bd7986b36dd2cd4fdb7af930b2750` (ADR-0014); `metrics["patch_is_empty"] = 0.0`, `patch.diff` 3,107 bytes. Grading ran: the `unit_test` entry's `metrics["unit_test.resolved"]` is **present** (`0.0`), which is what §4 makes the criterion — presence, not value. | **closed** | none |
 | 6 | Trace persisted, **interjection in it**, provenance complete | `conversation.json`: 73 messages, of which **msg[19], msg[29], msg[32]** are `role: "system"` and carry `supervisor_note` — the interjections survived conversion. Provenance: `run.json` carries `run_ts`, `backend`, `instance_id`, `sweep_id`, `tier`, `rollout_id`, `attempt`, `status`, and `extra["agent_model"] = "claude-sonnet-5"`. (The top-level `model` field is empty **by design** — `src/swe_lab/sandbox/persist.py:66-71`: nothing in-tree sets it, and a rollout records its actor in `extra`. Not a provenance gap; written down so the next reader does not re-derive it.) | **closed** | none |
 | 7 | The **outcome word is correct** | `run.json` → `extra.rollout_outcome = "patch_produced"`, recorded verbatim. Judged against `RolloutOutcome`'s members read fresh from `src/swe_lab/rollout.py` — `OOM_KILLED`, `SYSTEM_FAILED`, `TIMED_OUT`, `NO_PATCH`, `PATCH_PRODUCED`, `UNCLASSIFIED`, `SUPERVISION_FAILED` — against what happened: the agent finished (`agent_complete 1.0`, `claude_code.exit_code 0.0`, `claude_code.timed_out 0.0`), the patch is non-empty (`patch_is_empty 0.0`), no OOM (`sandbox.oom_kills 0.0`), and supervision was never lost (no `supervision.unhealthy` key; see §3). | **closed** | none |
@@ -195,18 +189,25 @@ it closes or fails none of the seven points.
 ## 5. Cost and hygiene
 
 - **Wall clock:** `metrics["claude_code.wall_seconds"] = 1124.47`.
-- **Supervision catch-up:** §5 of the skeleton asks for
-  `supervisor.jsonl`'s last timestamp minus the event stream's last
-  timestamp. **The event stream's events carry no absolute timestamp**, so
-  that subtraction is not available as specified; the same quantity is
-  derived from two recorded numbers instead — wall clock minus the actor's
-  own reported `duration_ms = 167591` on its terminal `result` event:
-  **≈ 956.9 s, or 85.1% of the run's wall clock**, during which the actor had
-  finished and the supervisor was still working. Recorded here on every run,
-  not only when something looks wrong: a number first computed after an
-  incident has no baseline to be read against. (Corroborating the same span
-  from the other side: `supervisor.jsonl` runs 07:23:35.650 → 07:42:14.572,
-  1118.9 s, against an actor that reported 167.6 s of work.)
+- **Supervision catch-up: 955.1 s, 84.9% of the wall clock.**
+  `supervisor.jsonl`'s last row (`07:42:14.572388+00:00`) minus the last
+  event-stream line that carries a timestamp (line 169, `assistant`,
+  `2026-09-02T07:26:19.485Z`). 90 of the stream's 170 lines carry one; the
+  terminal `result` event does not, which is why the row has to be named that
+  way. That span is time in which the actor had finished and the supervisor
+  was still working. Recorded on every run, not only when something looks
+  wrong: a number first computed after an incident has no baseline to be read
+  against.
+
+  A second, independent derivation of the same quantity agrees: wall clock
+  minus the actor's own reported `duration_ms = 167591` gives **956.9 s**, a
+  1.8 s difference that is the gap between "the actor's last timestamped
+  event" and "the actor's process finishing".
+
+  **A third number measures something else and is not comparable:**
+  `supervisor.jsonl` spans 07:23:35.650 → 07:42:14.572, **1118.9 s**. That is
+  the supervisor's whole working life, not the catch-up — it includes the
+  164 s during which the actor was still going.
 - **Actor spend:** $1.3311234 (see §2 line 1).
 - **Containers:** the rollout used one, the grading three (one per attempt);
   `docker ps -q` and `docker ps -aq` were both 0 after the run. The run held
