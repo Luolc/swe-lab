@@ -568,6 +568,16 @@ standing. It stays separate from `SUPERVISION_METRIC`, which is the one that
 changes the outcome word. A count that lived only in `supervisor.jsonl` would
 be one more fact recorded and never read.
 
+**Both hops are tested, and the second one had to be.** The observer's half is
+`test_a_bounded_lapse_is_counted_where_the_outcome_is_read`; the runner's half
+is `test_a_metric_an_observer_contributes_reaches_the_persisted_record`. The
+first alone is not enough, and the reason is worth keeping: it builds its
+`AttemptResult` from the contribution directly, so deleting the runner's copy
+leaves it green while the number vanishes from the record. This metric changes
+no outcome word, so the record is its *only* consumer — a claim about it that
+stops at the contribution is a claim about nothing (found in review of the PR
+that added it).
+
 ## 7. Acceptance
 
 - **The in-sandbox fold check — ✅ run 2026-09-02, `MATCH`**

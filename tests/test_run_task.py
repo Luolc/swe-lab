@@ -19,6 +19,7 @@ import pytest
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.swebench_pro.unit_test import SweBenchProVerdict
 from swe_lab.evaluation.verdict import UnitTestSpec
+from swe_lab.rollout import SUPERVISION_LAPSE_METRIC
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
@@ -92,6 +93,51 @@ class _MaybeProduce(SandboxObserver):
     if self.produce:
       return Contribution(inline_artifacts={"out.txt": b"OUT"})
     return None
+
+
+@final
+@dataclass
+class _ContributesAMetric(SandboxObserver):
+  """Produces the required output and one metric, as a real observer does."""
+
+  metric: str
+
+  @override
+  def output_schema(self) -> tuple[ArtifactSchema, ...]:
+    return (ArtifactSchema("out.txt", description="the deliverable"),)
+
+  @override
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+    del sb
+    return Contribution(
+        inline_artifacts={"out.txt": b"OUT"}, metrics={self.metric: 2.0}
+    )
+
+
+@final
+@dataclass
+class _MetricProducer(Task):
+  """A task whose only observer contributes one metric."""
+
+  metric: str
+
+  @override
+  def observers(
+      self, instance: TaskInstance[SweBenchProVerdict]
+  ) -> tuple[SandboxObserver, ...]:
+    del instance
+    return (_ContributesAMetric(metric=self.metric),)
+
+  @override
+  def action(
+      self,
+      sb: SandboxFs,
+      instance: TaskInstance[SweBenchProVerdict],
+      *,
+      timeout: float,
+  ) -> ExecResult:
+    del instance
+    return sb.run_script("main.sh", timeout=timeout)
 
 
 @final
@@ -184,6 +230,31 @@ def test_a_clean_run_persists_the_attempt_and_marks_succeeded(tmp_path: Path):
   marker = read_marker(store, ADDRESS, "acme__widget-1")
   assert marker is not None and marker.outcome is TaskOutcome.SUCCEEDED
   assert marker.attempts == 1
+
+
+def test_a_metric_an_observer_contributes_reaches_the_persisted_record(
+    tmp_path: Path,
+):
+  """The hop between "the run measured it" and "a reader can see it".
+
+  An observer's metric is only a fact about the run in memory. What makes it
+  readable is this layer copying it onto the persisted shard, and that copy has
+  no other guard: drop it and every metric still arrives at ``rollout_outcome``
+  from the live result, so a test built on an in-memory ``AttemptResult`` stays
+  green while the record loses the number.
+
+  Driven with ``supervision.lapses`` because that metric changes no outcome
+  word — the record *is* its only consumer, so this hop is the whole of it.
+  """
+  task = _MetricProducer(metric=SUPERVISION_LAPSE_METRIC)
+  outcome, store, _ = _run(tmp_path, task)
+
+  assert outcome.outcome is TaskOutcome.SUCCEEDED
+  assert outcome.record is not None
+  assert outcome.record.metrics[SUPERVISION_LAPSE_METRIC] == 2.0
+  # …and on the shard as it was written, not only on the object in hand.
+  shards = store.read_manifest("sw", "acme__widget-1", 0, task="probe")
+  assert [s.metrics[SUPERVISION_LAPSE_METRIC] for s in shards] == [2.0]
 
 
 def test_a_missing_required_output_fails_the_attempt(tmp_path: Path):
