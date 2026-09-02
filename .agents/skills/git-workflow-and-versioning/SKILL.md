@@ -283,6 +283,8 @@ For anything with consumers, version `MAJOR.MINOR.PATCH` and let the number carr
 
 The number is a promise, so make the code match it. A "patch" that changes behavior consumers relied on is a major change wearing a disguise (Hyrum's Law — see the `api-and-interface-design` skill). When unsure whether a change is breaking, assume it is; a surprise major is far cheaper than a broken consumer.
 
+**In this repository, the change type does not choose the digit.** `docs/conventions.md` → [Which digit moves](../../../docs/conventions.md#which-digit-moves) is the rule that applies here: bump the **last** number unless the user asked for a different position by name or gave a literal target version. Read the paragraphs above as background on the wider ecosystem's convention, not as an instruction for a swe-lab release.
+
 ### Tag the release, and let the tag be the source of truth
 
 A release is an immutable point in history, not a moving branch. Tag it so it can always be reproduced:
@@ -320,7 +322,7 @@ Write the entry in the same change that makes the change, while the impact is fr
 | "Branches add overhead" | Short-lived branches are free and prevent conflicting work from colliding. Long-lived branches are the problem — merge within 1-3 days. |
 | "I'll split this change later" | Large changes are harder to review, riskier to deploy, and harder to revert. Split before submitting, not after. |
 | "I don't need a .gitignore" | Until `.env` with production secrets gets committed. Set it up immediately. |
-| "It's just a small fix, bump the patch" | Check what consumers can observe. A behavior change they relied on is a major, whatever the diff size. |
+| "It's just a small fix, bump the patch" | Check what consumers can observe: in the wider convention, a behavior change they relied on is a major, whatever the diff size. **In swe-lab the change never chooses the digit** — [Which digit moves](../../../docs/conventions.md#which-digit-moves). |
 | "The changelog is just the commit log" | Commits are for you; the changelog is for consumers, curated by impact. Generating one from raw commits buries what matters. |
 | "We'll write the changelog at release time" | By then the impact is reconstructed from memory and half of it is missing. Write the entry with the change. |
 
@@ -333,7 +335,7 @@ Write the entry in the same change that makes the change, while the impact is fr
 - Committing `node_modules/`, `.env`, or build artifacts
 - Long-lived branches that diverge significantly from main
 - Force-pushing to shared branches
-- A breaking change shipped under a minor or patch version bump
+- A breaking change shipped under a minor or patch version bump — **wider-ecosystem convention only; not a red flag in swe-lab**, where the digit follows [Which digit moves](../../../docs/conventions.md#which-digit-moves) rather than the change
 - A release with no tag, or a version number hand-edited out of sync with the tag
 - A user-facing release with no changelog entry, or a changelog that's just dumped commit messages
 
@@ -350,6 +352,6 @@ For every commit:
 
 For every release (anything with consumers):
 
-- [ ] The version bump matches the change: breaking → major, additive → minor, fix → patch
+- [ ] The version bump matches the change: breaking → major, additive → minor, fix → patch — **except in this repository**, where the digit is fixed by [Which digit moves](../../../docs/conventions.md#which-digit-moves) and defaults to the last number regardless of the change
 - [ ] The release is tagged, and the version is derived from the tag, not hand-edited out of sync
 - [ ] The changelog has a curated, human-readable entry grouped by impact for this version
