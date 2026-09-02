@@ -572,7 +572,21 @@ retroactively (owner's calibration, 2026-09-01).
   fact that separates the red light from the green one has already been written
   down, and nothing reads it. Worked example:
   [ADR-0015](decisions/ADR-0015-four-words-for-how-a-rollout-ends.md), which
-  turns `oom_kills` from a number into a gate. **Sibling rule, one layer up:**
+  turns `oom_kills` from a number into a gate.
+- **A failure state needs an exit of its own; sharing one with a normal value
+  *is* the defect.** `None` returned both for "the policy decided not to speak"
+  and for "the policy could not speak"; a supervising thread whose liveness is
+  never read, so "still running" has nowhere to land and arrives as "it
+  stopped"; a leaked background process that no exit status reports. In each
+  the failure had no carrier and was absorbed by the nearest value that did.
+  The direction is not a tendency, it is structural: **"normal" is the default
+  and a failure is the thing that has to be represented, so what is not
+  represented falls back to the default — and the default reads as a run that
+  went fine.** The test is design-time: for every way a thing can fail, name
+  the field that carries it, and if you cannot, name the normal value it will
+  be read as instead. This is the sibling of the entry above that a review
+  cannot catch — *recorded and never consumed* shows up in a diff as a field
+  nobody uses, while **an absent representation has no line to appear on**. **Sibling rule, one layer up:**
   the experiment playbook's *stratifying variable* entry asks whether a
   recorded variable **can diagnose anything** (it must vary *within* some
   unit); this entry asks whether **anything reads it at all**. Neither implies
