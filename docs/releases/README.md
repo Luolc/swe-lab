@@ -13,6 +13,7 @@ these files **link** to it and never restate it.
 
 | Version | Date | Breaking | What it is |
 |---|---|---|---|
+| [v0.3.0](v0.3.0.md) | 2026-09-02 | **yes** — run output paths, the host-side capture proxy, a hash-gated dataset | Supervised rollouts a command can start (supervisor on the actor's live stdin, plus a paired control); `RolloutOutcome` and a rate that carries its two counts; the capture proxy moves into the sandbox; the pre-agent baseline and a one-hour agent budget become the defaults. |
 | [v0.2.14](v0.2.14.md) | 2026-08-26 | **small** — one moved module | DeepSWE 1.1 as a second fully-runnable dataset (113-task sweep clean); HOME defers to the image with per-agent pinned config; scoped `safe.directory` on every engine git command. |
 | [v0.2.13](v0.2.13.md) | 2026-08-25 | no | Two diff-extraction styles end to end: the classic `base_commit` round trip, plus an opt-in pre-agent baseline whose tree mismatch fails ungraded. |
 | [v0.2.12](v0.2.12.md) | 2026-08-23 | no | A bigger retry budget on a declared `CodexProvider`; nothing to react to. |
