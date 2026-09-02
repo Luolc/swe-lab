@@ -657,6 +657,21 @@ retroactively (owner's calibration, 2026-09-01).
   differ. So there are exactly two ways to read the code a PR is under review
   at: **`git show <sha>:<path>`, or your own detached worktree at that SHA.
   Reading somebody's working directory is not reading that code.**
+
+  The moment is a coordinate in its own right, and not only through
+  staleness: **a reading can invert.** `claude.correction_channel.unclean` is
+  written by the relay *before* the relay exists and removed only on a
+  deliberate close, so during a run its presence is the normal state and
+  after the run its presence is the failure — one path, read at two times,
+  two opposite facts. Ask what a file means *at the time you are reading it*;
+  the name answers only half of that.
+
+  And the artifact has to be the one that carries the claim. A commit
+  subject is compressed wording, not the evidence it points at: one reading
+  `the channel is a tagged tool-result suffix` was taken for a contradiction
+  of a measurement that had found a `system` role, until the report body it
+  summarised turned out to say `system` too (2026-09-02). Cite the report,
+  the test, or the record — never the sentence somebody wrote about it.
 - **After a squash merge, a branch cut from the merged branch cannot be
   rebased.** The squash lands the whole branch on `main` as one *new* commit, so
   git holds no record that the original commits are in — `git rebase
