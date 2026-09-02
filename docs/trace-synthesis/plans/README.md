@@ -6,12 +6,12 @@ deep design per task, indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L
 (break down if larger).
 
 > [!WARNING]
-> **Two rows below describe a terminated arm and are pending reconciliation**
-> (2026-09-01): task 01's acceptance and the whole of task 03 are written
+> **Task 03 is still pending reconciliation** (2026-09-01): it is written
 > against hint injection, which was closed by its own pre-registered kill
-> condition ([spec §15.1](../spec.md#15-success-criteria)). **Do not start
-> either** before [Pending reconciliation](#pending-reconciliation-2026-09-01)
-> at the end of this file is resolved.
+> condition ([spec §15.1](../spec.md#15-success-criteria)). **Do not start it**
+> before [Pending reconciliation](#pending-reconciliation-2026-09-01) at the end
+> of this file is resolved. **Task 01 is reconciled** — its acceptance was
+> rewritten on the owner's 2026-09-01 ruling; see [Task 01](#task-01-one-instance-end-to-end).
 
 > [!NOTE]
 > **Delivery moved off hooks on 2026-09-01**
@@ -63,7 +63,7 @@ research that preceded this index is not a task: its results are recorded in
 
 | # | Task | Status |
 |---|---|---|
-| 01 | **One instance, end to end** — an automated walkthrough producing the pipeline's first real artifacts on one real instance | ⚠ ⬜ **pending reconciliation** — its acceptance is the terminated arm's; a rewritten form is proposed [below](#pending-reconciliation-2026-09-01) |
+| 01 | **One instance, end to end** — one supervised rollout in which every stage of the pipeline actually runs, and each of the seven acceptance points names what proves it | ⬜ Acceptance rewritten 2026-09-01 (owner ruling); blocked only on task 05's `SpeakPolicy` |
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⚠ ⬜ **proposed for closure** — the task exists only for the terminated arm; see [below](#pending-reconciliation-2026-09-01) |
 | 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement. Wording follow-up from #276's review (P2, not a task — fold into the next edit of those passages): the design record's rationale and `oracle.py`'s module docstring still use the shorthand "the fix commit is reachable, and the brief says so" / "a run handed the answer" — scoped to phase B, where the purge is off, so consistent with the purge measured in rollouts, but untrue for a dataset that records no fix commit or reference patch, which the task supports — and `datasets/oracle_failures/README.md` lists the delegated gold patch without its when-recorded qualifier |
@@ -97,28 +97,53 @@ and it authorizes nothing.
 
 ## Task 01: One instance, end to end
 
-**Description:** Walk the whole pipeline over a single instance and keep what it
-produces: a real phase-A failure (on an instance whose gold self-test resolves)
-frozen with its conversation, a guidebook written against that failure in the
-[spec's shape](../spec.md#phase-b--the-oracle), and a steered re-run of a blind
-actor with every injected hint logged. The run is **automated** — the existing
-CLI plus scratch scripts, not a person typing hints — and uses no production
-code: nothing here is wired into a workflow definition.
+**Description:** One rollout of one real instance in which **every stage of the
+pipeline actually runs** — supervisor attached, correction delivered mid-turn,
+patch extracted, graded, recorded. The deliverable is a *working pipeline*, not
+an effect estimate: how much supervision helps is measured by the downstream
+consumer ([handoff note](../downstream-scale-note.md)), and this repo is capped
+at 10 instances × 2 rollouts.
 
-Per the owner's 2026-09-01 ruling the core assumption is **taken as given**
-rather than tested, so this is not the design's falsifier. Its value is the
-artifacts: tasks 04, 05 and 06 are designed against what a usable guidebook and
-a real steered conversation actually look like. The design record is
-[`task-01-one-instance-end-to-end.md`](task-01-one-instance-end-to-end.md).
+**What this replaces, and why.** The previous acceptance belonged to the
+**hint-injection arm**, closed by its own pre-registered kill condition
+([spec §15.1](../spec.md#15-success-criteria)), and delivery has since moved off
+hooks onto the actor's stdin
+([ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)).
+That ADR moved the mechanism without rewriting this row — this rewrite is the
+missed half of "the PR that outdates a spec reconciles it", done late. It also
+supersedes the post-hoc-grader form proposed in
+[Pending reconciliation §2](#2-task-01--rewrite-do-not-delete), which was
+written for a different arm again; see the note there.
 
-- **Acceptance:** a written record of the walkthrough — which candidates
-  survived gold validation, the harvested failure and where it is frozen, the
-  guidebook, the hint texts and where they were injected, the resulting verdict,
-  and a judgement on whether the hints stayed directional or drifted into
-  specifics. A **steered run that still fails is a complete result**.
-- **Verification:** an [experiment](../../experiments/playbook.md) `REPORT.md`
-  — hypothesis, logged run, conclusion.
-- **Dependencies:** none. **Scope:** S
+**Acceptance — seven points, each naming what proves it.** A point whose proof
+does not exist yet names the obligation on the PR that wires the supervisor,
+rather than a mechanism that is not there.
+
+| # | The claim | What proves it |
+|---|---|---|
+| 1 | The supervisor is attached to the actor's **live** output stream | The rollout entry persists the supervisor's own event artifact. **Obligation:** the wiring PR adds a named test that the entry composes the supervisor when configured, and names that artifact — neither exists today. |
+| 2 | The **barrier holds**: the supervisor's constructor interface carries no gold patch and no hidden tests, and the criterion artifact's sha256 is verified — a mismatch **refuses to start the run** | Task 05's own named tests (the fields are absent; a mismatched sha refuses). **Consumed here, not re-implemented** — a second barrier in this layer would be a second thing to keep true. |
+| 3 | The policy speaks at least once **because of a real deviation** | The supervisor's persisted log records, per utterance, the trigger that produced it, and at least one is deviation-triggered. `SpeakAt` is a knob for tests: **a run whose only utterances are scheduled does not satisfy this point.** **Obligation:** the wiring PR names the field that distinguishes the two. |
+| 4 | The correction arrives **mid-turn**, in the wire shape already measured | The run's capture artifact shows the injected block as the last `role: system` message before the actor's next action, matching the in-sandbox fold check (block byte-identical, 4 system-reminder blocks). |
+| 5 | The rollout completes, the patch is taken **against the pre-agent baseline**, and grading runs | `patch_base_ref` present in the rollout record (baseline mode, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md)) and `unit_test.resolved` present in the grading entry's metrics. Guarded by `test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image`. |
+| 6 | The trace is persisted, **the interjection is in it**, and provenance is complete | The conversation artifact contains the supervisor's block, and the record carries the fields `run_provenance()` stamps. **Obligation:** the wiring PR asserts the block survives conversion — an interjection that is delivered but lost in conversion passes points 1–4 and still leaves no evidence. |
+| 7 | The **outcome word is correct** | `rollout_outcome` in the rollout record is the one that matches what happened; the four words are pinned apart by the named tests in `tests/test_rollout.py` ([ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md)). |
+
+**All seven green = the pipeline works end to end.** Only then the 10 × 2 batch,
+whose purpose is to show the pipeline is *stable* — **not** to measure an
+effect, which it is far too small to do.
+
+- **Verification:** an [experiment](../../experiments/playbook.md) `REPORT.md` —
+  hypothesis, logged run, conclusion. A supervised rollout that **fails to
+  resolve is a complete result**; what would make it incomplete is a point above
+  that nothing can demonstrate.
+- **Dependencies:** task 05's `SpeakPolicy`. **Scope:** M
+
+**The old design record is superseded, not edited.**
+[`task-01-one-instance-end-to-end.md`](task-01-one-instance-end-to-end.md) is
+forward-looking design for the terminated arm (its Step 5 is "the steered
+re-run"). Keep the file, mark it superseded with a pointer, and write a new
+record for this form.
 
 ## Task 02: Measure the injection shape
 
@@ -570,6 +595,20 @@ up when a human reads the same trace". If it does not, collection, scoring and
 batch yield are all downstream of a judgement nobody can trust.
 
 ### 2. Task 01 — rewrite, do not delete
+
+> [!NOTE]
+> **Resolved 2026-09-01, but not by this proposal.** The owner ruled task 01's
+> acceptance to be the seven end-to-end points now in
+> [Task 01](#task-01-one-instance-end-to-end): the deliverable is a working
+> pipeline, and measuring the effect moved to the downstream consumer. The
+> proposal below was written for the **post-hoc grader** arm and is kept as the
+> record of a form that was not taken.
+>
+> **One question it leaves open, deliberately not answered here:** the
+> confrontation it describes — a guidebook's judgement against the unit-test
+> verdict and a human reading — is not part of task 01 any more, and has no
+> other home. Whether it still matters is the owner's call, not this file's.
+
 
 Under the new arm, "one instance end to end" becomes the thing this product line
 most needs and currently lacks: an **uninterfered** rollout of one real
