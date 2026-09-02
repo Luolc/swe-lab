@@ -12,13 +12,18 @@ from __future__ import annotations
 from collections.abc import Mapping
 import json
 from pathlib import Path
+import shlex
 from typing import Any, final
 
 from etils import epath
+import pytest
 
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_DONE_NAME,
+    CORRECTION_DROP_NAME,
+    CORRECTION_FIFO_NAME,
+    CORRECTION_PROMPT_NAME,
     CORRECTION_UNCLEAN_NAME,
 )
 from swe_lab.rollout import (
@@ -329,3 +334,104 @@ def test_a_channel_that_closed_on_its_own_produces_it_too(tmp_path: Path):
   contribution = observer.before_destroy(_fs(tmp_path))
   assert contribution is not None
   assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+
+
+@pytest.mark.docker
+def test_the_channel_works_in_a_real_container(tmp_path: Path):
+  """The parts no shape test can reach: FIFO, blocking open, reaping.
+
+  Everything else in this file runs on the host. Three properties only exist
+  inside the container, and two defects of exactly this kind were found in the
+  generated script by reading it rather than running it:
+
+  - the relay's ``exec 3>`` blocks until the reader opens the FIFO, so the
+    order the script starts things in is load-bearing;
+  - the sentinel closes the write end, the reader sees EOF, and **only** that
+    path clears the unclean marker;
+  - one ``EXIT`` trap reaps **both** background processes.
+
+  A stand-in stands in for the capture proxy: the pinned proxy binary is not in
+  a plain image, and what is under test is the reaping, not the proxy.
+  """
+  from swe_lab.harnesses.claude_code.harness import (
+      _reap,
+      _reaper_lines,
+      _relay_start_lines,
+      user_event_line,
+  )
+  from swe_lab.sandbox.backends.host import DockerHostSandbox
+
+  workspace = tmp_path / "ws"
+  workspace.mkdir()
+  sandbox = DockerHostSandbox(
+      spec=SandboxSpec("channel-probe", "debian:stable-slim", "/", "none"),
+      workspace=epath.Path(workspace),
+  )
+  sandbox.up()
+  try:
+    prompt = user_event_line("solve it").strip()
+    correction = user_event_line("look at the failing test").strip()
+    script = "\n".join(
+        [
+            "set -u",
+            *_reaper_lines(),
+            # Stands in for the capture proxy: a second long-lived
+            # child, which is what made the two traps overwrite.
+            "sleep 300 >/dev/null 2>&1 &",
+            "proxy_pid=$!",
+            _reap("proxy_pid"),
+            f"printf '%s\\n' {shlex.quote(prompt)}"
+            f' > "$SANDBOX_WORKSPACE"/{CORRECTION_PROMPT_NAME}',
+            *_relay_start_lines(),
+            # The host writes into the bind-mounted drop directory
+            # while the agent runs; the same files are the same bytes.
+            "(",
+            "  sleep 1",
+            f"  printf '%s\\n' {shlex.quote(correction)}"
+            f' > "$SANDBOX_WORKSPACE"/{CORRECTION_DROP_NAME}/m.part',
+            f'  mv "$SANDBOX_WORKSPACE"/{CORRECTION_DROP_NAME}/m.part'
+            f' "$SANDBOX_WORKSPACE"/{CORRECTION_DROP_NAME}/msg-0001.json',
+            "  sleep 1",
+            f'  touch "$SANDBOX_WORKSPACE"/{CORRECTION_DROP_NAME}/'
+            f"{CORRECTION_DONE_NAME}",
+            ") &",
+            # The agent's side: read the channel until the deliberate close.
+            f'cat "$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
+            ' > "$SANDBOX_WORKSPACE"/delivered.jsonl',
+            'printf "%s %s" "$proxy_pid" "$relay_pid"'
+            ' > "$SANDBOX_WORKSPACE"/pids',
+        ]
+    )
+    _ = (workspace / "channel.sh").write_text(script)
+    result = sandbox.run_script("channel.sh", timeout=60.0)
+    assert result.ok, result.stderr
+
+    # The prompt is the first message on the channel, the correction follows.
+    delivered = (workspace / "delivered.jsonl").read_text().splitlines()
+    assert [
+        json.loads(line)["message"]["content"][0]["text"] for line in delivered
+    ] == ["solve it", "look at the failing test"]
+
+    # The close was deliberate, so the marker is gone. Its survival is what
+    # tells a later reader that our side fell over instead.
+    assert not (workspace / CORRECTION_UNCLEAN_NAME).exists()
+
+    # Both children were reaped by the single EXIT trap. Checked inside the
+    # container, because these are container pids.
+    pids = (workspace / "pids").read_text().split()
+    _ = (workspace / "alive.sh").write_text(
+        "\n".join(f"kill -0 {pid} 2>/dev/null && exit 1" for pid in pids)
+        + "\nexit 0\n"
+    )
+    assert sandbox.run_script(
+        "alive.sh", timeout=30.0
+    ).ok, "a background process outlived the script"
+  finally:
+    # The relay ran as root, so the drop directory and FIFO it left are not
+    # removable by the test user; clear them from inside before teardown.
+    _ = (workspace / "clean.sh").write_text(
+        'rm -rf "$SANDBOX_WORKSPACE"/corrections'
+        ' "$SANDBOX_WORKSPACE"/claude.stdin.fifo\n'
+    )
+    _ = sandbox.run_script("clean.sh", timeout=30.0)
+    sandbox.down()

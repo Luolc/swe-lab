@@ -678,7 +678,9 @@ def test_the_relay_opens_the_channel_before_the_agent_reads_it():
   agent started before its relay waits forever — and that wait is indis-
   tinguishable from a slow run until the wall clock ends it.
   """
-  script = ClaudeCodeHarness(correction_channel=True)._invocation_script("/app")
+  script = ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  )._invocation_script("/app")
   lines = script.splitlines()
   relay = next(i for i, line in enumerate(lines) if line.startswith("mkfifo "))
   agent = next(i for i, line in enumerate(lines) if BINARY_AT in line)
@@ -696,7 +698,7 @@ def test_the_prompt_becomes_the_first_message_on_the_channel(tmp_path: Path):
   paths, as the record of what was asked.
   """
   sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
-  _ = ClaudeCodeHarness(correction_channel=True).run(
+  _ = ClaudeCodeHarness(capture="proxy", correction_channel=True).run(
       sb, prompt="solve it", timeout=1.0
   )
   assert json.loads(sb.read(CORRECTION_PROMPT_NAME).decode()) == {
@@ -721,9 +723,16 @@ def test_the_channel_closes_only_on_the_sentinel_and_says_so_when_it_does_not():
   remove one, and without this a supervisor crash reaches the outside as an
   agent that merely stopped early.
   """
-  script = ClaudeCodeHarness(correction_channel=True)._invocation_script("/app")
+  script = ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  )._invocation_script("/app")
   assert f'touch "$SANDBOX_WORKSPACE"/{CORRECTION_UNCLEAN_NAME}' in script
-  # Exactly one path clears the marker, and it is after the deliberate close.
+  # Exactly one path clears the marker, and it runs *before* the close.
+  # Ordering measured, not preferred: closing makes the reader see EOF, the
+  # script then exits, and its EXIT trap kills the relay — which races a
+  # removal placed after the close and leaves the marker behind on an
+  # ordinary ending. The marker means "the relay never saw a deliberate end",
+  # so the sentinel is the moment it stops being true.
   clears = [
       line
       for line in script.splitlines()
@@ -732,7 +741,7 @@ def test_the_channel_closes_only_on_the_sentinel_and_says_so_when_it_does_not():
   assert len(clears) == 1
   lines = script.splitlines()
   close = next(i for i, line in enumerate(lines) if line.strip() == "exec 3>&-")
-  assert lines.index(clears[0]) > close
+  assert lines.index(clears[0]) < close
   # …and the loop it leaves is the one the sentinel ends.
   assert f"{CORRECTION_DROP_NAME}/{CORRECTION_DONE_NAME}" in script
 
@@ -815,3 +824,21 @@ def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
 
   assert not timed_out, "the cleanup trap never returned"
   assert not survivors, f"outlived the script: {', '.join(survivors)}"
+
+
+def test_the_channel_is_refused_without_the_capture_it_requires():
+  """A supervised run on stream capture would produce a false trace.
+
+  Stream capture drops the injected message unless replay is asked for, and
+  with replay it renders as a ``user`` message what the wire carries as
+  ``system`` — so a stream-derived trace of a supervised run asserts a turn the
+  model never saw. Refused at construction rather than documented, because
+  otherwise the *simplest* caller reaches it through the public field and gets
+  something that looks like an ordinary result.
+  """
+  with pytest.raises(ValueError, match="requires capture='proxy'"):
+    _ = ClaudeCodeHarness(correction_channel=True)
+  # …and the combination the channel is designed for is accepted.
+  assert ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  ).correction_channel

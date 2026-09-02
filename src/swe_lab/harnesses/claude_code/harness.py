@@ -124,14 +124,21 @@ def _reaper_lines() -> list[str]:
   """
   return [
       f"{_REAPED_PIDS_VAR}=",
-      # Signal everything first, then wait **once** for all of them. The
-      # obvious `kill "$p"; wait "$p"` per pid deadlocks with more than
-      # one background job (measured: two `sleep`s, the second `wait`
-      # never returns), and this script has two the moment proxy capture
-      # and the correction channel are both on — which is the only
-      # configuration the live channel runs in.
-      f"trap 'for _pid in ${_REAPED_PIDS_VAR}; do"
-      ' kill "$_pid" 2>/dev/null; done; wait 2>/dev/null\' EXIT',
+      # Signal everything, then **poll** until it is gone. `wait` is not
+      # used: `kill "$p"; wait "$p"` per pid deadlocks with more than
+      # one background job, and a bare `wait` proved non-terminating in
+      # some environments too. A bounded poll is the only form measured to
+      # both reap and return, and it still gives the guarantee the wait was
+      # there for — the children are gone before the script exits, so the
+      # capture log is closed before anything converts it.
+      "trap '"
+      f'for _pid in ${_REAPED_PIDS_VAR}; do kill "$_pid" 2>/dev/null;'
+      " done; _left=50;"
+      ' while [ "$_left" -gt 0 ]; do _any=;'
+      f" for _pid in ${_REAPED_PIDS_VAR}; do"
+      ' kill -0 "$_pid" 2>/dev/null && _any=1; done;'
+      ' [ -n "$_any" ] || break; _left=$((_left-1)); sleep 0.1; done'
+      "' EXIT",
   ]
 
 
@@ -290,9 +297,13 @@ def _relay_start_lines() -> list[str]:
       '    cat "$message" >&3',
       '    mv "$message" "$message.sent"',
       "  done",
-      "  exec 3>&-",
-      # The deliberate close, and the only path that clears the marker.
+      # Cleared **before** the close, not after: closing makes the reader see
+      # EOF, the script then exits, and its EXIT trap kills this relay — which
+      # would race the removal and leave the marker behind on an ordinary,
+      # deliberate ending. The marker means "the relay never saw a deliberate
+      # end", so seeing the sentinel is the moment it stops being true.
       f"  rm -f {unclean}",
+      "  exec 3>&-",
       f") > {log} 2>&1 &",
       "relay_pid=$!",
       _reap("relay_pid"),
@@ -381,6 +392,29 @@ class ClaudeCodeHarness(Harness):
   max_budget_usd: float | None = None
   subagent_wait_ceiling_ms: int | None = None
   correction_channel: bool = False
+
+  def __post_init__(self) -> None:
+    """Refuse a channel whose trace could not be trusted.
+
+    The live channel **requires proxy capture** (task 16 §5): stream capture
+    drops the injected message unless `--replay-user-messages` is passed, and
+    with it renders as a ``user`` message what the wire carries as ``system``.
+    A stream-derived trace of a supervised run would therefore assert a turn
+    the model never saw — a false trace, produced by the *simplest* caller.
+
+    Refused at construction rather than documented, because the invalid
+    combination is otherwise reachable through the public field and produces
+    something that looks like a normal result.
+
+    Raises:
+      ValueError: If the correction channel is on without proxy capture.
+    """
+    if self.correction_channel and self.capture != "proxy":
+      raise ValueError(
+          "correction_channel=True requires capture='proxy': stream capture"
+          f" cannot represent an injected message truthfully (got"
+          f" capture={self.capture!r})"
+      )
 
   @property
   @override
