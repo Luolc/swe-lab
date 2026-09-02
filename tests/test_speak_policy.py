@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+from typing import Any
 
 import pytest
 
@@ -25,6 +26,7 @@ from swe_lab.trace_synthesis.supervisor import (
     InterventionTooLongError,
     MAX_INTERVENTION_CHARS,
     Observation,
+    PolicyLapseError,
     SpeakAt,
     SpeakWhenOffTrack,
     Verdict,
@@ -266,15 +268,18 @@ def test_the_judge_sees_only_the_window() -> None:
   assert last.text == "record 9"
 
 
-def test_an_unusable_line_is_a_gap_and_is_never_retried() -> None:
-  """Gate 6: an unusable line propagates instead of being retried.
+def test_an_unusable_line_is_a_lapse_and_is_never_retried() -> None:
+  """Gate 6: an unusable line is bounded and asked for exactly once.
 
-  The supervisor records the gap. A retry would make what the actor hears a
-  function of how many times we asked.
+  The supervisor records the lapse. A retry would make what the actor hears a
+  function of how many times we asked, so the writer is asked once and the
+  boundary is given up on.
   """
+  asked: list[int] = []
 
   def empty_writer(observation: Observation, criterion: Criterion) -> str:
     del observation, criterion
+    asked.append(1)
     return "   "
 
   speaker = SpeakWhenOffTrack(
@@ -284,14 +289,19 @@ def test_an_unusable_line_is_a_gap_and_is_never_retried() -> None:
       budget=1,
       cooldown=0,
   )
-  with pytest.raises(ValueError):
+  with pytest.raises(PolicyLapseError) as raised:
     speaker.consider(observation(1))
+  assert isinstance(raised.value.__cause__, ValueError)
+  assert asked == [1]
 
 
-def test_an_over_long_line_is_a_gap_and_is_never_truncated() -> None:
-  """The cap rejects rather than trims.
+def test_an_over_long_line_is_a_lapse_and_is_never_truncated() -> None:
+  """The cap rejects rather than trims, and the rejection is bounded.
 
-  A policy cannot ship half a sentence.
+  A policy cannot ship half a sentence. What it also cannot do is spend the
+  rest of the run on one bad line: the refusal is the writer's, this call's,
+  and the cause travels with it so the record still says the line was rejected
+  rather than trimmed.
   """
 
   def long_writer(observation: Observation, criterion: Criterion) -> str:
@@ -305,7 +315,116 @@ def test_an_over_long_line_is_a_gap_and_is_never_truncated() -> None:
       budget=1,
       cooldown=0,
   )
-  with pytest.raises(InterventionTooLongError):
+  with pytest.raises(PolicyLapseError) as raised:
+    speaker.consider(observation(1))
+  assert isinstance(raised.value.__cause__, InterventionTooLongError)
+
+
+def test_a_failed_judge_call_is_bounded_to_the_boundary_it_happened_at() -> (
+    None
+):
+  """One unreachable model call costs one boundary, not the run.
+
+  The bound is not a guess about the error: nothing in the policy's own state
+  has been touched when the judge is called, so the next boundary is judged
+  from exactly the state the failed one would have been.
+  """
+
+  class FailsThenAnswers:
+    """A judge whose first call fails."""
+
+    calls: int
+
+    def __init__(self) -> None:
+      self.calls = 0
+
+    def __call__(
+        self, observation: Observation, criterion: Criterion
+    ) -> Verdict:
+      """Fail once, then answer.
+
+      Args:
+        observation: Ignored.
+        criterion: Ignored.
+
+      Returns:
+        The off-track verdict, from the second call on.
+
+      Raises:
+        ConnectionError: On the first call.
+      """
+      del observation, criterion
+      self.calls += 1
+      if self.calls == 1:
+        raise ConnectionError("503 from upstream")
+      return OFF_TRACK
+
+  writer = CountingWriter()
+  speaker = SpeakWhenOffTrack(
+      judge=FailsThenAnswers(),
+      writer=writer,
+      criterion=load_criterion(),
+      budget=1,
+      cooldown=0,
+  )
+  with pytest.raises(PolicyLapseError) as raised:
+    speaker.consider(observation(1))
+  assert "503 from upstream" in str(raised.value)
+
+  # The state the failed call would have used is intact: the deviation at the
+  # next boundary is found, marked and spoken, with the budget still whole.
+  assert speaker.consider(observation(2)) is not None
+  assert [marker.cursor for marker in speaker.markers] == [2]
+  assert writer.calls == 1
+
+
+def test_a_writer_lapse_keeps_the_marker_and_the_budget() -> None:
+  """A lapse that happens after the judgement keeps the judgement.
+
+  The deviation was found; only the sentence about it could not be written. So
+  the marker stands — a control arm and a treatment arm still see the same
+  deviations — and nothing was said, so nothing is charged to the budget.
+  """
+
+  def failing_writer(observation: Observation, criterion: Criterion) -> str:
+    del observation, criterion
+    raise ConnectionError("503 from upstream")
+
+  speaker = SpeakWhenOffTrack(
+      judge=CountingJudge(verdict=OFF_TRACK),
+      writer=failing_writer,
+      criterion=load_criterion(),
+      budget=1,
+      cooldown=0,
+  )
+  with pytest.raises(PolicyLapseError):
+    speaker.consider(observation(1))
+
+  assert [marker.cursor for marker in speaker.markers] == [1]
+  # The budget of one is unspent, so the next boundary can still be spoken at.
+  with pytest.raises(PolicyLapseError):
+    speaker.consider(observation(2))
+  assert [marker.cursor for marker in speaker.markers] == [1, 2]
+
+
+def test_a_break_in_the_policys_own_state_is_not_bounded() -> None:
+  """What the two wrapped calls do not cover, and must not.
+
+  The bound is claimed for the calls out to a model, never for the gate
+  arithmetic between them: a policy whose own state machine raises knows
+  nothing about the boundaries after it. Wrapping the whole method body would
+  turn every such break into a small named hole, which is the false reassurance
+  this split exists to prevent.
+  """
+  broken_budget: Any = "one"
+  speaker = SpeakWhenOffTrack(
+      judge=CountingJudge(verdict=OFF_TRACK),
+      writer=CountingWriter(),
+      criterion=load_criterion(),
+      budget=broken_budget,
+      cooldown=0,
+  )
+  with pytest.raises(TypeError):
     speaker.consider(observation(1))
 
 

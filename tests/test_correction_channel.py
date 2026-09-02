@@ -35,6 +35,7 @@ from swe_lab.rollout import (
     CodingAgentTask,
     rollout_outcome,
     RolloutOutcome,
+    SUPERVISION_LAPSE_METRIC,
     SUPERVISION_METRIC,
 )
 from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
@@ -52,7 +53,9 @@ from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     INTERVENTION_TAG,
     LOG_KIND_GAP,
+    LOG_KIND_LAPSE,
     Observation,
+    PolicyLapseError,
     Supervisor,
 )
 from swe_lab.workflow import AttemptResult
@@ -111,6 +114,23 @@ class _Raises:
   def consider(self, observation: Observation) -> Intervention | None:
     del observation
     raise RuntimeError("judge unreachable")
+
+
+@final
+class _Lapses:
+  """A policy whose every call fails in a way it can bound to that call."""
+
+  def __init__(self) -> None:
+    self.calls = 0
+
+  @property
+  def name(self) -> str:
+    return "lapses"
+
+  def consider(self, observation: Observation) -> Intervention | None:
+    del observation
+    self.calls += 1
+    raise PolicyLapseError("judge call failed: upstream 503")
 
 
 def _supervisor(channel: CorrectionChannel, policy: Any) -> Supervisor:
@@ -681,6 +701,46 @@ def test_a_boundary_the_policy_could_not_judge_invalidates_the_run(
   assert (
       CodingAgentTask(harness=ClaudeCodeHarness()).outputs_valid(attempt)
       is False
+  )
+
+
+def test_a_bounded_lapse_is_counted_where_the_outcome_is_read(tmp_path: Path):
+  """The other half of the gap decision: a named hole is priced differently.
+
+  A run whose unsupervised boundaries are each named is still evidence, so it
+  keeps running and keeps its outcome word — but its denominator now contains
+  boundaries nobody watched, and that fact has to arrive where a reader of the
+  outcome record is standing. A count left only in the account would be a fact
+  recorded and never read.
+  """
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  policy = _Lapses()
+  run = _supervised(tmp_path, policy=policy)
+  first = _assistant_event("one") + "\n"
+  _ = events.write_text(first)
+  _wait_until(lambda: policy.calls >= 1)
+  # The second event is written only *after* the first was judged, and reaching
+  # the policy at all is the proof the run was not ended: a gap would have
+  # closed the channel and returned the feeding thread before this line.
+  _ = events.write_text(first + _assistant_event("two") + "\n")
+  _wait_until(lambda: policy.calls >= 2)
+
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  rows = [
+      json.loads(line)
+      for line in contribution.inline_artifacts[SUPERVISOR_LOG_NAME]
+      .decode()
+      .splitlines()
+  ]
+  assert [row["kind"] for row in rows] == [LOG_KIND_LAPSE, LOG_KIND_LAPSE]
+  assert contribution.metrics == {SUPERVISION_LAPSE_METRIC: 2.0}
+
+  attempt = _attempt_with(contribution.metrics)
+  assert rollout_outcome(attempt) is not RolloutOutcome.SUPERVISION_FAILED
+  assert (
+      CodingAgentTask(harness=ClaudeCodeHarness()).outputs_valid(attempt)
+      is True
   )
 
 

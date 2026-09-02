@@ -442,11 +442,21 @@ class CodingAgentTask(Task):
 # recorded number into a branch.
 OOM_METRIC = "sandbox.oom_kills"
 
-#: Set to 1.0 when a supervised run lost its supervisor part-way — the pump
-#: died, or the correction channel closed without being told to. A metric
-#: rather than an observer field so that `rollout_outcome` stays readable from
-#: the run alone, exactly as the out-of-memory signal is.
+#: Set to 1.0 when a supervised run lost its supervisor part-way *and the reach
+#: of that loss cannot be named* — the pump died, the correction channel closed
+#: without being told to, or the policy broke in a way it could not bound. A
+#: metric rather than an observer field so that `rollout_outcome` stays readable
+#: from the run alone, exactly as the out-of-memory signal is.
 SUPERVISION_METRIC = "supervision.unhealthy"
+
+#: How many boundaries went unsupervised for a reason the policy *could* bound
+#: to them — a failed model call, a line the writer could not make usable. Each
+#: one is named in the supervisor's own log; this is the count a reader needs to
+#: weigh a run without opening it, and the reason it is not folded into
+#: `SUPERVISION_METRIC`: a run with named holes is still evidence, carrying
+#: them, while a run of unknown reach is not evidence at all. An event, so a run
+#: that had none leaves no key rather than a zero.
+SUPERVISION_LAPSE_METRIC = "supervision.lapses"
 
 
 class RolloutOutcome(StrEnum):
@@ -484,11 +494,14 @@ class RolloutOutcome(StrEnum):
       the denominator like any unclassified ending, but it is **counted
       separately**, so an ending nobody could attribute is a number rather than
       silence inside :attr:`NO_PATCH` (ADR-0016).
-    SUPERVISION_FAILED: A supervised run lost its supervisor part-way. Ours,
-      and its own word: a run that was meant to be supervised and was not for
-      part of its length is **not evidence about supervision**, and pooling it
-      with "supervised, and the actor did not comply" would put our own
-      breakage inside the very comparison the supervision is being judged by.
+    SUPERVISION_FAILED: A supervised run lost its supervisor part-way, with no
+      bound on where. Ours, and its own word: a run that was meant to be
+      supervised and was not for an unknown part of its length is **not
+      evidence about supervision**, and pooling it with "supervised, and the
+      actor did not comply" would put our own breakage inside the very
+      comparison the supervision is being judged by. A run whose unsupervised
+      boundaries are each named — `SUPERVISION_LAPSE_METRIC` — does not land
+      here: it is evidence, and it carries the count.
   """
 
   OOM_KILLED = "oom_killed"

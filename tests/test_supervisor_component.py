@@ -19,6 +19,7 @@ from swe_lab.trace_synthesis.supervisor import (
     MAX_INTERVENTION_CHARS,
     NeverSpeak,
     Observation,
+    PolicyLapseError,
     Supervisor,
 )
 
@@ -364,12 +365,17 @@ def test_the_supervisor_emits_only_its_own_message() -> None:
   assert "the tool's own bytes" not in "".join(written)
 
 
-def test_a_policy_that_raises_is_recorded_as_a_gap() -> None:
+def test_a_failure_the_policy_did_not_bound_is_a_gap() -> None:
   """A dropped decision appears in the record, never silently skipped.
 
   A judge that fails leaves the boundary unjudged either way; what must not
   happen is that the record looks the same as one where the supervisor chose
   silence.
+
+  It is also the attack on the *default*: this policy raises an ordinary
+  ``RuntimeError``, saying nothing about how far its failure reaches, and the
+  supervisor must not read a small scope into that silence. Downgrading it to a
+  lapse would be the supervisor classifying on the policy's behalf.
   """
 
   class Raises:
@@ -411,6 +417,70 @@ def test_a_policy_that_raises_is_recorded_as_a_gap() -> None:
   assert "judge exploded" in str(rows[0]["reason"])
 
 
+def test_a_bounded_failure_is_a_lapse_and_the_next_boundary_is_judged() -> None:
+  """The two failures the log used to render identically, told apart.
+
+  A policy that names the reach of its failure buys the run its evidence value
+  back: the record says which boundary went unsupervised and why, and the one
+  after it is judged normally. A log that called this a gap would cost every
+  later boundary to account for one.
+  """
+
+  class LapsesOnce:
+    """A policy whose first call fails in a way it can bound."""
+
+    calls: int
+
+    def __init__(self) -> None:
+      self.calls = 0
+
+    @property
+    def name(self) -> str:
+      """Return the policy's name.
+
+      Returns:
+        ``"lapses-once"``.
+      """
+      return "lapses-once"
+
+    def consider(self, observation: Observation) -> Intervention | None:
+      """Fail the first call, then speak.
+
+      Args:
+        observation: Ignored.
+
+      Returns:
+        An intervention on every call after the first.
+
+      Raises:
+        PolicyLapseError: On the first call.
+      """
+      del observation
+      self.calls += 1
+      if self.calls == 1:
+        raise PolicyLapseError("judge call failed: upstream 503")
+      return Intervention(text="check the failing test first")
+
+  written: list[str] = []
+  rows: list[dict[str, object]] = []
+  supervisor = Supervisor(
+      policy=LapsesOnce(),
+      task="the task",
+      sink=written.append,
+      log=lambda row: rows.append(dict(row)),
+  )
+  supervisor.observe(assistant_event("one"))
+  supervisor.observe(assistant_event("two"))
+
+  assert [r["kind"] for r in rows] == ["lapse", "spoke"]
+  # Which boundary, and why: without both, "a lapse happened" is not a bound.
+  assert rows[0]["cursor"] == 1
+  assert "upstream 503" in str(rows[0]["reason"])
+  assert written == [
+      Intervention(text="check the failing test first").rendered()
+  ]
+
+
 def test_a_failing_sink_mutes_but_never_ends_the_run() -> None:
   """A dead channel stops speech and is recorded; it does not close anything.
 
@@ -436,7 +506,7 @@ def test_a_failing_sink_mutes_but_never_ends_the_run() -> None:
 
 
 def test_the_log_accounts_for_every_event() -> None:
-  """One row per event consumed: a judgement, a silence, or a gap."""
+  """One row per event consumed: a judgement, a silence, a lapse or a gap."""
   rows: list[dict[str, object]] = []
   supervisor = Supervisor(
       policy=NeverSpeak(),
