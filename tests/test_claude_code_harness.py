@@ -443,6 +443,33 @@ def test_event_stream_usage_aggregates_each_figure_its_own_way():
   assert event_stream_usage(segmented) == {"cost_usd": 0.05, "num_turns": 4}
 
 
+def test_event_stream_usage_reports_a_partial_aggregate_as_absent():
+  # A metric whose inputs are not all present is absent, not partial. Both of
+  # these would otherwise enter a cost average as though measured: the first as
+  # a stale earlier segment, the second as a sum over some of the segments.
+  final_without_cost = _stream_text(
+      [
+          {"type": "result", "total_cost_usd": 0.03, "num_turns": 3},
+          {"type": "result", "num_turns": 1},
+      ]
+  )
+  assert event_stream_usage(final_without_cost) == {
+      "cost_usd": None,
+      "num_turns": 4,
+  }
+
+  segment_without_turns = _stream_text(
+      [
+          {"type": "result", "total_cost_usd": 0.03, "num_turns": 3},
+          {"type": "result", "total_cost_usd": 0.05},
+      ]
+  )
+  assert event_stream_usage(segment_without_turns) == {
+      "cost_usd": 0.05,
+      "num_turns": None,
+  }
+
+
 def test_event_stream_usage_reports_absence_rather_than_zero():
   # a run whose trace never landed did not cost nothing; it is unknown, and a
   # zero here would average into a cost estimate as if it were measured
