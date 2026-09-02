@@ -13,6 +13,7 @@ import dataclasses
 import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock
+from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     InterventionTooLongError,
@@ -131,6 +132,7 @@ def policy(
       SpeakWhenOffTrack(
           judge=judge,
           writer=writer,
+          criterion=load_criterion(),
           budget=budget,
           cooldown=cooldown,
           window=window,
@@ -218,7 +220,7 @@ def test_the_first_intervention_is_never_delayed_by_the_cooldown() -> None:
   """The cooldown never delays the first intervention.
 
   Precision comes from the bar and restraint from the budget; neither may come
-  from delay, because 8 of 8 non-compliances arrived too late.
+  from delay, so a late correction is never bought with a later one.
   """
   speaker, _, _ = policy(OFF_TRACK, budget=3, cooldown=100)
   assert speaker.consider(observation(1)) is not None
@@ -263,6 +265,7 @@ def test_an_unusable_line_is_a_gap_and_is_never_retried() -> None:
   speaker = SpeakWhenOffTrack(
       judge=CountingJudge(verdict=OFF_TRACK),
       writer=empty_writer,
+      criterion=load_criterion(),
       budget=1,
       cooldown=0,
   )
@@ -283,6 +286,7 @@ def test_an_over_long_line_is_a_gap_and_is_never_truncated() -> None:
   speaker = SpeakWhenOffTrack(
       judge=CountingJudge(verdict=OFF_TRACK),
       writer=long_writer,
+      criterion=load_criterion(),
       budget=1,
       cooldown=0,
   )
@@ -309,3 +313,23 @@ def test_speak_at_needs_no_judge() -> None:
       SpeakAt(cursors=frozenset({1}), text="ok").consider(observation(1)),
       Intervention,
   )
+
+
+def test_the_real_policy_cannot_be_built_without_a_criterion() -> None:
+  """The policy that judges cannot exist without a loaded criterion.
+
+  The criterion is a constructor argument, so building one means having passed
+  the digest check. This is narrower than a startup gate, and it is all that is
+  enforced until the judge lands: ``SpeakAt`` takes no criterion because it
+  makes no judgement.
+  """
+  fields = {field.name for field in dataclasses.fields(SpeakWhenOffTrack)}
+  assert "criterion" in fields
+  criterion = next(
+      field
+      for field in dataclasses.fields(SpeakWhenOffTrack)
+      if field.name == "criterion"
+  )
+  assert criterion.default is dataclasses.MISSING
+  assert criterion.default_factory is dataclasses.MISSING
+  assert isinstance(load_criterion(), Criterion)

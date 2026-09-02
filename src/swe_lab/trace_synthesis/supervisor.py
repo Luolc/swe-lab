@@ -14,9 +14,10 @@ Three properties are structural rather than advisory, and each has a test:
   is deliberate: the Oracle writes a guidebook with the reference patch, the
   grading procedure and the unpurged history in hand, so a supervisor reading
   one would be steering by the answer without ever quoting it. The judge
-  measures against a criterion that is identical for every instance, which is
-  what makes this half of the barrier information-theoretic rather than a
-  promise about anyone's care.
+  measures against one pinned criterion instead, which guarantees that no run
+  selects a different criterion per instance — and leaves whether that shared
+  text is free of solution knowledge to review of the artifact itself
+  (:mod:`swe_lab.trace_synthesis.criterion`).
 - **When to speak is a seam.** It is the open variable of the design, so a
     :class:`SpeakPolicy` is replaceable without touching the consumer, the
     intervention, or the log.
@@ -35,6 +36,7 @@ from typing import Any, Protocol
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.harnesses.claude_code.convert import event_to_message
+from swe_lab.trace_synthesis.criterion import Criterion
 
 # The cap is the enforceable part of the intervention's shape. "Short,
 # directional, not a solution" is read by a human and deliberately not asserted
@@ -306,30 +308,33 @@ class SpeakWhenOffTrack:
 
   The cost of that order is stated rather than hidden: the judge runs on every
   boundary even after the budget is spent, so a treatment run and a control run
-  pay the same judge calls. That is the price of a paired comparison, and
-  paying it is the point.
+  pay the same judge calls. That is what makes the two arms differ by the
+  corrections alone.
 
-  The criterion it judges against is not a field here and not a field on
-  :class:`Observation`: it is built into the ``judge``, which is where the
-  pinned artifact and its hash check belong. A field nobody may fill is a hole
-  waiting for someone who sees the type line up and nothing stopping them.
+  The criterion is a constructor argument rather than a field on
+  :class:`Observation`, so it never travels the channel the actor's records
+  travel, and the policy cannot be built without one having been loaded. A
+  :class:`~swe_lab.trace_synthesis.criterion.Criterion` is produced by
+  ``load_criterion``, which refuses an artifact whose digest is not the pinned
+  one.
 
   Attributes:
-    judge: The off-track / self-correcting call, carrying its own criterion.
+    judge: The off-track / self-correcting call.
     writer: The line-writing call.
+    criterion: The loaded, digest-checked standard the judge measures against.
     budget: How many interventions a whole run may carry. **No default**: a
-      policy that may speak must state how often. Unmeasured — 3 is proposed,
-      and no measurement supports any number.
+      policy that may speak must state how often. No measured value; see the
+      task-05 plan.
     cooldown: How many boundaries must pass *between* interventions. It never
-      delays the first one: precision comes from the bar, restraint from the
-      budget, and neither may come from delay — 8 of 8 non-compliances arrived
-      too late, so delay is the currency already in deficit. Unmeasured.
-    window: How many of the actor's records the judge sees. Unmeasured; 8 is
-      what the earlier judge used, which is provenance and not evidence.
+      delays the first one: precision comes from the bar and restraint from the
+      budget, so a late correction is never bought with a later one. No
+      measured value.
+    window: How many of the actor's records the judge sees. No measured value.
   """
 
   judge: Judge
   writer: Writer
+  criterion: Criterion
   budget: int
   cooldown: int = 4
   window: int = 8

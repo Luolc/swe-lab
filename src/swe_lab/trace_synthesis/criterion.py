@@ -7,15 +7,28 @@ a criterion written for one instance by someone who has read its fix steers the
 actor down that fix's path without ever quoting it, and no field check on the
 observation can see it, because it never travels that channel.
 
-The rule this module enforces is therefore mechanical rather than a statement
-about anyone's care: **the criterion is a named, committed artifact that is
-byte-identical for every instance**, and a material identical across instances
-cannot encode instance-specific knowledge.
+**What the digest check does and does not establish**, because a barrier
+described more strongly than it is, is worse than none:
 
-When the check fires, that is the design working. The day a per-instance
-criterion is genuinely wanted, the digest stops matching and the run stops —
-the moment a person has to re-examine the barrier, deliberately loud so that
-routing around it takes a visible decision rather than a quiet edit.
+- It **does** guarantee that no run selects a different criterion per instance.
+  One artifact, one digest, every instance — a per-instance criterion cannot be
+  swapped in without the digest stopping the run.
+- It does **not** establish that the one shared artifact is free of solution
+  knowledge. A single committed criterion could carry the fixes for every
+  instance and still be byte-identical everywhere, and the optional
+  path/n-gram check is neither exhaustive nor always runnable. **Whether the
+  content is general is a review and provenance question**, settled by reading
+  the artifact, not by this module.
+
+The digest is therefore what makes the content question *answerable once*:
+review the artifact in its pull request, and the check keeps that reviewed text
+in force until someone re-pins it deliberately and visibly.
+
+**This is not yet a startup gate.** Nothing in a production path calls
+:func:`load_criterion`; the run-level refusal lands with the judge, which is
+where the criterion is consumed. What is enforced today is narrower and stated
+where it is claimed: ``SpeakWhenOffTrack`` cannot be constructed without a
+:class:`Criterion`.
 """
 
 from __future__ import annotations
@@ -48,10 +61,10 @@ _WORD = re.compile(r"\S+")
 
 
 class CriterionRejectedError(RuntimeError):
-  """Raised when the criterion is not the pinned, instance-independent one.
+  """Raised when the artifact is not the pinned criterion.
 
-  Deliberately not a recorded gap: with the barrier broken there is no
-  experiment left to run, so the run refuses to start.
+  Deliberately not a recorded gap: a criterion that is not the reviewed one
+  leaves nothing to judge against, so the caller refuses rather than degrades.
   """
 
 

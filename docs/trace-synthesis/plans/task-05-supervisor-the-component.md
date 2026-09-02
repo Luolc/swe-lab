@@ -121,10 +121,11 @@ it is, is worse than none:**
 > The supervisor never receives the gold patch, the reference patch, the test
 > patch, the hidden tests, or a phase-B guidebook — there is no field on its
 > input that can carry them, and no code path that fills one. What it measures
-> against is a criterion identical for every instance, which is what makes this
-> half information-theoretic rather than a promise about anyone's care. What
-> remains outside the claim: the judge and the writer are model calls, and
-> nothing here bounds what a model infers from the actor's own records.
+> against is one pinned criterion, so **no run selects a different criterion per
+> instance**. What remains outside the claim: whether that shared text is itself
+> free of solution knowledge is settled by reviewing the artifact, not by the
+> digest; and the judge and the writer are model calls, with nothing here
+> bounding what a model infers from the actor's own records.
 
 ### 3.1 The barrier's second half: what the *judge* may reason from
 
@@ -145,18 +146,33 @@ channel.**
 > **The judge's criterion is a named, committed artifact that is byte-identical
 > for every instance.**
 
-**Instance-independence is the operationalization of "general engineering
-practice, not this instance's solution path"** — a material that is the same for
-every instance cannot encode instance-specific knowledge, and that is an
-information-theoretic fact rather than an assurance about anybody's care. It
-gives the barrier's second half the four things its first half already has:
+**What byte-identity buys, exactly.** It removes *per-instance selection*: no
+run can be handed a criterion written for the instance in front of it. It does
+**not** prove the shared artifact is free of solution knowledge — one committed
+criterion could carry the fixes for every instance and still be byte-identical
+everywhere, and the redundant path/n-gram check is neither exhaustive nor always
+runnable. **The content question is a review and provenance question**, answered
+once by reading the artifact in its pull request; the digest's job is to keep
+that reviewed text in force until someone re-pins it deliberately. With that
+scope, the second half has the same four parts as the first:
 
 | | |
 | --- | --- |
 | **artifact** | the criterion file, in the repository |
-| **check** | each run asserts `sha256(criterion)` equals the pinned constant — and, redundantly but cheaply, that the criterion shares no file path and no 8-gram with this instance's gold patch |
-| **rejection** | on mismatch the **run refuses to start**. Not a recorded gap: with the barrier broken there is no experiment left to run |
+| **check** | `sha256(criterion)` equals the pinned constant — and, redundantly but cheaply, no shared file path and no shared 8-gram with this instance's gold patch |
+| **rejection** | `CriterionRejectedError`. Not a recorded gap: a criterion that is not the reviewed one leaves nothing to judge against |
 | **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
+
+**[U] The startup gate is not wired yet, and this row says so rather than
+implying otherwise.** `load_criterion` has no production caller: the criterion
+is consumed by the *judge*, which is not implemented, so that is where the
+run-level refusal belongs. What is enforced today is narrower and is the whole
+of the current claim: **`SpeakWhenOffTrack` cannot be constructed without a
+`Criterion`**, so the real policy cannot run without one having been loaded.
+`SpeakAt` takes none and judges nothing — it is the timing knob, and applying a
+criterion gate to a policy with no judgement would be theatre. **The judge's PR
+discharges this**, with a named test that a forged artifact prevents the run
+from starting.
 
 **What the criterion being constant does *not* mean.** The judge's *prompt* is
 still instance-specific — it carries the task statement and the actor's own
