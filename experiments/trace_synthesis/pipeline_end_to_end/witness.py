@@ -47,9 +47,34 @@ for name in ("no output", "unparsable output"):
   cursors = buckets[name]
   label = f"lapse {name}"
   print(f"{label:<25}{len(cursors)}  cursors " + ", ".join(map(str, cursors)))
+# The unparsable ones split again by what the decoder complained about, for the
+# same reason: "three were truncated" is a claim about members, not a count.
+detail = collections.defaultdict(list)
+for x in lapse:
+  if "not NoneType" in x["reason"]:
+    continue
+  # Matched on substrings, not on the whole message: the decoder's text is
+  # nested inside two exception reprs, so the quotes in it are escaped.
+  for name in ("Unterminated string", "Expecting value", "delimiter"):
+    if name in x["reason"]:
+      detail[name].append(x["cursor"])
+      break
+  else:
+    detail["other"].append(x["cursor"])
+for name in sorted(detail):
+  label = f"  {name}"
+  print(f"{label:<25}{len(detail[name])}  cursors " + ", ".join(map(str, detail[name])))
 
 events = rows("claude_code.event_stream.jsonl")
 stamped = [e["timestamp"] for e in events if e.get("timestamp")]
+result = next(e for e in events if e.get("type") == "result")
+usage = result.get("usage") or {}
+print(f"actor total_cost_usd     {result.get('total_cost_usd')}")
+print(f"actor num_turns          {result.get('num_turns')}")
+print(f"actor duration_ms        {result.get('duration_ms')}")
+keys = ("input_tokens", "cache_creation_input_tokens",
+        "cache_read_input_tokens", "output_tokens")
+print("actor usage              " + json.dumps({k: usage.get(k) for k in keys}))
 print(f"events                   {len(events)}")
 print(f"result events            {sum(1 for e in events if e.get('type') == 'result')}")
 print(f"events carrying a time   {len(stamped)}")

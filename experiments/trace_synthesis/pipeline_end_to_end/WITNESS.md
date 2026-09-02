@@ -112,6 +112,13 @@ lapse cursor range       87-165
 lapse classes            16 x PolicyLapseError <- JudgeAnswerError
 lapse no output          11  cursors 96, 98, 100, 106, 108, 109, 128, 134, 140, 158, 165
 lapse unparsable output  5  cursors 87, 101, 110, 131, 136
+  Expecting value        1  cursors 87
+  Unterminated string    3  cursors 110, 131, 136
+  delimiter              1  cursors 101
+actor total_cost_usd     1.3311234
+actor num_turns          32
+actor duration_ms        167591
+actor usage              {"input_tokens": 64, "cache_creation_input_tokens": 79716, "cache_read_input_tokens": 2049248, "output_tokens": 15438}
 events                   170
 result events            1
 events carrying a time   90
