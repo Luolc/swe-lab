@@ -104,21 +104,27 @@ Two inputs, and they are different in kind:
   would let it read its output as the actor's behaviour. The filter is
   **stateless**, so where a supervisor attached cannot change its verdict on a
   message.
-- **Criterion — the guidebook.** The phase-B artifact, host-side, validated by
-  **[C]** `validate_guidebook`
-  ([`guidebook.py:41`](../../../src/swe_lab/trace_synthesis/guidebook.py)).
+- **Criterion — the pinned artifact**, built into the judge rather than
+  travelling this channel; see [§3.1](#31-the-barriers-second-half-what-the-judge-may-reason-from).
+  **Not** phase B's guidebook: `oracle.py` writes that one with the reference
+  patch, the exact grading procedure and the repository's unpurged history in
+  hand, so a supervisor reading it would steer down the fix's path without ever
+  quoting it. `Observation` has no field for it —
+  **[C]** `test_supervisor_input_carries_no_privileged_field` asserts the field
+  set against an exact allowlist, and the field was **deleted** rather than left
+  unused, because a field nobody may fill is a hole waiting for the next
+  person.
 
-**And here is the honest limit of the barrier, stated plainly because a barrier
-described more strongly than it is, is worse than none.** The guidebook is
-*distilled from* privileged material in phase B — that is what phase B is. So
-the claim is **not** that the supervisor is information-theoretically isolated
-from the fix. The claim is narrower and checkable:
+**The barrier's claim, stated plainly because one described more strongly than
+it is, is worse than none:**
 
 > The supervisor never receives the gold patch, the reference patch, the test
-> patch, or the hidden tests — there is no field on its input that can carry
-> them, and no code path that fills one. What it receives about the intended
-> solution is the guidebook, and the guidebook's own content rules are phase B's
-> problem, not this component's.
+> patch, the hidden tests, or a phase-B guidebook — there is no field on its
+> input that can carry them, and no code path that fills one. What it measures
+> against is a criterion identical for every instance, which is what makes this
+> half information-theoretic rather than a promise about anyone's care. What
+> remains outside the claim: the judge and the writer are model calls, and
+> nothing here bounds what a model infers from the actor's own records.
 
 ### 3.1 The barrier's second half: what the *judge* may reason from
 
@@ -220,10 +226,10 @@ run.** Returning `None` is the ordinary case and is not an error.
 ### 4.1 What "off track" means, and why the bar is not a delay
 
 A policy that speaks needs a judgement, and the judgement is a model call over
-the `Observation`: the task, the guidebook, a window of the actor's own records,
+the `Observation`: the task, a window of the actor's own records,
 and what has already been said. **It asks two questions, not one:**
 
-1. **Is the actor off the guidebook's path?**
+1. **Is the actor off the criterion's path?**
 2. **Left alone, would it come back by itself?**
 
 Only *off-track **and** not self-correcting* speaks. The second question is
@@ -268,7 +274,7 @@ number nobody chose ends up in a result.
 
 **The budget gates speech, not judgement**, and the order follows from that —
 an earlier draft of this section put budget first, which would have made
-`GuidebookPolicy(budget=0)` skip the judge entirely and quietly destroy the
+`SpeakWhenOffTrack(budget=0)` skip the judge entirely and quietly destroy the
 matched control §4.4 depends on. `consider()` returns `None` unless every gate
 passes, in this order:
 
@@ -302,12 +308,12 @@ marker count is what proves the judge still ran; and `budget=k` yields at most
    at all. This is the **timing knob in isolation**: it varies *when* while
    holding *what* and *whether* constant, which is the one comparison the graded
    batch could not make because its trigger was entangled with its criterion.
-3. **`GuidebookPolicy(judge, writer, budget, cooldown, window)`** — the real
+3. **`SpeakWhenOffTrack(judge, writer, budget, cooldown, window)`** — the real
    one, as designed above.
 
 **A fourth class was considered and is not needed.** The paired control wants a
 supervisor that *judges but never speaks* — same calls, same cost, same
-cadence, zero corrections — and that is exactly `GuidebookPolicy(budget=0)`,
+cadence, zero corrections — and that is exactly `SpeakWhenOffTrack(budget=0)`,
 **which works only because §4.3 consults the budget after the judgement rather
 than before it.** Reverse those two and the control silently stops paying for
 its judge, at which point it is no longer the same run minus the corrections.
@@ -339,7 +345,7 @@ failures a length cap does not:
 | Writer check | What it actually rules out |
 | --- | --- |
 | no fenced code block and no diff hunk header | the most literal form of handing over the answer |
-| no verbatim n-gram shared with the guidebook (n≈8 words) | the guidebook being **pasted through** the channel into the actor's context |
+| no verbatim n-gram shared with the criterion (n≈8 words) | the criterion being **pasted through** the channel into the actor's context |
 
 A third property — *not a repeat of what it already said* — belongs to the
 policy rather than the writer: `said` is in the `Observation` precisely so the
@@ -348,7 +354,7 @@ it would be the wrong layer.
 
 **The n-gram guard is a floor, not a proof.** A paraphrase defeats it, and it is
 worth having anyway: it catches the failure that would actually happen, which is
-a writer quoting the guidebook because the guidebook is the most relevant text
+a writer quoting the criterion because the criterion is the most relevant text
 in its context.
 
 **What a policy can actually see about timing** is bounded by the channel, and
@@ -534,7 +540,7 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
   which remains design-only.
 - **Not the experiment.** Task selection, the baseline sweep and the paired arms
   belong to the rig; this component is what the rig consumes.
-- **Not a judge-quality study.** Whether the guidebook judge is any good is
+- **Not a judge-quality study.** Whether the judge is any good is
   [task 06](README.md) and the rig's problem.
 - **Not an authorization to produce traces for training.** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
   moves the *attribution* decision; what a shippable trace is remains
@@ -559,6 +565,8 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
 ## 10. Dependencies and scope
 
 **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
-(this PR) for the attribution; [task 04](task-04-oracle-analysis-task.md) for the
-guidebook it judges against. **Not** blocked on task 16, by §1's seam.
+(this PR) for the attribution. **No longer** dependent on
+[task 04](task-04-oracle-analysis-task.md): the judge measures against the
+pinned criterion, not against phase B's guidebook. **Not** blocked on task 16,
+by §1's seam.
 **Scope:** M.
