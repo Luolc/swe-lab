@@ -97,6 +97,18 @@ class CorrectionChannel:
   workspace: epath.Path
   delivered: int = 0
 
+  def __post_init__(self) -> None:
+    """Create the drop directory, before anything in the sandbox can.
+
+    The relay creates it too (``mkdir -p``), and the sandbox runs as root while
+    this process does not: a directory root made first in a bind mount is one
+    this side can no longer write into. Whoever creates it owns it, so it is
+    created here — the channel exists before the actor's script starts, and the
+    relay then finds it already there. Root can write into ours; we cannot
+    write into root's.
+    """
+    self.drop_dir.mkdir(parents=True, exist_ok=True)
+
   @property
   def drop_dir(self) -> epath.Path:
     """The directory the in-sandbox relay polls."""
