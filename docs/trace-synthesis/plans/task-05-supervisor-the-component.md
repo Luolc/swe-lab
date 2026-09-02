@@ -79,12 +79,22 @@ by one named test.
 
 Two inputs, and they are different in kind:
 
-- **Evidence — actor-produced only.** The records the actor emitted: assistant
-  messages and tool results, in order, with the cursor that identifies where in
-  the stream the supervisor is. **[C]** These are the record types
-  `event_stream_to_conversation` already parses
-  ([`convert.py:51`](../../../src/swe_lab/harnesses/claude_code/convert.py)),
+- **Evidence — admitted by origin, not by role.** The **task statement**, the
+  actor's assistant messages, and the tool results its own calls returned, in
+  order, with the cursor that identifies where in the stream the supervisor is.
+  **[C]** These are the record types `event_stream_to_conversation` already
+  parses ([`convert.py:51`](../../../src/swe_lab/harnesses/claude_code/convert.py)),
   which is where the shapes are defined rather than re-derived here.
+
+  **The task statement is admitted deliberately, and the axis matters.** An
+  earlier form of this rule cut on the `user` role and excluded every user text
+  — which threw out the brief along with the interjections. The barrier exists
+  to keep out the **solution**, not the **goal**: a supervisor that cannot see
+  what was asked cannot tell deviation from progress, and is left objecting to
+  style. What is excluded is what did not come from the actor *or* the task:
+  **this supervisor's own corrections**, which arrive back on the same stream as
+  `user` messages, and any later external user text. The task statement and a
+  correction are both `user` messages; they differ in where they came from.
 - **Criterion — the guidebook.** The phase-B artifact, host-side, validated by
   **[C]** `validate_guidebook`
   ([`guidebook.py:41`](../../../src/swe_lab/trace_synthesis/guidebook.py)).
@@ -110,12 +120,22 @@ test or the sentence is downgraded):
   of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
   pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
   catches the one we did not.
-- `test_evidence_is_built_only_from_the_actor_stream` — the evidence builder
-  takes the stream and nothing else, and a record the actor did not produce
-  (**[M]** the TUI prompt-suggestion exchange, whose body is the whole
-  conversation plus a `[SUGGESTION MODE: …]` message nobody sent —
-  [report §14.4](../../../experiments/trace_synthesis/streamjson_input/REPORT.md))
-  is excluded rather than judged.
+- `test_the_task_statement_reaches_the_supervisor` — the goal gets through.
+- `test_the_supervisors_own_words_never_come_back_as_evidence` — its own
+  correction is **memory, not observation**. Admitted as evidence, the
+  supervisor would be reading its own output as something the actor did.
+- `test_later_external_user_text_is_excluded` — the brief is the first user
+  message; a later interjection is not the actor's doing.
+- `test_every_event_is_dispositioned_in_the_record` — the log says *why* a
+  message was not judged rather than omitting it, so a reader can tell an
+  exclusion from a gap.
+
+**The supervisor's own words live in its memory, on a channel separate from its
+evidence.** Since a correction never returns as an observation, a policy has
+nothing to compare against unless the supervisor keeps a list of what it has
+already said — and would otherwise be free to say the same thing three times in
+a row. That list is handed to the policy beside the evidence, never mixed into
+it (`test_what_it_said_is_remembered_outside_the_evidence`).
 
 ## 4. When it speaks: a policy seam, and exactly two implementations
 
