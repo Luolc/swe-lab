@@ -18,9 +18,13 @@ from swe_lab.sandbox.testing import FakeSandbox
 
 
 def _sandbox(workspace: Path) -> FakeSandbox:
+  # `baseline_sha=None` turns off the fake's convenience answer for the
+  # baseline script: this file drives that script itself — its sha, its exit
+  # code, its absence — which is the whole subject here.
   return FakeSandbox(
       spec=SandboxSpec("x", "img:tag", "/app", "base"),
       workspace=epath.Path(workspace),
+      baseline_sha=None,
   )
 
 
@@ -73,7 +77,9 @@ def test_absent_raw_patch_is_empty(tmp_path: Path):
 
 
 def test_the_default_base_is_still_the_instances_base_commit(tmp_path: Path):
-  # The amendment's whole point: default off, current behavior byte-identical.
+  # The observer itself still takes `base_commit` unless asked otherwise;
+  # ADR-0014 moved the default at the *task* level, which is where a
+  # composition is configured — this mechanism is always told explicitly.
   _ = (tmp_path / RAW_PATCH_NAME).write_text("diff --git a/x b/x\n")
   sb = _sandbox(tmp_path)
   obs = DiffExtractObserver()

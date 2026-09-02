@@ -30,6 +30,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
 from swe_lab.workflow import (
     register_workflow,
@@ -165,8 +166,14 @@ def test_the_shipped_chain_grades_what_the_agent_produced():
   # Grading inherits no credential — only the agent needs one.
   assert evaluation.sandbox.pass_env == ()
   assert evaluation.retries == 2  # a flaky suite gets two more tries
-  # the edge that makes it a chain: the agent's patch is the grader's input
-  assert [s.name for s in evaluation.task.input_schema()] == [PATCH_NAME]
+  # the edge that makes it a chain: the agent's patch is the grader's input,
+  # and under the baseline default (ADR-0014) the base it was diffed against
+  # travels the same edge — the grader verifies the tree it resets to against
+  # that sha rather than trusting `base_commit`.
+  assert [s.name for s in evaluation.task.input_schema()] == [
+      PATCH_NAME,
+      BASE_REF_NAME,
+  ]
   # …and the grading entry supplies nothing itself, which is what lets the
   # SAME entry be the standalone `unit_test` workflow (patch from the caller)
   # and the tail of this chain (patch from the edge). A gold-patch variant
@@ -269,3 +276,32 @@ def test_a_definition_is_reusable_across_instances(tmp_path: Path):
     )
     assert outcome.succeeded is True
     assert outcome.record_key == f"sw/{instance_id}/r0/workflow.json"
+
+
+def test_the_rollout_and_grading_halves_of_the_baseline_agree() -> None:
+  """The base ref is a contract, so the pair cannot disagree (ADR-0014).
+
+  Either half alone moves the patch and the tree apart: a baseline patch
+  graded against ``base_commit`` fails to apply exactly when the agent touched
+  a path the image had mutated, and a ``base_commit`` patch graded against a
+  baseline fails its sha verify. The two defaults are what make the naive
+  composition correct, so they are asserted together rather than one at a time.
+  """
+  from swe_lab.evaluation.unit_test import UnitTestTask
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.workflow.definitions import ROLLOUT_AND_UNIT_TEST
+
+  coding, grading = (entry.task for entry in ROLLOUT_AND_UNIT_TEST)
+  assert isinstance(coding, CodingAgentTask)
+  assert isinstance(grading, UnitTestTask)
+  assert coding.patch_baseline is grading.patch_baseline is True
+
+
+def test_grading_a_gold_patch_stays_on_base_commit() -> None:
+  """The gold patch's base *is* ``base_commit``; it has no pre-agent tree."""
+  from swe_lab.evaluation.unit_test import UnitTestTask
+  from swe_lab.workflow.definitions import GOLD_UNIT_TEST
+
+  (entry,) = GOLD_UNIT_TEST
+  assert isinstance(entry.task, UnitTestTask)
+  assert entry.task.patch_baseline is False

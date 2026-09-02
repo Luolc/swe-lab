@@ -27,11 +27,13 @@ from typing import override
 from etils import epath
 
 from swe_lab.git.history import GitHistoryReport
+from swe_lab.git.patch import BASELINE_VERIFY_SCRIPT_NAME
 
 from .backends import register_sandbox, SandboxConfig
 from .errors import SandboxError
 from .mounts import Mount, Mounts
 from .observer import SandboxObserver
+from .observers.diff_extract import BASE_REF_NAME, BASELINE_SCRIPT_NAME
 from .observers.git_history_purge import (
     PURGE_SCRIPT_NAME as GIT_PURGE_SCRIPT_NAME,
 )
@@ -79,6 +81,16 @@ CLEAN_GIT_REPORT = json.dumps(
 
 _GIT_SCRIPTS = frozenset({GIT_REPORT_SCRIPT_NAME, GIT_PURGE_SCRIPT_NAME})
 
+# A plausible 40-hex sha for the pre-agent baseline. Its *value* is never
+# meaningful here — only the real grading side recomputes and compares it —
+# so what matters is that it is well-formed and stable across a run.
+_FAKE_BASELINE_SHA = "0" * 39 + "1"
+# Both halves of the baseline: the rollout side commits it, the grading side
+# recomputes and verifies it. Neither is the task's own action.
+_BASELINE_SCRIPTS = frozenset(
+    {BASELINE_SCRIPT_NAME, BASELINE_VERIFY_SCRIPT_NAME}
+)
+
 
 @dataclass
 class FakeSandbox(Sandbox):
@@ -97,6 +109,12 @@ class FakeSandbox(Sandbox):
       test need not know the purge runs two probes ahead of its own script.
       Set it to model a repo that still leaks, or ``None`` to stop intercepting
       entirely and drive the purge from ``run_results`` directly.
+    baseline_sha: The sha the pre-agent baseline commit resolves to, answered
+      the same way and for the same reason: baseline extraction is on by
+      default (ADR-0014), so every composition running an agent now commits a
+      baseline before the action a test actually cares about. ``None`` stops
+      the interception, which is how a test models the sandbox failing to
+      produce one.
     up_error: Raised by ``up`` when set.
     run_error: Raised by ``run_script`` / ``run_command`` when set.
     down_error: Raised by ``down`` when set (to test that the manager swallows
@@ -113,6 +131,7 @@ class FakeSandbox(Sandbox):
   config: SandboxConfig | None = None
   run_results: list[ExecResult] = field(default_factory=list)
   git_report: str | None = CLEAN_GIT_REPORT
+  baseline_sha: str | None = _FAKE_BASELINE_SHA
   up_error: Exception | None = None
   run_error: Exception | None = None
   down_error: Exception | None = None
@@ -216,6 +235,16 @@ class FakeSandbox(Sandbox):
       # integrity purge runs two probes before them.
       output = self.git_report if name == GIT_REPORT_SCRIPT_NAME else ""
       return ExecResult(0, output, "")
+    if self.baseline_sha is not None and name in _BASELINE_SCRIPTS:
+      # Same reasoning as the probes above, one layer later: a composition that
+      # runs an agent now commits a baseline before the action, and grading
+      # verifies it before the entryscript — neither is the script a test came
+      # here to exercise. The creation half writes the sha into the workspace
+      # and the observer reads it back from there, so the fake does that rather
+      # than returning it.
+      if name == BASELINE_SCRIPT_NAME:
+        self.write(BASE_REF_NAME, f"{self.baseline_sha}\n".encode())
+      return ExecResult(0, "", "")
     return self._next_result()
 
   @override

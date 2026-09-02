@@ -95,9 +95,17 @@ class CodingAgentTask(Task):
     exclude_globs: Build-noise denylist for the diff extraction.
     patch_baseline: Take the patch against the tree **as the agent found it**
       rather than against ``base_commit``, by committing that tree before the
-      agent starts (ADR-0001, 2026-08-25 amendment). For images whose worktree
-      ships already different from ``base_commit``, where the default folds
-      those build-time edits into every agent's patch.
+      agent starts (ADR-0001, 2026-08-25 amendment). **On by default**
+      (ADR-0014): an image whose worktree ships already different from
+      ``base_commit`` folds those build-time edits into every agent's patch,
+      and the images this repo actually runs do it — a SWE-bench Pro image was
+      measured shipping an untracked Redis AOF directory, which alone yields a
+      166 KB patch for an agent that ran no steps at all. Diffing against the
+      tree the agent found is right whether or not the image is dirty (the
+      baseline sha is a pure function of the tree, so a clean worktree simply
+      yields a baseline identical in content to ``base_commit``), which is what
+      lets it be the default rather than a per-image opt-in nobody remembers.
+      Set it ``False`` only to reproduce a pre-ADR-0014 run.
 
       **Half of a pair**: the base ref is a contract with the grader, which
       has to grade a tree matching it, so set this together with
@@ -141,7 +149,7 @@ class CodingAgentTask(Task):
   )
   extra_inputs: tuple[ArtifactSchema, ...] = ()
   exclude_globs: tuple[str, ...] = ()
-  patch_baseline: bool = False
+  patch_baseline: bool = True
   purge_git_history: bool = True
   verify_result: bool = True
   env: Mapping[str, str] | None = None

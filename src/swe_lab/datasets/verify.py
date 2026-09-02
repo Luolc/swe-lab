@@ -320,7 +320,9 @@ def verify_instance(
   try:
     base = _graded_run(
         instance,
-        task=UnitTestTask(apply_patch=False),
+        # No patch at all, so nothing is graded against a baseline: this
+        # checks the image's own tree at `base_commit` (ADR-0014).
+        task=UnitTestTask(apply_patch=False, patch_baseline=False),
         workspace=epath.Path(ws_root) / iid / "base",
         timeout=timeout,
         no_network=no_network,
@@ -332,7 +334,8 @@ def verify_instance(
         instance,
         # The reference solution is the task's own input, built from the
         # instance — the standalone shape, no caller bytes involved.
-        task=UnitTestTask(inputs_builder=gold_patch),
+        # The gold patch's base is `base_commit` by construction.
+        task=UnitTestTask(inputs_builder=gold_patch, patch_baseline=False),
         workspace=epath.Path(ws_root) / iid / "golden",
         timeout=timeout,
         # The golden patch is supposed to pass, so a failure here is either a

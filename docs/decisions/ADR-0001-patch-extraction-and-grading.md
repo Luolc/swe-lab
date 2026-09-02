@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted (amended 2026-08-25 — see the Amendment at the end)
+Accepted (amended 2026-08-25 — see the Amendment at the end; the
+amendment's default-off clause superseded by
+[ADR-0014](ADR-0014-the-pre-agent-baseline-is-the-default.md))
 
 ## Date
 
@@ -128,6 +130,12 @@ a real instance, add detection + a log line at that point.
 
 ## Amendment — 2026-08-25: Facet 1 lands, opt-in and default off
 
+> **Superseded in part by [ADR-0014](ADR-0014-the-pre-agent-baseline-is-the-default.md)
+> (2026-09-01): the mechanism below is unchanged, but it is now the
+> DEFAULT, not opt-in. The "default off" paragraph rested on the premise
+> that this repo does not ship affected images; measuring one of its own
+> SWE-bench Pro images falsified that.**
+
 Facet 1 above (a post-setup base instead of `base_commit`) was deferred with a
 named revisit condition: *"revisit only if setup noise becomes a real problem."*
 It became one — [#231](https://github.com/Luolc/swe-lab/issues/231) reports
@@ -140,9 +148,14 @@ changed nothing still produces a large patch, and grading fails identically for
 every agent on the affected instances.
 
 **Decision.** `DiffExtractObserver.baseline` (and `CodingAgentTask.patch_baseline`)
-commits the tree as the agent found it and diffs against that. **Default off**,
-so the accepted decision above remains this repo's behavior and nothing that
-works today changes.
+commits the tree as the agent found it and diffs against that. ~~**Default
+off**, so the accepted decision above remains this repo's behavior and nothing
+that works today changes.~~ **On by default since
+[ADR-0014](ADR-0014-the-pre-agent-baseline-is-the-default.md)**: an image this
+repo ships was measured producing a 166 KB patch from an agent that ran nothing
+— the failure described in the paragraph above, in our own images rather than
+only downstream ones — so keeping the remedy off left it as a description of a
+failure that went on happening.
 
 Diffing the *worktree* against the baseline — not `baseline..HEAD` — is
 deliberate and is what makes this strictly more robust than the benchmark
