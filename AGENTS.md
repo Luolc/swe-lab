@@ -158,10 +158,7 @@ test for is a wish, and it silently decays into a lie.
   the engine's compile contract (`SandboxSpec` / `UnitTestSpec` — what a dataset
   compiles its record into), or the report contract; re-hosting or renaming the
   HF dataset repos; the deferred `outputs/` restructure; deleting anything under
-  `outputs/` (it is a committed deliverable); **any experiment touching more
-  than 10 SWE-bench Pro instances, or more than 2 rollouts per instance** —
-  running the full set at scale belongs to the downstream consumer, whose quota
-  and sandboxes are sized for it.
+  `outputs/` (it is a committed deliverable).
 - **Never:** commit secrets / OAuth tokens / `.envrc.local` (enforced by the
   gitleaks hook + the CI history scan — see [Quality bar](#quality-bar));
   commit dataset data files or large trace records (gitignored / off-repo on HF
