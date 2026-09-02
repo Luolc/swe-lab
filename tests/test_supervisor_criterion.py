@@ -61,7 +61,8 @@ def test_a_criterion_quoting_the_gold_patch_is_rejected(
 ) -> None:
   """§3.1's named test: a criterion carrying the fix fails the check.
 
-  The run refuses to start rather than recording a gap.
+  The loader rejects rather than returning a degraded criterion. This is a
+  loader-level refusal; no run is stopped by it until a rollout path calls in.
   """
   path, digest = forged(
       tmp_path,

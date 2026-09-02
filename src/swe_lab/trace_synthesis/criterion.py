@@ -1,4 +1,4 @@
-"""The judge's criterion: one committed artifact, identical for every instance.
+r"""The judge's criterion: one committed artifact, identical for every instance.
 
 :class:`~swe_lab.trace_synthesis.supervisor.Observation` guards the entrance
 facing the actor. The judge has a second one — the standard it measures
@@ -24,11 +24,17 @@ The digest is therefore what makes the content question *answerable once*:
 review the artifact in its pull request, and the check keeps that reviewed text
 in force until someone re-pins it deliberately and visibly.
 
-**This is not yet a startup gate.** Nothing in a production path calls
-:func:`load_criterion`; the run-level refusal lands with the judge, which is
-where the criterion is consumed. What is enforced today is narrower and stated
-where it is claimed: ``SpeakWhenOffTrack`` cannot be constructed without a
-:class:`Criterion`.
+**This is not a startup gate.** What this module enforces is that
+:func:`load_criterion` **rejects an artifact** whose digest is not the pinned
+one, and that a :class:`Criterion` cannot misdescribe its own text. Nothing
+here stops a run, because nothing in a rollout path calls it — `rg -n
+"supervising_policy\(" src tests` finds only tests and the definition.
+
+**[U]** The run-level refusal is unwired and does **not** belong to the judge:
+it lands where a supervised run is assembled (task 01's dependency ③,
+acceptance point 2b, owned by the wiring PR), because a refusal to start can
+only be tested where the run is constructed. Until a non-test caller exists,
+treat this as a helper that rejects, not a gate that stops anything.
 """
 
 from __future__ import annotations
@@ -126,7 +132,7 @@ def load_criterion(
     path: pathlib.Path = CRITERION_PATH,
     digest: str = CRITERION_SHA256,
 ) -> Criterion:
-  """Load the criterion, or refuse to start.
+  """Load the criterion, or reject the artifact.
 
   Args:
     gold_patch: This instance's gold patch, when the dataset records one. Given

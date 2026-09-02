@@ -314,7 +314,7 @@ def supervising_policy(
     gold_patch: str | None = None,
     criterion_path: pathlib.Path | None = None,
 ) -> SpeakWhenOffTrack:
-  """Build the judging policy, or refuse to start.
+  """Build the judging policy, or reject the artifact.
 
   **[U] Not yet wired into a run.** This is where the criterion is loaded and a
   forged artifact raises, but nothing in a rollout path calls it, so the
