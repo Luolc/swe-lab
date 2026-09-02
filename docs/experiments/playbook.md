@@ -530,24 +530,42 @@ pilot's twelve amendments.
   rendered as a normal result: **a clean result arriving in a cleaner shape**,
   the same defect pointed the other way, with a gate on one side only.
 
-  The checkable form, since "compare the two documents carefully" is not
-  something a reviewer can execute:
+  The obligation is on the claims, not on a list of caveats, and it is a
+  **review obligation** — nothing mechanical covers it:
 
-  > **The report's list of limits must be a superset of the pre-registration's.**
-  > A limit that is missing must **name the observation that removed it** — not
-  > "the result came out well, so it no longer binds".
+  > **Every conclusion names the observation it rests on and is read against
+  > the limits pre-registered for that observation.** A claim that exceeds
+  > them is withdrawn or downgraded, unless it cites a **new observation** that
+  > removed the limit — "the result came out well" is not one.
 
-  Put the two lists side by side, take the difference, and a non-empty
-  difference is a question with an address. Run it over the whole conclusion
-  rather than the one sentence that looks weakest, because the loosening
-  arrives more than once: the same
-  [report](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md) also
-  read *deterministic for this input* off a single pair of equal outputs, where
-  the data says two recorded outputs were equal and ADR-0013's refutation
-  condition had its chance to fire and did not. Those are different kinds of sentence — one is a property of the
-  process, the other is what happened — and the discipline that refuses a `3/n`
-  bound on `observed 0 in 20` is the same one, held there against a quiet
-  result and dropped here against a clean one.
+  One cheap precondition is worth running first because it *is* mechanical:
+  **the report's limits should be a superset of the pre-registration's**, and a
+  non-empty difference is a question with an address. But a precondition is all
+  it is, and this entry's own instance is the proof. At `bf5d11e` — the head
+  that review names — the report **kept** the registered sentence, *a mismatch
+  could not have said which*, and wrote *neither difference moved the wrapper*
+  in the next one; it wrote *deterministic for this input* and *no evidence
+  about other tasks, timings, models* **in the same sentence**, joined by
+  "and". Both limits were present, the set difference was empty, and both
+  overclaims passed. **A guard proposed for a defect has to be run against that
+  defect before it is called a guard** — this one was not, in an entry whose
+  subject is exactly that, and a
+  [review](https://github.com/Luolc/swe-lab/pull/327#issuecomment-5502936994)
+  caught it the same way the first one did. Retaining a limit costs nothing and
+  is therefore no evidence of anything; **what a limit binds is the sentence
+  that reads the result**, and the two can sit in the same paragraph without
+  either author or reader noticing they disagree.
+
+  Apply it to the whole conclusion rather than the one sentence that looks
+  weakest, because the loosening arrives more than once: alongside the
+  attribution claim, the same
+  [report](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md) read
+  *deterministic for this input* off a single pair of equal outputs, where the
+  data says two recorded outputs were equal and ADR-0013's refutation condition
+  had its chance to fire and did not. Those are different kinds of sentence —
+  one is a property of the process, the other is what happened — and the
+  discipline that refuses a `3/n` bound on `observed 0 in 20` is the same one,
+  held there against a quiet result and dropped here against a clean one.
 
   Two details make the instance worth keeping. **Equality did not remove the
   confound it was used to dismiss**: two factors that are both inert and two
