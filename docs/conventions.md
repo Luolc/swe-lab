@@ -572,7 +572,13 @@ retroactively (owner's calibration, 2026-09-01).
   fact that separates the red light from the green one has already been written
   down, and nothing reads it. Worked example:
   [ADR-0015](decisions/ADR-0015-four-words-for-how-a-rollout-ends.md), which
-  turns `oom_kills` from a number into a gate.
+  turns `oom_kills` from a number into a gate. **Sibling rule, one layer up:**
+  the experiment playbook's *stratifying variable* entry asks whether a
+  recorded variable **can diagnose anything** (it must vary *within* some
+  unit); this entry asks whether **anything reads it at all**. Neither implies
+  the other — a metric can vary run to run and still be read by nothing, and a
+  variable the analysis genuinely reads can still be perfectly aligned with the
+  experimental unit and diagnose nothing.
 - **An absent measurement must not render as a zero measurement.** "Not
   measured" and "measured zero" are different facts, and the second is the
   first's most convenient disguise — it is a plausible number, so nothing looks

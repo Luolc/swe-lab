@@ -19,6 +19,7 @@ from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import UnitTestSpec, Verdict
 from swe_lab.harnesses import AgentOutcome, HarnessOutcomeObserver
 from swe_lab.harnesses.claude_code import ClaudeCodeHarness
+from swe_lab.harnesses.claude_code.constants import DEFAULT_MODEL
 from swe_lab.rollout import (
     CodingAgentTask,
     conversation_of,
@@ -253,9 +254,23 @@ def test_the_agent_outcome_lands_on_the_record():
       AgentOutcome.MAX_TURNS, patch=DiffExtractObserver(patch="", is_empty=True)
   )
   assert task.record_extra(spent) == {
+      "agent_model": DEFAULT_MODEL,
       "agent_outcome": "max_turns",
       "rollout_outcome": "no_patch",
   }
+
+
+def test_the_record_pins_which_actor_produced_it():
+  """A rate is only comparable across batches if the actor is on the record.
+
+  Measured 2026-09-01: the shard's own ``model`` field is empty by design, so
+  the actor of the first cost-measured rollout was recoverable only by grepping
+  111 lines of its event stream — and not at all once a trace is dropped.
+  """
+  task = CodingAgentTask(harness=ClaudeCodeHarness(model="claude-opus-5"))
+  assert task.record_extra(_attempt(AgentOutcome.FINISHED))["agent_model"] == (
+      "claude-opus-5"
+  )
 
 
 # ─── the outcome words, and which are ours (ADR-0015, ADR-0016) ──────────────
