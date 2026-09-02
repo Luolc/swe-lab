@@ -33,17 +33,18 @@ one thing added to its first entry. Nothing about the second entry changes.
 |---|---|---|---|
 | 1 | Instance → `SandboxSpec` | the dataset's `TaskInstance` | exists |
 | 2 | Actor runs under `CodingAgentTask` | [`rollout.py`](../../../src/swe_lab/rollout.py) | exists |
-| 3 | **Actor's live events reach a supervisor** | the harness's event stream | **missing — the wiring** |
+| 3 | **Actor's live events reach a supervisor** | `SupervisedRun` in [`trace_synthesis/channel.py`](../../../src/swe_lab/trace_synthesis/channel.py), composed by `CodingAgentTask.supervision_factory` | exists |
 | 4a | The **seam** a policy plugs into | the `SpeakPolicy` protocol in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | exists |
 | 4b | A policy that speaks **because of a real deviation** | `SpeakWhenOffTrack` in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | **the policy ships; the `Judge` and `Writer` it consults do not** — both are protocols with no implementation |
-| 5 | **Intervention reaches the actor's stdin** | the harness's invocation | **missing — the channel** |
+| 5 | **Intervention reaches the actor's stdin** | the FIFO and in-sandbox relay behind `ClaudeCodeHarness(correction_channel=True)` | exists |
 | 6 | Patch extracted vs the pre-agent baseline | `DiffExtractObserver(baseline=True)`, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md) | exists, default on |
 | 7 | Grading on that patch and that base ref | `UnitTestTask`, same base-ref contract | exists |
 | 8 | Outcome word + record | `rollout_outcome`, [ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md) | exists |
 
-**Stages 3, 4b and 5 are the remaining work.** 3 and 5 are two different seams
-— one reads, one writes — and conflating them is how a supervisor that "is
-attached" ends up never able to say anything.
+**Stage 4b is the remaining work.** 3 and 5 are two different seams — one
+reads, one writes — and conflating them is how a supervisor that "is attached"
+ends up never able to say anything; they are built as two, and both are in
+place.
 
 **4b is a prerequisite, not a detail of 4.** The policy that speaks on a
 deviation is `SpeakWhenOffTrack`, and it is shipped — but it consults a `Judge`

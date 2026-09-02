@@ -124,13 +124,13 @@ rather than a mechanism that is not there.
 
 | # | The claim | What proves it |
 |---|---|---|
-| 1 | The supervisor is attached to the actor's **live** output stream | The rollout entry persists the supervisor's own event artifact. **Obligation:** the wiring PR adds a named test that the entry composes the supervisor when configured, and names that artifact — neither exists today. |
+| 1 | The supervisor is attached to the actor's **live** output stream | The rollout entry persists the supervisor's own account, `supervisor.jsonl`. Composition and artifact are pinned by `test_the_rollout_composes_the_supervisor_when_one_is_configured` and `test_the_supervisors_account_of_the_run_is_persisted` — both, because either can hold while the run is unsupervised. What no test reaches is attachment to a **real** actor: every one of them drives a synthetic event stream. |
 | 2a | The **barrier holds** on the interface: the supervisor's input carries no gold patch and no hidden tests | Task 05's `test_supervisor_input_carries_no_privileged_field`. **Consumed here, not re-implemented** — a second barrier in this layer would be a second thing to keep true. |
 | 2b | The criterion artifact's sha256 is verified, and a mismatch **refuses to start the run** | The sha and the refusal both exist at loader level: `load_criterion` verifies the pinned digest and raises on a mismatch (`tests/test_supervisor_criterion.py`). What is missing is a **caller on the run's own path** — `rg -n 'supervising_policy\(' src tests` returns definition and tests only, so a forged artifact today fails a unit test rather than a run. **Obligation, owned by the wiring line** (owner ruling, 2026-09-02): "refuses to start the run" is only demonstrable where the run is constructed, so the composition that builds the policy is what must call it, with a named test that a forged artifact stops the run before the sandbox comes up. |
 | 3 | The policy speaks at least once **because of a real deviation** | The supervisor's persisted log — `supervisor.jsonl`, one row per event consumed — records `policy` on every row, so a `kind: "spoke"` row names what produced it. `SpeakAt` is a knob for tests: **a run whose only utterances are scheduled does not satisfy this point.** Not satisfied today, and the reason is **not** that the policy is missing: `SpeakWhenOffTrack` is shipped and its utterances are deviation-triggered by construction (its first two gates are the judge's verdict). What is missing is a `Judge` and a `Writer` to construct it with, so the point flips the moment those land and this composition is given one. |
 | 4 | The correction arrives **mid-turn**, in the wire shape already measured | The run's capture artifact shows the injected block as the last `role: system` message before the actor's next action, matching the in-sandbox fold check (block byte-identical, 4 system-reminder blocks). |
 | 5 | The rollout completes, the patch is taken **against the pre-agent baseline**, and grading runs | `patch_base_ref` present in the rollout record (baseline mode, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md)) and `unit_test.resolved` present in the grading entry's metrics. Guarded by `test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image`. |
-| 6 | The trace is persisted, **the interjection is in it**, and provenance is complete | The conversation artifact contains the supervisor's block, and the record carries the fields `run_provenance()` stamps. **Obligation:** the wiring PR asserts the block survives conversion — an interjection that is delivered but lost in conversion passes points 1–4 and still leaves no evidence. |
+| 6 | The trace is persisted, **the interjection is in it**, and provenance is complete | `test_an_interjection_survives_conversion_into_the_trace` builds the bytes with the channel's own rendering path and asserts they survive conversion — an interjection that is delivered but lost in conversion passes points 1–4 and still leaves no evidence. Provenance: the fields `run_provenance()` stamps, plus `extra["agent_model"]`, which pins the actor even once the trace is dropped. |
 | 7 | The **outcome word is correct** | `rollout_outcome` in the rollout record is the one that matches what happened; the four words are pinned apart by the named tests in `tests/test_rollout.py` ([ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md)). |
 
 **All seven green = the pipeline works end to end.** Only then the stability
@@ -159,12 +159,14 @@ rather than printing `0 / 0`.
   hypothesis, logged run, conclusion. A supervised rollout that **fails to
   resolve is a complete result**; what would make it incomplete is a point above
   that nothing can demonstrate.
-- **Dependencies:** a policy that speaks because of a real deviation, the
-  live-stream wiring, and the stdin channel (stages 4b, 3 and 5 of the
-  [design record](task-01-pipeline-end-to-end.md)), plus the pinned criterion
-  sha and its refusal path for point 2b. The `SpeakPolicy` **protocol** is
-  present; `NeverSpeak`, its only shipped implementation, is the control arm
-  and cannot satisfy point 3. **Scope:** M
+- **Dependencies:** three of the four are in place — the stdin channel and the
+  live-stream wiring (stages 5 and 3 of the
+  [design record](task-01-pipeline-end-to-end.md)), and the criterion with its
+  loader-level refusal. What remains is a `Judge` and a `Writer` to construct
+  `SpeakWhenOffTrack` with (stage 4b, point 3), and a caller for the criterion
+  on the run's own path (point 2b). Verify with
+  `rg -n 'class SpeakWhenOffTrack|def load_criterion|supervising_policy\(' src`
+  rather than from this sentence. **Scope:** M
 
 **The design record for this form is**
 [`task-01-pipeline-end-to-end.md`](task-01-pipeline-end-to-end.md).
