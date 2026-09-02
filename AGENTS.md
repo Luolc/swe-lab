@@ -97,12 +97,11 @@ uv run pre-commit run --all-files    # the full hook set — see conventions.md
 uv run pytest -m 'not docker'        # the test suite, minus the container tests
 ```
 
-**`--all-files` means all *tracked* files.** An untracked file is skipped in
-silence, so a brand-new module and its tests can pass this gate without being
-looked at — the highest-risk category is exactly the one that escapes. **Stage
-before running the quality bar, even when you are not ready to commit.**
-Measured 2026-09-02: a new module and test file passed `--all-files` cleanly and
-the commit hooks then failed on them immediately.
+**`--all-files` means all *tracked* files**, so stage before running the quality
+bar even when you are not ready to commit — an untracked file is skipped in
+silence, and new files are the category that most needs checking. The
+measurement and the reasoning live once, in
+[`docs/conventions.md`](docs/conventions.md#formatting--lint).
 
 The **docker-marked tests are CI's job**, and CI is the required check that runs
 them — they must be green before merge, but locally they start containers of
