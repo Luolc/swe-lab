@@ -143,12 +143,15 @@ CONTROL_BUDGET = 0
 def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
   """Build a rollout entry whose actor can be spoken to while it runs.
 
-  The treatment arm and its control differ **only** in the policy they are
-  given: same harness, same flags, same invocation script, so what separates
-  the two runs is what was said and nothing else. That is why this is a
-  function of the supervision rather than a flag on :data:`ROLLOUT` — a boolean
-  would hide the difference between the arms inside a parameter instead of
-  leaving it in two readable definitions.
+  The treatment arm and its control are given the same harness, the same flags
+  and the same invocation script, so nothing about the actor's environment
+  distinguishes them: what the actor receives differs by the corrections alone.
+  The supervision side is matched where a control has to match — the judging
+  work that precedes each decision — and not on the writing side, where a call
+  is what a delivered correction *is*. That is why this is a function of the
+  supervision rather than a flag on :data:`ROLLOUT`: a boolean would hide the
+  difference between the arms inside a parameter instead of leaving it in two
+  readable definitions.
 
   Args:
     supervision_factory: What watches the actor, given the task text.
@@ -189,7 +192,8 @@ SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
 
 # The same policy, the same criterion, the same judge on every boundary — with
 # nothing left to spend. What the actor experiences differs by the corrections
-# alone, which is the whole of what a paired arm is for.
+# alone, and the supervision side differs only past the point where a
+# correction was decided on, which is the whole of what a paired arm is for.
 CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
     supervision(
         model=SUPERVISOR_MODEL,

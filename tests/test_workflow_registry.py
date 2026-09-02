@@ -348,14 +348,14 @@ def test_a_supervised_rollout_and_its_control_can_both_be_started_by_name():
   assert plain.task.supervision_factory is None
 
 
-def test_the_two_arms_differ_only_in_what_the_policy_says():
+def test_the_two_arms_put_the_actor_in_the_same_environment():
   """Comparability comes from the harness, not from a flag.
 
   Both arms run the actor through the same invocation script — same capture,
-  same live channel, same relay — so the difference between the runs is what
-  was said and nothing else. If the control were simply the unsupervised
-  definition, the arms would differ in the script itself and the comparison
-  would be about the channel rather than about the corrections.
+  same live channel, same relay — so what the actor receives differs by the
+  corrections alone. If the control were simply the unsupervised definition,
+  the arms would differ in the script itself and the comparison would be about
+  the channel rather than about the corrections.
   """
   from swe_lab.rollout import CodingAgentTask
 
@@ -367,8 +367,8 @@ def test_the_two_arms_differ_only_in_what_the_policy_says():
   assert supervised.timeout == control.timeout
   assert supervised.sandbox == control.sandbox
   # …and the policies are the same policy, on the same criterion, with the
-  # same window and cooldown. Only the budget differs, which is what "differ
-  # only in what was said" has to mean at the object level.
+  # same window and cooldown. Only the budget differs — the object-level form
+  # of "matched everywhere the arms have to be matched".
   treatment_policy = _policy_of(supervised)
   control_policy = _policy_of(control)
   assert type(treatment_policy) is type(control_policy)
@@ -481,6 +481,6 @@ def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
   # Same judge calls and the same would-have-spoken markers…
   assert treatment[0] == control[0] == 12
   assert treatment[3] == control[3] == 12
-  # …and the difference is only what was delivered.
+  # …and they part company only after a correction has been decided on.
   assert (treatment[1], treatment[2]) == (3, 3)
   assert (control[1], control[2]) == (0, 0)
