@@ -598,6 +598,22 @@ retroactively (owner's calibration, 2026-09-01).
   the other — a metric can vary run to run and still be read by nothing, and a
   variable the analysis genuinely reads can still be perfectly aligned with the
   experimental unit and diagnose nothing.
+- **Writing a gap down lowers the chance it gets fixed.** Not the same claim as
+  *disclosure is not mitigation*, which says the note does not help; this says
+  the note costs something. A recorded gap reads like a handled gap, and the
+  more precisely it is written the more handled it reads — **including to the
+  person who wrote it**, because writing it down is what discharges the unease
+  that would otherwise have driven someone to close it. The same mechanism
+  turns a stale fact into a durable one: **a fact that has been conditionalised
+  reads like a fact that is being maintained**, so a conditional whose premise
+  has already flipped is indistinguishable, to anyone who does not re-check the
+  premise, from a current fact — a premise that has changed gets written as
+  changed, not left in the present tense. The executable form: **when you write
+  a gap down, the same change either covers it or names who covers it and when;
+  if you can do neither, do not write it in the register of a "known
+  limitation"**, because that register is itself the harm. Instance:
+  [task 01's acceptance point 1](trace-synthesis/plans/README.md), whose own
+  text named the missing coverage.
 - **An absent measurement must not render as a zero measurement.** "Not
   measured" and "measured zero" are different facts, and the second is the
   first's most convenient disguise — it is a plausible number, so nothing looks
@@ -619,6 +635,36 @@ retroactively (owner's calibration, 2026-09-01).
   slightly wrong. Generally: **a silent revert's only alarm is a number that
   looks slightly off, and nobody is obliged to look at that number.** Re-measure
   at the object you are describing, or describe the object you measured.
+
+  The same entry covers a reading taken somewhere else: **a green is about the
+  machine, the checkout and the moment it was taken on**, so one quoted without
+  those coordinates is not evidence about anywhere else. Three instances in one
+  day, two of them mistakes and the third the habit that avoids them: a branch
+  whose CI failed on a `FileNotFoundError` the author's local run never
+  produced, because that one checkout happened to have a sibling
+  `cc-reverse-proxy/` beside it; a worktree that passed a gate the primary
+  checkout failed, because only it held the parquet files; and a property
+  verified on a branch, then verified again on `main` after the merge — a
+  different object, checked as one.
+
+  A fourth is worse than those three, because the coordinates did not exist:
+  a file read straight out of another agent's working directory to check a
+  review finding, which nearly ruled the reviewer wrong on the strength of an
+  edit that was still uncommitted (2026-09-02, #348; `git status --short`
+  showing two ` M` is what caught it, and `git show <sha>:<path>` showed the
+  reviewer had been right all along). **A worktree in use has no stable
+  revision** — what it says this second and what it says next are allowed to
+  differ. So there are exactly two ways to read the code a PR is under review
+  at: **`git show <sha>:<path>`, or your own detached worktree at that SHA.
+  Reading somebody's working directory is not reading that code.**
+- **After a squash merge, a branch cut from the merged branch cannot be
+  rebased.** The squash lands the whole branch on `main` as one *new* commit, so
+  git holds no record that the original commits are in — `git rebase
+  origin/main` replays every one of them and conflicts wherever someone else has
+  since touched those files. The symptom is **a conflict that makes no sense**,
+  in a file the new work never opened, which reads as "somebody broke `main`".
+  Rebuild rather than rebase: reset the branch onto `origin/main` and
+  cherry-pick your own commits onto it.
 - **`git checkout <sha> -- <paths>` has overwrite semantics, not merge
   semantics — so it never conflicts, and that is exactly what makes it dangerous
   when rebuilding a branch.** The safe form is
@@ -701,16 +747,34 @@ retroactively (owner's calibration, 2026-09-01).
   still there to recover only because nobody had reaped the container. So
   `docker cp` what you need out **before** `docker rm`. Same family as the
   bullet above: look before you delete.
-- **While the capture proxy runs host-side, `capture="proxy"` has host
-  prerequisites, and two of them fail silently.** Every item below follows from
-  that one premise — the proxy is a process on the host, bound to a host port,
-  that the container dials outward. Change the premise and the list stops
-  applying rather than becoming wrong in place. The agent reaches the recorder
-  at `host.docker.internal:<port>`, so:
+- **In a bind mount shared with a root container, whoever creates a directory
+  owns it — and `mkdir -p` on one that already exists is a no-op that does not
+  reset ownership.** So any directory the host side has to write into is
+  created by the host *before* the container starts: root can write into ours,
+  we cannot write into root's. Both directions measured 2026-09-02 — uid 1000
+  into a container-made `drwxr-xr-x root root` is `PermissionError: [Errno
+  13]`; a host-made `drwxrwxr-x 1000 1000` stays ours and takes root's writes
+  fine. What hides it is that the container usually creates the directory
+  defensively too, and that `mkdir -p` succeeds either way, so the losing order
+  looks exactly like the winning one until something on the host tries to
+  write. Worked instance:
+  `test_the_supervised_script_carries_a_correction_to_a_stub_agent`, which
+  holds `CorrectionChannel` to creating its drop directory on construction.
+- **The W1 annotation path runs its capture proxy host-side, and two of its
+  prerequisites fail silently.** The rollout path does not: its proxy moved
+  *into* the sandbox
+  ([ADR-0012](decisions/ADR-0012-in-sandbox-capture-proxy.md)), where it listens
+  on the container's own loopback (`PROXY_BASE_URL`) and asks the host for
+  nothing. What follows is W1's — `pipelines/related_files/agent_run.py` is the
+  only caller left that constructs a host-side `ReverseProxy` — and every item
+  below follows from that one premise: the proxy is a process on the host, bound
+  to a host port, that the container dials outward. Change the premise and the
+  list stops applying rather than becoming wrong in place. The agent reaches the
+  recorder at `host.docker.internal:<port>`, so:
   (a) the host firewall must let the Docker bridge in — this box's `ufw`
   default-denies incoming, so proxy capture fails outright unless the recorder's
-  port ranges (`20000:20999` for rollouts, `25000:25999` for the aggregator) are
-  allowed; that rule belongs to `machine-setup`, and `sudo ufw status` is how you
+  port ranges (`20000:20999` for the annotator, `25000:25999` for the
+  aggregator) are allowed; that rule belongs to `machine-setup`, and `sudo ufw status` is how you
   check it rather than assuming it;
   (b) the port must be **free**, because `ReverseProxy._wait_until_listening`
   accepts *any* listener and an unrelated process squatting on it reads as "the
