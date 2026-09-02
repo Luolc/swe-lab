@@ -100,9 +100,11 @@ and it authorizes nothing.
 **Description:** One rollout of one real instance in which **every stage of the
 pipeline actually runs** — supervisor attached, correction delivered mid-turn,
 patch extracted, graded, recorded. The deliverable is a *working pipeline*, not
-an effect estimate: how much supervision helps is measured by the downstream
-consumer ([handoff note](../downstream-scale-note.md)), and this repo is capped
-at 10 instances × 2 rollouts.
+an effect estimate: how much supervision helps is measured by a downstream
+consumer, and this repo is capped at **10 instances × 2 rollouts** — an owner
+ruling of 2026-09-01, relayed through the orchestrator. The handoff note that
+hands the effect measurement over is written but **not yet in this tree**; it
+lands separately, and this row deliberately does not link it until it does.
 
 **What this replaces, and why.** The previous acceptance belonged to the
 **hint-injection arm**, closed by its own pre-registered kill condition
@@ -122,7 +124,8 @@ rather than a mechanism that is not there.
 | # | The claim | What proves it |
 |---|---|---|
 | 1 | The supervisor is attached to the actor's **live** output stream | The rollout entry persists the supervisor's own event artifact. **Obligation:** the wiring PR adds a named test that the entry composes the supervisor when configured, and names that artifact — neither exists today. |
-| 2 | The **barrier holds**: the supervisor's constructor interface carries no gold patch and no hidden tests, and the criterion artifact's sha256 is verified — a mismatch **refuses to start the run** | Task 05's own named tests (the fields are absent; a mismatched sha refuses). **Consumed here, not re-implemented** — a second barrier in this layer would be a second thing to keep true. |
+| 2a | The **barrier holds** on the interface: the supervisor's input carries no gold patch and no hidden tests | Task 05's `test_supervisor_input_carries_no_privileged_field`. **Consumed here, not re-implemented** — a second barrier in this layer would be a second thing to keep true. |
+| 2b | The criterion artifact's sha256 is verified, and a mismatch **refuses to start the run** | **Obligation:** neither the pinned sha nor the refusal path exists today — task 05's tests cover the field allowlist only. The PR that implements the criterion adds both, with a named test that a mismatched sha refuses. Until then this is a design intent, not a consumed proof. |
 | 3 | The policy speaks at least once **because of a real deviation** | The supervisor's persisted log records, per utterance, the trigger that produced it, and at least one is deviation-triggered. `SpeakAt` is a knob for tests: **a run whose only utterances are scheduled does not satisfy this point.** **Obligation:** the wiring PR names the field that distinguishes the two. |
 | 4 | The correction arrives **mid-turn**, in the wire shape already measured | The run's capture artifact shows the injected block as the last `role: system` message before the actor's next action, matching the in-sandbox fold check (block byte-identical, 4 system-reminder blocks). |
 | 5 | The rollout completes, the patch is taken **against the pre-agent baseline**, and grading runs | `patch_base_ref` present in the rollout record (baseline mode, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md)) and `unit_test.resolved` present in the grading entry's metrics. Guarded by `test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image`. |
@@ -139,11 +142,11 @@ effect, which it is far too small to do.
   that nothing can demonstrate.
 - **Dependencies:** task 05's `SpeakPolicy`. **Scope:** M
 
-**The old design record is superseded, not edited.**
+**The design record for this form is**
+[`task-01-pipeline-end-to-end.md`](task-01-pipeline-end-to-end.md).
 [`task-01-one-instance-end-to-end.md`](task-01-one-instance-end-to-end.md) is
-forward-looking design for the terminated arm (its Step 5 is "the steered
-re-run"). Keep the file, mark it superseded with a pointer, and write a new
-record for this form.
+kept as the record of the terminated hint-injection arm (its Step 5 is "the
+steered re-run") and is marked superseded in its own header, pointing here.
 
 ## Task 02: Measure the injection shape
 
