@@ -353,6 +353,18 @@ pilot's twelve amendments.
   a rule cannot be pinned before the flaw in it is known. It was handled by
   isolating one person; **the next pre-registration's goal is to need no
   isolation at all.**
+
+  Notice what that paragraph is, though: **an exemption with its reason written
+  beside it** — the shape *a defect with a reason written beside it reads as a
+  decision* is about, applied to the rule stated two sentences earlier. The
+  pinning rule *does* fire on that pilot, and the excuse is granted in the same
+  breath, which is how a rule acquires a standing exception nobody re-examines.
+  So the excuse is admissible only in the form *label an amendment for what it
+  is* asks for: **the amendment recorded with the observation that forced it and
+  with an empty prior action set.** Written that way a reader can separate "the
+  flaw was visible only once the run was under way" from an explanation
+  assembled after the fact; written as prose it is self-certifying, and a
+  self-certified exemption is the pinning rule never firing at all.
 - **A stopping rule that reads the clock is outcome-correlated.** Truncating a
   fixed design on wall time removes whole units, and the slowest unit goes
   first — which is a property of the workload, not of chance. The same shape
