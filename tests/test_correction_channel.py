@@ -13,6 +13,7 @@ from collections.abc import Callable, Mapping
 import json
 from pathlib import Path
 import shlex
+import threading
 import time
 from typing import Any, final
 
@@ -74,6 +75,27 @@ class _SpeaksOnce:
         if (self.calls == 1)
         else None
     )
+
+
+@final
+class _Blocks:
+  """A policy that does not return, the way a model call does not return."""
+
+  def __init__(self) -> None:
+    self.entered = threading.Event()
+    self.released = threading.Event()
+    self.calls = 0
+
+  @property
+  def name(self) -> str:
+    return "blocks"
+
+  def consider(self, observation: Observation) -> Intervention | None:
+    del observation
+    self.calls += 1
+    self.entered.set()
+    _ = self.released.wait(30.0)
+    return None
 
 
 @final
@@ -722,3 +744,39 @@ def test_a_correction_that_could_not_be_delivered_invalidates_the_run(
       rollout_outcome(_attempt_with(contribution.metrics))
       is RolloutOutcome.SUPERVISION_FAILED
   )
+
+
+def test_a_supervisor_that_never_returns_is_not_reported_as_healthy(
+    tmp_path: Path,
+):
+  """A stuck supervisor is a lost one, and teardown must not race it.
+
+  The policy consults a model, so "has not returned" is an ordinary thing for
+  it to be. Joining with a bound and then carrying on regardless reads that as
+  a healthy run: nothing raised, no marker, no gap. Worse, the final poll would
+  reach into a pump the feeder is still inside and hand the policy a second
+  observation while it has not answered the first.
+  """
+  policy = _Blocks()
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  run = SupervisedRun(
+      policy_factory=lambda: policy,
+      task="solve it",
+      poll_interval=0.01,
+      join_timeout=0.2,
+  )
+  run.after_create(_fs(tmp_path))
+  try:
+    _ = events.write_text(_assistant_event("thinking") + "\n")
+    assert policy.entered.wait(10.0), "the policy was never consulted"
+    # More for a concurrent poll to find, so "did not poll" is observable
+    # rather than merely intended.
+    with events.open("a") as handle:
+      _ = handle.write(_assistant_event("still thinking") + "\n")
+
+    contribution = run.before_destroy(_fs(tmp_path))
+    assert contribution is not None
+    assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+    assert policy.calls == 1  # teardown consulted nothing
+  finally:
+    policy.released.set()

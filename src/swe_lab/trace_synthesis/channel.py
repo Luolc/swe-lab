@@ -62,9 +62,11 @@ from .supervisor import (
 #: was supervised at all reads this artifact.
 SUPERVISOR_LOG_NAME = "supervisor.jsonl"
 
-# How long `before_destroy` waits for the polling thread to notice it should
-# stop. It is a poll interval plus one read, never a computation.
-_JOIN_TIMEOUT_SECONDS = 10.0
+# How long `before_destroy` waits for the supervising thread to notice it
+# should stop. A thread doing its job needs a poll interval plus one read; a
+# thread that needs longer is blocked in something that does not return, which
+# is a lost supervisor rather than a slow one.
+JOIN_TIMEOUT_SECONDS = 10.0
 
 
 @dataclass
@@ -264,6 +266,10 @@ class SupervisedRun(SandboxObserver):
       is a declaration that may be executed any number of times.
     task: What the actor was asked to do, for the supervisor's observation.
     poll_interval: Seconds between reads of the actor's event stream.
+    join_timeout: Seconds teardown waits for the supervising thread to stop.
+      A thread still running after it is not slow, it is stuck — in a model
+      call, a sink, a read that does not return — and the run is treated as
+      having lost its supervisor.
     pump: The pump, once the run has started.
     channel: The channel it writes through, once the run has started.
   """
@@ -271,10 +277,12 @@ class SupervisedRun(SandboxObserver):
   policy_factory: Callable[[], SpeakPolicy]
   task: str
   poll_interval: float = 0.5
+  join_timeout: float = JOIN_TIMEOUT_SECONDS
   pump: SupervisorPump | None = None
   channel: CorrectionChannel | None = None
   _rows: list[Mapping[str, Any]] = field(default_factory=list)
   _gap: bool = False
+  _stuck: bool = False
   _stop: threading.Event = field(default_factory=threading.Event)
   _thread: threading.Thread | None = None
 
@@ -346,9 +354,10 @@ class SupervisedRun(SandboxObserver):
   def supervised_throughout(self) -> bool:
     """Whether every boundary of this run was actually covered.
 
-    Three ways it stops being true, and they are one fact reached three ways:
+    Four ways it stops being true, and they are one fact reached four ways:
     the pump stopped reading, the supervisor hit a boundary it could not judge
-    or could not speak at, or the channel ended without being told to.
+    or could not speak at, the supervising thread never stopped, or the channel
+    ended without being told to.
 
     Returns:
       Whether the run is evidence about supervision at all.
@@ -357,6 +366,7 @@ class SupervisedRun(SandboxObserver):
         self.pump is not None
         and self.pump.healthy
         and not self._gap
+        and not self._stuck
         and self.channel is not None
         and not self.channel.closed_uncleanly
     )
@@ -400,8 +410,13 @@ class SupervisedRun(SandboxObserver):
     del sb
     self._stop.set()
     if self._thread is not None:
-      self._thread.join(timeout=_JOIN_TIMEOUT_SECONDS)
-    if self.pump is not None:
+      self._thread.join(timeout=self.join_timeout)
+      # A thread still running owns the pump and the supervisor. Reading them
+      # here would race it, and polling would put a second `consider` call
+      # into a policy that has not returned from its first — so teardown takes
+      # the liveness as the answer and touches nothing else.
+      self._stuck = self._thread.is_alive()
+    if self.pump is not None and not self._stuck:
       _ = self.pump.poll()  # whatever the actor wrote after the last tick
     lost = not self.supervised_throughout
     account = "".join(json.dumps(row) + "\n" for row in self._rows)
