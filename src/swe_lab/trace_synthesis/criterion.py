@@ -72,8 +72,10 @@ _WORD = re.compile(r"\S+")
 class CriterionRejectedError(RuntimeError):
   """Raised when the artifact is not the pinned criterion.
 
-  Deliberately not a recorded gap: a criterion that is not the reviewed one
-  leaves nothing to judge against, so the caller refuses rather than degrades.
+  Deliberately neither a recorded gap nor a lapse: those are boundaries a
+  running supervisor could not cover, and this is refused before one runs. A
+  criterion that is not the reviewed one leaves nothing to judge against, so
+  the caller refuses rather than degrades.
   """
 
 

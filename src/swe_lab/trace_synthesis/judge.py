@@ -339,7 +339,8 @@ class ModelWriter:
 
     Returns:
       The line, unvalidated here — :class:`Intervention` rejects an unusable
-      one, and the policy lets that become a recorded gap.
+      one, and the policy bounds that rejection to the boundary it happened at:
+      a recorded **lapse**, not a gap. One bad line costs one boundary.
     """
     payload = {
         "model": self.model,

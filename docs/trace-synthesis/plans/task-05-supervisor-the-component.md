@@ -160,7 +160,7 @@ scope, the second half has the same four parts as the first:
 | --- | --- |
 | **artifact** | the criterion file, in the repository |
 | **check** | `sha256(criterion)` equals the pinned constant — and, redundantly but cheaply, no shared file path and no shared 8-gram with this instance's gold patch |
-| **rejection** | `CriterionRejectedError`. Not a recorded gap: a criterion that is not the reviewed one leaves nothing to judge against |
+| **rejection** | `CriterionRejectedError`. Neither a recorded gap nor a lapse — both are boundaries a *running* supervisor could not cover, and this is refused before one runs: a criterion that is not the reviewed one leaves nothing to judge against |
 | **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
 
 **[U] The startup gate is not wired, and this row says so rather than implying
