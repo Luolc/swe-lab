@@ -32,6 +32,15 @@ carried here as a list rather than a count: the claim "no lapse occurred before
 `cursor` 87" cannot be rederived from `16`. Its witness is the sixteen cursors
 themselves, which is why they are written out below.
 
+The same reasoning splits those sixteen in two. They share one exception class,
+`PolicyLapseError <- JudgeAnswerError`, and that is what the class line counts —
+but eleven of them are a provider response whose `content` was null, which
+reaches the parser as `None`, and five are output that arrived and would not
+parse. **A call that returned nothing and a call that returned something
+unusable are two failures**, and a witness that prints only `16` cannot support
+a claim about either. Each bucket is printed with its own cursors for the same
+reason the union is: the claims here are about distribution.
+
 ## Provenance
 
 | | |
@@ -40,7 +49,7 @@ themselves, which is why they are written out below.
 | Host | the machine that ran it; **nowhere else** — in two directories on that one machine, see below |
 | Run date | 2026-09-02 (UTC) |
 | Repository at run time | `main` at `3e97442` |
-| Actor | Claude Code, pinned 2.1.220 |
+| Actor | Claude Code, pinned 2.1.212 (`claude.info`'s verbatim `--version`; `PINNED_CLAUDE_CODE_VERSION`, `src/swe_lab/harnesses/claude_code/binary.py:45`) |
 
 Collected artifacts of the rollout attempt (`rollout/a0/`), sha256:
 
@@ -101,29 +110,63 @@ spoke policies           speak-when-off-track
 lapse cursors            87, 96, 98, 100, 101, 106, 108, 109, 110, 128, 131, 134, 136, 140, 158, 165
 lapse cursor range       87-165
 lapse classes            16 x PolicyLapseError <- JudgeAnswerError
+lapse no output          11  cursors 96, 98, 100, 106, 108, 109, 128, 134, 140, 158, 165
+lapse unparsable output  5  cursors 87, 101, 110, 131, 136
+  Expecting value        1  cursors 87
+  Unterminated string    3  cursors 110, 131, 136
+  delimiter              1  cursors 101
+actor total_cost_usd     1.3311234
+actor num_turns          32
+actor duration_ms        167591
+actor usage              {"input_tokens": 64, "cache_creation_input_tokens": 79716, "cache_read_input_tokens": 2049248, "output_tokens": 15438}
 events                   170
 result events            1
 events carrying a time   90
 actor last stamped event 2026-09-02T07:26:19.485Z
+last stamped line        169
+run_ts                   20260902-072316
+backend                  host
+instance_id              instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb
 supervisor first row     2026-09-02T07:23:35.650499+00:00
 supervisor last row      2026-09-02T07:42:14.572388+00:00
 supervisor span s        1118.9  (measured; both ends are supervisor rows)
+s per boundary           6.58  (measured; 1118.9 s / 170 rows)
+lapses / boundaries      9.4%  (denominator 170 rows)
 rollout wall s           1124.47  (measured; claude_code.wall_seconds)
 overlap with actor s     163.8  (at least)
 tail after actor s       955.1  (at most)
-tail / rollout wall      0.849  (at most; denominator 1124.47 s)
-tail / supervisor span   0.854  (at most; denominator 1118.9 s)
+tail / rollout wall      84.9%  (at most; denominator 1124.47 s)
+tail / supervisor span   85.4%  (at most; denominator 1118.9 s)
+wall - actor duration s  956.9  (at most)
+the two bounds differ by 1.8  s
 proxy records            33
 requests carrying it     24
 occurrences              63
 in the final message     3
 in any response          0
+carried in history       60
 native transcript report {"archived": true, "config_dir": "/agent-home/.claude", "exit_code": 0, "members": 3}
 archive members          3
 transcript files         1
+transcript member        projects/-app/f4ddae90-a7d2-440a-9e56-36e8a90c08ce.jsonl
 transcript lines         122
-lines carrying it        3
+lines carrying it        3  lines 32, 51, 57
 their types              attachment
+conversation messages    73
+carrying it              3  msg[19], msg[29], msg[32]
+their roles              system
+verifier flagged         ["suspicious_git"]
+verifier high_confidence []
+verifier suspicious_git  4 commands
+  git show --stat HEAD
+  git log --all --oneline
+  git show 5f7d8d190 --stat
+  git show 5f7d8d190 -- openlibrary/core/models.py
+integrity base_sha       5f7d8d190e2f0d837545e582fd5db99aae51a979
+integrity purged         True
+integrity future_commits 3172 -> 0
+integrity solution_reach True -> False
+integrity violations     []
 metric agent_complete             1.0
 metric claude_code.exit_code      0.0
 metric claude_code.timed_out      0.0
@@ -132,12 +175,20 @@ metric supervision.boundaries     170.0
 metric supervision.corrections    3.0
 metric supervision.lapses         16.0
 metric patch_is_empty             0.0
+metric verifier.flagged           1.0
 metric supervision.unhealthy      False
 metric unit_test.required         25.0
 metric unit_test.passed           9.0
 metric unit_test.missing          16.0
 metric unit_test.resolved         0.0
+actor version            2.1.212 (Claude Code)
+actor model              claude-sonnet-5
+patch base_ref           64501d9b938bd7986b36dd2cd4fdb7af930b2750
+rollout outcome          patch_produced
 patch.diff bytes         3107
+supervisor.jsonl bytes   27340
+claude_code.proxy_log.jsonl bytes 3064215
+corpus files             122
 ```
 
 Three of these lines are worth reading twice, because each is a coordinate that
@@ -195,6 +246,34 @@ diff <(cd "$RUN_TREE" && find . -type f -exec sha256sum {} \; | sort -k2) \
 products* (`HF_TOKEN` is documented for `pipelines/related_files/traces.py` and
 `datasets/deepswe/build_parquet.py --upload`); a run's corpus is not one of
 those and is deliberately not uploaded.
+
+## What this script has to cover
+
+**Every number in `REPORT.md` that is a reading of the run's record is printed
+above.** Two kinds of number in that file are not, and they are enumerated
+rather than gestured at.
+
+The first is anything that is not a claim about the run: section, ADR, task and
+PR ids, dates, identifiers, `file:line` citations.
+
+The second has exactly two members — `_AGENT_TIMEOUT_S = 3600.0` and the
+**547 boundaries** derived from it — and a name, because "the witness cannot
+print it" describes a defect and this is a design: **read from the checkout at
+report time, by path — not reproducible from the corpus, and not intended to
+be.** A corpus witness prints what a past run recorded; printing today's
+constant beside it would be the wrong reading, not a better one. What such a
+number owes instead is a coordinate, and the report gives it one:
+`src/swe_lab/workflow/definitions.py:63` as of `main` =
+`91846dd595fa4e64ed2cd3a71a2c6e41709e1a53`. `547` is a **mixed derivation** —
+6.58 s per boundary is fixed by the corpus, `3600.0` changes the day someone
+edits it — and without the coordinate it would go quietly false with nothing
+failing.
+
+The check is a **census of every numeric token in the report**, not a search
+for the ones that look unwitnessed. Three review rounds of "a few more are
+missing" is what a search produces: it finds what it thought to look for, and
+the residue is invisible because nothing counts it. A census has a total, so
+the uncovered set is a number rather than an impression.
 
 What follows is the rule's own fallback, and it is the whole reason this file
 exists: **the numbers above are rederivable only with the corpus in hand.** The
