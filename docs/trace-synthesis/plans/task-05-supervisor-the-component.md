@@ -368,10 +368,29 @@ and **never asked whether there was anything left to ask for**.
 matches [the report's](../../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)
 own "fourteen of 17".
 
+**Worth stating plainly, because it changes how much that batch is owed:** under
+that rule the graded arm contained **3** interventions that still had something
+to ask for. Whatever `BELOW_BAR` measured, it measured it over that.
+
+**The question is paired to the fixture, and getting this wrong would
+manufacture a false refutation.** Gate (a) judges *deviation from general
+engineering practice*; the flag records whether *that fixture's predicate* was
+already satisfied. They are not the same thing, and a record whose predicate was
+satisfied can still be genuinely off track **on some other axis**. So the replay
+asks the matched question:
+
+> *On the dimension this fixture's correction addressed, is the actor deviating
+> at this moment?*
+
+**Not** "is anything wrong here". A gate (a) that answers "deviating" about a
+different axis is **right**, and scoring it as a miss would refute the design
+with an answer to a question nobody asked.
+
 **The reading, fixed here before the replay runs:**
 
-- On the **14**, gate (a) should answer *not deviating* — the work was already
-  done, and a judge that says otherwise has reproduced the defect.
+- On the **14**, gate (a) asked the paired question should answer *not
+  deviating* — the work was already done, and a judge that says otherwise has
+  reproduced the defect.
 - On the **3**, the counts are reported and **decide nothing**: n=3 is far under
   that experiment's own pre-registered floor of 12.
 
@@ -381,7 +400,7 @@ drawn after seeing which runs failed, and the fixtures have **no guidebook**, so
 what is being exercised is the *general-practice* criterion of
 [§3.1](#31-the-barriers-second-half-what-the-judge-may-reason-from), not the
 phase-B pipeline. **This replay can therefore falsify the gate and cannot
-validate it.** If gate (a) calls the 14 deviations, the design is wrong in the
+validate it — and it can falsify it only on the paired dimension above.** If gate (a) calls the 14 deviations, the design is wrong in the
 way that matters; if it does not, we have removed one known failure and learned
 nothing about the rest.
 
@@ -390,11 +409,23 @@ nothing about the rest.
 already-finished work is not a deviation under (a), and reaching for (b) to
 explain that would be fitting a second knob to the same data.
 
-**One dependency worth naming:** the committed evidence carries each row's
-action, correction and validity flags, but **not the conversation prefix** the
-judge needs — those raw captures are off-repo and currently live in another
-agent's worktree. The replay needs read access to them, and that is a
-coordination step, not a technical one.
+**The inputs are read-only and carry operator PII, which constrains what the
+replay may emit.** The committed evidence carries each row's action, correction
+and validity flags, but **not the conversation prefix** the judge needs; those
+raw captures are off-repo, gitignored for that reason, and owned by another
+component. The terms this replay works under:
+
+- **Read only** — nothing modified, moved, or copied into another worktree.
+- **Only aggregate counts and classification labels may be derived.** No
+  verbatim fragment, path, or username reaches a commit, a PR description, or a
+  message between agents.
+- **A record is cited by its index**, never by its content.
+
+These are the same redaction terms the repo already applies to trace records
+([`AGENTS.md`](../../../AGENTS.md) — *redact operator PII in any trace record*);
+they are restated here because this replay reads a corpus that never enters the
+repository, where the usual reviewer's check on a diff cannot see what was
+quoted.
 
 ## 5. What it may say
 
