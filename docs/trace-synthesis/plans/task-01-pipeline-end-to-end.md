@@ -19,8 +19,9 @@ thing recorded so a reader can check each stage happened rather than assume it.
 
 It is not an effect estimate. A supervised rollout that fails to resolve is a
 **complete result** — what would make it incomplete is a stage nothing can
-demonstrate. The effect measurement belongs to a downstream consumer; this repo
-is capped at 10 instances × 2 rollouts (owner ruling, 2026-09-01).
+demonstrate. The effect measurement belongs to a downstream consumer, not to
+this repo, which runs only a small stability batch. Its size is set by owner
+ruling and is not restated here — one fact, one home.
 
 ## The stages, and the seam each sits on
 

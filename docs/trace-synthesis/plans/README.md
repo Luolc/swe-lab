@@ -63,7 +63,7 @@ research that preceded this index is not a task: its results are recorded in
 
 | # | Task | Status |
 |---|---|---|
-| 01 | **One instance, end to end** — one supervised rollout in which every stage of the pipeline actually runs, and each of the seven acceptance points names what proves it | ⬜ Acceptance rewritten 2026-09-01 (owner ruling); blocked only on task 05's `SpeakPolicy` |
+| 01 | **One instance, end to end** — one supervised rollout in which every stage of the pipeline actually runs, and each of the seven acceptance points names what proves it | ⬜ Acceptance rewritten 2026-09-01 (owner ruling); prerequisites are the ones [the design record names](task-01-pipeline-end-to-end.md#dependencies) — the live-stream wiring and the stdin channel. `SpeakPolicy` is **present** |
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⚠ ⬜ **proposed for closure** — the task exists only for the terminated arm; see [below](#pending-reconciliation-2026-09-01) |
 | 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement. Wording follow-up from #276's review (P2, not a task — fold into the next edit of those passages): the design record's rationale and `oracle.py`'s module docstring still use the shorthand "the fix commit is reachable, and the brief says so" / "a run handed the answer" — scoped to phase B, where the purge is off, so consistent with the purge measured in rollouts, but untrue for a dataset that records no fix commit or reference patch, which the task supports — and `datasets/oracle_failures/README.md` lists the delegated gold patch without its when-recorded qualifier |
@@ -101,10 +101,11 @@ and it authorizes nothing.
 pipeline actually runs** — supervisor attached, correction delivered mid-turn,
 patch extracted, graded, recorded. The deliverable is a *working pipeline*, not
 an effect estimate: how much supervision helps is measured by a downstream
-consumer, and this repo is capped at **10 instances × 2 rollouts** — an owner
-ruling of 2026-09-01, relayed through the orchestrator. The handoff note that
-hands the effect measurement over is written but **not yet in this tree**; it
-lands separately, and this row deliberately does not link it until it does.
+consumer, not here. This repo runs only a small stability batch, whose size is
+set by owner ruling. **That size is deliberately not written here**: it has no
+committed home yet, and restating a number in two documents is how a fact stops
+having one home. It belongs in the handoff note, with its provenance, and this
+row will link there once that note lands.
 
 **What this replaces, and why.** The previous acceptance belonged to the
 **hint-injection arm**, closed by its own pre-registered kill condition
@@ -132,15 +133,18 @@ rather than a mechanism that is not there.
 | 6 | The trace is persisted, **the interjection is in it**, and provenance is complete | The conversation artifact contains the supervisor's block, and the record carries the fields `run_provenance()` stamps. **Obligation:** the wiring PR asserts the block survives conversion — an interjection that is delivered but lost in conversion passes points 1–4 and still leaves no evidence. |
 | 7 | The **outcome word is correct** | `rollout_outcome` in the rollout record is the one that matches what happened; the four words are pinned apart by the named tests in `tests/test_rollout.py` ([ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md)). |
 
-**All seven green = the pipeline works end to end.** Only then the 10 × 2 batch,
-whose purpose is to show the pipeline is *stable* — **not** to measure an
+**All seven green = the pipeline works end to end.** Only then the stability
+batch, whose purpose is to show the pipeline is *stable* — **not** to measure an
 effect, which it is far too small to do.
 
 - **Verification:** an [experiment](../../experiments/playbook.md) `REPORT.md` —
   hypothesis, logged run, conclusion. A supervised rollout that **fails to
   resolve is a complete result**; what would make it incomplete is a point above
   that nothing can demonstrate.
-- **Dependencies:** task 05's `SpeakPolicy`. **Scope:** M
+- **Dependencies:** the live-stream wiring and the stdin channel (stages 3
+  and 5 of the [design record](task-01-pipeline-end-to-end.md)), plus the
+  pinned criterion sha and its refusal path for point 2b. Task 05's
+  `SpeakPolicy` is present and is **not** what blocks this. **Scope:** M
 
 **The design record for this form is**
 [`task-01-pipeline-end-to-end.md`](task-01-pipeline-end-to-end.md).
