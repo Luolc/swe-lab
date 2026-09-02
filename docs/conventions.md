@@ -659,12 +659,13 @@ retroactively (owner's calibration, 2026-09-01).
   Reading somebody's working directory is not reading that code.**
 
   The moment is a coordinate in its own right, and not only through
-  staleness: **a reading can invert.** `claude.correction_channel.unclean` is
-  written by the relay *before* the relay exists and removed only on a
-  deliberate close, so during a run its presence is the normal state and
-  after the run its presence is the failure — one path, read at two times,
-  two opposite facts. Ask what a file means *at the time you are reading it*;
-  the name answers only half of that.
+  staleness: **a reading can invert** — one path, read at two times, two
+  opposite facts. Any failure-closed marker has this shape: while the thing
+  it guards is running, its presence is the normal state; only afterwards is
+  its presence the failure. (This repo's instance is the correction channel's
+  unclean marker, whose mechanism is stated once, on
+  `CorrectionChannel.closed_uncleanly`.) Ask what a file means *at the time
+  you are reading it*; the name answers only half of that.
 
   One layer harder than writing the coordinate down: **ask whether the number
   would be different if you looked a minute later, and if it would, report
@@ -785,9 +786,8 @@ retroactively (owner's calibration, 2026-09-01).
   fine. What hides it is that the container usually creates the directory
   defensively too, and that `mkdir -p` succeeds either way, so the losing order
   looks exactly like the winning one until something on the host tries to
-  write. Worked instance:
-  `test_the_supervised_script_carries_a_correction_to_a_stub_agent`, which
-  holds `CorrectionChannel` to creating its drop directory on construction.
+  write. Worked instance, where the rule and its enforcement both live:
+  `test_the_supervised_script_carries_a_correction_to_a_stub_agent`.
 - **The W1 annotation path runs its capture proxy host-side, and two of its
   prerequisites fail silently.** The rollout path does not: its proxy moved
   *into* the sandbox
