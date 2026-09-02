@@ -572,7 +572,26 @@ retroactively (owner's calibration, 2026-09-01).
   fact that separates the red light from the green one has already been written
   down, and nothing reads it. Worked example:
   [ADR-0015](decisions/ADR-0015-four-words-for-how-a-rollout-ends.md), which
-  turns `oom_kills` from a number into a gate. **Sibling rule, one layer up:**
+  turns `oom_kills` from a number into a gate.
+- **A failure crossing an interface whose ordinary result means "it went fine"
+  needs a representation distinguishable there.** Not every unrepresented
+  failure is dangerous: an exception or a non-zero exit carries itself, and so
+  does a connection error a client *raises* — but the same broken connection
+  folded into an empty read is an instance of this entry, not an exception to
+  it. The dangerous ones arrive **in band**, on a channel a normal
+  value also uses — `None` returned both for "the policy decided not to speak"
+  and for "the policy could not speak"; a supervising thread whose liveness is
+  never read, so "still running" arrives as "it stopped"; a leaked background
+  process that no exit status reports. There the failure has no carrier of its
+  own and is absorbed by the nearest value that has one, and the direction
+  follows from the interface rather than from a tally: **on such a channel an
+  unrepresented value already means "normal", so a failure that is not
+  represented is read as a run that went fine.** The test is design-time: for
+  each way a thing can fail, name what carries it *at the interface it crosses*
+  — and if that is a value the normal path also produces, it is not a carrier.
+  What makes this one hard is that the neighbouring check cannot find it:
+  *recorded and never consumed* looks for a field nobody reads, and here there
+  is no field to look at. **Sibling rule, one layer up:**
   the experiment playbook's *stratifying variable* entry asks whether a
   recorded variable **can diagnose anything** (it must vary *within* some
   unit); this entry asks whether **anything reads it at all**. Neither implies
