@@ -102,6 +102,13 @@ Adopt or overturn deliberately; each of these cost an argument.
   understate a rate; the opposite default lets the excluded set grow
   unwatched, in the direction that flatters results.
   ([ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md))
+- **Today, a transient supervisor failure ends the whole rollout** as
+  `SUPERVISION_FAILED` — deliberately, for the reason above. At full scale
+  this turns ordinary upstream jitter into a visible exclusion rate that
+  reads as **our pipeline being unstable**, not as jitter. See
+  [`channel.py`](../../src/swe_lab/trace_synthesis/channel.py) for current
+  behavior — under active revision, so checked there rather than described
+  here.
 - **Report every rate with its two counts** — how many runs were excluded as
   ours, and how many nobody could attribute:
   `resolved 12 / 40 (3 system failures excluded, 2 unclassified)`, never
