@@ -111,3 +111,29 @@ def test_a_rate_that_could_not_describe_a_batch_is_refused():
     _ = Rate(numerator=3, denominator=2, excluded=0, unclassified=0)
   with pytest.raises(ValueError, match="negative"):
     _ = Rate(numerator=1, denominator=2, excluded=-1, unclassified=0)
+
+
+def test_a_batch_that_was_all_ours_has_no_rate_and_says_so():
+  """The day's own failure mode, in this module: 0 / 0 is not a zero.
+
+  A batch whose runs were every one of them ours is real — the infrastructure
+  failed on all of them. Rendering it as ``0 / 0`` reports our total failure as
+  an actor that solved nothing, which is the substitution ADR-0015 and ADR-0016
+  exist to prevent. The counts stay: here they are the whole content.
+  """
+  rate = rate_of([(RolloutOutcome.SYSTEM_FAILED, False)] * 5)
+  assert rate.estimable is False
+  assert rate.render("resolved") == (
+      "resolved not estimable — 0 runs counted"
+      " (5 system failures excluded, 0 unclassified)"
+  )
+  # The number that would have been reported as a rate is not in the line.
+  assert "0 / 0" not in rate.render("resolved")
+
+
+def test_an_empty_batch_is_not_estimable_either():
+  # Nothing ran, so there is nothing to be a rate of — and it must not read as
+  # a perfect or a zero score.
+  rate = rate_of([])
+  assert rate.estimable is False
+  assert "not estimable" in rate.render("resolved")

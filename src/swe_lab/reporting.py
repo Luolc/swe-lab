@@ -6,10 +6,18 @@ were excluded as ours, and how many nobody could attribute. Both ADRs recorded
 that as a contract on a reporter that did not exist, which is the same shape as
 a metric nobody reads — so this module exists to make it structural instead.
 
-**The rate and its counts are one value.** :class:`Rate` is the only thing here
-that can be rendered, and it renders all four numbers together. There is no way
-to obtain the bare fraction as a report line, so a report missing a count is not
-a discipline anyone has to keep — it is a value that cannot be constructed.
+**The rate and its counts are one value, with one rendering.**
+:meth:`Rate.render` is the only line this module produces, and it produces all
+of the numbers together.
+
+**What that is, and what it is not.** It makes the *canonical* report line
+impossible to write without the counts, so a reporter built on this cannot drop
+them by accident. It does **not** make a bare fraction unobtainable: the fields
+are public and a caller can format its own string. That would be writing a
+second renderer, which is a visible thing to do in review — not the same as
+forgetting a count. The invariant this module can hold is stated at that
+strength deliberately, because a stronger claim than the code supports is how a
+contract becomes decoration.
 
 The counts are printed **even when they are zero**, deliberately. "No runs were
 excluded" and "exclusions were not reported" are different facts, and a
@@ -70,11 +78,32 @@ class Rate:
           " runs counted; unclassified runs are inside the denominator"
       )
 
+  @property
+  def estimable(self) -> bool:
+    """Whether any run was counted, so a fraction means anything at all.
+
+    A batch whose runs were **all** ours is a real batch — the infrastructure
+    failed on every one of them — and it has no rate. Reporting it as ``0 / 0``
+    would render our own total failure as an actor that solved nothing, which
+    is the exact substitution ADR-0015 and ADR-0016 exist to prevent.
+
+    Returns:
+      Whether the denominator is non-zero.
+    """
+    return self.denominator > 0
+
   def render(self, label: str) -> str:
     """Return the one reportable line for this rate.
 
     The only rendering there is, so the counts cannot be dropped by a caller
     that only wanted the number.
+
+    **Never give this method a boolean.** A flag like ``concise=True`` is how
+    the counts come off again: the name "the rate's report line" would then
+    mean two different things, one of them without them. If a shorter form is
+    ever genuinely needed it is a **different function returning a different
+    type**, so that this name keeps pointing at the thing that carries its
+    counts.
 
     Args:
       label: What the numerator counts, e.g. ``"resolved"``.
@@ -83,11 +112,14 @@ class Rate:
       A line of the form
       ``resolved 12 / 40 (3 system failures excluded, 2 unclassified)``.
     """
-    return (
-        f"{label} {self.numerator} / {self.denominator}"
-        f" ({self.excluded} system failures excluded,"
+    counts = (
+        f"({self.excluded} system failures excluded,"
         f" {self.unclassified} unclassified)"
     )
+    if not self.estimable:
+      # The counts still print: they are the whole content of this line.
+      return f"{label} not estimable — 0 runs counted {counts}"
+    return f"{label} {self.numerator} / {self.denominator} {counts}"
 
 
 def rate_of(runs: Iterable[tuple[RolloutOutcome, bool]], /) -> Rate:
