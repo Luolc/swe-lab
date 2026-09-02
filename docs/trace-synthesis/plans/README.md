@@ -87,6 +87,57 @@ start* — after the first run, whose event stream is its first input. It is
 listed with them only because it, too, is written down so it is not
 rediscovered as a mystery.
 
+### Task 17's first input — the read, fixed before the data exists
+
+Written now, not after the run, for the reason the pre-registration exists at
+all: **whoever invents the reading afterwards is the person who wants it to say
+something.** Separating *what to read* from *what it said* costs nothing today
+and cannot be done honestly tomorrow.
+
+```python
+# python3 - <run-dir>
+import json, pathlib, sys
+files = sorted(pathlib.Path(sys.argv[1]).rglob("claude_code.event_stream.jsonl"))
+if len(files) > 1:  # a merged count over several streams is not a reading
+    sys.exit(f"{len(files)} file(s): {[str(f) for f in files]}")
+events = [json.loads(line) for f in files
+          for line in f.read_text().splitlines() if line.strip()]
+print(len(files), "file(s),", len(events), "events,",
+      sum(1 for e in events if e.get("type") == "result"), "result")
+```
+
+Five answers, and what each one means — decided in advance:
+
+| Reading | What it means |
+| --- | --- |
+| `0 file(s)` | the stream was never produced. Not task 17: this is the missing-file case, and `supervision.unhealthy` is expected on the run |
+| `1 file(s), 0 events` | the file exists and is empty — where every supervised run *starts*, since the harness's `>` redirect creates it before the agent writes. The actor produced nothing |
+| `1 file(s), N events, 0 result` | **task 17's shape.** Events flowed and no `result` ever came, so nothing could set `at_rest`, so the channel was never closed. A `TIMED_OUT` on this run is **ours** |
+| `1 file(s), N events, R result` | the actor finished at least one turn; task 17 did not occur on this run |
+| `2+ file(s)`, exit 1 | **not a reading** — the path covers more than one copy of the stream, and one number summed over them belongs to none of them. Point it at a single attempt directory and read again |
+
+The first two are told apart on purpose. Collapsing them — which the first
+version of this snippet did, by printing only the event count — would have
+merged "no answer" with "an answer of zero", which is the same defect this task
+is about.
+
+**The `2+` row is the ordinary case at the top of a run directory, not an
+exotic one.** Handed the first end-to-end run's root, the read refuses with two
+files: the attempt's own stream and the store's copy of the same attempt
+(`r0/rollout/a0/…` and `r0/store/adhoc/…/r0/rollout/a0/…`). Several attempts do
+it too, but a run does not need a retry to get there.
+
+**Two files carry this stream, and only one of them is the input.** The
+workspace holds `ws/a<N>/claude.event_stream.jsonl` — the container-side name
+the harness's redirect writes (`EVENT_STREAM_NAME`), scratch that a non-resume
+re-run deletes with the rest of the workspace. The collected artifact is
+`a<N>/claude_code.event_stream.jsonl`, the same bytes under the name
+`qualified_name(harness.name, role)` builds from the harness's
+`native_outputs()`. The read names the artifact because that is the deliverable
+the record points at. Aiming it at the workspace name is a mistake that does
+**not** announce itself: it still finds a file and still prints a plausible
+line, it just read the copy that gets deleted.
+
 **Rows 12–16 are a registration, not a plan.** They come from the measurements
 in [`experiments/trace_synthesis/streamjson_input/REPORT.md`](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)
 (landed 2026-09-01) and are written down so they are not rediscovered as
