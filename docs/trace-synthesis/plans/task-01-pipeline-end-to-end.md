@@ -34,15 +34,24 @@ one thing added to its first entry. Nothing about the second entry changes.
 | 1 | Instance → `SandboxSpec` | the dataset's `TaskInstance` | exists |
 | 2 | Actor runs under `CodingAgentTask` | [`rollout.py`](../../../src/swe_lab/rollout.py) | exists |
 | 3 | **Actor's live events reach a supervisor** | the harness's event stream | **missing — the wiring** |
-| 4 | Policy decides whether to speak | `SpeakPolicy` in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | exists (`NeverSpeak` is the only implementation) |
+| 4a | The **seam** a policy plugs into | the `SpeakPolicy` protocol in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | exists |
+| 4b | A policy that speaks **because of a real deviation** | — | **missing — `NeverSpeak` is the only shipped implementation, and it is the control** |
 | 5 | **Intervention reaches the actor's stdin** | the harness's invocation | **missing — the channel** |
 | 6 | Patch extracted vs the pre-agent baseline | `DiffExtractObserver(baseline=True)`, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md) | exists, default on |
 | 7 | Grading on that patch and that base ref | `UnitTestTask`, same base-ref contract | exists |
 | 8 | Outcome word + record | `rollout_outcome`, [ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md) | exists |
 
-**Stages 3 and 5 are the whole of the remaining work**, and they are two
-different seams — one reads, one writes. Conflating them is how a supervisor
-that "is attached" ends up never able to say anything.
+**Stages 3, 4b and 5 are the remaining work.** 3 and 5 are two different seams
+— one reads, one writes — and conflating them is how a supervisor that "is
+attached" ends up never able to say anything.
+
+**4b is a prerequisite, not a detail of 4.** The protocol being in place says
+only that a policy *can* be plugged in. `NeverSpeak` is the **control arm**: by
+construction it never speaks, so a run driven by it cannot produce a
+deviation-triggered utterance and therefore **cannot satisfy acceptance point
+3** — the same reason a schedule-only `SpeakAt` run cannot. Wiring stages 3 and
+5 with only `NeverSpeak` available yields a pipeline that is provably complete
+on six of the seven points and cannot be finished on the seventh.
 
 ### Stage 3 — reading the live stream
 
@@ -96,6 +105,13 @@ consequences the wiring must respect, both already stated by the component:
 
 ## Dependencies
 
-Task 05's `SpeakPolicy` — present. What is genuinely blocking is the wiring
-(stages 3 and 5) and, for acceptance point 2b, the criterion artifact's pinned
-sha and its refusal path, neither of which exists today.
+Three, and the first is easy to miss because its *seam* is already there:
+
+1. **A deviation-triggered `SpeakPolicy` implementation** (stage 4b). The
+   protocol exists; the only shipped implementation is `NeverSpeak`, which is
+   the control and cannot satisfy acceptance point 3.
+2. **The wiring** — stages 3 and 5, reading the live stream and writing to
+   stdin.
+3. **The pinned criterion sha and its refusal path**, for acceptance point 2b.
+
+None of the three exists on `main` today.

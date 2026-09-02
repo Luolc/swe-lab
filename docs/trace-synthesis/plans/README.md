@@ -63,7 +63,7 @@ research that preceded this index is not a task: its results are recorded in
 
 | # | Task | Status |
 |---|---|---|
-| 01 | **One instance, end to end** — one supervised rollout in which every stage of the pipeline actually runs, and each of the seven acceptance points names what proves it | ⬜ Acceptance rewritten 2026-09-01 (owner ruling); prerequisites are the ones [the design record names](task-01-pipeline-end-to-end.md#dependencies) — the live-stream wiring and the stdin channel. `SpeakPolicy` is **present** |
+| 01 | **One instance, end to end** — one supervised rollout in which every stage of the pipeline actually runs, and each of the seven acceptance points names what proves it | ⬜ Acceptance rewritten 2026-09-01 (owner ruling); prerequisites are the ones [the design record names](task-01-pipeline-end-to-end.md#dependencies) — a deviation-triggered policy, the live-stream wiring, and the stdin channel. The `SpeakPolicy` **protocol** is present; its only shipped implementation, `NeverSpeak`, is the control and cannot meet acceptance point 3 |
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⚠ ⬜ **proposed for closure** — the task exists only for the terminated arm; see [below](#pending-reconciliation-2026-09-01) |
 | 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement. Wording follow-up from #276's review (P2, not a task — fold into the next edit of those passages): the design record's rationale and `oracle.py`'s module docstring still use the shorthand "the fix commit is reachable, and the brief says so" / "a run handed the answer" — scoped to phase B, where the purge is off, so consistent with the purge measured in rollouts, but untrue for a dataset that records no fix commit or reference patch, which the task supports — and `datasets/oracle_failures/README.md` lists the delegated gold patch without its when-recorded qualifier |
@@ -141,10 +141,12 @@ effect, which it is far too small to do.
   hypothesis, logged run, conclusion. A supervised rollout that **fails to
   resolve is a complete result**; what would make it incomplete is a point above
   that nothing can demonstrate.
-- **Dependencies:** the live-stream wiring and the stdin channel (stages 3
-  and 5 of the [design record](task-01-pipeline-end-to-end.md)), plus the
-  pinned criterion sha and its refusal path for point 2b. Task 05's
-  `SpeakPolicy` is present and is **not** what blocks this. **Scope:** M
+- **Dependencies:** a policy that speaks because of a real deviation, the
+  live-stream wiring, and the stdin channel (stages 4b, 3 and 5 of the
+  [design record](task-01-pipeline-end-to-end.md)), plus the pinned criterion
+  sha and its refusal path for point 2b. The `SpeakPolicy` **protocol** is
+  present; `NeverSpeak`, its only shipped implementation, is the control arm
+  and cannot satisfy point 3. **Scope:** M
 
 **The design record for this form is**
 [`task-01-pipeline-end-to-end.md`](task-01-pipeline-end-to-end.md).
