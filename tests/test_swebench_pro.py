@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import override
 
+from etils import epath
 import pytest
 
 from swe_lab.datasets.swebench_pro import (
@@ -15,10 +17,13 @@ import swe_lab.datasets.swebench_pro.auxiliary as auxiliary
 from swe_lab.datasets.swebench_pro.constants import (
     HARNESS_SUBDIR,
     IMAGE_REPO,
+    PARQUET_FILENAME,
     PARSER_NAME,
     RUN_SCRIPT_NAME,
     WORKDIR,
 )
+from swe_lab.datasets.swebench_pro.fetch import ensure_swebench_pro_parquet
+import swe_lab.datasets.swebench_pro.fetch as fetch
 from swe_lab.paths import cache_root
 
 
@@ -189,3 +194,66 @@ def test_run_script_and_parser_are_overridable() -> None:
   inst = _Embedded.from_raw(_raw())
   assert inst.run_script == b"EMBEDDED RUN"
   assert inst.parser == b"EMBEDDED PARSE"
+
+
+def test_a_drifted_parquet_is_rejected_not_silently_loaded(
+    tmp_path: Path,
+) -> None:
+  # The pin anchors nothing if a present-but-wrong file is trusted: a
+  # truncated download or a drifted upstream file must fail loudly, the same
+  # invariant deepswe's fetch already enforces.
+  data = tmp_path / "data"
+  data.mkdir()
+  _ = (data / PARQUET_FILENAME).write_bytes(b"not the pinned bytes")
+  with pytest.raises(ValueError, match="does not match the pinned sha256"):
+    _ = ensure_swebench_pro_parquet(data)
+
+
+def test_a_missing_parquet_names_the_readme(tmp_path: Path) -> None:
+  # The download is manual (README), so the failure a consumer sees when they
+  # skipped it should point there rather than surface as a bare stat error.
+  data = tmp_path / "data"
+  data.mkdir()
+  with pytest.raises(FileNotFoundError, match="README"):
+    _ = ensure_swebench_pro_parquet(data)
+
+
+def test_a_misnamed_parquet_is_named_as_misnamed_not_broken(
+    tmp_path: Path,
+) -> None:
+  # The pin is keyed to the exact filename as well as content, so a present
+  # file under any other name reads as "not found" — the same misleading-
+  # symptom family conventions.md already names for a missing dataset
+  # (FileNotFoundError reading as "these instances are broken"). The message
+  # must say a file *is* there, under the wrong name, not just that the
+  # pinned one is absent.
+  data = tmp_path / "data"
+  data.mkdir()
+  _ = (data / "test-00000-of-00002.parquet").write_bytes(b"whatever")
+  with pytest.raises(FileNotFoundError, match="test-00000-of-00002.parquet"):
+    _ = ensure_swebench_pro_parquet(data)
+
+
+def test_a_matching_file_is_accepted_and_returned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  # The rejection paths above prove nothing about the accept path: a verifier
+  # that always raises would pass every one of them. Pin the expected digest
+  # to whatever bytes are actually written, so this test does not depend on
+  # the real dataset's content or the live pin. Called twice, unmodified
+  # between calls: this is a load-time check, not a one-shot admission, so a
+  # second call must accept the same file the same way — guards against a
+  # verifier that only works once (a moved file, a consumed handle, a
+  # poisoned cache).
+  data = tmp_path / "data"
+  data.mkdir()
+  target = data / PARQUET_FILENAME
+  content = b"pretend parquet bytes"
+  _ = target.write_bytes(content)
+  monkeypatch.setattr(
+      fetch,
+      "PINNED_SWEBENCH_PRO_PARQUET_SHA256",
+      hashlib.sha256(content).hexdigest(),
+  )
+  assert ensure_swebench_pro_parquet(data) == epath.Path(target)
+  assert ensure_swebench_pro_parquet(data) == epath.Path(target)

@@ -26,6 +26,7 @@ from .deepswe.fetch import ensure_deepswe_parquet
 from .deepswe.record import DeepSweInstance
 from .oracle_failures import OracleFailureInstance
 from .swebench_pro import SweBenchProInstance
+from .swebench_pro.fetch import ensure_swebench_pro_parquet
 
 
 class DatasetRecord(Protocol):
@@ -59,6 +60,7 @@ _DATASET_RECORDS: dict[str, type[DatasetRecord]] = {
 # anchor; see ``deepswe.fetch``).
 _DATASET_PREPARERS: dict[str, Callable[[epath.Path], object]] = {
     "deepswe": ensure_deepswe_parquet,
+    "swebench_pro": ensure_swebench_pro_parquet,
 }
 
 

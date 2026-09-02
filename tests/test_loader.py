@@ -7,6 +7,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+from swe_lab.datasets import loader as loader_module
 from swe_lab.datasets.loader import (
     load_dataset,
     load_parquet,
@@ -81,7 +82,18 @@ def test_duplicate_instance_ids_raise(tmp_path: Path) -> None:
     load_parquet(path, SweBenchProInstance)
 
 
-def test_load_dataset_uses_layout(tmp_path: Path) -> None:
+def test_load_dataset_uses_layout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  # Layout resolution (`datasets/<name>/data/*.parquet`) is a property of
+  # every registered dataset, independent of whether that dataset also pins a
+  # preparer — swebench_pro's own preparer pins the *filename* too (a
+  # deliberate, separate constraint; see swebench_pro.fetch), so this test
+  # disables it rather than adopting the pinned name, or it would silently
+  # stop covering layout resolution under an arbitrary filename.
+  monkeypatch.setitem(
+      loader_module._DATASET_PREPARERS, "swebench_pro", lambda _: None
+  )
   root = tmp_path / "datasets"
   _write_parquet(root / "swebench_pro" / "data" / "test.parquet", [_row("i0")])
 
