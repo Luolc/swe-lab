@@ -1,15 +1,58 @@
 # Running the supervision experiment at scale — a note for the downstream consumer
 
-**Status:** handoff, and **not yet a proven pipeline.** This repo delivers the
-**design and the seams** for an end-to-end supervised rollout — the components
-task 01 depends on — not a demonstrated one: we have not run a real supervised
-rollout ourselves. Current status, point by point, lives in one place and
-moves as PRs land — check it before scheduling anything against this note:
-[task 01](plans/README.md#task-01-one-instance-end-to-end).
-Measuring how large the supervision effect is belongs to whoever has the
-quota and sandboxes to run the full set (owner, 2026-09-01); this repo is
-capped at **10 SWE-bench Pro instances × 2 rollouts** and will not produce an
-effect estimate even once the pipeline is proven.
+**Status:** handoff, and **the pipeline has been run once, end to end.** The
+first real supervised rollout completed on 2026-09-02, and task 01's seven
+acceptance points are closed against criteria frozen *before* the run:
+[`PREREGISTRATION.md`](../../experiments/trace_synthesis/pipeline_end_to_end/PREREGISTRATION.md)
+holds the criteria,
+[`REPORT.md`](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md)
+the readings. Point by point, and moving as PRs land:
+[task 01](plans/README.md#task-01-one-instance-end-to-end) — check it before
+scheduling anything against this note. What that run does and does not buy
+you, because the difference is the whole of what you are inheriting:
+
+- **The mechanism is verified.** A correction the supervisor wrote reached the
+  actor's context mid-run. The evidence is the actor's **own** native session
+  transcript — a file Claude Code writes for its own resume, which none of our
+  code produces — so it does not come through the pipeline being checked
+  ([REPORT §1](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md#1-the-seven-points),
+  points 3 and 4).
+- **The effect is not verified, and n=1 cannot verify it.** No sentence in that
+  report says supervision helped or hurt; the instance was not resolved, and
+  that is evidence for neither
+  ([REPORT §4](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md#4-what-this-run-does-not-claim)).
+  Measuring how large the supervision effect is belongs to whoever has the
+  quota and sandboxes to run the full set (owner, 2026-09-01); this repo is
+  capped at **10 SWE-bench Pro instances × 2 rollouts** and will not produce an
+  effect estimate.
+- **One run proved the path, it did not exercise yours.** Three known gaps, each
+  owned by a task row rather than restated here.
+  [Task 13](plans/README.md) is the one on your path: **every measurement of the
+  stdin correction channel is host-side**, against the host `claude` and the
+  host user-level `CLAUDE.md`, while a rollout runs the pinned binary in a
+  container with a pinned `CLAUDE_CONFIG_DIR` — which is the path you will run.
+  (What has been checked in-sandbox is the *fold* of an injected block,
+  [`sandbox_fold_check/`](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md);
+  the live channel itself has not.) [Task 18](plans/README.md) is throughput:
+  the supervisor judges each boundary with a synchronous model call and ran on
+  after the actor stopped, at **~6.6 s per boundary** on the one run measured
+  (170 boundaries). At that rate roughly **547** boundaries fit inside
+  `_AGENT_TIMEOUT_S = 3600`, so an instance with enough boundaries **can** hit
+  the wall clock because supervision could not keep up — a merely busier
+  instance need not; the rate itself is one point and moves with the actor,
+  the task and judge latency
+  ([REPORT §7a](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md#7a-the-supervisor-runs-an-order-of-magnitude-slower-than-the-actor)).
+  [Task 19](plans/README.md) is judge reliability: **16 of 170** judge calls
+  returned an answer the policy could not use, none of them before cursor 87, two
+  different failures under one message —
+  [undiagnosed and deliberately unfixed](../../experiments/trace_synthesis/pipeline_end_to_end/REPORT.md#7b-16-of-170-judge-calls-returned-an-answer-the-policy-could-not-use).
+  Also unstarted: task 12 (a run's outcome folded over its segments) and task 14
+  (the channel's edges a longer run will hit).
+- **If you consume `rollout_outcome`, read
+  [ADR-0016](../decisions/ADR-0016-the-endings-nobody-could-attribute.md)
+  first.** It supersedes ADR-0015's outcome taxonomy and its reporting rule —
+  the set of words is larger than four, and every rate carries two counts
+  (§2 below).
 
 Its purpose is narrow: **we already paid for some of the numbers and some of the
 design, and you should not buy them twice.** Everything below is either measured
@@ -168,10 +211,12 @@ results is choosing the flattering one.
 
 ## 5. What "the pipeline works" means, and where to check it
 
-**Not a claim that these are green here** — that status lives in one place,
-moves as PRs land, and would go stale the moment it was copied into this note:
+**Point-by-point status is not carried here** — it lives in one place, moves
+as PRs land, and would go stale the moment it was copied into this note:
 [task 01's acceptance table](plans/README.md#task-01-one-instance-end-to-end).
-Check it there before trusting anything above rests on a working pipeline.
+The header above says all seven closed on one run; read *what* each closed on
+there, and check it there before trusting anything above rests on a working
+pipeline.
 
 The seven points, reproduced only so you know what each one proves, not as a
 record of having passed them: the supervisor is on the actor's **live**

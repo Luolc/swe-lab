@@ -272,7 +272,7 @@ Stated plainly, because the repo's rule is that a claim names what was actually
 run:
 
 - **Version skew.** The vendored source is a **2026-03-31 leaked snapshot**; the
-  binary our sandbox runs is **2.1.220**. Every source line cited above is from
+  binary our sandbox runs is **2.1.212**. Every source line cited above is from
   the snapshot. The Docker run (§4b) agrees with it on every point it could
   test, which is the best corroboration available, but a subtype or an
   injection point could have moved.
