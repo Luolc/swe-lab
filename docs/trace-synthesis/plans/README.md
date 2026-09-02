@@ -11,8 +11,7 @@ deep design per task, indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L
 > against hint injection, which was closed by its own pre-registered kill
 > condition ([spec §15.1](../spec.md#15-success-criteria)). **Do not start
 > either** before [Pending reconciliation](#pending-reconciliation-2026-09-01)
-> at the end of this file is resolved. The ordering principle in the next
-> paragraph rests on the same terminated assumption.
+> at the end of this file is resolved.
 
 > [!NOTE]
 > **Delivery moved off hooks on 2026-09-01**
@@ -30,16 +29,36 @@ deep design per task, indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L
 these tasks. Any `plans/task-NN-*.md` that appears later is a point-in-time
 **design record** — don't read status from it.
 
-**The ordering principle is the cheapest falsifier first.** The pipeline rests
-on one assumption — *that a supervisor holding a good guidebook can steer a
-blind agent to a correct solution at tool-call granularity* — and on one
-unmeasured mechanism. The owner ruled on 2026-09-01 that the **assumption is
-taken as given**, so it is task **02** that can still kill the idea: if no hook
-channel yields a genuine user turn at a tool boundary, the design needs a
-different medium before anything after it is worth building. Task 01 keeps its
-place at the head for a different reason — it produces the first real artifacts
-the later tasks are designed against. The hook-mechanics research that preceded
-this index is not a task: its results are recorded in
+**The ordering principle is the cheapest falsifier first — and which task *is*
+the falsifier has moved.** The pipeline still rests on one assumption — *that a
+supervisor holding a good guidebook can steer a blind agent to a correct
+solution at tool-call granularity* — which the owner ruled on 2026-09-01 is
+**taken as given**. What changed is everything downstream of it. Task **02** was
+the falsifier while the open question was whether a hook could put a genuine
+user turn at a tool boundary; that question is closed twice over — task 02 is
+complete, and both its criterion (the wire-level role, replaced by
+[(a)/(b)](../spec.md#what-disqualifies-a-trace--the-two-criteria-of-record)) and
+its channel (replaced by
+[ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)) were
+superseded. **Nothing is blocked on it, and a reader should not order work
+against it.**
+
+Two things can still kill the idea, and they are ordered by cost:
+
+1. **The in-sandbox fold check**, an acceptance condition of task **05**. Every
+   measurement of the stdin channel is host-side; the sandbox runs a pinned
+   binary. If the fold differs there, the byte-identity result describes an
+   artifact we do not ship — [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)'s
+   **refutation** condition. It is one delivery, it is cheap, and it can
+   invalidate the long experiment; the long experiment cannot invalidate it.
+   **So it goes first.**
+2. **Whether supervision raises the resolved rate**, measured over paired arms.
+   Expensive, and it decides whether any of this is worth delivering —
+   ADR-0013's **retirement** condition.
+
+Task 01 keeps its place at the head for a different reason — it produces the
+first real artifacts the later tasks are designed against. The hook-mechanics
+research that preceded this index is not a task: its results are recorded in
 [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
 
 | # | Task | Status |
