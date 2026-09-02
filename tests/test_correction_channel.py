@@ -734,7 +734,16 @@ def test_a_bounded_lapse_is_counted_where_the_outcome_is_read(tmp_path: Path):
       .splitlines()
   ]
   assert [row["kind"] for row in rows] == [LOG_KIND_LAPSE, LOG_KIND_LAPSE]
-  assert contribution.metrics == {SUPERVISION_LAPSE_METRIC: 2.0}
+  # Exact, so that the *absence* of `supervision.unhealthy` is asserted rather
+  # than merely unmentioned: a lapse must not reach the outcome word. The two
+  # counts a supervised run always carries are here too — two boundaries were
+  # consulted about and nothing was said, which is what a lapsing run looks
+  # like from outside.
+  assert contribution.metrics == {
+      SUPERVISION_LAPSE_METRIC: 2.0,
+      BOUNDARIES_METRIC: 2.0,
+      CORRECTIONS_METRIC: 0.0,
+  }
 
   attempt = _attempt_with(contribution.metrics)
   assert rollout_outcome(attempt) is not RolloutOutcome.SUPERVISION_FAILED
