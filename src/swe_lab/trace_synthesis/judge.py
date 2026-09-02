@@ -51,8 +51,10 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import json
+import os
 import pathlib
 from typing import Any
+import urllib.request
 
 from swe_lab.conversation import Message, TextBlock
 from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
@@ -76,6 +78,61 @@ SAMPLING_KEYS: tuple[str, ...] = (
 
 #: Where a request goes and what comes back. Injected so tests make no call.
 Transport = Callable[[Mapping[str, Any]], Mapping[str, Any]]
+
+#: The provider both calls go to, in its OpenAI-shaped chat form — which is the
+#: shape :class:`ModelJudge` and :class:`ModelWriter` read
+#: (``choices[0].message.content``).
+OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
+
+#: The environment variable holding the provider keys, comma-separated. Split
+#: **inside** this program: a shell that splits it puts a key in a command line.
+OPENROUTER_KEYS_ENV = "OPENROUTER_API_KEYS"
+
+#: How long one judge or writer call may take. A supervisor that blocks forever
+#: is a lost supervisor rather than a slow one — the run's own teardown treats
+#: it that way — so the call has a bound of its own rather than relying on it.
+CALL_TIMEOUT_SECONDS = 180.0
+
+
+def openrouter_transport(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+  """Send one request to the provider and return the decoded answer.
+
+  The concrete :data:`Transport` a run uses. Keys are read at call time and
+  split here, never in a shell, so a value never reaches a command line; the
+  first is used, and this deliberately does not rotate or retry — a retried
+  judgement would be a function of how many times we asked.
+
+  Args:
+    payload: The request body, already shaped by the caller.
+
+  Returns:
+    The decoded response.
+
+  Raises:
+    RuntimeError: No key is present in the environment.
+  """
+  keys = [k for k in os.environ.get(OPENROUTER_KEYS_ENV, "").split(",") if k]
+  if not keys:
+    raise RuntimeError(
+        f"no provider key: {OPENROUTER_KEYS_ENV} is unset or empty in this"
+        " shell, so the supervisor cannot reach a model. This is a missing"
+        " credential, not a broken instance or image — see docs/conventions.md"
+        " (Secrets) for the op:// reference that fills it."
+    )
+  request = urllib.request.Request(
+      OPENROUTER_ENDPOINT,
+      data=json.dumps(dict(payload)).encode(),
+      headers={
+          "Authorization": f"Bearer {keys[0]}",
+          "Content-Type": "application/json",
+      },
+  )
+  with urllib.request.urlopen(
+      request, timeout=CALL_TIMEOUT_SECONDS
+  ) as response:
+    decoded: Mapping[str, Any] = json.loads(response.read())
+  return decoded
+
 
 JUDGE_INSTRUCTIONS = """\
 You are watching an engineer work. Decide two things about the moment shown.
@@ -317,10 +374,11 @@ def supervising_policy(
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or reject the artifact.
 
-  **[U] Not yet wired into a run.** This is where the criterion is loaded and a
-  forged artifact raises, but nothing in a rollout path calls it, so the
-  refusal is helper-level. Its consumer is the wiring PR (task 01 dependency
-  ③, acceptance point 2b); until then no run is stopped by it.
+  Called by :func:`~swe_lab.trace_synthesis.channel.supervision` while a
+  rollout assembles its observers — before the sandbox is created — so a forged
+  artifact stops the run rather than only this call, which is what acceptance
+  point 2b asks for. Pinned by
+  ``test_a_forged_criterion_stops_the_run_before_a_sandbox_exists``.
 
   Args:
     model: The model for both calls; named explicitly, never defaulted.

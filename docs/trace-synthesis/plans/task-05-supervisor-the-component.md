@@ -309,16 +309,16 @@ passes, in this order:
 1. the judge says off-track, else silent;
 2. the judge says it will not self-correct, else silent;
 3. **the would-have-spoken marker is recorded here**, before any budget is
-   consulted — this is what the control arm produces and what lets the two arms
-   be compared at matched deviation points;
+   consulted — this is what the control arm produces (what it buys is stated
+   once, at `workflow.definitions.CONTROL_BUDGET`);
 4. budget remaining, else silent (with the marker already recorded);
 5. cooldown elapsed since the last intervention, else silent (likewise);
 6. the writer produces a usable line, else **a recorded gap** — never a retry.
 
 The cost of this ordering is stated rather than hidden: **the judge runs on
-every boundary even after the budget is spent**, so a treatment run and a
-control run pay the same judge calls. That is the price of a paired comparison,
-and paying it is the point.
+every boundary even after the budget is spent**, so a `budget=0` policy still
+pays for a judge it can never act on. Why that is worth paying is stated once,
+at `workflow.definitions.CONTROL_BUDGET`.
 
 A policy that speaks by default cannot be produced by omitting a parameter,
 because **`budget` has no default**: a policy that may speak must state how
@@ -346,8 +346,8 @@ cadence, zero corrections — and that is exactly `SpeakWhenOffTrack(budget=0)`,
 than before it.** Reverse those two and the control silently stops paying for
 its judge, at which point it is no longer the same run minus the corrections.
 It also produces something more useful than silence: a record of **where it
-would have spoken** on control traces, which is what lets the two arms be
-compared at matched deviation points rather than only at their endpoints.
+would have spoken** on control traces; what that buys a comparison is stated
+once, at `workflow.definitions.CONTROL_BUDGET`.
 
 ### 4.5 What it writes
 

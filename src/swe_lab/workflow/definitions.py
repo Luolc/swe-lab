@@ -30,8 +30,10 @@ from swe_lab.harnesses.claude_code.constants import (
 # must not depend on whether some definition happens to mention it.
 import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
-from swe_lab.rollout import CodingAgentTask
+from swe_lab.rollout import CodingAgentTask, SupervisionFactory
 from swe_lab.sandbox import DockerHostSandboxConfig
+from swe_lab.trace_synthesis.channel import supervision
+from swe_lab.trace_synthesis.judge import openrouter_transport
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
 
 from .registry import register_workflow, WorkflowDef
@@ -114,6 +116,99 @@ UNIT_TEST: WorkflowDef = (
 
 ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 
+# The model both supervisor calls go to. Named here, and never defaulted, so
+# that every record says who was asked: a rate compared across batches is only
+# comparable if the judge is pinned, exactly as the actor is (`agent_model`).
+# This is the model the two prior supervision measurements used — the steered
+# re-run and the guidebook-as-criterion experiment — so the first supervised
+# rollouts are read against calls of the same shape rather than against a new
+# unknown.
+SUPERVISOR_MODEL = "anthropic/claude-sonnet-5"
+# How many corrections one run may carry. No measured value — task 05 owns that
+# question — so it is stated rather than derived, and stated once.
+SUPERVISOR_BUDGET = 3
+# The control arm's budget. Zero rather than a silent policy, because
+# `SpeakWhenOffTrack` gates *speech* on the budget and never gates judgement:
+# it consults the judge on every boundary and records what it would have said
+# before the budget is looked at. So the arms are matched on the *judging*
+# side — same calls, same waits, same cost per boundary — and differ on the
+# writing side, where a call is what a delivered correction is: the treatment
+# pays for the ones it makes and the control for none. That difference is the
+# treatment itself. A policy that returned early instead, consulting no judge
+# at all, would move the per-boundary calls too, and a paired comparison would
+# credit that to the corrections. **This is the one statement of how the arms
+# differ**; the other sites point here rather than repeating it, because a
+# repeated claim is one that goes stale in four places without failing in any.
+CONTROL_BUDGET = 0
+
+
+def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
+  """Build a rollout entry whose actor can be spoken to while it runs.
+
+  The treatment arm and its control are given the same harness, the same flags
+  and the same invocation script, so nothing about the actor's environment
+  distinguishes them; how their supervision sides differ is stated once, at
+  :data:`CONTROL_BUDGET`. That is why this is a function of the supervision
+  rather than a flag on :data:`ROLLOUT`: a boolean would hide the difference
+  between the arms inside a parameter instead of leaving it in two readable
+  definitions.
+
+  Args:
+    supervision_factory: What watches the actor, given the task text.
+
+  Returns:
+    The one-entry definition.
+  """
+  return (
+      WorkflowEntry(
+          ROLLOUT_KEY,
+          CodingAgentTask(
+              # Proxy capture is required by the channel and refused otherwise:
+              # a stream-derived trace of a supervised run asserts a turn the
+              # model never saw.
+              harness=ClaudeCodeHarness(
+                  model=DEFAULT_MODEL,
+                  bare=False,
+                  capture="proxy",
+                  correction_channel=True,
+              ),
+              supervision_factory=supervision_factory,
+          ),
+          timeout=_AGENT_TIMEOUT_S,
+          sandbox=DockerHostSandboxConfig(
+              network=True, pass_env=(OAUTH_TOKEN_ENV,)
+          ),
+      ),
+  )
+
+
+SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
+    supervision(
+        model=SUPERVISOR_MODEL,
+        transport=openrouter_transport,
+        budget=SUPERVISOR_BUDGET,
+    )
+)
+
+# The same policy, the same criterion, the same judge on every boundary — with
+# nothing left to spend. What the actor experiences differs by the corrections
+# alone, and the supervision side differs only past the point where a
+# correction was decided on, which is the whole of what a paired arm is for.
+CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(
+    supervision(
+        model=SUPERVISOR_MODEL,
+        transport=openrouter_transport,
+        budget=CONTROL_BUDGET,
+    )
+)
+
+SUPERVISED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
+    *SUPERVISED_ROLLOUT,
+    *UNIT_TEST,
+)
+
+CONTROL_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*CONTROL_ROLLOUT, *UNIT_TEST)
+
 GOLD_UNIT_TEST: WorkflowDef = (
     WorkflowEntry(
         UNIT_TEST_KEY,
@@ -169,3 +264,9 @@ register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
 register_workflow("gold_unit_test", GOLD_UNIT_TEST)
+register_workflow(
+    "supervised_rollout_and_unit_test", SUPERVISED_ROLLOUT_AND_UNIT_TEST
+)
+register_workflow(
+    "control_rollout_and_unit_test", CONTROL_ROLLOUT_AND_UNIT_TEST
+)

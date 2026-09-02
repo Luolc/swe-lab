@@ -453,7 +453,7 @@ def test_the_log_accounts_for_every_event() -> None:
 
 
 def test_a_policy_is_replaceable_without_touching_anything_else() -> None:
-  """The seam is real: only the policy differs between the two arms."""
+  """The seam is real: swapping the policy is the whole of the difference."""
   spoken: list[str] = []
   silent: list[str] = []
   for policy, sink in ((Speaks(), spoken), (NeverSpeak(), silent)):

@@ -36,6 +36,7 @@ from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_FIFO_NAME,
     CORRECTION_PROMPT_NAME,
     CORRECTION_UNCLEAN_NAME,
+    EVENT_STREAM_NAME,
     INFO_ARTIFACT,
     PROMPT_FILENAME,
     PROXY_BASE_URL,
@@ -857,3 +858,47 @@ def test_the_channel_is_refused_without_the_capture_it_requires():
   assert ClaudeCodeHarness(
       capture="proxy", correction_channel=True
   ).correction_channel
+
+
+def test_a_supervised_run_streams_its_events_to_the_file_the_supervisor_reads():
+  """The supervisor's only live view has to be written for it to be read.
+
+  Routing the API calls through the proxy and printing the actor's own events
+  are orthogonal decisions, and while they shared one branch a supervised run
+  discarded its stdout. Nothing failed loudly: the pump polls a file that never
+  appears, so the run never reaches a turn boundary, the channel is never
+  closed, and the actor sits on the FIFO until the wall clock kills it — which
+  reaches the outside as `TIMED_OUT`, a budget ADR-0015 charges to the actor.
+
+  So this asserts the redirect for the *supervised* configuration and the
+  absence of it for the plain proxy one, since dropping either half puts the
+  two decisions back together.
+  """
+  supervised = ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  )._invocation_script("/app")
+  assert f'> "$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}' in supervised
+  assert "--output-format stream-json --verbose" in supervised
+  # …and it still records its traffic: both decisions, not one instead of the
+  # other.
+  assert "ANTHROPIC_BASE_URL" in supervised
+
+  plain = ClaudeCodeHarness(capture="proxy")._invocation_script("/app")
+  assert EVENT_STREAM_NAME not in plain
+  assert "> /dev/null" in plain
+
+
+def test_a_supervised_run_persists_the_stream_its_supervisor_read():
+  """What the supervisor could see is part of the run's record.
+
+  Its decisions are only auditable against the events it actually had, so the
+  stream is a declared output of a supervised run rather than a file that
+  happened to be in the workspace.
+  """
+  supervised = ClaudeCodeHarness(capture="proxy", correction_channel=True)
+  assert supervised.native_outputs()["event_stream.jsonl"] == EVENT_STREAM_NAME
+  assert "proxy_log.jsonl" in supervised.native_outputs()
+  assert (
+      "event_stream.jsonl"
+      not in ClaudeCodeHarness(capture="proxy").native_outputs()
+  )

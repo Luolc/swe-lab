@@ -29,6 +29,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 import json
+import pathlib
 import threading
 from typing import Any, final, override, Protocol, runtime_checkable
 
@@ -50,12 +51,25 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
+from .judge import supervising_policy, Transport
 from .supervisor import (
     Intervention,
     LOG_KIND_GAP,
+    LOG_KIND_SPOKE,
     SpeakPolicy,
     Supervisor,
 )
+
+#: How many actor events the supervisor was consulted about. For a policy that
+#: judges every boundary this is also its judge-call count, which is what a
+#: supervised run costs *beyond* the actor — measured separately because the
+#: repo's per-rollout cost figure is the actor's alone.
+BOUNDARIES_METRIC = "supervision.boundaries"
+
+#: How many corrections were delivered. Never absent on a supervised run, so
+#: "spoke zero times" is distinguishable from "was not supervised" — the
+#: artifact below says which.
+CORRECTIONS_METRIC = "supervision.corrections"
 
 #: The supervisor's own account of a run, one JSON object per event consumed.
 #: Named here because this is what persists it; a reader checking that a run
@@ -172,6 +186,11 @@ class SupervisorPump:
     interventions: Every correction the supervisor delivered, in order. The
       supervisor writes them through the channel's sink; this is the record of
       what it did, not a second delivery path.
+    saw_events: Whether the actor's event stream ever appeared. A stream that
+      never exists is not a quiet run: it is a supervisor that watched nothing,
+      and it is indistinguishable from a healthy one unless it is recorded —
+      ``poll`` returning 0 says the same thing for "no new events" and for "no
+      file, ever".
     at_rest: Whether the last event consumed was the actor finishing a turn
       with the supervisor having nothing to add. Under a live stdin channel the
       actor does not exit when it finishes answering — it waits for more input
@@ -184,6 +203,7 @@ class SupervisorPump:
   events_path: epath.Path
   failure: Exception | None = None
   interventions: list[Intervention] = field(default_factory=list)
+  saw_events: bool = False
   at_rest: bool = False
   _offset: int = 0
 
@@ -208,6 +228,7 @@ class SupervisorPump:
     try:
       if not self.events_path.exists():
         return 0
+      self.saw_events = True
       text = self.events_path.read_text()[self._offset :]
       # Only whole lines are consumed, so a fragment is re-read next time
       # rather than dropped.
@@ -261,9 +282,11 @@ class SupervisedRun(SandboxObserver):
   never speaks is the actor's first result.
 
   Attributes:
-    policy_factory: Builds the policy for one run. A factory because a policy
-      carries per-run state (budget, cooldown, what it has said) while a task
-      is a declaration that may be executed any number of times.
+    policy: When to speak, already built. A policy carries per-run state
+      (budget, cooldown, what it has said), so one of these belongs to one
+      attempt — which is what :func:`supervision` produces, and what makes the
+      criterion's digest check happen before the sandbox exists rather than
+      inside it.
     task: What the actor was asked to do, for the supervisor's observation.
     poll_interval: Seconds between reads of the actor's event stream.
     join_timeout: Seconds teardown waits for the supervising thread to stop.
@@ -274,7 +297,7 @@ class SupervisedRun(SandboxObserver):
     channel: The channel it writes through, once the run has started.
   """
 
-  policy_factory: Callable[[], SpeakPolicy]
+  policy: SpeakPolicy
   task: str
   poll_interval: float = 0.5
   join_timeout: float = JOIN_TIMEOUT_SECONDS
@@ -324,7 +347,7 @@ class SupervisedRun(SandboxObserver):
     self.channel = CorrectionChannel(workspace=sb.workspace)
     self.pump = SupervisorPump(
         supervisor=Supervisor(
-            policy=self.policy_factory(),
+            policy=self.policy,
             task=self.task,
             sink=self.channel.sink,
             log=self._record,
@@ -354,16 +377,18 @@ class SupervisedRun(SandboxObserver):
   def supervised_throughout(self) -> bool:
     """Whether every boundary of this run was actually covered.
 
-    Four ways it stops being true, and they are one fact reached four ways:
-    the pump stopped reading, the supervisor hit a boundary it could not judge
-    or could not speak at, the supervising thread never stopped, or the channel
-    ended without being told to.
+    Five ways it stops being true, and they are one fact reached five ways:
+    the actor's event stream never appeared, the pump stopped reading, the
+    supervisor hit a boundary it could not judge or could not speak at, the
+    supervising thread never stopped, or the channel ended without being told
+    to.
 
     Returns:
       Whether the run is evidence about supervision at all.
     """
     return (
         self.pump is not None
+        and self.pump.saw_events
         and self.pump.healthy
         and not self._gap
         and not self._stuck
@@ -404,8 +429,10 @@ class SupervisedRun(SandboxObserver):
       sb: Unused — every fact here is already on the host.
 
     Returns:
-      The account, plus the metric when the run lost its supervisor. The
-      metric is an event, so a healthy run leaves no key rather than a zero.
+      The account, the two counts a supervised run always carries, and — only
+      when the run lost its supervisor — the metric that changes its outcome
+      word. That one is an event, so a healthy run leaves no key rather than a
+      zero; the counts are measurements and are always present.
     """
     del sb
     self._stop.set()
@@ -419,8 +446,73 @@ class SupervisedRun(SandboxObserver):
     if self.pump is not None and not self._stuck:
       _ = self.pump.poll()  # whatever the actor wrote after the last tick
     lost = not self.supervised_throughout
+    # Read off the account rather than plumbed through the policy: a row is
+    # written for every event the supervisor was consulted about, and a
+    # `spoke` row is exactly one delivered correction.
+    counts: dict[str, float] = {
+        BOUNDARIES_METRIC: float(len(self._rows)),
+        CORRECTIONS_METRIC: float(
+            sum(1 for row in self._rows if row.get("kind") == LOG_KIND_SPOKE)
+        ),
+    }
     account = "".join(json.dumps(row) + "\n" for row in self._rows)
     return Contribution(
         inline_artifacts={SUPERVISOR_LOG_NAME: account.encode()},
-        metrics={SUPERVISION_METRIC: 1.0} if lost else {},
+        metrics=counts | ({SUPERVISION_METRIC: 1.0} if lost else {}),
     )
+
+
+def supervision(
+    *,
+    model: str,
+    transport: Transport,
+    budget: int,
+    cooldown: int = 4,
+    window: int = 8,
+    gold_patch: str | None = None,
+    criterion_path: pathlib.Path | None = None,
+) -> Callable[[str], SupervisedRun]:
+  """Return the supervision a rollout composes, given how to reach a model.
+
+  The :data:`~swe_lab.rollout.SupervisionFactory` the rollout task takes. It
+  builds one policy per attempt, because a policy carries per-run state, and it
+  builds it **while the observers are being assembled** — before the sandbox is
+  created. That ordering is what turns the criterion's digest check into a
+  refusal to start the run: a forged artifact raises here, and no container has
+  been paid for.
+
+  The arguments are ``supervising_policy``'s, forwarded. This is the seam
+  rather than a convenience: the policy has to be constructed by whoever
+  constructs the run, and there is no other point in a rollout that is both
+  after the instance is known and before the sandbox comes up.
+
+  Args:
+    model: The model for the judge and the writer.
+    transport: How requests are sent; injected, so a caller with no network
+      still composes.
+    budget: How many interventions one run may carry.
+    cooldown: Boundaries required between interventions.
+    window: How many of the actor's records the judge sees.
+    gold_patch: This instance's gold patch, when recorded, for the criterion's
+      redundant overlap check.
+    criterion_path: The artifact to load; production leaves it unset.
+
+  Returns:
+    A callable taking the task text and returning the run's supervision.
+  """
+
+  def build(task: str) -> SupervisedRun:
+    return SupervisedRun(
+        policy=supervising_policy(
+            model=model,
+            transport=transport,
+            budget=budget,
+            cooldown=cooldown,
+            window=window,
+            gold_patch=gold_patch,
+            criterion_path=criterion_path,
+        ),
+        task=task,
+    )
+
+  return build

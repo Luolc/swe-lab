@@ -10,8 +10,11 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 import inspect
+import json
+import os
 import pathlib
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -274,3 +277,65 @@ def test_the_built_policy_hands_its_criterion_to_both_model_calls() -> None:
   assert len(transport.payloads) == 2
   for payload in transport.payloads:
     assert criterion_text in payload["messages"][1]["content"]
+
+
+def test_the_provider_key_travels_only_in_the_header_it_belongs_in():
+  """A credential must reach the wire and nothing else.
+
+  The key has to be sent — that is its job — so the property is not "absent"
+  but "in exactly one place": the ``Authorization`` header. A URL or a body
+  carrying it is what ends up in a proxy log, an exception message or a
+  captured request, and this repo has already had to rotate a key because a
+  line meant to report a *status* printed the value. Checked by capturing the
+  request the transport actually builds rather than by reading the code.
+  """
+  import io
+  import urllib.request
+
+  from swe_lab.trace_synthesis import judge as judge_module
+
+  sentinel = "not-a-real-key-0000000000000000"
+  captured: dict[str, Any] = {}
+
+  def fake_urlopen(request: Any, timeout: float | None = None) -> Any:
+    del timeout
+    captured["url"] = request.full_url
+    captured["headers"] = dict(request.header_items())
+    captured["body"] = request.data.decode()
+    return io.BytesIO(
+        json.dumps({"choices": [{"message": {"content": "{}"}}]}).encode()
+    )
+
+  with (
+      mock.patch.dict(os.environ, {judge_module.OPENROUTER_KEYS_ENV: sentinel}),
+      mock.patch.object(urllib.request, "urlopen", fake_urlopen),
+  ):
+    answer = judge_module.openrouter_transport({"model": "m", "messages": []})
+
+  header_values = [
+      value
+      for name, value in captured["headers"].items()
+      if name.lower() == "authorization"
+  ]
+  assert header_values == [f"Bearer {sentinel}"]
+  assert sentinel not in captured["url"]
+  assert sentinel not in captured["body"]
+  assert sentinel not in json.dumps(answer)
+
+
+def test_a_missing_provider_key_says_so_without_naming_a_value():
+  """The refusal has to read as a missing credential, not a broken run.
+
+  A supervised run with no key is a configuration state, and the message says
+  which variable and where its value comes from — while quoting neither the
+  variable's contents nor anything else in the environment, since "it is
+  empty" is exactly the case where a helpful echo prints whatever was there.
+  """
+  from swe_lab.trace_synthesis import judge as judge_module
+
+  with (
+      mock.patch.dict(os.environ, {judge_module.OPENROUTER_KEYS_ENV: ""}),
+      pytest.raises(RuntimeError, match="missing credential") as caught,
+  ):
+    _ = judge_module.openrouter_transport({"model": "m"})
+  assert judge_module.OPENROUTER_KEYS_ENV in str(caught.value)

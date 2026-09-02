@@ -82,9 +82,9 @@ Adopt or overturn deliberately; each of these cost an argument.
   that a leak is a type error rather than a discipline.
 - **Paired arms, per instance.** The control arm is the *same code path* with
   the speaking budget set to zero — same judge calls, stdin held open the same
-  way, and a "would have spoken" marker recorded. That makes the arms comparable
-  **at matched deviation points**, not only at the endpoint, which is worth far
-  more than the endpoint comparison alone.
+  way, and a "would have spoken" marker recorded. What the arms are and are not
+  matched on is stated once, in `src/swe_lab/workflow/definitions.py` beside
+  `CONTROL_BUDGET`.
 - **Screening draws must not double as the unsupervised arm.** Selecting on a
   noisy measurement and then reusing those same draws biases the baseline toward
   the middle. Re-draw for the measured arm.

@@ -32,6 +32,12 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandboxConfig
+from swe_lab.trace_synthesis.criterion import load_criterion
+from swe_lab.trace_synthesis.supervisor import (
+    Observation,
+    SpeakWhenOffTrack,
+    Verdict,
+)
 from swe_lab.workflow import (
     register_workflow,
     registered_workflows,
@@ -305,3 +311,176 @@ def test_grading_a_gold_patch_stays_on_base_commit() -> None:
   (entry,) = GOLD_UNIT_TEST
   assert isinstance(entry.task, UnitTestTask)
   assert entry.task.patch_baseline is False
+
+
+def test_a_supervised_rollout_and_its_control_can_both_be_started_by_name():
+  """The pipeline is startable, which is prior to it being correct.
+
+  A supervisor that composes when configured, with nothing in the shipped
+  definitions configuring it, is a capability no command can reach. Both arms
+  are registered, because a treatment that can be run and a control that cannot
+  measures nothing.
+  """
+  from swe_lab.rollout import CodingAgentTask
+
+  names = set(registered_workflows())
+  assert {
+      "supervised_rollout_and_unit_test",
+      "control_rollout_and_unit_test",
+  } <= names
+
+  supervised, graded = workflow_definition("supervised_rollout_and_unit_test")
+  control, control_graded = workflow_definition("control_rollout_and_unit_test")
+  assert isinstance(supervised.task, CodingAgentTask)
+  assert isinstance(control.task, CodingAgentTask)
+  assert supervised.task.supervision_factory is not None
+  assert control.task.supervision_factory is not None
+  # Both are chains: a supervised rollout that is not graded measures nothing
+  # either.
+  assert (graded.key, control_graded.key) == (
+      definitions.UNIT_TEST_KEY,
+      definitions.UNIT_TEST_KEY,
+  )
+
+  # …and the default stays unsupervised.
+  plain, _ = workflow_definition("rollout_and_unit_test")
+  assert isinstance(plain.task, CodingAgentTask)
+  assert plain.task.supervision_factory is None
+
+
+def test_the_two_arms_put_the_actor_in_the_same_environment():
+  """Comparability comes from the harness, not from a flag.
+
+  Both arms run the actor through the same invocation script — same capture,
+  same live channel, same relay — so what the actor receives differs by the
+  corrections alone. If the control were simply the unsupervised definition,
+  the arms would differ in the script itself and the comparison would be about
+  the channel rather than about the corrections.
+  """
+  from swe_lab.rollout import CodingAgentTask
+
+  supervised, _ = workflow_definition("supervised_rollout_and_unit_test")
+  control, _ = workflow_definition("control_rollout_and_unit_test")
+  assert isinstance(supervised.task, CodingAgentTask)
+  assert isinstance(control.task, CodingAgentTask)
+  assert supervised.task.harness == control.task.harness
+  assert supervised.timeout == control.timeout
+  assert supervised.sandbox == control.sandbox
+  # …and the policies are the same policy, on the same criterion, with the
+  # same window and cooldown. Only the budget differs — the object-level form
+  # of "matched everywhere the arms have to be matched".
+  treatment_policy = _policy_of(supervised)
+  control_policy = _policy_of(control)
+  assert type(treatment_policy) is type(control_policy)
+  assert treatment_policy.criterion == control_policy.criterion
+  assert (treatment_policy.window, treatment_policy.cooldown) == (
+      control_policy.window,
+      control_policy.cooldown,
+  )
+  assert (treatment_policy.budget, control_policy.budget) == (3, 0)
+
+
+def test_the_shipped_supervised_arm_carries_the_pinned_criterion():
+  """The criterion gate is on the path a command actually takes.
+
+  Building this definition's observers is what loads and digest-checks the
+  criterion, and it happens while the observers are assembled — before any
+  sandbox exists. Asserted against the *shipped* definition rather than a
+  hand-built one, since a gate on a composition nobody runs gates nothing.
+  """
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.trace_synthesis.channel import SupervisedRun
+  from swe_lab.trace_synthesis.criterion import CRITERION_SHA256
+  from swe_lab.trace_synthesis.supervisor import SpeakWhenOffTrack
+
+  supervised, _ = workflow_definition("supervised_rollout_and_unit_test")
+  assert isinstance(supervised.task, CodingAgentTask)
+  watchers = [
+      o
+      for o in supervised.task.observers(_Instance())
+      if isinstance(o, SupervisedRun)
+  ]
+  assert len(watchers) == 1
+  policy = watchers[0].policy
+  assert isinstance(policy, SpeakWhenOffTrack)
+  assert policy.criterion.digest == CRITERION_SHA256
+
+
+def _policy_of(entry: WorkflowEntry) -> SpeakWhenOffTrack:
+  """Return the policy the entry's supervision builds.
+
+  Args:
+    entry: A supervised rollout entry.
+
+  Returns:
+    Its policy.
+  """
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.trace_synthesis.channel import SupervisedRun
+
+  assert isinstance(entry.task, CodingAgentTask)
+  factory = entry.task.supervision_factory
+  assert factory is not None
+  built = factory("solve it")
+  assert isinstance(built, SupervisedRun)
+  policy = built.policy
+  assert isinstance(policy, SpeakWhenOffTrack)
+  return policy
+
+
+def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment():
+  """A control that skips the judge is not paired with anything.
+
+  The budget gates *speech* and never gates judgement: the policy consults the
+  judge at every boundary and records what it would have said before the
+  budget is consulted. A control that returned early instead would move model
+  calls, their latency and their cost between the arms, and a later paired
+  comparison would credit that difference to the corrections. Asserted over
+  behaviour rather than over fields, because "same type, different budget"
+  does not by itself say the judge still runs.
+  """
+  readings: dict[int, tuple[int, int, int, int]] = {}
+  for budget in (3, 0):
+    counted = {"judge": 0, "writer": 0}
+
+    def judge(
+        observation: Observation, criterion: Any, counted: Any = counted
+    ) -> Verdict:
+      del observation, criterion
+      counted["judge"] += 1
+      return Verdict(off_track=True, self_correcting=False, reason="drifting")
+
+    def writer(
+        observation: Observation, criterion: Any, counted: Any = counted
+    ) -> str:
+      del observation, criterion
+      counted["writer"] += 1
+      return "worth another look at the failing test"
+
+    policy = SpeakWhenOffTrack(
+        judge=judge,
+        writer=writer,
+        criterion=load_criterion(),
+        budget=budget,
+    )
+    spoke = sum(
+        policy.consider(
+            Observation(task="t", evidence=(), cursor=cursor, said=())
+        )
+        is not None
+        for cursor in range(1, 13)
+    )
+    readings[budget] = (
+        counted["judge"],
+        counted["writer"],
+        spoke,
+        len(policy.markers),
+    )
+
+  treatment, control = readings[3], readings[0]
+  # Same judge calls and the same would-have-spoken markers…
+  assert treatment[0] == control[0] == 12
+  assert treatment[3] == control[3] == 12
+  # …and they part company only after a correction has been decided on.
+  assert (treatment[1], treatment[2]) == (3, 3)
+  assert (control[1], control[2]) == (0, 0)
