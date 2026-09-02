@@ -101,8 +101,10 @@ Steps (the agent drives all of it):
    to, and the migration for it. **Before** the bump lands, not after tagging:
    written from memory afterwards, the migration steps are the part that goes
    wrong. A release with nothing to react to still gets a note saying so.
-2. Bump `project.version` in `pyproject.toml`; land it on `main` via the normal
-   PR flow (CI green) — the note can ride the same PR.
+2. Bump `project.version` in `pyproject.toml` — **the last number, and only
+   the last number**, unless [Which digit moves](#which-digit-moves) says
+   otherwise; land it on `main` via the normal PR flow (CI green) — the note
+   can ride the same PR.
 3. `gh release create vX.Y.Z --generate-notes` on the merged commit — this makes
    the tag **and** the Release, which triggers `publish.yml`. The generated
    notes are the exhaustive PR list; the in-repo note is the curated one, so
@@ -112,6 +114,59 @@ Steps (the agent drives all of it):
 
 A PyPI version is **immutable** — never reuse a number; a bad publish needs a new
 patch version.
+
+### Which digit moves
+
+**Bump the last number: `0.2.14` → `0.2.15`.** That is the default, and it is
+the only bump anyone may make on their own authority; moving any other digit
+takes the instruction described next.
+
+**The middle number moves only when the user asks for the middle number**, in
+words that name a **position** or a **literal target**: "bump the second
+digit", "make it 0.3.0", "go to 0.3". Nothing else authorizes it. These
+specifically do **not**: "minor", "a minor bump", "a small version", "bump the
+version", "bump it" — and neither does any description of *what changed*,
+however large. Additive, breaking, a hundred merged PRs: none of them moves the
+middle number by itself. The first number is the same rule, only stricter.
+
+**Never infer the position from a word.** "Minor" means semver's second slot to
+one reader and "a small change" to another, and most of the vocabulary people
+actually use for releases is ambiguous the same way. So the word is not
+evidence. If the instruction does not name a position or a literal version,
+bump the last number — that is the defined behavior under ambiguity, chosen so
+that the ambiguous case still has one answer and nobody has to guess or ask.
+
+**Change-type semver does not decide this.** The
+[`git-workflow-and-versioning`](../.agents/skills/git-workflow-and-versioning/SKILL.md)
+skill describes the general `breaking → major, additive → minor, fix → patch`
+convention; that is background about the wider ecosystem, and **this section
+overrides it for this repository**. A release here is a patch bump unless the
+user said otherwise, whatever the diff contains.
+
+**Nothing checks this.** Both quality-bar commands stay green on a PR that
+takes `project.version` from `0.3.0` to `0.4.0`; this is a manually enforced
+policy — the person opening the release PR and the person reviewing it are the
+whole of the enforcement. A guard was considered and deliberately not built,
+and the reason is worth keeping so it is not re-proposed blind: the rule's
+exception is *"the user asked for it"*, and every marker of that which could
+live in this repository — a commit-message trailer, a line in the release note,
+a label — is one the agent driving the release can write for itself, so the
+guard would gate on something its own subject controls. It would also have to
+grandfather the current state, since `0.2.14` → `0.3.0` is precisely the
+violation it would be looking for. If that trade is worth revisiting, revisit
+it here.
+
+Why this is written down: on 2026-09-02 the instruction "bump a minor version"
+was read as semver's second slot and published as `v0.3.0` when `0.2.15` was
+wanted. A published version number cannot be reclaimed — a release can be
+yanked or deleted, but its uploaded filenames can never be reused — so
+correcting it means a new version, not a replacement. This file named no digit
+at the time, while the repo's own
+`git-workflow-and-versioning` skill prescribed the change-type convention — so
+the one place that should have decided it was silent and the nearest other
+source pointed elsewhere. A procedure that leaves a genuinely ambiguous step
+unstated does not get executed as "unstated"; it gets filled from outside,
+usually without the person filling it noticing they did.
 
 ## Formatting & lint (enforced by pre-commit)
 
