@@ -364,6 +364,9 @@ def test_a_supervised_run_that_stayed_supervised_reports_no_metric(
   # a reader cannot mistake "supervised throughout" for "never measured". The
   # account is contributed either way — it is the evidence the run was watched.
   run = _supervised(tmp_path)
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  _ = events.write_text(_assistant_event("editing") + "\n")
+  _wait_until(lambda: bool(run.pump and run.pump.saw_events))
   contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
   assert SUPERVISION_METRIC not in contribution.metrics
@@ -786,3 +789,28 @@ def test_a_supervisor_that_never_returns_is_not_reported_as_healthy(
     assert policy.calls == 1  # teardown consulted nothing
   finally:
     policy.released.set()
+
+
+def test_a_run_whose_event_stream_never_appeared_is_not_supervised(
+    tmp_path: Path,
+):
+  """The quietest way to supervise nothing, and the one with no symptom.
+
+  `poll` returns 0 both for "no new events" and for "no such file, ever", so a
+  supervisor pointed at a stream nobody writes reports exactly what a calm run
+  reports. It is the same defect this repo named in `conventions.md` — a
+  failure with no exit of its own, absorbed by the nearest normal value — and
+  the run it produces is worse than unsupervised: with no events there is no
+  turn boundary, so nothing ever closes the channel and the actor sits until
+  the wall clock kills it, which is charged to the actor.
+  """
+  run = _supervised(tmp_path)  # nothing ever writes the event stream
+  contribution = run.before_destroy(_fs(tmp_path))
+
+  assert contribution is not None
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
+  assert contribution.metrics[BOUNDARIES_METRIC] == 0.0
+  assert (
+      rollout_outcome(_attempt_with(contribution.metrics))
+      is RolloutOutcome.SUPERVISION_FAILED
+  )

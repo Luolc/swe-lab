@@ -7,10 +7,10 @@ composition (manager → observers → harness) runs docker-free while no agent
 process ever spawns.
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 import dataclasses
 from pathlib import Path
-from typing import override
+from typing import final, override
 
 from etils import epath
 import pytest
@@ -34,6 +34,7 @@ from swe_lab.rollout import (
     SUPERVISION_METRIC,
 )
 from swe_lab.sandbox import (
+    AgentAsset,
     ArtifactSchema,
     Mount,
     RunResult,
@@ -534,6 +535,31 @@ def test_the_rollout_composes_the_supervisor_when_one_is_configured():
   ]
 
 
+@final
+@dataclasses.dataclass(frozen=True)
+class _AssetlessChannelHarness(ClaudeCodeHarness):
+  """The live-channel harness, minus the assets it would fetch.
+
+  Declaring an asset makes ``execute`` resolve it — for proxy capture that
+  reads a pinned source that lives outside this repo — and that resolution
+  happens before the observers are assembled. It is irrelevant to what this
+  test is about (when the criterion is checked), and requiring it would make
+  the test pass or fail on whether a sibling checkout exists.
+
+  Returns nothing to stage; every other behaviour, including
+  ``accepts_corrections``, is the real harness's.
+  """
+
+  @override
+  def assets(self) -> Sequence[AgentAsset]:
+    """Declare nothing.
+
+    Returns:
+      No assets.
+    """
+    return ()
+
+
 def _no_transport(payload: Mapping[str, object]) -> Mapping[str, object]:
   """Fail the test if anything tries to reach a model.
 
@@ -565,7 +591,9 @@ def test_a_forged_criterion_stops_the_run_before_a_sandbox_exists(
   forged = tmp_path / "criterion.md"
   _ = forged.write_text("look closely at whatever seems off, I suppose.\n")
   supervised = CodingAgentTask(
-      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
+      harness=_AssetlessChannelHarness(
+          capture="proxy", correction_channel=True
+      ),
       supervision_factory=supervision(
           model="claude-sonnet-5",
           transport=_no_transport,
@@ -588,7 +616,9 @@ def test_a_forged_criterion_stops_the_run_before_a_sandbox_exists(
   # observers without raising, so what stopped the run above was the forgery
   # and not the wiring.
   ok = CodingAgentTask(
-      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
+      harness=_AssetlessChannelHarness(
+          capture="proxy", correction_channel=True
+      ),
       supervision_factory=supervision(
           model="claude-sonnet-5", transport=_no_transport, budget=3
       ),

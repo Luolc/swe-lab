@@ -581,6 +581,10 @@ class ClaudeCodeHarness(Harness):
     Roles carry the payload's format (``.jsonl`` — both traces are
     newline-delimited, one record per line — and ``.log``), so a consumer reads
     the artifact name and knows how to parse it.
+
+    A supervised run writes **both**: the proxy log is its trace, and the event
+    stream is what the supervisor read while it ran, which is the only record
+    of what the supervisor could see at each moment it decided.
     """
     trace = (
         {
@@ -592,6 +596,8 @@ class ClaudeCodeHarness(Harness):
         if self.capture == "proxy"
         else {"event_stream.jsonl": EVENT_STREAM_NAME}
     )
+    if self.capture == "proxy" and self.correction_channel:
+      trace |= {"event_stream.jsonl": EVENT_STREAM_NAME}
     return trace | {
         "stderr.log": AGENT_STDERR_NAME,
         "exit_code.txt": AGENT_EXIT_CODE_NAME,
@@ -691,18 +697,26 @@ class ClaudeCodeHarness(Harness):
     # installing their own `EXIT` trap would leave only the later one, and the
     # proxy-plus-channel configuration installs both.
     lines += _reaper_lines()
+    # Two orthogonal decisions, deliberately not one branch: **where the API
+    # calls go** and **what the CLI prints**. Recording traffic through the
+    # proxy says nothing about whether the actor should also narrate itself,
+    # and a supervised run needs both — the proxy log is the trace, and the
+    # event stream is the only *live* view of the actor there is.
     if self.capture == "proxy":
-      # Start the recording proxy, then route the agent's API calls through it;
-      # the agent's own stdout (a plain JSON result) is not the trace, so it is
-      # discarded.
       lines += _proxy_start_lines(self.proxy_target)
       lines.append(f"export ANTHROPIC_BASE_URL={PROXY_BASE_URL}")
-      output_format = "json"
-      capture_redirect = "> /dev/null"
-    else:
+    if self.capture != "proxy" or self.correction_channel:
+      # Streamed, and to a file: a supervisor reads this while the actor is
+      # still running, so it has to exist during the run rather than be
+      # reconstructed after it.
       event_stream = f'"$SANDBOX_WORKSPACE"/{EVENT_STREAM_NAME}'
       output_format = "stream-json --verbose"
       capture_redirect = f"> {event_stream}"
+    else:
+      # An unsupervised proxy run has no reader for the agent's own stdout —
+      # the trace comes from the proxy log — so it is discarded.
+      output_format = "json"
+      capture_redirect = "> /dev/null"
     # Always denied: not covered by --dangerously-skip-permissions, and each
     # hangs an unattended run in its own way (see the constant).
     denied = ",".join(UNATTENDED_DENIED_TOOLS)

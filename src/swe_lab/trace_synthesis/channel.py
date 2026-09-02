@@ -186,6 +186,11 @@ class SupervisorPump:
     interventions: Every correction the supervisor delivered, in order. The
       supervisor writes them through the channel's sink; this is the record of
       what it did, not a second delivery path.
+    saw_events: Whether the actor's event stream ever appeared. A stream that
+      never exists is not a quiet run: it is a supervisor that watched nothing,
+      and it is indistinguishable from a healthy one unless it is recorded —
+      ``poll`` returning 0 says the same thing for "no new events" and for "no
+      file, ever".
     at_rest: Whether the last event consumed was the actor finishing a turn
       with the supervisor having nothing to add. Under a live stdin channel the
       actor does not exit when it finishes answering — it waits for more input
@@ -198,6 +203,7 @@ class SupervisorPump:
   events_path: epath.Path
   failure: Exception | None = None
   interventions: list[Intervention] = field(default_factory=list)
+  saw_events: bool = False
   at_rest: bool = False
   _offset: int = 0
 
@@ -222,6 +228,7 @@ class SupervisorPump:
     try:
       if not self.events_path.exists():
         return 0
+      self.saw_events = True
       text = self.events_path.read_text()[self._offset :]
       # Only whole lines are consumed, so a fragment is re-read next time
       # rather than dropped.
@@ -370,16 +377,18 @@ class SupervisedRun(SandboxObserver):
   def supervised_throughout(self) -> bool:
     """Whether every boundary of this run was actually covered.
 
-    Four ways it stops being true, and they are one fact reached four ways:
-    the pump stopped reading, the supervisor hit a boundary it could not judge
-    or could not speak at, the supervising thread never stopped, or the channel
-    ended without being told to.
+    Five ways it stops being true, and they are one fact reached five ways:
+    the actor's event stream never appeared, the pump stopped reading, the
+    supervisor hit a boundary it could not judge or could not speak at, the
+    supervising thread never stopped, or the channel ended without being told
+    to.
 
     Returns:
       Whether the run is evidence about supervision at all.
     """
     return (
         self.pump is not None
+        and self.pump.saw_events
         and self.pump.healthy
         and not self._gap
         and not self._stuck
