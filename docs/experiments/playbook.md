@@ -277,19 +277,6 @@ pilot's twelve amendments.
   making claims smaller: the pass was over magnitude assertions, and no
   direction assertion was re-examined.
 
-  Its sharpest form is a check that cannot represent the problem at all. A
-  verbatim n-gram overlap here returned zero and was reported as evidence that a
-  document did not duplicate a registered rule; the duplication was
-  **paraphrase**, which that check cannot express, so its zero was uninformative
-  by construction rather than by bad luck. What was wrong was the **role, not the
-  tool**: a detector's hits **rank what to read next**, and no detector's miss
-  establishes that there is nothing to find — a sharper detector makes that
-  substitution *more* tempting, because its blind spot is harder to characterize
-  than the crude one it replaced. Those three sites were found by reading, which
-  does not scale, so the finished state is not "a person read it" but **the
-  assurance described as what it is**: one reading, at one revision, by someone
-  who knew what to look for.
-
   With the two questions above, these are the three review obligations asked
   for **up to here** — none is machine-checkable, so none is written as an
   invariant; the entries below add their own:
@@ -297,6 +284,24 @@ pilot's twelve amendments.
   > **Restating a number:** what did I add that was not in their words?
   > **Correcting a number:** was the new reference point actually measured?
   > **Citing a check:** what does its *passing* establish?
+- **A blind check's green is not an absence proof, and a better check does not
+  make it one.** The obligation is one executable question, asked before the
+  check is cited: **if the problem existed, how would it appear in this check's
+  output?** It is not the neighbouring obligation and is not discharged by it —
+  **stating what a pass would establish does not test whether the statement is
+  true**, and an author can write that sentence correctly and still be wrong,
+  because the instrument cannot represent the thing the sentence is about. A
+  verbatim n-gram overlap here returned zero and was reported as evidence that a
+  document did not duplicate a registered rule; the duplication was
+  **paraphrase**, which that check cannot express, so its zero was uninformative
+  by construction rather than by bad luck. What was wrong was the **role, not
+  the tool**: a detector's hits **rank what to read next**, and no detector's
+  miss establishes that there is nothing to find — a sharper detector makes that
+  substitution *more* tempting, because its blind spot is harder to characterize
+  than the crude one it replaced. Those three sites were found by reading, which
+  does not scale, so the finished state is not "a person read it" but **the
+  assurance described as what it is**: one reading, at one revision, by someone
+  who knew what to look for.
 - **Put a statement about the parameter and a statement about the data in
   separate sentences.** Their modalities differ — a prior is an assumption, a
   count is an observation — and ordinary English hides the difference, because
