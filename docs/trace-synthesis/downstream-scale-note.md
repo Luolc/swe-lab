@@ -88,9 +88,13 @@ Adopt or overturn deliberately; each of these cost an argument.
   ending stays, so it can only understate a rate; the opposite default lets the
   excluded set grow unwatched, in the direction that flatters results.
   ([ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md))
-- **Report every rate with its excluded count** — `resolved 12 / 40 (3 system
-  failures excluded)`, never `12/40`. An unstated exclusion set is an invisible
-  knob.
+- **Report every rate with its two counts** — how many runs were excluded as
+  ours, and how many nobody could attribute:
+  `resolved 12 / 40 (3 system failures excluded, 2 unclassified)`, never
+  `12/40`. An unstated exclusion set is an invisible knob; the two counts are
+  one value with one rendering
+  ([`swe_lab/reporting.py`](../../src/swe_lab/reporting.py)`.Rate`,
+  [ADR-0016](../decisions/ADR-0016-the-endings-nobody-could-attribute.md)).
 - **Pin the actor and the harness version.** Rates, costs and headroom all move
   with them, and a batch that does not record them cannot be compared with the
   next. The rollout record carries `agent_model`; the harness version is in the
@@ -210,10 +214,15 @@ rate accumulates as a by-product of runs you are making anyway.
 
 Both arrive as a zero. Give infrastructure failure its own word at the point it
 happens, or it is counted as task difficulty and depresses the measured rate of
-whichever arm happened to break more. The four endings this repo separates —
-`oom_killed`, `system_failed`, `timed_out`, `no_patch` — and which of them leave
-the denominator are in
-[ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md).
+whichever arm happened to break more. The endings this repo separates —
+`oom_killed`, `system_failed`, `timed_out`, `no_patch`, and `unclassified` (the
+harness gave no readable outcome at all) — and which of them leave the
+denominator are in
+[ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md) and
+[ADR-0016](../decisions/ADR-0016-the-endings-nobody-could-attribute.md), which
+adds `unclassified`: an ending nobody could attribute is a fact distinct from
+the actor's own zero, and the two-count report above (§2) is what keeps it from
+being silently absorbed into the rate.
 
 Related, and cheap to get wrong in the other direction: an agent that runs
 cleanly and produces nothing is a **real failure to solve** and stays in the
