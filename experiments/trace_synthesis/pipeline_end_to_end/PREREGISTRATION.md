@@ -99,10 +99,10 @@ table leaves room to read it two ways after the fact.
 
 | # | Claim | Closes when | Judged against |
 |---|---|---|---|
-| 1 | Supervisor attached to the actor's **live** stream | `supervisor.jsonl` exists in the run's output artifacts and `metrics["supervision.boundaries"] > 0` (§6) — the account of a real actor's boundaries, not a synthetic stream. See the flag below the table for whether this point additionally needs §5's independent evidence. | `test_the_rollout_composes_the_supervisor_when_one_is_configured`, `test_the_supervisors_account_of_the_run_is_persisted` confirm composition and artifact; neither drives a real actor. |
+| 1 | Supervisor attached to the actor's **live** stream | Requires **§5's independent evidence**, unconditionally — `supervisor.jsonl` existing and `metrics["supervision.boundaries"] > 0` are necessary but not sufficient, since both are the pipeline's own account of itself (see the note below the table). | `test_the_rollout_composes_the_supervisor_when_one_is_configured`, `test_the_supervisors_account_of_the_run_is_persisted` confirm composition and artifact; neither drives a real actor. |
 | 2a | Barrier holds: no gold patch, no hidden tests in the supervisor's input | Consumed as-is, not re-verified here (the table's own instruction: "consumed here, not re-implemented"). | `test_supervisor_input_carries_no_privileged_field` (task 05, not re-run). |
 | 2b | Criterion sha verified, mismatch refuses **the run** | Closed by the test suite once §3's two named tests are on `main` — this point does **not** additionally require evidence from this run. If #349 merges without them, or with a weaker refusal, this row reverts to open and this run cannot close it either (a run against a *correct* criterion says nothing about what happens against a forged one). | `test_a_forged_criterion_stops_the_run_before_a_sandbox_exists`, `test_the_shipped_supervised_arm_carries_the_pinned_criterion` (§3). |
-| 3 | Policy speaks at least once **because of a real deviation** | `supervisor.jsonl` contains ≥1 row with `kind: "spoke"` whose `policy` is not `"speak-at"` — equivalently, `metrics["supervision.corrections"] > 0` on a run whose policy is `SpeakWhenOffTrack` (not `SpeakAt`). A run with zero such rows leaves this point **open**, not closed-negative: the table says a scheduled-only run doesn't satisfy it, and a silent real run says nothing either way. See the flag below the table for whether this point additionally needs §5's independent evidence. | `supervisor.jsonl` and the `metrics` field read directly off this run's own record; no test claims a real run's deviation count. |
+| 3 | Policy speaks at least once **because of a real deviation** | Requires **§5's independent evidence**, unconditionally. `supervisor.jsonl` containing ≥1 row with `kind: "spoke"` whose `policy` is not `"speak-at"` (equivalently, `metrics["supervision.corrections"] > 0` on a `SpeakWhenOffTrack` run) is necessary — a run with zero such rows leaves this point **open**, not closed-negative, since a silent real run says nothing either way — but not sufficient by itself; §5 is what confirms a delivery the host-side log claims actually happened. | `supervisor.jsonl` and the `metrics` field read directly off this run's own record; no test claims a real run's deviation count. |
 | 4 | Correction arrives **mid-turn**, matching the measured wire shape | Requires **§5's independent evidence**, unconditionally — this row is not closable from `supervisor.jsonl` under any reading. | `experiments/trace_synthesis/sandbox_fold_check/` established the reference wire shape this run's independent capture is compared against. |
 | 5 | Rollout completes, patch taken **against the pre-agent baseline**, grading runs | The rollout record has `patch_base_ref` set (ADR-0014); the grading entry's `metrics` has `unit_test.resolved` present (either `true` or `false` — presence, not value, closes this point). | `test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image` (existing test, not re-run; this is a property of this run's own record). |
 | 6 | Trace persisted, **interjection in it**, provenance complete | The converted trace contains the interjection text (if point 3 fired one) surviving conversion; `run_provenance()`'s stamped fields plus `extra["agent_model"]` are present in the record. | `test_an_interjection_survives_conversion_into_the_trace` (existing test, not re-run; a property of this run's own trace). |
@@ -114,52 +114,60 @@ per [the acceptance table's own rule](../../../docs/trace-synthesis/plans/README
 being checked, so "the run says it did" and "it did" are one statement made
 twice. That rule, as currently written in the plan, names **points 1 and 4**.
 
-**A discrepancy this document does not resolve on its own authority.**
-Orchestra's most recent operational guidance (2026-09-01) instead scopes the
-independent-evidence requirement to **points 3 and 4**. The two sources
-disagree about whether point 1 or point 3 is the one that needs
-non-self-collected evidence, and this document does not silently pick one —
-that is exactly the kind of restated number the codebase's own review
-discipline says to flag rather than smooth over. **Until reconciled, this run
-treats the requirement conservatively as covering point 1 *and* point 3 *and*
-point 4**: none of the three may be marked closed on `supervisor.jsonl` alone,
-and each needs §5's independent evidence (or, for whichever of 1/3 turns out
-not to need it once reconciled, a named argument for why self-evidence
-suffices there — not a default). Point 2b is unaffected either way (§4).
+**A discrepancy this document does not resolve on its own authority, and does
+not let widen or narrow the frozen set.** Orchestra's most recent operational
+guidance (2026-09-01) instead scopes the independent-evidence requirement to
+**points 3 and 4**. The two sources disagree about whether point 1 or point 3
+is the one that needs non-self-collected evidence. **This document freezes the
+stricter union — points 1, 3, and 4 — for this run, with no later waiver**:
+whichever of 1/3 a future reconciliation drops does not retroactively loosen
+this pre-registration once it exists; a narrower rule only ever applies to a
+*new* pre-registration written before its own run. Point 2b is unaffected
+either way (§4).
 
 ## 5. Independent evidence for points 1, 3 and 4
 
-**The candidate, and its status.** `swelab-inproxy-impl` is extracting the
-actor's own native event stream — inside the container, at
-`/agent-home/.claude/projects/-app/*.jsonl`
-([`docs/conventions.md`](../../../docs/conventions.md), the `docker rm`
-evidence-destruction hazard) — before the container is torn down. **Its
-independence from our own collection path is not yet confirmed.** The
-question it must answer, in the words it was given: is this file's content
-itself a product of the same code being verified, or a record from outside
-that code's reach? If the former, it is not independent evidence no matter
-how it was extracted; extraction mechanics do not confer independence.
+**One required chain, fixed now, no run-time choice.** Points 1, 3 and 4 close
+only on [task 10](../../../docs/trace-synthesis/plans/README.md#task-10-run-the-capture-proxy-inside-the-sandbox)'s
+in-sandbox proxy capture — the host-side reverse proxy recording the actor's
+own API traffic. Its independence from the code being checked is structural,
+not merely asserted: the proxy is a general-purpose network capture with no
+awareness of `supervisor.jsonl`, `SupervisedRun`, or anything else in
+`trace_synthesis/`, so it cannot be reporting the pipeline's own account of
+itself. It is also already landed (task 10's row is ✅), so this run does not
+wait on anything to use it. Task 09's publishing gate does not apply — closure
+reads the capture locally as evidence, it does not publish it — so nothing
+here is blocked on that gate either.
 
-**This "unconfirmed" is left standing, not filled in.** Per the same
-guidance: if the independence question is still open when this run happens,
-the correct report for points 1, 3 and 4 is **not closed** — reached via our
-own collection path, however extracted — not "closed using our own log
-because nothing else was ready in time."
+- **Point 1** closes when the capture shows a request whose body carries a
+  `<supervisor_note>`-wrapped message (the channel's wrapper,
+  `src/swe_lab/trace_synthesis/channel.py`) — evidence the message reached the
+  actor's own outgoing request, not merely that the host-side channel wrote
+  one.
+- **Point 3** closes when a captured request carrying that wrapper corresponds
+  to a `supervisor.jsonl` row with `kind: "spoke"` — the independent chain
+  confirms the delivery the host-side log claims for the same event, rather
+  than closing on the host-side log's `kind: "spoke"` count alone (§4's row 3
+  is the count; this is what makes that count trustworthy).
+- **Point 4** closes on the same capture, checked for cursor position and
+  block shape against `sandbox_fold_check`'s reference, as in §4's row.
 
-**If independence is confirmed before this run:** the candidate closes a
-point when its content corroborates the corresponding row in §4's table —
-e.g. for point 4, the native stream's own record of the correction message
-arriving between two specific actor turns, checked against the same wire
-shape (`sandbox_fold_check`'s reference) `supervisor.jsonl` claims.
+**No second chain, and no fallback.** The actor's own native event stream
+(`/agent-home/.claude/projects/-app/*.jsonl` inside the container — the
+`docker rm` evidence-destruction hazard in
+[`docs/conventions.md`](../../../docs/conventions.md)), which
+`swelab-inproxy-impl` is separately extracting, plays **no role in closing any
+point in this pre-registration**, regardless of what its independence
+investigation concludes before or during this run. That investigation's
+outcome is not evidence this document can act on: using it would mean
+choosing, at or after run time, whether to fold in a second chain — exactly
+the discretion a frozen protocol removes. It may motivate a *future*
+pre-registration's evidence plan; it changes nothing about this one.
 
-**If a second, already-landed independent chain exists** (task 10's
-in-sandbox proxy capture — see
-[task 10](../../../docs/trace-synthesis/plans/README.md#task-10-run-the-capture-proxy-inside-the-sandbox))
-and is available for this run, it may be used in place of, or alongside, the
-native-stream candidate — it does not pass through `supervisor.jsonl` either.
-Which of the two (or both) is actually used is decided at run time and
-recorded in the report, not fixed here, because which one is ready first is
-an operational fact this document cannot know in advance.
+**If the proxy capture is unavailable for this run** — the recorder failed to
+attach, the log is empty, or `capture="proxy"` was not actually configured —
+points 1, 3 and 4 are **not closed**, unconditionally, and the report says so
+rather than substituting `supervisor.jsonl`'s own account or any other source.
 
 ## 6. Readouts required alongside the seven points
 
@@ -199,18 +207,17 @@ an operational fact this document cannot know in advance.
 
 ## 7. Failure classification
 
-Read fresh from `src/swe_lab/rollout.py` at the time this file was written
-(2026-09-01) — **re-read at report time rather than trusted from here**, since
-this enum is exactly the kind of fact that must come from source, not from a
-document about source:
+The report records this run's `rollout_outcome` **verbatim**, as
+`RolloutOutcome` defines it in [`src/swe_lab/rollout.py`](../../../src/swe_lab/rollout.py)
+at report time — not as a list copied into this document, which would be a
+second, staler copy of the same taxonomy the moment that enum changes. Point
+7's closure criterion (§4) is exactly this: the recorded word matches what
+actually happened, judged against the source's current members, not this
+file's.
 
-`OOM_KILLED`, `SYSTEM_FAILED`, `TIMED_OUT`, `NO_PATCH`, `PATCH_PRODUCED`,
-`UNCLASSIFIED`, `SUPERVISION_FAILED` — with
-`_OURS = frozenset({OOM_KILLED, SYSTEM_FAILED, SUPERVISION_FAILED})`.
-
-This run's `rollout_outcome`, whatever it is, is reported verbatim and
-matched against point 7's closure criterion (§4). Two endings get special
-handling in the report regardless of which one lands:
+Two ending *categories* get special handling in the report regardless of
+which specific word lands, because both are properties of *this
+pre-registration's* obligations rather than of the taxonomy itself:
 
 - **`SUPERVISION_FAILED`** — `SUPERVISION_METRIC` (`supervision.unhealthy`)
   fired, meaning the pump died or the channel closed uncleanly mid-run. If
