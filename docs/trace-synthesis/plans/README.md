@@ -11,23 +11,54 @@ deep design per task, indexed here). Sizes: XS=1 file · S=1–2 · M=3–5 · L
 > against hint injection, which was closed by its own pre-registered kill
 > condition ([spec §15.1](../spec.md#15-success-criteria)). **Do not start
 > either** before [Pending reconciliation](#pending-reconciliation-2026-09-01)
-> at the end of this file is resolved. The ordering principle in the next
-> paragraph rests on the same terminated assumption.
+> at the end of this file is resolved.
+
+> [!NOTE]
+> **Delivery moved off hooks on 2026-09-01**
+> ([ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)): a
+> correction is written on the actor's stdin, not returned from a hook. **Read
+> every passage below that describes a hook channel as a record of the design in
+> force when that task was written or run.** The measurements in them stand, and
+> so does what the completed experiments found — a finished task's record should
+> say what it actually did, not what we would do now. Only **task 05** is
+> rewritten, because it is the live one. Where a task's scope and this note seem
+> to disagree, the task's own plan wins on **scope** and the ADR wins on
+> **attribution**.
 
 **Single source of truth for status:** this table is the *only* live status for
 these tasks. Any `plans/task-NN-*.md` that appears later is a point-in-time
 **design record** — don't read status from it.
 
-**The ordering principle is the cheapest falsifier first.** The pipeline rests
-on one assumption — *that a supervisor holding a good guidebook can steer a
-blind agent to a correct solution at tool-call granularity* — and on one
-unmeasured mechanism. The owner ruled on 2026-09-01 that the **assumption is
-taken as given**, so it is task **02** that can still kill the idea: if no hook
-channel yields a genuine user turn at a tool boundary, the design needs a
-different medium before anything after it is worth building. Task 01 keeps its
-place at the head for a different reason — it produces the first real artifacts
-the later tasks are designed against. The hook-mechanics research that preceded
-this index is not a task: its results are recorded in
+**The ordering principle is the cheapest falsifier first — and which task *is*
+the falsifier has moved.** The pipeline still rests on one assumption — *that a
+supervisor holding a good guidebook can steer a blind agent to a correct
+solution at tool-call granularity* — which the owner ruled on 2026-09-01 is
+**taken as given**. What changed is everything downstream of it. Task **02** was
+the falsifier while the open question was whether a hook could put a genuine
+user turn at a tool boundary; that question is closed twice over — task 02 is
+complete, and both its criterion (the wire-level role, replaced by
+[(a)/(b)](../spec.md#what-disqualifies-a-trace--the-two-criteria-of-record)) and
+its channel (replaced by
+[ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)) were
+superseded. **Nothing is blocked on it, and a reader should not order work
+against it.**
+
+Two things can still kill the idea, and they are ordered by cost:
+
+1. **The in-sandbox fold check**, an acceptance condition of task **05**. Every
+   measurement of the stdin channel is host-side; the sandbox runs a pinned
+   binary. If the fold differs there, the byte-identity result describes an
+   artifact we do not ship — [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)'s
+   **refutation** condition. It is one delivery, it is cheap, and it can
+   invalidate the long experiment; the long experiment cannot invalidate it.
+   **So it goes first.**
+2. **Whether supervision raises the resolved rate**, measured over paired arms.
+   Expensive, and it decides whether any of this is worth delivering —
+   ADR-0013's **retirement** condition.
+
+Task 01 keeps its place at the head for a different reason — it produces the
+first real artifacts the later tasks are designed against. The hook-mechanics
+research that preceded this index is not a task: its results are recorded in
 [`spec.md` §10](../spec.md#10-what-is-measured-about-hooks).
 
 | # | Task | Status |
@@ -36,7 +67,7 @@ this index is not a task: its results are recorded in
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⚠ ⬜ **proposed for closure** — the task exists only for the terminated arm; see [below](#pending-reconciliation-2026-09-01) |
 | 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement. Wording follow-up from #276's review (P2, not a task — fold into the next edit of those passages): the design record's rationale and `oracle.py`'s module docstring still use the shorthand "the fix commit is reachable, and the brief says so" / "a run handed the answer" — scoped to phase B, where the purge is off, so consistent with the purge measured in rollouts, but untrue for a dataset that records no fix commit or reference patch, which the task supports — and `datasets/oracle_failures/README.md` lists the delegated gold patch without its when-recorded qualifier |
-| 05 | **Supervisor + hook wiring in the sandbox** | ⬜ |
+| 05 | **The supervisor: what it may see, when it speaks, what it may say** — the component that consumes the actor's live output stream and writes a short correction on its stdin; the barrier is a constructor, the trigger is a seam, and the in-sandbox fold check is an acceptance condition — [`task-05-supervisor-the-component.md`](task-05-supervisor-the-component.md) | ⬜ Re-scoped by [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md); the hook-wiring form is retired |
 | 06 | **Trace-quality scorer** (decide whether to build) | ⬜ |
 | 07 | **The `oracle_guided_trace` workflow + integrity separation** | ⬜ |
 | 08 | **Batch run: N instances, measure yield / cost / quality** | ⬜ |
@@ -177,26 +208,35 @@ without phase C.
   end to end, the produced guidebook failed the schema check on one missing
   field, and no human has judged it — the row above stays 🔶 until one has.
 
-## Task 05: Supervisor + hook wiring in the sandbox
+## Task 05: The supervisor — what it may see, when it speaks, what it may say
 
-**Description:** The real machinery. Hook settings injected per run
-(`--settings` + an isolated `CLAUDE_CONFIG_DIR`), a host-side Supervisor called
-over the API with its own credential (the hook subprocess inherits none), the
-belief state kept outside the sandbox, and an intervention record written per
-decision. Includes the explicit timeout policy: the default is fail-open, so a
-dropped decision must be **recorded**, never silently skipped.
+**The design lives in [`task-05-supervisor-the-component.md`](task-05-supervisor-the-component.md).**
+This entry is the index summary; the plan is canonical about scope.
 
-- **Acceptance:** the guidebook and the belief state are provably absent from
-  the actor's context and mounts (named tests, per the spec's
-  [invariants](../spec.md#12-invariants-intended-enforced-where-marked)); a
-  dropped or timed-out supervisor decision appears in the run record; the
-  Supervisor's hook response can never carry `updatedInput`, a deny decision or
-  `additionalContext` — the three channels
-  [§5](../spec.md#5-the-mechanism-decisions) bans, `additionalContext` included
-  because it is delivered as a system reminder.
-- **Verification:** unit tests over the hook payload handling; one live guided
-  rollout end to end.
-- **Dependencies:** 02, 04. **Scope:** M–L
+**Description:** A supervisor that consumes the actor's live output stream and,
+when its policy says the moment has come, writes one short user message on the
+actor's stdin ([ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)).
+Three parts carry it: the **information barrier** is a property of the type the
+supervisor is constructed with rather than an instruction in its prompt; **when
+to speak** is a replaceable policy, because that is the measured unknown (8 of 8
+non-compliances arrived too late); and what it may say is **bounded in length
+and tagged**, with every intervention logged.
+
+- **Acceptance:** the in-sandbox fold check — one intervention delivered inside
+  the sandbox whose block length and `sha256` match the host measurement, which
+  is [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)'s
+  refutation condition carried here so that it is scheduled; named tests for the
+  privileged-field allowlist, the actor-only evidence, the length cap, the tag,
+  and the emitter; a policy replaceable without touching the stream consumer;
+  and a log that accounts for every cursor with a judgement, a silence or an
+  explicit gap.
+- **Verification:** unit tests over a **recorded** event stream with a stub
+  sink, plus the single in-sandbox delivery. No live rollout is part of this
+  task's acceptance — that budget belongs to the measurement rig.
+- **Dependencies:** [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md);
+  task 04 for the guidebook. **Not** blocked on task 16 — the supervisor writes
+  into a sink it is handed and never opens or closes the channel.
+  **Scope:** M
 
 ## Task 06: Trace-quality scorer (decide whether to build)
 

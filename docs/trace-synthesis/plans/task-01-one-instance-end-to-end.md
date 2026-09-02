@@ -120,6 +120,13 @@ the input to step 5 and nothing else in this task reads the gold patch.
 
 ## Step 5 — The steered re-run (simulated supervisor)
 
+> **This step is a hook-era record.** It describes the design in force when the
+> steered re-run was actually built and run, and it is kept in that form so the
+> record says what was done. Delivery has since moved to the actor's stdin
+> ([ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)); a
+> rewritten form of this step belongs to whatever resolves this task's pending
+> reconciliation, not to this paragraph.
+
 A blind actor runs the same instance again. On each tool boundary a **scratch**
 hook fires, calls a supervisor model with the guidebook plus the run so far, and
 injects a directional hint when the actor is off track.
