@@ -666,6 +666,19 @@ retroactively (owner's calibration, 2026-09-01).
   two opposite facts. Ask what a file means *at the time you are reading it*;
   the name answers only half of that.
 
+  One layer harder than writing the coordinate down: **ask whether the number
+  would be different if you looked a minute later, and if it would, report
+  the shape instead of the number.** A count taken off something still being
+  written is a property of when you looked, not of what you are describing —
+  a correction's occurrences across a growing capture climbed with every
+  subsequent request, so the count was a fact about the reading; the
+  occurrences *as the last message* were three, one per injection, and stayed
+  three. The first is shape (once injected, a correction stays in the
+  context, and every later request carries it); only the second is a finding.
+  The same confusion, one step earlier, puts two readings of one growing file
+  into a single sentence, where the numbers do not add up — and the
+  arithmetic is the only thing that shows it (2026-09-02, measured live).
+
   And the artifact has to be the one that carries the claim. A commit
   subject is compressed wording, not the evidence it points at: one reading
   `the channel is a tagged tool-result suffix` was taken for a contradiction
