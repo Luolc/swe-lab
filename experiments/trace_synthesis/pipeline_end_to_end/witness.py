@@ -35,6 +35,18 @@ classes = collections.Counter(
 )
 for names, n in classes.most_common():
   print(f"lapse classes            {n} x {' <- '.join(names)}")
+# One exception class, two failures. A provider response whose `content` was
+# null reaches `json.loads` as None; that is a call that returned nothing, not
+# output that arrived and would not parse. Counted apart, with cursors, because
+# the claim they support is about a distribution and a count is not its witness.
+buckets = collections.defaultdict(list)
+for x in lapse:
+  nothing = "not NoneType" in x["reason"]
+  buckets["no output" if nothing else "unparsable output"].append(x["cursor"])
+for name in ("no output", "unparsable output"):
+  cursors = buckets[name]
+  label = f"lapse {name}"
+  print(f"{label:<25}{len(cursors)}  cursors " + ", ".join(map(str, cursors)))
 
 events = rows("claude_code.event_stream.jsonl")
 stamped = [e["timestamp"] for e in events if e.get("timestamp")]

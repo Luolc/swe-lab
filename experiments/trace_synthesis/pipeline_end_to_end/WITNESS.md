@@ -32,6 +32,15 @@ carried here as a list rather than a count: the claim "no lapse occurred before
 `cursor` 87" cannot be rederived from `16`. Its witness is the sixteen cursors
 themselves, which is why they are written out below.
 
+The same reasoning splits those sixteen in two. They share one exception class,
+`PolicyLapseError <- JudgeAnswerError`, and that is what the class line counts —
+but eleven of them are a provider response whose `content` was null, which
+reaches the parser as `None`, and five are output that arrived and would not
+parse. **A call that returned nothing and a call that returned something
+unusable are two failures**, and a witness that prints only `16` cannot support
+a claim about either. Each bucket is printed with its own cursors for the same
+reason the union is: the claims here are about distribution.
+
 ## Provenance
 
 | | |
@@ -40,7 +49,7 @@ themselves, which is why they are written out below.
 | Host | the machine that ran it; **nowhere else** — in two directories on that one machine, see below |
 | Run date | 2026-09-02 (UTC) |
 | Repository at run time | `main` at `3e97442` |
-| Actor | Claude Code, pinned 2.1.220 |
+| Actor | Claude Code, pinned 2.1.212 (`claude.info`'s verbatim `--version`; `PINNED_CLAUDE_CODE_VERSION`, `src/swe_lab/harnesses/claude_code/binary.py:45`) |
 
 Collected artifacts of the rollout attempt (`rollout/a0/`), sha256:
 
@@ -101,6 +110,8 @@ spoke policies           speak-when-off-track
 lapse cursors            87, 96, 98, 100, 101, 106, 108, 109, 110, 128, 131, 134, 136, 140, 158, 165
 lapse cursor range       87-165
 lapse classes            16 x PolicyLapseError <- JudgeAnswerError
+lapse no output          11  cursors 96, 98, 100, 106, 108, 109, 128, 134, 140, 158, 165
+lapse unparsable output  5  cursors 87, 101, 110, 131, 136
 events                   170
 result events            1
 events carrying a time   90
