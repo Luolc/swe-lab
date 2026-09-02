@@ -28,6 +28,7 @@ from swe_lab.rollout import (
     PROMPT_NAME,
     rollout_outcome,
     RolloutOutcome,
+    SUPERVISION_METRIC,
 )
 from swe_lab.sandbox import (
     ArtifactSchema,
@@ -314,12 +315,15 @@ def test_an_unclassifiable_ending_stays_in_the_denominator():
   opposite default lets the excluded set grow unwatched, in the direction that
   makes results look better.
   """
+  # Stated against `ours` rather than a hand-listed set: the invariant is
+  # "only a positively-identified system failure leaves", so a word added
+  # later must satisfy it too, instead of quietly falling off a literal.
   assert all(
       outcome.counts_in_denominator
       for outcome in RolloutOutcome
-      if outcome
-      not in (RolloutOutcome.OOM_KILLED, RolloutOutcome.SYSTEM_FAILED)
+      if not outcome.ours
   )
+  assert not any(o.counts_in_denominator for o in RolloutOutcome if o.ours)
   # A budget the actor spent is the actor's, per ADR-0011.
   assert RolloutOutcome.TIMED_OUT.counts_in_denominator is True
   # …and the ending that was attributed to nobody is the one that most needs
@@ -401,3 +405,41 @@ def test_the_unclassified_count_is_reportable_apart_from_the_excluded_one():
   # stop meaning "nobody could attribute this".
   assert RolloutOutcome.NO_PATCH.unclassified is False
   assert RolloutOutcome.SYSTEM_FAILED.unclassified is False
+
+
+def test_a_run_that_lost_its_supervisor_is_not_evidence_about_supervision():
+  """The pump's health has to reach the outcome word, or it is decoration.
+
+  Measured precedent: a polling supervisor died at boundary 13 of a steered
+  re-run and every later boundary went unjudged, while the run itself looked
+  complete. Recording that in a field nothing reads would put it on the same
+  shelf as `sandbox.oom_kills` before ADR-0015 — a fact with no branch.
+  """
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  lost = _attempt(AgentOutcome.FINISHED)
+  lost.run.metrics[SUPERVISION_METRIC] = 1.0
+  assert rollout_outcome(lost) is RolloutOutcome.SUPERVISION_FAILED
+  # Ours, so it leaves the denominator and does not pay for a grading
+  # container: the run cannot answer the question it was run to answer.
+  assert rollout_outcome(lost).ours is True
+  assert rollout_outcome(lost).counts_in_denominator is False
+  assert task.outputs_valid(lost) is False
+  # Its own word, kept apart from the two it would otherwise hide inside.
+  assert rollout_outcome(lost) is not RolloutOutcome.SYSTEM_FAILED
+  assert rollout_outcome(lost) is not RolloutOutcome.NO_PATCH
+
+
+def test_a_stalled_channel_is_not_reported_as_a_budget_the_actor_spent():
+  """Order matters where two causes co-occur.
+
+  A supervised run whose channel stalls reaches its wall clock, so both signals
+  are true at once. `TIMED_OUT` is the actor's by ADR-0011 — it spent a budget
+  it was handed — and a run that hung because our relay stopped feeding it was
+  handed no such budget.
+  """
+  stalled = _attempt(AgentOutcome.FINISHED, status=RunStatus.TIMEOUT)
+  stalled.run.metrics[SUPERVISION_METRIC] = 1.0
+  assert rollout_outcome(stalled) is RolloutOutcome.SUPERVISION_FAILED
+  # …and an out-of-memory kill still outranks it: it explains the stall too.
+  stalled.run.metrics[OOM_METRIC] = 1.0
+  assert rollout_outcome(stalled) is RolloutOutcome.OOM_KILLED
