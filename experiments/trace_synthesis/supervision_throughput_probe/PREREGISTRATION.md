@@ -639,7 +639,7 @@ too small to move a headroom figure is not reported as a separation.
   scatter, which would be false whenever `B > W` — row B below.
 - `not-separated (both)` — *the difference was neither material nor larger than
   the observed scatter.*
-- **None of the four is evidence that the instances are alike.** Two draws
+- **None of the four is evidence that the instances are alike.** A few draws
   cannot exclude a difference smaller than the scatter they showed, and no
   branch may be cited as if they could.
 - **None of the four names a cause.** No claim that a repository, a language, an
@@ -743,8 +743,12 @@ readout and **carries no verdict**; it may not be described as a difference
 between instances.
 
 **V1 still reports, in the same form, and its degradation runs one way.** `R`
-is computed over the rollouts that exist, with the count stated (`R over 4
-runs`). Dropping a value from a `max/min` set can only lower the ratio or leave
+is computed over the contributing values that exist, reported in V1's canonical
+wording — `R over <n> contributing invocations` — and in no other. **A reduced
+design does not fix `<n>`:** no replacement runs, but a failed invocation still
+contributes whenever §5.0's (a)–(d) hold, and a nominally successful one does
+not when they fail, so `<n>` is whatever §5.0 admits and is never inferred from
+the design. Dropping a value from a `max/min` set can only lower the ratio or leave
 it unchanged, so a reduced design makes **`consistent-within-2x` strictly
 easier to reach** — it is the optimistic branch under degradation, the way
 `separated` is the optimistic branch of V2 (§5's `W` limitations). A
@@ -911,14 +915,19 @@ copy it.
   a stability finding — that would be an effect-side claim reached with the
   budget bought for a throughput-side one.
 - **Not a generalization.** Three instances and a single-digit number of
-  rollouts — four planned, up to seven if both probe instances receive an
-  authorized replacement and every predecessor qualifies — all from
+  rollouts. **Invocations and contributions are different counts here and are
+  not interchanged:** five invocations are planned (run 1's one, plus two on
+  each probe instance), and an authorized replacement on each probe instance
+  would make seven — *whether or not* those predecessors qualify, since a
+  replacement is an invocation either way. How many of them *contribute* a value
+  is §5.0's answer alone, at most the number of invocations, and never derived
+  from the design. All from
   [issue #261](https://github.com/Luolc/swe-lab/issues/261)'s mixed-outcome 40,
   all with `verdict == "good"` and a proven image, one of the three with a
   single rollout. The strongest available conclusions are V1's and V2's, in the
   words each licenses — not that any figure holds for SWE-bench Pro, for this
   pipeline, or for a batch.
-- **Not a variance estimate.** Two draws per instance give a range, not a
+- **Not a variance estimate.** A few draws per instance give a range, not a
   variance, a standard error or a confidence interval, and none of those may
   appear in the report.
 - **Not an attribution of any disagreement.** §0 and V2's licensed sentences:
@@ -961,15 +970,29 @@ closed cause list (§6), the exclusions (§7).
   this file has shipped were at boundaries.
 - Every count is reported with the state that produced it (§4a).
 - **A quantity that can change is written once, where it is defined, and
-  derived everywhere else — never restated as a literal.** Three defects here
-  were this one shape and nothing failed on any of them: `R10` silently fell out
-  of an enumerated list of secondary readouts when it was demoted; five separate
-  sentences hard-coded a total of "five rollouts" that a single authorized
-  replacement makes seven; and a count of list members stood in for the list. The
-  repairs are the same each time — state the **complement** rather than the
-  enumeration, **parameterize** the count (`<n> contributing invocations`), or
-  **point** at the definition. Prefer whichever removes the second copy
-  outright.
+  derived everywhere else — never restated as a literal.** The occurrences in
+  this file, each of which failed silently: `R10` fell out of an enumerated list
+  of secondary readouts when it was demoted; sentences elsewhere hard-coded an
+  observed rollout total that §1's replacement path makes false; a list's length
+  was restated beside the list; and a reduced design was assumed to fix V1's
+  count when §5.0 alone determines it. The repairs are the same each time —
+  state the **complement** rather than the enumeration, **parameterize** the
+  count (`<n> contributing invocations`), or **point** at the defining rule.
+  Prefer whichever removes the second copy outright.
+
+  **Two traps this obligation sets for anyone writing it down, both sprung
+  here.** Naming the defect does not exempt the sentence that names it: an
+  earlier draft of this bullet restated the very arithmetic it forbids, and got
+  it wrong — a *single* authorized replacement makes six, not seven. And a
+  count of the occurrences ("three defects here") is itself an instance,
+  which is why this bullet no longer carries one.
+
+- **Invocations and contributions are counted separately and never
+  interchanged.** An invocation is an execution (§5.0); a contribution is an
+  invocation that met (a)–(d). Every invocation happens whether or not it
+  qualifies, so no statement about how many invocations exist may be qualified
+  by predecessor eligibility, and no statement about how many values feed a
+  verdict may be derived from the design instead of from §5.0.
 
 **Not this document's to change at all** — frozen is the wrong word, because
 freezing implies it was ours to set: these are the **user's** decisions, given
