@@ -123,36 +123,57 @@ from the fix. The claim is narrower and checkable:
 ### 3.1 The barrier's second half: what the *judge* may reason from
 
 **`Observation` guards one entrance, and it is the one facing the actor. The
-judge has a second one — its reference material — and material derived from the
-answer pierces the barrier from behind.**
+judge has a second one — its criterion — and material derived from the answer
+pierces the barrier from behind.**
 
 The concrete case is not hypothetical. SWE-bench instances carry **no
 per-instance guidebook**. If one is written for an instance by someone who has
-read the gold patch, then the supervisor is *paraphrasing the answer*: it will
-never say "the fix is X", and it will still push the actor down X's path. That
-is the leak the whole design exists to prevent, arriving through a different
-door — **and no field test on `Observation` can see it, because it never travels
-that channel.**
+read the gold patch, the supervisor is *paraphrasing the answer*: it will never
+say "the fix is X", and it will still push the actor down X's path. That is the
+leak the whole design exists to prevent, arriving through a different door — and
+**no field test on `Observation` can see it, because it never travels that
+channel.**
 
-So the rule, stated so it can be reviewed:
+**The rule, in the form that can be checked:**
 
-> **The path the judge measures deviation against must be general engineering
-> practice, not a solution path for this instance.** A judgement that could only
-> be made by someone who knows the correct fix does not belong to this
-> supervisor.
+> **The judge's criterion is a named, committed artifact that is byte-identical
+> for every instance.**
 
-What that admits is what a competent engineer sees **without knowing the
-answer**: editing the tests rather than the source; not having run anything yet;
-pattern-matching in a file that was never read; retrying the same failing
-direction. Those are exactly the shape of the correction this design is for — *"I
-don't think you should be looking at those failures, these seem more relevant."*
+**Instance-independence is the operationalization of "general engineering
+practice, not this instance's solution path"** — a material that is the same for
+every instance cannot encode instance-specific knowledge, and that is an
+information-theoretic fact rather than an assurance about anybody's care. It
+gives the barrier's second half the four things its first half already has:
 
-**This half is held by provenance, not by a type**, and the plan says so rather
-than implying the field test covers it: whoever supplies the judge's criterion
-must be able to say where it came from and that its author did not read the fix.
-It is written here because the failure mode is silent and gradual — it would
-arrive inside some later change to *"make the judge a bit more accurate"*, which
-is precisely when a task-specific hint is most tempting.
+| | |
+| --- | --- |
+| **artifact** | the criterion file, in the repository |
+| **check** | each run asserts `sha256(criterion)` equals the pinned constant — and, redundantly but cheaply, that the criterion shares no file path and no 8-gram with this instance's gold patch |
+| **rejection** | on mismatch the **run refuses to start**. Not a recorded gap: with the barrier broken there is no experiment left to run |
+| **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
+
+**What the criterion being constant does *not* mean.** The judge's *prompt* is
+still instance-specific — it carries the task statement and the actor's own
+records, which is the whole point of §3. What is pinned is the **standard** it
+measures against, not the material it measures.
+
+**The redundant half degrades honestly.** The path- and n-gram-overlap check
+needs the gold patch to be available where the check runs; for a dataset that
+records none, it cannot run and the hash equality carries the invariant alone.
+That is a weaker state and the run should say so rather than reporting a check
+it did not perform.
+
+**When this check fires, that is the design working.** The day someone genuinely
+needs a per-instance criterion, the hash stops matching and the run stops. That
+is the moment the barrier has to be re-examined by a person — **not an obstacle
+to route around**, and the rejection path is deliberately loud so that routing
+around it takes a visible decision rather than a quiet edit.
+
+**The provenance statement survives as rationale, not as a guarantee.** *"Its
+author must not have read the fix"* is a claim about a person; nothing can test
+it, and by this repo's own rule an untestable *must* is either given a test or
+downgraded. It is kept here because it says **why** the artifact is pinned, and
+it no longer does any of the load-bearing work.
 
 **Tests that must land with the code** (per `AGENTS.md`: an invariant needs a
 test or the sentence is downgraded):
@@ -163,6 +184,8 @@ test or the sentence is downgraded):
   of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
   pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
   catches the one we did not.
+- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half,
+  with the run refusing to start rather than recording a gap.
 - `test_the_task_is_given_not_read_off_the_stream` — the goal reaches the
   policy without any message having to be guessed to *be* the brief.
 - `test_a_supervisor_attached_mid_run_admits_no_user_text` — where the
@@ -477,7 +500,9 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
   one we ship. This is on the critical path either way — the rollouts that will
   use this channel run in containers, and every measurement of the channel so
   far is host-side.
-- The six named tests above exist and fail when their invariant is violated.
+- **Every named test above exists and fails when its invariant is violated.**
+  The count is deliberately not written here: it has grown twice already, and a
+  number in this line would be wrong before the code lands.
 - A `SpeakPolicy` can be replaced without touching the stream consumer, the
   intervention type, or the log — demonstrated by `NeverSpeak` and the real
   policy sharing every other line.
