@@ -114,12 +114,13 @@ def test_a_rate_that_could_not_describe_a_batch_is_refused():
 
 
 def test_a_batch_that_was_all_ours_has_no_rate_and_says_so():
-  """The day's own failure mode, in this module: 0 / 0 is not a zero.
+  """A batch with nothing counted has no rate, and must not print one.
 
-  A batch whose runs were every one of them ours is real — the infrastructure
-  failed on all of them. Rendering it as ``0 / 0`` reports our total failure as
-  an actor that solved nothing, which is the substitution ADR-0015 and ADR-0016
-  exist to prevent. The counts stay: here they are the whole content.
+  ``0 / 0`` is not a zero. A batch whose runs were every one of them ours is a
+  real batch, and rendering it as a fraction reports a total infrastructure
+  failure as an actor that solved nothing — the substitution ADR-0015 and
+  ADR-0016 forbid. The counts stay, because in that line they are the whole
+  content.
   """
   rate = rate_of([(RolloutOutcome.SYSTEM_FAILED, False)] * 5)
   assert rate.estimable is False
