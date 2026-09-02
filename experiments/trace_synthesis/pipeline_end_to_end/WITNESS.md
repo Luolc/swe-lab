@@ -37,7 +37,7 @@ themselves, which is why they are written out below.
 | | |
 | --- | --- |
 | Corpus | `<runs-root>/supervised_rollout_and_unit_test/instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb/r0/` |
-| Host | the machine that ran it; **nowhere else** — see the gap below |
+| Host | the machine that ran it; **nowhere else** — in two directories on that one machine, see below |
 | Run date | 2026-09-02 (UTC) |
 | Repository at run time | `main` at `3e97442` |
 | Actor | Claude Code, pinned 2.1.220 |
@@ -154,12 +154,31 @@ a summary would drop:
   zero: the channel leaves no key rather than a zero, so this line says the
   metric was never emitted.
 
-## The gap: this corpus has no home but one machine
+## The gap: this corpus has no home, and a copy is not one
 
-**The corpus exists only in the `.cache/runs/` tree of the machine that ran it.**
-It is gitignored, so nothing protects it: `git worktree remove` deletes
-gitignored content without asking, and a re-run of the same rollout id without
-`--resume` deletes the previous run's output directory outright.
+**The corpus exists only on the machine that ran it**, now in two directories
+there:
+
+| | |
+| --- | --- |
+| The run tree | `<runs-root>/supervised_rollout_and_unit_test/instance_…/r0/` |
+| A copy taken by the run's owner on 2026-09-02 | `~/swe-lab-run-corpus/first-e2e-2026-09-02/r0/` |
+
+**The copy is a copy, not an agreed home.** Nothing refers to it, nothing keeps
+it, no second machine has it, and no convention says a run's corpus goes there.
+It was taken because the run tree is exposed: it is gitignored, so
+`git worktree remove` deletes it without asking, and a re-run of the same
+rollout id without `--resume` deletes the whole output directory outright. That
+removes the immediate hazard and changes nothing about the rule.
+
+It is, at least, checked rather than assumed: all **122** files match by path
+and sha256, and the script above produces byte-identical output from either
+directory (`$ATTEMPT` is the `r0/` under whichever one is at hand).
+
+```sh
+diff <(cd "$RUN_TREE" && find . -type f -exec sha256sum {} \; | sort -k2) \
+     <(cd "$COPY"     && find . -type f -exec sha256sum {} \; | sort -k2)
+```
 
 There is no convention in this repository for where a rollout run's corpus
 goes. What exists is HF publishing for *dataset products* — `HF_TOKEN` is
