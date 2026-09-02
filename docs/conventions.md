@@ -112,8 +112,11 @@ Steps (the agent drives all of it):
 4. Watch the run (`gh run watch`) and confirm the new version appears at
    <https://pypi.org/p/swe-lab>.
 
-A PyPI version is **immutable** — never reuse a number; a bad publish needs a new
-patch version.
+**An uploaded file can never be replaced.** A distribution filename on PyPI is
+project + version + distribution type, and PyPI refuses to reuse one even after
+the file is deleted — so a bad distribution can be removed, but not corrected
+in place. Fix it by releasing the next version: the last digit, per
+[Which digit moves](#which-digit-moves).
 
 ### Which digit moves
 
@@ -158,11 +161,10 @@ it here.
 
 Why this is written down: on 2026-09-02 the instruction "bump a minor version"
 was read as semver's second slot and published as `v0.3.0` when `0.2.15` was
-wanted. A published version number cannot be reclaimed — a release can be
-yanked or deleted, but its uploaded filenames can never be reused — so
-correcting it means a new version, not a replacement. This file named no digit
-at the time, while the repo's own
-`git-workflow-and-versioning` skill prescribed the change-type convention — so
+wanted, and the distribution that went out could not be replaced (above), so
+correcting it meant a new version rather than a fix in place. This file named no digit at the
+time, while the repo's own `git-workflow-and-versioning` skill prescribed the
+change-type convention — so
 the one place that should have decided it was silent and the nearest other
 source pointed elsewhere. A procedure that leaves a genuinely ambiguous step
 unstated does not get executed as "unstated"; it gets filled from outside,
