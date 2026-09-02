@@ -17,12 +17,14 @@ rather than copied throughout this repo's docs.
 
 **The main checkout, `/home/ubuntu/dev/swe-lab` — never a worktree.**
 `--output-root` (the flag that would let a worktree point its output
-elsewhere) is on [#351](https://github.com/luolc/swe-lab/pull/351), not yet
-on `main` as of this writing. Without it, a run's output lands under the
-checkout it started in, and `git worktree remove` deletes gitignored content
-silently (`docs/conventions.md:659` — "`git worktree remove` deletes
-gitignored content, silently"). Running from the main checkout is not a
-preference here; it is the substitute for a flag that does not exist yet.
+elsewhere) **landed** with [#351](https://github.com/luolc/swe-lab/pull/351)
+on 2026-09-02 — `main` = `5875077`, `src/swe_lab/cli/run.py:100`. This
+paragraph used to say it was not on `main` yet, and that premise is what
+changed; the instruction did not. A run leaves more behind than its output
+root — its container, its caches, its `.envrc.local` — and
+`git worktree remove` deletes gitignored content silently
+(`docs/conventions.md:659`). Run from the main checkout and leave
+`--output-root` at its default.
 
 ## 1. Pre-flight — re-check every item at launch time, never trust a prior pass
 
@@ -59,6 +61,51 @@ every box below is re-verified immediately before pressing the button in
       `src/swe_lab/workflow/definitions.py:63`), and the run lands as
       `TIMED_OUT` — a wiring failure charged to the actor's budget
       (`PREREGISTRATION.md` §3, §7).
+- [ ] **The correction channel owns its drop directory.** Build the shipped
+      supervised arm's observer, run its `after_create` against a stand-in
+      workspace, and assert the drop directory exists and belongs to us:
+
+      ```
+      cd /home/ubuntu/dev/swe-lab
+      uv run python3 -c "
+      import dataclasses, os, tempfile
+      from etils import epath
+      from swe_lab.rollout import CodingAgentTask
+      from swe_lab.workflow.definitions import SUPERVISED_ROLLOUT
+      task = SUPERVISED_ROLLOUT[0].task
+      assert isinstance(task, CodingAgentTask) and task.supervision_factory is not None
+      observer = task.supervision_factory('a task')
+      @dataclasses.dataclass
+      class Workspace:
+        workspace: epath.Path
+      with tempfile.TemporaryDirectory() as root:
+        observer.after_create(Workspace(epath.Path(root)))
+        drop = os.path.join(root, 'corrections')
+        assert os.path.isdir(drop), 'the drop directory was not created before the actor could'
+        assert os.stat(drop).st_uid == os.getuid(), 'the drop directory is not ours to write into'
+      print('OK: drop directory exists and is ours')
+      "
+      ```
+
+      No container, one second. **Verified both ways on 2026-09-02** against
+      `main` = `52addd3`: it prints `OK: drop directory exists and is ours`,
+      and reverting the fix in `CorrectionChannel.__post_init__`
+      (`src/swe_lab/trace_synthesis/channel.py`) turns it into
+      `AssertionError: the drop directory was not created before the actor
+      could`. So it is a gate, not decoration. **Why it is repeated here and
+      not left to the suite:** the property is otherwise held by a single
+      docker-marked test, and the docker-marked tests are CI's job
+      (`docs/conventions.md:443` — the local-suite/CI jurisdictions entry),
+      so a regression that lands on `main` is invisible in the local gate
+      right up to the moment the button is pressed. **If this fails, do not
+      press the button in §2**: the in-sandbox relay creates that directory
+      as root the instant the actor's script starts, `mkdir -p` on an
+      existing directory does not reset ownership, and the host side can then
+      never write into it — so the treatment arm delivers nothing, while the
+      control arm (`budget=0`) is silent by design. The two arms become
+      indistinguishable, and an hour of wall clock and a few dollars buy a
+      result nobody can attribute. Fixed in
+      [#353](https://github.com/luolc/swe-lab/pull/353).
 - [ ] `#349` is merged: `git -C /home/ubuntu/dev/swe-lab fetch origin && git
       -C /home/ubuntu/dev/swe-lab log --oneline -1 origin/main` names a
       commit that closes #349, and `git rev-parse main` ==
@@ -238,15 +285,30 @@ they are exactly the ones a post-hoc reading would be tempted to soften:
 - A `TIMED_OUT` outcome on this run defaults to **our** fault, not the
   actor's, unless `proxy_log.jsonl` itself shows otherwise
   (`PREREGISTRATION.md` §7).
-- **If [#351](https://github.com/luolc/swe-lab/pull/351) has not landed by
-  the time this run happens, the actor's own native session transcript is
-  not merely "not yet collected" — it is destroyed with the container,
-  permanently, for this specific run**, and cannot be recovered by any later
-  work (§3 of this runbook). Under `PREREGISTRATION.md` §5's frozen branch,
-  that means points 3 and 4 of task 01's acceptance table are **not closed**
-  by this run, full stop — not "closed provisionally," not "closed pending
-  confirmation." Check whether #351 landed **before**, not after, deciding
-  what this run is worth running for.
+- **[#351](https://github.com/luolc/swe-lab/pull/351) landed** on 2026-09-02
+  (`main` = `5875077`,
+  `src/swe_lab/harnesses/claude_code/native_transcript.py`), so the actor's
+  own native session record is taken out of the container before it dies.
+  This bullet used to say the opposite, conditionally: that without it the
+  transcript is destroyed with the container, permanently, for this specific
+  run — which is why `PREREGISTRATION.md` §5's frozen branch turns points 3
+  and 4 on exactly this dependency. Re-check that #351 is still on `main` at
+  launch time rather than trusting this sentence, and read §5 there for what
+  the two points now require.
+- **`supervision.corrections == 0` is not a neutral reading.** It has two
+  sources — the policy genuinely saw no off-track boundary, or delivery was
+  broken — and **the number alone does not separate them.** Read it against
+  `supervision.boundaries`, which `PREREGISTRATION.md` §6 readout 2 reports
+  beside it: `boundaries > 0` with `corrections == 0` is "judged every
+  boundary and stayed silent," which can be legitimate; `boundaries == 0` is
+  "nothing was ever judged," which is not a supervised run at all. **A
+  supervised run that spoke zero times has to be adjudicated in the report;
+  it is never written down as an ordinary result.** Out of
+  [#353](https://github.com/luolc/swe-lab/pull/353), whose own failure was
+  failure-closed and would have surfaced as `SUPERVISION_FAILED` — but whose
+  shape is general: **the treatment arm collapsing silently into the control
+  arm.** Nothing false is recorded; the run just answers a question nobody
+  asked.
 
 ## 5. Cost
 
@@ -274,9 +336,15 @@ they are exactly the ones a post-hoc reading would be tempted to soften:
 
 - **Do not edit `docs/conventions.md`** — queued for a single pass by the
   wiring line.
-- **Do not edit anything under `src/swe_lab/trace_synthesis/`** —
-  [#348](https://github.com/luolc/swe-lab/pull/348) and
-  [#351](https://github.com/luolc/swe-lab/pull/351) are open and queued
-  against those files as of 2026-09-02 ([#349](https://github.com/luolc/swe-lab/pull/349)
-  has since merged); a concurrent edit against either open one is exactly
-  the kind of collision this repo has already paid for once today.
+- **Do not edit anything under `src/swe_lab/trace_synthesis/`,
+  `src/swe_lab/workflow/definitions.py` or `src/swe_lab/harnesses/` while a
+  run holds the window — and do not merge a PR that touches them.** A merge
+  moves `main`, which §1's `main` == `origin/main` check depends on holding
+  still for the length of the run; a concurrent edit against an in-flight PR
+  on those files is the kind of collision this repo has already paid for
+  once. **Which PRs are in flight is deliberately not recorded here**: that
+  is `gh pr list --state open`, and the merge discipline is whatever the
+  current window announcement says. This bullet used to enumerate them, and
+  the enumeration went stale *during the review of the change that wrote
+  it* — a snapshot of which PRs are open stays true for about an hour, in a
+  file people execute.
