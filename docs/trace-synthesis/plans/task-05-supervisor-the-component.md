@@ -561,10 +561,12 @@ way.
 
 **The count is consumed, not just recorded.** A lapse leaves the run's
 denominator containing a boundary nobody watched, so
-`SUPERVISION_LAPSE_METRIC` carries the count into the attempt record where the
-outcome is read — separate from `SUPERVISION_METRIC`, which changes the outcome
-word. A count that lived only in `supervisor.jsonl` would be one more fact
-recorded and never read.
+`SUPERVISION_LAPSE_METRIC` carries the count out of the log and into the run's
+metrics, which `run_task` copies verbatim into `AttemptRecord.metrics` — the
+path `SUPERVISION_METRIC` already takes, and where a reader of the outcome is
+standing. It stays separate from `SUPERVISION_METRIC`, which is the one that
+changes the outcome word. A count that lived only in `supervisor.jsonl` would
+be one more fact recorded and never read.
 
 ## 7. Acceptance
 

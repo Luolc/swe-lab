@@ -447,7 +447,9 @@ class SupervisedRun(SandboxObserver):
     word: the run *is* evidence, and this is how many of its boundaries went
     unsupervised for a named reason. Reported here rather than left in the log
     because a run whose denominator includes unsupervised boundaries has to say
-    so where the outcome is read, not only where the account is stored.
+    so where the outcome is read, not only where the account is stored — it
+    reaches the run's metrics, which ``run_task`` copies verbatim into
+    ``AttemptRecord.metrics``, the path ``SUPERVISION_METRIC`` already takes.
 
     Args:
       sb: Unused — every fact here is already on the host.

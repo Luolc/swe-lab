@@ -437,10 +437,12 @@ class SpeakWhenOffTrack:
     Args:
       observation: The actor's records so far, the task and the criterion.
 
-    Both calls out to a model are bounded to this boundary: whatever they
-    raise — an upstream error, an unparseable answer, or a line
+    Both calls out to a model are bounded to this boundary: any ``Exception``
+    they raise — an upstream error, an unparseable answer, or a line
     :class:`Intervention` rejects as empty or over the cap — becomes a
-    :class:`PolicyLapseError`, and the supervisor records a lapse. The bound
+    :class:`PolicyLapseError`, and the supervisor records a lapse. A
+    ``BaseException`` is not caught: an interrupt is not this policy's to
+    reinterpret as a small hole. The bound
     comes from *where* the failure happened rather than from what was raised: a
     judge call fails before this method has touched its own state, and a writer
     call fails after the deviation is already recorded and before any budget is
