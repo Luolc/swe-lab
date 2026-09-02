@@ -167,8 +167,11 @@ scope, the second half has the same four parts as the first:
 implying otherwise.** `load_criterion` has no production caller: the criterion
 is consumed by the *judge*, which is not implemented, so that is where the
 run-level refusal belongs. What is enforced today is narrower and is the whole
-of the current claim: **`SpeakWhenOffTrack` cannot be constructed without a
-`Criterion`**, so the real policy cannot run without one having been loaded.
+of the current claim: **`SpeakWhenOffTrack` refuses to construct unless its
+criterion's digest is the pinned one, and passes that criterion to the judge on
+every call.** Hand-off is the whole of it — a protocol cannot compel an
+implementation to use a parameter, so *what the judge measures against* is a
+judge-implementation invariant whose named behavioural test belongs to that PR.
 `SpeakAt` takes none and judges nothing — it is the timing knob, and applying a
 criterion gate to a policy with no judgement would be theatre. **The judge's PR
 discharges this**, with a named test that a forged artifact prevents the run
@@ -212,8 +215,8 @@ test or the sentence is downgraded):
 - `test_a_forged_criterion_cannot_build_the_policy` and
   `test_the_judge_is_handed_the_canonical_criterion_every_call` — what *is*
   enforced today: `SpeakWhenOffTrack` refuses any criterion whose digest is not
-  the pinned one, and carries it to the judge on every call rather than storing
-  it beside one.
+  the pinned one, and passes it to the judge on every call rather than storing
+  it beside one — **hand-off, not consumption**.
 - `test_the_task_is_given_not_read_off_the_stream` — the goal reaches the
   policy without any message having to be guessed to *be* the brief.
 - `test_a_supervisor_attached_mid_run_admits_no_user_text` — where the
@@ -330,7 +333,7 @@ marker count is what proves the judge still ran; and `budget=k` yields at most
    at all. This is the **timing knob in isolation**: it varies *when* while
    holding *what* and *whether* constant, which is the one comparison the graded
    batch could not make because its trigger was entangled with its criterion.
-3. **`SpeakWhenOffTrack(judge, writer, budget, cooldown, window)`** — the real
+3. **`SpeakWhenOffTrack(judge, writer, criterion, budget, cooldown, window)`** — the real
    one, as designed above.
 
 **A fourth class was considered and is not needed.** The paired control wants a

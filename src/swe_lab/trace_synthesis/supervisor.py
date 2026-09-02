@@ -215,8 +215,10 @@ class Judge(Protocol):
 
     Args:
       observation: The evidence window and the task.
-      criterion: The standard to measure against, passed explicitly so a judge
-        cannot quietly use an embedded one.
+      criterion: The standard to measure against, passed explicitly on every
+        call. Whether an implementation builds its prompt from this argument
+        rather than an embedded standard is that implementation's invariant,
+        with its own named test; a protocol cannot compel a parameter's use.
 
     Returns:
       The verdict for this moment.
@@ -319,10 +321,11 @@ class SpeakWhenOffTrack:
 
   The criterion is a constructor argument rather than a field on
   :class:`Observation`, so it never travels the channel the actor's records
-  travel. Construction **rejects** a criterion whose digest is not
+  travel. Two things are enforced here and no more: construction **rejects** a
+  criterion whose digest is not
   :data:`~swe_lab.trace_synthesis.criterion.CRITERION_SHA256`, and ``consider``
-  hands it to the judge on every call, so it is carried rather than stored: a
-  judge cannot be handed one standard and quietly measure against another.
+  **passes** it to the judge on every call, so it is carried rather than stored
+  beside one. What a judge then measures against is the judge's own invariant.
 
   Attributes:
     judge: The off-track / self-correcting call.

@@ -356,10 +356,10 @@ def test_a_criterion_cannot_misdescribe_its_own_text() -> None:
 
 
 def test_the_judge_is_handed_the_canonical_criterion_every_call() -> None:
-  """The criterion is carried to the judge, not merely stored beside it.
+  """The criterion is passed to the judge on every call, not stored beside it.
 
-  A judge that was handed nothing could measure against anything it embedded,
-  which is what makes a stored-but-unused field decorative.
+  This establishes hand-off only. Whether a judge builds its prompt from the
+  argument is that implementation's invariant, tested where it is written.
   """
   speaker, judge, _ = policy(ON_TRACK)
   for index in range(1, 4):
