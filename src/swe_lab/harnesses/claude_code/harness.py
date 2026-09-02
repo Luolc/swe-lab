@@ -84,6 +84,7 @@ from .convert import (
     proxy_log_outcome,
     proxy_log_to_conversation,
 )
+from .native_transcript import NativeTranscriptObserver
 
 _logger = logging.getLogger(__name__)
 
@@ -454,6 +455,12 @@ class ClaudeCodeHarness(Harness):
     problem rather than solving it: the proxy is started and reaped by the
     invocation script, so it is already gone, and its log already complete,
     before ``run`` returns.
+
+    The native transcript comes **last**, and unconditionally. It is the only
+    thing here written by the agent itself rather than by us, so it is what an
+    account of ours can be checked against — and it exists only in the
+    container's writable layer, so a hook that runs after this one is a hook
+    that runs after the record is gone.
     """
     return (
         # First: record which build the sandbox actually got, before anything
@@ -461,6 +468,7 @@ class ClaudeCodeHarness(Harness):
         AgentInfoObserver(binary=BINARY_AT, artifact=INFO_ARTIFACT),
         ConversationObserver(producer=self),
         HarnessOutcomeObserver(harness=self),
+        NativeTranscriptObserver(),
     )
 
   @override

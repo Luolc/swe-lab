@@ -696,6 +696,56 @@ The correct form of the requirement, which nothing implements yet:
 Until those exist, treat "a lost hint is detectable" as **intended and not
 enforced**.
 
+#### Nothing in the container is independent evidence — and what to do about it
+
+Every record a run leaves has one of two writers, and neither is a third party:
+
+| Record | Written by |
+| --- | --- |
+| `event_stream.jsonl` (`stream-json` stdout) | the actor's CLI |
+| the actor's native session record (`$CLAUDE_CONFIG_DIR/projects/`) | the actor's CLI |
+| the recording proxy's capture | **us** |
+| `supervisor.jsonl`, the corrections drop, the in-sandbox relay | **us** |
+
+So a run's account of itself has exactly one shape available: *we said we did
+it, and our own instruments agree.* The native session record is worth taking
+out — it is written by the agent binary rather than by our supervision code, so
+it survives every one of our host-side components being wrong — but it is **not
+independent**: it shares a writer with the event stream, and a CLI that
+misreports gets both wrong in the same way.
+
+**What replaces "independent evidence" is a join, and the join is stronger than
+either leg.** The proxy capture holds what the actor actually sent upstream; the
+native record holds what the actor's own bookkeeping says happened. Agreement
+between them cannot be produced by our wiring narrating its own success —
+faking it would take our proxy and the CLI's session writer failing in step.
+
+**Say what it rules out, not that it is proof.**
+
+- **Ruled out:** our collection and supervision code reporting a delivery that
+  did not happen. This is the failure family we have actually met, repeatedly.
+- **Not ruled out:** the actor's CLI reporting the same falsehood in two places.
+  Excluding that needs the provider's own record, which we cannot read. This
+  limit is **permanent** — stated here once, not re-argued per run.
+
+**The ladder, weakest to strongest.** A claim that a correction was received
+should name which rung it stands on:
+
+1. *We wrote it* — `supervisor.jsonl`. Pure self-report.
+2. *The relay delivered it* — in-sandbox, still our code.
+3. **The block appears in the actor's next outbound request** — in the proxy
+   capture, inside the `messages` array the actor itself built. **This is the
+   first rung that crosses a boundary we do not control:** we can write a FIFO,
+   and we cannot make a block appear in a request the actor composes. A broken
+   wiring can fake "I delivered it"; it cannot fake "the actor carried it into
+   its next call."
+4. *The actor's behaviour changes accordingly* — strongest, because behaviour is
+   an event rather than a record, and hardest to make into a mechanical
+   criterion.
+
+Rung 3 is what a claim of mid-turn delivery should assert, and it needs no new
+mechanism: it is already in the capture a supervised run produces.
+
 The rest, in no particular order. **The first two are retired by
 [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)** — they
 ask how to arrange hooks, and steering no longer goes through one; their

@@ -505,6 +505,45 @@ def test_two_rollouts_of_one_instance_both_keep_their_records(
     assert record.is_file(), f"{rollout} lost its record to the other run"
 
 
+def test_the_run_can_land_its_outputs_outside_the_checkout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """Evidence that has to outlive the worktree needs somewhere else to live.
+
+  The default is `.cache/runs` under the repo root, which is inside whatever
+  checkout ran the command — and a `git worktree remove` takes gitignored
+  content with it without a word. This repo has already lost a run's only
+  surviving record that way, so the location is a decision the caller can make
+  per run rather than a property of where they happened to be standing.
+  """
+  _wire(monkeypatch, tmp_path)
+  elsewhere = tmp_path.parent / "artifacts-outside"
+
+  result = _run(
+      "gold_unit_test",
+      _INSTANCE_ID,
+      "--sweep",
+      "sw1",
+      "--output-root",
+      str(elsewhere),
+  )
+
+  assert result.exit_code == run_mod.ExitCode.OK
+  record = (
+      elsewhere
+      / "gold_unit_test"
+      / _INSTANCE_ID
+      / "r0"
+      / "store"
+      / "sw1"
+      / _INSTANCE_ID
+      / "r0"
+      / "workflow.json"
+  )
+  assert record.is_file()
+  assert not (tmp_path / ".cache" / "runs").exists()
+
+
 def test_a_record_that_cannot_be_read_back_fails_the_run(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
