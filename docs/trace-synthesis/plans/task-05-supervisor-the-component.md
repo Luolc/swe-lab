@@ -486,9 +486,24 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
 
 ## 7. Acceptance
 
-- **The in-sandbox fold check** — [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)'s
-  refutation condition, carried here so that it is scheduled rather than filed
-  against nobody. The supervisor delivers **one** intervention *inside the
+- **The in-sandbox fold check — ✅ run 2026-09-02, `MATCH`**
+  ([report](../../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md)).
+  The injected block inside the sandbox on the pinned `2.1.212` is byte-identical
+  to the host measurement — `len 440`, `sha256 3ba88726…fb90c8` — as is every
+  other wire count: 7 messages, the same role sequence, 4 `system-reminder`
+  blocks, 4 API calls of which 3 are agent-loop.
+  [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)'s
+  **refutation condition therefore does not fire**, and the byte-identity result
+  the attribution decision rests on is about the artifact we ship rather than
+  only about the host. **N=1 against a baseline of N=1**: what is established is
+  that two recorded outputs were equal, and that the combined change of version
+  and environment did not alter the wrapper for this input — not that either
+  change is separately harmless, and not that the path is repeatable, which one
+  pair cannot show.
+
+  The condition as originally written, kept because it is what the check was run
+  against — it was ADR-0013's refutation condition, carried here so that it was
+  scheduled rather than filed against nobody. The supervisor delivers **one** intervention *inside the
   sandbox*, and the fold's measured shape — the injected block's **length** and
   **`sha256`** — must match the host measurement, `len 440` /
   `sha256 3ba88726…fb90c8`. **Read the expected values from the committed
