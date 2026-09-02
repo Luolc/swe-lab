@@ -77,25 +77,24 @@ every box below is re-verified immediately before pressing the button in
       record survived at all (`docs/conventions.md:673` — the `docker rm`
       evidence-destruction hazard). Do not prune any container found here;
       investigate what it is first.
-- [ ] **No merge is currently in progress against a file this run's
-      pre-flight or launch depends on.** Not a path into any one session's
-      scratchpad — a passing state here has to be checkable from any machine,
-      by anyone, at any time:
-
-      ```
-      cd /home/ubuntu/dev/swe-lab
-      gh pr list --state open --json number,title,mergeStateStatus
-      ```
-
-      Confirm none of the listed PRs both touches
+- [ ] **The run happens inside a window orchestra has announced, and not
+      before.** Two conditions this run needs — no other agent running a
+      docker-marked test or holding a container
+      (`AGENTS.md:108` — the one-container-at-a-time rule; this run occupies
+      one for a long time), and no local merge in progress against
       `src/swe_lab/trace_synthesis/`, `docs/conventions.md`, or
-      `src/swe_lab/workflow/definitions.py` (`gh pr diff <n> --name-only` to
-      check) and shows a merge actively underway. If uncertain, ask the
-      orchestrating session directly before launch — a five-minute delay
-      against a run that costs a rollout to redo.
-- [ ] A container window for this run has been announced to the other
-      agents sharing this box, and no agent runs docker-marked tests until
-      it is closed (`AGENTS.md:108` — the one-container-at-a-time rule).
+      `src/swe_lab/workflow/definitions.py` (a concurrent merge moves `main`,
+      which the pre-flight's `main` == `origin/main` check above depends on
+      staying still) — are **not locally self-checkable**: a local,
+      unpushed merge is invisible to any remote query (`gh pr list`'s
+      `mergeStateStatus` reports a PR's own mergeability against its remote
+      base, not "a merge is happening right now," so it cannot stand in for
+      this). Only the orchestrating session, which tracks every agent
+      working this repo, actually knows. **So this is not a command to run
+      and check — it is waiting for that session's own announcement that the
+      window is open, and stopping the instant it announces the window
+      closed.** A check that cannot deliver the guarantee it claims is worse
+      than no check: it is what let this exact gap through twice already.
 - [ ] The dataset loads and has the expected count:
 
       ```
@@ -113,37 +112,32 @@ every box below is re-verified immediately before pressing the button in
       would fail at dataset load. Verified passing (`dataset_count=731`) on
       2026-09-02.
 - [ ] The chosen instance's Docker image is present locally **now** — not
-      merely "was present on some earlier date":
+      merely "was present on some earlier date" — checked as **an exact
+      match**, not a substring, which a different or stale tag sharing the
+      same prefix would also match. One command derives the reference and
+      checks it:
 
       ```
       cd /home/ubuntu/dev/swe-lab
       uv run python -c "
-      from swe_lab.datasets.loader import load_dataset
-      ds = load_dataset('swebench_pro')
-      inst = ds.require('instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb')
-      print(inst.sandbox_spec().image_ref)
+      import subprocess
+      from swe_lab.datasets import load_dataset
+      iid = 'instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb'
+      inst = next(i for i in load_dataset('swebench_pro') if i.instance_id == iid)
+      ref = inst.sandbox_spec().image_ref
+      local = set(subprocess.run(['docker', 'images', '--format', '{{.Repository}}:{{.Tag}}'],
+                                  capture_output=True, text=True).stdout.split())
+      print(('PRESENT' if ref in local else 'MISSING'), ref)
       "
       ```
 
-      then check that exact tag:
-
-      ```
-      docker images --format '{{.Repository}}:{{.Tag}}' | grep 'openlibrary-internetarchive__openlibrary-5de7de19'
-      ```
-
-      Verified passing on 2026-09-02: the image-derivation command prints
-      `jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7`,
-      and the `grep` above finds exactly that line.
-
-      For reference, the other three of #261's candidate instances — not
-      what this run launches, PREREGISTRATION.md §2 already fixed the
-      choice — were derived and checked present the same way, on 2026-09-02:
-
-      | candidate | `grep` substring | image present |
-      | --- | --- | --- |
-      | `ansible-c1f2df47` | `ansible-ansible__ansible-c1f2df47` | yes |
-      | `navidrome-5001518260` | `navidrome-navidrome__navidrome-5001518260` | yes |
-      | `vuls-4c04acbd9` | `vuls-future-architect__vuls-4c04acbd9` | yes |
+      Derivation from `datasets/swebench_pro/record.py:267`
+      (`image_ref = f"{IMAGE_REPO}:{self.dockerhub_tag}"`) and
+      `IMAGE_REPO = "jefzda/sweap-images"`
+      (`datasets/swebench_pro/constants.py:17`). **`PRESENT` to continue;
+      `MISSING` means a pull is needed — a few minutes of wall clock that
+      belongs *before* the container window is announced, not inside it.**
+      Verified `PRESENT` on 2026-09-02.
 
 ## 2. The command
 
