@@ -1,10 +1,15 @@
 # Running the supervision experiment at scale — a note for the downstream consumer
 
-**Status:** handoff. This repo delivers a **working end-to-end pipeline**, not a
-powered comparison. Measuring how large the supervision effect is belongs to
-whoever has the quota and sandboxes to run the full set (owner, 2026-09-01);
-this repo is capped at **10 SWE-bench Pro instances × 2 rollouts** and will not
-produce an effect estimate.
+**Status:** handoff, and **not yet a proven pipeline.** This repo delivers the
+**design and the seams** for an end-to-end supervised rollout — the components
+task 01 depends on — not a demonstrated one: we have not run a real supervised
+rollout ourselves. Current status, point by point, lives in one place and
+moves as PRs land — check it before scheduling anything against this note:
+[task 01](plans/README.md#task-01-one-instance-end-to-end).
+Measuring how large the supervision effect is belongs to whoever has the
+quota and sandboxes to run the full set (owner, 2026-09-01); this repo is
+capped at **10 SWE-bench Pro instances × 2 rollouts** and will not produce an
+effect estimate even once the pipeline is proven.
 
 Its purpose is narrow: **we already paid for some of the numbers and some of the
 design, and you should not buy them twice.** Everything below is either measured
@@ -84,9 +89,18 @@ Adopt or overturn deliberately; each of these cost an argument.
   noisy measurement and then reusing those same draws biases the baseline toward
   the middle. Re-draw for the measured arm.
 - **The denominator defaults to "in".** Only an ending positively identified as
-  *your* breakage leaves it (`oom_killed`, `system_failed`). An unclassified
-  ending stays, so it can only understate a rate; the opposite default lets the
-  excluded set grow unwatched, in the direction that flatters results.
+  *your* breakage leaves it — the current, complete set is
+  `RolloutOutcome`'s docstring
+  ([`rollout.py`](../../src/swe_lab/rollout.py)), not reproduced here: a
+  partial copy of this enum has already gone stale twice in this note. The one
+  worth calling out by name for a **supervised** rollout at scale:
+  `SUPERVISION_FAILED` (the supervisor died mid-run) leaves the denominator
+  too — a run that was meant to be supervised and lost its supervisor partway
+  through is not evidence about supervision either way, and pooling it with a
+  genuine non-compliance would put our own breakage inside the comparison
+  supervision is being judged by. An unclassified ending stays, so it can only
+  understate a rate; the opposite default lets the excluded set grow
+  unwatched, in the direction that flatters results.
   ([ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md))
 - **Report every rate with its two counts** — how many runs were excluded as
   ours, and how many nobody could attribute:
@@ -145,24 +159,29 @@ Compute what each needs from your *observed* headroom distribution, then
 **freeze the choice before spending on the formal arms.** Choosing after seeing
 results is choosing the flattering one.
 
-## 5. What "the pipeline works" was checked to mean
+## 5. What "the pipeline works" means, and where to check it
 
-Before trusting any of this, check that task 01's seven acceptance points are
-green in this repo's record — the list is reproduced so you can check rather
-than assume: the supervisor is on the actor's **live** stream; the **barrier
-holds** (the fields are absent, and a criterion-artifact sha mismatch refuses
-the run); the policy speaks at least once **because of a real deviation** and
-not on a schedule; the correction lands **mid-turn** in the measured wire shape;
-the patch is taken **against the pre-agent baseline** and grading runs; the
-trace is persisted **with the interjection still in it after conversion**; and
-the **outcome word** is the right one.
+**Not a claim that these are green here** — that status lives in one place,
+moves as PRs land, and would go stale the moment it was copied into this note:
+[task 01's acceptance table](plans/README.md#task-01-one-instance-end-to-end).
+Check it there before trusting anything above rests on a working pipeline.
+
+The seven points, reproduced only so you know what each one proves, not as a
+record of having passed them: the supervisor is on the actor's **live**
+stream; the **barrier holds** (the fields are absent, and a criterion-artifact
+sha mismatch refuses the run); the policy speaks at least once **because of a
+real deviation** and not on a schedule; the correction lands **mid-turn** in
+the measured wire shape; the patch is taken **against the pre-agent baseline**
+and grading runs; the trace is persisted **with the interjection still in it
+after conversion**; and the **outcome word** is the right one.
 
 Each of those names a test, a persisted field or a record — an acceptance
 nobody can check is worth as little as a metric nobody reads. Two are worth
-copying into your own harness: a run whose only utterances are **scheduled**
-does not demonstrate a policy (a knob cannot be evidence for what it sets), and
-an interjection that is delivered but **lost in conversion** satisfies every
-delivery check while leaving no evidence behind.
+copying into your own harness regardless of when task 01 finishes: a run
+whose only utterances are **scheduled** does not demonstrate a policy (a knob
+cannot be evidence for what it sets), and an interjection that is delivered
+but **lost in conversion** satisfies every delivery check while leaving no
+evidence behind.
 
 ## 6. Hazards that will cost you data
 
@@ -214,17 +233,34 @@ rate accumulates as a by-product of runs you are making anyway.
 
 Both arrive as a zero. Give infrastructure failure its own word at the point it
 happens, or it is counted as task difficulty and depresses the measured rate of
-whichever arm happened to break more. The endings this repo separates —
-`oom_killed`, `system_failed`, `timed_out`, `no_patch`, and `unclassified` (the
-harness gave no readable outcome at all) — and which of them leave the
-denominator are in
+whichever arm happened to break more. The complete, current set of endings and
+which of them leave the denominator is `RolloutOutcome`'s docstring
+([`rollout.py`](../../src/swe_lab/rollout.py)) — not reproduced here, per §2
+above. The reasoning is in
 [ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md) and
 [ADR-0016](../decisions/ADR-0016-the-endings-nobody-could-attribute.md), which
 adds `unclassified`: an ending nobody could attribute is a fact distinct from
 the actor's own zero, and the two-count report above (§2) is what keeps it from
-being silently absorbed into the rate.
+being silently absorbed into the rate. For a **supervised** rollout
+specifically, `SUPERVISION_FAILED` is the one to watch: see §2 above — it is
+ours, not the actor's, and must leave a supervision-effect denominator the
+same way a system failure does.
 
 Related, and cheap to get wrong in the other direction: an agent that runs
 cleanly and produces nothing is a **real failure to solve** and stays in the
 denominator. Excluding it raises the measured rate, and raises it most for the
 weakest actor.
+
+### 6.4 Two environment hazards you will hit at this scale, not measured here
+
+Both are already recorded, so linked rather than restated:
+[Hazards learned the hard way](../conventions.md#hazards-learned-the-hard-way).
+
+- **Do not run in a git worktree.** `git worktree remove` deletes gitignored
+  content silently — this is how task 01's own phase-A evidence was lost once,
+  costing three rollouts to re-harvest. Put anything worth keeping on a stable
+  path outside every checkout.
+- **The dataset is a manual download, and its absence is a misleading
+  symptom.** A missing parquet makes every `gold_unit_test` run exit 1 with a
+  `FileNotFoundError`, which reads as "these instances are broken" rather than
+  "the parquet was never downloaded here."
