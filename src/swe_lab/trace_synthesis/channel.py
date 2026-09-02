@@ -28,7 +28,7 @@ from __future__ import annotations
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 import json
-from typing import Any
+from typing import Any, final, override
 
 from etils import epath
 
@@ -38,6 +38,8 @@ from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_UNCLEAN_NAME,
 )
 from swe_lab.harnesses.claude_code.harness import user_event_line
+from swe_lab.rollout import SUPERVISION_METRIC
+from swe_lab.sandbox import Contribution, SandboxFs, SandboxObserver
 
 from .supervisor import Intervention, Supervisor
 
@@ -194,3 +196,42 @@ class SupervisorPump:
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
       self.failure = error
       return 0
+
+
+@final
+@dataclass
+class CorrectionChannelObserver(SandboxObserver):
+  """Reports whether the run was supervised for the whole of its length.
+
+  The producer for ``supervision.unhealthy``, which
+  :func:`~swe_lab.rollout.rollout_outcome` reads to classify the run as
+  ``SUPERVISION_FAILED``. Without it the metric would have a consumer and no
+  producer, which is the same defect as a metric with a producer and no
+  consumer, seen from the other side.
+
+  Two conditions, one signal, because they are the same fact reached two ways:
+  the pump stopped feeding the supervisor, or the channel closed without being
+  told to. Either means the actor finished part of its work unsupervised.
+
+  Attributes:
+    pump: The supervisor pump for this run.
+    channel: The correction channel it wrote through.
+  """
+
+  pump: SupervisorPump
+  channel: CorrectionChannel
+
+  @override
+  def before_destroy(self, sb: SandboxFs) -> Contribution | None:
+    """Report the supervision failure, if there was one.
+
+    Args:
+      sb: Unused — both facts are already on the host.
+
+    Returns:
+      The metric when the run lost its supervisor, otherwise ``None`` — the
+      metric is an event, so a healthy run leaves no key rather than a zero.
+    """
+    del sb
+    lost = not self.pump.healthy or self.channel.closed_uncleanly
+    return Contribution(metrics={SUPERVISION_METRIC: 1.0}) if lost else None

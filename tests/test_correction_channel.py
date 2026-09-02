@@ -9,18 +9,29 @@ thing feeding the supervisor dies.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import json
 from pathlib import Path
 from typing import Any, final
 
 from etils import epath
 
+from swe_lab.harnesses.claude_code import ClaudeCodeHarness
 from swe_lab.harnesses.claude_code.constants import (
     CORRECTION_DONE_NAME,
     CORRECTION_UNCLEAN_NAME,
 )
+from swe_lab.rollout import (
+    CodingAgentTask,
+    rollout_outcome,
+    RolloutOutcome,
+    SUPERVISION_METRIC,
+)
+from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
+from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.channel import (
     CorrectionChannel,
+    CorrectionChannelObserver,
     stream_events,
     SupervisorPump,
 )
@@ -29,6 +40,7 @@ from swe_lab.trace_synthesis.supervisor import (
     Observation,
     Supervisor,
 )
+from swe_lab.workflow import AttemptResult
 
 
 @final
@@ -239,3 +251,81 @@ def test_only_whole_usable_events_reach_the_supervisor():
   # A fragment and a non-object line are both skipped rather than guessed at.
   events = list(stream_events('{"type":"a"}\nnot json\n[1,2]\n{"type":"b"}'))
   assert [e["type"] for e in events] == ["a", "b"]
+
+
+_SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "base")
+
+
+def _fs(tmp_path: Path) -> FakeSandbox:
+  """Build a sandbox the observer never reads: both facts are host-side."""
+  return FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+
+
+def _attempt_with(metrics: Mapping[str, float]) -> AttemptResult:
+  """Build a finished attempt carrying just the metrics under test."""
+  return AttemptResult(
+      run=RunResult(
+          label="acme__widget-1",
+          status=RunStatus.SUCCESS,
+          artifacts={},
+          metrics=dict(metrics),
+      ),
+      exec_result=None,
+      output_schema=(),
+      observers=(),
+  )
+
+
+def _observer(
+    tmp_path: Path,
+) -> tuple[CorrectionChannelObserver, SupervisorPump, CorrectionChannel]:
+  channel = CorrectionChannel(workspace=epath.Path(tmp_path))
+  pump = SupervisorPump(
+      supervisor=_supervisor(channel, _SpeaksOnce()),
+      channel=channel,
+      events_path=epath.Path(tmp_path) / "events.jsonl",
+  )
+  return CorrectionChannelObserver(pump=pump, channel=channel), pump, channel
+
+
+def test_a_supervised_run_that_stayed_supervised_reports_nothing(
+    tmp_path: Path,
+):
+  # The metric is an event: a healthy run leaves no key rather than a zero, so
+  # a reader cannot mistake "supervised throughout" for "never measured".
+  observer, _, _ = _observer(tmp_path)
+  assert observer.before_destroy(_fs(tmp_path)) is None
+
+
+def test_a_dead_pump_produces_the_metric_that_changes_the_outcome_word(
+    tmp_path: Path,
+):
+  """The producer for a signal that already had a consumer.
+
+  `rollout_outcome` reads `supervision.unhealthy` and classifies the run as
+  ours. A metric with a consumer and no producer is the same defect as one with
+  a producer and no consumer, so the two halves are asserted together: the
+  observer emits it, and the classifier acts on it.
+  """
+  observer, pump, _ = _observer(tmp_path)
+  pump.failure = RuntimeError("the judge went away")
+
+  contribution = observer.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+
+  # …and the metric is not merely recorded: it decides the word.
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  attempt = _attempt_with(contribution.metrics)
+  assert rollout_outcome(attempt) is RolloutOutcome.SUPERVISION_FAILED
+  assert task.outputs_valid(attempt) is False
+
+
+def test_a_channel_that_closed_on_its_own_produces_it_too(tmp_path: Path):
+  # The other way the same fact is reached: the relay's marker survived, so the
+  # write end closed without anyone deciding the run was over.
+  observer, _, _ = _observer(tmp_path)
+  (epath.Path(tmp_path) / CORRECTION_UNCLEAN_NAME).touch()
+  contribution = observer.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
