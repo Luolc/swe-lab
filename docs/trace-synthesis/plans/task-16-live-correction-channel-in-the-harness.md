@@ -1,13 +1,14 @@
-# Task 16 — A live correction channel in the Claude Code harness (design only)
+# Task 16 — A live correction channel in the Claude Code harness
 
 **Status lives in [`plans/README.md`](README.md), not here.**
 
-**Nothing here is authorized to be built.** The verdict that favours this
-delivery mechanism is conditional on a compliance test that has not been run
-([`DEBATE-VERDICT.md`](../../../experiments/trace_synthesis/process_supervision/DEBATE-VERDICT.md)),
-and [`spec.md` §5](../spec.md#5-the-mechanism-decisions) still says *steer from
-a hook*. This document exists so that, if the gate passes, the plumbing question
-is already answered — and so that if it fails, what is discarded is a document.
+**Authorized and in progress as of 2026-09-01.** This document was written
+design-only, while the mechanism was conditional on a compliance test that
+returned `BELOW_BAR`; the attribution moved anyway on an owner ruling recorded
+in [ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md),
+which is what authorizes building it. **§8 is the implementation record** — what
+was decided where this document deliberately left no default, and what the one
+[U] the termination design rested on turned out to be.
 
 Every claim below carries its status: **[M]** measured (with N and design) ·
 **[C]** read out of this repo's code at `origin/main`, with the file and line ·
@@ -245,7 +246,7 @@ Written so the next person does not mistake an assumption for a finding.
 
 | Unknown | The test |
 | --- | --- |
-| Does `claude` exit on FIFO EOF the same way it does on a closed pipe? | One host run: `mkfifo`, start the agent against it, write a task, hold, then close — observe whether the process ends |
+| ~~Does `claude` exit on FIFO EOF the same way it does on a closed pipe?~~ **[M]** yes — measured 2026-09-02, see §8.2 | ~~One host run~~ — run, reading fixed in advance |
 | Does the 10 MiB cap apply per line, per process, or not at all under `--input-format stream-json`? | One host run with a >10 MiB line, then the same bytes split across lines |
 | Does the channel behave the same **inside the sandbox** — the pinned binary, the pinned `CLAUDE_CONFIG_DIR`, a container without the host user's `CLAUDE.md`? | Already registered as [task 13](README.md); every measurement so far is host-side, and the pinned binary is 2.1.212 against 2.1.257 on this machine |
 | Does a mid-tool-call correction still fold identically when the tool is MCP rather than local Bash? | Registered as [task 15](README.md); unmeasured because the MCP servers here need auth |
@@ -258,3 +259,56 @@ Written so the next person does not mistake an assumption for a finding.
 - **Not the supervisor's own design** — what it judges, how often, and on what
   evidence is the guidebook question ([task 05](README.md)), not the plumbing
   one.
+
+## 8. Implementation record
+
+### 8.1 The two decisions §2.3 and §4 left without a default
+
+Both are about what happens when the run does **not** end the way it should,
+and the answer to both came from the same place: an ending that is ours must not
+reach the outside looking like the actor's
+([ADR-0016](../../decisions/ADR-0016-the-endings-nobody-could-attribute.md)).
+
+**Closing the write end is deliberate.** The relay closes it only on a sentinel
+file in the drop directory. Since the CLI exits on stdin EOF, closing *is* the
+termination mechanism, so it must be produced by whoever decides the task is
+over — never as a side effect of something dying.
+
+**Every other way the relay can end leaves a marker.** `claude.correction_channel.unclean`
+is written *before* the relay exists and removed *only* on that deliberate
+close. It is **failure-closed on purpose**: a relay that is killed cannot write
+a marker, but it also cannot remove one.
+
+§4 offered two options for a dead supervisor — keep the FIFO open (the agent
+waits and burns to the wall clock) or close it (the agent ends early).
+**Neither was taken, and the reason is the whole point of the marker:**
+
+| Option | What the outside sees | Why that is wrong |
+| --- | --- | --- |
+| Keep it open | `RunStatus.TIMEOUT` → `TIMED_OUT` | ADR-0015 attributes a spent wall clock to **the actor**. Our crash becomes its failure. |
+| Close it | an agent that stopped early, cleanly | A system failure rendered as an ordinary result. |
+
+Both charge our breakage to the actor. The third answer is to **close, and leave
+evidence that the close was not deliberate**, so the ending can be positively
+identified as ours rather than inferred from a shape that has an innocent
+explanation.
+
+### 8.2 The [U] the termination design rested on, now measured
+
+**[M]** 2026-09-02, one host run, readings fixed before it (`claude` 2.1.258 on
+the host; the sandbox pins 2.1.212, so this is **host-side only** — the
+in-sandbox repeat is [task 13](README.md), unchanged):
+
+| Observation | Result |
+| --- | --- |
+| A `result` event arrives for the first message | yes (1 event) |
+| The process is **still alive** 5 s after that result, write end held open | **yes** |
+| The process exits after the write end is closed | **yes, rc=0**, stderr empty |
+
+The middle row is the load-bearing one. It says the process does **not** end
+when it finishes answering — it waits for more input, which is what makes a live
+correction channel possible at all — and it means the exit in the third row is
+attributable to the close rather than a coincidence of timing.
+
+So `claude` exits on FIFO EOF as it does on a closed pipe, and §2.3's
+termination design stands on a measurement rather than an assumption.
