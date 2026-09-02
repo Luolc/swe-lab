@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted.
+Accepted, **partly superseded**: the outcome taxonomy of §1 and the reporting
+rule of §5 by [ADR-0016](ADR-0016-the-endings-nobody-could-attribute.md), which
+adds a sixth word and a second reported count. Everything else — classification
+by cause, the one causal bit, and the denominator defaulting to "in" — stands
+unchanged.
 
 ## Date
 
@@ -62,7 +66,6 @@ number into a gate.
 | `TIMED_OUT` | the action hit its wall-clock budget | no — the actor spent it (ADR-0011) |
 | `NO_PATCH` | terminated on its own terms, produced nothing | no |
 | `PATCH_PRODUCED` | there is something to grade | no |
-| `UNCLASSIFIED` | the evidence to attribute the ending was not there | **neither** (see the amendment below) |
 
 Deliberately **not** named `AGENT_FAILED`: reading "the agent failed" for our
 own breakage is the exact mistake the split exists to prevent.
@@ -93,12 +96,11 @@ unwatched, and it grows in the direction that makes results look better.
 **5. Every rate is reported with its excluded count. Always.**
 
 ```
-resolved 12 / 40  (3 system failures excluded, 2 unclassified)
+resolved 12 / 40  (3 system failures excluded)
 ```
 
 `12/40` alone makes the exclusion set an invisible knob — the same shape as a
-default-off switch silently deciding a result. The second count is required by
-the amendment below.
+default-off switch silently deciding a result.
 
 ## Consequences
 
@@ -118,54 +120,3 @@ the amendment below.
   does not exist yet. It is a contract on the bench that reports these rates:
   when that reporting is written, the function that returns a rate returns the
   excluded count with it. Until then this is an intention, not an invariant.
-
-## Amendment — 2026-09-01: the unclassified count
-
-Point 4 is unchanged: an ending nobody classified stays in the denominator, and
-that direction can only understate a rate. The objection this amendment answers
-is not about the direction; it is about **what the direction hides**.
-
-The excluded set is watched by construction — an ending has to be *positively*
-identified as ours to leave it, so it cannot grow without someone naming a
-cause. The set kept **in** has no such property. A system failure we have not
-named yet is classified as the actor's, and it is then invisible: it shows up
-only as a lower rate, and the amount it lowers it by varies with infrastructure
-quality rather than with the actor. Two batches can differ because of the
-machine and read as differing because of the model.
-
-That failure shape is not hypothetical here. Three defects found on 2026-09-01
-— the rollout-record wipe, the 1800 s grading budget spent on a 1.4 s agent
-death, and the missing `.envrc.local` — were each, before being named, exactly
-"a frequently-occurring system failure nobody had positively identified".
-
-**So: keep the default, and add the second number.**
-
-1. **A sixth word, `UNCLASSIFIED`**, for an ending where the evidence needed to
-   attribute it was not there: no harness outcome to read (a crash and a clean
-   stop are indistinguishable from there), or no diff extraction at all (we
-   never looked for work). Previously both fell into `NO_PATCH`, which asserts
-   something stronger than we knew — that an extraction ran and came back
-   empty. **Absence of evidence was being booked as evidence the actor produced
-   nothing.**
-2. **`UNCLASSIFIED` is not ours**, so nothing about grading or the denominator
-   changes: it stays in, exactly as point 4 requires.
-3. **`RolloutOutcome.unclassified` is reported with every rate**, beside the
-   excluded count (point 5). This is the whole point of the amendment: it turns
-   an unnamed crash mode from silence into a growing number.
-
-Like point 5, the *reporting* half is a contract on a bench that does not exist
-yet, not an invariant — what is enforced today is the word, its exclusion from
-the ours-set, and its separation from `NO_PATCH`, each with a named test in
-`tests/test_rollout.py`. Writing the enum member without a reporter would be
-the decoration this ADR's own sister rule warns about, so the branch it changes
-is named here: the reporter reads `unclassified`, and the acceptance for that
-bench includes the second count.
-
-### What this does not fix
-
-A system failure that *does* produce a readable outcome and an empty patch —
-a harness that reports `FINISHED` while silently broken — still classifies as
-`NO_PATCH` and is still counted as the actor's. `UNCLASSIFIED` catches missing
-evidence, not **wrong** evidence. That case needs a positive signal we do not
-have, and inventing one from the patch would feed the patch back into an
-attribution decision ADR-0011 keeps it out of.

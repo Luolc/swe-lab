@@ -419,12 +419,11 @@ class RolloutOutcome(StrEnum):
     NO_PATCH: It terminated on its own terms and produced no usable patch. A
       genuine failure to solve, not a failure of the system.
     PATCH_PRODUCED: There is something to grade.
-    UNCLASSIFIED: The evidence needed to attribute the ending was not there —
-      no harness outcome to read, or no patch information at all. Neither
-      positively ours nor positively the actor's. It stays in the denominator
-      like any unclassified ending, but it is **counted separately** so that a
-      failure mode we have not named yet shows up as a growing number instead
-      of hiding inside :attr:`NO_PATCH`.
+    UNCLASSIFIED: The harness supplied no outcome, so how the loop ended cannot
+      be read. Neither positively ours nor positively the actor's: it stays in
+      the denominator like any unclassified ending, but it is **counted
+      separately**, so an ending nobody could attribute is a number rather than
+      silence inside :attr:`NO_PATCH` (ADR-0016).
   """
 
   OOM_KILLED = "oom_killed"
@@ -466,12 +465,10 @@ class RolloutOutcome(StrEnum):
   def unclassified(self) -> bool:
     """Whether the ending was attributed to nobody, for want of evidence.
 
-    Reported alongside every rate, next to the excluded count (ADR-0015 §5, as
-    amended). The excluded set is watched by construction — something had to
-    be positively identified to leave. This set is the one that is *not*:
-    keeping it in the denominator is the safe default, but it makes an
-    unnamed failure mode silent, and silence is where this repo's last three
-    defects lived. A separate count is what turns that silence into a number.
+    This is the separately reportable not-attributed set: reported alongside
+    every rate, next to the excluded count (ADR-0016). The excluded set is
+    watched by construction — an ending must be positively identified as ours
+    to leave the denominator. This set is not, so it is counted on its own.
 
     Returns:
       Whether this ending was positively identified as neither ours nor the
@@ -511,13 +508,17 @@ def rollout_outcome(result: AttemptResult) -> RolloutOutcome:
   observer = outcome_of(result)
   if observer is not None and observer.outcome.retryable:
     return RolloutOutcome.SYSTEM_FAILED
-  patch = patch_of(result)
-  if observer is None or patch is None:
-    # We saw no evidence, which is not the same as evidence of nothing: with
-    # no outcome to read we cannot tell a crash from a clean stop, and with no
-    # diff extraction we never looked for work. Calling either one `NO_PATCH`
-    # would book an absence of evidence as the actor's failure to solve.
+  if observer is None:
+    # No outcome to read: a crash and a clean stop are indistinguishable from
+    # here, so neither attribution is earned. Calling it `NO_PATCH` would book
+    # an absence of evidence as the actor's failure to solve.
     return RolloutOutcome.UNCLASSIFIED
+  patch = patch_of(result)
+  if patch is None:
+    # This task always composes a `DiffExtractObserver` and declares the patch
+    # as a required output, so a missing one is a broken composition, not a
+    # task that chose not to look — ours, and it must stop here.
+    return RolloutOutcome.SYSTEM_FAILED
   if patch.is_empty:
     return RolloutOutcome.NO_PATCH
   return RolloutOutcome.PATCH_PRODUCED

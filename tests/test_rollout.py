@@ -138,12 +138,14 @@ def _attempt(
     status: RunStatus = RunStatus.SUCCESS,
     artifacts: dict[str, epath.Path] | None = None,
     patch: DiffExtractObserver | None = None,
+    extractor: bool = True,
 ) -> AttemptResult:
   """Build a finished rollout attempt whose agent ended the given way.
 
-  ``patch`` defaults to ``None`` — no diff extraction composed at all, which is
-  a different thing from an extraction that came back empty, and the two must
-  not be spelled the same way at a call site.
+  Composes a ``DiffExtractObserver`` by default, because the production task
+  always does — a fixture without one is not a task that chose not to look, it
+  is a **broken composition**, and ``extractor=False`` is how a test says it
+  means that.
   """
   observer = HarnessOutcomeObserver(harness=ClaudeCodeHarness())
   observer.outcome = outcome
@@ -160,7 +162,11 @@ def _attempt(
       ),
       exec_result=None,
       output_schema=(ArtifactSchema(CONVERSATION_NAME),),
-      observers=(observer,) if patch is None else (observer, patch),
+      observers=(
+          (observer,)
+          if not extractor
+          else (observer, patch or DiffExtractObserver(patch="", is_empty=True))
+      ),
   )
 
 
@@ -251,7 +257,7 @@ def test_the_agent_outcome_lands_on_the_record():
   }
 
 
-# ─── the four endings, and which of them are ours (ADR-0015) ─────────────────
+# ─── the outcome words, and which are ours (ADR-0015, ADR-0016) ──────────────
 
 
 def test_a_system_failure_is_not_graded_and_leaves_the_denominator():
@@ -325,15 +331,10 @@ def test_an_ending_with_no_evidence_is_not_booked_as_the_actors():
   """An absence of evidence must not read as evidence the actor produced none.
 
   The distinction the enum previously could not make: ``NO_PATCH`` says an
-  extraction ran and came back empty. These two say we never had the evidence
-  to attribute anything — and folding them into ``NO_PATCH`` charges the actor
-  for our own missing instrumentation.
+  extraction ran and came back empty. This says the harness supplied no outcome
+  at all — and folding the two together charges the actor for instrumentation
+  we did not get.
   """
-  # No diff extraction composed at all: we never looked for work.
-  never_looked = _attempt(AgentOutcome.FINISHED)
-  assert patch_of(never_looked) is None
-  assert rollout_outcome(never_looked) is RolloutOutcome.UNCLASSIFIED
-
   # A patch, but no harness outcome to read: a crash and a clean stop are
   # indistinguishable from here, so neither attribution is earned.
   extraction = DiffExtractObserver(patch="diff --git a/a b/a", is_empty=False)
@@ -342,16 +343,52 @@ def test_an_ending_with_no_evidence_is_not_booked_as_the_actors():
   )
   assert outcome_of(no_outcome) is None
   assert rollout_outcome(no_outcome) is RolloutOutcome.UNCLASSIFIED
+  # …and it is not booked as the actor producing nothing, which is the word it
+  # would otherwise have landed on.
+  assert rollout_outcome(no_outcome) is not RolloutOutcome.NO_PATCH
+
+
+def test_the_task_always_composes_the_extractor_it_requires():
+  """The premise that makes a missing patch a defect rather than a case.
+
+  `rollout_outcome` treats an absent `DiffExtractObserver` as ours. That is
+  only correct because this task composes one unconditionally and declares the
+  patch a required output — if a caller could legitimately omit it, the same
+  branch would be charging a normal configuration to the system.
+  """
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  composed = task.observers(_Instance())
+  assert any(isinstance(o, DiffExtractObserver) for o in composed)
+  assert PATCH_NAME in {
+      schema.name for o in composed for schema in o.output_schema()
+  }
+
+
+def test_a_broken_composition_is_ours_rather_than_an_empty_patch():
+  """A missing extractor is our defect, and it must stop the run.
+
+  Distinct from `UNCLASSIFIED`: there is no ambiguity about who owns it. The
+  task guarantees the observer, so its absence is broken wiring — and booking
+  it as `NO_PATCH` would both charge the actor for it and let grading proceed
+  on an attempt that produced no patch at all.
+  """
+  task = CodingAgentTask(harness=ClaudeCodeHarness())
+  broken = _attempt(AgentOutcome.FINISHED, extractor=False)
+  assert patch_of(broken) is None
+  assert rollout_outcome(broken) is RolloutOutcome.SYSTEM_FAILED
+  assert rollout_outcome(broken).ours is True
+  assert task.outputs_valid(broken) is False
 
 
 def test_the_unclassified_count_is_reportable_apart_from_the_excluded_one():
   """The exclusion set is watched by construction; this set is not.
 
-  Every rate is reported with its excluded count (ADR-0015 §5). That count only
-  covers endings something positively identified, so a failure mode we have not
-  named yet stays silent inside the denominator. `unclassified` is the second
-  number that makes it a growing figure instead of silence — the property is
-  what a reporter reads, so it is asserted to be exactly one word wide.
+  Every rate is reported with its excluded count (ADR-0015 §5) and this one
+  beside it (ADR-0016). The excluded count covers only endings that something
+  positively identified, so a failure mode we have not named yet stays silent
+  inside the denominator. `unclassified` is the second number that makes it a
+  growing figure instead of silence — the property is what a reporter reads, so
+  it is asserted to be exactly one word wide.
   """
   assert [o for o in RolloutOutcome if o.unclassified] == [
       RolloutOutcome.UNCLASSIFIED
