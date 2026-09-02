@@ -163,19 +163,20 @@ scope, the second half has the same four parts as the first:
 | **rejection** | `CriterionRejectedError`. Not a recorded gap: a criterion that is not the reviewed one leaves nothing to judge against |
 | **named test** | `test_a_criterion_quoting_the_gold_patch_is_rejected` — a criterion that quotes the fix must make the check fail |
 
-**[U] The startup gate is not wired yet, and this row says so rather than
-implying otherwise.** `load_criterion` has no production caller: the criterion
-is consumed by the *judge*, which is not implemented, so that is where the
-run-level refusal belongs. What is enforced today is narrower and is the whole
+**[U] The startup gate is not wired, and this row says so rather than implying
+otherwise.** `supervising_policy` loads the criterion and refuses a forged one,
+but **nothing in a rollout path calls it**, so that refusal is helper-level. An
+earlier draft said the gate "lands with the judge"; the judge is written and
+does not wire it, because the criterion is loaded where a *supervised run* is
+assembled — task 16's channel and the rollout workflow — which is where the
+run-level test belongs. What is enforced today is narrower and is the whole
 of the current claim: **`SpeakWhenOffTrack` refuses to construct unless its
 criterion's digest is the pinned one, and passes that criterion to the judge on
 every call.** Hand-off is the whole of it — a protocol cannot compel an
 implementation to use a parameter, so *what the judge measures against* is a
 judge-implementation invariant whose named behavioural test belongs to that PR.
 `SpeakAt` takes none and judges nothing — it is the timing knob, and applying a
-criterion gate to a policy with no judgement would be theatre. **The judge's PR
-discharges this**, with a named test that a forged artifact prevents the run
-from starting.
+criterion gate to a policy with no judgement would be theatre.
 
 **What the criterion being constant does *not* mean.** The judge's *prompt* is
 still instance-specific — it carries the task statement and the actor's own
@@ -211,7 +212,8 @@ test or the sentence is downgraded):
   catches the one we did not.
 - `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half:
   the loader rejects rather than recording a gap. **This is a loader test, not
-  a run-level one** — the startup gate is `[U]` and lands with the judge.
+  a run-level one** — the startup gate is `[U]` and lands where a supervised
+  run is assembled, not in the supervisor component.
 - `test_a_forged_criterion_cannot_build_the_policy` and
   `test_the_judge_is_handed_the_canonical_criterion_every_call` — what *is*
   enforced today: `SpeakWhenOffTrack` refuses any criterion whose digest is not

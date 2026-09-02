@@ -1,8 +1,8 @@
 """The judge and writer, and the attack that must fail for each guarantee.
 
 Every "cannot" in :mod:`swe_lab.trace_synthesis.judge` is written here as the
-attack that would break it, because a guard that has not been run against its
-own defect is not a guard.
+attack that would break it: a guard that has not been run against its own
+defect is not a guard.
 """
 
 from __future__ import annotations
@@ -117,10 +117,10 @@ def test_a_judge_without_a_named_model_cannot_be_built() -> None:
 def test_a_forged_criterion_prevents_the_run_from_starting(
     tmp_path: pathlib.Path,
 ) -> None:
-  """Attack: point the production construction path at an edited criterion.
+  """Attack: point the construction helper at an edited criterion.
 
-  It must raise before a policy exists — the startup gate, which #337 could
-  not yet claim.
+  It raises before a policy object exists. This is a **helper-level** refusal,
+  not a run-level one: nothing in a rollout path calls this yet.
   """
   forged = tmp_path / "criterion.md"
   forged.write_text(
@@ -237,3 +237,40 @@ def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
 
   with pytest.raises(InterventionTooLongError):
     policy.consider(observation())
+
+
+def test_a_non_boolean_verdict_field_is_unusable_not_coerced() -> None:
+  """Attack: answer with the string "false" where a boolean is required.
+
+  Coercion would read it as True, turning a verdict of *no* into a correction.
+  One request, then rejection.
+  """
+  transport = RecordingTransport(
+      answers=['{"off_track": "false", "self_correcting": false}']
+  )
+  judge = ModelJudge(model="anthropic/claude-sonnet-5", transport=transport)
+
+  with pytest.raises(JudgeAnswerError, match="boolean"):
+    judge(observation(), load_criterion())
+  assert len(transport.payloads) == 1
+
+
+def test_the_built_policy_hands_its_criterion_to_both_model_calls() -> None:
+  """The seam is the policy, so the assertion is made there, not on the classes.
+
+  Inspecting ``ModelWriter`` alone would pass while the policy called a closure
+  carrying some other standard.
+  """
+  transport = RecordingTransport(answers=[OFF_TRACK_JSON, "look at the error"])
+  built = supervising_policy(
+      model="anthropic/claude-sonnet-5",
+      transport=transport,
+      budget=1,
+      cooldown=0,
+  )
+  built.consider(observation())
+
+  criterion_text = load_criterion().text
+  assert len(transport.payloads) == 2
+  for payload in transport.payloads:
+    assert criterion_text in payload["messages"][1]["content"]

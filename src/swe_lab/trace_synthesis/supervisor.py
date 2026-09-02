@@ -229,11 +229,14 @@ class Judge(Protocol):
 class Writer(Protocol):
   """Turns a decision to speak into the line the actor receives."""
 
-  def __call__(self, observation: Observation) -> str:
+  def __call__(self, observation: Observation, criterion: Criterion) -> str:
     """Write one short, hedged, directional line.
 
     Args:
       observation: The same observation the judge saw.
+      criterion: The same criterion the judge was handed, passed explicitly for
+        the same reason: a closure carrying its own standard is a side door,
+        and one that no signature shows.
 
     Returns:
       The text of the correction.
@@ -415,7 +418,7 @@ class SpeakWhenOffTrack:
     ):
       return None
 
-    intervention = Intervention(text=self.writer(windowed))
+    intervention = Intervention(text=self.writer(windowed, self.criterion))
     self._spoken_at.append(observation.cursor)
     return intervention
 

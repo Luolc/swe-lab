@@ -9,19 +9,31 @@ Every guarantee stated here has an attack test that must fail — a claim withou
 one is downgraded rather than written, because a guarantee that has not been
 attacked is a wish (see the experiment playbook's entry on guards).
 
-- **The run refuses to start on a forged criterion.**
-  ``test_a_forged_criterion_prevents_the_run_from_starting``.
+- **[U] The startup gate is not wired.** :func:`supervising_policy` is the
+  construction helper that loads the criterion, and **nothing in a rollout path
+  calls it yet**, so a forged artifact stops this helper and not a run. The
+  run-level refusal lands when the supervised run is assembled, which is task
+  01's dependency ③ (*the pinned criterion sha and its refusal path, for
+  acceptance point 2b*) and belongs to the wiring PR: the refusal can only be
+  tested where the run is constructed, so it disappears by acquiring a consumer
+  rather than by being reworded.
+  ``test_a_forged_criterion_prevents_the_run_from_starting`` is a helper test.
 - **The judge prompts with the criterion it was handed**, not one it fetches
   for itself — the layer above hand-off, which the policy cannot enforce.
   ``test_the_judge_prompts_with_the_criterion_it_was_handed``.
-- **Neither call has a side door**: their inputs are the observation and the
-  criterion, and :class:`~swe_lab.trace_synthesis.supervisor.Observation` has no
-  field for privileged material.
-  ``test_neither_call_has_an_input_beside_the_observation_and_criterion``.
+- **Neither call has a side door**: both take the observation and the criterion
+  and nothing else, and the policy passes the criterion to both — a writer that
+  took only the observation could carry its own standard in a closure, which no
+  signature would show.
+  ``test_neither_call_has_an_input_beside_the_observation_and_criterion`` and
+  ``test_the_built_policy_hands_its_criterion_to_both_model_calls``.
 - **The model is named explicitly or construction fails** — no default, for the
   same reason ``budget`` has none: an obligation enforced by the absence of a
   default rather than by anyone remembering.
   ``test_a_judge_without_a_named_model_cannot_be_built``.
+- **A verdict field that is not a JSON boolean is unusable, never coerced** —
+  ``bool("false")`` is ``True``, so coercion turns a verdict of *no* into a
+  correction. ``test_a_non_boolean_verdict_field_is_unusable_not_coerced``.
 - **No branch depends on two verdicts agreeing.** The judgement is a model
   call and is not a function; the pipeline is what must be correct under that.
   ``test_the_pipeline_is_correct_when_the_judge_disagrees_with_itself``.
@@ -221,13 +233,27 @@ class ModelJudge:
     )
     try:
       answer = json.loads(raw)
-      return Verdict(
-          off_track=bool(answer["off_track"]),
-          self_correcting=bool(answer["self_correcting"]),
-          reason=str(answer.get("reason", "")),
-      )
+      off_track = answer["off_track"]
+      self_correcting = answer["self_correcting"]
     except (json.JSONDecodeError, KeyError, TypeError) as error:
       raise JudgeAnswerError(f"unusable judge answer: {error}") from error
+
+    # Coercion here would read "false" as True — a verdict of *no* becoming a
+    # correction — so the shape is required rather than converted.
+    for name, value in (
+        ("off_track", off_track),
+        ("self_correcting", self_correcting),
+    ):
+      if type(value) is not bool:
+        raise JudgeAnswerError(
+            f"{name} must be a JSON boolean, got {type(value).__name__}"
+        )
+
+    return Verdict(
+        off_track=off_track,
+        self_correcting=self_correcting,
+        reason=str(answer.get("reason", "")),
+    )
 
 
 @dataclasses.dataclass
@@ -290,8 +316,10 @@ def supervising_policy(
 ) -> SpeakWhenOffTrack:
   """Build the judging policy, or refuse to start.
 
-  This is the production construction path, and the one place the criterion is
-  loaded: a forged or edited artifact raises here, before a run exists.
+  **[U] Not yet wired into a run.** This is where the criterion is loaded and a
+  forged artifact raises, but nothing in a rollout path calls it, so the
+  refusal is helper-level. Its consumer is the wiring PR (task 01 dependency
+  ③, acceptance point 2b); until then no run is stopped by it.
 
   Args:
     model: The model for both calls; named explicitly, never defaulted.
@@ -311,10 +339,9 @@ def supervising_policy(
       if criterion_path is not None
       else load_criterion(gold_patch=gold_patch)
   )
-  writer = ModelWriter(model=model, transport=transport)
   return SpeakWhenOffTrack(
       judge=ModelJudge(model=model, transport=transport),
-      writer=lambda observation: writer(observation, criterion),
+      writer=ModelWriter(model=model, transport=transport),
       criterion=criterion,
       budget=budget,
       cooldown=cooldown,
