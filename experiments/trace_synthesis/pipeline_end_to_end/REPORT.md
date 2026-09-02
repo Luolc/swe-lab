@@ -137,17 +137,23 @@ rather than as a promise made once:
 ## 5. Cost and hygiene
 
 - **Wall clock:** `___` (`claude_code.wall_seconds`)
-- **Supervision catch-up:** `supervisor.jsonl`'s last timestamp minus the
-  timestamp of **the last event-stream line that carries one** = `___`
-  seconds — the span in which the actor had already stopped and the
-  supervisor was still working through its backlog. As a fraction of the wall
-  clock: `___`. The qualifier is load-bearing: only some event kinds carry a
-  `timestamp`, and the terminal `result` event is not one of them, so "the
-  last line" and "the last line with a timestamp" are different rows. **Both
-  numbers are recorded on every run, not only when something looks wrong:** a
-  number first computed after an incident has no baseline to be read against.
-  This is a cost measurement, not one of §6's three readouts, which are
-  frozen.
+- **Supervision catch-up: `___` seconds at most, `___` of the wall clock at
+  most.** `supervisor.jsonl`'s last timestamp minus the timestamp of **the
+  last event-stream line that carries one** — the span in which the actor had
+  already stopped and the supervisor was still working through its backlog.
+  Two qualifiers, both load-bearing:
+  - only some event kinds carry a `timestamp`, and the terminal `result`
+    event is not one of them, so "the last line" and "the last line with a
+    timestamp" are different rows;
+  - that row is therefore **not the moment the actor finished** — the actor
+    finished at some unknown time *at or after* it. Every quantity derived
+    from it is a **bound**, not a point, and is written as one. Carry the
+    same `(measured)` / `(at least)` / `(at most)` markers the witness script
+    prints: **the report may not be more certain than the script it quotes.**
+
+  **Recorded on every run, not only when something looks wrong:** a number
+  first computed after an incident has no baseline to be read against. This
+  is a cost measurement, not one of §6's three readouts, which are frozen.
 - **Actor spend:** `___` (see §2 line 1 for how it is reported)
 - **Containers:** started `___`, left behind `___`. The window this ran in:
   `___`.
