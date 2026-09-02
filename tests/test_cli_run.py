@@ -532,7 +532,7 @@ def test_a_record_that_cannot_be_read_back_fails_the_run(
   assert result.exit_code == run_mod.ExitCode.FAILED
   # Named, because an unhandled error also exits non-zero with no summary:
   # without this the test passes whether the guard caught the store's error or
-  # never ran at all. (Verified by reverting the guard's except clause.)
+  # never ran at all.
   assert "cannot be read back" in result.output + (result.stderr or "")
   # …and nothing printed a success claim on the way out.
   assert '"succeeded": true' not in result.output
