@@ -883,3 +883,28 @@ def test_a_run_whose_event_stream_never_appeared_is_not_supervised(
       rollout_outcome(_attempt_with(contribution.metrics))
       is RolloutOutcome.SUPERVISION_FAILED
   )
+
+
+@pytest.mark.parametrize(
+    "content", ["", "not json at all\n"], ids=["empty", "undecodable"]
+)
+def test_a_stream_that_yielded_no_usable_event_is_not_supervised_either(
+    tmp_path: Path, content: str
+):
+  """A file is not evidence; an event reaching a judgement is.
+
+  The same hole one step further in. `stream_events` skips a line it cannot
+  parse rather than raising, so a stream that exists and yields nothing looks
+  exactly like a calm run — and reading the *file's* existence as the signal
+  puts a zero-boundary run back on the healthy path, which is the absorption
+  the missing-file case above exists to stop. Found in review of the PR that
+  added that case.
+  """
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  run = _supervised(tmp_path)
+  _ = events.write_text(content)
+  contribution = run.before_destroy(_fs(tmp_path))
+
+  assert contribution is not None
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
+  assert contribution.metrics[BOUNDARIES_METRIC] == 0.0

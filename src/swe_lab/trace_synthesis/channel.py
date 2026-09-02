@@ -187,11 +187,15 @@ class SupervisorPump:
     interventions: Every correction the supervisor delivered, in order. The
       supervisor writes them through the channel's sink; this is the record of
       what it did, not a second delivery path.
-    saw_events: Whether the actor's event stream ever appeared. A stream that
-      never exists is not a quiet run: it is a supervisor that watched nothing,
-      and it is indistinguishable from a healthy one unless it is recorded —
-      ``poll`` returning 0 says the same thing for "no new events" and for "no
-      file, ever".
+    saw_events: Whether one usable actor event was ever handed to the
+      supervisor. **Not** whether the stream file appeared: a file that exists
+      and yields nothing decodable is the same fact as no file at all — a
+      supervisor that watched nothing — and it is indistinguishable from a
+      healthy one unless it is recorded, since ``poll`` returning 0 says the
+      same thing for "no new events", "nothing I could decode" and "no file,
+      ever". ``stream_events`` skips a line it cannot parse rather than
+      raising, so the existence of bytes is not evidence that any of them
+      reached a judgement.
     at_rest: Whether the last event consumed was the actor finishing a turn
       with the supervisor having nothing to add. Under a live stdin channel the
       actor does not exit when it finishes answering — it waits for more input
@@ -229,7 +233,6 @@ class SupervisorPump:
     try:
       if not self.events_path.exists():
         return 0
-      self.saw_events = True
       text = self.events_path.read_text()[self._offset :]
       # Only whole lines are consumed, so a fragment is re-read next time
       # rather than dropped.
@@ -239,6 +242,10 @@ class SupervisorPump:
       self._offset += consumed
       spoken = 0
       for event in stream_events(text[:consumed]):
+        # Here, not at the file check: what makes a run supervised is an event
+        # reaching a judgement, and a file full of lines nobody could decode
+        # gets no further than the parser.
+        self.saw_events = True
         # `observe` writes through the sink itself and returns only what it
         # actually delivered, so this records rather than re-sends.
         intervention = self.supervisor.observe(event)
@@ -393,10 +400,11 @@ class SupervisedRun(SandboxObserver):
     unsupervised and why. What breaks the account is a hole of unknown reach.
 
     Five ways it stops being true, and they are one fact reached five ways:
-    the actor's event stream never appeared, the pump stopped reading, the
-    supervisor hit a boundary it could not judge or could not speak at *and
-    could not bound*, the supervising thread never stopped, or the channel
-    ended without being told to.
+    no usable actor event ever reached the supervisor (whether because the
+    stream never appeared or because nothing in it could be decoded), the pump
+    stopped reading, the supervisor hit a boundary it could not judge or could
+    not speak at *and could not bound*, the supervising thread never stopped,
+    or the channel ended without being told to.
 
     Returns:
       Whether the run is evidence about supervision at all.
