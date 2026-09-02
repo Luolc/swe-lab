@@ -188,10 +188,9 @@ with the following repo-wide choices and deviations (full plan + rationale:
   the old implementation looked like, which error it raised, that the suite was
   green at the time, and how the review went. An incident may be **named**,
   but only as a bare pointer to the full case (`test_steered_rerun_driver.py`
-  cites #264 this way) — never narrated. That a failure mode exists is the
-  contract; a dated run and its specific cause are chronicle, not a
-  source-level reason. The discriminant: does the reader need this to **avoid
-  repeating** the failure, or to know **how we got here**?
+  cites #264 this way) — never a dated run with its cause, which is chronicle
+  rather than a source-level reason. The discriminant: does the reader need
+  this to **avoid repeating** the failure, or to know **how we got here**?
 - Enforced by ruff (`D` google convention + `D401` + `D417`, `N`, `C90`,
   `W505`) and **pydoclint** (Args ↔ signature consistency) in pre-commit + CI.
 - **Modern typing syntax (PEP 695):** type aliases use the `type` statement
