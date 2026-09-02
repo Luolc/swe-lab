@@ -97,6 +97,17 @@ def run_cmd(
         bool,
         typer.Option(help="Honor terminal markers instead of re-running."),
     ] = False,
+    output_root: Annotated[
+        str,
+        typer.Option(
+            help=(
+                "Where run outputs land. Defaults to the repo's .cache/runs —"
+                " which is inside this checkout, so a worktree removed later"
+                " takes them with it. Point it outside for a run whose"
+                " evidence has to outlive the checkout."
+            )
+        ),
+    ] = "",
 ) -> None:
   """Run a registered workflow against one instance.
 
@@ -129,13 +140,18 @@ def run_cmd(
   # declares that two runs of one instance are two samples rather than a
   # repeat. Throwaway is right for a re-run and wrong for two samples, so
   # without this segment the second rollout deletes the first one's records.
-  output_dir = (
-      cache_root(root)
-      / _RUNS_SUBDIR
-      / workflow
-      / instance.instance_id
-      / f"r{rollout_id}"
+  # Default: inside the checkout. That is the wrong home for evidence — a
+  # `git worktree remove` takes gitignored content silently, and this repo has
+  # already lost a run's only record that way — but it is the right default for
+  # the throwaway case, and moving every run out of tree by fiat would strand
+  # the resume paths that look here. So the location is a decision the caller
+  # makes, and one they can make per run.
+  runs_root = (
+      epath.Path(output_root)
+      if output_root
+      else cache_root(root) / _RUNS_SUBDIR
   )
+  output_dir = runs_root / workflow / instance.instance_id / f"r{rollout_id}"
   if not resume:
     # A one-off command re-runs: the previous run's attempts, workspaces and
     # markers go with it.

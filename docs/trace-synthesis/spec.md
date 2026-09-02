@@ -696,6 +696,80 @@ The correct form of the requirement, which nothing implements yet:
 Until those exist, treat "a lost hint is detectable" as **intended and not
 enforced**.
 
+#### Nothing in the container is independent evidence — and what to do about it
+
+Every record a run leaves has one of two writers, and neither is a third party:
+
+| Record | Written by |
+| --- | --- |
+| `event_stream.jsonl` (`stream-json` stdout) | the actor's CLI |
+| the actor's native session record (`$CLAUDE_CONFIG_DIR/projects/`) | the actor's CLI |
+| the recording proxy's capture | **us** |
+| `supervisor.jsonl`, the corrections drop, the in-sandbox relay | **us** |
+
+So a run's account of itself has exactly one shape available: *we said we did
+it, and our own instruments agree.* The native session record is worth taking
+out — it is written by the agent binary rather than by our supervision code, so
+it survives every one of our host-side components being wrong — but it is **not
+independent**: it shares a writer with the event stream, and a CLI that
+misreports gets both wrong in the same way.
+
+**What replaces "independent evidence" is a join, and the join is stronger than
+either leg.** The proxy capture holds what the actor actually sent upstream; the
+native record holds what the actor's own bookkeeping says happened. Agreement
+between them cannot be produced by our wiring narrating its own success —
+faking it would take our proxy and the CLI's session writer failing in step.
+
+**Two assertions, two different witnesses — and they are not equally
+supported.** Splitting them is the whole point; one sentence covering both
+overstates the weaker one.
+
+- **A — the correction entered the actor's context.** Witnessed by the actor's
+  **own CLI session record**, which our code does not write. Our proxy being
+  broken, or lying, does not touch it.
+- **B — the wire shape and position** (the block as the last `role: system`
+  message before the next action, four `system-reminder` blocks). Witnessed
+  **only by the proxy capture, which is our code**. Nothing rules that witness
+  out; B rests on a **trust assumption** and must be written as one.
+
+**So a claim about wire shape is one notch weaker than a claim about receipt.**
+
+**Say what is ruled out, and for which assertion.**
+
+- **Ruled out for A:** our collection and supervision code reporting a delivery
+  that did not happen — the failure family we have actually met, repeatedly. It
+  is ruled out because A's witness is not ours.
+- **Not ruled out for B:** the same family, applied to the recorder itself. "Our
+  code" is not one trust basis: the proxy is inside the very category the join
+  is supposed to exclude, so it cannot also be what excludes it.
+- **Not ruled out for either:** the actor's CLI reporting the same falsehood in
+  two places. Excluding that needs the provider's own record, which we cannot
+  read. This limit is **permanent** — stated here once, not re-argued per run.
+
+**The ladder, weakest to strongest.** A claim that a correction was received
+should name which rung it stands on, *and whose record witnesses it*:
+
+1. *We wrote it* — `supervisor.jsonl`. Pure self-report.
+2. *The relay delivered it* — in-sandbox, still our code.
+3. **The block appears in the actor's next outbound request**, inside the
+   `messages` array the actor itself built. **The first rung whose *fact*
+   crosses a boundary we do not control:** we can write a FIFO, and we cannot
+   make a block appear in a request the actor composes. A broken wiring can fake
+   "I delivered it"; it cannot fake "the actor carried it into its next call."
+   Read the witness carefully, though — the actor's session record carries it as
+   A, the proxy capture carries it as B, and only the first is outside our code.
+4. *The actor's behaviour changes accordingly* — strongest, because behaviour is
+   an event rather than a record, and hardest to make into a mechanical
+   criterion.
+
+**This rests on a dependency, and it is a live one.** A's witness only exists if
+the actor's session record is actually captured before the container is
+destroyed (`NativeTranscriptObserver`). **If that capture comes back empty, A
+loses its independent witness and collapses onto B — leaving self-report plus a
+trust assumption, and no claim of delivery should be written as closed.** The
+report artifact beside the archive is what makes that branch readable rather
+than inferred, and the branch is decided *before* a run is read, not after.
+
 The rest, in no particular order. **The first two are retired by
 [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)** — they
 ask how to arrange hooks, and steering no longer goes through one; their

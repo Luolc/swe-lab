@@ -279,6 +279,81 @@ def test_contributions_aggregate_across_observers(tmp_path: Path):
   assert mgr.result.metrics == {"secs": 2.0}
 
 
+def test_a_failed_run_still_collects_what_before_destroy_registered(
+    tmp_path: Path,
+):
+  """The run we most need evidence from is the one that broke.
+
+  Two facts already have tests — `before_destroy` runs after a body error, and
+  registered artifacts are fetched out — but the composition of them is what a
+  post-mortem depends on, and the composition is where it could quietly not
+  hold: the collect step lives after the hooks in the same `finally`, so an
+  early return on the error path would strand every diagnostic an observer
+  gathered. Nothing survives the sandbox going down, so a diagnostic that is
+  collected only on the happy path is a diagnostic that is never there when it
+  matters.
+  """
+  sb = _sandbox(tmp_path)
+  sb.workspace.mkdir(parents=True)
+  _ = (sb.workspace / "record.tar.gz").write_bytes(b"the actor's own record")
+  out = tmp_path / "out"
+  mgr = _manager(
+      sb,
+      output_dir=out,
+      observers=[
+          RecordingObserver(
+              "a",
+              contribution=Contribution(artifacts={"record": "record.tar.gz"}),
+          )
+      ],
+  )
+
+  with mgr.session():  # the body fails, the way a real rollout does
+    _boom(ValueError("body boom"))
+
+  assert mgr.result.status is RunStatus.RUN_ERROR
+  assert mgr.result.artifacts == {"record": out / "record"}
+  assert (out / "record").read_bytes() == b"the actor's own record"
+  assert _down_ran(sb)
+
+
+def test_one_failing_hook_does_not_take_the_other_diagnostics_with_it(
+    tmp_path: Path,
+):
+  """A broken diagnostic must cost its own output and nothing else.
+
+  `_teardown` holds the first hook error in hand and then runs the collect
+  step, so "something already went wrong, do not bother fetching" is a natural
+  and entirely wrong shortcut: it would discard the evidence of every *other*
+  observer at exactly the moment someone needs it, and nothing about the
+  surviving observers' own tests would notice.
+
+  The property this pins is ordering, not error handling: whatever a hook did,
+  what the run registered is still fetched out while the sandbox is live.
+  """
+  sb = _sandbox(tmp_path)
+  sb.workspace.mkdir(parents=True)
+  _ = (sb.workspace / "record.tar.gz").write_bytes(b"the actor's own record")
+  out = tmp_path / "out"
+  mgr = _manager(
+      sb,
+      output_dir=out,
+      observers=[
+          RecordingObserver("broken", raise_in="before_destroy"),
+          RecordingObserver(
+              "intact",
+              contribution=Contribution(artifacts={"record": "record.tar.gz"}),
+          ),
+      ],
+  )
+
+  with mgr.session():
+    pass
+
+  assert mgr.result.artifacts == {"record": out / "record"}
+  assert (out / "record").read_bytes() == b"the actor's own record"
+
+
 def test_inline_artifacts_land_without_touching_the_sandbox(tmp_path: Path):
   sb = _sandbox(tmp_path)
   out = tmp_path / "out"

@@ -296,6 +296,9 @@ def test_proxy_capture_composes_no_extra_observer():
       "AgentInfoObserver",
       "ConversationObserver",
       "HarnessOutcomeObserver",
+      # Last, and on every capture: the one record here the agent writes
+      # itself, and the one that dies with the container's writable layer.
+      "NativeTranscriptObserver",
   ]
 
 
