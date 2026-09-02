@@ -46,21 +46,26 @@ every box below is re-verified immediately before pressing the button in
       "
       ```
 
-      **Verified FAILING** against `main` = `ca4e5c4` on 2026-09-02 (the
-      assertion raises; `EVENT_STREAM_NAME` is absent from the script). The
-      fix is on [#349](https://github.com/luolc/swe-lab/pull/349), not yet
-      merged as of this writing. **If this fails, do not press the button
+      **Verified PASSING** against `main` = `5145510` on 2026-09-02, now that
+      [#349](https://github.com/luolc/swe-lab/pull/349) has merged (the fix
+      landed there). Re-run this at launch time regardless — a passing check
+      today is not evidence it still passes when the button is actually
+      pressed, and this is exactly the item a later regression would be most
+      costly to trust from memory. **If this fails, do not press the button
       in §2**: without the redirection, a supervised proxy-captured run's
       `event_stream.jsonl` is never written, the actor hangs on the
       correction-channel FIFO for the full agent timeout
       (`_AGENT_TIMEOUT_S = 3600.0`,
-      `src/swe_lab/workflow/definitions.py:61`), and the run lands as
+      `src/swe_lab/workflow/definitions.py:63`), and the run lands as
       `TIMED_OUT` — a wiring failure charged to the actor's budget
       (`PREREGISTRATION.md` §3, §7).
 - [ ] `#349` is merged: `git -C /home/ubuntu/dev/swe-lab fetch origin && git
       -C /home/ubuntu/dev/swe-lab log --oneline -1 origin/main` names a
       commit that closes #349, and `git rev-parse main` ==
-      `git rev-parse origin/main` in the main checkout.
+      `git rev-parse origin/main` in the main checkout. **Merged 2026-09-02**
+      (`main` = `5145510`) — still a launch-time check, not a fact to carry
+      forward from this sentence: re-verify, since this file does not update
+      itself when `main` moves again.
 - [ ] `#350` (the pre-registration) is merged **and has been read** —
       merged as of `ca4e5c4` (2026-09-02); its closure criteria are frozen
       before this run starts, and re-reading it now is what keeps them that
@@ -72,40 +77,101 @@ every box below is re-verified immediately before pressing the button in
       record survived at all (`docs/conventions.md:673` — the `docker rm`
       evidence-destruction hazard). Do not prune any container found here;
       investigate what it is first.
-- [ ] No other agent is mid-merge on a file this run touches:
-      `python3 /tmp/claude-1000/-home-ubuntu-dev-swe-lab/0e93a8cb-e83a-4dfd-bddf-a9ec3a7f565a/scratchpad/status.py`
-      (absolute path — there is no `scratchpad/` under this repo; this
-      script belongs to the orchestrating session, not this repo, and is
-      not copied here).
+- [ ] **No merge is currently in progress against a file this run's
+      pre-flight or launch depends on.** Not a path into any one session's
+      scratchpad — a passing state here has to be checkable from any machine,
+      by anyone, at any time:
+
+      ```
+      cd /home/ubuntu/dev/swe-lab
+      gh pr list --state open --json number,title,mergeStateStatus
+      ```
+
+      Confirm none of the listed PRs both touches
+      `src/swe_lab/trace_synthesis/`, `docs/conventions.md`, or
+      `src/swe_lab/workflow/definitions.py` (`gh pr diff <n> --name-only` to
+      check) and shows a merge actively underway. If uncertain, ask the
+      orchestrating session directly before launch — a five-minute delay
+      against a run that costs a rollout to redo.
 - [ ] A container window for this run has been announced to the other
       agents sharing this box, and no agent runs docker-marked tests until
       it is closed (`AGENTS.md:108` — the one-container-at-a-time rule).
-- [ ] `load_dataset('swebench_pro')` returns `731` records — confirms the
-      pinned parquet ([#345](https://github.com/luolc/swe-lab/pull/345)) is
-      present and intact before spending any wall-clock on a rollout that
-      would fail at dataset load.
-- [ ] The chosen instance's Docker image is present locally **now**
-      (`docker images | grep <image tag>`) — not merely "was present on some
-      earlier date."
+- [ ] The dataset loads and has the expected count:
+
+      ```
+      cd /home/ubuntu/dev/swe-lab
+      uv run python -c "
+      from swe_lab.datasets.loader import load_dataset
+      ds = load_dataset('swebench_pro')
+      assert len(ds) == 731, f'expected 731, got {len(ds)}'
+      print('OK: 731 records')
+      "
+      ```
+
+      Confirms the pinned parquet ([#345](https://github.com/luolc/swe-lab/pull/345))
+      is present and intact before spending any wall-clock on a rollout that
+      would fail at dataset load. Verified passing (`dataset_count=731`) on
+      2026-09-02.
+- [ ] The chosen instance's Docker image is present locally **now** — not
+      merely "was present on some earlier date":
+
+      ```
+      cd /home/ubuntu/dev/swe-lab
+      uv run python -c "
+      from swe_lab.datasets.loader import load_dataset
+      ds = load_dataset('swebench_pro')
+      inst = ds.require('instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb')
+      print(inst.sandbox_spec().image_ref)
+      "
+      ```
+
+      then check that exact tag:
+
+      ```
+      docker images --format '{{.Repository}}:{{.Tag}}' | grep 'openlibrary-internetarchive__openlibrary-5de7de19'
+      ```
+
+      Verified passing on 2026-09-02: the image-derivation command prints
+      `jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7`,
+      and the `grep` above finds exactly that line.
+
+      For reference, the other three of #261's candidate instances — not
+      what this run launches, PREREGISTRATION.md §2 already fixed the
+      choice — were derived and checked present the same way, on 2026-09-02:
+
+      | candidate | `grep` substring | image present |
+      | --- | --- | --- |
+      | `ansible-c1f2df47` | `ansible-ansible__ansible-c1f2df47` | yes |
+      | `navidrome-5001518260` | `navidrome-navidrome__navidrome-5001518260` | yes |
+      | `vuls-4c04acbd9` | `vuls-future-architect__vuls-4c04acbd9` | yes |
 
 ## 2. The command
 
 The instance is
 [`PREREGISTRATION.md` §2](PREREGISTRATION.md#2-the-instance)'s choice —
 read it from there, not retyped here, so the two documents cannot disagree
-about which instance this is:
+about which instance this is. **Run through `uv run`, matching every other
+command in this file.** Not because a bare `python -m swe_lab` is broken —
+whether it works **depends on the reader's shell state**: in one checkout
+with a `direnv`-activated virtualenv it succeeds; in a clean environment
+(`env -u VIRTUAL_ENV -u PATH /usr/bin/python3 -m swe_lab --help`) it fails
+with `No module named swe_lab`, and this worktree's own plain `python -c
+"import swe_lab"` failed the same way on 2026-09-02, `VIRTUAL_ENV` unset.
+A runbook a human reads on some machine cannot assume which of those two
+states they're in. `uv run` is what removes the dependency on that state,
+not a fix for a break — the two readings above are each true only in the
+shell that produced them, and neither generalizes past it.
 
 ```
 cd /home/ubuntu/dev/swe-lab
-python -m swe_lab run supervised_rollout_and_unit_test \
+uv run python -m swe_lab run supervised_rollout_and_unit_test \
   instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb
 ```
 
-Workflow name confirmed registered at
-`src/swe_lab/workflow/definitions.py` on [#349](https://github.com/luolc/swe-lab/pull/349)'s
-branch (`register_workflow("supervised_rollout_and_unit_test", ...)`,
-verified against SHA `da913975` on 2026-09-02 — re-check the line once #349
-merges, since line numbers may shift).
+Workflow name confirmed registered at `src/swe_lab/workflow/definitions.py:268`
+on `main` (`register_workflow("supervised_rollout_and_unit_test", ...)`,
+verified against `main` = `5145510` on 2026-09-02, after
+[#349](https://github.com/luolc/swe-lab/pull/349) merged).
 
 **No overrides. Three reasons, each independently checked, not remembered:**
 
@@ -121,15 +187,15 @@ merges, since line numbers may shift).
    (`src/swe_lab/harnesses/claude_code/constants.py:114`, confirmed on
    current `main`) and `SUPERVISOR_MODEL = "anthropic/claude-sonnet-5"` (the
    same model, OpenRouter-qualified;
-   `src/swe_lab/workflow/definitions.py:126` on #349's branch, same SHA as
-   above). The pin is deliberate: it is what keeps a positive result from
+   `src/swe_lab/workflow/definitions.py:126`, also confirmed on current
+   `main`). The pin is deliberate: it is what keeps a positive result from
    being read two ways at once — "supervision worked" versus "a stronger
    model's reasoning leaked into the judge." `--rollout.harness.model=...`
    overrides only the actor's half and nothing refuses the resulting
    mismatch.
 3. **`--unit_test.retries=2` would be a no-op.** `_UNIT_TEST_RETRIES = 2` is
-   already the default (`src/swe_lab/workflow/definitions.py:65`, used at
-   lines 111 and 132).
+   already the default (`src/swe_lab/workflow/definitions.py:67`, used at
+   lines 113 and 227).
 
 ## 3. If it fails — read this before doing anything
 
@@ -185,8 +251,9 @@ they are exactly the ones a post-hoc reading would be tempted to soften:
   call, which this run's workflow adds.
 - **Supervision side — call counts only, not money.**
   `supervision.boundaries` / `supervision.corrections` on the rollout
-  record are available once `#349` lands (`PREREGISTRATION.md` §6, point 2).
-  Tokens and dollars are **not instrumented** for either count
+  record are available now that `#349` has landed
+  (`PREREGISTRATION.md` §6, point 2). Tokens and dollars are **not
+  instrumented** for either count
   (`PREREGISTRATION.md` §6, point 3) — do not convert a call count into a
   cost figure; nothing in this run's tooling supports that conversion.
 - **Cap for this stage: 10 SWE-bench Pro instances × 2 rollouts**
@@ -199,8 +266,8 @@ they are exactly the ones a post-hoc reading would be tempted to soften:
 - **Do not edit `docs/conventions.md`** — queued for a single pass by the
   wiring line.
 - **Do not edit anything under `src/swe_lab/trace_synthesis/`** —
-  [#348](https://github.com/luolc/swe-lab/pull/348),
-  [#349](https://github.com/luolc/swe-lab/pull/349) and
-  [#351](https://github.com/luolc/swe-lab/pull/351) are already queued
-  against those files; a fourth concurrent edit is exactly the kind of
-  collision this repo has already paid for once today.
+  [#348](https://github.com/luolc/swe-lab/pull/348) and
+  [#351](https://github.com/luolc/swe-lab/pull/351) are open and queued
+  against those files as of 2026-09-02 ([#349](https://github.com/luolc/swe-lab/pull/349)
+  has since merged); a concurrent edit against either open one is exactly
+  the kind of collision this repo has already paid for once today.
