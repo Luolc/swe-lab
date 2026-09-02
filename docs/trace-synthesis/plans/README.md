@@ -137,6 +137,24 @@ rather than a mechanism that is not there.
 batch, whose purpose is to show the pipeline is *stable* — **not** to measure an
 effect, which it is far too small to do.
 
+**A precondition on the reporting path, not an eighth point.** Before *any* rate
+is reported from this pipeline — which means before the stability batch, not
+after it — the rate has to carry the two counts ADR-0015 §5 and
+[ADR-0016](../../decisions/ADR-0016-the-endings-nobody-could-attribute.md)
+require: how many runs were excluded as ours, and how many nobody could
+attribute. Both ADRs recorded that as a contract on a reporter that did not
+exist, and a contract with nothing enforcing it is the decoration this
+component's own hazard entry is about.
+[`swe_lab/reporting.py`](../../../src/swe_lab/reporting.py) is the canonical
+value and renderer for it: the rate and its counts are **one value with one
+rendering**, and the named tests in `tests/test_reporting.py` fail if either
+count is deleted from that rendering. **Obligation:** nothing reports a rate
+today, so the PR that adds the first reporting path routes it through that
+renderer and tests the call site. Until then this is a safe value with no
+caller, not a run-wide invariant — and it is a batch that was *entirely* ours
+which shows why the distinction matters: it has no rate at all, and says so
+rather than printing `0 / 0`.
+
 - **Verification:** an [experiment](../../experiments/playbook.md) `REPORT.md` —
   hypothesis, logged run, conclusion. A supervised rollout that **fails to
   resolve is a complete result**; what would make it incomplete is a point above
