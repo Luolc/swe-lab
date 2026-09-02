@@ -228,6 +228,12 @@ def build_baseline_script(*, workdir: str, output_path: str) -> str:
   )
 
 
+# Persisted for audit by the grading side, and named here rather than there
+# so the sandbox layer's test double can answer the script without importing
+# upward into `evaluation`.
+BASELINE_VERIFY_SCRIPT_NAME = "baseline_verify.sh"
+
+
 def build_baseline_verify_script(*, workdir: str, base_ref_path: str) -> str:
   """Build the bash that proves the tree is the one the patch was taken from.
 

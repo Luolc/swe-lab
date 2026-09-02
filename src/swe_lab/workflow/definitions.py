@@ -122,7 +122,11 @@ GOLD_UNIT_TEST: WorkflowDef = (
         # not a flag on ``UNIT_TEST`` precisely because a task that builds its
         # own patch cannot also be handed one: the two suppliers collide, on
         # purpose, and the collision is the reason there are two names.
-        UnitTestTask(inputs_builder=gold_patch),
+        # `patch_baseline=False` against the default (ADR-0014): the
+        # dataset's gold patch is authored against `base_commit`, so
+        # `base_commit` is its base — there is no pre-agent tree here,
+        # and no recorded base ref for a verify to compare against.
+        UnitTestTask(inputs_builder=gold_patch, patch_baseline=False),
         timeout=_UNIT_TEST_TIMEOUT_S,
         sandbox=DockerHostSandboxConfig(network=True),
         retries=_UNIT_TEST_RETRIES,

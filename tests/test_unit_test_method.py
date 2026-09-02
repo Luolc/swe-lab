@@ -33,6 +33,7 @@ from swe_lab.evaluation.unit_test import (
     verdict_of,
 )
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec
+from swe_lab.git.patch import BASELINE_VERIFY_SCRIPT_NAME
 from swe_lab.sandbox import (
     Contribution,
     ExecResult,
@@ -46,6 +47,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandbox, FakeSandboxConfig
 from swe_lab.workflow import (
     AttemptResult,
@@ -139,7 +141,10 @@ def _grade(
       _Instance(spec=spec, gold=gold),
       output_dir=output_dir,
       timeout=60.0,
-      extra_mounts={PATCH_NAME: Mount(Inline(b"CANDIDATE"))},
+      extra_mounts={
+          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+      },
       **kwargs,  # pyright: ignore[reportArgumentType]
   )
 
@@ -151,8 +156,9 @@ def test_run_stages_entryscript_and_grades(tmp_path: Path):
       _unit_test_spec(["a", "b"], ["a", "b"]),
       output_dir=tmp_path / "o",
   )
-  # the eval script is run as entryscript.sh (a workspace file, by name)
-  assert sandbox.scripts == [ENTRYSCRIPT_NAME]
+  # the eval script is run as entryscript.sh (a workspace file, by name),
+  # preceded by the baseline verify the default now composes (ADR-0014)
+  assert sandbox.scripts == [BASELINE_VERIFY_SCRIPT_NAME, ENTRYSCRIPT_NAME]
   assert result.run.status is RunStatus.SUCCESS
   verdict = verdict_of(result)
   assert isinstance(verdict, SweBenchProVerdict)
@@ -256,9 +262,13 @@ def test_env_reaches_the_entryscript(tmp_path: Path):
       _Instance(spec=_unit_test_spec(["a"], ["a"])),
       output_dir=tmp_path / "o",
       timeout=60.0,
-      extra_mounts={PATCH_NAME: Mount(Inline(b"CANDIDATE"))},
+      extra_mounts={
+          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+      },
   )
-  assert sandbox.script_envs == [{"MY_FLAG": "1"}]
+  # The env is the *entryscript's*; the baseline verify ahead of it gets none.
+  assert sandbox.script_envs == [None, {"MY_FLAG": "1"}]
 
 
 def test_extra_observers_run_after_the_methods_own(tmp_path: Path):
@@ -330,7 +340,7 @@ def test_the_gold_builder_fills_the_patch_input_itself(tmp_path: Path):
   # input from the instance's reference solution.
   sandbox = _fake(tmp_path)
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      inputs_builder=gold_patch
+      inputs_builder=gold_patch, patch_baseline=False
   )
   result = task.execute(
       sandbox,
@@ -346,7 +356,7 @@ def test_the_gold_builder_refuses_an_instance_without_one(tmp_path: Path):
   # Asking to grade a reference solution that does not exist is a caller
   # error, recorded as the attempt's failure rather than graded as unresolved.
   task: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
-      inputs_builder=gold_patch
+      inputs_builder=gold_patch, patch_baseline=False
   )
   result = task.execute(
       _fake(tmp_path),
@@ -366,7 +376,10 @@ def test_a_custom_patch_name_reaches_the_schema_and_the_spec():
       patch_name="candidate.diff"
   )
   instance = _Instance(spec=_unit_test_spec(["a"], ["a"]))
-  assert [s.name for s in task.input_schema()] == ["candidate.diff"]
+  assert [s.name for s in task.input_schema()] == [
+      "candidate.diff",
+      BASE_REF_NAME,
+  ]
   assert (
       instance.unit_test_spec(
           apply_patch=True, patch_name=task.patch_name
@@ -390,8 +403,13 @@ def test_baseline_grading_declares_the_base_ref_as_a_second_input():
       "patch.diff",
       BASE_REF_NAME,
   ]
-  # Default mode is untouched; and no-apply mode has no inputs to gain.
-  plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
+  # …and it is the default (ADR-0014). Opting back to `base_commit` drops it,
+  # and no-apply mode has no inputs to gain either way.
+  assert [s.name for s in UnitTestTask().input_schema()] == [
+      "patch.diff",
+      BASE_REF_NAME,
+  ]
+  plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask(patch_baseline=False)
   assert [s.name for s in plain.input_schema()] == ["patch.diff"]
   no_apply: UnitTestTask[SweBenchProVerdict] = UnitTestTask(
       apply_patch=False, patch_baseline=True
@@ -414,9 +432,9 @@ def test_baseline_mode_composes_the_verify_observer_first():
   observers = baseline.observers(instance)
   assert isinstance(observers[0], BaselineVerifyObserver)
   assert observers[0].workdir == instance.sandbox_spec().workdir
-  # Default mode composes no verifier; nor does a no-apply baseline run —
-  # with no patch there is no base to hold anyone to.
-  plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask()
+  # `base_commit` grading composes no verifier; nor does a no-apply baseline
+  # run — with no patch there is no base to hold anyone to.
+  plain: UnitTestTask[SweBenchProVerdict] = UnitTestTask(patch_baseline=False)
   assert not any(
       isinstance(o, BaselineVerifyObserver) for o in plain.observers(instance)
   )
@@ -438,9 +456,11 @@ def test_the_verify_observer_fails_the_run_ungraded_on_a_mismatch(
   from swe_lab.sandbox import ExecResult, SandboxError, SandboxSpec
   from swe_lab.sandbox.testing import FakeSandbox
 
+  # `baseline_sha=None`: this test drives the verify script itself.
   sb = FakeSandbox(
       spec=SandboxSpec("x", "img:tag", "/app", "base"),
       workspace=epath.Path(tmp_path),
+      baseline_sha=None,
   )
   sb.run_results = [
       ExecResult(1, "", "grading tree differs from the patch base: ...")
@@ -451,6 +471,7 @@ def test_the_verify_observer_fails_the_run_ungraded_on_a_mismatch(
   clean = FakeSandbox(
       spec=SandboxSpec("x", "img:tag", "/app", "base"),
       workspace=epath.Path(tmp_path / "ok"),
+      baseline_sha=None,
   )
   BaselineVerifyObserver(workdir="/app").after_create(clean)
   assert clean.scripts == ["baseline_verify.sh"]
@@ -518,7 +539,10 @@ def _run_eval(
       timeout=60.0,
       retries=retries,
       run_ts="ts-0",
-      extra_mounts={PATCH_NAME: Mount(Inline(b"CANDIDATE"))},
+      extra_mounts={
+          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+      },
   )
   return outcome, config, store
 

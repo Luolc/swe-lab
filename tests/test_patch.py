@@ -15,6 +15,7 @@ import subprocess
 import pytest
 
 from swe_lab.git.patch import (
+    build_baseline_script,
     build_extraction_script,
     is_effectively_empty,
     strip_binary_hunks,
@@ -124,6 +125,20 @@ def _run_extraction(
   return out_path.read_bytes().decode("utf-8", "replace")
 
 
+def _run_baseline(repo: Path) -> str:
+  """Commit the tree as the agent found it; return the baseline sha."""
+  out_path = repo.parent / "base_ref.txt"
+  script = build_baseline_script(workdir=str(repo), output_path=str(out_path))
+  subprocess.run(
+      ["bash", "-c", script],
+      check=True,
+      capture_output=True,
+      text=True,
+      env={"PATH": _PATH},
+  )
+  return out_path.read_text().strip()
+
+
 def test_extraction_captures_new_modified_deleted(tmp_path: Path) -> None:
   repo, base = _init_repo(tmp_path)
   _ = (repo / "app.py").write_text("def f():\n    return 2\n")  # modified
@@ -154,6 +169,52 @@ def test_extraction_empty_when_no_changes(tmp_path: Path) -> None:
   repo, base = _init_repo(tmp_path)
   patch = _run_extraction(repo, base)
   assert is_effectively_empty(patch)
+
+
+def test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image(
+    tmp_path: Path,
+) -> None:
+  """No agent ran, so the patch is empty — even on a dirty image (ADR-0014).
+
+  The named enforcement of the baseline default. Measured 2026-09-01: a
+  SWE-bench Pro image ships an untracked Redis append-only-file directory, so
+  the ``git add -N`` of facet 3 stages the image's own state as if the agent
+  had written it — 15,710 insertions, 166 KB, from a run whose agent executed
+  nothing. ADR-0001's 2026-08-25 amendment described that failure and shipped
+  the remedy **off**, which is why it kept happening; this test is what makes
+  the default load-bearing rather than a sentence in a document.
+  """
+  repo, base_commit = _init_repo(tmp_path)
+  # The image ships untracked state — as NodeBB's does — and no agent runs.
+  (repo / "appendonlydir").mkdir()
+  _ = (repo / "appendonlydir" / "appendonly.aof.1.incr.aof").write_text(
+      "SELECT\n*2\n" * 500
+  )
+
+  # Guard against a vacuous pass: against `base_commit` the image's own files
+  # *are* folded in, which is the defect this default exists to prevent.
+  assert not is_effectively_empty(_run_extraction(repo, base_commit))
+
+  # Against the tree the agent found, an agent that did nothing changed nothing.
+  assert is_effectively_empty(_run_extraction(repo, _run_baseline(repo)))
+
+
+def test_the_baseline_still_captures_the_work_of_an_agent_that_did_edit(
+    tmp_path: Path,
+) -> None:
+  """The default must not buy an empty patch by suppressing real edits."""
+  repo, _ = _init_repo(tmp_path)
+  (repo / "appendonlydir").mkdir()
+  _ = (repo / "appendonlydir" / "appendonly.aof").write_text("state\n")
+  base_ref = _run_baseline(repo)  # the tree as the agent finds it
+
+  _ = (repo / "app.py").write_text("def f():\n    return 2\n")  # the agent
+  _ = (repo / "new.py").write_text("x = 1\n")
+
+  patch = _run_extraction(repo, base_ref)
+  assert "+    return 2" in patch
+  assert "b/new.py" in patch and "x = 1" in patch
+  assert "appendonlydir" not in patch  # the image's state stays out
 
 
 def test_extraction_removes_nested_git(tmp_path: Path) -> None:

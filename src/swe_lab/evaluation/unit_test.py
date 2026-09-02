@@ -19,7 +19,10 @@ from typing import Any, override
 
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.evaluation.verdict import Grader, UnitTestSpec, Verdict
-from swe_lab.git.patch import build_baseline_verify_script
+from swe_lab.git.patch import (
+    BASELINE_VERIFY_SCRIPT_NAME,
+    build_baseline_verify_script,
+)
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
@@ -201,7 +204,6 @@ def gold_patch(
   return {PATCH_NAME: patch.encode("utf-8")}
 
 
-_BASELINE_VERIFY_SCRIPT_NAME = "baseline_verify.sh"  # persisted for audit
 _BASELINE_VERIFY_TIMEOUT_S = 120.0
 
 
@@ -248,9 +250,9 @@ class BaselineVerifyObserver(SandboxObserver):
         workdir=self.workdir, base_ref_path=self.base_ref_name
     )
     script = f'cd "$SANDBOX_WORKSPACE"\n{body}'
-    sb.write(_BASELINE_VERIFY_SCRIPT_NAME, script.encode("utf-8"))
+    sb.write(BASELINE_VERIFY_SCRIPT_NAME, script.encode("utf-8"))
     result = sb.run_script(
-        _BASELINE_VERIFY_SCRIPT_NAME, timeout=_BASELINE_VERIFY_TIMEOUT_S
+        BASELINE_VERIFY_SCRIPT_NAME, timeout=_BASELINE_VERIFY_TIMEOUT_S
     )
     if result.exit_code != 0:
       detail = (result.stderr or result.stdout).strip()[-500:]
@@ -288,7 +290,12 @@ class UnitTestTask[V: Verdict](Task):
       resetting to ``base_commit`` — the grading half of
       ``CodingAgentTask.patch_baseline`` (ADR-0001, 2026-08-25 amendment), and
       the two must be set together: each side alone moves the patch and the
-      tree apart. The compiled script recomputes the baseline with the same
+      tree apart. **On by default** (ADR-0014), matching the rollout half, so
+      the naive composition of the two tasks is the correct one. Set it
+      ``False`` for a patch whose base genuinely *is* ``base_commit`` and that
+      therefore carries no recorded base ref — the dataset's own gold patch
+      (``GOLD_UNIT_TEST``, ``datasets/verify.py``) and the untouched-tree
+      self-check. The compiled script recomputes the baseline with the same
       pinned commands the rollout side used, **verifies the sha against the
       run's recorded** ``patch.base_ref.txt`` (declared here as an input, so
       the workflow wires it along the same edge as the patch), and only then
@@ -304,7 +311,7 @@ class UnitTestTask[V: Verdict](Task):
 
   apply_patch: bool = True
   patch_name: str = PATCH_NAME
-  patch_baseline: bool = False
+  patch_baseline: bool = True
   env: Mapping[str, str] | None = None
 
   def _compile(self, instance: TaskInstance[Any]) -> UnitTestSpec[V]:

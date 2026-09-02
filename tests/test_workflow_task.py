@@ -28,6 +28,7 @@ from swe_lab.evaluation.unit_test import (
     UnitTestTask,
 )
 from swe_lab.evaluation.verdict import UnitTestSpec
+from swe_lab.git.patch import BASELINE_VERIFY_SCRIPT_NAME
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
@@ -44,6 +45,7 @@ from swe_lab.sandbox import (
     SandboxSpec,
 )
 from swe_lab.sandbox.observers import PATCH_NAME
+from swe_lab.sandbox.observers.diff_extract import BASE_REF_NAME
 from swe_lab.sandbox.testing import FakeSandbox, RecordingObserver
 from swe_lab.workflow import AttemptResult, retry_permitted, Task
 
@@ -573,7 +575,12 @@ def test_the_patch_input_is_fixed_by_configuration():
   # stages no placeholder of its own — regardless of who will supply it.
   task = UnitTestTask()
   instance = _EvalInstance()
-  assert [schema.name for schema in task.input_schema()] == [PATCH_NAME]
+  # Two names by default: a patch is only interpretable with the base it was
+  # taken against, so they are declared — and travel — together (ADR-0014).
+  assert [schema.name for schema in task.input_schema()] == [
+      PATCH_NAME,
+      BASE_REF_NAME,
+  ]
   assert PATCH_NAME not in task.mounts(instance)
   # …but the eval script was still compiled to apply the patch, so whatever
   # gets mounted under the declared name is what gets applied.
@@ -593,11 +600,15 @@ def test_a_callers_literal_patch_arrives_through_the_same_channel(
       _EvalInstance(),
       output_dir=tmp_path / "out",
       timeout=10.0,
-      extra_mounts={PATCH_NAME: Mount(Inline(b"CANDIDATE"))},
+      extra_mounts={
+          PATCH_NAME: Mount(Inline(b"CANDIDATE")),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+      },
   )
   assert result.run.status is RunStatus.SUCCESS
   assert (sandbox.workspace / PATCH_NAME).read_text() == "CANDIDATE"
-  assert sandbox.scripts == [ENTRYSCRIPT_NAME]
+  # The baseline verify proves the tree is the patch's base before grading it.
+  assert sandbox.scripts == [BASELINE_VERIFY_SCRIPT_NAME, ENTRYSCRIPT_NAME]
 
 
 def test_a_workflow_edge_mounts_the_upstream_patch(tmp_path: Path):
@@ -614,7 +625,8 @@ def test_a_workflow_edge_mounts_the_upstream_patch(tmp_path: Path):
       # what a workflow edge does: resolve input_schema() names against the
       # store and mount them read-only
       extra_mounts={
-          PATCH_NAME: Mount(LocalFile(epath.Path(upstream)), read_only=True)
+          PATCH_NAME: Mount(LocalFile(epath.Path(upstream)), read_only=True),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
       },
   )
   assert result.run.status is RunStatus.SUCCESS
@@ -740,7 +752,10 @@ def _graded_eval_run(
       instance,
       output_dir=tmp_path / "out",
       timeout=10.0,
-      extra_mounts={PATCH_NAME: Mount(Inline(b"P"))},
+      extra_mounts={
+          PATCH_NAME: Mount(Inline(b"P")),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+      },
   )
   return task, result
 
@@ -814,7 +829,10 @@ def test_an_eval_that_never_graded_is_invalid(tmp_path: Path):
       _EvalInstance(),
       output_dir=tmp_path / "out",
       timeout=10.0,
-      extra_mounts={PATCH_NAME: Mount(Inline(b"P"))},
+      extra_mounts={
+          PATCH_NAME: Mount(Inline(b"P")),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+      },
   )
   assert task.outputs_valid(result) is False
   assert task.should_retry(result) is True
@@ -902,7 +920,10 @@ def test_a_timed_out_eval_is_not_retried_by_default(tmp_path: Path):
       _EvalInstance(),
       output_dir=tmp_path / "out",
       timeout=10.0,
-      extra_mounts={PATCH_NAME: Mount(Inline(b"P"))},
+      extra_mounts={
+          PATCH_NAME: Mount(Inline(b"P")),
+          BASE_REF_NAME: Mount(Inline(b"deadbeef\n")),
+      },
   )
   assert result.run.status is RunStatus.TIMEOUT
   assert retry_permitted(task, result) is False

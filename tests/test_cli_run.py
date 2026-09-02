@@ -28,6 +28,7 @@ from swe_lab.datasets.swebench_pro.unit_test import (
     SweBenchProGrader,
     SweBenchProVerdict,
 )
+from swe_lab.evaluation.unit_test import UnitTestTask
 from swe_lab.evaluation.verdict import UnitTestSpec
 from swe_lab.harnesses import (
     AgentOutcome,
@@ -174,8 +175,15 @@ def _wire(
     *,
     passed: list[str] | None = None,
     gold: str | None = "GOLD DIFF",
+    patch_baseline: bool = True,
 ) -> None:
-  """Point the command at a stand-in dataset and a throwaway repo root."""
+  """Point the command at a stand-in dataset and a throwaway repo root.
+
+  ``patch_baseline=False`` grades against ``base_commit``, which leaves the
+  unit-test workflow with a single unbound input — the shape the CLI's own
+  input-binding rules are about. The shipped default declares two (the patch
+  and the base it was taken against, ADR-0014).
+  """
   instance = _Instance(
       passed=passed if passed is not None else ["a"], gold=gold
   )
@@ -197,7 +205,15 @@ def _wire(
 
   def on_fake(name: str):
     return tuple(
-        replace(entry, sandbox=FakeSandboxConfig())
+        replace(
+            entry,
+            sandbox=FakeSandboxConfig(),
+            task=(
+                entry.task
+                if patch_baseline or not isinstance(entry.task, UnitTestTask)
+                else replace(entry.task, patch_baseline=False)
+            ),
+        )
         for entry in real_definition(name)
     )
 
@@ -329,7 +345,7 @@ def test_a_workflow_that_needs_an_input_says_which_one(
 def test_one_unbound_input_needs_no_name(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  _wire(monkeypatch, tmp_path)
+  _wire(monkeypatch, tmp_path, patch_baseline=False)
   candidate = tmp_path / "cand.diff"
   _ = candidate.write_text("CANDIDATE")
   result = _run("unit_test", _INSTANCE_ID, "--input", str(candidate))
@@ -351,7 +367,7 @@ def test_one_unbound_input_needs_no_name(
 def test_an_input_may_be_named_and_a_missing_file_is_refused(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-  _wire(monkeypatch, tmp_path)
+  _wire(monkeypatch, tmp_path, patch_baseline=False)
   candidate = tmp_path / "cand.diff"
   _ = candidate.write_text("CANDIDATE")
   named = _run(
