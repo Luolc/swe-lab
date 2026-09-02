@@ -42,7 +42,7 @@ from swe_lab.harnesses.claude_code.constants import (
     EVENT_STREAM_NAME,
 )
 from swe_lab.harnesses.claude_code.harness import user_event_line
-from swe_lab.rollout import SUPERVISION_METRIC
+from swe_lab.rollout import SUPERVISION_LAPSE_METRIC, SUPERVISION_METRIC
 from swe_lab.sandbox import (
     ArtifactSchema,
     Contribution,
@@ -55,6 +55,7 @@ from .judge import supervising_policy, Transport
 from .supervisor import (
     Intervention,
     LOG_KIND_GAP,
+    LOG_KIND_LAPSE,
     LOG_KIND_SPOKE,
     SpeakPolicy,
     Supervisor,
@@ -198,11 +199,15 @@ class SupervisorPump:
     interventions: Every correction the supervisor delivered, in order. The
       supervisor writes them through the channel's sink; this is the record of
       what it did, not a second delivery path.
-    saw_events: Whether the actor's event stream ever appeared. A stream that
-      never exists is not a quiet run: it is a supervisor that watched nothing,
-      and it is indistinguishable from a healthy one unless it is recorded —
-      ``poll`` returning 0 says the same thing for "no new events" and for "no
-      file, ever".
+    saw_events: Whether one usable actor event was ever handed to the
+      supervisor. **Not** whether the stream file appeared: a file that exists
+      and yields nothing decodable is the same fact as no file at all — a
+      supervisor that watched nothing — and it is indistinguishable from a
+      healthy one unless it is recorded, since ``poll`` returning 0 says the
+      same thing for "no new events", "nothing I could decode" and "no file,
+      ever". ``stream_events`` skips a line it cannot parse rather than
+      raising, so the existence of bytes is not evidence that any of them
+      reached a judgement.
     at_rest: Whether the last event consumed was the actor finishing a turn
       with the supervisor having nothing to add. Under a live stdin channel the
       actor does not exit when it finishes answering — it waits for more input
@@ -240,7 +245,6 @@ class SupervisorPump:
     try:
       if not self.events_path.exists():
         return 0
-      self.saw_events = True
       text = self.events_path.read_text()[self._offset :]
       # Only whole lines are consumed, so a fragment is re-read next time
       # rather than dropped.
@@ -250,6 +254,10 @@ class SupervisorPump:
       self._offset += consumed
       spoken = 0
       for event in stream_events(text[:consumed]):
+        # Here, not at the file check: what makes a run supervised is an event
+        # reaching a judgement, and a file full of lines nobody could decode
+        # gets no further than the parser.
+        self.saw_events = True
         # `observe` writes through the sink itself and returns only what it
         # actually delivered, so this records rather than re-sends.
         intervention = self.supervisor.observe(event)
@@ -317,6 +325,7 @@ class SupervisedRun(SandboxObserver):
   channel: CorrectionChannel | None = None
   _rows: list[Mapping[str, Any]] = field(default_factory=list)
   _gap: bool = False
+  _lapses: int = 0
   _stuck: bool = False
   _stop: threading.Event = field(default_factory=threading.Event)
   _thread: threading.Thread | None = None
@@ -378,22 +387,36 @@ class SupervisedRun(SandboxObserver):
     unjudged or a correction that was never delivered. Read here because the
     log is where the supervisor already tells them apart.
 
+    A lapse is the third thing, and it is counted rather than latched: the
+    policy named the boundary it could not cover and asserted the next one is
+    unaffected, so the run keeps going and keeps its evidence value. Nothing
+    here re-derives that scope — the classification is the policy's, made where
+    the failure happened.
+
     Args:
       row: One row of the supervisor's account.
     """
     self._rows.append(row)
     if row.get("kind") == LOG_KIND_GAP:
       self._gap = True
+    elif row.get("kind") == LOG_KIND_LAPSE:
+      self._lapses += 1
 
   @property
-  def supervised_throughout(self) -> bool:
-    """Whether every boundary of this run was actually covered.
+  def supervision_accounted_for(self) -> bool:
+    """Whether every boundary of this run is accounted for.
+
+    Not the same claim as "every boundary was covered", and the difference is
+    the point: a boundary the policy could name and bound (a lapse) leaves the
+    run accounted for, because a reader can say exactly which boundary went
+    unsupervised and why. What breaks the account is a hole of unknown reach.
 
     Five ways it stops being true, and they are one fact reached five ways:
-    the actor's event stream never appeared, the pump stopped reading, the
-    supervisor hit a boundary it could not judge or could not speak at, the
-    supervising thread never stopped, or the channel ended without being told
-    to.
+    no usable actor event ever reached the supervisor (whether because the
+    stream never appeared or because nothing in it could be decoded), the pump
+    stopped reading, the supervisor hit a boundary it could not judge or could
+    not speak at *and could not bound*, the supervising thread never stopped,
+    or the channel ended without being told to.
 
     Returns:
       Whether the run is evidence about supervision at all.
@@ -417,6 +440,9 @@ class SupervisedRun(SandboxObserver):
       # would burn the wall clock and reach the outside as the actor's timeout
       # (ADR-0015), charging our breakage to it; the metric below is what keeps
       # the deliberate close from reading as an ordinary early finish.
+      # `_gap` and not the lapse count: a bounded failure costs one boundary,
+      # and ending the run over it would throw away every boundary after it to
+      # avoid losing one.
       if self.pump.at_rest or self._gap or not self.pump.healthy:
         try:
           self.channel.close()
@@ -430,21 +456,30 @@ class SupervisedRun(SandboxObserver):
 
   @override
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
-    """Stop supervising, persist the account, and report a lost supervisor.
+    """Stop supervising, persist the account, and report what it cost.
 
-    The metric is :attr:`supervised_throughout` negated: every way a run can
-    lose its supervisor means the actor finished part of its work unsupervised,
-    which is what :func:`~swe_lab.rollout.rollout_outcome` turns into
-    ``SUPERVISION_FAILED``.
+    Two different facts, and they are reported as two:
+    :attr:`supervision_accounted_for` negated is
+    :data:`~swe_lab.rollout.SUPERVISION_METRIC`, which
+    :func:`~swe_lab.rollout.rollout_outcome` turns into ``SUPERVISION_FAILED``
+    — the run is not evidence about supervision. The lapse count is
+    :data:`~swe_lab.rollout.SUPERVISION_LAPSE_METRIC`, which changes no outcome
+    word: the run *is* evidence, and this is how many of its boundaries went
+    unsupervised for a named reason. Reported here rather than left in the log
+    because a run whose denominator includes unsupervised boundaries has to say
+    so where the outcome is read, not only where the account is stored — it
+    reaches the run's metrics, which ``run_task`` copies verbatim into
+    ``AttemptRecord.metrics``, the path ``SUPERVISION_METRIC`` already takes.
 
     Args:
       sb: Unused — every fact here is already on the host.
 
     Returns:
-      The account, the two counts a supervised run always carries, and — only
-      when the run lost its supervisor — the metric that changes its outcome
-      word. That one is an event, so a healthy run leaves no key rather than a
-      zero; the counts are measurements and are always present.
+      The account, the two counts a supervised run always carries, and two
+      events: the metric that changes the run's outcome word when it lost its
+      supervisor, and the lapse count when any boundary went unsupervised for a
+      named reason. The counts are measurements and are always present; the
+      events leave no key rather than a zero.
     """
     del sb
     self._stop.set()
@@ -457,7 +492,7 @@ class SupervisedRun(SandboxObserver):
       self._stuck = self._thread.is_alive()
     if self.pump is not None and not self._stuck:
       _ = self.pump.poll()  # whatever the actor wrote after the last tick
-    lost = not self.supervised_throughout
+    lost = not self.supervision_accounted_for
     # Read off the account rather than plumbed through the policy: a row is
     # written for every event the supervisor was consulted about, and a
     # `spoke` row is exactly one delivered correction.
@@ -468,9 +503,14 @@ class SupervisedRun(SandboxObserver):
         ),
     }
     account = "".join(json.dumps(row) + "\n" for row in self._rows)
+    events: dict[str, float] = {}
+    if lost:
+      events[SUPERVISION_METRIC] = 1.0
+    if self._lapses:
+      events[SUPERVISION_LAPSE_METRIC] = float(self._lapses)
     return Contribution(
         inline_artifacts={SUPERVISOR_LOG_NAME: account.encode()},
-        metrics=counts | ({SUPERVISION_METRIC: 1.0} if lost else {}),
+        metrics=counts | events,
     )
 
 

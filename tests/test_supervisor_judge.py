@@ -37,6 +37,7 @@ from swe_lab.trace_synthesis.supervisor import (
     InterventionTooLongError,
     MAX_INTERVENTION_CHARS,
     Observation,
+    PolicyLapseError,
     Verdict,
 )
 
@@ -225,7 +226,12 @@ def test_an_unusable_judge_answer_is_never_retried() -> None:
 
 
 def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
-  """The writer may produce anything; the intervention is what refuses it."""
+  """The writer may produce anything; the intervention is what refuses it.
+
+  The refusal reaches the supervisor bounded to this boundary, and the cause
+  travels with it — so the record still says the line was rejected for its
+  length rather than trimmed to fit.
+  """
   transport = RecordingTransport(answers=["x" * (MAX_INTERVENTION_CHARS + 1)])
   policy = supervising_policy(
       model="anthropic/claude-sonnet-5",
@@ -238,8 +244,9 @@ def test_an_over_long_line_from_the_writer_is_rejected_not_truncated() -> None:
       transport=RecordingTransport(answers=[OFF_TRACK_JSON]),
   )
 
-  with pytest.raises(InterventionTooLongError):
+  with pytest.raises(PolicyLapseError) as raised:
     policy.consider(observation())
+  assert isinstance(raised.value.__cause__, InterventionTooLongError)
 
 
 def test_a_non_boolean_verdict_field_is_unusable_not_coerced() -> None:

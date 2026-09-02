@@ -53,12 +53,20 @@ MAX_INTERVENTION_CHARS = 400
 # so the actor can mistake it neither for its own output nor for a tool's.
 INTERVENTION_TAG = "supervisor_note"
 
-#: The log row for a boundary the supervisor could not judge or could not speak
-#: at — a policy that raised, or a sink that did. Named because it is read
-#: outside this module: a gap means the actor passed that boundary
-#: **unsupervised**, which is not the same fact as a deliberate silence even
-#: though both leave the actor untouched.
+#: The log row for a boundary the supervisor could not cover **and cannot bound
+#: the reach of** — the sink failed, or the policy broke in a way it did not
+#: name. Named because it is read outside this module: a gap means the actor
+#: passed that boundary unsupervised and nothing is known about the boundaries
+#: after it, so the run stops being evidence about supervision at all.
 LOG_KIND_GAP = "gap"
+
+#: The log row for a *bounded* failure: this one boundary went unsupervised, for
+#: the reason recorded, and the policy asserted its own state survived. What it
+#: proves is a named hole — which boundary, and why — so the run stays evidence
+#: carrying that fact. What it does not prove is that the actor did anything at
+#: that boundary, or that the next one was covered: a later lapse says
+#: otherwise, and the count of them is the reading.
+LOG_KIND_LAPSE = "lapse"
 
 #: The log row for a correction that was delivered. Named for the same reason:
 #: a consumer counts these to say what the run's supervision cost and did.
@@ -73,6 +81,21 @@ LogWriter = Callable[[Mapping[str, Any]], None]
 
 class InterventionTooLongError(ValueError):
   """Raised when a policy produces text over :data:`MAX_INTERVENTION_CHARS`."""
+
+
+class PolicyLapseError(Exception):
+  """A policy failure the policy itself bounds to the boundary it happened at.
+
+  Raising this is an assertion about the *policy*, not about the actor: this
+  call could not produce a decision, and the policy's own state is intact, so
+  the next boundary will be judged normally.
+
+  **Scope is declared, never inferred.** Only the policy knows which of its
+  failures it can bound, so the supervisor reads the declaration and does not
+  classify on its behalf — an exception that does not carry it is unbounded by
+  definition, and the run is excluded. That default is the honest one: silence
+  about scope is not a claim of a small one.
+  """
 
 
 @dataclasses.dataclass(frozen=True)
@@ -146,7 +169,13 @@ class Observation:
 
 
 class SpeakPolicy(Protocol):
-  """Decides whether and when to speak — never what channel, never the run."""
+  """Decides whether and when to speak — never what channel, never the run.
+
+  A policy that cannot decide says how far the failure reaches, because only it
+  knows: :class:`PolicyLapseError` out of ``consider`` bounds it to that one
+  boundary, and any other exception leaves the reach unstated and excludes the
+  run.
+  """
 
   @property
   def name(self) -> str:
@@ -329,8 +358,8 @@ class SpeakWhenOffTrack:
      consulted;
   4. budget remaining, else silent;
   5. cooldown elapsed since the last intervention, else silent;
-  6. the writer produces a usable line, else the failure propagates and the
-     supervisor records a gap. Never a retry.
+  6. the writer produces a usable line, else the failure is bounded to this
+     boundary and recorded as a lapse. Never a retry.
 
   The cost of that order is stated rather than hidden: the judge runs on every
   boundary even after the budget is spent, so a ``budget=0`` policy still pays
@@ -408,18 +437,37 @@ class SpeakWhenOffTrack:
     Args:
       observation: The actor's records so far, the task and the criterion.
 
-    An unusable line from the writer — empty, or over the cap — is rejected by
-    :class:`Intervention` and propagates to the supervisor, which records the
-    gap. It is deliberately not caught here: retrying would make what the actor
-    hears a function of how many times we asked.
+    Both calls out to a model are bounded to this boundary: any ``Exception``
+    they raise — an upstream error, an unparseable answer, or a line
+    :class:`Intervention` rejects as empty or over the cap — becomes a
+    :class:`PolicyLapseError`, and the supervisor records a lapse. A
+    ``BaseException`` is not caught: an interrupt is not this policy's to
+    reinterpret as a small hole. The bound
+    comes from *where* the failure happened rather than from what was raised: a
+    judge call fails before this method has touched its own state, and a writer
+    call fails after the deviation is already recorded and before any budget is
+    spent. Neither is retried — retrying would make what the actor hears a
+    function of how many times we asked — and neither is a reason to disbelieve
+    the next boundary.
+
+    Anything raised outside those two calls is this policy's own state machine
+    breaking, which it cannot bound and therefore does not: it propagates
+    unclassified and the supervisor records a gap.
 
     Returns:
       What to say, or ``None``. Silence is the ordinary case.
+
+    Raises:
+      PolicyLapseError: A model call failed, or produced a line
+        :class:`Intervention` refused.
     """
     windowed = dataclasses.replace(
         observation, evidence=observation.evidence[-self.window :]
     )
-    verdict = self.judge(windowed, self.criterion)
+    try:
+      verdict = self.judge(windowed, self.criterion)
+    except Exception as error:  # noqa: BLE001 - re-raised with its scope named
+      raise PolicyLapseError(f"judge call failed: {error!r}") from error
     if not verdict.off_track or verdict.self_correcting:
       return None
 
@@ -434,7 +482,11 @@ class SpeakWhenOffTrack:
     ):
       return None
 
-    intervention = Intervention(text=self.writer(windowed, self.criterion))
+    try:
+      intervention = Intervention(text=self.writer(windowed, self.criterion))
+    except Exception as error:  # noqa: BLE001 - re-raised with its scope named
+      unusable = f"writer produced no usable line: {error!r}"
+      raise PolicyLapseError(unusable) from error
     self._spoken_at.append(observation.cursor)
     return intervention
 
@@ -527,8 +579,8 @@ class Supervisor:
     """Consume one stream event and act on it.
 
     Every call writes exactly one log row, so the account of a run has no
-    silent gaps: a judgement, a silence, or an explicit gap where the policy or
-    the sink failed.
+    silent gaps: a judgement, a silence, a lapse the policy bounded to this one
+    boundary, or a gap of unknown reach.
 
     Args:
       event: One decoded ``stream-json`` event.
@@ -549,6 +601,11 @@ class Supervisor:
     )
     try:
       intervention = self.policy.consider(observation)
+    except PolicyLapseError as error:
+      # The policy bounded this one; the run keeps its evidence value and the
+      # next boundary is judged normally.
+      self._row(LOG_KIND_LAPSE, reason=f"policy lapsed: {error!r}")
+      return None
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
       self._row(LOG_KIND_GAP, reason=f"policy raised: {error!r}")
       return None
@@ -583,7 +640,7 @@ class Supervisor:
     """Write one row of the run's account.
 
     Args:
-      kind: ``"spoke"``, ``"silent"`` or ``"gap"``.
+      kind: ``"spoke"``, ``"silent"``, ``"lapse"`` or ``"gap"``.
       **extra: Fields specific to the kind.
     """
     self.log(

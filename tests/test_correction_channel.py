@@ -35,6 +35,7 @@ from swe_lab.rollout import (
     CodingAgentTask,
     rollout_outcome,
     RolloutOutcome,
+    SUPERVISION_LAPSE_METRIC,
     SUPERVISION_METRIC,
 )
 from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
@@ -52,7 +53,9 @@ from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     INTERVENTION_TAG,
     LOG_KIND_GAP,
+    LOG_KIND_LAPSE,
     Observation,
+    PolicyLapseError,
     Supervisor,
 )
 from swe_lab.workflow import AttemptResult
@@ -111,6 +114,23 @@ class _Raises:
   def consider(self, observation: Observation) -> Intervention | None:
     del observation
     raise RuntimeError("judge unreachable")
+
+
+@final
+class _Lapses:
+  """A policy whose every call fails in a way it can bound to that call."""
+
+  def __init__(self) -> None:
+    self.calls = 0
+
+  @property
+  def name(self) -> str:
+    return "lapses"
+
+  def consider(self, observation: Observation) -> Intervention | None:
+    del observation
+    self.calls += 1
+    raise PolicyLapseError("judge call failed: upstream 503")
 
 
 def _supervisor(channel: CorrectionChannel, policy: Any) -> Supervisor:
@@ -684,6 +704,55 @@ def test_a_boundary_the_policy_could_not_judge_invalidates_the_run(
   )
 
 
+def test_a_bounded_lapse_is_counted_where_the_outcome_is_read(tmp_path: Path):
+  """The other half of the gap decision: a named hole is priced differently.
+
+  A run whose unsupervised boundaries are each named is still evidence, so it
+  keeps running and keeps its outcome word — but its denominator now contains
+  boundaries nobody watched, and that fact has to arrive where a reader of the
+  outcome record is standing. A count left only in the account would be a fact
+  recorded and never read.
+  """
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  policy = _Lapses()
+  run = _supervised(tmp_path, policy=policy)
+  first = _assistant_event("one") + "\n"
+  _ = events.write_text(first)
+  _wait_until(lambda: policy.calls >= 1)
+  # The second event is written only *after* the first was judged, and reaching
+  # the policy at all is the proof the run was not ended: a gap would have
+  # closed the channel and returned the feeding thread before this line.
+  _ = events.write_text(first + _assistant_event("two") + "\n")
+  _wait_until(lambda: policy.calls >= 2)
+
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  rows = [
+      json.loads(line)
+      for line in contribution.inline_artifacts[SUPERVISOR_LOG_NAME]
+      .decode()
+      .splitlines()
+  ]
+  assert [row["kind"] for row in rows] == [LOG_KIND_LAPSE, LOG_KIND_LAPSE]
+  # Exact, so that the *absence* of `supervision.unhealthy` is asserted rather
+  # than merely unmentioned: a lapse must not reach the outcome word. The two
+  # counts a supervised run always carries are here too — two boundaries were
+  # consulted about and nothing was said, which is what a lapsing run looks
+  # like from outside.
+  assert contribution.metrics == {
+      SUPERVISION_LAPSE_METRIC: 2.0,
+      BOUNDARIES_METRIC: 2.0,
+      CORRECTIONS_METRIC: 0.0,
+  }
+
+  attempt = _attempt_with(contribution.metrics)
+  assert rollout_outcome(attempt) is not RolloutOutcome.SUPERVISION_FAILED
+  assert (
+      CodingAgentTask(harness=ClaudeCodeHarness()).outputs_valid(attempt)
+      is True
+  )
+
+
 def test_a_gap_mid_turn_ends_the_run_rather_than_letting_it_continue(
     tmp_path: Path,
 ):
@@ -814,3 +883,43 @@ def test_a_run_whose_event_stream_never_appeared_is_not_supervised(
       rollout_outcome(_attempt_with(contribution.metrics))
       is RolloutOutcome.SUPERVISION_FAILED
   )
+
+
+@pytest.mark.parametrize(
+    "content", ["", "not json at all\n"], ids=["empty", "undecodable"]
+)
+def test_a_stream_that_yielded_no_usable_event_is_not_supervised_either(
+    tmp_path: Path, content: str
+):
+  """A file is not evidence; an event reaching a judgement is.
+
+  The same hole one step further in. `stream_events` skips a line it cannot
+  parse rather than raising, so a stream that exists and yields nothing looks
+  exactly like a calm run — and reading the *file's* existence as the signal
+  puts a zero-boundary run back on the healthy path, which is the absorption
+  the missing-file case above exists to stop.
+
+  **The empty case is the main one, not an edge.** A supervised run redirects
+  the actor's stdout with `> "$SANDBOX_WORKSPACE"/…` (`claude_code/harness.py`,
+  the `capture != "proxy" or correction_channel` branch), and a truncating
+  shell redirect creates that file when the command *starts* — zero bytes,
+  before the agent has written anything. So an empty stream is the initial
+  state of **every** supervised run, and a run whose actor never started, or
+  died immediately, simply stays there. Reading existence as the signal made it
+  true on the first poll of every real run, which is a signal carrying no
+  information at all.
+
+  That also splits the two failures this pair now covers, which are not the
+  same fault: **no file** means the wiring was never connected; **a file with
+  nothing usable in it** means the wiring was connected and the actor produced
+  nothing. Only the second is what a correctly wired but failed run looks like
+  — the shape a first live run is most likely to meet.
+  """
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  run = _supervised(tmp_path)
+  _ = events.write_text(content)
+  contribution = run.before_destroy(_fs(tmp_path))
+
+  assert contribution is not None
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
+  assert contribution.metrics[BOUNDARIES_METRIC] == 0.0

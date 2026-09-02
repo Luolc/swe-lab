@@ -313,7 +313,8 @@ passes, in this order:
    once, at `workflow.definitions.CONTROL_BUDGET`);
 4. budget remaining, else silent (with the marker already recorded);
 5. cooldown elapsed since the last intervention, else silent (likewise);
-6. the writer produces a usable line, else **a recorded gap** — never a retry.
+6. the writer produces a usable line, else **a recorded lapse** bounded to this
+   boundary (§6.1) — never a retry.
 
 The cost of this ordering is stated rather than hidden: **the judge runs on
 every boundary even after the budget is spent**, so a `budget=0` policy still
@@ -513,10 +514,69 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
 
 | Failure | The answer this task must implement |
 | --- | --- |
-| The policy raises | recorded as an explicit gap at that cursor; the run continues; the supervisor does not go quiet without a record ([`spec.md` §12](../spec.md#12-invariants-intended-enforced-where-marked)) |
+| The policy raises, and bounds the failure to this call | recorded as a **lapse** at that cursor; the run continues *and stays evidence*, carrying the count (§6.1) |
+| The policy raises anything else | recorded as an explicit **gap** at that cursor; the reach is unknown, so the run stops being evidence about supervision ([`spec.md` §12](../spec.md#12-invariants-intended-enforced-where-marked)) |
 | The sink write fails, or the sink is already closed | recorded, and the supervisor stops speaking — it does **not** close the sink and does **not** kill the run |
 | The supervisor dies | the run's fate belongs to whoever owns the process (task 16 / the rig); this component asserts nothing about it |
 | The stream ends while a decision is in flight | the decision is dropped **with a record**, never applied to a later cursor |
+
+### 6.1 Two scopes of failure, two records
+
+The failure table above used to have one row for "the policy raises", and it
+mixed two things that need opposite treatment: a single failed model call, or a
+single line the writer could not make usable — after which the next boundary is
+judged normally — and the policy's own state machine breaking, after which
+nothing is known about any later boundary. One row meant the consumer could only
+take the worst reading, and a run was thrown away whole to account for one
+boundary.
+
+**What a `lapse` row proves.** *This* boundary, at *this* cursor, went
+unsupervised, for *this* reason, and the policy asserted at the moment of
+failure that its own state survived. That is what keeps the run evidence: a
+reader can name every boundary that was not covered. The distinction the
+product sells is exactly this one — "we do not know what happened" and "we know
+precisely which one we missed" are not the same fact, and a recorded, single
+unsupervised boundary must not be priced like a hole of unknown reach.
+
+**What it does not prove.** Not that the actor did anything at that boundary;
+not that the *next* boundary was covered — a later lapse says otherwise, and the
+count is the reading; not that the policy's self-assessment was independently
+checked. The warrant is the policy's own declaration, which is why it is made by
+**raising a named exception** (`PolicyLapseError`) rather than inferred from an
+exception type at the catch site. Only the policy knows which of its failures it
+can bound; a supervisor classifying on its behalf would be guessing exactly
+where the consumer is forbidden to.
+
+**Scope is asserted, never inferred.** An exception that does not carry the
+declaration is unbounded, and the run is excluded as before. Silence about
+scope is not a claim of a small one.
+
+**Where the bound comes from.** Not from the error — from *where* it happened.
+`SpeakWhenOffTrack` claims it for its two calls out to a model and nowhere else:
+a judge call fails before the method has touched its own state, and a writer
+call fails after the deviation is already marked and before any budget is spent.
+The gate arithmetic between them is unwrapped on purpose, and
+`test_a_break_in_the_policys_own_state_is_not_bounded` is what keeps it that
+way.
+
+**The count is consumed, not just recorded.** A lapse leaves the run's
+denominator containing a boundary nobody watched, so
+`SUPERVISION_LAPSE_METRIC` carries the count out of the log and into the run's
+metrics, which `run_task` copies verbatim into `AttemptRecord.metrics` — the
+path `SUPERVISION_METRIC` already takes, and where a reader of the outcome is
+standing. It stays separate from `SUPERVISION_METRIC`, which is the one that
+changes the outcome word. A count that lived only in `supervisor.jsonl` would
+be one more fact recorded and never read.
+
+**Both hops are tested, and the second one had to be.** The observer's half is
+`test_a_bounded_lapse_is_counted_where_the_outcome_is_read`; the runner's half
+is `test_a_metric_an_observer_contributes_reaches_the_persisted_record`. The
+first alone is not enough, and the reason is worth keeping: it builds its
+`AttemptResult` from the contribution directly, so deleting the runner's copy
+leaves it green while the number vanishes from the record. This metric changes
+no outcome word, so the record is its *only* consumer — a claim about it that
+stops at the contribution is a claim about nothing (found in review of the PR
+that added it).
 
 ## 7. Acceptance
 
@@ -557,7 +617,7 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
   policy sharing every other line.
 - One end-to-end test drives the component over a **recorded** event stream with
   a stub sink and asserts the log accounts for every cursor: a judgement, a
-  silence, or an explicit gap.
+  silence, a lapse, or an explicit gap.
 - **No live run is part of this task's acceptance.** Live behaviour is the rig's
   measurement, and this task must not consume its budget.
 
