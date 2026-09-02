@@ -97,7 +97,8 @@ the file is not growing under the count):
 - **As the last message: 3.** One per intervention. A run property.
 - **Carried in history: the rest.** 24 requests carry the block at all, 63
   occurrences in total, and the per-request count climbs 1 → 2 → 3 and then
-  holds at 3. **Reported as a shape, not a number:** once injected, a
+  holds at 3. The two counts close against each other: 3 in a last message
+  plus 60 carried in history is the 63. **Reported as a shape, not a number:** once injected, a
   correction stays in the actor's context and travels with every subsequent
   request; the total is a property of how many requests followed, not of the
   delivery.
@@ -189,25 +190,41 @@ it closes or fails none of the seven points.
 ## 5. Cost and hygiene
 
 - **Wall clock:** `metrics["claude_code.wall_seconds"] = 1124.47`.
-- **Supervision catch-up: 955.1 s, 84.9% of the wall clock.**
-  `supervisor.jsonl`'s last row (`07:42:14.572388+00:00`) minus the last
-  event-stream line that carries a timestamp (line 169, `assistant`,
-  `2026-09-02T07:26:19.485Z`). 90 of the stream's 170 lines carry one; the
-  terminal `result` event does not, which is why the row has to be named that
-  way. That span is time in which the actor had finished and the supervisor
-  was still working. Recorded on every run, not only when something looks
-  wrong: a number first computed after an incident has no baseline to be read
-  against.
+- **Supervision catch-up: at most 955.1 s, at most 84.9% of the rollout's
+  wall clock (denominator = `claude_code.wall_seconds` = 1124.47 s).** In
+  words, because a bare percentage hides which question it answers: *the
+  actor spent at most 955.1 s of the run's 1124.47 s wall clock already
+  finished, waiting for the supervisor to catch up.*
 
-  A second, independent derivation of the same quantity agrees: wall clock
-  minus the actor's own reported `duration_ms = 167591` gives **956.9 s**, a
-  1.8 s difference that is the gap between "the actor's last timestamped
-  event" and "the actor's process finishing".
+  Four quantities, each with what it actually is:
 
-  **A third number measures something else and is not comparable:**
-  `supervisor.jsonl` spans 07:23:35.650 → 07:42:14.572, **1118.9 s**. That is
-  the supervisor's whole working life, not the catch-up — it includes the
-  164 s during which the actor was still going.
+      1118.9 s   the supervisor's whole span      (measured)
+    ≥  163.8 s   actor / supervisor overlap       (at least)
+    ≤  955.1 s   the catch-up tail                (at most)
+    ≤    84.9%   of the rollout's wall clock      (at most)
+
+  **They are bounds, not point values, and the reason is one row of the
+  event stream.** The last line carrying a `timestamp` is line 169, an
+  `assistant` event at `2026-09-02T07:26:19.485Z`; the terminal `result`
+  event carries none, and 90 of the stream's 170 lines carry one at all. So
+  that timestamp is not when the actor finished — the actor finished at some
+  unknown time *at or after* it. Subtracting it from `supervisor.jsonl`'s
+  last row (`07:42:14.572388+00:00`) therefore gives the **largest** the
+  catch-up can have been, and the overlap the **smallest**.
+
+  A second, independent derivation agrees to 1.8 s: the wall clock minus the
+  actor's own reported `duration_ms = 167591` gives ≤ 956.9 s, also an upper
+  bound, since the wall clock includes setup the actor's duration does not.
+
+  **The supervisor's 1118.9 s span is not a fourth reading of the same
+  thing** — it is how long the supervisor worked, including the ~164 s while
+  the actor was still going. The same 955.1 s over *that* denominator is
+  85.4%, which is a true statement about the supervisor rather than about
+  what the run cost; this line uses the wall clock because the claim it
+  supports is what that hour bought.
+
+  Recorded on every run, not only when something looks wrong: a number first
+  computed after an incident has no baseline to be read against.
 - **Actor spend:** $1.3311234 (see §2 line 1).
 - **Containers:** the rollout used one, the grading three (one per attempt);
   `docker ps -q` and `docker ps -aq` were both 0 after the run. The run held
@@ -246,14 +263,14 @@ weaken or strengthen one of the seven points.
 ### 7a. The supervisor runs an order of magnitude slower than the actor
 
     supervisor.jsonl  first row  07:23:35.650  (cursor 1)
-    actor's own reported duration                167.6 s
     supervisor.jsonl  last row   07:42:14.572  (cursor 170)
-    → 1118.9 s / 170 boundaries = 6.6 s per boundary
-    → 956.9 s (85.1% of the wall clock) with the actor finished and waiting
+    → 1118.9 s / 170 boundaries = 6.6 s per boundary   (measured)
+    → ≤ 955.1 s with the actor finished and waiting    (at most)
+    → ≤ 84.9% of the rollout's 1124.47 s wall clock    (at most)
 
 Each boundary is a synchronous judge call inside the poll loop. The actor
 finished its 170 events in under three minutes; the supervisor then spent a
-further sixteen minutes working through the backlog, and the run ended when
+further sixteen minutes or so working through the backlog, and the run ended when
 it caught up — `at_rest` is reached on the last event, the channel closes,
 and the CLI exits on EOF.
 
@@ -280,9 +297,9 @@ actor is idle for most of its budget is not an actor that was slow.
 **A methodological consequence, recorded because it happened.** Mid-run, with
 `corrections/done` absent and the `claude` process still alive, this was read
 as *the channel was never closed*. What held at that moment was *not closed
-yet*: the file appeared sixteen minutes later. The 956 s of catch-up is
-exactly what makes "not yet" look like "never" — the same reading, taken at
-two times, is two opposite facts. It cost a wrong broadcast and no data.
+yet*: the file appeared sixteen minutes later. That catch-up tail is exactly
+what makes "not yet" look like "never" — the same reading, taken at two
+times, is two opposite facts. It cost a wrong broadcast and no data.
 
 ### 7b. 16 of 170 judge calls returned an answer the policy could not use
 
