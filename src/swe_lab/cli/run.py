@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 import json
+import sys
 from typing import Annotated, Any, final
 
 from etils import epath
@@ -18,7 +19,13 @@ from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import ArtifactSchema, LocalFile, Mount
+from swe_lab.sandbox import (
+    ArtifactSchema,
+    LocalFile,
+    Mount,
+    SandboxError,
+    Store,
+)
 from swe_lab.workflow import (
     EntryOutcome,
     registered_workflows,
@@ -118,15 +125,26 @@ def run_cmd(
     raise typer.BadParameter(f"dataset {dataset!r} has no runnable instances")
 
   root = find_repo_root()
-  output_dir = cache_root(root) / _RUNS_SUBDIR / workflow / instance.instance_id
+  # Keyed by rollout too: the wipe below is per directory, and `--rollout-id`
+  # declares that two runs of one instance are two samples rather than a
+  # repeat. Throwaway is right for a re-run and wrong for two samples, so
+  # without this segment the second rollout deletes the first one's records.
+  output_dir = (
+      cache_root(root)
+      / _RUNS_SUBDIR
+      / workflow
+      / instance.instance_id
+      / f"r{rollout_id}"
+  )
   if not resume:
     # A one-off command re-runs: the previous run's attempts, workspaces and
     # markers go with it.
     output_dir.rmtree(missing_ok=True)
   supplied = _supplied_inputs(inputs or [], entries)
 
+  store = run_store(root, persist_to_t1=persist, scratch=output_dir)
   built = Workflow(
-      store=run_store(root, persist_to_t1=persist, scratch=output_dir),
+      store=store,
       sweep_id=sweep,
       rollout_id=rollout_id,
       entries=entries,
@@ -143,11 +161,46 @@ def run_cmd(
   except WorkflowError as error:
     raise typer.BadParameter(_explain(error, workflow, entries)) from error
 
+  # Before the summary, not after: the summary is the success claim, and
+  # printing it first leaves a `"succeeded": true` on stdout for anything
+  # downstream to consume even when the record behind it is not there.
+  _refuse_a_record_that_did_not_land(store, outcome.record_key)
   summary = _summarize(
       outcome, workflow=workflow, instance=instance, persist=persist
   )
   print(json.dumps(summary, indent=2))
   raise typer.Exit(_exit_code(outcome))
+
+
+def _refuse_a_record_that_did_not_land(store: Store, key: str) -> None:
+  """Fail the command if the record it just reported cannot be read back.
+
+  A run that prints ``"succeeded": true`` and a ``record_key`` is making a
+  claim about the filesystem. That claim can be false for several unrelated
+  reasons — a later run wiping the directory, a write that failed, a mis-joined
+  key, a full disk — and **every one of them produces the same output**: a
+  successful-looking summary naming a key with nothing under it. Checking the
+  reason is a different fix for each; checking the *claim* covers them all.
+
+  Args:
+    store: The store the run persisted through.
+    key: The record key the summary reported; empty when none was claimed.
+
+  Raises:
+    typer.Exit: With ``FAILED``, when a claimed record cannot be read back.
+  """
+  if not key:
+    return  # nothing was claimed, so there is nothing to hold it to
+  try:
+    _ = store.get_bytes(key)
+  except SandboxError as error:  # every Store documents this for a missing key
+    print(
+        f"run reported record_key {key!r}, but it cannot be read back"
+        f" ({type(error).__name__}); the run is being failed rather than"
+        " reported as a success with no evidence behind it",
+        file=sys.stderr,
+    )
+    raise typer.Exit(ExitCode.FAILED) from error
 
 
 def _supplied_inputs(
