@@ -205,11 +205,12 @@ def test_budget_zero_speaks_nothing_and_still_marks_every_deviation() -> None:
   assert [marker.cursor for marker in speaker.markers] == [1, 2, 3, 4, 5]
 
 
-def test_the_control_arm_pays_the_same_judge_calls_as_the_treatment() -> None:
-  """The judge runs on every boundary even after the budget is spent.
+def test_the_judge_runs_at_every_boundary_with_no_budget_to_speak() -> None:
+  """Gate order: judgement precedes the budget, so `budget=0` still judges.
 
-  That is the stated cost of the gate order. Without it the arms differ by
-  more than the corrections.
+  Call counts only, on the policy alone — no arm is built here. What matched
+  judge calls buy a comparison is stated once, at
+  `workflow.definitions.CONTROL_BUDGET`.
   """
   control, control_judge, control_writer = policy(OFF_TRACK, budget=0)
   treatment, treatment_judge, treatment_writer = policy(OFF_TRACK, budget=1)
