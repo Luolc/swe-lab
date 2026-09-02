@@ -114,7 +114,7 @@ def test_a_judge_without_a_named_model_cannot_be_built() -> None:
     assert model.default_factory is dataclasses.MISSING
 
 
-def test_a_forged_criterion_prevents_the_run_from_starting(
+def test_a_forged_criterion_is_refused_by_the_construction_helper(
     tmp_path: pathlib.Path,
 ) -> None:
   """Attack: point the construction helper at an edited criterion.

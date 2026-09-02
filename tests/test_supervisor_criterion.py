@@ -48,7 +48,7 @@ def forged(tmp_path: pathlib.Path, text: str) -> tuple[pathlib.Path, str]:
 
 
 def test_the_committed_criterion_matches_its_pinned_digest() -> None:
-  """The artifact and the constant move together, or every run stops."""
+  """The artifact and the constant move together, or the loader rejects."""
   assert (
       hashlib.sha256(CRITERION_PATH.read_bytes()).hexdigest()
       == CRITERION_SHA256
@@ -90,7 +90,7 @@ def test_a_criterion_naming_a_changed_file_is_rejected(
 def test_an_edited_criterion_stops_the_run(tmp_path: pathlib.Path) -> None:
   """Instance-independence is enforced by the digest, not by inspection.
 
-  Any edit at all, benign or not, stops every run until someone re-pins it.
+  Any edit at all, benign or not, is rejected until someone re-pins it.
   """
   path = tmp_path / "edited.md"
   path.write_text(

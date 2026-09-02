@@ -54,8 +54,10 @@ CRITERION_SHA256 = (
 )
 """The pinned digest of :data:`CRITERION_PATH`.
 
-Changing the criterion without changing this constant stops every run, which is
-the point: the two move together only by someone's decision.
+Changing the criterion without changing this constant makes every
+:func:`load_criterion` call reject, which is the point: the two move together
+only by someone's decision. Whether that reaches a *run* depends on a caller
+that does not exist yet — see the module note.
 """
 
 # Long enough that ordinary English prose does not collide by chance, short

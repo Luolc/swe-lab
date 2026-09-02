@@ -17,7 +17,8 @@ attacked is a wish (see the experiment playbook's entry on guards).
   acceptance point 2b*) and belongs to the wiring PR: the refusal can only be
   tested where the run is constructed, so it disappears by acquiring a consumer
   rather than by being reworded.
-  ``test_a_forged_criterion_prevents_the_run_from_starting`` is a helper test.
+  ``test_a_forged_criterion_is_refused_by_the_construction_helper`` tests the
+  helper, not a run.
 - **The judge prompts with the criterion it was handed**, not one it fetches
   for itself — the layer above hand-off, which the policy cannot enforce.
   ``test_the_judge_prompts_with_the_criterion_it_was_handed``.
