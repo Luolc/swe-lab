@@ -58,10 +58,18 @@ To be filled by the owner. Two things go here, and they are separate:
   suite's `test_supervisor_input_carries_no_privileged_field` constrains the
   supervisor's *input*, not what a model then chose to say. `___`
 - **The delivery's morphology in `proxy_log.jsonl`** — counted row by row,
-  not sampled and generalised: how many outbound requests carry the block as
-  the **last** message (the injection itself), how many carry it **retained
-  in history** further back, and how many *responses* carry it (which must be
-  zero, or it is our own narration rather than the actor's context). `___`
+  not sampled and generalised, and **with the log's byte size and the
+  wall-clock moment written beside the counts**, because the file is still
+  being appended to while it is being read. Two of the three are properties
+  of the run; one is not, and is reported as a shape instead:
+  - occurrences as the **last** message — one per injection, so this is a
+    run property and is reported as a count. `___`
+  - occurrences carried in **history** further back — this rises with every
+    later request, which makes it a property of *when you looked*. **Report
+    the shape, not the number:** once injected, does the correction stay in
+    the actor's context and travel with every subsequent request? `___`
+  - occurrences in any **response** — must be zero, or the block is our own
+    narration rather than the actor's context. A run property. `___`
 
 ## 2. The three readouts
 
