@@ -102,6 +102,22 @@ Adopt or overturn deliberately; each of these cost an argument.
   understate a rate; the opposite default lets the excluded set grow
   unwatched, in the direction that flatters results.
   ([ADR-0015](../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md))
+- **Today, a single transient judge/writer error ends the whole run.** Any
+  gap in the supervisor's own account — one upstream API error, one
+  over-long writer output — closes the channel and lands as
+  `SUPERVISION_FAILED`
+  (`SupervisedRun._feed` in
+  [`channel.py`](../../src/swe_lab/trace_synthesis/channel.py); measured
+  during wiring, log line `gap: policy raised: ...`). The direction is
+  deliberate — excluding is safer than pooling an unsupervised remainder
+  with genuine non-compliance — but the cost lands at scale: one rollout you
+  notice and re-run becomes, at 10×2 and beyond, a steady rate of exclusions
+  that reads as **our pipeline being unstable** rather than as ordinary
+  upstream jitter. This is in flux, not settled: the policy is being taught
+  to tell a transient failure (log and continue) from an internally broken
+  one (still terminate), expected before the 10×2 batch. Check `channel.py`
+  for the current behavior rather than trusting this description — it is
+  the one thing on this page most likely to change under you.
 - **Report every rate with its two counts** — how many runs were excluded as
   ours, and how many nobody could attribute:
   `resolved 12 / 40 (3 system failures excluded, 2 unclassified)`, never
