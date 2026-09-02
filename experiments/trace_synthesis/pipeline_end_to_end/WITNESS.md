@@ -247,6 +247,21 @@ products* (`HF_TOKEN` is documented for `pipelines/related_files/traces.py` and
 `datasets/deepswe/build_parquet.py --upload`); a run's corpus is not one of
 those and is deliberately not uploaded.
 
+## What this script has to cover
+
+**Every number in `REPORT.md` that is a reading of the run's record is printed
+above.** Two kinds of number in that file are not, and they are enumerated
+rather than gestured at: numbers that are not claims about the run — section,
+ADR, task and PR ids, dates, identifiers, `file:line` citations — and the one
+pair read from the checkout instead of the record, `_AGENT_TIMEOUT_S = 3600.0`
+and the boundary count derived from it, whose witness is the cited source file.
+
+The check is a **census of every numeric token in the report**, not a search
+for the ones that look unwitnessed. Three review rounds of "a few more are
+missing" is what a search produces: it finds what it thought to look for, and
+the residue is invisible because nothing counts it. A census has a total, so
+the uncovered set is a number rather than an impression.
+
 What follows is the rule's own fallback, and it is the whole reason this file
 exists: **the numbers above are rederivable only with the corpus in hand.** The
 command that rederives them is named, the corpus it needs is identified by
