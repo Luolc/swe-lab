@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import override
 
+from etils import epath
 import pytest
 
 from swe_lab.datasets.swebench_pro import (
@@ -21,6 +23,7 @@ from swe_lab.datasets.swebench_pro.constants import (
     WORKDIR,
 )
 from swe_lab.datasets.swebench_pro.fetch import ensure_swebench_pro_parquet
+import swe_lab.datasets.swebench_pro.fetch as fetch
 from swe_lab.paths import cache_root
 
 
@@ -229,3 +232,28 @@ def test_a_misnamed_parquet_is_named_as_misnamed_not_broken(
   _ = (data / "test-00000-of-00002.parquet").write_bytes(b"whatever")
   with pytest.raises(FileNotFoundError, match="test-00000-of-00002.parquet"):
     _ = ensure_swebench_pro_parquet(data)
+
+
+def test_a_matching_file_is_accepted_and_returned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+  # The rejection paths above prove nothing about the accept path: a verifier
+  # that always raises would pass every one of them. Pin the expected digest
+  # to whatever bytes are actually written, so this test does not depend on
+  # the real dataset's content or the live pin. Called twice, unmodified
+  # between calls: this is a load-time check, not a one-shot admission, so a
+  # second call must accept the same file the same way — guards against a
+  # verifier that only works once (a moved file, a consumed handle, a
+  # poisoned cache).
+  data = tmp_path / "data"
+  data.mkdir()
+  target = data / PARQUET_FILENAME
+  content = b"pretend parquet bytes"
+  _ = target.write_bytes(content)
+  monkeypatch.setattr(
+      fetch,
+      "PINNED_SWEBENCH_PRO_PARQUET_SHA256",
+      hashlib.sha256(content).hexdigest(),
+  )
+  assert ensure_swebench_pro_parquet(data) == epath.Path(target)
+  assert ensure_swebench_pro_parquet(data) == epath.Path(target)
