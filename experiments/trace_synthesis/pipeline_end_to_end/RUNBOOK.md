@@ -120,33 +120,39 @@ every box below is re-verified immediately before pressing the button in
       ```
       cd /home/ubuntu/dev/swe-lab
       uv run python -c "
-      import subprocess
+      import subprocess, sys
       from swe_lab.datasets import load_dataset
       iid = 'instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb'
       inst = next(i for i in load_dataset('swebench_pro') if i.instance_id == iid)
       ref = inst.sandbox_spec().image_ref
-      result = subprocess.run(['docker', 'images', '--format', '{{.Repository}}:{{.Tag}}'],
-                               capture_output=True, text=True)
-      if result.returncode != 0:
-        raise SystemExit(f'docker images failed (exit {result.returncode}): {result.stderr.strip()}')
-      local = set(result.stdout.split())
-      print(('PRESENT' if ref in local else 'MISSING'), ref)
+      proc = subprocess.run(['docker', 'images', '--format', '{{.Repository}}:{{.Tag}}'],
+                             capture_output=True, text=True)
+      if proc.returncode != 0:
+        print(f'DOCKER-FAILED rc={proc.returncode}: {proc.stderr.strip()}', file=sys.stderr)
+        sys.exit(2)
+      present = ref in set(proc.stdout.split())
+      print(('PRESENT' if present else 'MISSING'), ref)
+      sys.exit(0 if present else 1)
       "
       ```
 
       Derivation from `datasets/swebench_pro/record.py:267`
       (`image_ref = f"{IMAGE_REPO}:{self.dockerhub_tag}"`) and
       `IMAGE_REPO = "jefzda/sweap-images"`
-      (`datasets/swebench_pro/constants.py:17`). **Three distinguishable
-      outcomes, not two**: `PRESENT` to continue; `MISSING` means a pull is
-      needed — a few minutes of wall clock that belongs *before* the
-      container window is announced, not inside it; a nonzero exit with a
-      `docker images failed` message means Docker itself is unavailable
-      (daemon down, permissions, anything else) — **do not read that as
-      `MISSING` and proceed to pull**, it is a different failure with a
-      different fix. Verified `PRESENT` on 2026-09-02, and separately
-      verified the failure path raises with `stderr` surfaced rather than
-      silently reporting `MISSING`.
+      (`datasets/swebench_pro/constants.py:17`). **Three outcomes, three
+      exit codes, three different next actions — not decoration, the
+      criteria this step exists to produce:**
+
+      | exit | meaning | do |
+      | --- | --- | --- |
+      | `0` | `PRESENT` | continue |
+      | `1` | `MISSING` | pull the image **before** the container window is announced, not inside it |
+      | `2` | `DOCKER-FAILED` | stop — this is not a missing image, Docker itself is unreachable (`stderr` names why, passed through verbatim, not paraphrased); fix Docker, then start this checklist over |
+
+      Verified all three paths independently on 2026-09-02: `PRESENT`
+      (exit `0`), `MISSING` against a fabricated tag (exit `1`), and
+      `DOCKER-FAILED` against a deliberately malformed `docker` invocation
+      (exit `2`, `stderr` surfaced).
 
 ## 2. The command
 
