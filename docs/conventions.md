@@ -186,11 +186,11 @@ with the following repo-wide choices and deviations (full plan + rationale:
   chronicle. Keep: what about this code makes the failure **silent**, and why an
   ordinary green run says nothing about it. Drop, to the PR and git log: what
   the old implementation looked like, which error it raised, that the suite was
-  green at the time, and how the review went. An incident may be **named as a
-  subordinate clause** when it carries what the hazard sentence cannot — a
-  pointer to the full case (`test_steered_rerun_driver.py` cites #264 this way).
-  The discriminant: does the reader need this to **avoid repeating** the
-  failure, or to know **how we got here**?
+  green at the time, and how the review went. An incident may be **named**,
+  but only as a bare pointer to the full case (`test_steered_rerun_driver.py`
+  cites #264 this way) — never a dated run with its cause, which is chronicle
+  rather than a source-level reason. The discriminant: does the reader need
+  this to **avoid repeating** the failure, or to know **how we got here**?
 - Enforced by ruff (`D` google convention + `D401` + `D417`, `N`, `C90`,
   `W505`) and **pydoclint** (Args ↔ signature consistency) in pre-commit + CI.
 - **Modern typing syntax (PEP 695):** type aliases use the `type` statement
