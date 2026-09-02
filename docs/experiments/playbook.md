@@ -167,6 +167,20 @@ pilot's twelve amendments.
   analytical half explicitly open with a gate** — "no analysis may run until a
   party that has seen no outcome fixes this in writing" — rather than settling
   it once the numbers are in.
+
+  **The strongest form of that gate is not needing one.** Protecting a ruler's
+  blindness is a remedy for a *timing* defect — it is needed only because a
+  decision was still live once results existed — so the shape to aim at is the
+  one where the question never arises:
+
+  > **Pin the analysis policy — the estimator, the censoring rule, what a unit
+  > containing failures may conclude — before the first attempt runs.**
+
+  The honesty-scorer pilot did not reach it: the defect that forced its analysis
+  policy was visible only once the run was under way, and it was handled by
+  isolating one person. Say so when a run falls short, in the form *label an
+  amendment for what it is* requires — otherwise the shortfall is
+  self-certifying.
 - **"My choice cannot exploit my knowledge" is an argument about a mechanism,
   not a property of a person.** It must be re-checked for every clause it is
   applied to, and it fails first on the clauses that decide what gets
@@ -271,22 +285,23 @@ pilot's twelve amendments.
   > **Correcting a number:** was the new reference point actually measured?
   > **Citing a check:** what does its *passing* establish?
 - **A blind check's green is not an absence proof, and a better check does not
-  make it one.** A verbatim n-gram overlap here returned zero and was reported
-  as evidence that a document did not duplicate a registered rule. The
-  duplication was **paraphrase**, which that check cannot represent at all, so
-  its zero was uninformative by construction rather than by bad luck — the
-  executable question (*if the problem existed, how would it appear in this
-  check's output?*) has no answer for it. What was wrong was the **role, not the
-  tool**: a detector's hits **rank what to read next**, and no detector's miss
-  establishes that there is nothing to find. So build the sharper detector when
-  it earns its keep as triage — but it stays evidence for inspection, never a
-  substitute for the absence claim, and an improved one makes that substitution
-  *more* tempting precisely because its blind spot is harder to characterize
-  than the crude one it replaced. The three sites here were found by reading.
-  Reading has its own blind spots and does not scale, which is why the finished
-  state is not "a person read it" but **the assurance described as what it
-  is** — here: one reading, at one revision, by someone who knew what to look
-  for.
+  make it one.** The obligation is one executable question, asked before the
+  check is cited: **if the problem existed, how would it appear in this check's
+  output?** It is not the neighbouring obligation and is not discharged by it —
+  **stating what a pass would establish does not test whether the statement is
+  true**, and an author can write that sentence correctly and still be wrong,
+  because the instrument cannot represent the thing the sentence is about. A
+  verbatim n-gram overlap here returned zero and was reported as evidence that a
+  document did not duplicate a registered rule; the duplication was
+  **paraphrase**, which that check cannot express, so its zero was uninformative
+  by construction rather than by bad luck. What was wrong was the **role, not
+  the tool**: a detector's hits **rank what to read next**, and no detector's
+  miss establishes that there is nothing to find — a sharper detector makes that
+  substitution *more* tempting, because its blind spot is harder to characterize
+  than the crude one it replaced. Those three sites were found by reading, which
+  does not scale, so the finished state is not "a person read it" but **the
+  assurance described as what it is**: one reading, at one revision, by someone
+  who knew what to look for.
 - **Put a statement about the parameter and a statement about the data in
   separate sentences.** Their modalities differ — a prior is an assumption, a
   count is an observation — and ordinary English hides the difference, because
@@ -350,34 +365,6 @@ pilot's twelve amendments.
   is not redundant, and it is the whole of what is being asked for. A new rule
   stands on its own obligation, cost and evidence, or it does not stand; an
   accepted neighbour is **precedent and motivation, never authority**.
-- **The strongest form needs no blind party at all.** Protecting a ruler's
-  blindness is a remedy for a *timing* defect: it is needed only because some
-  decision was still live after results existed. So the target shape for a
-  pre-registration is the one where the question never arises —
-
-  > **Pin the analysis policy — the estimator, the censoring rule, what a unit
-  > containing failures may conclude — before the first attempt runs. Once
-  > execution begins, there should be no live decision whose ruler needs
-  > protecting.**
-
-  Say plainly when a run did not reach that shape and why. The honesty-scorer
-  pilot did not: the defect that forced its analysis policy was only visible
-  once the run was under way, which is a legitimate reason and not a failure —
-  a rule cannot be pinned before the flaw in it is known. It was handled by
-  isolating one person; **the next pre-registration's goal is to need no
-  isolation at all.**
-
-  Notice what that paragraph is, though: **an exemption with its reason written
-  beside it** — the shape *a defect with a reason written beside it reads as a
-  decision* is about, applied to the rule stated two sentences earlier. The
-  pinning rule *does* fire on that pilot, and the excuse is granted in the same
-  breath, which is how a rule acquires a standing exception nobody re-examines.
-  So the excuse is admissible only in the form *label an amendment for what it
-  is* asks for: **the amendment recorded with the observation that forced it and
-  with an empty prior action set.** Written that way a reader can separate "the
-  flaw was visible only once the run was under way" from an explanation
-  assembled after the fact; written as prose it is self-certifying, and a
-  self-certified exemption is the pinning rule never firing at all.
 - **A stopping rule that reads the clock is outcome-correlated.** Truncating a
   fixed design on wall time removes whole units, and the slowest unit goes
   first — which is a property of the workload, not of chance. The same shape
@@ -414,6 +401,14 @@ pilot's twelve amendments.
   a variable the analysis cannot separate. Pausing mid-cell instead puts both
   machine states inside one cell with everything else fixed
   ([pilot README](../../experiments/trace_synthesis/honesty_scorer/README.md#the-wall-clock-is-an-estimate-and-the-count-is-the-constraint)).
+
+  **Sibling rule, one layer down:** the *recorded but never consumed* entry in
+  [`docs/conventions.md`](../conventions.md)'s Hazards asks whether **anything
+  reads a recorded variable at all**; this entry asks whether a variable that is
+  read **can diagnose anything**. Neither implies the other —
+  `sandbox.oom_kills` varies from run to run, so this entry passes it, and
+  nothing in the repo reads it; a variable the analysis genuinely reads can
+  still be perfectly aligned with the experimental unit and diagnose nothing.
 - **Disclosure is not a remedy for a degree of freedom.** This is the boundary
   of every "make it visible" fix above, and it constrains the remedies
   themselves: **for a measurement, visibility is a sufficient remedy — for a
@@ -497,11 +492,11 @@ pilot's twelve amendments.
   outcome would need to carry**, because afterwards it is the one nobody
   re-examines — but note that *more trials help more often* is also a claim
   about a process: when the varying thing is fixed for the duration of a run,
-  extra calls within that run are extra observations and not extra chances. The same asymmetry decides what a one-directional check may be
-  cited for: sharp when it fires, empty when it does not, said where it is
-  defined, or its silence gets read as its verdict — and note that the firing
-  direction usually needs **no** distributional assumption at all, since one
-  counterexample is one counterexample.
+  extra calls within that run are extra observations and not extra chances. What
+  a one-directional check may be cited for is *describing a check: write what
+  each direction establishes*, one entry up; the part that belongs here is that
+  its **firing** direction usually needs no distributional assumption at all,
+  since one counterexample is one counterexample.
 - **A call whose result will be cited as evidence records what answered it and
   how.** Two things are absent by default and unrecoverable afterwards: the model
   id the **response** reports — never the alias in the request, since an alias
@@ -549,74 +544,53 @@ pilot's twelve amendments.
   happened. Say so precisely, and confine the claim to the layer it covers; a
   document that asserts outcome-independence in one section and discloses known
   outcomes in another has written its own refutation.
-- **A pre-registration's limits bind in both directions — and every guard we
-  have points at only one of them.** Freezing a threshold before the data,
-  committing the criterion as code, refusing an amendment that has seen an
-  outcome: all of it defends one direction, *a bad result inviting a post-hoc
-  adjustment*. Nothing here defends against **a good result inviting a
-  relaxation**, and both directions came up here within one day. On the bad
-  side the machinery held —
-  [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
-  records a gate that returned `BELOW_BAR` and stayed `BELOW_BAR`: the verdict
-  unwithdrawn, no number changed, the decision moved on a disclosed owner
-  judgement instead. On the good side there was no machinery. The
-  [fold check's pre-registration](../../experiments/trace_synthesis/sandbox_fold_check/PRE-REGISTRATION.md)
-  correctly said a **mismatch** could not be attributed to either of the two
-  factors it varied together; once the two artifacts came back byte-identical,
-  the report widened that one-directional limit into a two-directional claim —
-  *neither difference moved the wrapper*. The
-  [review](https://github.com/Luolc/swe-lab/pull/325#issuecomment-5502846310)
-  caught it; no rule of ours would have. It is the mirror of a failure
-  rendered as a normal result: **a clean result arriving in a cleaner shape**,
-  the same defect pointed the other way, with a gate on one side only.
 
-  The obligation is on the claims, not on a list of caveats, and it is a
-  **review obligation** — nothing mechanical covers it:
+  **An exemption is written the same way.** A rule that fires and is excused in
+  prose — "the flaw was visible only once the run was under way" — acquires a
+  standing exception nobody re-examines. Recorded with the observation that
+  forced it and an empty prior action set, a reader can separate a genuine
+  mid-run discovery from an explanation assembled afterwards. **A self-certified
+  exemption is the rule never firing at all.**
+- **A pre-registration's limits bind in both directions.** Freezing a threshold
+  before the data, committing the criterion as code, refusing an amendment that
+  has seen an outcome — every guard here defends one direction, *a bad result
+  inviting a post-hoc adjustment*. Nothing defends against **a good result
+  inviting a relaxation**, and both came up here within one day:
+  [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)'s gate
+  returned `BELOW_BAR` and stayed there, while the
+  [fold check](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md)'s
+  registered limit — a *mismatch* could not be attributed to either of the two
+  factors it varied together — was widened into a two-directional claim the
+  moment the two artifacts came back equal, and the same report read
+  *deterministic for this input* off that single pair. Equality does not remove
+  the confound it was used to dismiss: two inert factors and two offsetting ones
+  are indistinguishable in a comparison of one pair, and *unlikely* counts only
+  once it is written down. The obligation is on the claims, and it is a **review
+  obligation**:
 
-  > **Every conclusion names the observation it rests on and is read against
-  > the limits pre-registered for that observation.** A claim that exceeds
-  > them is withdrawn or downgraded, unless it cites a **new observation** that
-  > removed the limit — "the result came out well" is not one.
+  > **Every conclusion names the observation it rests on and is read against the
+  > limits pre-registered for that observation.** A claim that exceeds them is
+  > withdrawn or downgraded, unless it cites a **new observation** that removed
+  > the limit — "the result came out well" is not one.
 
-  One cheap precondition is worth running first because it *is* mechanical:
-  **the report's limits should be a superset of the pre-registration's**, and a
-  non-empty difference is a question with an address. But a precondition is all
-  it is, and this entry's own instance is the proof. At `bf5d11e` — the head
-  that review names — the report **kept** the registered sentence, *a mismatch
-  could not have said which*, and wrote *neither difference moved the wrapper*
-  in the next one; it wrote *deterministic for this input* and *no evidence
-  about other tasks, timings, models* **in the same sentence**, joined by
-  "and". Both limits were present, the set difference was empty, and both
-  overclaims passed. **A guard proposed for a defect has to be run against that
-  defect before it is called a guard** — this one was not, in an entry whose
-  subject is exactly that, and a
-  [review](https://github.com/Luolc/swe-lab/pull/327#issuecomment-5502936994)
-  caught it the same way the first one did. Retaining a limit costs nothing and
-  is therefore no evidence of anything; **what a limit binds is the sentence
-  that reads the result**, and the two can sit in the same paragraph without
-  either author or reader noticing they disagree.
-
-  Apply it to the whole conclusion rather than the one sentence that looks
-  weakest, because the loosening arrives more than once: alongside the
-  attribution claim, the same
-  [report](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md) read
-  *deterministic for this input* off a single pair of equal outputs, where the
-  data says two recorded outputs were equal and ADR-0013's refutation condition
-  had its chance to fire and did not. Those are different kinds of sentence —
-  one is a property of the process, the other is what happened — and the
-  discipline that refuses a `3/n` bound on `observed 0 in 20` is the same one,
-  held there against a quiet result and dropped here against a clean one.
-
-  Two details make the instance worth keeping. **Equality did not remove the
-  confound it was used to dismiss**: two factors that are both inert and two
-  factors that offset each other are indistinguishable in a comparison of one
-  pair. Byte-identity does make offsetting very unlikely — that is a real
-  argument, and it counts only once it is written down, which is exactly the
-  step a convenient result skips. And **the wider claim bought nothing**: the
-  registered question was *does the artifact match inside the sandbox*, which
-  is joint in the first place, so the relaxed sentence answered a question
-  nobody had asked. Loosening is not a trade of rigour for reach; usually there
-  is no reach.
+  Retaining a limit costs nothing and is therefore no evidence of anything;
+  **what a limit binds is the sentence that reads the result**, and the two sit
+  in one paragraph without either author or reader noticing that they disagree.
+- **A guard proposed for a defect has to be run against that defect before it is
+  called a guard.** The instance is this section's own. The first draft of the
+  entry above offered a mechanical criterion — *the report's limits must be a
+  superset of the pre-registration's* — and run against the report that produced
+  it, that criterion is green: at `bf5d11e` the fold report **kept** *a mismatch
+  could not have said which* and wrote *neither difference moved the wrapper* in
+  the next sentence, and wrote *deterministic for this input* and *no evidence
+  about other tasks, timings, models* in one sentence joined by "and". Both
+  limits present, set difference empty, both overclaims through
+  ([review](https://github.com/Luolc/swe-lab/pull/327#issuecomment-5502936994)).
+  A criterion that reads as mechanical is trusted for exactly that reason, so it
+  is not finished until it has been run against its own instance; that one
+  survives as a **cheap precondition**, described as one. The first pass over
+  this section under this rule is
+  [#328](https://github.com/Luolc/swe-lab/pull/328).
 
 ## Investigations (the lighter variant)
 
