@@ -289,9 +289,14 @@ it is structural. A judgment costs a model call, and the actor does not wait
 during it.
 
 **The wall clock is spent on supervision and charged to the actor.** At 6.58 s
-per boundary, `_AGENT_TIMEOUT_S = 3600.0`
-(`src/swe_lab/workflow/definitions.py`) admits roughly **547 boundaries**;
-this run had 170. A more eventful instance can therefore hit the wall clock
+per boundary, `_AGENT_TIMEOUT_S = 3600.0` admits roughly **547 boundaries**;
+this run had 170. **Those two numbers carry a coordinate the rest of this
+report does not need**: `3600.0` is read from the checkout, not from the run's
+record — `src/swe_lab/workflow/definitions.py:63` as of `main` =
+`91846dd595fa4e64ed2cd3a71a2c6e41709e1a53` — so `547` is a **mixed
+derivation**, one factor fixed by the corpus and one that changes the day
+somebody edits the timeout. Without the coordinate it would go quietly false
+with nothing failing. A more eventful instance can therefore hit the wall clock
 because supervision could not keep up — and ADR-0015 charges `TIMED_OUT` to
 the actor. `RUNBOOK.md` §4's presumption covers the #349 wiring failure,
 where nothing was written; it does not cover this one, where everything works
