@@ -9,11 +9,17 @@ of the gates is itself an invariant: judging before budgeting is what makes
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 
 import pytest
 
 from swe_lab.conversation import Message, Role, TextBlock
-from swe_lab.trace_synthesis.criterion import Criterion, load_criterion
+from swe_lab.trace_synthesis.criterion import (
+    Criterion,
+    CRITERION_SHA256,
+    CriterionRejectedError,
+    load_criterion,
+)
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     InterventionTooLongError,
@@ -56,21 +62,25 @@ class CountingJudge:
   Attributes:
     verdict: The answer it always gives.
     calls: The observations it was handed, in order.
+    criteria: The criteria it was handed, in order.
   """
 
   verdict: Verdict
   calls: list[Observation] = dataclasses.field(default_factory=list)
+  criteria: list[Criterion] = dataclasses.field(default_factory=list)
 
-  def __call__(self, observation: Observation) -> Verdict:
+  def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
     """Record the call and answer.
 
     Args:
       observation: What the policy handed over.
+      criterion: The standard the policy handed over with it.
 
     Returns:
       The fixed verdict.
     """
     self.calls.append(observation)
+    self.criteria.append(criterion)
     return self.verdict
 
 
@@ -315,21 +325,46 @@ def test_speak_at_needs_no_judge() -> None:
   )
 
 
-def test_the_real_policy_cannot_be_built_without_a_criterion() -> None:
-  """The policy that judges cannot exist without a loaded criterion.
+def test_a_forged_criterion_cannot_build_the_policy() -> None:
+  """The judging policy refuses any criterion but the pinned one.
 
-  The criterion is a constructor argument, so building one means having passed
-  the digest check. This is narrower than a startup gate, and it is all that is
-  enforced until the judge lands: ``SpeakAt`` takes no criterion because it
-  makes no judgement.
+  A ``Criterion`` verifies its own digest, so a forgery must be
+  self-consistent — and the policy then rejects it for not being the reviewed
+  artifact. Field presence alone would not distinguish this from a decorative
+  argument.
   """
-  fields = {field.name for field in dataclasses.fields(SpeakWhenOffTrack)}
-  assert "criterion" in fields
-  criterion = next(
-      field
-      for field in dataclasses.fields(SpeakWhenOffTrack)
-      if field.name == "criterion"
+  forged_text = "judge them however you like"
+  forged = Criterion(
+      text=forged_text,
+      digest=hashlib.sha256(forged_text.encode("utf-8")).hexdigest(),
+      overlap_checked=False,
   )
-  assert criterion.default is dataclasses.MISSING
-  assert criterion.default_factory is dataclasses.MISSING
-  assert isinstance(load_criterion(), Criterion)
+  with pytest.raises(CriterionRejectedError):
+    SpeakWhenOffTrack(
+        judge=CountingJudge(verdict=OFF_TRACK),
+        writer=CountingWriter(),
+        criterion=forged,
+        budget=1,
+        cooldown=0,
+    )
+
+
+def test_a_criterion_cannot_misdescribe_its_own_text() -> None:
+  """Constructing one recomputes the digest, so the pair is consistent."""
+  with pytest.raises(CriterionRejectedError):
+    Criterion(text="forged", digest="0" * 64, overlap_checked=False)
+
+
+def test_the_judge_is_handed_the_canonical_criterion_every_call() -> None:
+  """The criterion is carried to the judge, not merely stored beside it.
+
+  A judge that was handed nothing could measure against anything it embedded,
+  which is what makes a stored-but-unused field decorative.
+  """
+  speaker, judge, _ = policy(ON_TRACK)
+  for index in range(1, 4):
+    speaker.consider(observation(index))
+
+  assert len(judge.criteria) == 3
+  assert {one.digest for one in judge.criteria} == {CRITERION_SHA256}
+  assert judge.criteria[0].text == load_criterion().text

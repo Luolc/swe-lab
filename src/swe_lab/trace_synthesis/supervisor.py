@@ -36,7 +36,11 @@ from typing import Any, Protocol
 
 from swe_lab.conversation import Message, Role, TextBlock, ToolResultBlock
 from swe_lab.harnesses.claude_code.convert import event_to_message
-from swe_lab.trace_synthesis.criterion import Criterion
+from swe_lab.trace_synthesis.criterion import (
+    Criterion,
+    CRITERION_SHA256,
+    CriterionRejectedError,
+)
 
 # The cap is the enforceable part of the intervention's shape. "Short,
 # directional, not a solution" is read by a human and deliberately not asserted
@@ -206,11 +210,13 @@ class Verdict:
 class Judge(Protocol):
   """Decides whether the actor is off track and whether it will recover."""
 
-  def __call__(self, observation: Observation) -> Verdict:
-    """Judge one moment.
+  def __call__(self, observation: Observation, criterion: Criterion) -> Verdict:
+    """Judge one moment against the criterion.
 
     Args:
-      observation: The evidence window, the task and the criterion.
+      observation: The evidence window and the task.
+      criterion: The standard to measure against, passed explicitly so a judge
+        cannot quietly use an embedded one.
 
     Returns:
       The verdict for this moment.
@@ -313,10 +319,10 @@ class SpeakWhenOffTrack:
 
   The criterion is a constructor argument rather than a field on
   :class:`Observation`, so it never travels the channel the actor's records
-  travel, and the policy cannot be built without one having been loaded. A
-  :class:`~swe_lab.trace_synthesis.criterion.Criterion` is produced by
-  ``load_criterion``, which refuses an artifact whose digest is not the pinned
-  one.
+  travel. Construction **rejects** a criterion whose digest is not
+  :data:`~swe_lab.trace_synthesis.criterion.CRITERION_SHA256`, and ``consider``
+  hands it to the judge on every call, so it is carried rather than stored: a
+  judge cannot be handed one standard and quietly measure against another.
 
   Attributes:
     judge: The off-track / self-correcting call.
@@ -341,6 +347,19 @@ class SpeakWhenOffTrack:
 
   _markers: list[WouldHaveSpoken] = dataclasses.field(default_factory=list)
   _spoken_at: list[int] = dataclasses.field(default_factory=list)
+
+  def __post_init__(self) -> None:
+    """Refuse a criterion that is not the pinned one.
+
+    Raises:
+      CriterionRejectedError: The criterion's digest is not
+        :data:`~swe_lab.trace_synthesis.criterion.CRITERION_SHA256`.
+    """
+    if self.criterion.digest != CRITERION_SHA256:
+      raise CriterionRejectedError(
+          f"policy criterion {self.criterion.digest} is not the pinned"
+          f" {CRITERION_SHA256}"
+      )
 
   @property
   def name(self) -> str:
@@ -378,7 +397,7 @@ class SpeakWhenOffTrack:
     windowed = dataclasses.replace(
         observation, evidence=observation.evidence[-self.window :]
     )
-    verdict = self.judge(windowed)
+    verdict = self.judge(windowed, self.criterion)
     if not verdict.off_track or verdict.self_correcting:
       return None
 

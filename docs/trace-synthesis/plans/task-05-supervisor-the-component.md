@@ -206,8 +206,14 @@ test or the sentence is downgraded):
   of `{gold_patch, reference_patch, test_patch, hidden_tests, fail_to_pass,
   pass_to_pass, fix_commit}` catches the names we thought of; an allowlist
   catches the one we did not.
-- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half,
-  with the run refusing to start rather than recording a gap.
+- `test_a_criterion_quoting_the_gold_patch_is_rejected` — §3.1's second half:
+  the loader rejects rather than recording a gap. **This is a loader test, not
+  a run-level one** — the startup gate is `[U]` and lands with the judge.
+- `test_a_forged_criterion_cannot_build_the_policy` and
+  `test_the_judge_is_handed_the_canonical_criterion_every_call` — what *is*
+  enforced today: `SpeakWhenOffTrack` refuses any criterion whose digest is not
+  the pinned one, and carries it to the judge on every call rather than storing
+  it beside one.
 - `test_the_task_is_given_not_read_off_the_stream` — the goal reaches the
   policy without any message having to be guessed to *be* the brief.
 - `test_a_supervisor_attached_mid_run_admits_no_user_text` — where the

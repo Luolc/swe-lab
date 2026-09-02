@@ -70,10 +70,16 @@ class CriterionRejectedError(RuntimeError):
 
 @dataclasses.dataclass(frozen=True)
 class Criterion:
-  """The criterion text and an honest account of what was checked.
+  """The criterion text, the digest it was checked against, and what ran.
+
+  Constructing one recomputes the digest, so an instance cannot misdescribe its
+  own text: forging requires supplying a self-consistent pair, and a consumer
+  that wants *the* criterion compares :attr:`digest` against
+  :data:`CRITERION_SHA256`.
 
   Attributes:
     text: The artifact's contents.
+    digest: ``sha256`` of :attr:`text`, verified on construction.
     overlap_checked: Whether the redundant gold-patch overlap check ran. It
       needs the gold patch to be available where the check runs; for a dataset
       that records none it cannot run, and the digest carries the invariant
@@ -82,7 +88,20 @@ class Criterion:
   """
 
   text: str
+  digest: str
   overlap_checked: bool
+
+  def __post_init__(self) -> None:
+    """Reject an instance whose digest does not describe its own text.
+
+    Raises:
+      CriterionRejectedError: The stored digest is not the text's.
+    """
+    found = hashlib.sha256(self.text.encode("utf-8")).hexdigest()
+    if found != self.digest:
+      raise CriterionRejectedError(
+          f"criterion digest {self.digest} does not describe its text ({found})"
+      )
 
 
 def _shingles(text: str) -> set[tuple[str, ...]]:
@@ -140,7 +159,7 @@ def load_criterion(
 
   text = raw.decode("utf-8")
   if gold_patch is None:
-    return Criterion(text=text, overlap_checked=False)
+    return Criterion(text=text, digest=found, overlap_checked=False)
 
   shared_paths = sorted(
       changed
@@ -159,4 +178,4 @@ def load_criterion(
         " gold patch"
     )
 
-  return Criterion(text=text, overlap_checked=True)
+  return Criterion(text=text, digest=found, overlap_checked=True)
