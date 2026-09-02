@@ -14,7 +14,7 @@ from dataclasses import replace
 import json
 from pathlib import Path
 import re
-from typing import final, override
+from typing import Any, final, override
 
 import pytest
 from typer.testing import CliRunner
@@ -50,6 +50,7 @@ from swe_lab.sandbox.observers.diff_extract import RAW_PATCH_NAME
 
 # Importing the doubles registers the `fake` backend these runs build on.
 from swe_lab.sandbox.testing import FakeSandboxConfig
+from swe_lab.workflow import Workflow, WorkflowOutcome
 from swe_lab.workflow.registry import workflow_definition
 
 runner = CliRunner()
@@ -512,16 +513,26 @@ def test_a_record_that_cannot_be_read_back_fails_the_run(
   The claim is checked rather than its causes: a wipe, a failed write, a
   mis-joined key and a full disk all produce the same successful-looking
   summary naming a key with nothing under it.
+
+  The missing record here is **real** — the run is made to report a key that
+  was never written, so the store raises its own documented error from the
+  production path. Faking the exception instead would test a shape the store
+  never actually produces.
   """
   _wire(monkeypatch, tmp_path)
+  real_execute = Workflow.execute
 
-  def _vanish(self: object, key: str) -> bytes:
-    del self
-    raise FileNotFoundError(key)
+  def _misreport(self: Workflow, *args: Any, **kwargs: Any) -> WorkflowOutcome:
+    outcome = real_execute(self, *args, **kwargs)
+    return replace(outcome, record_key="sw1/nobody/r0/workflow.json")
 
-  monkeypatch.setattr(
-      "swe_lab.sandbox.store.FilesystemStore.get_bytes", _vanish
-  )
+  monkeypatch.setattr(Workflow, "execute", _misreport)
   result = _run("gold_unit_test", _INSTANCE_ID)
+
   assert result.exit_code == run_mod.ExitCode.FAILED
-  assert "cannot be read back" in result.output + str(result.stderr or "")
+  # Named, because an unhandled error also exits non-zero with no summary:
+  # without this the test passes whether the guard caught the store's error or
+  # never ran at all. (Verified by reverting the guard's except clause.)
+  assert "cannot be read back" in result.output + (result.stderr or "")
+  # …and nothing printed a success claim on the way out.
+  assert '"succeeded": true' not in result.output

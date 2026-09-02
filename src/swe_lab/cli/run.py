@@ -19,7 +19,13 @@ from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import ArtifactSchema, LocalFile, Mount, Store
+from swe_lab.sandbox import (
+    ArtifactSchema,
+    LocalFile,
+    Mount,
+    SandboxError,
+    Store,
+)
 from swe_lab.workflow import (
     EntryOutcome,
     registered_workflows,
@@ -157,11 +163,14 @@ def run_cmd(
   except WorkflowError as error:
     raise typer.BadParameter(_explain(error, workflow, entries)) from error
 
+  # Before the summary, not after: the summary is the success claim, and
+  # printing it first leaves a `"succeeded": true` on stdout for anything
+  # downstream to consume even when the record behind it is not there.
+  _refuse_a_record_that_did_not_land(store, outcome.record_key)
   summary = _summarize(
       outcome, workflow=workflow, instance=instance, persist=persist
   )
   print(json.dumps(summary, indent=2))
-  _refuse_a_record_that_did_not_land(store, outcome.record_key)
   raise typer.Exit(_exit_code(outcome))
 
 
@@ -187,7 +196,7 @@ def _refuse_a_record_that_did_not_land(store: Store, key: str) -> None:
     return  # nothing was claimed, so there is nothing to hold it to
   try:
     _ = store.get_bytes(key)
-  except (OSError, KeyError, ValueError) as error:
+  except SandboxError as error:  # every Store documents this for a missing key
     print(
         f"run reported record_key {key!r}, but it cannot be read back"
         f" ({type(error).__name__}); the run is being failed rather than"
