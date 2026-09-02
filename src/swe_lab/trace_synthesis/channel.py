@@ -16,11 +16,12 @@ Two properties are structural rather than advisory, and each has a test:
 - **Ending the run is deliberate.** :meth:`CorrectionChannel.close` writes the
   sentinel the relay waits for. Closing the FIFO's write end is what makes the
   CLI exit, so it must be an act, never a side effect.
-- **A pump that dies leaves evidence.** The precedent is a measured failure: in
-  the steered re-run, a polling thread died on a malformed reply at boundary 13
-  and every later boundary went unjudged, silently. So :class:`SupervisorPump`
-  records the failure that stopped it and reports itself unhealthy, rather than
-  a run that merely stops being supervised part-way and looks complete.
+- **A pump that dies leaves evidence.** A supervisor that stops polling
+  part-way leaves every later boundary unjudged while the run itself finishes
+  and looks complete, so silence is indistinguishable from supervision. Hence
+  :class:`SupervisorPump` records the failure that stopped it and reports
+  itself unhealthy, which is what disqualifies the run as evidence about
+  supervision.
 """
 
 from __future__ import annotations

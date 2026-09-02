@@ -212,12 +212,12 @@ def test_a_half_written_line_is_re_read_rather_than_guessed_at(tmp_path: Path):
 
 
 def test_a_pump_that_dies_says_so_instead_of_going_quiet(tmp_path: Path):
-  """A measured failure, not an imagined one.
+  """A pump that stops polling must not read as a fully supervised run.
 
-  In the steered re-run a polling thread died on a malformed reply at boundary
-  13 and every later boundary went unjudged — the run looked complete and was
-  unsupervised from there on. An unhealthy pump is not a detail of the report:
-  it decides whether the run is evidence about supervision at all.
+  A supervisor that dies part-way leaves every later boundary unjudged while
+  the run finishes and looks complete. An unhealthy pump is therefore not a
+  detail of the report: it decides whether the run is evidence about
+  supervision at all.
   """
   events = epath.Path(tmp_path) / "events.jsonl"
   channel = CorrectionChannel(workspace=epath.Path(tmp_path))

@@ -410,10 +410,10 @@ def test_the_unclassified_count_is_reportable_apart_from_the_excluded_one():
 def test_a_run_that_lost_its_supervisor_is_not_evidence_about_supervision():
   """The pump's health has to reach the outcome word, or it is decoration.
 
-  Measured precedent: a polling supervisor died at boundary 13 of a steered
-  re-run and every later boundary went unjudged, while the run itself looked
-  complete. Recording that in a field nothing reads would put it on the same
-  shelf as `sandbox.oom_kills` before ADR-0015 — a fact with no branch.
+  A supervisor that dies part-way leaves the rest of the run unjudged while the
+  run itself looks complete, so the loss has to be visible in the word the run
+  reports. Recording it in a field nothing reads would make it a fact with no
+  branch — the shape ADR-0015 exists to prevent.
   """
   task = CodingAgentTask(harness=ClaudeCodeHarness())
   lost = _attempt(AgentOutcome.FINISHED)
