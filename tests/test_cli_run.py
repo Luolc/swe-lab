@@ -287,6 +287,7 @@ def test_the_chain_runs_and_grades_what_the_agent_produced(
       / "runs"
       / "rollout_and_unit_test"
       / _INSTANCE_ID
+      / "r0"
       / "unit_test"
       / "ws"
       / "a0"
@@ -356,6 +357,7 @@ def test_one_unbound_input_needs_no_name(
       / "runs"
       / "unit_test"
       / _INSTANCE_ID
+      / "r0"
       / "unit_test"
       / "ws"
       / "a0"
@@ -393,6 +395,7 @@ def test_gold_grading_is_a_workflow_not_a_flag(
       / "runs"
       / "gold_unit_test"
       / _INSTANCE_ID
+      / "r0"
       / "unit_test"
       / "ws"
       / "a0"
@@ -461,3 +464,64 @@ def test_effort_is_overridable_and_a_typo_is_refused():
     _ = apply_overrides(
         entries, parse_overrides(["--rollout.harness.effort=ultra"])
     )
+
+
+# ─── a reported record has to be there ───────────────────────────────────────
+
+
+def test_two_rollouts_of_one_instance_both_keep_their_records(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """`--rollout-id` distinguishes samples, so one must not erase the other.
+
+  The scratch store lives under the run's own directory and a non-resumed run
+  wipes that directory — correct for a re-run, wrong across rollouts of one
+  instance, which are distinct samples rather than a repeat.
+  """
+  _wire(monkeypatch, tmp_path)
+  for rollout in ("0", "1"):
+    result = _run(
+        "gold_unit_test",
+        _INSTANCE_ID,
+        "--sweep",
+        "sw1",
+        "--rollout-id",
+        rollout,
+    )
+    assert result.exit_code == run_mod.ExitCode.OK
+
+  runs = tmp_path / ".cache" / "runs" / "gold_unit_test" / _INSTANCE_ID
+  for rollout in ("r0", "r1"):
+    record = (
+        runs
+        / rollout
+        / "store"
+        / "sw1"
+        / _INSTANCE_ID
+        / rollout
+        / "workflow.json"
+    )
+    assert record.is_file(), f"{rollout} lost its record to the other run"
+
+
+def test_a_record_that_cannot_be_read_back_fails_the_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+  """Reporting a key nothing can read is a failure, not a success.
+
+  The claim is checked rather than its causes: a wipe, a failed write, a
+  mis-joined key and a full disk all produce the same successful-looking
+  summary naming a key with nothing under it.
+  """
+  _wire(monkeypatch, tmp_path)
+
+  def _vanish(self: object, key: str) -> bytes:
+    del self
+    raise FileNotFoundError(key)
+
+  monkeypatch.setattr(
+      "swe_lab.sandbox.store.FilesystemStore.get_bytes", _vanish
+  )
+  result = _run("gold_unit_test", _INSTANCE_ID)
+  assert result.exit_code == run_mod.ExitCode.FAILED
+  assert "cannot be read back" in result.output + str(result.stderr or "")

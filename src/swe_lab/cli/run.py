@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 import json
+import sys
 from typing import Annotated, Any, final
 
 from etils import epath
@@ -18,7 +19,7 @@ from swe_lab.cli.persist_wiring import run_store, run_ts
 from swe_lab.datasets.instance import TaskInstance
 from swe_lab.datasets.loader import load_dataset
 from swe_lab.paths import cache_root, find_repo_root
-from swe_lab.sandbox import ArtifactSchema, LocalFile, Mount
+from swe_lab.sandbox import ArtifactSchema, LocalFile, Mount, Store
 from swe_lab.workflow import (
     EntryOutcome,
     registered_workflows,
@@ -118,15 +119,28 @@ def run_cmd(
     raise typer.BadParameter(f"dataset {dataset!r} has no runnable instances")
 
   root = find_repo_root()
-  output_dir = cache_root(root) / _RUNS_SUBDIR / workflow / instance.instance_id
+  # Keyed by rollout too, because `--rollout-id` exists precisely to
+  # distinguish samples of one instance and the wipe below is per directory:
+  # without it, `--rollout-id 1` deletes the records `--rollout-id 0` just
+  # wrote, and the second run is the one that reports success. Measured: two
+  # rollouts of one instance run back to back left one record, and the lost
+  # run's own output still named the key it had written.
+  output_dir = (
+      cache_root(root)
+      / _RUNS_SUBDIR
+      / workflow
+      / instance.instance_id
+      / f"r{rollout_id}"
+  )
   if not resume:
     # A one-off command re-runs: the previous run's attempts, workspaces and
     # markers go with it.
     output_dir.rmtree(missing_ok=True)
   supplied = _supplied_inputs(inputs or [], entries)
 
+  store = run_store(root, persist_to_t1=persist, scratch=output_dir)
   built = Workflow(
-      store=run_store(root, persist_to_t1=persist, scratch=output_dir),
+      store=store,
       sweep_id=sweep,
       rollout_id=rollout_id,
       entries=entries,
@@ -147,7 +161,40 @@ def run_cmd(
       outcome, workflow=workflow, instance=instance, persist=persist
   )
   print(json.dumps(summary, indent=2))
+  _refuse_a_record_that_did_not_land(store, outcome.record_key)
   raise typer.Exit(_exit_code(outcome))
+
+
+def _refuse_a_record_that_did_not_land(store: Store, key: str) -> None:
+  """Fail the command if the record it just reported cannot be read back.
+
+  A run that prints ``"succeeded": true`` and a ``record_key`` is making a
+  claim about the filesystem, and until now nothing checked it. The claim can
+  be false for several unrelated reasons — a later run wiping the directory, a
+  write that failed, a mis-joined key, a full disk — and **every one of them
+  produces the same output**: a successful-looking summary naming a key with
+  nothing under it. Checking the reason is a different fix for each; checking
+  the *claim* covers them all.
+
+  Args:
+    store: The store the run persisted through.
+    key: The record key the summary reported; empty when none was claimed.
+
+  Raises:
+    typer.Exit: With ``FAILED``, when a claimed record cannot be read back.
+  """
+  if not key:
+    return  # nothing was claimed, so there is nothing to hold it to
+  try:
+    _ = store.get_bytes(key)
+  except (OSError, KeyError, ValueError) as error:
+    print(
+        f"run reported record_key {key!r}, but it cannot be read back"
+        f" ({type(error).__name__}); the run is being failed rather than"
+        " reported as a success with no evidence behind it",
+        file=sys.stderr,
+    )
+    raise typer.Exit(ExitCode.FAILED) from error
 
 
 def _supplied_inputs(
