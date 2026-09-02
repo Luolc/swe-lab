@@ -509,6 +509,56 @@ pilot's twelve amendments.
   happened. Say so precisely, and confine the claim to the layer it covers; a
   document that asserts outcome-independence in one section and discloses known
   outcomes in another has written its own refutation.
+- **A pre-registration's limits bind in both directions — and every guard we
+  have points at only one of them.** Freezing a threshold before the data,
+  committing the criterion as code, refusing an amendment that has seen an
+  outcome: all of it defends one direction, *a bad result inviting a post-hoc
+  adjustment*. Nothing here defends against **a good result inviting a
+  relaxation**, and both directions came up here within one day. On the bad
+  side the machinery held —
+  [ADR-0013](../decisions/ADR-0013-supervision-on-the-stdin-channel.md)
+  records a gate that returned `BELOW_BAR` and stayed `BELOW_BAR`: the verdict
+  unwithdrawn, no number changed, the decision moved on a disclosed owner
+  judgement instead. On the good side there was no machinery. The
+  [fold check's pre-registration](../../experiments/trace_synthesis/sandbox_fold_check/PRE-REGISTRATION.md)
+  correctly said a **mismatch** could not be attributed to either of the two
+  factors it varied together; once the two artifacts came back byte-identical,
+  the report widened that one-directional limit into a two-directional claim —
+  *neither difference moved the wrapper*. The
+  [review](https://github.com/Luolc/swe-lab/pull/325#issuecomment-5502846310)
+  caught it; no rule of ours would have. It is the mirror of a failure
+  rendered as a normal result: **a clean result arriving in a cleaner shape**,
+  the same defect pointed the other way, with a gate on one side only.
+
+  The checkable form, since "compare the two documents carefully" is not
+  something a reviewer can execute:
+
+  > **The report's list of limits must be a superset of the pre-registration's.**
+  > A limit that is missing must **name the observation that removed it** — not
+  > "the result came out well, so it no longer binds".
+
+  Put the two lists side by side, take the difference, and a non-empty
+  difference is a question with an address. Run it over the whole conclusion
+  rather than the one sentence that looks weakest, because the loosening
+  arrives more than once: the same
+  [report](../../experiments/trace_synthesis/sandbox_fold_check/REPORT.md) also
+  read *deterministic for this input* off a single pair of equal outputs, where
+  the data says two recorded outputs were equal and ADR-0013's refutation
+  condition had its chance to fire and did not. Those are different kinds of sentence — one is a property of the
+  process, the other is what happened — and the discipline that refuses a `3/n`
+  bound on `observed 0 in 20` is the same one, held there against a quiet
+  result and dropped here against a clean one.
+
+  Two details make the instance worth keeping. **Equality did not remove the
+  confound it was used to dismiss**: two factors that are both inert and two
+  factors that offset each other are indistinguishable in a comparison of one
+  pair. Byte-identity does make offsetting very unlikely — that is a real
+  argument, and it counts only once it is written down, which is exactly the
+  step a convenient result skips. And **the wider claim bought nothing**: the
+  registered question was *does the artifact match inside the sandbox*, which
+  is joint in the first place, so the relaxed sentence answered a question
+  nobody had asked. Loosening is not a trade of rigour for reach; usually there
+  is no reach.
 
 ## Investigations (the lighter variant)
 
