@@ -263,9 +263,9 @@ def test_the_agent_outcome_lands_on_the_record():
 def test_the_record_pins_which_actor_produced_it():
   """A rate is only comparable across batches if the actor is on the record.
 
-  Measured 2026-09-01: the shard's own ``model`` field is empty by design, so
-  the actor of the first cost-measured rollout was recoverable only by grepping
-  111 lines of its event stream — and not at all once a trace is dropped.
+  The shard's own ``model`` field is deliberately unset (a model is a per-task
+  fact), so without this the actor survives only inside the trace artifact —
+  which is not a durable channel.
   """
   task = CodingAgentTask(harness=ClaudeCodeHarness(model="claude-opus-5"))
   assert task.record_extra(_attempt(AgentOutcome.FINISHED))["agent_model"] == (
