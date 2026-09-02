@@ -98,13 +98,15 @@ and cannot be done honestly tomorrow.
 # python3 - <run-dir>
 import json, pathlib, sys
 files = sorted(pathlib.Path(sys.argv[1]).rglob("claude_code.event_stream.jsonl"))
+if len(files) > 1:  # one stream per attempt; a merged count is not a reading
+    sys.exit(f"{len(files)} file(s), spanning attempts: {[str(f) for f in files]}")
 events = [json.loads(line) for f in files
           for line in f.read_text().splitlines() if line.strip()]
 print(len(files), "file(s),", len(events), "events,",
       sum(1 for e in events if e.get("type") == "result"), "result")
 ```
 
-Four answers, and what each one means — decided in advance:
+Five answers, and what each one means — decided in advance:
 
 | Reading | What it means |
 | --- | --- |
@@ -112,11 +114,23 @@ Four answers, and what each one means — decided in advance:
 | `1 file(s), 0 events` | the file exists and is empty — where every supervised run *starts*, since the harness's `>` redirect creates it before the agent writes. The actor produced nothing |
 | `1 file(s), N events, 0 result` | **task 17's shape.** Events flowed and no `result` ever came, so nothing could set `at_rest`, so the channel was never closed. A `TIMED_OUT` on this run is **ours** |
 | `1 file(s), N events, R result` | the actor finished at least one turn; task 17 did not occur on this run |
+| `2+ file(s)`, exit 1 | **not a reading** — the path spans more than one attempt, and one number over two attempts belongs to neither. Point it at a single attempt directory and read again |
 
 The first two are told apart on purpose. Collapsing them — which the first
 version of this snippet did, by printing only the event count — would have
 merged "no answer" with "an answer of zero", which is the same defect this task
 is about.
+
+**Two files carry this stream, and only one of them is the input.** The
+workspace holds `ws/a<N>/claude.event_stream.jsonl` — the container-side name
+the harness's redirect writes (`EVENT_STREAM_NAME`), scratch that a non-resume
+re-run deletes with the rest of the workspace. The collected artifact is
+`a<N>/claude_code.event_stream.jsonl`, the same bytes under the name
+`qualified_name(harness.name, role)` builds from the harness's
+`native_outputs()`. The read names the artifact because that is the deliverable
+the record points at. Aiming it at the workspace name is a mistake that does
+**not** announce itself: it still finds a file and still prints a plausible
+line, it just read the copy that gets deleted.
 
 **Rows 12–16 are a registration, not a plan.** They come from the measurements
 in [`experiments/trace_synthesis/streamjson_input/REPORT.md`](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)
