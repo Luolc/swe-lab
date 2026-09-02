@@ -107,10 +107,12 @@ events carrying a time   90
 actor last stamped event 2026-09-02T07:26:19.485Z
 supervisor first row     2026-09-02T07:23:35.650499+00:00
 supervisor last row      2026-09-02T07:42:14.572388+00:00
-supervisor span s        1118.9  (measured)
+supervisor span s        1118.9  (measured; both ends are supervisor rows)
+rollout wall s           1124.47  (measured; claude_code.wall_seconds)
 overlap with actor s     163.8  (at least)
 tail after actor s       955.1  (at most)
-tail share of span       0.854  (at most)
+tail / rollout wall      0.849  (at most; denominator 1124.47 s)
+tail / supervisor span   0.854  (at most; denominator 1118.9 s)
 proxy records            33
 requests carrying it     24
 occurrences              63
@@ -141,6 +143,13 @@ patch.diff bytes         3107
 Three of these lines are worth reading twice, because each is a coordinate that
 a summary would drop:
 
+- **Two ratios, and each one names its denominator.** They share a numerator
+  and answer different questions, so a bare percentage is not a reading here.
+  The one the report uses is `tail / rollout wall`: **the actor spent at most
+  955.1 s of the rollout's 1124.47 s wall clock (84.9%) finished and waiting
+  for the supervisor to catch up.** `tail / supervisor span` (85.4%) is a
+  statement about the supervisor's own working time, not about what the run
+  cost.
 - **`events carrying a time 90`.** The `result` event carries no timestamp.
   `actor last stamped event` is the assistant event immediately before it, so
   the actor's stopping point is that instant **or later**. Only the span is

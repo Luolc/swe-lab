@@ -43,6 +43,8 @@ print(f"result events            {sum(1 for e in events if e.get('type') == 'res
 print(f"events carrying a time   {len(stamped)}")
 print(f"actor last stamped event {max(stamped)}")
 
+run = json.loads(next((a / "store/adhoc").glob("*/r0/rollout/a0/run.json")).read_text())
+wall = run["metrics"]["claude_code.wall_seconds"]
 first = dt.datetime.fromisoformat(sup[0]["at"])
 last = dt.datetime.fromisoformat(sup[-1]["at"])
 actor = dt.datetime.fromisoformat(max(stamped).replace("Z", "+00:00"))
@@ -52,10 +54,15 @@ print(f"supervisor first row     {sup[0]['at']}")
 print(f"supervisor last row      {sup[-1]['at']}")
 # The result event carries no timestamp, so the actor stopped at the last
 # stamped event or later: the span is measured, the rest are bounds.
-print(f"supervisor span s        {span:.1f}  (measured)")
+print(f"supervisor span s        {span:.1f}  (measured; both ends are supervisor rows)")
+print(f"rollout wall s           {wall:.2f}  (measured; claude_code.wall_seconds)")
 print(f"overlap with actor s     {span - tail:.1f}  (at least)")
 print(f"tail after actor s       {tail:.1f}  (at most)")
-print(f"tail share of span       {tail / span:.3f}  (at most)")
+# Two true ratios of the same numerator. Named, because a percentage without
+# its denominator is not a reading: one is the run's cost, the other is how
+# much of its own span the supervisor spent working alone.
+print(f"tail / rollout wall      {tail / wall:.3f}  (at most; denominator {wall:.2f} s)")
+print(f"tail / supervisor span   {tail / span:.3f}  (at most; denominator {span:.1f} s)")
 
 TAG = "<supervisor_note>"
 proxy = rows("claude_code.proxy_log.jsonl")
@@ -87,7 +94,6 @@ noted = [json.loads(l) for l in lines if TAG in l]
 print(f"lines carrying it        {len(noted)}")
 print("their types              " + ", ".join(sorted({x.get("type") for x in noted})))
 
-run = json.loads(next((a / "store/adhoc").glob("*/r0/rollout/a0/run.json")).read_text())
 unit = json.loads(next((a / "store/adhoc").glob("*/r0/unit_test/a2/run.json")).read_text())
 keys = ("agent_complete", "claude_code.exit_code", "claude_code.timed_out",
         "claude_code.wall_seconds", "supervision.boundaries",
