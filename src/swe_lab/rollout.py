@@ -18,6 +18,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 import contextlib
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any, override
 
 from swe_lab.conversation import ConversationObserver
@@ -29,6 +30,7 @@ from swe_lab.sandbox import (
     ExecResult,
     merge_mounts,
     Mounts,
+    RunStatus,
     SandboxFs,
     SandboxObserver,
 )
@@ -234,6 +236,31 @@ class CodingAgentTask(Task):
     )
 
   @override
+  def outputs_valid(self, result: AttemptResult) -> bool:
+    """Refuse an attempt whose ending was ours, so nothing downstream grades it.
+
+    This is what makes :class:`RolloutOutcome` load-bearing rather than
+    recorded: a workflow blocks every later entry once an entry fails, so an
+    out-of-memory kill or a crashed harness stops here instead of paying for a
+    grading container that can only report the damage as a zero. Measured: a
+    run whose agent died in 1.4 s still spent the grading budget in full.
+
+    An ending the *actor* owns — a spent wall-clock budget, or a clean run that
+    produced no patch — is **not** refused here. It is a real result, and the
+    empty patch it yields is already stopped one step later by the edge, which
+    costs no container (ADR-0007 §5).
+
+    Args:
+      result: The attempt to judge.
+
+    Returns:
+      Whether the attempt produced outputs worth carrying forward.
+    """
+    if rollout_outcome(result).ours:
+      return False
+    return super().outputs_valid(result)
+
+  @override
   def should_retry(self, result: AttemptResult) -> bool:
     """Retry an infrastructure failure, never one the agent earned (ADR-0011).
 
@@ -298,6 +325,9 @@ class CodingAgentTask(Task):
       # per-attempt sha that exists nowhere else, and a reader should not have
       # to know which mode a run used to know how to read its patch.
       extra["patch_base_ref"] = patch.base_ref
+    # The stage's own word, so a reader can tell our breakage from the
+    # actor's result without re-deriving it from three other fields.
+    extra["rollout_outcome"] = rollout_outcome(result).value
     observer = outcome_of(result)
     if observer is not None:
       extra["agent_outcome"] = observer.outcome.value
@@ -351,6 +381,117 @@ class CodingAgentTask(Task):
     )
     with recorder:
       return self.harness.run(sb, prompt=prompt, timeout=timeout, env=self.env)
+
+
+# The cgroup/docker OOM counter the host backend records on every run
+# (`sandbox.oom_kills`). Named here because this module is what turns it from a
+# recorded number into a branch.
+OOM_METRIC = "sandbox.oom_kills"
+
+
+class RolloutOutcome(StrEnum):
+  """What the rollout *stage* produced — the word that decides what follows.
+
+  Distinct from :class:`~swe_lab.harnesses.AgentOutcome`, which is what the
+  agent's own trace says about its loop. This one is about the stage as a
+  whole (engine, resources, agent, patch), and it exists because four endings
+  that need different treatment were previously rendered the same way: a
+  crashed harness, an out-of-memory kill, a spent wall-clock budget, and an
+  agent that ran fine and produced nothing all arrived downstream as "no
+  usable patch".
+
+  **Classification is by cause, never by exit code.** An actor that exhausts
+  its own turn budget may well exit non-zero, and that is still the actor's
+  result. The question each member answers is: *did the actor terminate on its
+  own terms?* Killed from outside, or a precondition that was never met, is
+  ours; running to its own boundary and stopping is the actor's.
+
+  Attributes:
+    OOM_KILLED: Killed for memory. Ours — the box was too small, which says
+      nothing about the task.
+    SYSTEM_FAILED: The engine failed, or the agent's loop ended in a way it
+      did not choose (:attr:`AgentOutcome.retryable` — a crash, a truncated
+      trace, an API error). Deliberately **not** named ``AGENT_FAILED``:
+      reading "the agent failed" is exactly the mistake this member exists to
+      prevent, because it invites counting our breakage as the actor's.
+    TIMED_OUT: The action was killed at its wall-clock budget. The actor's,
+      per ADR-0011 — wall-clock is a budget it was handed and spent.
+    NO_PATCH: It terminated on its own terms and produced no usable patch. A
+      genuine failure to solve, not a failure of the system.
+    PATCH_PRODUCED: There is something to grade. The only member that lets
+      grading run.
+  """
+
+  OOM_KILLED = "oom_killed"
+  SYSTEM_FAILED = "system_failed"
+  TIMED_OUT = "timed_out"
+  NO_PATCH = "no_patch"
+  PATCH_PRODUCED = "patch_produced"
+
+  @property
+  def ours(self) -> bool:
+    """Whether this ending was the system's doing rather than the actor's.
+
+    The one causal bit, read by both consumers: it decides whether the attempt
+    produced trustworthy outputs (so whether grading runs) and whether the run
+    belongs in a solve rate. One bit rather than two, so the gate and the
+    accounting cannot disagree about the same run.
+
+    Returns:
+      Whether the ending is attributable to us.
+    """
+    return self in _OURS
+
+  @property
+  def counts_in_denominator(self) -> bool:
+    """Whether a run that ended this way belongs in a solve rate.
+
+    **Default in.** Only an ending positively identified as ours leaves, so an
+    ending nobody classified stays — which can only *understate* a success
+    rate. The opposite default lets the excluded set grow unwatched, and it
+    grows in the direction that makes results look better.
+
+    Returns:
+      Whether to count this run in the denominator.
+    """
+    return not self.ours
+
+
+# The only two endings that are ours rather than the actor's. Kept beside the
+# enum, like `_RETRYABLE_OUTCOMES`, so the policy reads as one table.
+_OURS: frozenset[RolloutOutcome] = frozenset(
+    {RolloutOutcome.OOM_KILLED, RolloutOutcome.SYSTEM_FAILED}
+)
+
+
+def rollout_outcome(result: AttemptResult) -> RolloutOutcome:
+  """Classify how a rollout attempt ended, by cause.
+
+  Order matters where causes co-occur: a run killed for memory reports both an
+  OOM and a broken agent loop, and the OOM is the one that explains the other.
+  Wall-clock is checked before the agent's own ending for the same reason —
+  a killed action leaves a truncated trace, and calling that a crash would
+  move a budget the actor spent onto our side of the ledger.
+
+  Args:
+    result: The attempt to classify.
+
+  Returns:
+    The stage's outcome.
+  """
+  if result.run.metrics.get(OOM_METRIC, 0.0) > 0.0:
+    return RolloutOutcome.OOM_KILLED
+  if result.run.status is RunStatus.TIMEOUT:
+    return RolloutOutcome.TIMED_OUT
+  if result.run.status is not RunStatus.SUCCESS:
+    return RolloutOutcome.SYSTEM_FAILED  # setup / run error: never the actor's
+  observer = outcome_of(result)
+  if observer is not None and observer.outcome.retryable:
+    return RolloutOutcome.SYSTEM_FAILED
+  patch = patch_of(result)
+  if patch is None or patch.is_empty:
+    return RolloutOutcome.NO_PATCH
+  return RolloutOutcome.PATCH_PRODUCED
 
 
 def patch_of(result: AttemptResult) -> DiffExtractObserver | None:
