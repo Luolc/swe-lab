@@ -575,8 +575,10 @@ retroactively (owner's calibration, 2026-09-01).
   turns `oom_kills` from a number into a gate.
 - **A failure crossing an interface whose ordinary result means "it went fine"
   needs a representation distinguishable there.** Not every unrepresented
-  failure is dangerous: an exception, a non-zero exit or a dropped connection
-  carries itself. The dangerous ones arrive **in band**, on a channel a normal
+  failure is dangerous: an exception or a non-zero exit carries itself, and so
+  does a connection error a client *raises* — but the same broken connection
+  folded into an empty read is an instance of this entry, not an exception to
+  it. The dangerous ones arrive **in band**, on a channel a normal
   value also uses — `None` returned both for "the policy decided not to speak"
   and for "the policy could not speak"; a supervising thread whose liveness is
   never read, so "still running" arrives as "it stopped"; a leaked background
