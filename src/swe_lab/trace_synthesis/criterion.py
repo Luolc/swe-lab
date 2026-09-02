@@ -92,8 +92,10 @@ class Criterion:
     overlap_checked: Whether the redundant gold-patch overlap check ran. It
       needs the gold patch to be available where the check runs; for a dataset
       that records none it cannot run, and the digest carries the invariant
-      alone. That is a weaker state, and a run says so rather than reporting a
-      check it did not perform.
+      alone. That is the weaker state, and this flag is how the returned
+      criterion records which of the two happened. **[U]** No reporting path
+      reads it yet — that consumer arrives with the wiring PR, and until then
+      nothing surfaces the distinction to a reader of results.
   """
 
   text: str

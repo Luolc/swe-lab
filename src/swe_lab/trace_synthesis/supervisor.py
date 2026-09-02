@@ -14,9 +14,10 @@ Three properties are structural rather than advisory, and each has a test:
   is deliberate: the Oracle writes a guidebook with the reference patch, the
   grading procedure and the unpurged history in hand, so a supervisor reading
   one would be steering by the answer without ever quoting it. The judge
-  measures against one pinned criterion instead, which guarantees that no run
-  selects a different criterion per instance — and leaves whether that shared
-  text is free of solution knowledge to review of the artifact itself
+  measures against one pinned criterion instead, so every load yields the same
+  text and a per-instance criterion cannot be swapped in without the loader
+  rejecting it — and whether that shared text is free of solution knowledge is
+  left to review of the artifact itself
   (:mod:`swe_lab.trace_synthesis.criterion`).
 - **When to speak is a seam.** It is the open variable of the design, so a
     :class:`SpeakPolicy` is replaceable without touching the consumer, the

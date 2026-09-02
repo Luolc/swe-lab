@@ -111,13 +111,12 @@ def test_a_missing_criterion_is_rejected_by_the_loader(
     load_criterion(path=tmp_path / "nope.md")
 
 
-def test_without_a_gold_patch_the_run_says_the_overlap_half_did_not_run() -> (
-    None
-):
+def test_the_criterion_records_whether_the_overlap_half_ran() -> None:
   """The redundant half degrades honestly.
 
   A dataset that records no patch leaves the digest carrying the invariant
-  alone, and the run says so rather than reporting a check it did not perform.
+  alone, and the returned criterion records which of the two happened. Nothing
+  reports it yet — that consumer is ``[U]``.
   """
   assert load_criterion().overlap_checked is False
   assert load_criterion(gold_patch=GOLD_PATCH).overlap_checked is True
