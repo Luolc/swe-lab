@@ -149,7 +149,7 @@ already said — and would otherwise be free to say the same thing three times i
 a row. That list is handed to the policy beside the evidence, never mixed into
 it (`test_what_it_said_is_remembered_outside_the_evidence`).
 
-## 4. When it speaks: a policy seam, and exactly two implementations
+## 4. When it speaks, and what it says
 
 ```
 SpeakPolicy:  consider(observation) -> Intervention | None
@@ -160,17 +160,123 @@ run state (what it has already said, and where). **The policy decides whether
 and when; it does not decide the channel, does not write, and cannot end the
 run.** Returning `None` is the ordinary case and is not an error.
 
-**Two implementations ship, and the second one is not padding:**
+### 4.1 What "off track" means, and why the bar is not a delay
 
-1. **The real policy** — one, whichever the rig's first arm needs.
-2. **`NeverSpeak`** — because the control arm must run *the same supervisor*
-   with speech disabled, not *no supervisor*. If the control arm simply omits
-   the component, the arms differ by the judge calls, their latency and their
-   cost as well as by the corrections, and the comparison stops being paired.
+A policy that speaks needs a judgement, and the judgement is a model call over
+the `Observation`: the task, the guidebook, a window of the actor's own records,
+and what has already been said. **It asks two questions, not one:**
 
-Beyond those two, **no policy library.** The repo's rule is that the third
-repetition earns the abstraction; the seam here is earned by the measured fact
-in §2, not by anticipated variety.
+1. **Is the actor off the guidebook's path?**
+2. **Left alone, would it come back by itself?**
+
+Only *off-track **and** not self-correcting* speaks. The second question is
+where the restraint lives — an actor that has just said "that didn't work, let
+me reconsider" is already doing the thing an intervention would ask for, and
+speaking there is the redundancy the graded batch measured (roughly half its
+interventions).
+
+**Precision comes from the bar; restraint comes from the budget; neither may
+come from delay.** The obvious way to buy precision is to debounce — require
+the deviation to persist across two judgements before speaking. **This design
+rejects that**, and the reason is the one measurement we have: 8 of 8
+non-compliances arrived *too late*
+([report §6.2](../../../experiments/trace_synthesis/mid_turn_compliance/REPORT.md)).
+Debouncing buys precision with exactly the currency we are already short of. So
+the first intervention is never delayed by design; what is limited is **how
+often** the supervisor may speak, not **how long it waits** before it may.
+
+**The judgement is subjective, and the design says so.** The owner's ruling
+stands: this is a language model deciding on-track or off-track, so it is
+probabilistic and a defensible reading suffices. The policy therefore must not
+be built as though the judge were an oracle — no retry-until-agreement, no
+second call to break a tie. One call, one verdict, recorded.
+
+### 4.2 The three parameters a sweep needs, and their honest status
+
+The parameters are named here so they can be varied without editing the policy,
+because **timing is the variable we have never been able to turn**:
+
+| Parameter | What it controls | Status |
+| --- | --- | --- |
+| `budget` | how many interventions a whole run may carry | **[U]** proposed 3; no measurement supports any number |
+| `cooldown` | how many boundaries must pass **between** interventions — it never delays the *first* one | **[U]** proposed 4 |
+| `window` | how many of the actor's records the judge sees | **[C]** 8 in the one judge we have run (`judge_steps.py`), carried forward for continuity, not because 8 was tested against 4 or 16 |
+
+**None of these three has a measured value, and the plan will not pretend
+otherwise.** They are written as parameters precisely so the rig can sweep them;
+a default that arrived by taste and then hardened into a constant is how a
+number nobody chose ends up in a result.
+
+### 4.3 Silence is structural, not hoped for
+
+`consider()` returns `None` unless **every** gate passes, in this order:
+
+1. budget remaining, else silent;
+2. cooldown elapsed since the last intervention, else silent;
+3. the judge says off-track, else silent;
+4. the judge says it will not self-correct, else silent;
+5. the writer produces a usable line, else **a recorded gap** — never a retry.
+
+A policy that speaks by default cannot be produced by omitting a parameter,
+because **`budget` has no default**: a policy that may speak must state how
+often. The guarantee is tested three ways: a judge that always says on-track
+yields zero interventions; `budget=0` yields zero even when the judge always
+says off-track; and `budget=k` yields at most `k` on a trace where it always
+says off-track.
+
+### 4.4 The implementations, and why `budget=0` replaces a second control
+
+1. **`NeverSpeak`** — already shipped. No judge, no speech; the trivial control
+   and the test double.
+2. **`SpeakAt(cursors)`** — speaks a fixed line at fixed cursors, with no judge
+   at all. This is the **timing knob in isolation**: it varies *when* while
+   holding *what* and *whether* constant, which is the one comparison the graded
+   batch could not make because its trigger was entangled with its criterion.
+3. **`GuidebookPolicy(judge, writer, budget, cooldown, window)`** — the real
+   one, as designed above.
+
+**A fourth class was considered and is not needed.** The paired control wants a
+supervisor that *judges but never speaks* — same calls, same cost, same
+cadence, zero corrections — and that is exactly `GuidebookPolicy(budget=0)`.
+It also produces something more useful than silence: a record of **where it
+would have spoken** on control traces, which is what lets the two arms be
+compared at matched deviation points rather than only at their endpoints.
+
+### 4.5 What it writes
+
+A second model call, given the same `Observation` and nothing else. The shape is
+the user's, quoted because paraphrasing it loses the thing that matters:
+
+> "不对不对，你不太应该看那些 fail，我觉得看这些是更相关一点的" — a person
+> watching over your shoulder, hedged and offhand.
+>
+> **Not**: "ok the right answer is X, go do that."
+
+So the writer is instructed to produce one short line that **hedges** ("I don't
+think…", "I'd look at…"), **points at a direction** already visible in the
+actor's own work, and **names no fix**. Three of those are prose properties. The
+checkable ones are stated as checks and the rest is stated as unenforced:
+
+§5 already fixes what *any* intervention must satisfy — the length cap, the
+tag, and the ban on fabricating an observation — and those are properties of the
+`Intervention` type, not of this writer. **What the writer adds are two checks
+of its own**, and they are the only two worth adding because they rule out
+failures a length cap does not:
+
+| Writer check | What it actually rules out |
+| --- | --- |
+| no fenced code block and no diff hunk header | the most literal form of handing over the answer |
+| no verbatim n-gram shared with the guidebook (n≈8 words) | the guidebook being **pasted through** the channel into the actor's context |
+
+A third property — *not a repeat of what it already said* — belongs to the
+policy rather than the writer: `said` is in the `Observation` precisely so the
+judgement can decline to speak again, and rejecting a duplicate after paying for
+it would be the wrong layer.
+
+**The n-gram guard is a floor, not a proof.** A paraphrase defeats it, and it is
+worth having anyway: it catches the failure that would actually happen, which is
+a writer quoting the guidebook because the guidebook is the most relevant text
+in its context.
 
 **What a policy can actually see about timing** is bounded by the channel, and
 the plan says so rather than letting an implementer discover it: **[M]** the
