@@ -30,9 +30,12 @@ from swe_lab.harnesses.claude_code.constants import (
 # must not depend on whether some definition happens to mention it.
 import swe_lab.harnesses.codex as _codex
 import swe_lab.harnesses.grok_build as _grok
-from swe_lab.rollout import CodingAgentTask
+from swe_lab.rollout import CodingAgentTask, SupervisionFactory
 from swe_lab.sandbox import DockerHostSandboxConfig
+from swe_lab.trace_synthesis.channel import SupervisedRun, supervision
+from swe_lab.trace_synthesis.judge import openrouter_transport
 from swe_lab.trace_synthesis.oracle import OracleAnalysisTask
+from swe_lab.trace_synthesis.supervisor import NeverSpeak
 
 from .registry import register_workflow, WorkflowDef
 from .workflow import WorkflowEntry
@@ -114,6 +117,92 @@ UNIT_TEST: WorkflowDef = (
 
 ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*ROLLOUT, *UNIT_TEST)
 
+# The model both supervisor calls go to. Named here, and never defaulted, so
+# that every record says who was asked: a rate compared across batches is only
+# comparable if the judge is pinned, exactly as the actor is (`agent_model`).
+# This is the model the two prior supervision measurements used — the steered
+# re-run and the guidebook-as-criterion experiment — so the first supervised
+# rollouts are read against calls of the same shape rather than against a new
+# unknown.
+SUPERVISOR_MODEL = "anthropic/claude-sonnet-5"
+# How many corrections one run may carry. No measured value — task 05 owns that
+# question — so it is stated rather than derived, and stated once.
+SUPERVISOR_BUDGET = 3
+
+
+def _supervised_rollout(supervision_factory: SupervisionFactory) -> WorkflowDef:
+  """Build a rollout entry whose actor can be spoken to while it runs.
+
+  The treatment arm and its control differ **only** in the policy they are
+  given: same harness, same flags, same invocation script, so what separates
+  the two runs is what was said and nothing else. That is why this is a
+  function of the supervision rather than a flag on :data:`ROLLOUT` — a boolean
+  would hide the difference between the arms inside a parameter instead of
+  leaving it in two readable definitions.
+
+  Args:
+    supervision_factory: What watches the actor, given the task text.
+
+  Returns:
+    The one-entry definition.
+  """
+  return (
+      WorkflowEntry(
+          ROLLOUT_KEY,
+          CodingAgentTask(
+              # Proxy capture is required by the channel and refused otherwise:
+              # a stream-derived trace of a supervised run asserts a turn the
+              # model never saw.
+              harness=ClaudeCodeHarness(
+                  model=DEFAULT_MODEL,
+                  bare=False,
+                  capture="proxy",
+                  correction_channel=True,
+              ),
+              supervision_factory=supervision_factory,
+          ),
+          timeout=_AGENT_TIMEOUT_S,
+          sandbox=DockerHostSandboxConfig(
+              network=True, pass_env=(OAUTH_TOKEN_ENV,)
+          ),
+      ),
+  )
+
+
+def _control_supervision(task: str) -> SupervisedRun:
+  """Build the control arm's supervision: attached, and silent by construction.
+
+  Not "no supervision": the channel, the relay and the pump all run, so the
+  actor's environment is the treatment arm's. `NeverSpeak` is what makes the
+  arm a control, and it is why this run cannot satisfy task 01's acceptance
+  point 3 — by construction it has nothing to say.
+
+  Args:
+    task: What the actor was asked to do.
+
+  Returns:
+    The run's supervision.
+  """
+  return SupervisedRun(policy=NeverSpeak(), task=task)
+
+
+SUPERVISED_ROLLOUT: WorkflowDef = _supervised_rollout(
+    supervision(
+        model=SUPERVISOR_MODEL,
+        transport=openrouter_transport,
+        budget=SUPERVISOR_BUDGET,
+    )
+)
+
+CONTROL_ROLLOUT: WorkflowDef = _supervised_rollout(_control_supervision)
+
+SUPERVISED_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (
+    *SUPERVISED_ROLLOUT,
+    *UNIT_TEST,
+)
+
+CONTROL_ROLLOUT_AND_UNIT_TEST: WorkflowDef = (*CONTROL_ROLLOUT, *UNIT_TEST)
+
 GOLD_UNIT_TEST: WorkflowDef = (
     WorkflowEntry(
         UNIT_TEST_KEY,
@@ -169,3 +258,9 @@ register_workflow("rollout", ROLLOUT)
 register_workflow("unit_test", UNIT_TEST)
 register_workflow("rollout_and_unit_test", ROLLOUT_AND_UNIT_TEST)
 register_workflow("gold_unit_test", GOLD_UNIT_TEST)
+register_workflow(
+    "supervised_rollout_and_unit_test", SUPERVISED_ROLLOUT_AND_UNIT_TEST
+)
+register_workflow(
+    "control_rollout_and_unit_test", CONTROL_ROLLOUT_AND_UNIT_TEST
+)

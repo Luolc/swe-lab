@@ -35,26 +35,26 @@ one thing added to its first entry. Nothing about the second entry changes.
 | 2 | Actor runs under `CodingAgentTask` | [`rollout.py`](../../../src/swe_lab/rollout.py) | exists |
 | 3 | **Actor's live events reach a supervisor** | `SupervisedRun` in [`trace_synthesis/channel.py`](../../../src/swe_lab/trace_synthesis/channel.py), composed by `CodingAgentTask.supervision_factory` | exists |
 | 4a | The **seam** a policy plugs into | the `SpeakPolicy` protocol in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | exists |
-| 4b | A policy that speaks **because of a real deviation** | `SpeakWhenOffTrack` in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | **the policy ships; the `Judge` and `Writer` it consults do not** — both are protocols with no implementation |
+| 4b | A policy that speaks **because of a real deviation** | `SpeakWhenOffTrack`, built by `supervising_policy` over `ModelJudge` / `ModelWriter` | exists; composed by the `supervised_rollout_and_unit_test` definition |
 | 5 | **Intervention reaches the actor's stdin** | the FIFO and in-sandbox relay behind `ClaudeCodeHarness(correction_channel=True)` | exists |
 | 6 | Patch extracted vs the pre-agent baseline | `DiffExtractObserver(baseline=True)`, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md) | exists, default on |
 | 7 | Grading on that patch and that base ref | `UnitTestTask`, same base-ref contract | exists |
 | 8 | Outcome word + record | `rollout_outcome`, [ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md) | exists |
 
-**Stage 4b is the remaining work.** 3 and 5 are two different seams — one
-reads, one writes — and conflating them is how a supervisor that "is attached"
-ends up never able to say anything; they are built as two, and both are in
-place.
+**No stage is missing any more; what is missing is a run.** 3 and 5 are two
+different seams — one reads, one writes — and conflating them is how a
+supervisor that "is attached" ends up never able to say anything; they are
+built as two, and both are in place. A stage existing is not the same as a
+stage having run, which is the whole of what task 01 still owes.
 
 **4b is a prerequisite, not a detail of 4.** The policy that speaks on a
-deviation is `SpeakWhenOffTrack`, and it is shipped — but it consults a `Judge`
-and a `Writer`, and neither protocol has an implementation, so it cannot be
-constructed into something that runs. The two policies that *can* be
-constructed today are both disqualified by construction: `NeverSpeak` is the
-**control arm** and never speaks, and `SpeakAt` speaks on a schedule, which
-acceptance point 3 excludes. So wiring stages 3 and 5 yields a pipeline
-provably complete on six of the seven points, with the seventh waiting on a
-judge and a writer rather than on a policy design.
+deviation is `SpeakWhenOffTrack`, built by `supervising_policy` over a
+`ModelJudge` and a `ModelWriter`. Which policy an arm gets is the *only*
+difference between the two shipped supervised definitions: the control runs the
+same harness, the same channel and the same pump with `NeverSpeak`, so what
+separates the arms is what was said rather than whether the machinery was
+there. `SpeakAt` remains a knob for tests — a run whose utterances are
+scheduled cannot satisfy acceptance point 3.
 
 ### Stage 3 — reading the live stream
 
@@ -110,16 +110,12 @@ consequences the wiring must respect, both already stated by the component:
 
 Three, and the first is easy to miss because its *seam* is already there:
 
-1. **A `Judge` and a `Writer` for `SpeakWhenOffTrack`** (stage 4b). The policy
-   is on `main`; both collaborators it consults are protocols with no
-   implementation, so the only constructible policies are the two acceptance
-   point 3 excludes.
-2. **The wiring** — stages 3 and 5, reading the live stream and writing to
-   stdin.
-3. **The pinned criterion sha and its refusal path**, for acceptance point 2b.
-   A `Criterion` type is on `main`; what is missing is a builder that verifies
-   the artifact's sha and a **caller** for it, since "the run refuses to start"
-   is only testable where the run is constructed.
+All three are on `main`: the policy with a `Judge` and a `Writer` to build it
+(stage 4b), the wiring in both directions (stages 3 and 5), and the criterion's
+digest check with a caller on the run's own construction path (point 2b). Each
+of the three was consumed by the wiring, which is why none of them could be
+shown to refuse or to speak until it existed.
 
-The wiring is what the rest hangs off: the first and third are consumed by it,
-so neither can be shown to refuse or to speak until it exists.
+What is left is not a dependency but the run: `swe-lab run
+supervised_rollout_and_unit_test <instance>` for the treatment arm and
+`control_rollout_and_unit_test` for the control.

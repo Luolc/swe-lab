@@ -7,6 +7,7 @@ composition (manager → observers → harness) runs docker-free while no agent
 process ever spawns.
 """
 
+from collections.abc import Mapping
 import dataclasses
 from pathlib import Path
 from typing import override
@@ -42,7 +43,12 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import DiffExtractObserver
 from swe_lab.sandbox.testing import FakeSandbox
-from swe_lab.trace_synthesis.channel import SupervisedRun, SUPERVISOR_LOG_NAME
+from swe_lab.trace_synthesis.channel import (
+    SupervisedRun,
+    supervision,
+    SUPERVISOR_LOG_NAME,
+)
+from swe_lab.trace_synthesis.criterion import CriterionRejectedError
 from swe_lab.trace_synthesis.supervisor import NeverSpeak
 from swe_lab.workflow import AttemptResult
 
@@ -473,7 +479,7 @@ def test_a_supervised_rollout_is_refused_on_a_harness_that_cannot_hear_it():
   """
 
   def supervision(task: str) -> SupervisedRun:
-    return SupervisedRun(policy_factory=NeverSpeak, task=task)
+    return SupervisedRun(policy=NeverSpeak(), task=task)
 
   with pytest.raises(ValueError, match="accepts corrections"):
     _ = CodingAgentTask(
@@ -498,7 +504,7 @@ def test_the_rollout_composes_the_supervisor_when_one_is_configured():
 
   def supervision(task: str) -> SupervisedRun:
     seen.append(task)
-    return SupervisedRun(policy_factory=NeverSpeak, task=task)
+    return SupervisedRun(policy=NeverSpeak(), task=task)
 
   task = CodingAgentTask(
       harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
@@ -526,3 +532,65 @@ def test_the_rollout_composes_the_supervisor_when_one_is_configured():
       for observer in plain.observers(_Instance())
       for schema in observer.output_schema()
   ]
+
+
+def _no_transport(payload: Mapping[str, object]) -> Mapping[str, object]:
+  """Fail the test if anything tries to reach a model.
+
+  Args:
+    payload: Unused — no request may be made while a criterion is checked.
+
+  Returns:
+    Never returns.
+
+  Raises:
+    AssertionError: Always.
+  """
+  del payload
+  raise AssertionError("a criterion check must not call a model")
+
+
+def test_a_forged_criterion_stops_the_run_before_a_sandbox_exists(
+    tmp_path: Path,
+):
+  """Acceptance point 2b: the refusal has to happen where the run is built.
+
+  A digest check with no caller on the run's path refuses a *call*, not a run.
+  This composes the supervision the way a rollout does and drives one attempt:
+  the forged artifact raises while the observers are being assembled, so the
+  sandbox is never created — which is both the point ("refuses to *start* the
+  run") and the reason it is cheap, since a container costs the same whether
+  the run was going to be valid or not.
+  """
+  forged = tmp_path / "criterion.md"
+  _ = forged.write_text("look closely at whatever seems off, I suppose.\n")
+  supervised = CodingAgentTask(
+      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
+      supervision_factory=supervision(
+          model="claude-sonnet-5",
+          transport=_no_transport,
+          budget=3,
+          criterion_path=forged,
+      ),
+  )
+  sandbox = _LocalFakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path / "ws"))
+
+  with pytest.raises(CriterionRejectedError):
+    _ = supervised.execute(
+        sandbox,
+        _Instance(),
+        output_dir=tmp_path / "out",
+        timeout=60.0,
+    )
+  assert not [call for call in sandbox.calls if call[0] == "up"]
+
+  # The control: the same composition with the pinned artifact assembles its
+  # observers without raising, so what stopped the run above was the forgery
+  # and not the wiring.
+  ok = CodingAgentTask(
+      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
+      supervision_factory=supervision(
+          model="claude-sonnet-5", transport=_no_transport, budget=3
+      ),
+  )
+  assert [o for o in ok.observers(_Instance()) if isinstance(o, SupervisedRun)]

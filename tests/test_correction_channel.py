@@ -40,7 +40,9 @@ from swe_lab.rollout import (
 from swe_lab.sandbox import RunResult, RunStatus, SandboxSpec
 from swe_lab.sandbox.testing import FakeSandbox
 from swe_lab.trace_synthesis.channel import (
+    BOUNDARIES_METRIC,
     CorrectionChannel,
+    CORRECTIONS_METRIC,
     stream_events,
     SupervisedRun,
     SUPERVISOR_LOG_NAME,
@@ -322,7 +324,7 @@ def _supervised(tmp_path: Path, policy: Any = None) -> SupervisedRun:
     what stops its thread.
   """
   run = SupervisedRun(
-      policy_factory=lambda: policy if policy is not None else _SpeaksOnce(),
+      policy=policy if policy is not None else _SpeaksOnce(),
       task="solve it",
       poll_interval=0.01,
   )
@@ -364,7 +366,7 @@ def test_a_supervised_run_that_stayed_supervised_reports_no_metric(
   run = _supervised(tmp_path)
   contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
-  assert contribution.metrics == {}
+  assert SUPERVISION_METRIC not in contribution.metrics
   assert SUPERVISOR_LOG_NAME in contribution.inline_artifacts
 
 
@@ -386,7 +388,7 @@ def test_a_dead_pump_produces_the_metric_that_changes_the_outcome_word(
 
   contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
-  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
 
   # …and the metric is not merely recorded: it decides the word.
   task = CodingAgentTask(harness=ClaudeCodeHarness())
@@ -402,7 +404,7 @@ def test_a_channel_that_closed_on_its_own_produces_it_too(tmp_path: Path):
   (epath.Path(tmp_path) / CORRECTION_UNCLEAN_NAME).touch()
   contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
-  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
 
 
 def test_the_supervisors_account_of_the_run_is_persisted(tmp_path: Path):
@@ -460,7 +462,11 @@ def test_the_run_ends_when_the_supervisor_lets_a_turn_boundary_pass(
 
   contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
-  assert contribution.metrics == {}  # a deliberate close is not a failure
+  # A deliberate close is not a failure, and the run still says what its
+  # supervision cost and did.
+  assert SUPERVISION_METRIC not in contribution.metrics
+  assert contribution.metrics[BOUNDARIES_METRIC] == 2.0
+  assert contribution.metrics[CORRECTIONS_METRIC] == 1.0
 
 
 def test_a_pump_that_died_still_ends_the_run(tmp_path: Path):
@@ -479,7 +485,7 @@ def test_a_pump_that_died_still_ends_the_run(tmp_path: Path):
 
   contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
-  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
 
 
 @pytest.mark.docker
@@ -666,7 +672,7 @@ def test_a_boundary_the_policy_could_not_judge_invalidates_the_run(
   ]
   assert [row["kind"] for row in rows] == [LOG_KIND_GAP]
   # …and that reaches the outcome word rather than stopping at the log.
-  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
   attempt = _attempt_with(contribution.metrics)
   assert rollout_outcome(attempt) is RolloutOutcome.SUPERVISION_FAILED
   assert (
@@ -694,7 +700,7 @@ def test_a_gap_mid_turn_ends_the_run_rather_than_letting_it_continue(
 
   contribution = run.before_destroy(_fs(tmp_path))
   assert contribution is not None
-  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
 
 
 def test_a_correction_that_could_not_be_delivered_invalidates_the_run(
@@ -739,7 +745,7 @@ def test_a_correction_that_could_not_be_delivered_invalidates_the_run(
   # ignored, this run would report as a clean, fully supervised one.
   assert run.pump is not None and run.pump.healthy
   assert run.channel is not None and not run.channel.closed_uncleanly
-  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  assert contribution.metrics[SUPERVISION_METRIC] == 1.0
   assert (
       rollout_outcome(_attempt_with(contribution.metrics))
       is RolloutOutcome.SUPERVISION_FAILED
@@ -760,7 +766,7 @@ def test_a_supervisor_that_never_returns_is_not_reported_as_healthy(
   policy = _Blocks()
   events = epath.Path(tmp_path) / EVENT_STREAM_NAME
   run = SupervisedRun(
-      policy_factory=lambda: policy,
+      policy=policy,
       task="solve it",
       poll_interval=0.01,
       join_timeout=0.2,
@@ -776,7 +782,7 @@ def test_a_supervisor_that_never_returns_is_not_reported_as_healthy(
 
     contribution = run.before_destroy(_fs(tmp_path))
     assert contribution is not None
-    assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+    assert contribution.metrics[SUPERVISION_METRIC] == 1.0
     assert policy.calls == 1  # teardown consulted nothing
   finally:
     policy.released.set()

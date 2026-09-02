@@ -305,3 +305,93 @@ def test_grading_a_gold_patch_stays_on_base_commit() -> None:
   (entry,) = GOLD_UNIT_TEST
   assert isinstance(entry.task, UnitTestTask)
   assert entry.task.patch_baseline is False
+
+
+def test_a_supervised_rollout_and_its_control_can_both_be_started_by_name():
+  """The pipeline is startable, which is prior to it being correct.
+
+  A supervisor that composes when configured, with nothing in the shipped
+  definitions configuring it, is a capability no command can reach. Both arms
+  are registered, because a treatment that can be run and a control that cannot
+  measures nothing.
+  """
+  from swe_lab.rollout import CodingAgentTask
+
+  names = set(registered_workflows())
+  assert {
+      "supervised_rollout_and_unit_test",
+      "control_rollout_and_unit_test",
+  } <= names
+
+  supervised, graded = workflow_definition("supervised_rollout_and_unit_test")
+  control, control_graded = workflow_definition("control_rollout_and_unit_test")
+  assert isinstance(supervised.task, CodingAgentTask)
+  assert isinstance(control.task, CodingAgentTask)
+  assert supervised.task.supervision_factory is not None
+  assert control.task.supervision_factory is not None
+  # Both are chains: a supervised rollout that is not graded measures nothing
+  # either.
+  assert (graded.key, control_graded.key) == (
+      definitions.UNIT_TEST_KEY,
+      definitions.UNIT_TEST_KEY,
+  )
+
+  # …and the default stays unsupervised.
+  plain, _ = workflow_definition("rollout_and_unit_test")
+  assert isinstance(plain.task, CodingAgentTask)
+  assert plain.task.supervision_factory is None
+
+
+def test_the_two_arms_differ_only_in_what_the_policy_says():
+  """Comparability comes from the harness, not from a flag.
+
+  Both arms run the actor through the same invocation script — same capture,
+  same live channel, same relay — so the difference between the runs is what
+  was said and nothing else. If the control were simply the unsupervised
+  definition, the arms would differ in the script itself and the comparison
+  would be about the channel rather than about the corrections.
+  """
+  from swe_lab.rollout import CodingAgentTask
+
+  supervised, _ = workflow_definition("supervised_rollout_and_unit_test")
+  control, _ = workflow_definition("control_rollout_and_unit_test")
+  assert isinstance(supervised.task, CodingAgentTask)
+  assert isinstance(control.task, CodingAgentTask)
+  assert supervised.task.harness == control.task.harness
+  assert supervised.timeout == control.timeout
+  assert supervised.sandbox == control.sandbox
+  # The control is attached and silent, not detached.
+  from swe_lab.trace_synthesis.channel import SupervisedRun
+  from swe_lab.trace_synthesis.supervisor import NeverSpeak
+
+  factory = control.task.supervision_factory
+  assert factory is not None
+  built = factory("solve it")
+  assert isinstance(built, SupervisedRun)
+  assert isinstance(built.policy, NeverSpeak)
+
+
+def test_the_shipped_supervised_arm_carries_the_pinned_criterion():
+  """The criterion gate is on the path a command actually takes.
+
+  Building this definition's observers is what loads and digest-checks the
+  criterion, and it happens while the observers are assembled — before any
+  sandbox exists. Asserted against the *shipped* definition rather than a
+  hand-built one, since a gate on a composition nobody runs gates nothing.
+  """
+  from swe_lab.rollout import CodingAgentTask
+  from swe_lab.trace_synthesis.channel import SupervisedRun
+  from swe_lab.trace_synthesis.criterion import CRITERION_SHA256
+  from swe_lab.trace_synthesis.supervisor import SpeakWhenOffTrack
+
+  supervised, _ = workflow_definition("supervised_rollout_and_unit_test")
+  assert isinstance(supervised.task, CodingAgentTask)
+  watchers = [
+      o
+      for o in supervised.task.observers(_Instance())
+      if isinstance(o, SupervisedRun)
+  ]
+  assert len(watchers) == 1
+  policy = watchers[0].policy
+  assert isinstance(policy, SpeakWhenOffTrack)
+  assert policy.criterion.digest == CRITERION_SHA256

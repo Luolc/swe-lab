@@ -60,6 +60,10 @@ INTERVENTION_TAG = "supervisor_note"
 #: though both leave the actor untouched.
 LOG_KIND_GAP = "gap"
 
+#: The log row for a correction that was delivered. Named for the same reason:
+#: a consumer counts these to say what the run's supervision cost and did.
+LOG_KIND_SPOKE = "spoke"
+
 #: Where a correction is written. A borrowed callable — see the module note.
 Sink = Callable[[str], None]
 
@@ -569,7 +573,7 @@ class Supervisor:
       return None
 
     self._said.append(intervention)
-    self._row("spoke", text=intervention.text)
+    self._row(LOG_KIND_SPOKE, text=intervention.text)
     return intervention
 
   def _row(self, kind: str, **extra: object) -> None:
