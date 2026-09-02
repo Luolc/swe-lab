@@ -311,6 +311,9 @@ yet*: the file appeared sixteen minutes later. That catch-up tail is exactly
 what makes "not yet" look like "never" — the same reading, taken at two
 times, is two opposite facts. It cost a wrong broadcast and no data.
 
+[`LATENCY.md`](LATENCY.md) is this section's per-boundary figure opened up into
+a distribution over the same record, with its own witness script.
+
 ### 7b. 16 of 170 judge calls returned an answer the policy could not use
 
 `metrics["supervision.lapses"] = 16` (9.4%), every one a `JudgeAnswerError`
