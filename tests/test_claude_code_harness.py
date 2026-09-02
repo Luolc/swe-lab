@@ -29,7 +29,13 @@ from swe_lab.harnesses.claude_code.constants import (
     AGENT_INFO_NAME,
     AGENT_SCRIPT_NAME,
     BINARY_AT,
+    CORRECTION_DONE_NAME,
+    CORRECTION_DROP_NAME,
+    CORRECTION_FIFO_NAME,
+    CORRECTION_PROMPT_NAME,
+    CORRECTION_UNCLEAN_NAME,
     INFO_ARTIFACT,
+    PROMPT_FILENAME,
     PROXY_BASE_URL,
     PROXY_BINARY_AT,
     PROXY_LOG_NAME,
@@ -642,3 +648,85 @@ def test_effort_carries_exactly_the_values_the_pinned_agent_accepts():
 
 def test_capture_carries_both_strategies():
   assert get_args(Capture.__value__) == ("stream", "proxy")
+
+
+# ─── the live correction channel (ADR-0013, task 16) ─────────────────────────
+
+
+def test_the_correction_channel_is_off_unless_it_is_asked_for():
+  """The default path keeps the termination mechanism it has.
+
+  With the channel off, stdin is the prompt file and the run ends because that
+  file reaches EOF. Turning the channel on deletes that mechanism, so it cannot
+  be something a caller gets without choosing it.
+  """
+  script = ClaudeCodeHarness()._invocation_script("/app")
+  assert "--input-format stream-json" not in script
+  assert CORRECTION_FIFO_NAME not in script
+  assert f'< "$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}' in script
+
+
+def test_the_relay_opens_the_channel_before_the_agent_reads_it():
+  """Opening order is load-bearing, not incidental.
+
+  A shell redirect from a FIFO blocks until a writer opens the other end, so an
+  agent started before its relay waits forever — and that wait is indis-
+  tinguishable from a slow run until the wall clock ends it.
+  """
+  script = ClaudeCodeHarness(correction_channel=True)._invocation_script("/app")
+  lines = script.splitlines()
+  relay = next(i for i, line in enumerate(lines) if line.startswith("mkfifo "))
+  agent = next(i for i, line in enumerate(lines) if BINARY_AT in line)
+  assert relay < agent
+  # …and the agent really is reading that FIFO rather than a file.
+  assert f'< "$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}' in lines[agent]
+  assert "--input-format stream-json" in lines[agent]
+
+
+def test_the_prompt_becomes_the_first_message_on_the_channel(tmp_path: Path):
+  """Under `--input-format stream-json` a plain prompt file is not readable.
+
+  Every message on this channel is a JSON line, so the task prompt is simply
+  the first of them; the human-readable prompt file is still written, on both
+  paths, as the record of what was asked.
+  """
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  _ = ClaudeCodeHarness(correction_channel=True).run(
+      sb, prompt="solve it", timeout=1.0
+  )
+  assert json.loads(sb.read(CORRECTION_PROMPT_NAME).decode()) == {
+      "type": "user",
+      "message": {
+          "role": "user",
+          "content": [{"type": "text", "text": "solve it"}],
+      },
+  }
+  assert sb.read(PROMPT_FILENAME) == b"solve it"
+
+
+def test_the_channel_closes_only_on_the_sentinel_and_says_so_when_it_does_not():
+  """Termination must be deliberate, and an accident must be visible.
+
+  The CLI exits when stdin reaches EOF, so closing the FIFO's write end *is*
+  how a supervised run ends — it has to be produced by whoever decides the task
+  is over, never as a side effect of something dying. The marker is the other
+  half: written before the relay exists and removed only on that deliberate
+  close, so anything else that ends the relay leaves it behind. Failure-closed
+  on purpose — a relay that is killed cannot write a marker, but it also cannot
+  remove one, and without this a supervisor crash reaches the outside as an
+  agent that merely stopped early.
+  """
+  script = ClaudeCodeHarness(correction_channel=True)._invocation_script("/app")
+  assert f'touch "$SANDBOX_WORKSPACE"/{CORRECTION_UNCLEAN_NAME}' in script
+  # Exactly one path clears the marker, and it is after the deliberate close.
+  clears = [
+      line
+      for line in script.splitlines()
+      if CORRECTION_UNCLEAN_NAME in line and line.strip().startswith("rm -f")
+  ]
+  assert len(clears) == 1
+  lines = script.splitlines()
+  close = next(i for i, line in enumerate(lines) if line.strip() == "exec 3>&-")
+  assert lines.index(clears[0]) > close
+  # …and the loop it leaves is the one the sentinel ends.
+  assert f"{CORRECTION_DROP_NAME}/{CORRECTION_DONE_NAME}" in script

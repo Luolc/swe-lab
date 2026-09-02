@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+import json
 import logging
 import shlex
 from typing import override
@@ -58,6 +59,12 @@ from .constants import (
     AGENT_STDERR_NAME,
     ANTHROPIC_API,
     BINARY_AT,
+    CORRECTION_DONE_NAME,
+    CORRECTION_DROP_NAME,
+    CORRECTION_FIFO_NAME,
+    CORRECTION_PROMPT_NAME,
+    CORRECTION_RELAY_LOG_NAME,
+    CORRECTION_UNCLEAN_NAME,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
@@ -161,6 +168,96 @@ def _proxy_start_lines(target: str) -> list[str]:
   ]
 
 
+_RELAY_POLL_INTERVAL_S = 0.1
+
+
+def user_event_line(text: str) -> str:
+  """Return one stream-json user event, newline-terminated.
+
+  The wire shape is not ours to choose: it is what the CLI accepts under
+  ``--input-format stream-json``, and it is the shape the compliance experiment
+  measured, so it is reproduced rather than re-derived.
+
+  Args:
+    text: The message body.
+
+  Returns:
+    A single JSON line, ending in a newline.
+  """
+  event = {
+      "type": "user",
+      "message": {"role": "user", "content": [{"type": "text", "text": text}]},
+  }
+  return json.dumps(event) + "\n"
+
+
+def _relay_start_lines() -> list[str]:
+  """Return the script lines that open the correction channel and hold it.
+
+  The relay is the only thing holding the FIFO's write end, which makes it the
+  thing that decides when the run ends. Three properties follow, and each is a
+  line here rather than an assumption:
+
+  - **It starts before the agent.** A shell redirect from a FIFO blocks until a
+    writer opens the other end, so an agent started first would hang forever.
+    The proxy's readiness wait is the precedent.
+  - **It closes the write end only on the sentinel.** Closing is the intended
+    termination mechanism (the CLI exits on stdin EOF), so it must be produced
+    deliberately by whoever decides the task is over.
+  - **It is failure-closed.** The unclean marker is written at start and removed
+    only on that deliberate close, so anything else that ends the relay — a
+    crash, a kill, the container going away — leaves the marker behind. A relay
+    that is killed cannot write a marker; it also cannot remove one.
+
+  Returns:
+    The lines, in order.
+  """
+  fifo = f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
+  drop = f'"$SANDBOX_WORKSPACE"/{CORRECTION_DROP_NAME}'
+  unclean = f'"$SANDBOX_WORKSPACE"/{CORRECTION_UNCLEAN_NAME}'
+  log = f'"$SANDBOX_WORKSPACE"/{CORRECTION_RELAY_LOG_NAME}'
+  return [
+      f"mkdir -p {drop}",
+      f"rm -f {fifo}",
+      f"mkfifo {fifo}",
+      # Present from before the relay exists until it closes on purpose.
+      f"touch {unclean}",
+      "(",
+      # Blocks until the agent opens the read end, which is why this whole
+      # subshell is backgrounded and the agent is started after it.
+      f"  exec 3> {fifo}",
+      # The prompt is just the first message on this channel.
+      f'  cat "$SANDBOX_WORKSPACE"/{CORRECTION_PROMPT_NAME} >&3',
+      f"  while [ ! -e {drop}/{CORRECTION_DONE_NAME} ]; do",
+      f"    for message in {drop}/*.json; do",
+      '      [ -e "$message" ] || continue',
+      '      cat "$message" >&3',
+      '      mv "$message" "$message.sent"',
+      "    done",
+      f"    sleep {_RELAY_POLL_INTERVAL_S}",
+      "  done",
+      # Drain whatever arrived in the same tick as the sentinel, so a
+      # correction and the end of the run cannot race each other away.
+      f"  for message in {drop}/*.json; do",
+      '    [ -e "$message" ] || continue',
+      '    cat "$message" >&3',
+      '    mv "$message" "$message.sent"',
+      "  done",
+      "  exec 3>&-",
+      # The deliberate close, and the only path that clears the marker.
+      f"  rm -f {unclean}",
+      f") > {log} 2>&1 &",
+      "relay_pid=$!",
+      'trap \'kill "$relay_pid" 2>/dev/null; wait "$relay_pid" 2>/dev/null\''
+      " EXIT",
+      '  if ! kill -0 "$relay_pid" 2>/dev/null; then',
+      f'    echo "FATAL: the correction relay exited before the agent started;'
+      f' see {CORRECTION_RELAY_LOG_NAME}" >&2',
+      f"    exit {_MISCONFIGURED_EXIT}",
+      "  fi",
+  ]
+
+
 @dataclass(frozen=True)
 class ClaudeCodeHarness(Harness):
   """The Claude Code agent as a sandbox-engine harness plug.
@@ -213,6 +310,19 @@ class ClaudeCodeHarness(Harness):
       ``None``, which leaves the agent's own ten-minute default in place.
       Letting the run bound itself yields a clean exit and a complete trace
       where an external kill would truncate mid-write.
+    correction_channel: Run the agent with a **live** stdin channel — a FIFO
+      fed by an in-sandbox relay from a bind-mounted drop directory — so a
+      host-side supervisor can write a correction while the agent is still
+      working (ADR-0013). Off by default: it removes the ordinary termination
+      mechanism (stdin reaching EOF) and replaces it with a deliberate close,
+      which only a caller that owns a supervisor can produce.
+
+      A **field rather than a subclass** on purpose: a supervised rollout must
+      differ from an unsupervised one *only* by the corrections, and a forked
+      harness is a standing invitation for the two to drift in flags, denied
+      tools or capture wiring — drift that would be invisible in the traces it
+      produces. That reasoning expires the moment the supervised path needs a
+      genuinely different invocation rather than an extended one.
   """
 
   model: str = DEFAULT_MODEL
@@ -224,6 +334,7 @@ class ClaudeCodeHarness(Harness):
   max_turns: int = 500
   max_budget_usd: float | None = None
   subagent_wait_ceiling_ms: int | None = None
+  correction_channel: bool = False
 
   @property
   @override
@@ -355,6 +466,11 @@ class ClaudeCodeHarness(Harness):
           f" {MAX_PROMPT_BYTES}"
       )
     sb.write(PROMPT_FILENAME, encoded)
+    if self.correction_channel:
+      # The same prompt, as the first message of the live channel. Written in
+      # addition to the plain file, which stays the human-readable record of
+      # what was asked on both paths.
+      sb.write(CORRECTION_PROMPT_NAME, user_event_line(prompt).encode())
     if env:
       sb.write(AGENT_ENV_NAME, env_exports(env).encode())
     return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
@@ -525,6 +641,15 @@ class ClaudeCodeHarness(Harness):
           "fi",
       ]
 
+    if self.correction_channel:
+      # Before the agent: a redirect from a FIFO blocks until a writer opens
+      # the other end, so an agent started first would wait forever.
+      lines += _relay_start_lines()
+      flags.append("--input-format stream-json")
+      stdin_source = f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
+    else:
+      stdin_source = prompt
+
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
         f"cd {shlex.quote(workdir)}",
@@ -533,7 +658,7 @@ class ClaudeCodeHarness(Harness):
         # arbitrary prompt.
         (
             f"{binary} {' '.join(flags)}"
-            f" < {prompt} {capture_redirect} 2> {stderr}"
+            f" < {stdin_source} {capture_redirect} 2> {stderr}"
         ),
         *status_tail(exit_file),
     ]
