@@ -336,11 +336,15 @@ they are exactly the ones a post-hoc reading would be tempted to soften:
 
 - **Do not edit `docs/conventions.md`** — queued for a single pass by the
   wiring line.
-- **Do not edit anything under `src/swe_lab/trace_synthesis/`** —
-  [#348](https://github.com/luolc/swe-lab/pull/348) is open and queued
-  against those files as of 2026-09-02
-  ([#349](https://github.com/luolc/swe-lab/pull/349),
-  [#351](https://github.com/luolc/swe-lab/pull/351) and
-  [#353](https://github.com/luolc/swe-lab/pull/353) have since merged); a
-  concurrent edit against the open one is exactly the kind of collision this
-  repo has already paid for once today.
+- **Do not edit anything under `src/swe_lab/trace_synthesis/`,
+  `src/swe_lab/workflow/definitions.py` or `src/swe_lab/harnesses/` while a
+  run holds the window — and do not merge a PR that touches them.** A merge
+  moves `main`, which §1's `main` == `origin/main` check depends on holding
+  still for the length of the run; a concurrent edit against an in-flight PR
+  on those files is the kind of collision this repo has already paid for
+  once. **Which PRs are in flight is deliberately not recorded here**: that
+  is `gh pr list --state open`, and the merge discipline is whatever the
+  current window announcement says. This bullet used to enumerate them, and
+  the enumeration went stale *during the review of the change that wrote
+  it* — a snapshot of which PRs are open stays true for about an hour, in a
+  file people execute.
