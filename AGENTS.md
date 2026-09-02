@@ -101,7 +101,7 @@ uv run pytest -m 'not docker'        # the test suite, minus the container tests
 bar even when you are not ready to commit — an untracked file is skipped in
 silence, and new files are the category that most needs checking. The
 measurement and the reasoning live once, in
-[`docs/conventions.md`](docs/conventions.md#formatting--lint).
+[`docs/conventions.md`](docs/conventions.md#formatting--lint-enforced-by-pre-commit).
 
 The **docker-marked tests are CI's job**, and CI is the required check that runs
 them — they must be green before merge, but locally they start containers of

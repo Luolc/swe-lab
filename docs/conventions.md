@@ -113,7 +113,7 @@ Steps (the agent drives all of it):
 A PyPI version is **immutable** — never reuse a number; a bad publish needs a new
 patch version.
 
-## Formatting & lint
+## Formatting & lint (enforced by pre-commit)
 
 **Stage before you run the hooks.** `--all-files` means all files *git tracks*;
 an untracked one is skipped in silence, so a brand-new module and its tests can
@@ -121,7 +121,6 @@ pass the gate without being looked at — and new files are the category that mo
 needs looking at. Measured 2026-09-02: a new module and test file passed
 `--all-files` cleanly, and the commit hooks failed on those same two files
 immediately afterwards. `git add` first, even when you are not ready to commit.
- (enforced by pre-commit)
 
 The full hook set. `.pre-commit-config.yaml` is the source of truth; this is
 the one prose copy of it (`AGENTS.md` links here rather than restating it):
