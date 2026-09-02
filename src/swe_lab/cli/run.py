@@ -125,12 +125,10 @@ def run_cmd(
     raise typer.BadParameter(f"dataset {dataset!r} has no runnable instances")
 
   root = find_repo_root()
-  # Keyed by rollout too, because `--rollout-id` exists precisely to
-  # distinguish samples of one instance and the wipe below is per directory:
-  # without it, `--rollout-id 1` deletes the records `--rollout-id 0` just
-  # wrote, and the second run is the one that reports success. Measured: two
-  # rollouts of one instance run back to back left one record, and the lost
-  # run's own output still named the key it had written.
+  # Keyed by rollout too: the wipe below is per directory, and `--rollout-id`
+  # declares that two runs of one instance are two samples rather than a
+  # repeat. Throwaway is right for a re-run and wrong for two samples, so
+  # without this segment the second rollout deletes the first one's records.
   output_dir = (
       cache_root(root)
       / _RUNS_SUBDIR
@@ -178,12 +176,11 @@ def _refuse_a_record_that_did_not_land(store: Store, key: str) -> None:
   """Fail the command if the record it just reported cannot be read back.
 
   A run that prints ``"succeeded": true`` and a ``record_key`` is making a
-  claim about the filesystem, and until now nothing checked it. The claim can
-  be false for several unrelated reasons — a later run wiping the directory, a
-  write that failed, a mis-joined key, a full disk — and **every one of them
-  produces the same output**: a successful-looking summary naming a key with
-  nothing under it. Checking the reason is a different fix for each; checking
-  the *claim* covers them all.
+  claim about the filesystem. That claim can be false for several unrelated
+  reasons — a later run wiping the directory, a write that failed, a mis-joined
+  key, a full disk — and **every one of them produces the same output**: a
+  successful-looking summary naming a key with nothing under it. Checking the
+  reason is a different fix for each; checking the *claim* covers them all.
 
   Args:
     store: The store the run persisted through.
