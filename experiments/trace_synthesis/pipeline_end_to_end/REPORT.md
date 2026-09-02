@@ -1,18 +1,38 @@
 # First e2e supervised rollout — report
 
-**Status: skeleton. Every slot is `___`; it carries no findings.**
-
-It is a **specification of what the report must contain** — which slots exist,
-what each one has to say, and which of them may not be merged into another —
-and it is reviewed as that, on its own. The values land in a second PR and are
-reviewed against this one, so a filled slot that answers a question this file
-never asked shows up as a diff against it.
+**The shape of this file — which slots exist and what each one must say — is
+reviewed on its own in [#359](https://github.com/luolc/swe-lab/pull/359); this
+PR fills the values from the run's record.** Two PRs so that the specification
+and the readings are judged separately: a filled slot answering a question the
+specification never asked is a diff against it.
 
 **The criteria are not here.** They are frozen in
 [`PREREGISTRATION.md`](PREREGISTRATION.md) and are linked, never copied — a
 second copy of a closure criterion is a criterion that can drift from the
 frozen one without anything failing. When a row below says "closes when",
 read it there.
+
+## 0. Coordinates
+
+Every reading below was taken from this run's own record, not from anyone's
+account of it. Where a number is derived rather than read, the derivation is
+shown.
+
+| | |
+|---|---|
+| Run | `run_ts = 20260902-072316`, backend `host`, one attempt (`a0`) |
+| Instance | `instance_internetarchive__openlibrary-5de7de19211e71b29b2f2ba3b1dff2fe065d660f-v08d8e8889ec945ab821fb156c04c7d2e2810debb` |
+| Record root | `.cache/runs/supervised_rollout_and_unit_test/<instance>/r0/store/adhoc/<instance>/r0/` — `rollout/a0/` below |
+| Actor | Claude Code **2.1.212** — `claude.info`'s verbatim `/opt/claude-code/claude --version`, matching `PINNED_CLAUDE_CODE_VERSION` (`src/swe_lab/harnesses/claude_code/binary.py:45`) |
+| Actor model | `claude-sonnet-5` (`run.json` → `extra.agent_model`) |
+| Supervisor model | `SUPERVISOR_MODEL` (`src/swe_lab/workflow/definitions.py`), one judge call and one writer call per intervention |
+| Read at | 2026-09-02, after the run ended and the container was gone; every file below is final, not growing |
+
+The version line is worth its row: an earlier account of this run named
+2.1.220, which appears only in *comments* describing probes
+(`constants.py:49`, `harness.py:351/367/738`). The pinned constant and the
+container's own `--version` both say 2.1.212. A version always has a runtime
+reading; a comment about a version is not one.
 
 ## 1. The seven points
 
@@ -34,142 +54,179 @@ Three slots each, and none of them may be merged:
 
 | # | Claim | Evidence from this run | Verdict | Assertion |
 |---|---|---|---|---|
-| 1 | Supervisor attached to the actor's **live** stream | `___` | `___` | `___` |
-| 2a | Barrier holds: no gold patch, no hidden tests in the supervisor's input | `___` (consumed, not re-verified — §4) | `___` | `___` |
-| 2b | Criterion sha verified, mismatch refuses **the run** | `___` (closed by the suite, not by this run — §4) | `___` | `___` |
-| 3 | Policy speaks at least once **because of a real deviation** | `___` | `___` | `___` |
-| 4 | Correction arrives **mid-turn**, matching the measured wire shape | `___` | `___` | `___` |
-| 5 | Rollout completes, patch taken **against the pre-agent baseline**, grading runs | `___` | `___` | `___` |
-| 6 | Trace persisted, **interjection in it**, provenance complete | `___` | `___` | `___` |
-| 7 | The **outcome word is correct** | `___` | `___` | `___` |
+| 1 | Supervisor attached to the actor's **live** stream | `supervisor.jsonl` has 170 rows, first `at 07:23:35.650499+00:00` (cursor 1), last `at 07:42:14.572388+00:00` (cursor 170); `metrics["supervision.boundaries"] = 170`. Counted independently off the actor's own `claude_code.event_stream.jsonl`: **170 events** — two files, two write paths, same number. Corroborated by `claude_code.proxy_log.jsonl`: 33 real API exchanges, so the stream being watched was a working actor's, not a synthetic one. And Assertion A carries the half the pipeline cannot vouch for (see point 3). | **closed** | A (+ proxy corroboration) |
+| 2a | Barrier holds: no gold patch, no hidden tests in the supervisor's input | Consumed as-is per §4, not re-verified here; `test_supervisor_input_carries_no_privileged_field` is where it lives. This run adds a *different* fact, not a substitute: the three delivered corrections carry no answer either (§1a). | consumed, **not re-verified** | none |
+| 2b | Criterion sha verified, mismatch refuses **the run** | Closed by the suite, not by this run: `test_a_forged_criterion_stops_the_run_before_a_sandbox_exists` (`tests/test_rollout.py`) and `test_the_shipped_supervised_arm_carries_the_pinned_criterion` (`tests/test_workflow_registry.py`), both on `main`. A run against a *correct* criterion says nothing about a forged one. | **closed** by the suite | none |
+| 3 | Policy speaks at least once **because of a real deviation** | Three `kind: "spoke"` rows, cursors **4 / 8 / 12**, `at` 07:23:47.541 / 07:24:04.404 / 07:24:23.080, `policy: "speak-when-off-track"` on all 170 rows (never `speak-at`); `metrics["supervision.corrections"] = 3`. **Assertion A:** all three texts appear in the actor's own native session transcript — `claude_code.native_transcript.tar.gz` → `projects/-app/f4ddae90-a7d2-440a-9e56-36e8a90c08ce.jsonl`, 122 lines, `supervisor_note` on lines **32 / 51 / 57** (1-indexed), `type: attachment`. That file is written by Claude Code for its own resume, by nothing of ours. | **closed** | A |
+| 4 | Correction arrives **mid-turn**, matching the measured wire shape | `claude_code.proxy_log.jsonl` (3,064,215 bytes, final): 33 requests carry a `messages` array, **24** carry the block, **63** occurrences of `<supervisor_note>` in total, of which **3 sit in the last message** — one per intervention — and **0 appear in any response**. The carrying message is `role: "system"` with one `type: "text"` block wrapping `<system-reminder>The user sent a new message while you were working: <supervisor_note>…</supervisor_note>…</system-reminder>`. **Structural agreement** with `experiments/trace_synthesis/sandbox_fold_check/` — role, wrapper and position — and deliberately **not** byte-identity: that measurement is about *its own probe text*, and this run's injected text is different. | **closed on B**, with the trust assumption below | B |
+| 5 | Rollout completes, patch taken **against the pre-agent baseline**, grading runs | `run.json` → `extra.patch_base_ref = 64501d9b938bd7986b36dd2cd4fdb7af930b2750` (ADR-0014); `metrics["patch_is_empty"] = 0.0`, `patch.diff` 3,107 bytes. Grading ran: the `unit_test` entry's `metrics["unit_test.resolved"]` is **present** (`0.0`), which is what §4 makes the criterion — presence, not value. | **closed** | none |
+| 6 | Trace persisted, **interjection in it**, provenance complete | `conversation.json`: 73 messages, of which **msg[19], msg[29], msg[32]** are `role: "system"` and carry `supervisor_note` — the interjections survived conversion. Provenance: `run.json` carries `run_ts`, `backend`, `instance_id`, `sweep_id`, `tier`, `rollout_id`, `attempt`, `status`, and `extra["agent_model"] = "claude-sonnet-5"`. (The top-level `model` field is empty **by design** — `src/swe_lab/sandbox/persist.py:66-71`: nothing in-tree sets it, and a rollout records its actor in `extra`. Not a provenance gap; written down so the next reader does not re-derive it.) | **closed** | none |
+| 7 | The **outcome word is correct** | `run.json` → `extra.rollout_outcome = "patch_produced"`, recorded verbatim. Judged against `RolloutOutcome`'s members read fresh from `src/swe_lab/rollout.py` — `OOM_KILLED`, `SYSTEM_FAILED`, `TIMED_OUT`, `NO_PATCH`, `PATCH_PRODUCED`, `UNCLASSIFIED`, `SUPERVISION_FAILED` — against what happened: the agent finished (`agent_complete 1.0`, `claude_code.exit_code 0.0`, `claude_code.timed_out 0.0`), the patch is non-empty (`patch_is_empty 0.0`), no OOM (`sandbox.oom_kills 0.0`), and supervision was never lost (no `supervision.unhealthy` key; see §3). | **closed** | none |
+
+**The trust assumption point 4 rests on, stated rather than implied.**
+`proxy_log.jsonl` is written by `cc-reverse-proxy`, which is this project's
+own code. Assertion B cannot rule out that recorder fabricating or corrupting
+what it records; checking it against itself would be circular. Point 3 is
+stronger because Assertion A crosses a boundary this project does not
+control. Six of the seven rows closing does not make point 4 as hard as the
+others, and this paragraph exists so a later reader does not read it that
+way.
 
 ### 1a. The corrections themselves
 
-To be filled by the owner. Two things go here, and they are separate:
+**The three delivered corrections, verbatim** (`supervisor.jsonl`, the
+`spoke` rows; identical bytes reached the actor — see point 3):
 
-- **The text of every correction delivered**, verbatim, and the judgment of
-  whether any of them leaked the answer — gold-patch content, a test name, a
-  line to change. This is the first real evidence for that barrier; the
-  suite's `test_supervisor_input_carries_no_privileged_field` constrains the
-  supervisor's *input*, not what a model then chose to say. `___`
-- **The delivery's morphology in `proxy_log.jsonl`** — counted row by row,
-  not sampled and generalised, and **with the log's byte size and the
-  wall-clock moment written beside the counts**, because the file is still
-  being appended to while it is being read. Two of the three are properties
-  of the run; one is not, and is reported as a shape instead:
-  - occurrences as the **last** message — one per injection, so this is a
-    run property and is reported as a count. `___`
-  - occurrences carried in **history** further back — this rises with every
-    later request, which makes it a property of *when you looked*. **Report
-    the shape, not the number:** once injected, does the correction stay in
-    the actor's context and travel with every subsequent request? `___`
-  - occurrences in any **response** — must be zero, or the block is our own
-    narration rather than the actor's context. A run property. `___`
+1. *Notice you haven't yet opened models.py to see how from_isbn currently
+   branches on identifier type before sketching the new helpers.*
+2. *Odd that no output shows a read of the current from_isbn/canonical-ISBN
+   logic yet — worth confirming what's actually there before locking in the
+   helper contracts.*
+3. *Still haven't seen a read of the current from_isbn body land in the
+   transcript — worth checking what's actually there before the helper
+   signatures get finalized.*
+
+**Did any of them leak the answer?** No. None contains gold-patch content, a
+test name, a file line to change, or a solution sketch. All three are
+procedural — *you are designing before you have read what is there* — which
+is what someone watching over a shoulder says. They are quoted in full here
+because that judgment has no other evidence: paraphrasing them would ask the
+reader to take it on trust.
+
+**One thing the texts do show, and it is not a leak:** all three say the same
+thing three times. See §7.
+
+**The delivery's morphology**, counted row by row over the final
+`claude_code.proxy_log.jsonl` (3,064,215 bytes, read after the run ended, so
+the file is not growing under the count):
+
+- **As the last message: 3.** One per intervention. A run property.
+- **Carried in history: the rest.** 24 requests carry the block at all, 63
+  occurrences in total, and the per-request count climbs 1 → 2 → 3 and then
+  holds at 3. **Reported as a shape, not a number:** once injected, a
+  correction stays in the actor's context and travels with every subsequent
+  request; the total is a property of how many requests followed, not of the
+  delivery.
+- **In any response: 0.** The load-bearing count. The block appears only in
+  what the actor *sent*, never in what came back — so it is the actor's
+  context, not our own narration folded into the capture.
 
 ## 2. The three readouts
 
 [`PREREGISTRATION.md` §6](PREREGISTRATION.md#6-readouts-required-alongside-the-seven-points)
-requires these as **three lines, never merged into fewer** — a count that
-looks like a cost is a defect shape this codebase has already named more than
-once.
+requires these as **three lines, never merged into fewer**.
 
-1. **Actor-side cost — a range, not a point.** `___`
+1. **Actor-side cost.** `total_cost_usd = 1.3311234` on the terminal `result`
+   event of `claude_code.event_stream.jsonl`, with
+   `usage = {input 64, cache_creation 79,716, cache_read 2,049,248, output
+   15,438}` and `num_turns = 32`. **One run is one point, not a range**: the
+   two prior points in
+   [`downstream-scale-note.md`](../../../docs/trace-synthesis/downstream-scale-note.md)
+   spread $2.04–$4.17, and this run sits below both. Three points do not make
+   a distribution; the spread is still what a reader should carry.
 2. **Supervision-side call counts — counts, not a rate.**
-   `metrics["supervision.boundaries"]` = `___`,
-   `metrics["supervision.corrections"]` = `___`. Read together, never alone:
-   `corrections == 0` has two sources — nothing was off track, or delivery
-   was broken — and only `boundaries` separates them
-   ([`RUNBOOK.md` §4](RUNBOOK.md#4-reading-the-result)).
+   `metrics["supervision.boundaries"] = 170`,
+   `metrics["supervision.corrections"] = 3`,
+   `metrics["supervision.lapses"] = 16`. Read together, never alone:
+   `corrections == 0` would have had two possible sources, and only
+   `boundaries` separates them ([`RUNBOOK.md` §4](RUNBOOK.md#4-reading-the-result)).
+   Here `boundaries = 170` establishes that judgement happened, so
+   `corrections = 3` is "spoke three times", not "was never asked".
 3. **Supervision-side tokens and dollars — absent, and the absence is the
-   readout.** Not implemented: `usage` is discarded before anything durable
-   sees it (§6.3). State what the absence means as well as that it exists —
-   **line 2's counts cannot be multiplied into a dollar figure**, because
-   each judge call's context grows with `window` and the boundary index, so
-   token count is not constant across calls even within one run. `___`
+   readout.** Not implemented: `ModelJudge`/`ModelWriter` keep
+   `requested_model`, `response_model`, `sampling_sent` and `raw` per call and
+   discard the provider's `usage` block, so nothing durable ever sees it
+   (§6.3). **What the absence means:** line 2's counts **cannot** be
+   multiplied into a dollar figure, because each judge call's context grows
+   with `window` and the boundary index — token count is not constant across
+   calls even within this one run. The 170 judge calls of this run cost
+   something; this run cannot say what.
 
 ## 3. The outcome word
 
-`rollout_outcome` recorded **verbatim**, judged against `RolloutOutcome`'s
-members read fresh from
-[`src/swe_lab/rollout.py`](../../../src/swe_lab/rollout.py) at report time —
-not from any list in this file or the pre-registration, both of which are
-snapshots.
-
-- **Recorded outcome:** `___`
-- **What actually happened, in one sentence:** `___`
-- **Do they match (point 7):** `___`
+- **Recorded outcome:** `patch_produced` (`run.json` → `extra`), verbatim.
+- **What actually happened, in one sentence:** the actor ran to completion
+  under supervision, produced a non-empty patch against the pre-agent
+  baseline, and the patch did not resolve the instance.
+- **Do they match (point 7):** yes — see the point 7 row for the members it
+  was judged against and the metric that excludes each competing word.
 
 Two categories carry obligations of their own
 ([§7](PREREGISTRATION.md#7-failure-classification)), and each keeps its slot
-whether or not it fires:
+whether or not it fired:
 
-- **If `SUPERVISION_FAILED`** (`supervision.unhealthy`): points 1, 3, 4 and 6
-  are judged **as of the moment supervision stopped being trustworthy**, not
-  waved through because the rollout completed. Applies: `___`. If it applies,
-  the moment and its evidence: `___`.
-- **If `TIMED_OUT` on the first attempt**: presumed **ours**, a wiring
-  failure, not the actor's — reclassified only if `proxy_log.jsonl`'s own
-  timeline shows the actor actively working up to the wall clock rather than
-  idle on the channel. Applies: `___`. If it applies, the timeline reading:
-  `___`.
+- **`SUPERVISION_FAILED`** — **did not apply.** No `supervision.unhealthy`
+  key is present, which is an event key rather than a zero, so its absence is
+  the statement. Note what this means in the presence of the 16 lapses: a
+  lapse is a bounded, recorded gap at a named boundary, not a loss of the
+  supervisor ([#348](https://github.com/luolc/swe-lab/pull/348)), so the run
+  keeps its evidentiary value **and** reports honestly that 16 boundaries went
+  unjudged. That distinction was drawn before this run and was used by it.
+- **`TIMED_OUT` on the first attempt** — **did not apply.**
+  `metrics["claude_code.timed_out"] = 0.0`,
+  `metrics["claude_code.exit_code"] = 0.0`. The presumption written into §7
+  (a first-attempt timeout is ours until the proxy timeline says otherwise)
+  was therefore never exercised. §7 of this report explains why that
+  presumption is now *more* load-bearing than it was, not less.
 
 ## 4. What this run does not claim
 
 [§8](PREREGISTRATION.md#8-what-this-run-deliberately-does-not-measure-or-claim)'s
-four exclusions, each restated as a live check on this report's own text
-rather than as a promise made once:
+four exclusions, each checked against this report's own text:
 
-- **Not an effect estimate.** No sentence in this report says supervision
-  helped or hurt. Checked: `___`
+- **Not an effect estimate.** No sentence here says supervision helped or
+  hurt. The instance was not resolved; **that is not evidence either way**,
+  and no row above treats it as such. Checked.
 - **Not the stability batch.** Nothing here sizes, schedules or pre-empts it.
-  Checked: `___`
-- **Not a rate.** No `resolved N/M` or `Rate`-shaped number is computed from
-  this one run. Checked: `___`
+  §7's throughput finding constrains how such a batch would have to be run,
+  which is not the same as planning one. Checked.
+- **Not a rate.** No `resolved N/M` or `Rate`-shaped number is computed. The
+  unit-test figures below are this one run's counts. Checked.
 - **Not a comparison to `control_rollout_and_unit_test`.** The control arm
-  exists in the registry; this run did not run it, and nothing here reads as
-  if it had. Checked: `___`
+  exists in the registry and did not run. Nothing here reads as if it had; in
+  particular, the three corrections are not compared to anything. Checked.
+
+**Grading, for completeness, not as a claim:** `unit_test.required = 25`,
+`unit_test.passed = 9`, `unit_test.missing = 16`, `unit_test.resolved = 0.0`,
+over three attempts (`a0`/`a1`/`a2`) with identical results each time. Per
+§1 of the pre-registration this is a **complete result**, not a failure, and
+it closes or fails none of the seven points.
 
 ## 5. Cost and hygiene
 
-- **Wall clock:** `___` (`claude_code.wall_seconds`)
-- **Supervision catch-up: `___` seconds at most, `___` of the wall clock at
-  most.** `supervisor.jsonl`'s last timestamp minus the timestamp of **the
-  last event-stream line that carries one** — the span in which the actor had
-  already stopped and the supervisor was still working through its backlog.
-  Two qualifiers, both load-bearing:
-  - only some event kinds carry a `timestamp`, and the terminal `result`
-    event is not one of them, so "the last line" and "the last line with a
-    timestamp" are different rows;
-  - that row is therefore **not the moment the actor finished** — the actor
-    finished at some unknown time *at or after* it. Every quantity derived
-    from it is a **bound**, not a point, and is written as one. Carry the
-    same `(measured)` / `(at least)` / `(at most)` markers the witness script
-    prints: **the report may not be more certain than the script it quotes.**
-  - **a percentage without its denominator is not a reading.** Write it as
-    `N% (denominator = …)`. The same catch-up span over the rollout's wall
-    clock and over the supervisor's own span are two different statements —
-    one about what the run cost, one about how long the supervisor worked
-    alone — and side by side, unlabelled, two true readings read as one
-    contradiction. This slot wants the **rollout's wall clock**, because the
-    claim it supports is what that hour bought.
-
-  **Recorded on every run, not only when something looks wrong:** a number
-  first computed after an incident has no baseline to be read against. This
-  is a cost measurement, not one of §6's three readouts, which are frozen.
-- **Actor spend:** `___` (see §2 line 1 for how it is reported)
-- **Containers:** started `___`, left behind `___`. The window this ran in:
-  `___`.
+- **Wall clock:** `metrics["claude_code.wall_seconds"] = 1124.47`.
+- **Supervision catch-up:** §5 of the skeleton asks for
+  `supervisor.jsonl`'s last timestamp minus the event stream's last
+  timestamp. **The event stream's events carry no absolute timestamp**, so
+  that subtraction is not available as specified; the same quantity is
+  derived from two recorded numbers instead — wall clock minus the actor's
+  own reported `duration_ms = 167591` on its terminal `result` event:
+  **≈ 956.9 s, or 85.1% of the run's wall clock**, during which the actor had
+  finished and the supervisor was still working. Recorded here on every run,
+  not only when something looks wrong: a number first computed after an
+  incident has no baseline to be read against. (Corroborating the same span
+  from the other side: `supervisor.jsonl` runs 07:23:35.650 → 07:42:14.572,
+  1118.9 s, against an actor that reported 167.6 s of work.)
+- **Actor spend:** $1.3311234 (see §2 line 1).
+- **Containers:** the rollout used one, the grading three (one per attempt);
+  `docker ps -q` and `docker ps -aq` were both 0 after the run. The run held
+  the machine's container window for its duration.
 
 ## 6. Artifacts
 
-The files this report is read against, by path, so a later reader checks the
-claims rather than the prose:
+Under `<record root>/rollout/a0/`:
 
-- Rollout record: `___`
-- `supervisor.jsonl`: `___`
-- `proxy_log.jsonl`: `___`
-- Native session transcript (Assertion A): `___`
-- Converted trace: `___`
+- Rollout record: `run.json` (and `../complete.json`, `outcome: succeeded`)
+- `supervisor.jsonl` — 170 rows, 27,340 bytes
+- `claude_code.proxy_log.jsonl` — 3,064,215 bytes
+- Native session transcript (Assertion A):
+  `claude_code.native_transcript.tar.gz` (3 members) and
+  `claude_code.native_transcript.json`
+  (`{"archived": true, "config_dir": "/agent-home/.claude", "exit_code": 0, "members": 3}`)
+- Converted trace: `conversation.json` — 73 messages
+- Also read: `claude_code.event_stream.jsonl` (170 events), `claude.info`,
+  `git_integrity.json`, `verifier.json`, `patch.diff`, `patch.base_ref.txt`
+- Grading: `<record root>/unit_test/{a0,a1,a2}/run.json`
 
 ## 7. Unanticipated findings
 
@@ -183,13 +240,111 @@ prevent, so the slot stands on every run — not a door opened once something
 turned up. `PREREGISTRATION.md` does not ask for it; this file does.
 
 Nothing here is frozen by `PREREGISTRATION.md` and nothing here may close,
-weaken or strengthen one of the seven points: evidence for a point goes in
-that point's row, judged against its frozen criterion. What belongs here is
-what this run showed that no point, readout or outcome word asks about.
+weaken or strengthen one of the seven points.
 
-`___`
+### 7a. The supervisor runs an order of magnitude slower than the actor
+
+    supervisor.jsonl  first row  07:23:35.650  (cursor 1)
+    actor's own reported duration                167.6 s
+    supervisor.jsonl  last row   07:42:14.572  (cursor 170)
+    → 1118.9 s / 170 boundaries = 6.6 s per boundary
+    → 956.9 s (85.1% of the wall clock) with the actor finished and waiting
+
+Each boundary is a synchronous judge call inside the poll loop. The actor
+finished its 170 events in under three minutes; the supervisor then spent a
+further sixteen minutes working through the backlog, and the run ended when
+it caught up — `at_rest` is reached on the last event, the channel closes,
+and the CLI exits on EOF.
+
+**Two consequences, neither of which any test could have produced.**
+
+**A correction is judged fresh and delivered stale.** All three interventions
+say the same thing — *you have not read the current implementation yet* —
+because they were judged at cursors 4, 8 and 12, and by the time each one
+crossed the channel the actor had moved on. This is not a judge error rate;
+it is structural. A judgment costs a model call, and the actor does not wait
+during it.
+
+**The wall clock is spent on supervision and charged to the actor.** At 6.6 s
+per boundary, `_AGENT_TIMEOUT_S = 3600.0`
+(`src/swe_lab/workflow/definitions.py`) admits roughly **547 boundaries**;
+this run had 170. A more eventful instance can therefore hit the wall clock
+because supervision could not keep up — and ADR-0015 charges `TIMED_OUT` to
+the actor. `RUNBOOK.md` §4's presumption covers the #349 wiring failure,
+where nothing was written; it does not cover this one, where everything works
+and is merely slow. **The diagnostic is two numbers this report now always
+carries:** the catch-up span and its share of the wall clock. A run where the
+actor is idle for most of its budget is not an actor that was slow.
+
+**A methodological consequence, recorded because it happened.** Mid-run, with
+`corrections/done` absent and the `claude` process still alive, this was read
+as *the channel was never closed*. What held at that moment was *not closed
+yet*: the file appeared sixteen minutes later. The 956 s of catch-up is
+exactly what makes "not yet" look like "never" — the same reading, taken at
+two times, is two opposite facts. It cost a wrong broadcast and no data.
+
+### 7b. 16 of 170 judge calls returned an answer the policy could not use
+
+`metrics["supervision.lapses"] = 16` (9.4%), every one a `JudgeAnswerError`
+raised at `src/swe_lab/trace_synthesis/judge.py`'s parse of
+`response["choices"][0]["message"]["content"]`. **They are not one
+phenomenon. Two classes, recorded separately so a fix aimed at one is not
+mistaken for a fix for both:**
+
+| count | inner error | what the provider returned |
+|---|---|---|
+| 11 | `the JSON object must be str, bytes or bytearray, not NoneType` | a well-formed response whose `content` was **null** — no output at all |
+| 3 | `Unterminated string starting at …` | output that stopped mid-string — truncation |
+| 1 | `Expecting value` | malformed |
+| 1 | `Expecting ',' delimiter` | malformed |
+
+**Distribution**: cursors 87, 96, 98, 100, 101, 106, 108, 109, 110, 128, 131,
+134, 136, 140, 158, 165 — **none before cursor 87**, all after it.
+
+Phenomenon and distribution only; **no cause is offered here.** One run of
+one instance cannot distinguish between the several explanations that fit,
+and naming one would make the other candidates harder to see. What is worth
+recording is the split itself: an account that called all 16 "truncated
+output" would send the next reader to fix a problem that explains 3 of 16.
+
+### 7c. The integrity verifier flagged the actor for doing what the supervisor asked
+
+`metrics["verifier.flagged"] = 1.0`; `verifier.json` →
+`flagged: ["suspicious_git"]`, `high_confidence: []`, on four commands the
+actor ran:
+
+    git show --stat HEAD
+    git log --all --oneline
+    git show 5f7d8d190 --stat
+    git show 5f7d8d190 -- openlibrary/core/models.py
+
+Against the other side's readings: `git_integrity.json` records
+`base_sha = 5f7d8d190e2f0d837545e582fd5db99aae51a979`, and the purge
+succeeded — `future_commits` 3172 → 0, `solution_reachable` true → false,
+`violations: []`.
+
+**Read together: the sha the actor inspected is the base commit itself**, the
+run's own starting point, not any future commit; the future commits were
+gone; nothing was flagged with high confidence. **No evidence of a boundary
+crossed.** Stated as the readings rather than as a verdict on the verifier:
+it applied its rule and the rule does not distinguish "inspect the base" from
+"go looking" — which is a mismatch between the rule and this situation, not
+an error in it.
+
+**What makes it worth a section**: the actor was reading the current
+implementation with `git show <base> -- models.py` — which is precisely what
+the supervisor had told it three times to do. **Two safety mechanisms rubbed
+against each other**, and only a real run puts them in the same room.
 
 ## 8. Open questions
 
-Anything this run raised and did not answer, one line each — **not** softened
-into the sections above. `___`
+- Does the 6.6 s per boundary hold at other instances and event volumes, or
+  is it particular to this one? A single point cannot say, and §7a's
+  consequence scales with it.
+- Do the 16 unusable judge answers cluster after cursor 87 because of
+  something that grows with the run, or because of something about that
+  stretch of this instance? Both fit; nothing here separates them.
+- Point 4 rests on a recorder we own. What would an independent check of the
+  wire shape even look like, given the project cannot obtain provider-side
+  evidence? Recorded as unresolved rather than as a limitation to be restated
+  each run.
