@@ -120,11 +120,11 @@ table leaves room to read it two ways after the fact.
 
 | # | Claim | Closes when | Judged against |
 |---|---|---|---|
-| 1 | Supervisor attached to the actor's **live** stream | Requires **§5's tier-3 cross-check**, unconditionally — `supervisor.jsonl` existing and `metrics["supervision.boundaries"] > 0` are necessary but not sufficient, since both are the pipeline's own account of itself (see the note below the table). | `test_the_rollout_composes_the_supervisor_when_one_is_configured`, `test_the_supervisors_account_of_the_run_is_persisted` confirm composition and artifact; neither drives a real actor. |
+| 1 | Supervisor attached to the actor's **live** stream | Requires **§5's Assertion A** (plus `proxy_log.jsonl` corroborating real traffic at the claimed boundaries), unconditionally — `supervisor.jsonl` existing and `metrics["supervision.boundaries"] > 0` are necessary but not sufficient, since both are the pipeline's own account of itself. If §5's native-transcript dependency is unavailable, this point is **not closed** (see §5's branch). | `test_the_rollout_composes_the_supervisor_when_one_is_configured`, `test_the_supervisors_account_of_the_run_is_persisted` confirm composition and artifact; neither drives a real actor. |
 | 2a | Barrier holds: no gold patch, no hidden tests in the supervisor's input | Consumed as-is, not re-verified here (the table's own instruction: "consumed here, not re-implemented"). | `test_supervisor_input_carries_no_privileged_field` (task 05, not re-run). |
 | 2b | Criterion sha verified, mismatch refuses **the run** | Closed by the test suite once §3's two named tests are on `main` — this point does **not** additionally require evidence from this run. If #349 merges without them, or with a weaker refusal, this row reverts to open and this run cannot close it either (a run against a *correct* criterion says nothing about what happens against a forged one). | `test_a_forged_criterion_stops_the_run_before_a_sandbox_exists`, `test_the_shipped_supervised_arm_carries_the_pinned_criterion` (§3). |
-| 3 | Policy speaks at least once **because of a real deviation** | Requires **§5's tier-3 cross-check**, unconditionally. `supervisor.jsonl` containing ≥1 row with `kind: "spoke"` whose `policy` is not `"speak-at"` (equivalently, `metrics["supervision.corrections"] > 0` on a `SpeakWhenOffTrack` run) is necessary — a run with zero such rows leaves this point **open**, not closed-negative, since a silent real run says nothing either way — but not sufficient by itself; §5 is what confirms a delivery the log claims actually crossed to the actor. | `supervisor.jsonl` and the `metrics` field read directly off this run's own record; no test claims a real run's deviation count. |
-| 4 | Correction arrives **mid-turn**, matching the measured wire shape | Requires **§5's tier-3 cross-check**, unconditionally — this row is not closable from `supervisor.jsonl` under any reading. Tier 4 (§5), if observed, is recorded alongside but is not what closes this row. | `experiments/trace_synthesis/sandbox_fold_check/` established the reference wire shape this run's independent capture is compared against. |
+| 3 | Policy speaks at least once **because of a real deviation** | Requires **§5's Assertion A**, unconditionally. `supervisor.jsonl` containing ≥1 row with `kind: "spoke"` whose `policy` is not `"speak-at"` (equivalently, `metrics["supervision.corrections"] > 0` on a `SpeakWhenOffTrack` run) is necessary — a run with zero such rows leaves this point **open**, not closed-negative, since a silent real run says nothing either way — but not sufficient by itself; Assertion A is what confirms a delivery the self-report claims actually reached the actor. If §5's native-transcript dependency is unavailable, this point is **not closed**. | `supervisor.jsonl` and the `metrics` field read directly off this run's own record; no test claims a real run's deviation count. |
+| 4 | Correction arrives **mid-turn**, matching the measured wire shape | Requires **§5's Assertion B**, unconditionally — this row is not closable from `supervisor.jsonl` under any reading, and closes on a *weaker* basis than points 1 and 3 (Assertion B rests on a stated trust assumption about the proxy, not a boundary this project doesn't control). If §5's native-transcript dependency is unavailable, this point is **not closed** either, since Assertion B alone collapses to self-report plus trust assumption. The actor's subsequent behavior visibly responding (§5), if observed, is recorded alongside but is not what closes this row. | `experiments/trace_synthesis/sandbox_fold_check/` established the reference wire shape this run's capture is compared against. |
 | 5 | Rollout completes, patch taken **against the pre-agent baseline**, grading runs | The rollout record has `patch_base_ref` set (ADR-0014); the grading entry's `metrics` has `unit_test.resolved` present (either `true` or `false` — presence, not value, closes this point). | `test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image` (existing test, not re-run; this is a property of this run's own record). |
 | 6 | Trace persisted, **interjection in it**, provenance complete | The converted trace contains the interjection text (if point 3 fired one) surviving conversion; `run_provenance()`'s stamped fields plus `extra["agent_model"]` are present in the record. | `test_an_interjection_survives_conversion_into_the_trace` (existing test, not re-run; a property of this run's own trace). |
 | 7 | The **outcome word is correct** | `rollout_outcome` in the rollout record matches what actually happened, judged against the seven `RolloutOutcome` members read fresh from `src/swe_lab/rollout.py` at report time — not from this document's §7, which is a snapshot and may be stale by the time the run happens. | `tests/test_rollout.py`'s named tests pin the words apart; this row is a judgment call on one run's record against them. |
@@ -146,84 +146,90 @@ this pre-registration once it exists; a narrower rule only ever applies to a
 *new* pre-registration written before its own run. Point 2b is unaffected
 either way (§4).
 
-## 5. Evidence for points 1, 3 and 4 — a cross-check, not an independence proof
+## 5. Evidence for points 1, 3 and 4 — two assertions, not one, on two different bases
 
-**Fixed by ruling (2026-09-01), not left for a run to discover.** No writer
-inside the container is independent in the sense points 1, 3 and 4 need. Of
-the five artifacts a supervised run's harness declares
-(`ClaudeCodeHarness.native_outputs`,
-`src/swe_lab/harnesses/claude_code/harness.py`): `event_stream.jsonl` and the
-actor's own native transcript are two serializations by the **same** CLI
-process, not independent of each other or of the actor; `stderr.log` and
-`exit_code.txt` carry no content evidence; `proxy_log.jsonl` — the in-sandbox
-proxy's wire capture — records genuine bytes crossing the boundary between the
-actor's process and the real provider, but the code that records them is
-still ours. `supervisor.jsonl` (`src/swe_lab/trace_synthesis/channel.py`) is
-our own account on top of all of it. **None of this is a proof of
-independence, and this document does not claim one.**
+**Fixed by ruling (2026-09-02), not left for a run to discover.** No single
+writer inside the container is independent in the sense points 1, 3 and 4
+need. But "the cross-check" is not one thing with one trust question — it is
+**two separate assertions, each carried by a different record with a
+different trust basis**. Collapsing them under one label is what an earlier
+draft of this section did, and it is wrong the same way twice over: it named
+a broad category ("our collection code," "independent evidence") and treated
+one narrow property as covering the whole category, rather than naming each
+thing inside the category and asking whether the evidence actually reaches
+it. Split, the two assertions don't share a trust question, so they don't
+share a verdict.
 
-**What a cross-check against `proxy_log.jsonl` establishes, and what it
-cannot.** Say `X` = our own collection or supervision code is lying about what
-happened, and `Y` = the actor's CLI is lying consistently in two separate
-places at once (its own transcript **and** what it constructs into its next
-outbound request). A match between `supervisor.jsonl` and `proxy_log.jsonl`
-**rules out `X`** — a broken relay or a fabricated `supervisor.jsonl` row
-cannot also reach into the actor's own outbound request and insert the same
-block, because that request is assembled by the actor's own process, not
-ours. It **does not rule out `Y`**: that would need provider-side evidence
-this project cannot obtain, and is a permanent limitation of every point
-closed this way, stated once, here — not re-litigated per run.
-
-**The evidence chain, ranked by what it crosses, fixed once:**
-
-1. `supervisor.jsonl` says we sent it — self-report, weakest; crosses nothing.
-2. The relay delivered it inside the sandbox — still our code, on our side of
-   the boundary.
-3. **The block appears in the actor's own next outbound request's message
-   array**, per `proxy_log.jsonl` — the first tier that crosses a boundary
-   this pipeline does not control: this project can write the FIFO, but
-   cannot make that exact block appear inside a request the actor's own CLI
-   constructs. A broken wiring can fabricate "I delivered it"; it cannot
-   fabricate this.
-4. The actor's subsequent behavior visibly changes in response — strongest,
-   but not a mechanical closure criterion here. **Recorded if observed, never
-   required for closure.**
-
-**Points 1, 3 and 4 close at tier 3, and no higher or lower tier substitutes
-for it.** Concretely, against
-[ADR-0012](../../../docs/decisions/ADR-0012-in-sandbox-capture-proxy.md)'s
-in-sandbox proxy (`proxy_log.jsonl`, not a host process):
-
-- **Point 1** closes when `proxy_log.jsonl` contains a request whose body
-  carries a `<supervisor_note>`-wrapped message (the channel's wrapper,
-  `src/swe_lab/trace_synthesis/channel.py`) — tier-3 evidence the message
-  reached the actor's own constructed request, ruling out `X` for attachment.
-- **Point 3** closes when a tier-3 request carrying that wrapper corresponds
-  to a `supervisor.jsonl` row with `kind: "spoke"` for the same event —
-  confirming the delivery the self-report claims, not trusting the count in
-  §4's row 3 on its own.
-- **Point 4** closes on the same tier-3 evidence, checked for cursor position
-  and block shape against `sandbox_fold_check`'s reference wire shape, as in
-  §4's row. Tier 4 — the actor's subsequent action visibly responding to the
-  correction — is recorded alongside if it happens, but is not what closes
-  this row.
-
-**No second chain, and no fallback.** The actor's own native event stream
+**Assertion A — the correction actually reached the actor's context.** Carried
+by the **actor's own native session transcript**
 (`/agent-home/.claude/projects/-app/*.jsonl` inside the container — the
 `docker rm` evidence-destruction hazard in
-[`docs/conventions.md`](../../../docs/conventions.md)), which
-`swelab-inproxy-impl` is separately extracting, plays **no role in closing any
-point in this pre-registration**, regardless of what its investigation
-concludes before or during this run: it is same-origin with the actor's own
-transcript (tier 1/2 at best per the ranking above), not a tier-3 chain, and
-folding it in at or after run time would be exactly the discretion a frozen
-protocol removes. It may motivate a *future* pre-registration; it changes
-nothing about this one.
+[`docs/conventions.md`](../../../docs/conventions.md)) — Claude Code's own
+internal session persistence, written by the CLI for its own purposes
+(resume, etc.), not by anything this project's harness or capture code
+produces. This is a different file from the workspace's `event_stream.jsonl`,
+which **is** our own redirected capture of the actor's stdout.
 
-**If `proxy_log.jsonl` is unavailable for this run** — the recorder failed to
-attach, the log is empty, or `capture="proxy"` was not actually configured —
-points 1, 3 and 4 are **not closed**, unconditionally, and the report says so
-rather than substituting `supervisor.jsonl`'s own account or any other source.
+- **Rules out:** the supervisor/relay/collection code
+  (`src/swe_lab/trace_synthesis/channel.py`, `supervisor.jsonl`'s account)
+  falsely claiming a delivery that never happened — a broken or fabricating
+  relay cannot also write a correctly-arrived block into a file the actor's
+  own CLI process persists for itself.
+- **Does not rule out:** the actor's CLI being wrong consistently across its
+  two own serializations — the native transcript and the workspace's
+  `event_stream.jsonl`/stdout capture — since both originate from the same
+  process. This is the **permanent limitation**: it would need provider-side
+  evidence this project cannot obtain, stated once, here, not re-litigated
+  per run.
+
+**Assertion B — the correction's wire shape and position match what was
+measured.** Carried **only** by `proxy_log.jsonl`, the in-sandbox proxy's wire
+capture — and that recorder **is** this project's own code
+(`cc-reverse-proxy`, run in-sandbox per
+[ADR-0012](../../../docs/decisions/ADR-0012-in-sandbox-capture-proxy.md)).
+
+- **Not ruled out here, only trusted:** the proxy fabricating or corrupting
+  what it records. This is a **stated trust assumption**, not a proven one —
+  checking it against itself would be circular. If the assumption is wrong,
+  nothing in this run would catch it.
+- This makes **point 4 weaker than point 3**: point 3 (delivery happened) can
+  rest on Assertion A, which crosses a boundary this project does not
+  control; point 4 (wire shape/position) has no such record and rests on
+  Assertion B alone. An earlier draft of this section used one evidence tier
+  for both, which lent point 4 a strength it does not have.
+
+**A dependency this document takes as a precondition, not an assumption.**
+Assertion A requires the native transcript to actually be extracted before
+the container is destroyed — work in progress (`swelab-inproxy-impl`, a
+`before_destroy` sandbox observer pulling the whole `projects/` subtree,
+because a single `*.jsonl` glob does not adequately describe the record).
+**Its landing status by run time is not yet known.** This document fixes what
+happens in both cases now, rather than deciding after seeing which one holds:
+
+- **If the native transcript is available for this run:** point 1 and point 3
+  close on Assertion A (point 1: `proxy_log.jsonl` also corroborates real
+  actor traffic at the claimed boundaries, ruling out a synthetic stream, in
+  addition to Assertion A ruling out a fabricated `supervisor.jsonl`; point 3:
+  Assertion A directly). Point 4 closes on Assertion B, with its trust
+  assumption stated in the report, not hidden.
+- **If it is not available** — the extraction did not land, or failed for
+  this run — **Assertion A does not exist**, and only `proxy_log.jsonl`
+  remains, which is our own code. Both assertions then collapse to the same
+  self-report-plus-trust-assumption shape. **Points 1, 3 and 4 are not marked
+  closed in that case**, regardless of what `proxy_log.jsonl` alone shows —
+  a run that reaches this branch reports all three as open, and says why.
+
+**A third thing, stronger than either assertion if it happens: the actor's
+subsequent behavior visibly changing in response to the correction.**
+Recorded alongside either branch above, if observed, but never what closes
+any of the three points — it is the hardest of the three to make a
+mechanical criterion, so it stays observational only.
+
+**If `proxy_log.jsonl` itself is unavailable for this run** — the recorder
+failed to attach, the log is empty, or `capture="proxy"` was not actually
+configured — none of points 1, 3 or 4 close under either branch above, since
+Assertion B has no record to rest on and Assertion A's corroboration (point 1)
+has nothing to corroborate against either.
 
 ## 6. Readouts required alongside the seven points
 
