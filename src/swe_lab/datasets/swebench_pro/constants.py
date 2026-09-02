@@ -32,6 +32,36 @@ SCALE_SWEBENCH_PRO_COMMIT = "ca10a60a5fcae51e6948ffe1485d4153d421e6c5"
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com"
 HARNESS_FETCH_TIMEOUT_S = 30.0
 
+# --- Dataset parquet pin (verified, not fetched — see fetch.py) -------------
+
+# The published HF file this dataset loads. Downloaded manually per
+# ``datasets/swebench_pro/README.md`` (dataset data is not committed); this
+# name is what the loader looks for once it is there.
+PARQUET_FILENAME = "test-00000-of-00001.parquet"
+
+# sha256 of the published parquet — the loader's trust anchor for a file
+# fetched from a mutable HF ``main`` ref (same shape as
+# ``deepswe.constants.PINNED_DEEPSWE_PARQUET_SHA256``).
+#
+# What this pin proves: the local copy is byte-identical to the one HF's own
+# LFS storage serves at ``ScaleAI/SWE-bench_Pro`` — two independent sources
+# agree (below), so this is not merely "the hash of the file I happened to
+# download". What it does **not** prove: that the file HF serves today is the
+# one the paper's numbers were computed from, or was ever reviewed for
+# correctness. The pin fixes "does not silently change under us" going
+# forward; it does not establish "was correct to begin with".
+#
+# Provenance (2026-09-02):
+#   - Local download: `curl` per this dataset's README, `sha256sum` on the
+#     result.
+#   - HF's own record, independent of that download:
+#     `curl -s "https://huggingface.co/api/datasets/ScaleAI/SWE-bench_Pro?blobs=true"`
+#     -> `siblings[].lfs.sha256` for `data/test-00000-of-00001.parquet`.
+#   Both gave the same digest and the same size (7,816,820 bytes).
+PINNED_SWEBENCH_PRO_PARQUET_SHA256 = (
+    "c8cd7115496ad4e9a8b21d088cef576a65bf821bb542b24336f13f714cef13f8"
+)
+
 # --- Harness / workspace file names ------------------------------------------
 
 # The per-instance harness: fetched from Scale, then staged into the workspace.
