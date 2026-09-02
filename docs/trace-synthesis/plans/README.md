@@ -133,6 +133,16 @@ rather than a mechanism that is not there.
 | 6 | The trace is persisted, **the interjection is in it**, and provenance is complete | `test_an_interjection_survives_conversion_into_the_trace` builds the bytes with the channel's own rendering path and asserts they survive conversion — an interjection that is delivered but lost in conversion passes points 1–4 and still leaves no evidence. Provenance: the fields `run_provenance()` stamps, plus `extra["agent_model"]`, which pins the actor even once the trace is dropped. |
 | 7 | The **outcome word is correct** | `rollout_outcome` in the rollout record is the one that matches what happened; the four words are pinned apart by the named tests in `tests/test_rollout.py` ([ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md)). |
 
+**Points 1 and 4 can only be closed by a real run, and a real run's evidence is
+collected by the code being checked.** `supervisor.jsonl`, the trace and the
+record are all written by the pipeline itself, so "the run says it did" and "it
+did" are one statement made twice. Closing either point therefore requires **at
+least one piece of evidence that does not come through our collection path** —
+the actor's own subsequent behaviour showing it read the correction, or the
+container-side raw capture, which is an independent chain from the supervisor's
+log. Without that, a self-consistent account is being taken for a proof.
+
+
 **All seven green = the pipeline works end to end.** Only then the stability
 batch, whose purpose is to show the pipeline is *stable* — **not** to measure an
 effect, which it is far too small to do.

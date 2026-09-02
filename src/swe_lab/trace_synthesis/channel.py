@@ -50,7 +50,12 @@ from swe_lab.sandbox import (
     SandboxObserver,
 )
 
-from .supervisor import Intervention, SpeakPolicy, Supervisor
+from .supervisor import (
+    Intervention,
+    LOG_KIND_GAP,
+    SpeakPolicy,
+    Supervisor,
+)
 
 #: The supervisor's own account of a run, one JSON object per event consumed.
 #: Named here because this is what persists it; a reader checking that a run
@@ -269,6 +274,7 @@ class SupervisedRun(SandboxObserver):
   pump: SupervisorPump | None = None
   channel: CorrectionChannel | None = None
   _rows: list[Mapping[str, Any]] = field(default_factory=list)
+  _gap: bool = False
   _stop: threading.Event = field(default_factory=threading.Event)
   _thread: threading.Thread | None = None
 
@@ -313,7 +319,7 @@ class SupervisedRun(SandboxObserver):
             policy=self.policy_factory(),
             task=self.task,
             sink=self.channel.sink,
-            log=self._rows.append,
+            log=self._record,
         ),
         channel=self.channel,
         events_path=sb.workspace / EVENT_STREAM_NAME,
@@ -321,17 +327,57 @@ class SupervisedRun(SandboxObserver):
     self._thread = threading.Thread(target=self._feed, daemon=True)
     self._thread.start()
 
+  def _record(self, row: Mapping[str, Any]) -> None:
+    """Keep the supervisor's row, and notice a boundary it could not cover.
+
+    A gap and a silence are both ``None`` back from ``observe``, and they mean
+    opposite things: one is a decision, the other is a boundary that went
+    unjudged or a correction that was never delivered. Read here because the
+    log is where the supervisor already tells them apart.
+
+    Args:
+      row: One row of the supervisor's account.
+    """
+    self._rows.append(row)
+    if row.get("kind") == LOG_KIND_GAP:
+      self._gap = True
+
+  @property
+  def supervised_throughout(self) -> bool:
+    """Whether every boundary of this run was actually covered.
+
+    Three ways it stops being true, and they are one fact reached three ways:
+    the pump stopped reading, the supervisor hit a boundary it could not judge
+    or could not speak at, or the channel ended without being told to.
+
+    Returns:
+      Whether the run is evidence about supervision at all.
+    """
+    return (
+        self.pump is not None
+        and self.pump.healthy
+        and not self._gap
+        and self.channel is not None
+        and not self.channel.closed_uncleanly
+    )
+
   def _feed(self) -> None:
     """Poll until the run is over, then end it."""
     assert self.pump is not None and self.channel is not None
     while not self._stop.is_set():
       _ = self.pump.poll()
-      # A dead pump ends the run too. Leaving the channel open would burn the
-      # wall clock and reach the outside as the actor's timeout (ADR-0015),
-      # charging our breakage to it; the metric below is what keeps the
-      # deliberate close from reading as an ordinary early finish.
-      if self.pump.at_rest or not self.pump.healthy:
-        self.channel.close()
+      # Anything that ends supervision ends the run. Leaving the channel open
+      # would burn the wall clock and reach the outside as the actor's timeout
+      # (ADR-0015), charging our breakage to it; the metric below is what keeps
+      # the deliberate close from reading as an ordinary early finish.
+      if self.pump.at_rest or self._gap or not self.pump.healthy:
+        try:
+          self.channel.close()
+        except OSError as error:
+          # The drop directory is how the run is ended; if it cannot be
+          # written the actor will sit until the wall clock kills it, and the
+          # only thing that keeps that ending ours is this.
+          self.pump.failure = error
         return
       _ = self._stop.wait(self.poll_interval)
 
@@ -339,11 +385,9 @@ class SupervisedRun(SandboxObserver):
   def before_destroy(self, sb: SandboxFs) -> Contribution | None:
     """Stop supervising, persist the account, and report a lost supervisor.
 
-    Two conditions raise the metric, because they are the same fact reached
-    two ways: the pump stopped feeding the supervisor, or the channel closed
-    without being told to. Either means the actor finished part of its work
-    unsupervised, which is what
-    :func:`~swe_lab.rollout.rollout_outcome` turns into
+    The metric is :attr:`supervised_throughout` negated: every way a run can
+    lose its supervisor means the actor finished part of its work unsupervised,
+    which is what :func:`~swe_lab.rollout.rollout_outcome` turns into
     ``SUPERVISION_FAILED``.
 
     Args:
@@ -359,12 +403,7 @@ class SupervisedRun(SandboxObserver):
       self._thread.join(timeout=_JOIN_TIMEOUT_SECONDS)
     if self.pump is not None:
       _ = self.pump.poll()  # whatever the actor wrote after the last tick
-    lost = (
-        self.pump is None
-        or not self.pump.healthy
-        or self.channel is None
-        or self.channel.closed_uncleanly
-    )
+    lost = not self.supervised_throughout
     account = "".join(json.dumps(row) + "\n" for row in self._rows)
     return Contribution(
         inline_artifacts={SUPERVISOR_LOG_NAME: account.encode()},

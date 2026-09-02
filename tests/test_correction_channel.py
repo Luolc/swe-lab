@@ -48,6 +48,7 @@ from swe_lab.trace_synthesis.channel import (
 from swe_lab.trace_synthesis.supervisor import (
     Intervention,
     INTERVENTION_TAG,
+    LOG_KIND_GAP,
     Observation,
     Supervisor,
 )
@@ -607,3 +608,117 @@ def test_an_interjection_survives_conversion_into_the_trace():
   )
   assert f"<{INTERVENTION_TAG}>" in rendered
   assert spoken.text in rendered
+
+
+def test_a_boundary_the_policy_could_not_judge_invalidates_the_run(
+    tmp_path: Path,
+):
+  """A gap is not a silence, and the run must not be counted as if it were.
+
+  `observe` returns ``None`` for both a policy that raised and a policy that
+  chose not to speak, so keying the end of the run on that alone classifies our
+  failure as the supervisor's decision — a run that was never judged at that
+  boundary closes cleanly, leaves no metric, and stays in the denominator of
+  every rate computed over it. Driven end to end here: a real ``result`` event
+  through a raising policy, then the terminal contribution, then the word.
+  """
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  run = _supervised(tmp_path, policy=_Raises())
+  _ = events.write_text(_result_event() + "\n")
+  # The gap ends the run, so the sentinel is the public signal that the
+  # supervising thread has finished with this event.
+  _wait_until(
+      (
+          epath.Path(tmp_path) / CORRECTION_DROP_NAME / CORRECTION_DONE_NAME
+      ).exists
+  )
+
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  # The supervisor recorded the boundary as one it could not cover…
+  rows = [
+      json.loads(line)
+      for line in contribution.inline_artifacts[SUPERVISOR_LOG_NAME]
+      .decode()
+      .splitlines()
+  ]
+  assert [row["kind"] for row in rows] == [LOG_KIND_GAP]
+  # …and that reaches the outcome word rather than stopping at the log.
+  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  attempt = _attempt_with(contribution.metrics)
+  assert rollout_outcome(attempt) is RolloutOutcome.SUPERVISION_FAILED
+  assert (
+      CodingAgentTask(harness=ClaudeCodeHarness()).outputs_valid(attempt)
+      is False
+  )
+
+
+def test_a_gap_mid_turn_ends_the_run_rather_than_letting_it_continue(
+    tmp_path: Path,
+):
+  """Everything after a gap is unsupervised, so there is nothing to buy.
+
+  The run is already disqualified at that point; letting the actor keep going
+  spends the rest of the budget producing a rollout that cannot be used as
+  evidence about supervision either way.
+  """
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  run = _supervised(tmp_path, policy=_Raises())
+  # Not a `result`: nothing here is a turn boundary, so only the gap can end
+  # the run.
+  _ = events.write_text(_assistant_event("still working") + "\n")
+  sentinel = epath.Path(tmp_path) / CORRECTION_DROP_NAME / CORRECTION_DONE_NAME
+  _wait_until(sentinel.exists)
+
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+
+
+def test_a_correction_that_could_not_be_delivered_invalidates_the_run(
+    tmp_path: Path,
+):
+  """The other half of the same gap: the policy spoke and nobody heard it.
+
+  The supervisor mutes itself and logs a gap when the sink raises, which from
+  the actor's side is identical to a run nobody tried to correct. Reproduced by
+  occupying the name the first correction is renamed onto — a real failure of
+  the delivery step, not a patched sink — and deliberately one that leaves the
+  drop directory usable, so the deliberate close still succeeds and the pump
+  stays healthy. What is under test is the **gap**, and it is the only thing
+  that can raise the metric here.
+  """
+  occupied = epath.Path(tmp_path) / CORRECTION_DROP_NAME / "msg-0001.json"
+  occupied.mkdir(parents=True)
+  _ = (occupied / "in the way").write_text("")
+  events = epath.Path(tmp_path) / EVENT_STREAM_NAME
+  run = _supervised(tmp_path)
+
+  _ = events.write_text(_result_event() + "\n")
+  # The gap ends the run, so the sentinel is the public signal that the
+  # supervising thread has finished with this event.
+  _wait_until(
+      (
+          epath.Path(tmp_path) / CORRECTION_DROP_NAME / CORRECTION_DONE_NAME
+      ).exists
+  )
+
+  contribution = run.before_destroy(_fs(tmp_path))
+  assert contribution is not None
+  rows = [
+      json.loads(line)
+      for line in contribution.inline_artifacts[SUPERVISOR_LOG_NAME]
+      .decode()
+      .splitlines()
+  ]
+  assert rows[0]["kind"] == LOG_KIND_GAP
+  assert "sink raised" in rows[0]["reason"]
+  # The pump never failed and the channel closed deliberately: with the gap
+  # ignored, this run would report as a clean, fully supervised one.
+  assert run.pump is not None and run.pump.healthy
+  assert run.channel is not None and not run.channel.closed_uncleanly
+  assert contribution.metrics == {SUPERVISION_METRIC: 1.0}
+  assert (
+      rollout_outcome(_attempt_with(contribution.metrics))
+      is RolloutOutcome.SUPERVISION_FAILED
+  )
