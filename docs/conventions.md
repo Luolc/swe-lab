@@ -558,6 +558,18 @@ retroactively (owner's calibration, 2026-09-01).
   down, and nothing reads it. Worked example:
   [ADR-0015](decisions/ADR-0015-four-words-for-how-a-rollout-ends.md), which
   turns `oom_kills` from a number into a gate.
+- **An absent measurement must not render as a zero measurement.** "Not
+  measured" and "measured zero" are different facts, and the second is the
+  first's most convenient disguise — it is a plausible number, so nothing looks
+  wrong. The test: for every value that can be missing, **name what it renders
+  as when it is missing**, and if that is the same glyph a genuine low value
+  produces, it is wrong. Two instances, same day: `patch is None` — no diff
+  extraction had run at all — was classified as `NO_PATCH`, i.e. as an actor
+  that produced nothing ([ADR-0016](decisions/ADR-0016-the-endings-nobody-could-attribute.md));
+  and a batch whose runs were **every one of them** excluded as ours rendered
+  `resolved 0 / 0`, reporting a total infrastructure failure as an actor that
+  solved nothing. The second was written into the very module built to stop the
+  first.
 - **Evidence can exist and still not be about the thing you are claiming.** Three
   instances, same week: a PR body said the quality bar was green "at this head"
   while the run in hand came from the pre-rebase SHA on an older base; a run read
