@@ -388,6 +388,12 @@ class CodingAgentTask(Task):
 # recorded number into a branch.
 OOM_METRIC = "sandbox.oom_kills"
 
+#: Set to 1.0 when a supervised run lost its supervisor part-way — the pump
+#: died, or the correction channel closed without being told to. A metric
+#: rather than an observer field so that `rollout_outcome` stays readable from
+#: the run alone, exactly as the out-of-memory signal is.
+SUPERVISION_METRIC = "supervision.unhealthy"
+
 
 class RolloutOutcome(StrEnum):
   """What the rollout *stage* produced — the word that decides what follows.
@@ -424,6 +430,11 @@ class RolloutOutcome(StrEnum):
       the denominator like any unclassified ending, but it is **counted
       separately**, so an ending nobody could attribute is a number rather than
       silence inside :attr:`NO_PATCH` (ADR-0016).
+    SUPERVISION_FAILED: A supervised run lost its supervisor part-way. Ours,
+      and its own word: a run that was meant to be supervised and was not for
+      part of its length is **not evidence about supervision**, and pooling it
+      with "supervised, and the actor did not comply" would put our own
+      breakage inside the very comparison the supervision is being judged by.
   """
 
   OOM_KILLED = "oom_killed"
@@ -432,6 +443,7 @@ class RolloutOutcome(StrEnum):
   NO_PATCH = "no_patch"
   PATCH_PRODUCED = "patch_produced"
   UNCLASSIFIED = "unclassified"
+  SUPERVISION_FAILED = "supervision_failed"
 
   @property
   def ours(self) -> bool:
@@ -480,7 +492,11 @@ class RolloutOutcome(StrEnum):
 # The only two endings that are ours rather than the actor's. Kept beside the
 # enum, like `_RETRYABLE_OUTCOMES`, so the policy reads as one table.
 _OURS: frozenset[RolloutOutcome] = frozenset(
-    {RolloutOutcome.OOM_KILLED, RolloutOutcome.SYSTEM_FAILED}
+    {
+        RolloutOutcome.OOM_KILLED,
+        RolloutOutcome.SYSTEM_FAILED,
+        RolloutOutcome.SUPERVISION_FAILED,
+    }
 )
 
 
@@ -501,6 +517,11 @@ def rollout_outcome(result: AttemptResult) -> RolloutOutcome:
   """
   if result.run.metrics.get(OOM_METRIC, 0.0) > 0.0:
     return RolloutOutcome.OOM_KILLED
+  if result.run.metrics.get(SUPERVISION_METRIC, 0.0) > 0.0:
+    # Before the wall clock on purpose: a stalled channel is one of the ways a
+    # supervised run reaches its timeout, and reporting that as `TIMED_OUT`
+    # would hand a budget the actor never got to spend back to the actor.
+    return RolloutOutcome.SUPERVISION_FAILED
   if result.run.status is RunStatus.TIMEOUT:
     return RolloutOutcome.TIMED_OUT
   if result.run.status is not RunStatus.SUCCESS:

@@ -121,3 +121,41 @@ OAUTH_TOKEN_ENV = "CLAUDE_CODE_OAUTH_TOKEN"
 # subscription OAuth token) is used — required by ``--bare``, which disables
 # OAuth. Set by the harness for the agent exec when an ``api_key`` is given.
 API_KEY_ENV = "ANTHROPIC_API_KEY"
+
+# ─── the live correction channel (ADR-0013, task 16) ────────────────────────
+
+# The agent's stdin when the correction channel is on. A FIFO rather than a
+# file because the file's EOF *is* today's termination mechanism: a one-shot
+# prompt file ends the run by running out. A channel that stays open removes
+# that, which is why `CORRECTION_UNCLEAN_NAME` below exists.
+CORRECTION_FIFO_NAME = "claude.stdin.fifo"
+
+# The bind-mounted drop directory the host supervisor writes into. One file per
+# message, `*.json`, each a single stream-json user message; the in-sandbox
+# relay appends them to the FIFO in name order and renames what it has sent.
+CORRECTION_DROP_NAME = "corrections"
+
+# The sentinel the host writes into the drop directory to end the run. Closing
+# the FIFO's write end is the *intended* termination mechanism, so it has to be
+# produced deliberately by whoever decides the task is over — never as a side
+# effect of something dying.
+CORRECTION_DONE_NAME = "done"
+
+# Written when the relay starts and removed only on the deliberate close above,
+# so its **presence at the end means the channel did not close on purpose**.
+# Failure-closed on purpose: a relay that is killed cannot write a marker, but
+# it also cannot remove one. Without this, a supervisor crash reaches the
+# outside as an agent that simply stopped early — a system failure rendered as
+# an ordinary result, which is the shape ADR-0016 exists to stop.
+CORRECTION_UNCLEAN_NAME = "claude.correction_channel.unclean"
+
+# The relay's own output. Same reasoning as the proxy's log: an in-sandbox
+# process that fails silently leaves no other trace.
+CORRECTION_RELAY_LOG_NAME = "claude.correction_channel.log"
+
+# The prompt, encoded as the one stream-json user event that starts the run.
+# Under `--input-format stream-json` the prompt cannot be a plain file: every
+# message on that channel is a JSON line, and the task prompt is simply the
+# first of them. Written beside `PROMPT_FILENAME` rather than replacing it, so
+# the human-readable prompt stays exactly where it is on both paths.
+CORRECTION_PROMPT_NAME = "prompt.stream.json"

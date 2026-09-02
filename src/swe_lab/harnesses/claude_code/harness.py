@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+import json
 import logging
 import shlex
 from typing import override
@@ -58,6 +59,12 @@ from .constants import (
     AGENT_STDERR_NAME,
     ANTHROPIC_API,
     BINARY_AT,
+    CORRECTION_DONE_NAME,
+    CORRECTION_DROP_NAME,
+    CORRECTION_FIFO_NAME,
+    CORRECTION_PROMPT_NAME,
+    CORRECTION_RELAY_LOG_NAME,
+    CORRECTION_UNCLEAN_NAME,
     DEFAULT_MODEL,
     EVENT_STREAM_NAME,
     INFO_ARTIFACT,
@@ -95,6 +102,64 @@ _PROXY_READY_INTERVAL_S = "0.1"
 _MISCONFIGURED_EXIT = 78
 
 
+_REAPED_PIDS_VAR = "reaped_pids"
+
+
+def _reaper_lines() -> list[str]:
+  """Return the lines that install the script's single ``EXIT`` trap.
+
+  **Bash keeps only the last ``EXIT`` trap installed.** Two helpers each
+  trapping their own background process therefore silently leaves one of them
+  unreaped — the second `trap` replaces the first rather than adding to it. So
+  there is one trap, installed once here, over a list every starter appends to.
+
+  Installed **before** anything is backgrounded, so a process started and then
+  failing a readiness guard is still reaped on the way out.
+
+  Reaping runs in reverse order of starting: the capture proxy goes last,
+  because it is the thing recording whatever the others do on their way down.
+
+  Returns:
+    The lines, in order.
+  """
+  return [
+      f"{_REAPED_PIDS_VAR}=",
+      # TERM, a bounded grace, then KILL whatever is left. `wait` is not
+      # used: `kill "$p"; wait "$p"` per pid deadlocks with more than
+      # one background job, and a bare `wait` proved non-terminating in
+      # some environments. The escalation is what makes the guarantee
+      # true rather than likely — a child that ignores or delays TERM
+      # would otherwise outlive the grace period silently, and `run`
+      # would return while the capture log was still being written.
+      # A KILLed proxy truncates its log at a line boundary (each record
+      # is written and closed), so the cost of escalating is partial
+      # capture, never a corrupt file.
+      "trap '"
+      f'for _pid in ${_REAPED_PIDS_VAR}; do kill "$_pid" 2>/dev/null;'
+      " done; _left=50;"
+      ' while [ "$_left" -gt 0 ]; do _any=;'
+      f" for _pid in ${_REAPED_PIDS_VAR}; do"
+      ' kill -0 "$_pid" 2>/dev/null && _any=1; done;'
+      ' [ -n "$_any" ] || break; _left=$((_left-1)); sleep 0.1; done;'
+      f" for _pid in ${_REAPED_PIDS_VAR}; do"
+      ' kill -0 "$_pid" 2>/dev/null && kill -9 "$_pid" 2>/dev/null;'
+      " done"
+      "' EXIT",
+  ]
+
+
+def _reap(pid_var: str) -> str:
+  """Return the line registering ``pid_var`` with the single cleanup trap.
+
+  Args:
+    pid_var: The shell variable holding the process id.
+
+  Returns:
+    One line, prepending the pid so cleanup runs in reverse start order.
+  """
+  return f'{_REAPED_PIDS_VAR}="${pid_var} ${_REAPED_PIDS_VAR}"'
+
+
 def _proxy_start_lines(target: str) -> list[str]:
   """Return the script lines that start the in-sandbox recording proxy.
 
@@ -107,8 +172,11 @@ def _proxy_start_lines(target: str) -> list[str]:
   - **it is accepting connections** — polled on the loopback port, not slept
     through. A fixed sleep is a race, and the failure it produces (the agent's
     very first API call refused) reads as an auth or network problem;
-  - **it is reaped when the script ends** — an ``EXIT`` trap, so the proxy dies
-    on every path out, including the guards that ``exit 78`` above it.
+  - **it is reaped when the script ends** — it registers with the script's
+    single ``EXIT`` trap (see :func:`_reaper_lines`), so the proxy dies on every
+    path out, including the guards that ``exit 78`` above it. It does **not**
+    install a trap of its own: Bash keeps only the last one installed, and this
+    script may also start a correction relay.
 
   The trap is also why no observer is needed for ordering anymore: by the time
   ``run`` returns, the proxy is gone and its log is closed.
@@ -141,8 +209,7 @@ def _proxy_start_lines(target: str) -> list[str]:
           f" --output {log} > {own_log} 2>&1 &"
       ),
       "proxy_pid=$!",
-      'trap \'kill "$proxy_pid" 2>/dev/null; wait "$proxy_pid" 2>/dev/null\''
-      " EXIT",
+      _reap("proxy_pid"),
       "proxy_wait=0",
       f"until {probe}; do",
       '  if ! kill -0 "$proxy_pid" 2>/dev/null; then',
@@ -158,6 +225,99 @@ def _proxy_start_lines(target: str) -> list[str]:
       "  fi",
       f"  sleep {_PROXY_READY_INTERVAL_S}",
       "done",
+  ]
+
+
+_RELAY_POLL_INTERVAL_S = 0.1
+
+
+def user_event_line(text: str) -> str:
+  """Return one stream-json user event, newline-terminated.
+
+  The wire shape is not ours to choose: it is what the CLI accepts under
+  ``--input-format stream-json``, and it is the shape the compliance experiment
+  measured, so it is reproduced rather than re-derived.
+
+  Args:
+    text: The message body.
+
+  Returns:
+    A single JSON line, ending in a newline.
+  """
+  event = {
+      "type": "user",
+      "message": {"role": "user", "content": [{"type": "text", "text": text}]},
+  }
+  return json.dumps(event) + "\n"
+
+
+def _relay_start_lines() -> list[str]:
+  """Return the script lines that open the correction channel and hold it.
+
+  The relay is the only thing holding the FIFO's write end, which makes it the
+  thing that decides when the run ends. Three properties follow, and each is a
+  line here rather than an assumption:
+
+  - **It starts before the agent.** A shell redirect from a FIFO blocks until a
+    writer opens the other end, so an agent started first would hang forever.
+    The proxy's readiness wait is the precedent.
+  - **It closes the write end only on the sentinel.** Closing is the intended
+    termination mechanism (the CLI exits on stdin EOF), so it must be produced
+    deliberately by whoever decides the task is over.
+  - **It is failure-closed.** The unclean marker is written at start and removed
+    only on that deliberate close, so anything else that ends the relay — a
+    crash, a kill, the container going away — leaves the marker behind. A relay
+    that is killed cannot write a marker; it also cannot remove one.
+
+  Returns:
+    The lines, in order.
+  """
+  fifo = f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
+  drop = f'"$SANDBOX_WORKSPACE"/{CORRECTION_DROP_NAME}'
+  unclean = f'"$SANDBOX_WORKSPACE"/{CORRECTION_UNCLEAN_NAME}'
+  log = f'"$SANDBOX_WORKSPACE"/{CORRECTION_RELAY_LOG_NAME}'
+  return [
+      f"mkdir -p {drop}",
+      f"rm -f {fifo}",
+      f"mkfifo {fifo}",
+      # Present from before the relay exists until it closes on purpose.
+      f"touch {unclean}",
+      "(",
+      # Blocks until the agent opens the read end, which is why this whole
+      # subshell is backgrounded and the agent is started after it.
+      f"  exec 3> {fifo}",
+      # The prompt is just the first message on this channel.
+      f'  cat "$SANDBOX_WORKSPACE"/{CORRECTION_PROMPT_NAME} >&3',
+      f"  while [ ! -e {drop}/{CORRECTION_DONE_NAME} ]; do",
+      f"    for message in {drop}/*.json; do",
+      '      [ -e "$message" ] || continue',
+      '      cat "$message" >&3',
+      '      mv "$message" "$message.sent"',
+      "    done",
+      f"    sleep {_RELAY_POLL_INTERVAL_S}",
+      "  done",
+      # Drain whatever arrived in the same tick as the sentinel, so a
+      # correction and the end of the run cannot race each other away.
+      f"  for message in {drop}/*.json; do",
+      '    [ -e "$message" ] || continue',
+      '    cat "$message" >&3',
+      '    mv "$message" "$message.sent"',
+      "  done",
+      # Cleared **before** the close, not after: closing makes the reader see
+      # EOF, the script then exits, and its EXIT trap kills this relay — which
+      # would race the removal and leave the marker behind on an ordinary,
+      # deliberate ending. The marker means "the relay never saw a deliberate
+      # end", so seeing the sentinel is the moment it stops being true.
+      f"  rm -f {unclean}",
+      "  exec 3>&-",
+      f") > {log} 2>&1 &",
+      "relay_pid=$!",
+      _reap("relay_pid"),
+      '  if ! kill -0 "$relay_pid" 2>/dev/null; then',
+      f'    echo "FATAL: the correction relay exited before the agent started;'
+      f' see {CORRECTION_RELAY_LOG_NAME}" >&2',
+      f"    exit {_MISCONFIGURED_EXIT}",
+      "  fi",
   ]
 
 
@@ -213,6 +373,19 @@ class ClaudeCodeHarness(Harness):
       ``None``, which leaves the agent's own ten-minute default in place.
       Letting the run bound itself yields a clean exit and a complete trace
       where an external kill would truncate mid-write.
+    correction_channel: Run the agent with a **live** stdin channel — a FIFO
+      fed by an in-sandbox relay from a bind-mounted drop directory — so a
+      host-side supervisor can write a correction while the agent is still
+      working (ADR-0013). Off by default: it removes the ordinary termination
+      mechanism (stdin reaching EOF) and replaces it with a deliberate close,
+      which only a caller that owns a supervisor can produce.
+
+      A **field rather than a subclass** on purpose: a supervised rollout must
+      differ from an unsupervised one *only* by the corrections, and a forked
+      harness is a standing invitation for the two to drift in flags, denied
+      tools or capture wiring — drift that would be invisible in the traces it
+      produces. That reasoning expires the moment the supervised path needs a
+      genuinely different invocation rather than an extended one.
   """
 
   model: str = DEFAULT_MODEL
@@ -224,6 +397,30 @@ class ClaudeCodeHarness(Harness):
   max_turns: int = 500
   max_budget_usd: float | None = None
   subagent_wait_ceiling_ms: int | None = None
+  correction_channel: bool = False
+
+  def __post_init__(self) -> None:
+    """Refuse a channel whose trace could not be trusted.
+
+    The live channel **requires proxy capture** (task 16 §5): stream capture
+    drops the injected message unless `--replay-user-messages` is passed, and
+    with it renders as a ``user`` message what the wire carries as ``system``.
+    A stream-derived trace of a supervised run would therefore assert a turn
+    the model never saw — a false trace, produced by the *simplest* caller.
+
+    Refused at construction rather than documented, because the invalid
+    combination is otherwise reachable through the public field and produces
+    something that looks like a normal result.
+
+    Raises:
+      ValueError: If the correction channel is on without proxy capture.
+    """
+    if self.correction_channel and self.capture != "proxy":
+      raise ValueError(
+          "correction_channel=True requires capture='proxy': stream capture"
+          f" cannot represent an injected message truthfully (got"
+          f" capture={self.capture!r})"
+      )
 
   @property
   @override
@@ -355,6 +552,11 @@ class ClaudeCodeHarness(Harness):
           f" {MAX_PROMPT_BYTES}"
       )
     sb.write(PROMPT_FILENAME, encoded)
+    if self.correction_channel:
+      # The same prompt, as the first message of the live channel. Written in
+      # addition to the plain file, which stays the human-readable record of
+      # what was asked on both paths.
+      sb.write(CORRECTION_PROMPT_NAME, user_event_line(prompt).encode())
     if env:
       sb.write(AGENT_ENV_NAME, env_exports(env).encode())
     return sb.run_script(AGENT_SCRIPT_NAME, timeout=timeout)
@@ -474,6 +676,10 @@ class ClaudeCodeHarness(Harness):
         # clobber the proxy URL this run was wired to.
         f'. "$SANDBOX_WORKSPACE"/{AGENT_ENV_NAME}',
     ]
+    # One cleanup owner, before anything is backgrounded: two helpers each
+    # installing their own `EXIT` trap would leave only the later one, and the
+    # proxy-plus-channel configuration installs both.
+    lines += _reaper_lines()
     if self.capture == "proxy":
       # Start the recording proxy, then route the agent's API calls through it;
       # the agent's own stdout (a plain JSON result) is not the trace, so it is
@@ -525,6 +731,15 @@ class ClaudeCodeHarness(Harness):
           "fi",
       ]
 
+    if self.correction_channel:
+      # Before the agent: a redirect from a FIFO blocks until a writer opens
+      # the other end, so an agent started first would wait forever.
+      lines += _relay_start_lines()
+      flags.append("--input-format stream-json")
+      stdin_source = f'"$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}'
+    else:
+      stdin_source = prompt
+
     exit_file = f'"$SANDBOX_WORKSPACE"/{AGENT_EXIT_CODE_NAME}'
     lines += [
         f"cd {shlex.quote(workdir)}",
@@ -533,7 +748,7 @@ class ClaudeCodeHarness(Harness):
         # arbitrary prompt.
         (
             f"{binary} {' '.join(flags)}"
-            f" < {prompt} {capture_redirect} 2> {stderr}"
+            f" < {stdin_source} {capture_redirect} 2> {stderr}"
         ),
         *status_tail(exit_file),
     ]

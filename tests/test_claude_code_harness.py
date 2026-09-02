@@ -1,7 +1,9 @@
 """Tests for the claude_code harness: mounts, binary, invocation, conversion."""
 
 import json
+import os
 from pathlib import Path
+import subprocess
 from typing import get_args
 
 from etils import epath
@@ -29,7 +31,13 @@ from swe_lab.harnesses.claude_code.constants import (
     AGENT_INFO_NAME,
     AGENT_SCRIPT_NAME,
     BINARY_AT,
+    CORRECTION_DONE_NAME,
+    CORRECTION_DROP_NAME,
+    CORRECTION_FIFO_NAME,
+    CORRECTION_PROMPT_NAME,
+    CORRECTION_UNCLEAN_NAME,
     INFO_ARTIFACT,
+    PROMPT_FILENAME,
     PROXY_BASE_URL,
     PROXY_BINARY_AT,
     PROXY_LOG_NAME,
@@ -248,7 +256,10 @@ def test_the_script_starts_the_proxy_in_the_sandbox_and_reaps_it():
   assert f'--output "$SANDBOX_WORKSPACE"/{PROXY_LOG_NAME}' in script
   assert f'> "$SANDBOX_WORKSPACE"/{PROXY_STDERR_NAME} 2>&1 &' in script
   assert f"until (exec 3<>/dev/tcp/127.0.0.1/{PROXY_PORT})" in script
-  assert 'trap \'kill "$proxy_pid"' in script
+  # Registered with the script's single EXIT trap rather than owning one:
+  # Bash keeps only the last trap installed, and this script may start a relay
+  # too (see test_the_script_installs_exactly_one_exit_trap).
+  assert 'reaped_pids="$proxy_pid $reaped_pids"' in script
   # The proxy is started before the agent is invoked, not after.
   assert script.index("proxy_pid=$!") < script.index(BINARY_AT + " -p")
   # A stream run starts nothing and mentions no proxy at all.
@@ -642,3 +653,207 @@ def test_effort_carries_exactly_the_values_the_pinned_agent_accepts():
 
 def test_capture_carries_both_strategies():
   assert get_args(Capture.__value__) == ("stream", "proxy")
+
+
+# ─── the live correction channel (ADR-0013, task 16) ─────────────────────────
+
+
+def test_the_correction_channel_is_off_unless_it_is_asked_for():
+  """The default path keeps the termination mechanism it has.
+
+  With the channel off, stdin is the prompt file and the run ends because that
+  file reaches EOF. Turning the channel on deletes that mechanism, so it cannot
+  be something a caller gets without choosing it.
+  """
+  script = ClaudeCodeHarness()._invocation_script("/app")
+  assert "--input-format stream-json" not in script
+  assert CORRECTION_FIFO_NAME not in script
+  assert f'< "$SANDBOX_WORKSPACE"/{PROMPT_FILENAME}' in script
+
+
+def test_the_relay_opens_the_channel_before_the_agent_reads_it():
+  """Opening order is load-bearing, not incidental.
+
+  A shell redirect from a FIFO blocks until a writer opens the other end, so an
+  agent started before its relay waits forever — and that wait is indis-
+  tinguishable from a slow run until the wall clock ends it.
+  """
+  script = ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  )._invocation_script("/app")
+  lines = script.splitlines()
+  relay = next(i for i, line in enumerate(lines) if line.startswith("mkfifo "))
+  agent = next(i for i, line in enumerate(lines) if BINARY_AT in line)
+  assert relay < agent
+  # …and the agent really is reading that FIFO rather than a file.
+  assert f'< "$SANDBOX_WORKSPACE"/{CORRECTION_FIFO_NAME}' in lines[agent]
+  assert "--input-format stream-json" in lines[agent]
+
+
+def test_the_prompt_becomes_the_first_message_on_the_channel(tmp_path: Path):
+  """Under `--input-format stream-json` a plain prompt file is not readable.
+
+  Every message on this channel is a JSON line, so the task prompt is simply
+  the first of them; the human-readable prompt file is still written, on both
+  paths, as the record of what was asked.
+  """
+  sb = FakeSandbox(spec=_SPEC, workspace=epath.Path(tmp_path))
+  _ = ClaudeCodeHarness(capture="proxy", correction_channel=True).run(
+      sb, prompt="solve it", timeout=1.0
+  )
+  assert json.loads(sb.read(CORRECTION_PROMPT_NAME).decode()) == {
+      "type": "user",
+      "message": {
+          "role": "user",
+          "content": [{"type": "text", "text": "solve it"}],
+      },
+  }
+  assert sb.read(PROMPT_FILENAME) == b"solve it"
+
+
+def test_the_channel_closes_only_on_the_sentinel_and_says_so_when_it_does_not():
+  """Termination must be deliberate, and an accident must be visible.
+
+  The CLI exits when stdin reaches EOF, so closing the FIFO's write end *is*
+  how a supervised run ends — it has to be produced by whoever decides the task
+  is over, never as a side effect of something dying. The marker is the other
+  half: written before the relay exists and removed only on that deliberate
+  close, so anything else that ends the relay leaves it behind. Failure-closed
+  on purpose — a relay that is killed cannot write a marker, but it also cannot
+  remove one, and without this a supervisor crash reaches the outside as an
+  agent that merely stopped early.
+  """
+  script = ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  )._invocation_script("/app")
+  assert f'touch "$SANDBOX_WORKSPACE"/{CORRECTION_UNCLEAN_NAME}' in script
+  # Exactly one path clears the marker, and it runs *before* the close.
+  # The ordering is load-bearing: closing makes the reader see EOF, the script
+  # then exits, and its EXIT trap kills the relay — so a removal placed after
+  # the close races that kill and leaves the marker behind on an ordinary
+  # ending. The marker means "the relay never saw a deliberate end", so the
+  # sentinel is the moment it stops being true.
+  clears = [
+      line
+      for line in script.splitlines()
+      if CORRECTION_UNCLEAN_NAME in line and line.strip().startswith("rm -f")
+  ]
+  assert len(clears) == 1
+  lines = script.splitlines()
+  close = next(i for i, line in enumerate(lines) if line.strip() == "exec 3>&-")
+  assert lines.index(clears[0]) < close
+  # …and the loop it leaves is the one the sentinel ends.
+  assert f"{CORRECTION_DROP_NAME}/{CORRECTION_DONE_NAME}" in script
+
+
+def test_the_script_installs_exactly_one_exit_trap():
+  """Bash keeps only the last ``EXIT`` trap, so there must be exactly one.
+
+  The proxy-plus-channel configuration is the *intended* live-channel setup, and
+  it starts two background processes. Two helpers each trapping their own would
+  leave the earlier one unreaped — a leak that no exit status reports.
+  """
+  script = ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  )._invocation_script("/app")
+  assert script.count("trap ") == 1
+  # …and both processes are registered with it.
+  assert 'reaped_pids="$proxy_pid $reaped_pids"' in script
+  assert 'reaped_pids="$relay_pid $reaped_pids"' in script
+
+
+def test_the_cleanup_actually_reaps_both_background_processes(tmp_path: Path):
+  """Run the generated cleanup, rather than asserting its shape.
+
+  The shape assertions above would still pass if the trap body reaped only the
+  first entry, or if a later change registered a pid the loop never reads. This
+  runs the real lines from the harness against two live processes and requires
+  **both** to be gone afterwards — so removing either reaper, or letting two
+  traps overwrite each other, turns it red.
+
+  One child is **stopped**, so TERM is never delivered to it and only the KILL
+  escalation removes it. Without that escalation the script returns after its
+  grace period with the child still alive, and this test goes red. It costs
+  that grace period once, which is what the guarantee is worth.
+
+  The children sleep far longer than the timeout, so they cannot die of old age
+  and pass this by accident; and the pids travel through a file rather than a
+  pipe, so nothing here waits on a descriptor a child might hold open.
+  """
+  from swe_lab.harnesses.claude_code.harness import _reap, _reaper_lines
+
+  pid_file = tmp_path / "pids"
+  script = "\n".join(
+      [
+          *_reaper_lines(),
+          "sleep 300 >/dev/null 2>&1 &",
+          "proxy_pid=$!",
+          _reap("proxy_pid"),
+          "sleep 300 >/dev/null 2>&1 &",
+          "relay_pid=$!",
+          _reap("relay_pid"),
+          # A **stopped** child, which is the reliable way to model one that
+          # does not die on TERM: the signal stays pending and is never
+          # delivered, so only the KILL escalation removes it. `bash -c 'trap
+          # "" TERM; sleep 300'` does not model it — the shell execs the
+          # trailing command and the trap goes with it.
+          "sleep 300 >/dev/null 2>&1 &",
+          "stubborn_pid=$!",
+          'kill -STOP "$stubborn_pid"',
+          _reap("stubborn_pid"),
+          f'printf "%s %s %s" "$proxy_pid" "$relay_pid" "$stubborn_pid"'
+          f" > {pid_file}",
+      ]
+  )
+  # Staged as a file and run like the harness runs its own script, rather than
+  # through `bash -c`.
+  script_file = tmp_path / "cleanup.sh"
+  _ = script_file.write_text(script + "\n")
+  # Short, because a working trap returns in milliseconds. A trap that never
+  # fires must fail this test quickly rather than hold the suite for the
+  # children's lifetime.
+  timed_out = False
+  try:
+    subprocess.run(
+        ["bash", str(script_file)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=30,
+        check=True,
+    )
+  except subprocess.TimeoutExpired:
+    timed_out = True
+
+  survivors: list[str] = []
+  for name, pid in zip(
+      ("proxy", "relay", "stopped"),
+      (int(p) for p in pid_file.read_text().split()),
+      strict=True,
+  ):
+    try:
+      os.kill(pid, 0)
+    except ProcessLookupError:
+      continue
+    survivors.append(name)
+    os.kill(pid, 9)  # never leave one behind: an orphan destabilises later runs
+
+  assert not timed_out, "the cleanup trap never returned"
+  assert not survivors, f"outlived the script: {', '.join(survivors)}"
+
+
+def test_the_channel_is_refused_without_the_capture_it_requires():
+  """A supervised run on stream capture would produce a false trace.
+
+  Stream capture drops the injected message unless replay is asked for, and
+  with replay it renders as a ``user`` message what the wire carries as
+  ``system`` — so a stream-derived trace of a supervised run asserts a turn the
+  model never saw. Refused at construction rather than documented, because
+  otherwise the *simplest* caller reaches it through the public field and gets
+  something that looks like an ordinary result.
+  """
+  with pytest.raises(ValueError, match="requires capture='proxy'"):
+    _ = ClaudeCodeHarness(correction_channel=True)
+  # …and the combination the channel is designed for is accepted.
+  assert ClaudeCodeHarness(
+      capture="proxy", correction_channel=True
+  ).correction_channel
