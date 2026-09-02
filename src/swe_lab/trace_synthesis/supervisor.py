@@ -53,6 +53,13 @@ MAX_INTERVENTION_CHARS = 400
 # so the actor can mistake it neither for its own output nor for a tool's.
 INTERVENTION_TAG = "supervisor_note"
 
+#: The log row for a boundary the supervisor could not judge or could not speak
+#: at — a policy that raised, or a sink that did. Named because it is read
+#: outside this module: a gap means the actor passed that boundary
+#: **unsupervised**, which is not the same fact as a deliberate silence even
+#: though both leave the actor untouched.
+LOG_KIND_GAP = "gap"
+
 #: Where a correction is written. A borrowed callable — see the module note.
 Sink = Callable[[str], None]
 
@@ -536,7 +543,7 @@ class Supervisor:
     try:
       intervention = self.policy.consider(observation)
     except Exception as error:  # noqa: BLE001 - recorded, never swallowed
-      self._row("gap", reason=f"policy raised: {error!r}")
+      self._row(LOG_KIND_GAP, reason=f"policy raised: {error!r}")
       return None
 
     if intervention is None:
@@ -544,7 +551,9 @@ class Supervisor:
       return None
     if self._mute:
       self._row(
-          "gap", reason="sink unusable; not attempted", text=intervention.text
+          LOG_KIND_GAP,
+          reason="sink unusable; not attempted",
+          text=intervention.text,
       )
       return None
 
@@ -554,7 +563,9 @@ class Supervisor:
       # The channel is gone, but the run is not ours to end: stop speaking and
       # keep accounting for every later event.
       self._mute = True
-      self._row("gap", reason=f"sink raised: {error!r}", text=intervention.text)
+      self._row(
+          LOG_KIND_GAP, reason=f"sink raised: {error!r}", text=intervention.text
+      )
       return None
 
     self._said.append(intervention)

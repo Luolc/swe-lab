@@ -424,6 +424,17 @@ class ClaudeCodeHarness(Harness):
 
   @property
   @override
+  def accepts_corrections(self) -> bool:
+    """Whether this run has the live stdin channel.
+
+    Returns:
+      Whether :attr:`correction_channel` is on — the FIFO and the in-sandbox
+      relay are the whole of what makes the actor reachable mid-run.
+    """
+    return self.correction_channel
+
+  @property
+  @override
   def name(self) -> str:
     """This harness's identifier; namespaces its artifacts."""
     return "claude_code"

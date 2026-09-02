@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import override
 
 from etils import epath
+import pytest
 
 from swe_lab.conversation import Conversation
 from swe_lab.conversation.observer import CONVERSATION_NAME
@@ -41,6 +42,8 @@ from swe_lab.sandbox import (
 from swe_lab.sandbox.observers import PATCH_NAME
 from swe_lab.sandbox.observers.diff_extract import DiffExtractObserver
 from swe_lab.sandbox.testing import FakeSandbox
+from swe_lab.trace_synthesis.channel import SupervisedRun, SUPERVISOR_LOG_NAME
+from swe_lab.trace_synthesis.supervisor import NeverSpeak
 from swe_lab.workflow import AttemptResult
 
 _SPEC = SandboxSpec("acme__widget-1", "img:tag", "/app", "base")
@@ -458,3 +461,68 @@ def test_a_stalled_channel_is_not_reported_as_a_budget_the_actor_spent():
   # …and an out-of-memory kill still outranks it: it explains the stall too.
   stalled.run.metrics[OOM_METRIC] = 1.0
   assert rollout_outcome(stalled) is RolloutOutcome.OOM_KILLED
+
+
+def test_a_supervised_rollout_is_refused_on_a_harness_that_cannot_hear_it():
+  """A supervisor with no channel is a silent run, not a degraded one.
+
+  The corrections would be written, nothing would read them, and the record
+  would be indistinguishable from an unsupervised rollout — the same shape as
+  a metric with no consumer, and just as invisible. Refused where the two are
+  composed, which is the first place both are known.
+  """
+
+  def supervision(task: str) -> SupervisedRun:
+    return SupervisedRun(policy_factory=NeverSpeak, task=task)
+
+  with pytest.raises(ValueError, match="accepts corrections"):
+    _ = CodingAgentTask(
+        harness=ClaudeCodeHarness(), supervision_factory=supervision
+    )
+  # …and the combination that *can* hear it is accepted.
+  _ = CodingAgentTask(
+      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
+      supervision_factory=supervision,
+  )
+
+
+def test_the_rollout_composes_the_supervisor_when_one_is_configured():
+  """Point 1 of task 01: attachment has to be visible from outside the run.
+
+  Nothing the actor produces differs between a supervised run and an
+  unsupervised one, so the evidence is the entry's own composition and the
+  artifact it declares. Both are asserted, because either alone can be true
+  while the run is not supervised.
+  """
+  seen: list[str] = []
+
+  def supervision(task: str) -> SupervisedRun:
+    seen.append(task)
+    return SupervisedRun(policy_factory=NeverSpeak, task=task)
+
+  task = CodingAgentTask(
+      harness=ClaudeCodeHarness(capture="proxy", correction_channel=True),
+      supervision_factory=supervision,
+  )
+  observers = task.observers(_Instance())
+  supervisors = [o for o in observers if isinstance(o, SupervisedRun)]
+  assert len(supervisors) == 1
+  # It is given the task the actor was given — the supervisor judges against
+  # the same statement, not a paraphrase of it.
+  assert seen == ["SOLVE THIS"]
+  assert SUPERVISOR_LOG_NAME in [
+      schema.name
+      for observer in observers
+      for schema in observer.output_schema()
+  ]
+
+  # The default is an unsupervised run, and it declares no such artifact.
+  plain = CodingAgentTask(harness=ClaudeCodeHarness())
+  assert not [
+      o for o in plain.observers(_Instance()) if isinstance(o, SupervisedRun)
+  ]
+  assert SUPERVISOR_LOG_NAME not in [
+      schema.name
+      for observer in plain.observers(_Instance())
+      for schema in observer.output_schema()
+  ]

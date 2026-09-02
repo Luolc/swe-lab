@@ -33,25 +33,28 @@ one thing added to its first entry. Nothing about the second entry changes.
 |---|---|---|---|
 | 1 | Instance → `SandboxSpec` | the dataset's `TaskInstance` | exists |
 | 2 | Actor runs under `CodingAgentTask` | [`rollout.py`](../../../src/swe_lab/rollout.py) | exists |
-| 3 | **Actor's live events reach a supervisor** | the harness's event stream | **missing — the wiring** |
+| 3 | **Actor's live events reach a supervisor** | `SupervisedRun` in [`trace_synthesis/channel.py`](../../../src/swe_lab/trace_synthesis/channel.py), composed by `CodingAgentTask.supervision_factory` | exists |
 | 4a | The **seam** a policy plugs into | the `SpeakPolicy` protocol in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | exists |
-| 4b | A policy that speaks **because of a real deviation** | — | **missing — `NeverSpeak` is the only shipped implementation, and it is the control** |
-| 5 | **Intervention reaches the actor's stdin** | the harness's invocation | **missing — the channel** |
+| 4b | A policy that speaks **because of a real deviation** | `SpeakWhenOffTrack` in [`trace_synthesis/supervisor.py`](../../../src/swe_lab/trace_synthesis/supervisor.py) | **the policy ships; the `Judge` and `Writer` it consults do not** — both are protocols with no implementation |
+| 5 | **Intervention reaches the actor's stdin** | the FIFO and in-sandbox relay behind `ClaudeCodeHarness(correction_channel=True)` | exists |
 | 6 | Patch extracted vs the pre-agent baseline | `DiffExtractObserver(baseline=True)`, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md) | exists, default on |
 | 7 | Grading on that patch and that base ref | `UnitTestTask`, same base-ref contract | exists |
 | 8 | Outcome word + record | `rollout_outcome`, [ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md) | exists |
 
-**Stages 3, 4b and 5 are the remaining work.** 3 and 5 are two different seams
-— one reads, one writes — and conflating them is how a supervisor that "is
-attached" ends up never able to say anything.
+**Stage 4b is the remaining work.** 3 and 5 are two different seams — one
+reads, one writes — and conflating them is how a supervisor that "is attached"
+ends up never able to say anything; they are built as two, and both are in
+place.
 
-**4b is a prerequisite, not a detail of 4.** The protocol being in place says
-only that a policy *can* be plugged in. `NeverSpeak` is the **control arm**: by
-construction it never speaks, so a run driven by it cannot produce a
-deviation-triggered utterance and therefore **cannot satisfy acceptance point
-3** — the same reason a schedule-only `SpeakAt` run cannot. Wiring stages 3 and
-5 with only `NeverSpeak` available yields a pipeline that is provably complete
-on six of the seven points and cannot be finished on the seventh.
+**4b is a prerequisite, not a detail of 4.** The policy that speaks on a
+deviation is `SpeakWhenOffTrack`, and it is shipped — but it consults a `Judge`
+and a `Writer`, and neither protocol has an implementation, so it cannot be
+constructed into something that runs. The two policies that *can* be
+constructed today are both disqualified by construction: `NeverSpeak` is the
+**control arm** and never speaks, and `SpeakAt` speaks on a schedule, which
+acceptance point 3 excludes. So wiring stages 3 and 5 yields a pipeline
+provably complete on six of the seven points, with the seventh waiting on a
+judge and a writer rather than on a policy design.
 
 ### Stage 3 — reading the live stream
 
@@ -107,11 +110,16 @@ consequences the wiring must respect, both already stated by the component:
 
 Three, and the first is easy to miss because its *seam* is already there:
 
-1. **A deviation-triggered `SpeakPolicy` implementation** (stage 4b). The
-   protocol exists; the only shipped implementation is `NeverSpeak`, which is
-   the control and cannot satisfy acceptance point 3.
+1. **A `Judge` and a `Writer` for `SpeakWhenOffTrack`** (stage 4b). The policy
+   is on `main`; both collaborators it consults are protocols with no
+   implementation, so the only constructible policies are the two acceptance
+   point 3 excludes.
 2. **The wiring** — stages 3 and 5, reading the live stream and writing to
    stdin.
 3. **The pinned criterion sha and its refusal path**, for acceptance point 2b.
+   A `Criterion` type is on `main`; what is missing is a builder that verifies
+   the artifact's sha and a **caller** for it, since "the run refuses to start"
+   is only testable where the run is constructed.
 
-None of the three exists on `main` today.
+The wiring is what the rest hangs off: the first and third are consumed by it,
+so neither can be shown to refuse or to speak until it exists.

@@ -63,7 +63,7 @@ research that preceded this index is not a task: its results are recorded in
 
 | # | Task | Status |
 |---|---|---|
-| 01 | **One instance, end to end** — one supervised rollout in which every stage of the pipeline actually runs, and each of the seven acceptance points names what proves it | ⬜ Acceptance rewritten 2026-09-01 (owner ruling); prerequisites are the ones [the design record names](task-01-pipeline-end-to-end.md#dependencies) — a deviation-triggered policy, the live-stream wiring, and the stdin channel. The `SpeakPolicy` **protocol** is present; its only shipped implementation, `NeverSpeak`, is the control and cannot meet acceptance point 3 |
+| 01 | **One instance, end to end** — one supervised rollout in which every stage of the pipeline actually runs, and each of the seven acceptance points names what proves it | ⬜ Acceptance rewritten 2026-09-01 (owner ruling); prerequisites are the ones [the design record names](task-01-pipeline-end-to-end.md#dependencies) — a deviation-triggered policy, the live-stream wiring, and the stdin channel. `SpeakWhenOffTrack` — the policy that speaks on a deviation — is present, but the `Judge` and `Writer` it consults are protocols with no implementation, so the only constructible policies are `NeverSpeak` (the control) and `SpeakAt` (a schedule), both of which acceptance point 3 excludes |
 | 02 | **Measure the injection shape** — can a hook put a *visibly external* hint at a tool boundary, and does it survive conversion? | ✅ |
 | 03 | **Hint log + conversion guard** (pure, tested) | ⚠ ⬜ **proposed for closure** — the task exists only for the terminated arm; see [below](#pending-reconciliation-2026-09-01) |
 | 04 | **Oracle analysis task + guidebook schema** — [`task-04-oracle-analysis-task.md`](task-04-oracle-analysis-task.md) | 🔶 Code landed — `OracleAnalysisTask`, the schema check, the one-entry `oracle_analysis` workflow, tests; one live run made — the guidebook it produced failed the schema check on one missing field and awaits a human judgement. Wording follow-up from #276's review (P2, not a task — fold into the next edit of those passages): the design record's rationale and `oracle.py`'s module docstring still use the shorthand "the fix commit is reachable, and the brief says so" / "a run handed the answer" — scoped to phase B, where the purge is off, so consistent with the purge measured in rollouts, but untrue for a dataset that records no fix commit or reference patch, which the task supports — and `datasets/oracle_failures/README.md` lists the delegated gold patch without its when-recorded qualifier |
@@ -77,7 +77,7 @@ research that preceded this index is not a task: its results are recorded in
 | 12 | **Fold a run's outcome over its segments** — `event_stream_outcome` reduces a run to its *last* `result`, so an interrupted or turn-limited segment is invisible behind a later success | ⬜ Registered, not started ([§13.5](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
 | 13 | **Confirm the stream-json correction channel in the sandbox** — every measurement of it so far is host-side, against the host `claude` and the host user-level `CLAUDE.md`; the rollout harness runs in a container with a pinned `CLAUDE_CONFIG_DIR` | ⬜ Registered, not started ([§11](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
 | 14 | **The channel's edges that a real rollout will hit** — an interjection at turn 40 rather than turn 3, models other than `claude-sonnet-5`, non-text content blocks, and how several queued messages fold | ⬜ Registered, not started ([§11](../../../experiments/trace_synthesis/streamjson_input/REPORT.md), [§14.6](../../../experiments/trace_synthesis/streamjson_input/REPORT.md)) |
-| 16 | **A live correction channel in the harness** — stdin from a file to a FIFO, and who may act while `run()` blocks — [`task-16-live-correction-channel-in-the-harness.md`](task-16-live-correction-channel-in-the-harness.md) | ⬜ **Design only; no code authorized.** The plumbing answered ahead of the gate, so that a failed gate discards a document rather than an implementation |
+| 16 | **A live correction channel in the harness** — stdin from a file to a FIFO, and who may act while `run()` blocks — [`task-16-live-correction-channel-in-the-harness.md`](task-16-live-correction-channel-in-the-harness.md) | 🔶 Channel and wiring landed — the FIFO, the in-sandbox relay, the host-side pump, and `SupervisedRun` as the observer that brackets the blocked `run()` ([§9](task-16-live-correction-channel-in-the-harness.md#9-the-wiring-who-runs-the-supervisor-while-run-blocks)). What no test covers yet is a real actor being corrected mid-run, which is task 01's job and needs a constructible deviation-triggered policy |
 | 15 | **Segmentation and interrupt edges** — MCP tool calls vs. the 2.1.246 interrupt claim, `cancel_queued: true`, `--max-turns` above 1, whether a parallel tool batch can be prevented, whether the two interrupt records can be suppressed | ⬜ **Parked, not merely unstarted** — this is the machinery [§14](../../../experiments/trace_synthesis/streamjson_input/REPORT.md) superseded; it becomes live only if segmentation or interrupt returns as a design |
 
 **Rows 12–16 are a registration, not a plan.** They come from the measurements
@@ -124,14 +124,24 @@ rather than a mechanism that is not there.
 
 | # | The claim | What proves it |
 |---|---|---|
-| 1 | The supervisor is attached to the actor's **live** output stream | The rollout entry persists the supervisor's own event artifact. **Obligation:** the wiring PR adds a named test that the entry composes the supervisor when configured, and names that artifact — neither exists today. |
+| 1 | The supervisor is attached to the actor's **live** output stream | The rollout entry persists the supervisor's own account, `supervisor.jsonl`. Composition and artifact are pinned by `test_the_rollout_composes_the_supervisor_when_one_is_configured` and `test_the_supervisors_account_of_the_run_is_persisted` — both, because either can hold while the run is unsupervised. What no test reaches is attachment to a **real** actor: every one of them drives a synthetic event stream. |
 | 2a | The **barrier holds** on the interface: the supervisor's input carries no gold patch and no hidden tests | Task 05's `test_supervisor_input_carries_no_privileged_field`. **Consumed here, not re-implemented** — a second barrier in this layer would be a second thing to keep true. |
-| 2b | The criterion artifact's sha256 is verified, and a mismatch **refuses to start the run** | **Obligation:** neither the pinned sha nor the refusal path exists today — task 05's tests cover the field allowlist only. The PR that implements the criterion adds both, with a named test that a mismatched sha refuses. Until then this is a design intent, not a consumed proof. |
-| 3 | The policy speaks at least once **because of a real deviation** | The supervisor's persisted log records, per utterance, the trigger that produced it, and at least one is deviation-triggered. `SpeakAt` is a knob for tests: **a run whose only utterances are scheduled does not satisfy this point.** **Obligation:** the wiring PR names the field that distinguishes the two. |
+| 2b | The criterion artifact's sha256 is verified, and a mismatch **refuses to start the run** | The sha and the refusal both exist at loader level: `load_criterion` verifies the pinned digest and raises on a mismatch (`tests/test_supervisor_criterion.py`). What is missing is a **caller on the run's own path** — `rg -n 'supervising_policy\(' src tests` returns definition and tests only, so a forged artifact today fails a unit test rather than a run. **Obligation, owned by the wiring line** (owner ruling, 2026-09-02): "refuses to start the run" is only demonstrable where the run is constructed, so the composition that builds the policy is what must call it, with a named test that a forged artifact stops the run before the sandbox comes up. |
+| 3 | The policy speaks at least once **because of a real deviation** | The supervisor's persisted log — `supervisor.jsonl`, one row per event consumed — records `policy` on every row, so a `kind: "spoke"` row names what produced it. `SpeakAt` is a knob for tests: **a run whose only utterances are scheduled does not satisfy this point.** Not satisfied today, and the reason is **not** that the policy is missing: `SpeakWhenOffTrack` is shipped and its utterances are deviation-triggered by construction (its first two gates are the judge's verdict). What is missing is a `Judge` and a `Writer` to construct it with, so the point flips the moment those land and this composition is given one. |
 | 4 | The correction arrives **mid-turn**, in the wire shape already measured | The run's capture artifact shows the injected block as the last `role: system` message before the actor's next action, matching the in-sandbox fold check (block byte-identical, 4 system-reminder blocks). |
 | 5 | The rollout completes, the patch is taken **against the pre-agent baseline**, and grading runs | `patch_base_ref` present in the rollout record (baseline mode, [ADR-0014](../../decisions/ADR-0014-the-pre-agent-baseline-is-the-default.md)) and `unit_test.resolved` present in the grading entry's metrics. Guarded by `test_a_stub_agent_produces_an_empty_patch_on_a_dirty_image`. |
-| 6 | The trace is persisted, **the interjection is in it**, and provenance is complete | The conversation artifact contains the supervisor's block, and the record carries the fields `run_provenance()` stamps. **Obligation:** the wiring PR asserts the block survives conversion — an interjection that is delivered but lost in conversion passes points 1–4 and still leaves no evidence. |
+| 6 | The trace is persisted, **the interjection is in it**, and provenance is complete | `test_an_interjection_survives_conversion_into_the_trace` builds the bytes with the channel's own rendering path and asserts they survive conversion — an interjection that is delivered but lost in conversion passes points 1–4 and still leaves no evidence. Provenance: the fields `run_provenance()` stamps, plus `extra["agent_model"]`, which pins the actor even once the trace is dropped. |
 | 7 | The **outcome word is correct** | `rollout_outcome` in the rollout record is the one that matches what happened; the four words are pinned apart by the named tests in `tests/test_rollout.py` ([ADR-0015](../../decisions/ADR-0015-four-words-for-how-a-rollout-ends.md)). |
+
+**Points 1 and 4 can only be closed by a real run, and a real run's evidence is
+collected by the code being checked.** `supervisor.jsonl`, the trace and the
+record are all written by the pipeline itself, so "the run says it did" and "it
+did" are one statement made twice. Closing either point therefore requires **at
+least one piece of evidence that does not come through our collection path** —
+the actor's own subsequent behaviour showing it read the correction, or the
+container-side raw capture, which is an independent chain from the supervisor's
+log. Without that, a self-consistent account is being taken for a proof.
+
 
 **All seven green = the pipeline works end to end.** Only then the stability
 batch, whose purpose is to show the pipeline is *stable* — **not** to measure an
@@ -159,12 +169,14 @@ rather than printing `0 / 0`.
   hypothesis, logged run, conclusion. A supervised rollout that **fails to
   resolve is a complete result**; what would make it incomplete is a point above
   that nothing can demonstrate.
-- **Dependencies:** a policy that speaks because of a real deviation, the
-  live-stream wiring, and the stdin channel (stages 4b, 3 and 5 of the
-  [design record](task-01-pipeline-end-to-end.md)), plus the pinned criterion
-  sha and its refusal path for point 2b. The `SpeakPolicy` **protocol** is
-  present; `NeverSpeak`, its only shipped implementation, is the control arm
-  and cannot satisfy point 3. **Scope:** M
+- **Dependencies:** three of the four are in place — the stdin channel and the
+  live-stream wiring (stages 5 and 3 of the
+  [design record](task-01-pipeline-end-to-end.md)), and the criterion with its
+  loader-level refusal. What remains is a `Judge` and a `Writer` to construct
+  `SpeakWhenOffTrack` with (stage 4b, point 3), and a caller for the criterion
+  on the run's own path (point 2b). Verify with
+  `rg -n 'class SpeakWhenOffTrack|def load_criterion|supervising_policy\(' src`
+  rather than from this sentence. **Scope:** M
 
 **The design record for this form is**
 [`task-01-pipeline-end-to-end.md`](task-01-pipeline-end-to-end.md).
