@@ -207,6 +207,15 @@ products* (`HF_TOKEN` is documented for `pipelines/related_files/traces.py` and
 `datasets/deepswe/build_parquet.py --upload`); a run's corpus is not one of
 those and is deliberately not uploaded.
 
+**There is a planned destination, and that is part of the answer rather than a
+qualification of it.** The horizontal component's
+[tasks 12 and 13](../../../docs/horizontal/plans/README.md) are this: task 12
+landed the `Store` seam and post-run persist, and task 13 — the R2 store keyed
+`runs/<sweep>/<instance>/<ts>/…` — is designed and deferred. So machine-local
+is not a stopgap standing in for a decision nobody made; it is the correct
+state until task 13 lands. `~/corpora/<repo>/<run>/` is the same shape as that
+key, which makes the eventual move a move rather than a rebuild.
+
 What follows is the rule's own fallback, and it is the whole reason this file
 exists: **the numbers above are rederivable only with the corpus in hand.** The
 command that rederives them is named, the corpus it needs is identified by
