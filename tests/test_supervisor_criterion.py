@@ -48,7 +48,7 @@ def forged(tmp_path: pathlib.Path, text: str) -> tuple[pathlib.Path, str]:
 
 
 def test_the_committed_criterion_matches_its_pinned_digest() -> None:
-  """The artifact and the constant move together, or every run stops."""
+  """The artifact and the constant move together, or the loader rejects."""
   assert (
       hashlib.sha256(CRITERION_PATH.read_bytes()).hexdigest()
       == CRITERION_SHA256
@@ -61,7 +61,8 @@ def test_a_criterion_quoting_the_gold_patch_is_rejected(
 ) -> None:
   """§3.1's named test: a criterion carrying the fix fails the check.
 
-  The run refuses to start rather than recording a gap.
+  The loader rejects rather than returning a degraded criterion. This is a
+  loader-level refusal; no run is stopped by it until a rollout path calls in.
   """
   path, digest = forged(
       tmp_path,
@@ -86,10 +87,12 @@ def test_a_criterion_naming_a_changed_file_is_rejected(
     load_criterion(gold_patch=GOLD_PATCH, path=path, digest=digest)
 
 
-def test_an_edited_criterion_stops_the_run(tmp_path: pathlib.Path) -> None:
+def test_an_edited_criterion_is_rejected_by_the_loader(
+    tmp_path: pathlib.Path,
+) -> None:
   """Instance-independence is enforced by the digest, not by inspection.
 
-  Any edit at all, benign or not, stops every run until someone re-pins it.
+  Any edit at all, benign or not, is rejected until someone re-pins it.
   """
   path = tmp_path / "edited.md"
   path.write_text(
@@ -100,19 +103,20 @@ def test_an_edited_criterion_stops_the_run(tmp_path: pathlib.Path) -> None:
     load_criterion(path=path)
 
 
-def test_a_missing_criterion_stops_the_run(tmp_path: pathlib.Path) -> None:
+def test_a_missing_criterion_is_rejected_by_the_loader(
+    tmp_path: pathlib.Path,
+) -> None:
   """An absent artifact is a refusal, never a silently empty criterion."""
   with pytest.raises(CriterionRejectedError):
     load_criterion(path=tmp_path / "nope.md")
 
 
-def test_without_a_gold_patch_the_run_says_the_overlap_half_did_not_run() -> (
-    None
-):
+def test_the_criterion_records_whether_the_overlap_half_ran() -> None:
   """The redundant half degrades honestly.
 
   A dataset that records no patch leaves the digest carrying the invariant
-  alone, and the run says so rather than reporting a check it did not perform.
+  alone, and the returned criterion records which of the two happened. Nothing
+  reports it yet — that consumer is ``[U]``.
   """
   assert load_criterion().overlap_checked is False
   assert load_criterion(gold_patch=GOLD_PATCH).overlap_checked is True

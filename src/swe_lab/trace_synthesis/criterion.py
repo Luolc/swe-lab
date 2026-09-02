@@ -1,4 +1,4 @@
-"""The judge's criterion: one committed artifact, identical for every instance.
+r"""The judge's criterion: one committed artifact, identical for every instance.
 
 :class:`~swe_lab.trace_synthesis.supervisor.Observation` guards the entrance
 facing the actor. The judge has a second one — the standard it measures
@@ -10,9 +10,10 @@ observation can see it, because it never travels that channel.
 **What the digest check does and does not establish**, because a barrier
 described more strongly than it is, is worse than none:
 
-- It **does** guarantee that no run selects a different criterion per instance.
-  One artifact, one digest, every instance — a per-instance criterion cannot be
-  swapped in without the digest stopping the run.
+- It **does** guarantee that every load yields the same criterion: one
+  artifact, one digest, so a per-instance criterion cannot be swapped in
+  without :func:`load_criterion` rejecting it. Whether that reaches a *run*
+  needs the caller described below, which does not exist yet.
 - It does **not** establish that the one shared artifact is free of solution
   knowledge. A single committed criterion could carry the fixes for every
   instance and still be byte-identical everywhere, and the optional
@@ -24,11 +25,17 @@ The digest is therefore what makes the content question *answerable once*:
 review the artifact in its pull request, and the check keeps that reviewed text
 in force until someone re-pins it deliberately and visibly.
 
-**This is not yet a startup gate.** Nothing in a production path calls
-:func:`load_criterion`; the run-level refusal lands with the judge, which is
-where the criterion is consumed. What is enforced today is narrower and stated
-where it is claimed: ``SpeakWhenOffTrack`` cannot be constructed without a
-:class:`Criterion`.
+**This is not a startup gate.** What this module enforces is that
+:func:`load_criterion` **rejects an artifact** whose digest is not the pinned
+one, and that a :class:`Criterion` cannot misdescribe its own text. Nothing
+here stops a run, because nothing in a rollout path calls it — `rg -n
+"supervising_policy\(" src tests` finds only tests and the definition.
+
+**[U]** The run-level refusal is unwired and does **not** belong to the judge:
+it lands where a supervised run is assembled (task 01's dependency ③,
+acceptance point 2b, owned by the wiring PR), because a refusal to start can
+only be tested where the run is constructed. Until a non-test caller exists,
+treat this as a helper that rejects, not a gate that stops anything.
 """
 
 from __future__ import annotations
@@ -48,8 +55,10 @@ CRITERION_SHA256 = (
 )
 """The pinned digest of :data:`CRITERION_PATH`.
 
-Changing the criterion without changing this constant stops every run, which is
-the point: the two move together only by someone's decision.
+Changing the criterion without changing this constant makes every
+:func:`load_criterion` call reject, which is the point: the two move together
+only by someone's decision. Whether that reaches a *run* depends on a caller
+that does not exist yet — see the module note.
 """
 
 # Long enough that ordinary English prose does not collide by chance, short
@@ -83,8 +92,10 @@ class Criterion:
     overlap_checked: Whether the redundant gold-patch overlap check ran. It
       needs the gold patch to be available where the check runs; for a dataset
       that records none it cannot run, and the digest carries the invariant
-      alone. That is a weaker state, and a run says so rather than reporting a
-      check it did not perform.
+      alone. That is the weaker state, and this flag is how the returned
+      criterion records which of the two happened. **[U]** No reporting path
+      reads it yet — that consumer arrives with the wiring PR, and until then
+      nothing surfaces the distinction to a reader of results.
   """
 
   text: str
@@ -126,7 +137,7 @@ def load_criterion(
     path: pathlib.Path = CRITERION_PATH,
     digest: str = CRITERION_SHA256,
 ) -> Criterion:
-  """Load the criterion, or refuse to start.
+  """Load the criterion, or reject the artifact.
 
   Args:
     gold_patch: This instance's gold patch, when the dataset records one. Given

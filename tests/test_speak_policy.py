@@ -91,22 +91,26 @@ class CountingWriter:
   Attributes:
     line: What it writes.
     calls: How many times it was asked.
+    criteria: The criteria it was handed, in order.
   """
 
   line: str = "not sure that's the thread to pull"
   calls: int = 0
+  criteria: list[Criterion] = dataclasses.field(default_factory=list)
 
-  def __call__(self, observation: Observation) -> str:
+  def __call__(self, observation: Observation, criterion: Criterion) -> str:
     """Record the call and write.
 
     Args:
       observation: Ignored.
+      criterion: The standard the policy handed over.
 
     Returns:
       The fixed line.
     """
     del observation
     self.calls += 1
+    self.criteria.append(criterion)
     return self.line
 
 
@@ -268,8 +272,8 @@ def test_an_unusable_line_is_a_gap_and_is_never_retried() -> None:
   function of how many times we asked.
   """
 
-  def empty_writer(observation: Observation) -> str:
-    del observation
+  def empty_writer(observation: Observation, criterion: Criterion) -> str:
+    del observation, criterion
     return "   "
 
   speaker = SpeakWhenOffTrack(
@@ -289,8 +293,8 @@ def test_an_over_long_line_is_a_gap_and_is_never_truncated() -> None:
   A policy cannot ship half a sentence.
   """
 
-  def long_writer(observation: Observation) -> str:
-    del observation
+  def long_writer(observation: Observation, criterion: Criterion) -> str:
+    del observation, criterion
     return "x" * (MAX_INTERVENTION_CHARS + 1)
 
   speaker = SpeakWhenOffTrack(
@@ -368,3 +372,16 @@ def test_the_judge_is_handed_the_canonical_criterion_every_call() -> None:
   assert len(judge.criteria) == 3
   assert {one.digest for one in judge.criteria} == {CRITERION_SHA256}
   assert judge.criteria[0].text == load_criterion().text
+
+
+def test_the_writer_is_handed_the_same_criterion_as_the_judge() -> None:
+  """The seam is the policy, not the concrete classes.
+
+  A writer that took only the observation could carry its own standard in a
+  closure — a side door no signature shows — so the policy passes the criterion
+  to both calls.
+  """
+  speaker, _, writer = policy(OFF_TRACK, budget=1)
+  speaker.consider(observation(1))
+
+  assert [one.digest for one in writer.criteria] == [CRITERION_SHA256]

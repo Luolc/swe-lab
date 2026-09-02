@@ -14,9 +14,10 @@ Three properties are structural rather than advisory, and each has a test:
   is deliberate: the Oracle writes a guidebook with the reference patch, the
   grading procedure and the unpurged history in hand, so a supervisor reading
   one would be steering by the answer without ever quoting it. The judge
-  measures against one pinned criterion instead, which guarantees that no run
-  selects a different criterion per instance — and leaves whether that shared
-  text is free of solution knowledge to review of the artifact itself
+  measures against one pinned criterion instead, so every load yields the same
+  text and a per-instance criterion cannot be swapped in without the loader
+  rejecting it — and whether that shared text is free of solution knowledge is
+  left to review of the artifact itself
   (:mod:`swe_lab.trace_synthesis.criterion`).
 - **When to speak is a seam.** It is the open variable of the design, so a
     :class:`SpeakPolicy` is replaceable without touching the consumer, the
@@ -229,11 +230,14 @@ class Judge(Protocol):
 class Writer(Protocol):
   """Turns a decision to speak into the line the actor receives."""
 
-  def __call__(self, observation: Observation) -> str:
+  def __call__(self, observation: Observation, criterion: Criterion) -> str:
     """Write one short, hedged, directional line.
 
     Args:
       observation: The same observation the judge saw.
+      criterion: The same criterion the judge was handed, passed explicitly for
+        the same reason: a closure carrying its own standard is a side door,
+        and one that no signature shows.
 
     Returns:
       The text of the correction.
@@ -264,8 +268,9 @@ class SpeakAt:
   """Speaks a fixed line at fixed cursors, with no judge at all.
 
   The timing knob in isolation: it varies *when* while holding *what* and
-  *whether* constant. That is the comparison the graded batch could not make,
-  because its trigger was entangled with its criterion.
+  *whether* constant. A policy whose trigger is entangled with its criterion
+  cannot isolate timing at all — the two move together, so no comparison
+  between its arms can attribute a difference to either one.
 
   Attributes:
     cursors: The cursor values at which to speak.
@@ -415,7 +420,7 @@ class SpeakWhenOffTrack:
     ):
       return None
 
-    intervention = Intervention(text=self.writer(windowed))
+    intervention = Intervention(text=self.writer(windowed, self.criterion))
     self._spoken_at.append(observation.cursor)
     return intervention
 
