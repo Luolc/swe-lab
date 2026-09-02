@@ -1,4 +1,16 @@
-# Task 01 — One instance, end to end
+# Task 01 — One instance, end to end (superseded)
+
+> [!WARNING]
+> **Superseded on 2026-09-01 by
+> [`task-01-pipeline-end-to-end.md`](task-01-pipeline-end-to-end.md).** This
+> file is the design for the **hint-injection arm**, which was closed by its own
+> pre-registered kill condition ([spec §15.1](../spec.md#15-success-criteria));
+> its Step 5 is "the steered re-run", a person hand-driving an actor. Delivery
+> has since moved off hooks onto the actor's stdin
+> ([ADR-0013](../../decisions/ADR-0013-supervision-on-the-stdin-channel.md)) and
+> the run is automated. **Kept, not edited**: what it records was true when it
+> was written, and the candidate-selection measurement in Step 0 is still the
+> one the new record reuses. Do not plan work from it.
 
 **Status lives in [`README.md`](README.md).** This file is the design.
 
