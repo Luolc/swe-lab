@@ -176,6 +176,211 @@ class NeverSpeak:
     return None
 
 
+@dataclasses.dataclass(frozen=True)
+class Verdict:
+  """One judge call's answer: two questions, not one.
+
+  Attributes:
+    off_track: Whether the actor has left the criterion's path.
+    self_correcting: Whether, left alone, it would come back by itself. This
+      is where the restraint lives — an actor that has just said "that didn't
+      work, let me reconsider" is already doing what an intervention would ask
+      for.
+    reason: The judge's own words, recorded but never acted on.
+  """
+
+  off_track: bool
+  self_correcting: bool
+  reason: str = ""
+
+
+class Judge(Protocol):
+  """Decides whether the actor is off track and whether it will recover."""
+
+  def __call__(self, observation: Observation) -> Verdict:
+    """Judge one moment.
+
+    Args:
+      observation: The evidence window, the task and the criterion.
+
+    Returns:
+      The verdict for this moment.
+    """
+    ...
+
+
+class Writer(Protocol):
+  """Turns a decision to speak into the line the actor receives."""
+
+  def __call__(self, observation: Observation) -> str:
+    """Write one short, hedged, directional line.
+
+    Args:
+      observation: The same observation the judge saw.
+
+    Returns:
+      The text of the correction.
+    """
+    ...
+
+
+@dataclasses.dataclass(frozen=True)
+class WouldHaveSpoken:
+  """A deviation the judge found, recorded whether or not speech followed.
+
+  This is what the control arm produces. ``GuidebookPolicy(budget=0)`` judges
+  every boundary and speaks at none, so its markers are the points at which the
+  treatment arm would have intervened — which is what lets the two arms be
+  compared at matched deviation points rather than only at their endpoints.
+
+  Attributes:
+    cursor: Where the deviation was found.
+    reason: The judge's stated reason.
+  """
+
+  cursor: int
+  reason: str
+
+
+@dataclasses.dataclass(frozen=True)
+class SpeakAt:
+  """Speaks a fixed line at fixed cursors, with no judge at all.
+
+  The timing knob in isolation: it varies *when* while holding *what* and
+  *whether* constant. That is the comparison the graded batch could not make,
+  because its trigger was entangled with its criterion.
+
+  Attributes:
+    cursors: The cursor values at which to speak.
+    text: The line, identical at every one of them.
+  """
+
+  cursors: frozenset[int]
+  text: str
+
+  @property
+  def name(self) -> str:
+    """Return the policy's name.
+
+    Returns:
+      ``"speak-at"``.
+    """
+    return "speak-at"
+
+  def consider(self, observation: Observation) -> Intervention | None:
+    """Speak if this cursor is one of the fixed points.
+
+    Args:
+      observation: Read only for its cursor.
+
+    Returns:
+      The fixed line, or ``None``.
+    """
+    if observation.cursor not in self.cursors:
+      return None
+    return Intervention(text=self.text)
+
+
+@dataclasses.dataclass
+class GuidebookPolicy:
+  """Judges every boundary; speaks when off track, unrecovering and affordable.
+
+  **The budget gates speech, not judgement.** ``consider`` returns ``None``
+  unless every gate passes, in this order:
+
+  1. the judge says off track, else silent;
+  2. the judge says it will not self-correct, else silent;
+  3. the would-have-spoken marker is recorded — *before* any budget is
+     consulted;
+  4. budget remaining, else silent;
+  5. cooldown elapsed since the last intervention, else silent;
+  6. the writer produces a usable line, else the failure propagates and the
+     supervisor records a gap. Never a retry.
+
+  The cost of that order is stated rather than hidden: the judge runs on every
+  boundary even after the budget is spent, so a treatment run and a control run
+  pay the same judge calls. That is the price of a paired comparison, and
+  paying it is the point.
+
+  Attributes:
+    judge: The off-track / self-correcting call.
+    writer: The line-writing call.
+    budget: How many interventions a whole run may carry. **No default**: a
+      policy that may speak must state how often. Unmeasured — 3 is proposed,
+      and no measurement supports any number.
+    cooldown: How many boundaries must pass *between* interventions. It never
+      delays the first one: precision comes from the bar, restraint from the
+      budget, and neither may come from delay — 8 of 8 non-compliances arrived
+      too late, so delay is the currency already in deficit. Unmeasured.
+    window: How many of the actor's records the judge sees. Unmeasured; 8 is
+      what the earlier judge used, which is provenance and not evidence.
+  """
+
+  judge: Judge
+  writer: Writer
+  budget: int
+  cooldown: int = 4
+  window: int = 8
+
+  _markers: list[WouldHaveSpoken] = dataclasses.field(default_factory=list)
+  _spoken_at: list[int] = dataclasses.field(default_factory=list)
+
+  @property
+  def name(self) -> str:
+    """Return the policy's name.
+
+    Returns:
+      ``"guidebook"``.
+    """
+    return "guidebook"
+
+  @property
+  def markers(self) -> tuple[WouldHaveSpoken, ...]:
+    """Return every deviation found, spoken or not.
+
+    Returns:
+      The markers in the order they were recorded. A non-zero count on a
+      ``budget=0`` run is what proves the judge still ran.
+    """
+    return tuple(self._markers)
+
+  def consider(self, observation: Observation) -> Intervention | None:
+    """Decide whether to speak at this boundary.
+
+    Args:
+      observation: The actor's records so far, the task and the criterion.
+
+    An unusable line from the writer — empty, or over the cap — is rejected by
+    :class:`Intervention` and propagates to the supervisor, which records the
+    gap. It is deliberately not caught here: retrying would make what the actor
+    hears a function of how many times we asked.
+
+    Returns:
+      What to say, or ``None``. Silence is the ordinary case.
+    """
+    windowed = dataclasses.replace(
+        observation, evidence=observation.evidence[-self.window :]
+    )
+    verdict = self.judge(windowed)
+    if not verdict.off_track or verdict.self_correcting:
+      return None
+
+    self._markers.append(
+        WouldHaveSpoken(cursor=observation.cursor, reason=verdict.reason)
+    )
+
+    if len(self._spoken_at) >= self.budget:
+      return None
+    if self._spoken_at and observation.cursor - self._spoken_at[-1] < (
+        self.cooldown
+    ):
+      return None
+
+    intervention = Intervention(text=self.writer(windowed))
+    self._spoken_at.append(observation.cursor)
+    return intervention
+
+
 # How a message was dispositioned, recorded so the account of a run says why
 # something was not judged rather than leaving it missing.
 ADMITTED_ASSISTANT = "assistant"
