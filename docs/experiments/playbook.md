@@ -7,7 +7,10 @@ coding-lifecycle skills (spec → plan → build → review → ship) don't cove
 mode. This playbook does.
 
 It is **descriptive first**: the conventions below are the ones the repo's best
-experiments already follow. Two exemplars to imitate:
+experiments already follow. **Every entry names, in its own body, the defect it
+was written against** — a rule whose instance lives only in the PR that landed
+it is checkable by its author and by nobody else, and recovering it afterwards
+is archaeology where writing it down cost a clause. Two exemplars to imitate:
 
 - **A full experiment** — [`experiments/related_files/prompt_variance/`](../../experiments/related_files/prompt_variance/)
   (`README.md` + [`REPORT.md`](../../experiments/related_files/prompt_variance/REPORT.md)).
@@ -363,11 +366,29 @@ pilot's twelve amendments.
   a rule cannot be pinned before the flaw in it is known. It was handled by
   isolating one person; **the next pre-registration's goal is to need no
   isolation at all.**
+
+  Notice what that paragraph is, though: **an exemption with its reason written
+  beside it** — the shape *a defect with a reason written beside it reads as a
+  decision* is about, applied to the rule stated two sentences earlier. The
+  pinning rule *does* fire on that pilot, and the excuse is granted in the same
+  breath, which is how a rule acquires a standing exception nobody re-examines.
+  So the excuse is admissible only in the form *label an amendment for what it
+  is* asks for: **the amendment recorded with the observation that forced it and
+  with an empty prior action set.** Written that way a reader can separate "the
+  flaw was visible only once the run was under way" from an explanation
+  assembled after the fact; written as prose it is self-certifying, and a
+  self-certified exemption is the pinning rule never firing at all.
 - **A stopping rule that reads the clock is outcome-correlated.** Truncating a
   fixed design on wall time removes whole units, and the slowest unit goes
   first — which is a property of the workload, not of chance. The same shape
   wears other costumes: retrying on "environment failure" is optional stopping
-  whenever the failure is a function of how long a unit takes.
+  whenever the failure is a function of how long a unit takes. The instance: the
+  honesty-scorer pilot's proposed wall-time truncation would have dropped a
+  whole (repository × label) cell, and **directionally** — the slower repository
+  is the one carrying the positive class, so the cut thins one class more than
+  the other, restoring exactly the repository↔label correlation two amendments
+  had been written to kill
+  ([pilot README](../../experiments/trace_synthesis/honesty_scorer/README.md#the-wall-clock-is-an-estimate-and-the-count-is-the-constraint)).
 - **A wall-clock figure is workload × available compute, so it carries a
   predicate.** Record the machine state a timing estimate assumes (CPU steal,
   load, timestamp); an estimate without it silently asserts a condition that may
@@ -376,14 +397,23 @@ pilot's twelve amendments.
 - **Never typeset an estimate and a hard constraint the same way.** Format
   carries credibility, and nothing checks format: side by side, a derived
   estimate and a registered constraint become indistinguishable in epistemic
-  status, and the estimate starts being defended as a rule.
+  status, and the estimate starts being defended as a rule. The instance: the
+  same pilot's hard constraint is **exactly 24 executions**, and the wall-clock
+  figure *derived from* that count was set beside it in the same visual form
+  ([pilot README](../../experiments/trace_synthesis/honesty_scorer/README.md#the-wall-clock-is-an-estimate-and-the-count-is-the-constraint)).
 - **When a stratifying variable is perfectly aligned with the experimental
   unit, "we recorded it" is not a remedy** — diagnosability requires the
   variable to vary *within* some unit. And an **unmeasured** endpoint cannot
   serve as the control arm of a measured one: prefer **a weaker true statement
   to a stronger one that needs data you do not have** ("heterogeneity exists but
   is not quantifiable" beats "we have an internal control"). Never back-fill an
-  estimated value into a missing measurement.
+  estimated value into a missing measurement. The instance: pausing that pilot at
+  a **cell** boundary would have made machine state perfectly collinear with the
+  cell — and so with both repository and label — leaving any throttling effect
+  inseparable from that cell's effect forever; recording the steal field records
+  a variable the analysis cannot separate. Pausing mid-cell instead puts both
+  machine states inside one cell with everything else fixed
+  ([pilot README](../../experiments/trace_synthesis/honesty_scorer/README.md#the-wall-clock-is-an-estimate-and-the-count-is-the-constraint)).
 - **Disclosure is not a remedy for a degree of freedom.** This is the boundary
   of every "make it visible" fix above, and it constrains the remedies
   themselves: **for a measurement, visibility is a sufficient remedy — for a
