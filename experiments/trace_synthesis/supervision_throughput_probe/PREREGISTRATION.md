@@ -9,7 +9,7 @@ The first end-to-end supervised rollout measured **6.58 s per boundary** and
 left the question of whether that number belongs to the pipeline or to that one
 instance explicitly open
 ([`REPORT.md` §8](../pipeline_end_to_end/REPORT.md#8-open-questions), first
-bullet). This probe is two more instances, one rollout each, asked at that
+bullet). This probe is two more instances, two rollouts each, asked at that
 question and nothing else.
 
 Everything the first run established — the coordinates, the seven acceptance
@@ -27,7 +27,8 @@ spent 1118.9 s on 170 boundaries. §7a of that report turns the figure into a
 headroom claim (`_AGENT_TIMEOUT_S / 6.58` ≈ 547 boundaries), and every
 consequence downstream of it scales with a number measured once. The primary
 question is whether the per-boundary figure on two instances nobody tuned for
-lands anywhere near run 1's.
+lands anywhere near run 1's — and, because each of them is run twice, whether
+any gap is larger than the gap between two runs of the same instance.
 
 **Secondary — does the pipeline run unattended on an instance it was not set up
 for?** Run 1's instance was chosen, pre-flighted, and had its image proven. The
@@ -36,35 +37,60 @@ without a human touching it on an instance that got none of that attention.
 This is robustness, not effect.
 
 **A limitation of the design, stated here rather than in the report that would
-otherwise discover it.** Two instances at one rollout each cannot separate
-*instance-to-instance* variation from *run-to-run* variation of the same
-instance, and the quantity being measured is dominated by latency of a model
-call over a network — which is not obviously stable from run to run. So a
-**disagreement** among the three numbers is ambiguous by construction: it is
-compatible with "instances differ" and with "any one instance differs from
-itself." Nothing in this budget resolves that; buying replication instead
-(one instance, two rollouts) would measure run-to-run variance and answer the
-transferability question not at all, and the budget does not buy both. The
-consequence is written into §4's verdicts rather than left for prose: the
-probe's disagreement branch does **not** name a cause, and the follow-up it
-recommends is within-instance replication.
+otherwise discover it.** The quantity being measured is dominated by the
+latency of a model call over a network, which is not obviously stable from one
+run to the next. Two rollouts per instance give a **crude bound** on that
+run-to-run scatter — the interval between two draws — and nothing more: two
+observations do not estimate a variance, and the interval between two draws
+systematically understates the spread of the distribution they came from. So
+the design's improvement over one rollout per instance is real and small: a
+**disagreement** between instances stops being *uninterpretable by
+construction* and becomes *weakly bounded* — it can be compared against a
+scatter that was actually observed rather than against nothing. It does not
+become an attribution. §5 pins that comparison before any number exists, and
+neither of its verdicts is licensed to name a cause.
+
+**The asymmetry among the three instances is not cosmetic.** Run 1 has **one**
+rollout and will not get another under this probe, so it contributes a *point*
+where the two probe instances contribute *intervals*. Every within-instance
+statement below therefore rests on two instances, not three, and run 1's point
+enters the between-instance comparison as though it had no scatter — which it
+certainly has, and which nothing here measures. The consequence runs one
+direction and is stated in §5 where it bites: the observed scatter is an
+**under**estimate, so the between-instance verdict is correspondingly
+**over**confident, most of all about run 1's instance. The cheapest single
+improvement available to a follow-up is a second rollout of run 1's instance;
+this probe does not buy it, because that would make three instances and §1
+freezes two.
 
 ## 1. Scale — the hard cap
 
-**Frozen: 2 instances × 1 rollout = 2 rollouts.**
+**Frozen: 2 instances × 2 rollouts = 4 rollouts.**
 
-`AGENTS.md`'s ask-first boundary is more than 10 SWE-bench Pro instances **or**
-more than 2 rollouts per instance; 2 × 1 is inside it, so this probe needs no
-additional permission.
+`AGENTS.md`'s ask-first boundary is **more than** 10 SWE-bench Pro instances
+**or more than** 2 rollouts per instance. Two rollouts on each of two instances
+sits exactly on that line and inside it, so this probe needs no additional
+permission — and has none in reserve: **every instance in it is at its ceiling
+from the start.**
 
-**The one exception, and its ceiling.** A rollout that fails for one of the
-named infrastructure causes in §6 may be re-run **once** on the same instance,
-with a fresh rollout id. The absolute ceiling is therefore **4 rollouts, never
-more than 2 on one instance** — which is exactly where the ask-first line sits,
-so the ceiling grants nothing the repository has not already permitted and
-nothing is available past it. A third rollout on any instance, a third
-instance, or a control arm requires a **new pre-registration**, written before
-it runs; this one may not be amended to allow them.
+**What that does to a re-run, which is the part the extra budget changes.**
+With the planned count at the ceiling, a re-run is not additive. A rollout that
+fails for one of the named infrastructure causes in §6 may be replaced **only
+with the owner's explicit go-ahead, recorded in the report** — because a
+replacement is a third *invocation* on that instance, and this document takes
+the strict reading of the ask-first line: **an invocation counts whether or not
+it produced a record.** The lenient reading ("a rollout that made no model call
+never happened") is available and is deliberately not taken, since it is the
+reading whose adoption would be indistinguishable from wanting one more run.
+
+**The default, when no go-ahead is sought or given: proceed with the reduced
+design.** That instance ends with one usable rollout, contributing a point to
+§5's between-instance comparison and nothing to its within-instance one, and
+the report says which instance it was. No agent decides this on its own.
+
+A third instance, a fifth planned rollout, or a control arm requires a **new
+pre-registration**, written before it runs; this one may not be amended to
+allow them.
 
 ## 2. The instances, and the rule that picked them
 
@@ -247,7 +273,10 @@ time (`claude.info`), the way run 1 read it — not assumed from the pin.
 
 **Frozen. Nothing may be added to this list after the first rollout starts.**
 Every entry names the file and the field, relative to a rollout attempt
-directory `<root>/rollout/a0/` unless stated otherwise.
+directory `<root>/rollout/a0/` unless stated otherwise. **Every readout is
+taken per rollout, not per instance** — four times over the probe's own runs —
+and an instance's two rollouts are never averaged into one row before §5 uses
+them, since the gap between them is what V2 reads.
 
 | # | Readout | File → field |
 |---|---|---|
@@ -313,43 +342,129 @@ reports that readout as *absent*, with the absence named.
 
 ## 5. The verdict rule — written before the numbers exist
 
-Let `m_1 = 6.58` (run 1, measured), and `m_P1`, `m_P2` be R3 for the two probe
-runs. All three are constructed the same way — `span_s / boundaries`, dividing
-by the row count and not by `boundaries − 1` — because the number under test is
-run 1's, and a differently-constructed mean would not be a test of it.
+The measured quantity, per rollout, is R3: `span_s / boundaries`, dividing by
+the row count and **not** by `boundaries − 1`. Every value below is built that
+way, including run 1's `m_1 = 6.58`, because the number under test is run 1's
+and a differently-constructed mean would not be a test of it.
 
-**Primary verdict, no free parameters at analysis time.**
+Five values are expected: `m_1` (run 1, one rollout), `m_P1a`, `m_P1b`,
+`m_P2a`, `m_P2b`. **Two verdicts, computed in this order, each pinned here
+before any of the four new values exists.** They answer different questions and
+neither may be reported without the other.
 
-    R = max(m_1, m_P1, m_P2) / min(m_1, m_P1, m_P2)
+### V1 — consistency: the open question, as it was asked
+
+    R = max(all available m) / min(all available m)
 
 - `R ≤ 2` → **`consistent-within-2x`**
 - `R > 2` → **`not-consistent-within-2x`**
 
-There is no third value and no "inconclusive" branch — an escape hatch here is
-the whole of what this section exists to prevent. If a probe run produced no
-usable R1/R2 at all, §6 decides whether it is a re-run or a result, and the
-verdict is computed over whichever runs remain, with the count stated (`R over
-2 runs`, not `R` unqualified).
+No third value and no "inconclusive" branch — an escape hatch here is the whole
+of what this section exists to prevent. `R` is taken over **every** usable
+rollout, run 1's included, and deliberately **not** over per-instance
+summaries: a downstream planner faces the spread of individual runs, not the
+spread of their averages, and averaging inside an instance would hide exactly
+the run-to-run component V2 exists to measure. The report states the count it
+was computed over (`R over 5 runs`, or fewer, never `R` unqualified).
 
-**What each verdict licenses, frozen with the threshold:**
+**What each verdict licenses:**
 
-- `consistent-within-2x` licenses exactly one sentence: *on these three
-  instances, per-boundary supervision cost lay in `[min, max]` s.* It does
+- `consistent-within-2x` licenses exactly one sentence: *across the rollouts
+  measured here, per-boundary supervision cost lay in `[min, max]` s.* It does
   **not** license "6.58 s per boundary holds", and it does not license
-  extrapolating a headroom figure from any single one of the three.
+  extrapolating a headroom figure from any single rollout.
 - `not-consistent-within-2x` licenses: *6.58 s per boundary is not a
   transferable constant; any downstream figure derived from it must carry the
-  observed range in place of the point.* It does **not** name a cause — see §0
-  on why this design cannot attribute a disagreement.
+  observed range in place of the point.* It names **no cause** — that is V2's
+  question, and V2 does not name one either.
 
-**Why 2, and why the threshold is not tunable.** The factor is a round order-of-
-magnitude-free choice made while exactly one measurement exists, so it cannot
-have been fitted to the spread it will judge — there is no spread yet. It is
-also the coarseness the downstream consequence can absorb: §7a's headroom
-figure (`3600 / m` boundaries) moves by the same factor, and a factor of 2 in
-headroom is the difference between "run 1's 170 boundaries used a third of the
-budget" and "used two thirds", which is a planning input either way. A factor
-of 4 would not be.
+**Why 2, and why the threshold is not tunable.** The factor was chosen while
+exactly one measurement existed, so it cannot have been fitted to the spread it
+will judge — there was no spread yet, and there still is none. It is also the
+coarseness the downstream consequence can absorb: §7a's headroom figure
+(`3600 / m` boundaries) moves by the same factor, and a factor of 2 in headroom
+is the difference between "run 1's 170 boundaries used a third of the budget"
+and "used two thirds", which is a planning input either way. A factor of 4
+would not be.
+
+### V2 — attribution: is a spread between instances, or just between runs?
+
+This is what the second rollout per instance buys, and the rule that reads it is
+fixed **now**, before the scatter it references has been observed — otherwise
+"how much run-to-run scatter counts as a lot" gets defined against numbers
+already on the screen, which is the one failure this whole document is built to
+prevent.
+
+Two quantities, both ratios, both from the same five values:
+
+    W = max over instances with two rollouts of ( max(m_i) / min(m_i) )
+        — the largest run-to-run spread actually observed
+    B = max over instances of c_i  /  min over instances of c_i,
+        where c_i = the geometric mean of instance i's usable rollouts
+        (for run 1, c_1 = m_1, its single value)
+
+**Verdict:**
+
+- **`separated`** if `B > W` **and** `B > 2`
+- **`not-separated`** otherwise
+
+Both conditions, joined by `and`, and each carries its own job: `B > W` asks
+whether the between-instance difference is larger than run-to-run scatter as
+this probe actually saw it, and `B > 2` is the same materiality floor V1 uses,
+so a difference that is real but too small to move a headroom figure is not
+reported as a separation. Neither condition alone is the verdict.
+
+**What each verdict licenses, and what neither does:**
+
+- `separated` licenses: *the instances differed by more than the run-to-run
+  scatter observed here, and by more than a factor of 2.* It does **not**
+  license "per-boundary cost is a property of the instance" — with two draws
+  per instance, `W` is a bound, not an estimate.
+- `not-separated` licenses: *the differences seen are not larger than this
+  probe's own run-to-run scatter.* It is **not** evidence that the instances
+  are alike; two draws cannot exclude a difference smaller than the scatter
+  they showed, and this verdict may never be cited as if they could.
+- **Neither verdict names a cause.** No claim that a repository, a language, an
+  event volume or a task shape explains a difference is licensed by this probe
+  under either branch.
+
+**Three properties of `W` that are pre-registered as limitations, not
+discovered as findings.** They run in known directions, which is why they can be
+written down before the data:
+
+1. **`W` is built from two instances, not three.** Run 1 has one rollout and
+   contributes to `B` as a point and to `W` not at all (§0).
+2. **The range of two draws understates the spread of their distribution**, and
+   understating `W` makes `separated` *easier* to reach. So `separated` is the
+   optimistic branch of this rule, and the report says so wherever it appears.
+3. **`W` can come out small by luck.** Two draws landing close is an ordinary
+   outcome, not evidence of stability. This is why `B > 2` is joined to
+   `B > W` rather than replaced by it: the materiality floor is what stops a
+   lucky-small `W` from manufacturing a separation on its own.
+
+**The rule was run against the two defects it was written for, before being
+called a rule** — on invented values, since no real ones exist, and recorded
+here so a reader can see the branches are reachable rather than take it on
+trust:
+
+| scenario (invented `m` values) | V1 | `W` | `B` | V2 |
+|---|---|---|---|---|
+| O `6.58`; P1 `3.0, 12.0`; P2 `4.0, 11.0` — spread is run-to-run | `not-consistent-within-2x` | 4.00 | 1.11 | `not-separated` |
+| O `6.58`; P1 `6.50, 6.55`; P2 `8.0, 8.1` — lucky-tight `W` | `consistent-within-2x` | 1.01 | 1.23 | `not-separated` |
+| O `6.58`; P1 `6.2, 7.0`; P2 `20.0, 21.0` — instance really differs | `not-consistent-within-2x` | 1.13 | 3.11 | `separated` |
+
+Row 1 is the defect `B > W` exists for: a large `R` that is entirely
+run-to-run must not read as a difference between instances. Row 2 is the defect
+the `B > 2` floor exists for: `B > W` alone would have fired there on a
+1.23× difference, because `W` happened to come out tiny. Both branches stay
+shut, and row 3 shows the rule is still able to fire.
+
+**If an instance ends with one usable rollout** (§1's reduced-design default),
+it contributes to `B` as a point and to `W` not at all, exactly as run 1 does.
+If **no** instance has two usable rollouts, `W` does not exist, **V2 is not
+computed, and the report says `V2: not computable, no instance had two usable
+rollouts`** — that is an absence of data, not an inconclusive verdict, and V1
+still reports normally.
 
 **The quantity check, and it qualifies the verdict rather than replacing it.**
 `span_s / boundaries` is not the judge's latency; it is the *interval between
@@ -368,22 +483,27 @@ one-directional:
   may not be cited as evidence that the supervisor was the bottleneck.
 
 Run 1 does not fire the first branch (`tail_fraction ≤ 85.4%`, itself an upper
-bound). A run that does fires it **without changing `R`**: its `m` still enters
-the ratio, with no discretion available. If `not-consistent-within-2x` is driven
-by a run that fired it, the report's reading is *the three did not agree and at
-least one of the three means is a different quantity* — which is a stronger
-answer to the open question than a bare disagreement, not a weaker one.
+bound). A run that does fires it **without changing `R`, `W` or `B`**: its `m`
+enters every one of them, with no discretion available. If a spread is driven
+by a run that fired it, the report's reading is *these did not agree and at
+least one of the means is a different quantity* — which is a stronger answer to
+the open question than a bare disagreement, not a weaker one. It also bounds
+V2: a `W` computed across two runs of which one fired this branch is a spread
+between two different quantities, and `separated` may not be reported without
+saying so.
 
-**Secondary readouts that may never flip the primary verdict:** R4's median and
+**Secondary readouts that may never flip either verdict:** R4's median and
 percentiles, R5, R6, R9, R11, R12. They are reported on every run. The median
 delta is the obvious candidate for a second shot at the target and is
-explicitly denied one: it describes the distribution, and the verdict is on the
-mean.
+explicitly denied one: it describes the distribution, and both verdicts are on
+the mean.
 
-**No trend claim.** With three points and one rollout each, the report tabulates
-`(boundaries, m)` per run and makes **no** regression, correlation, monotonicity
-or "scales with event volume" claim. That is pre-registered here precisely
-because such a story will be available and tempting once three points exist.
+**No trend claim.** Five rollouts over three instances, two of them replicated,
+is not a design that supports one. The report tabulates `(boundaries, m)` per
+rollout and makes **no** regression, correlation, monotonicity or "scales with
+event volume" claim. This is pre-registered precisely because such a story will
+be available and tempting once five points exist — more available at five than
+it was at three.
 
 **The robustness verdict, per run, three values:**
 
@@ -408,9 +528,11 @@ for an instance is allowed to be "no", and `did-not-terminate` is that answer,
 not a broken run to be discarded. Anything else lets the excluded set grow in
 the direction that flatters the result.
 
-**The closed list of re-runnable infrastructure causes.** A rollout may be
-re-run **once**, on a fresh rollout id, only when its failure is positively
-identified as one of:
+**The closed list of causes for which a replacement may be *requested*.** Per
+§1, the planned 2 rollouts per instance already sit on the ask-first ceiling, so
+nothing here authorizes a re-run by itself: a replacement needs the owner's
+explicit go-ahead, and this list only says which failures may be taken to them.
+A failure qualifies when it is positively identified as one of:
 
 1. the instance's image is missing or its pull failed;
 2. Docker itself is unreachable (`RUNBOOK.md` §1's exit-code-2 branch);
@@ -423,6 +545,10 @@ crash mid-run, a lapse rate of any size, and a rollout that produced no patch �
 is a **result** and is reported. The list is closed; adding to it after seeing
 a failure is the amendment this section exists to forbid.
 
+**Whether a go-ahead was sought, and its answer, are reported either way** — a
+replacement that was never asked for and one that was declined are different
+facts, and both leave the instance at one usable rollout.
+
 **`TIMED_OUT` inherits run 1's presumption.** A first-attempt timeout is
 presumed ours, not the actor's, unless `claude_code.proxy_log.jsonl`'s own
 timeline shows the actor actively working up to the wall clock
@@ -431,11 +557,12 @@ A timeout that R10 and R11 show as the supervisor still catching up while the
 actor sat finished is **the primary question's answer arriving as a failure**,
 and the report reads it that way rather than as a lost run.
 
-**Re-running destroys evidence unless a fresh rollout id is used.** A
+**Every rollout uses a fresh rollout id — the second planned one included.** A
 non-`--resume` invocation deletes the prior attempt's output directory outright
-([`RUNBOOK.md` §3](../pipeline_end_to_end/RUNBOOK.md#3-if-it-fails--read-this-before-doing-anything)).
-Any re-run under this section uses a new rollout id, and both runs' corpora are
-kept and reported.
+([`RUNBOOK.md` §3](../pipeline_end_to_end/RUNBOOK.md#3-if-it-fails--read-this-before-doing-anything)),
+so an instance's two planned rollouts must not share an id or the first is
+destroyed by the second — which would take `W` with it. Every corpus is kept
+and reported, an authorized replacement's predecessor included.
 
 **Launch procedure is run 1's.**
 [`RUNBOOK.md`](../pipeline_end_to_end/RUNBOOK.md) is the launch procedure, and
@@ -448,16 +575,23 @@ copy it.
 - **Not an effect estimate.** No sentence in the report may say supervision
   helped or hurt. This probe has no control arm and does not run
   `control_rollout_and_unit_test`.
-- **Not a resolve rate.** R13 is two counts from two runs, reported per run. No
-  `resolved N/M` is computed, and neither run's grading outcome is evidence
-  about supervision.
-- **Not a generalization.** `n = 3` instances, one rollout each, all from
+- **Not a resolve rate.** R13 is reported per rollout. No `resolved N/M` is
+  computed, no grading outcome is evidence about supervision, and two rollouts
+  of one instance agreeing or disagreeing on `resolved` is **not** reported as
+  a stability finding — that would be an effect-side claim reached with the
+  budget bought for a throughput-side one.
+- **Not a generalization.** Three instances and at most five rollouts, all from
   [issue #261](https://github.com/Luolc/swe-lab/issues/261)'s mixed-outcome 40,
-  all with `verdict == "good"` and a proven image. The strongest available
-  conclusion is *whether these three agree within a factor of 2* — not that any
-  figure holds for SWE-bench Pro, for this pipeline, or for a batch.
-- **Not an attribution of any disagreement.** See §0: instance-to-instance and
-  run-to-run variation are confounded by the design.
+  all with `verdict == "good"` and a proven image, one of the three with a
+  single rollout. The strongest available conclusions are V1's and V2's, in the
+  words each licenses — not that any figure holds for SWE-bench Pro, for this
+  pipeline, or for a batch.
+- **Not a variance estimate.** Two draws per instance give a range, not a
+  variance, a standard error or a confidence interval, and none of those may
+  appear in the report.
+- **Not an attribution of any disagreement.** §0 and V2's licensed sentences:
+  the second rollout per instance bounds run-to-run scatter crudely, it does
+  not explain a difference. Neither V2 branch names a cause.
 - **Not a measurement of judge latency.** Nothing instruments a per-call
   duration; §5's quantity check is what stands in for one, in one direction
   only.
@@ -466,17 +600,18 @@ copy it.
   re-checks Assertion A because the throughput reading needs the deliveries to
   have been real, not to re-litigate point 3.
 - **Not a cause for the lapses.** R5 records counts, classes and cursors. Run 1
-  left the "clusters after cursor 87" question open on purpose; two more runs
-  are tabulated beside it and no explanation is offered from three points.
+  left the "clusters after cursor 87" question open on purpose; the new
+  rollouts are tabulated beside it and no explanation is offered from five.
 
 ## 8. What may still change
 
-**Frozen:** the scale and its ceiling (§1), the selection rule and the two
-instance ids (§2) together with the data copy its verification read (§2a), the
-fixed configuration and the drift check (§3), the readout list (§4) and the
-state every count is reported with (§4a), the verdict rule with its threshold,
-its licensed sentences
-and its quantity check (§5), the failure handling and its closed cause list
+**Frozen:** the scale, its ceiling and the replacement rule that follows from
+sitting on it (§1), the selection rule and the two instance ids (§2) together
+with the data copy its verification read (§2a), the fixed configuration and the
+drift check (§3), the readout list (§4) and the state every count is reported
+with (§4a), **both verdicts V1 and V2 — their thresholds, the definitions of
+`R`, `W` and `B`, the sentences each branch licenses, and the quantity check
+that qualifies them** (§5), the failure handling and its closed cause list
 (§6), the exclusions (§7).
 
 **Not frozen:** the probe's witness script, so long as it computes §4's list and
@@ -488,4 +623,4 @@ specify:** an *unanticipated findings* section, filled on every run, whose
 entry is exactly `None observed.` when there is nothing to put there — the
 convention run 1's report
 [argues for and adopts](../pipeline_end_to_end/REPORT.md#7-unanticipated-findings).
-Nothing in that section may close, weaken or strengthen a §5 verdict.
+Nothing in that section may close, weaken or strengthen V1 or V2.
