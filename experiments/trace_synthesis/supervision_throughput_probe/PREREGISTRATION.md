@@ -74,23 +74,36 @@ permission — and has none in reserve: **every instance in it is at its ceiling
 from the start.**
 
 **What that does to a re-run, which is the part the extra budget changes.**
-With the planned count at the ceiling, a re-run is not additive. A rollout that
-fails for one of the named infrastructure causes in §6 may be replaced **only
-with the owner's explicit go-ahead, recorded in the report** — because a
-replacement is a third *invocation* on that instance, and this document takes
-the strict reading of the ask-first line: **an invocation counts whether or not
-it produced a record.** The lenient reading ("a rollout that made no model call
-never happened") is available and is deliberately not taken, since it is the
-reading whose adoption would be indistinguishable from wanting one more run.
+With the planned count at the ceiling, a re-run is not additive: a replacement
+is a **third invocation** on that instance, which is across `AGENTS.md`'s
+ask-first line, not up against it. This document takes the strict reading —
+**an invocation counts whether or not it produced a record.** The lenient
+reading ("a rollout that made no model call never happened") is available and
+is deliberately not taken, since adopting it would be indistinguishable from
+wanting one more run.
 
-**The default, when no go-ahead is sought or given: proceed with the reduced
-design.** That instance ends with one usable rollout, contributing a point to
-§5's between-instance comparison and nothing to its within-instance one, and
-the report says which instance it was. No agent decides this on its own.
+**So there are two branches and no third.**
 
-A third instance, a fifth planned rollout, or a control arm requires a **new
-pre-registration**, written before it runs; this one may not be amended to
-allow them.
+- **Default — the reduced design.** The instance keeps its one usable rollout
+  and no replacement is run. This needs nobody's permission and is what happens
+  unless the exception below fires. Its consequences for V1 and V2 are
+  pre-registered in §5 rather than worked out afterwards.
+- **Exception — a replacement, and only on the user's explicit instruction.**
+  The user gives it directly. **No agent may give it, relay it as authority, or
+  answer for it** — not the orchestrating session, not the implementing one.
+  What crosses the ask-first line is the user's to decide, and a message
+  between agents carries collaboration context, not authorization. If the
+  instruction arrives, the report records **that it was given**, alongside the
+  replacement's own corpus.
+
+Asking is allowed; assuming is not. A replacement that was never requested and
+one that was requested and declined are different facts, and the report says
+which happened.
+
+A third instance, a fifth planned rollout, or a control arm is the same kind of
+decision and sits on the same side of that line: **the user's.** A new
+pre-registration is what such a run would additionally need — it is not what
+would authorize it, and this one may not be amended to allow any of them.
 
 ## 2. The instances, and the rule that picked them
 
@@ -259,12 +272,21 @@ git log --oneline 3e97442..origin/main -- \
 
 — which is empty at `origin/main` = `62f6bb5`: no commit has touched those three
 files since run 1. **Re-run that command at launch** with the then-current
-`origin/main`. If it is non-empty, the report says which constant moved and
-whether it is one of the thirteen above; a moved constant does not void the
-probe, it becomes a stated difference, and a moved *supervision* constant
-(model, policy, budget, cooldown, window, poll interval) means the primary
-comparison in §4 is between two different configurations and must be reported
-as such rather than as a transferability result.
+`origin/main`, and if it is non-empty, say which constant moved and whether it
+is one of the thirteen above. Two cases, and they are not the same size:
+
+- **A moved non-supervision constant** (grading retries, a timeout the run does
+  not reach) does not void the probe. It becomes a stated difference in the
+  report, and the launch proceeds.
+- **A moved supervision constant** — model, policy, budget, cooldown, window,
+  poll interval — breaks the premise the whole probe rests on: §5 would then be
+  comparing two configurations, not two instances, and no verdict it produces
+  answers the transferability question. **Do not launch. Put it to the user**,
+  with what moved, and let them decide whether to spend the four rollouts
+  anyway, revert to run 1's configuration, or re-register the probe. Spending
+  the budget on a question that can no longer be answered is a decision about
+  their quota and their instance ceiling; whoever happens to be running the
+  command does not own it, and neither does any orchestrating agent.
 
 The actor version is also read from the container's own `--version` at report
 time (`claude.info`), the way run 1 read it — not assumed from the pin.
@@ -459,12 +481,42 @@ the `B > 2` floor exists for: `B > W` alone would have fired there on a
 1.23× difference, because `W` happened to come out tiny. Both branches stay
 shut, and row 3 shows the rule is still able to fire.
 
-**If an instance ends with one usable rollout** (§1's reduced-design default),
-it contributes to `B` as a point and to `W` not at all, exactly as run 1 does.
-If **no** instance has two usable rollouts, `W` does not exist, **V2 is not
-computed, and the report says `V2: not computable, no instance had two usable
-rollouts`** — that is an absence of data, not an inconclusive verdict, and V1
-still reports normally.
+### What the reduced design does to V1 and V2
+
+§1's default — an instance keeping one usable rollout, because a replacement
+was not run — is decided there, but its analytical consequences are decided
+**here**, before any run, so that a shrunken design is never read against a
+rule chosen once its shape was known.
+
+**V2 requires both probe instances to have two usable rollouts.** With fewer,
+the report says exactly:
+
+> `V2: not computable — <n> of 2 probe instances had two usable rollouts.`
+
+This holds at `n = 1` as well as at `n = 0`, and the reason `n = 1` does not
+suffice is not caution, it is what `W` would have to mean. At `n = 1`, `W` is
+one instance's single observed run-to-run ratio, and using it as the yardstick
+for *every* instance assumes run-to-run scatter transfers between instances —
+an assumption of exactly the kind this probe exists to test for the mean, and
+one it would then be smuggling in as a premise to reach its own verdict. **This
+is the sample being gone, not an escape hatch**: the difference is that an
+escape hatch is available whatever the data say, while this branch is entered
+only by a rollout that did not happen, is announced with the count that
+triggered it, and takes no argument from the values observed.
+
+An instance with one usable rollout still contributes to `B` as a point,
+exactly as run 1 does — but with V2 uncomputed, `B` is reported as a raw
+readout and **carries no verdict**; it may not be described as a difference
+between instances.
+
+**V1 still reports, in the same form, and its degradation runs one way.** `R`
+is computed over the rollouts that exist, with the count stated (`R over 4
+runs`). Dropping a value from a `max/min` set can only lower the ratio or leave
+it unchanged, so a reduced design makes **`consistent-within-2x` strictly
+easier to reach** — it is the optimistic branch under degradation, the way
+`separated` is the optimistic branch of V2 (§5's three `W` limitations). A
+`consistent-within-2x` reported over fewer than five rollouts says so in the
+same sentence as the verdict.
 
 **The quantity check, and it qualifies the verdict rather than replacing it.**
 `span_s / boundaries` is not the judge's latency; it is the *interval between
@@ -530,9 +582,10 @@ the direction that flatters the result.
 
 **The closed list of causes for which a replacement may be *requested*.** Per
 §1, the planned 2 rollouts per instance already sit on the ask-first ceiling, so
-nothing here authorizes a re-run by itself: a replacement needs the owner's
-explicit go-ahead, and this list only says which failures may be taken to them.
-A failure qualifies when it is positively identified as one of:
+**nothing in this section authorizes a re-run** — only the user does, directly,
+and no agent may give or relay that instruction. This list says which failures
+may be put to the user at all; the default for every one of them is still §1's
+reduced design. A failure qualifies when it is positively identified as one of:
 
 1. the instance's image is missing or its pull failed;
 2. Docker itself is unreachable (`RUNBOOK.md` §1's exit-code-2 branch);
@@ -545,9 +598,9 @@ crash mid-run, a lapse rate of any size, and a rollout that produced no patch �
 is a **result** and is reported. The list is closed; adding to it after seeing
 a failure is the amendment this section exists to forbid.
 
-**Whether a go-ahead was sought, and its answer, are reported either way** — a
-replacement that was never asked for and one that was declined are different
-facts, and both leave the instance at one usable rollout.
+**Whether the user was asked, and what they said, is reported either way** — a
+replacement that was never requested and one that was requested and declined
+are different facts, and both leave the instance at one usable rollout.
 
 **`TIMED_OUT` inherits run 1's presumption.** A first-attempt timeout is
 presumed ours, not the actor's, unless `claude_code.proxy_log.jsonl`'s own
@@ -610,9 +663,18 @@ sitting on it (§1), the selection rule and the two instance ids (§2) together
 with the data copy its verification read (§2a), the fixed configuration and the
 drift check (§3), the readout list (§4) and the state every count is reported
 with (§4a), **both verdicts V1 and V2 — their thresholds, the definitions of
-`R`, `W` and `B`, the sentences each branch licenses, and the quantity check
-that qualifies them** (§5), the failure handling and its closed cause list
-(§6), the exclusions (§7).
+`R`, `W` and `B`, the sentences each branch licenses, the quantity check that
+qualifies them, and what a reduced design does to each** (§5), the failure
+handling and its closed cause list (§6), the exclusions (§7).
+
+**Not this document's to change at all** — frozen is the wrong word, because
+freezing implies it was ours to set: anything across `AGENTS.md`'s ask-first
+line is the **user's** decision, given directly. That covers a replacement
+rollout (§1, §6), a third instance, a fifth planned rollout, a control arm, and
+launching under a moved supervision constant (§3). No agent may grant, relay or
+answer for any of them, and a message between agents is collaboration context,
+never authorization. Writing a new pre-registration does not create the
+permission either — it is an additional requirement, not a source of one.
 
 **Not frozen:** the probe's witness script, so long as it computes §4's list and
 nothing more; how the report presents the findings; and the prose explaining
