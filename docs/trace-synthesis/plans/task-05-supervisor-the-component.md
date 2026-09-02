@@ -225,8 +225,11 @@ with nothing in the record to say so ([`spec.md` §11](../spec.md#11-open-questi
   refutation condition, carried here so that it is scheduled rather than filed
   against nobody. The supervisor delivers **one** intervention *inside the
   sandbox*, and the fold's measured shape — the injected block's **length** and
-  **`sha256`** — must match the host measurement (`len 440`,
-  `sha256 3ba88726…fb90c8`, pinned by `tests/test_streamjson_input_evidence.py`).
+  **`sha256`** — must match the host measurement, `len 440` /
+  `sha256 3ba88726…fb90c8`. **Read the expected values from the committed
+  artifact** (`experiments/trace_synthesis/streamjson_input/runs/proxy-midturn/evidence.json`),
+  which is where they live; the suite's test asserts that the headless and TUI
+  captures agree, not that either equals a literal.
   **A mismatch means this task is not complete** and opens the ADR's refutation
   path: the byte-identity result would then be about the host binary and not the
   one we ship. This is on the critical path either way — the rollouts that will

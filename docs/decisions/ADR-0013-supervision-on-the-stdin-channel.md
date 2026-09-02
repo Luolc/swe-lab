@@ -75,8 +75,11 @@ softening that.** It did not pass.
   real interactive TUI and the same correction written on `-p` stdin produce the
   same wire: same message count (7 vs 7), same role sequence, same
   `<system-reminder>` count (4 vs 4), and a **byte-identical** injected block
-  (`len 440`, `sha256 3ba88726…fb90c8`) — N=1 per arm, hash-pinned by
-  `tests/test_streamjson_input_evidence.py`
+  (`len 440`, `sha256 3ba88726…fb90c8`) — N=1 per arm. The two values are
+  carried by the committed artifacts
+  (`experiments/trace_synthesis/streamjson_input/runs/{proxy,tui}-midturn/evidence.json`),
+  and `tests/test_streamjson_input_evidence.py` asserts their **equality**, and
+  §14's counts, on every run of the suite; it does not hold the literal digest
   ([streamjson_input §14](../../experiments/trace_synthesis/streamjson_input/REPORT.md)).
 - **Speaking costs zero extra actor API requests** mid-turn (N=1 per arm, 3
   proxied headless arms, one task, one model).
