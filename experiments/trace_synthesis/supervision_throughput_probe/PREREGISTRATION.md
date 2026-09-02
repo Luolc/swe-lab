@@ -521,8 +521,8 @@ defined just below.
 deliberately **not** over per-instance summaries: a downstream planner faces the
 spread of individual runs, not the spread of their averages, and averaging
 inside an instance would hide exactly the run-to-run component V2 exists to
-measure. The report states the count it was computed over (`R over 5 runs`, or
-fewer, never `R` unqualified).
+measure. The report states the count it was computed over — `R over <n>
+contributing invocations`, with `<n>` whatever it is, never `R` unqualified.
 
 **Minimum coverage, without which V1 is not computed at all.** V1 requires
 contributing values from **at least two distinct instances, at least one of
@@ -576,7 +576,9 @@ prevent.
 
 Two quantities, both ratios, both over the contributing values of §5.0:
 
-    M_i = the set of ALL contributing m from instance i  (§5.0)
+    M_i = the MULTISET of every contributing m from instance i (§5.0):
+          one entry per qualifying invocation, equal values kept apart,
+          and |M_i| counts entries, not distinct values
 
     W_i = max(M_i) / min(M_i)
     W   = max of W_i over probe instances with |M_i| >= 2
@@ -584,6 +586,13 @@ Two quantities, both ratios, both over the contributing values of §5.0:
     B   = max over instances of c_i / min over instances of c_i,
           where c_i = the geometric mean of ALL of M_i
           (for run 1, c_1 = m_1, its single value)
+
+**Multiset, not set — an ordinary set silently deletes a real observation.**
+Two rollouts of one instance that measure the same `m` are two observations, and
+under set semantics `{6.58, 6.58}` has one element: row E below would fail
+`|M_i| >= 2`, V2 would be uncomputable, and the table would contradict the rule
+in the same document. `|M_i|` counts **invocations that contributed**, so equal
+values count twice, and `c_i`'s geometric mean is taken over the entries.
 
 **`W_i` and `c_i` range over every contributing value, never over a chosen
 two.** A worked case, because the wording that said "two rollouts" produced the
@@ -636,8 +645,8 @@ too small to move a headroom figure is not reported as a separation.
 - **None of the four names a cause.** No claim that a repository, a language, an
   event volume or a task shape explains a difference is licensed here.
 
-**Three properties of `W` that are pre-registered as limitations, not
-discovered as findings** — and only the first two have a known direction:
+**Properties of `W` pre-registered as limitations, not discovered as findings**
+— numbered below, and only the first two have a known direction:
 
 1. **`W` is built from the probe instances only.** Run 1 has one rollout and
    contributes to `B` as a point and to `W` not at all (§0).
@@ -689,6 +698,13 @@ wrong, which no comparison of labels can catch.
 - **D** exercises the fourth branch, which nothing else reaches: a material
   `B` of 7.45 that is nonetheless inside a `W` of 9. `within scatter` reads
   true; `below floor` would have been false.
+- **E** is also this file's multiplicity test, and it fails loudly under the
+  wrong semantics: its two probe instances each contributed two *equal* values,
+  so as sets they would have cardinality 1, no instance would clear
+  `|M_i| >= 2`, and V2 would read `not computable` while this very row reports
+  `W = 1.0000` and `B = 2.0000`. As multisets the cardinalities are 2 and 2 and
+  the row stands. **A row whose values are equal is the only kind that can
+  catch this**, which is why it is kept rather than perturbed into distinctness.
 - **E** sits exactly on the registered boundary, `B = 2.0000` and `R = 2.0`,
   which is where a rule's prose fails while its interior reads fine. Both
   thresholds are `≤`, so both take the inclusive branch — and the old wording
@@ -731,9 +747,9 @@ is computed over the rollouts that exist, with the count stated (`R over 4
 runs`). Dropping a value from a `max/min` set can only lower the ratio or leave
 it unchanged, so a reduced design makes **`consistent-within-2x` strictly
 easier to reach** — it is the optimistic branch under degradation, the way
-`separated` is the optimistic branch of V2 (§5's three `W` limitations). A
-`consistent-within-2x` reported over fewer than five rollouts says so in the
-same sentence as the verdict.
+`separated` is the optimistic branch of V2 (§5's `W` limitations). A
+`consistent-within-2x` reported over fewer contributing invocations than the
+design planned says so in the same sentence as the verdict.
 
 ### There is no saturation discriminator, and R10 carries no inference
 
@@ -780,12 +796,12 @@ delta is the obvious candidate for a second shot at the target and is
 explicitly denied one: it describes the distribution, and both verdicts are on
 the mean.
 
-**No trend claim.** Five rollouts over three instances, two of them replicated,
-is not a design that supports one. The report tabulates `(boundaries, m)` per
+**No trend claim.** A handful of rollouts over three instances, two of them
+replicated, is not a design that supports one. The report tabulates `(boundaries, m)` per
 rollout and makes **no** regression, correlation, monotonicity or "scales with
 event volume" claim. This is pre-registered precisely because such a story will
-be available and tempting once five points exist — more available at five than
-it was at three.
+be available and tempting once several points exist — more available at five or
+seven than it was at three.
 
 **The robustness verdict — an ordered mapping to exactly one word.** The three
 earlier words overlapped: a no-human `TIMED_OUT` satisfied both
@@ -894,7 +910,9 @@ copy it.
   of one instance agreeing or disagreeing on `resolved` is **not** reported as
   a stability finding — that would be an effect-side claim reached with the
   budget bought for a throughput-side one.
-- **Not a generalization.** Three instances and at most five rollouts, all from
+- **Not a generalization.** Three instances and a single-digit number of
+  rollouts — four planned, up to seven if both probe instances receive an
+  authorized replacement and every predecessor qualifies — all from
   [issue #261](https://github.com/Luolc/swe-lab/issues/261)'s mixed-outcome 40,
   all with `verdict == "good"` and a proven image, one of the three with a
   single rollout. The strongest available conclusions are V1's and V2's, in the
@@ -920,7 +938,7 @@ copy it.
   have been real, not to re-litigate point 3.
 - **Not a cause for the lapses.** R5 records counts, classes and cursors. Run 1
   left the "clusters after cursor 87" question open on purpose; the new
-  rollouts are tabulated beside it and no explanation is offered from five.
+  rollouts are tabulated beside it and no explanation is offered from so few.
 
 ## 8. What may still change
 
@@ -934,11 +952,24 @@ the contribution rule and reason codes of §5.0, the minimum-coverage conditions
 and what a reduced design does to each** (§5), the failure handling and its
 closed cause list (§6), the exclusions (§7).
 
-**Also frozen: the two obligations this document owes its own report.** Every
-invented-value check of a verdict reads the **licensed prose** against the
-numbers, not only the branch label — the defect that shipped once here was a
-correct label under a false sentence. And every count is reported with the state
-that produced it (§4a).
+**Also frozen: the obligations this document owes its own report.**
+
+- Every invented-value check of a verdict reads the **licensed prose** against
+  the numbers, not only the branch label — the defect that shipped here was a
+  correct label under a false sentence — and includes a row **at each
+  threshold's boundary**, not only in the interiors, since both prose defects
+  this file has shipped were at boundaries.
+- Every count is reported with the state that produced it (§4a).
+- **A quantity that can change is written once, where it is defined, and
+  derived everywhere else — never restated as a literal.** Three defects here
+  were this one shape and nothing failed on any of them: `R10` silently fell out
+  of an enumerated list of secondary readouts when it was demoted; five separate
+  sentences hard-coded a total of "five rollouts" that a single authorized
+  replacement makes seven; and a count of list members stood in for the list. The
+  repairs are the same each time — state the **complement** rather than the
+  enumeration, **parameterize** the count (`<n> contributing invocations`), or
+  **point** at the definition. Prefer whichever removes the second copy
+  outright.
 
 **Not this document's to change at all** — frozen is the wrong word, because
 freezing implies it was ours to set: these are the **user's** decisions, given
