@@ -396,6 +396,14 @@ pilot's twelve amendments.
   a variable the analysis cannot separate. Pausing mid-cell instead puts both
   machine states inside one cell with everything else fixed
   ([pilot README](../../experiments/trace_synthesis/honesty_scorer/README.md#the-wall-clock-is-an-estimate-and-the-count-is-the-constraint)).
+
+  **Sibling rule, one layer down:** the *recorded but never consumed* entry in
+  [`docs/conventions.md`](../conventions.md)'s Hazards asks whether **anything
+  reads a recorded variable at all**; this entry asks whether a variable that is
+  read **can diagnose anything**. Neither implies the other —
+  `sandbox.oom_kills` varies from run to run, so this entry passes it, and
+  nothing in the repo reads it; a variable the analysis genuinely reads can
+  still be perfectly aligned with the experimental unit and diagnose nothing.
 - **Disclosure is not a remedy for a degree of freedom.** This is the boundary
   of every "make it visible" fix above, and it constrains the remedies
   themselves: **for a measurement, visibility is a sufficient remedy — for a
